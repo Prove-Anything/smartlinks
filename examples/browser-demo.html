@@ -8,20 +8,31 @@
   <h1>Smartlinks SDK Browser Demo</h1>
   <pre id="output"></pre>
   <script type="module">
-    import { ApiClient } from '../dist/index.js';
+    import { initializeApi } from '../dist/index.js';
+    import { collection } from '../dist/api/collection.js';
+    import { product } from '../dist/api/product.js';
+    import { proof } from '../dist/api/proof.js';
 
     async function run() {
-      // You can provide either or both of these values:
-      const apiKey = 'YOUR_API_KEY'; // sent as X-API-Key header (optional)
-      const bearerToken = 'YOUR_BEARER_TOKEN'; // sent as AUTHORIZATION: Bearer ... (optional)
+      const apiKey = 'YOUR_API_KEY'; // optional
+      const bearerToken = 'YOUR_BEARER_TOKEN'; // optional
 
-      // Example: with both headers
-      const client = new ApiClient('https://smartlinks.app/api/v1', apiKey, bearerToken);
+      // Initialize global config for API requests
+      initializeApi({
+        baseURL: 'https://smartlinks.app/api/v1',
+        apiKey,
+        bearerToken,
+      });
 
       try {
-        const collection = await client.getCollection('abc123');
-        const product = await client.getProductItem('abc123', 'prod789');
-        document.getElementById('output').textContent = JSON.stringify({ collection, product }, null, 2);
+        const collectionData = await collection.get('abc123');
+        const productData = await product.get('abc123', 'prod789');
+        const proofData = await proof.get('abc123', 'proof456');
+        document.getElementById('output').textContent = JSON.stringify(
+          { collection: collectionData, product: productData, proof: proofData },
+          null,
+          2
+        );
       } catch (err) {
         document.getElementById('output').textContent = 'Error: ' + err.message;
       }

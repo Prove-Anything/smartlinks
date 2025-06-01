@@ -1,19 +1,27 @@
-import { ApiClient, CollectionResponse, ProductResponse } from "../src/index";
+import { initializeApi } from "../dist/index";
+import { collection } from "../dist/api/collection";
+import { product } from "../dist/api/product";
+import { proof } from "../dist/api/proof";
 
 async function main() {
-  // You can provide either or both of these values:
-  const apiKey = "YOUR_API_KEY"; // sent as X-API-Key header (optional)
-  const bearerToken = "YOUR_BEARER_TOKEN"; // sent as AUTHORIZATION: Bearer ... (optional)
+  const apiKey = "YOUR_API_KEY"; // optional
+  const bearerToken = "YOUR_BEARER_TOKEN"; // optional
 
-  // Example: with both headers
-  const client = new ApiClient("https://smartlinks.app/api/v1", apiKey, bearerToken);
+  initializeApi({
+    baseURL: "https://smartlinks.app/api/v1",
+    apiKey,
+    bearerToken,
+  });
 
   try {
-    const collection: CollectionResponse = await client.getCollection("abc123");
-    console.log("Collection:", collection);
+    const collectionData = await collection.get("abc123");
+    console.log("Collection:", collectionData);
 
-    const product: ProductResponse = await client.getProductItem("abc123", "prod789");
-    console.log("Product Item:", product);
+    const productData = await product.get("abc123", "prod789");
+    console.log("Product Item:", productData);
+
+    const proofData = await proof.get("abc123", "proof456");
+    console.log("Proof:", proofData);
   } catch (err) {
     console.error("Error fetching data:", err);
   }
