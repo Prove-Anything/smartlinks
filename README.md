@@ -1,19 +1,19 @@
-# @smartlinks/sdk
+# @proveanything/smartlinks
 
 An official JavaScript/TypeScript client SDK for the Smartlinks API. This package provides a simple wrapper around the Smartlinks REST endpoints, allowing you to fetch Collection, Product, and App Configuration data in both browser and Node.js environments.
 
 ## Installation
 
 ```bash
-npm install @smartlinks/sdk
+npm install @proveanything/smartlinks
 # or
-yarn add @smartlinks/sdk
+yarn add @proveanything/smartlinks
 ```
 
 ## Quickstart
 
 ```ts
-import { ApiClient, CollectionResponse, ProductResponse } from "@smartlinks/sdk";
+import { ApiClient, CollectionResponse, ProductResponse } from "@proveanything/smartlinks";
 
 async function main() {
   // Instantiate the client (no apiKey needed for public endpoints, but shown here for reference)
@@ -136,7 +136,7 @@ Fetches a single app configuration within a collection.
 All endpoints require a Bearer token passed in the `AUTHORIZATION` header. When instantiating `ApiClient`, optionally supply your token:
 
 ```ts
-import { ApiClient } from "@smartlinks/sdk";
+import { ApiClient } from "@proveanything/smartlinks";
 
 const apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
 const client = new ApiClient("https://smartlinks.app/api/v1", apiKey);
@@ -149,7 +149,7 @@ If `apiKey` is omitted, requests will be sent without an `Authorization` header,
 All methods throw an `Error` when the server responds with a non-2xx status. The thrown error message includes the numeric error code and message from the API. Example:
 
 ```ts
-import { ApiClient } from "@smartlinks/sdk";
+import { ApiClient } from "@proveanything/smartlinks";
 
 async function fetchData() {
   const client = new ApiClient("https://smartlinks.app/api/v1", "INVALID_KEY");
