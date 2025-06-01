@@ -1,6 +1,6 @@
 # @proveanything/smartlinks
 
-An official JavaScript/TypeScript client SDK for the Smartlinks API. This package provides a simple wrapper around the Smartlinks REST endpoints, allowing you to fetch Collection, Product, and App Configuration data in both browser and Node.js environments.
+An official JavaScript/TypeScript client SDK for the Smartlinks API. This package provides simple, namespaced functions to fetch Collection, Product, Proof, and App Configuration data in both browser and Node.js environments.
 
 ## Installation
 
@@ -13,20 +13,38 @@ yarn add @proveanything/smartlinks
 ## Quickstart
 
 ```ts
-import { ApiClient, CollectionResponse, ProductResponse } from "@proveanything/smartlinks";
+import {
+  initializeApi,
+  collection,
+  product,
+  proof,
+  appConfiguration,
+} from "@proveanything/smartlinks";
 
 async function main() {
-  // Instantiate the client (no apiKey needed for public endpoints, but shown here for reference)
-  const client = new ApiClient("https://smartlinks.app/api/v1", "YOUR_API_KEY_HERE");
+  // Initialize once (provide base URL and optional API key/bearer token)
+  initializeApi({
+    baseURL: "https://smartlinks.app/api/v1",
+    apiKey: "YOUR_API_KEY_HERE",       // optional
+    bearerToken: "YOUR_BEARER_TOKEN",  // optional
+  });
 
   try {
     // Fetch a collection by ID
-    const collection: CollectionResponse = await client.getCollection("abc123");
-    console.log("Collection:", collection);
+    const coll = await collection.get("abc123");
+    console.log("Collection:", coll);
 
     // Fetch a product item by collection ID & product ID
-    const product: ProductResponse = await client.getProductItem("abc123", "prod789");
-    console.log("Product Item:", product);
+    const prod = await product.get("abc123", "prod789");
+    console.log("Product Item:", prod);
+
+    // Fetch a proof by collection ID & proof ID
+    const prf = await proof.get("abc123", "proof456");
+    console.log("Proof:", prf);
+
+    // Fetch an app configuration by collection ID & app ID
+    const cfg = await appConfiguration.get("abc123", "app789");
+    console.log("App Configuration:", cfg);
   } catch (err) {
     console.error("Error fetching data:", err);
   }
@@ -37,19 +55,24 @@ main();
 
 ## API Reference
 
-### Class: `ApiClient`
+### Initialization
 
 ```ts
-constructor(baseURL: string, apiKey?: string)
+initializeApi(options: { baseURL: string; apiKey?: string; bearerToken?: string }): void
 ```
 
 - **Parameters:**
-  - `baseURL` (`string`, required): The root URL of the Smartlinks API, e.g. `https://smartlinks.app/api/v1`.  
-  - `apiKey` (`string`, optional): Your Bearer token. If omitted, requests will be sent without an `Authorization` header.
+  - `baseURL` (`string`, required): The root URL of the Smartlinks API, e.g. `https://smartlinks.app/api/v1`.
+  - `apiKey`  (`string`, optional): Your API key for the `X-API-Key` header.
+  - `bearerToken` (`string`, optional): Your Bearer token for the `AUTHORIZATION` header.
+
+All subsequent calls to the API functions will use these settings.
 
 ---
 
-#### `getCollection(collectionId: string): Promise<CollectionResponse>`
+### Namespace: `collection`
+
+#### `collection.get(collectionId: string): Promise<CollectionResponse>`
 
 Fetches a single collection by its ID.
 
@@ -69,20 +92,21 @@ Fetches a single collection by its ID.
 
 - **Example:**
   ```ts
-  const client = new ApiClient("https://smartlinks.app/api/v1", "YOUR_API_KEY");
-  const collection = await client.getCollection("abc123");
-  console.log("Fetched collection:", collection);
+  const coll = await collection.get("abc123");
+  console.log("Fetched collection:", coll.title);
   ```
 
 ---
 
-#### `getProductItem(collectionId: string, productId: string): Promise<ProductResponse>`
+### Namespace: `product`
+
+#### `product.get(collectionId: string, productId: string): Promise<ProductResponse>`
 
 Fetches a single product item within a collection.
 
 - **Parameters:**
   - `collectionId` (`string`, required): The parent collection’s ID.
-  - `productId`   (`string`, required): The product item’s ID.
+  - `productId`    (`string`, required): The product item’s ID.
 - **Returns:**  
   A `Promise` that resolves to a `ProductResponse` object:
 
@@ -97,16 +121,49 @@ Fetches a single product item within a collection.
 
 - **Example:**
   ```ts
-  const client = new ApiClient("https://smartlinks.app/api/v1", "YOUR_API_KEY");
-  const product = await client.getProductItem("abc123", "prod789");
-  console.log("Fetched product:", product);
+  const prod = await product.get("abc123", "prod789");
+  console.log("Fetched product:", prod.name);
   ```
 
 ---
 
-#### `getAppConfiguration(collectionId: string, appId: string): Promise<AppConfigurationResponse>`
+### Namespace: `proof`
 
-Fetches a single app configuration within a collection.
+#### `proof.get(collectionId: string, proofId: string): Promise<ProofResponse>`
+
+Fetches a single proof by collection ID and proof ID.
+
+- **Parameters:**
+  - `collectionId` (`string`, required): The parent collection’s ID.
+  - `proofId`      (`string`, required): The proof’s ID.
+- **Returns:**  
+  A `Promise` that resolves to a `ProofResponse` object:
+
+  ```ts
+  export interface ProofResponse {
+    collectionId: string;
+    createdAt: string;
+    id: string;
+    productId: string;
+    tokenId: string;
+    userId: string;
+    values: Record<string, any>;
+  }
+  ```
+
+- **Example:**
+  ```ts
+  const prf = await proof.get("abc123", "proof456");
+  console.log("Fetched proof:", prf.id);
+  ```
+
+---
+
+### Namespace: `appConfiguration`
+
+#### `appConfiguration.get(collectionId: string, appId: string): Promise<AppConfigurationResponse>`
+
+Fetches a single app configuration by collection ID and app ID.
 
 - **Parameters:**
   - `collectionId` (`string`, required): The parent collection’s ID.
@@ -124,66 +181,59 @@ Fetches a single app configuration within a collection.
 
 - **Example:**
   ```ts
-  const client = new ApiClient("https://smartlinks.app/api/v1", "YOUR_API_KEY");
-  const config = await client.getAppConfiguration("abc123", "app456");
-  console.log("Fetched app configuration:", config);
+  const cfg = await appConfiguration.get("abc123", "app789");
+  console.log("Fetched app configuration:", cfg.name);
   ```
 
 ---
 
-## Authentication
-
-All endpoints require a Bearer token passed in the `AUTHORIZATION` header. When instantiating `ApiClient`, optionally supply your token:
-
-```ts
-import { ApiClient } from "@proveanything/smartlinks";
-
-const apiKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...";
-const client = new ApiClient("https://smartlinks.app/api/v1", apiKey);
-```
-
-If `apiKey` is omitted, requests will be sent without an `Authorization` header, which may cause a `401 Unauthorized` for protected endpoints.
-
 ## Error Handling
 
-All methods throw an `Error` when the server responds with a non-2xx status. The thrown error message includes the numeric error code and message from the API. Example:
+All methods throw an `Error` when the server responds with a non-2xx status. The thrown error message will include the numeric error code and message from the API. Example:
 
 ```ts
-import { ApiClient } from "@proveanything/smartlinks";
+import { product } from "@proveanything/smartlinks";
 
-async function fetchData() {
-  const client = new ApiClient("https://smartlinks.app/api/v1", "INVALID_KEY");
-
+async function fetchProduct() {
   try {
-    await client.getCollection("nonexistent");
+    await product.get("abc123", "invalidProdId");
   } catch (err) {
-    // err.message might be: "Error 401: Unauthorized" or "Error 404: Not Found"
+    // err.message might be: "Error 404: Not Found"
     console.error("Request failed:", err);
   }
 }
 
-fetchData();
+fetchProduct();
 ```
 
-## Examples
+---
 
-See the **examples/** folder for complete, runnable samples:
+## Types
 
-- [`examples/node-demo.ts`](examples/node-demo.ts)  
-- [`examples/browser-demo.html`](examples/browser-demo.html)  
-- [`examples/react-demo.tsx`](examples/react-demo.tsx)  
+You can import any of the response interfaces directly:
 
-## OpenAPI Specification
+```ts
+import {
+  CollectionResponse,
+  ProductResponse,
+  ProofResponse,
+  AppConfigurationResponse,
+} from "@proveanything/smartlinks/types";
+```
 
-This SDK is generated and maintained according to the [Smartlinks OpenAPI 3.0 specification](openapi.yaml).  
-You can find the full API contract in [`openapi.yaml`](openapi.yaml) at the root of this package.
+---
 
 ## Changelog
 
 ### 1.0.0
 
-- Initial release:  
-  - `ApiClient` class with `getCollection`, `getProductItem`, and `getAppConfiguration` methods.  
-  - Full TypeScript typings and JSDoc.  
-  - Browser/Node fetch support.  
+- Initial release:
+  - `initializeApi` function to configure baseURL and auth.
+  - Namespaced modules:
+    - `collection.get(collectionId)`
+    - `product.get(collectionId, productId)`
+    - `proof.get(collectionId, proofId)`
+    - `appConfiguration.get(collectionId, appId)`
+  - Full TypeScript typings and JSDoc.
+  - Browser/Node fetch support via `cross-fetch`.
   - Error handling via thrown `Error` objects.

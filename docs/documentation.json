@@ -6,219 +6,29 @@
 	"flags": {},
 	"children": [
 		{
-			"id": 18,
-			"name": "ApiClient",
+			"id": 29,
+			"name": "appConfiguration",
 			"variant": "declaration",
-			"kind": 128,
+			"kind": 4,
 			"flags": {},
-			"comment": {
-				"summary": [
-					{
-						"kind": "text",
-						"text": "ApiClient for the Smartlinks API.\nSupports both browser (native fetch) and Node (using cross-fetch)."
-					}
-				]
-			},
 			"children": [
 				{
-					"id": 19,
-					"name": "constructor",
+					"id": 30,
+					"name": "get",
 					"variant": "declaration",
-					"kind": 512,
+					"kind": 64,
 					"flags": {},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 97,
-							"character": 2
+							"fileName": "api/appConfiguration.ts",
+							"line": 13,
+							"character": 24
 						}
 					],
 					"signatures": [
 						{
-							"id": 20,
-							"name": "new ApiClient",
-							"variant": "signature",
-							"kind": 16384,
-							"flags": {},
-							"comment": {
-								"summary": [
-									{
-										"kind": "text",
-										"text": "Creates an instance of ApiClient."
-									}
-								],
-								"blockTags": [
-									{
-										"tag": "@example",
-										"content": [
-											{
-												"kind": "code",
-												"text": "```ts\n// With both API key and bearer token\nconst client = new ApiClient(\n  'https://smartlinks.app/api/v1',\n  'your-api-key',\n  'your-bearer-token'\n);\n\n// With only API key\nconst client = new ApiClient(\n  'https://smartlinks.app/api/v1',\n  'your-api-key'\n);\n\n// With only bearer token\nconst client = new ApiClient(\n  'https://smartlinks.app/api/v1',\n  undefined,\n  'your-bearer-token'\n);\n```"
-											}
-										]
-									}
-								]
-							},
-							"sources": [
-								{
-									"fileName": "index.ts",
-									"line": 97,
-									"character": 2
-								}
-							],
-							"parameters": [
-								{
-									"id": 21,
-									"name": "baseURL",
-									"variant": "param",
-									"kind": 32768,
-									"flags": {},
-									"comment": {
-										"summary": [
-											{
-												"kind": "text",
-												"text": "The base URL of the Smartlinks API (e.g., https://smartlinks.app/api/v1)"
-											}
-										]
-									},
-									"type": {
-										"type": "intrinsic",
-										"name": "string"
-									}
-								},
-								{
-									"id": 22,
-									"name": "apiKey",
-									"variant": "param",
-									"kind": 32768,
-									"flags": {
-										"isOptional": true
-									},
-									"comment": {
-										"summary": [
-											{
-												"kind": "text",
-												"text": "(Optional) API key for X-API-Key header"
-											}
-										]
-									},
-									"type": {
-										"type": "intrinsic",
-										"name": "string"
-									}
-								},
-								{
-									"id": 23,
-									"name": "bearerToken",
-									"variant": "param",
-									"kind": 32768,
-									"flags": {
-										"isOptional": true
-									},
-									"comment": {
-										"summary": [
-											{
-												"kind": "text",
-												"text": "(Optional) Bearer token for AUTHORIZATION header"
-											}
-										]
-									},
-									"type": {
-										"type": "intrinsic",
-										"name": "string"
-									}
-								}
-							],
-							"type": {
-								"type": "reference",
-								"target": 18,
-								"name": "ApiClient",
-								"package": "@proveanything/smartlinks"
-							}
-						}
-					]
-				},
-				{
-					"id": 25,
-					"name": "apiKey",
-					"variant": "declaration",
-					"kind": 1024,
-					"flags": {
-						"isPrivate": true,
-						"isOptional": true
-					},
-					"sources": [
-						{
-							"fileName": "index.ts",
-							"line": 67,
-							"character": 10
-						}
-					],
-					"type": {
-						"type": "intrinsic",
-						"name": "string"
-					}
-				},
-				{
-					"id": 24,
-					"name": "baseURL",
-					"variant": "declaration",
-					"kind": 1024,
-					"flags": {
-						"isPrivate": true
-					},
-					"sources": [
-						{
-							"fileName": "index.ts",
-							"line": 66,
-							"character": 10
-						}
-					],
-					"type": {
-						"type": "intrinsic",
-						"name": "string"
-					}
-				},
-				{
-					"id": 26,
-					"name": "bearerToken",
-					"variant": "declaration",
-					"kind": 1024,
-					"flags": {
-						"isPrivate": true,
-						"isOptional": true
-					},
-					"sources": [
-						{
-							"fileName": "index.ts",
-							"line": 68,
-							"character": 10
-						}
-					],
-					"type": {
-						"type": "intrinsic",
-						"name": "string"
-					}
-				},
-				{
-					"id": 34,
-					"name": "getAppConfiguration",
-					"variant": "declaration",
-					"kind": 2048,
-					"flags": {
-						"isPublic": true
-					},
-					"sources": [
-						{
-							"fileName": "index.ts",
-							"line": 133,
-							"character": 15
-						}
-					],
-					"signatures": [
-						{
-							"id": 35,
-							"name": "getAppConfiguration",
+							"id": 31,
+							"name": "get",
 							"variant": "signature",
 							"kind": 4096,
 							"flags": {},
@@ -252,14 +62,14 @@
 							},
 							"sources": [
 								{
-									"fileName": "index.ts",
-									"line": 133,
-									"character": 15
+									"fileName": "api/appConfiguration.ts",
+									"line": 13,
+									"character": 24
 								}
 							],
 							"parameters": [
 								{
-									"id": 36,
+									"id": 32,
 									"name": "collectionId",
 									"variant": "param",
 									"kind": 32768,
@@ -268,7 +78,7 @@
 										"summary": [
 											{
 												"kind": "text",
-												"text": "Identifier of the parent collection"
+												"text": "– Identifier of the parent collection"
 											}
 										]
 									},
@@ -278,7 +88,7 @@
 									}
 								},
 								{
-									"id": 37,
+									"id": 33,
 									"name": "appId",
 									"variant": "param",
 									"kind": 32768,
@@ -287,7 +97,7 @@
 										"summary": [
 											{
 												"kind": "text",
-												"text": "Identifier of the app configuration"
+												"text": "– Identifier of the app configuration"
 											}
 										]
 									},
@@ -306,7 +116,7 @@
 								"typeArguments": [
 									{
 										"type": "reference",
-										"target": 11,
+										"target": 52,
 										"name": "AppConfigurationResponse",
 										"package": "@proveanything/smartlinks"
 									}
@@ -316,26 +126,48 @@
 							}
 						}
 					]
-				},
+				}
+			],
+			"groups": [
 				{
-					"id": 27,
-					"name": "getCollection",
+					"title": "Functions",
+					"children": [
+						30
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "api/appConfiguration.ts",
+					"line": 5,
+					"character": 17
+				}
+			]
+		},
+		{
+			"id": 12,
+			"name": "collection",
+			"variant": "declaration",
+			"kind": 4,
+			"flags": {},
+			"children": [
+				{
+					"id": 13,
+					"name": "get",
 					"variant": "declaration",
-					"kind": 2048,
-					"flags": {
-						"isPublic": true
-					},
+					"kind": 64,
+					"flags": {},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 109,
-							"character": 15
+							"fileName": "api/collection.ts",
+							"line": 12,
+							"character": 24
 						}
 					],
 					"signatures": [
 						{
-							"id": 28,
-							"name": "getCollection",
+							"id": 14,
+							"name": "get",
 							"variant": "signature",
 							"kind": 4096,
 							"flags": {},
@@ -369,14 +201,14 @@
 							},
 							"sources": [
 								{
-									"fileName": "index.ts",
-									"line": 109,
-									"character": 15
+									"fileName": "api/collection.ts",
+									"line": 12,
+									"character": 24
 								}
 							],
 							"parameters": [
 								{
-									"id": 29,
+									"id": 15,
 									"name": "collectionId",
 									"variant": "param",
 									"kind": 32768,
@@ -385,7 +217,7 @@
 										"summary": [
 											{
 												"kind": "text",
-												"text": "Identifier of the collection"
+												"text": "– Identifier of the collection"
 											}
 										]
 									},
@@ -404,7 +236,7 @@
 								"typeArguments": [
 									{
 										"type": "reference",
-										"target": 1,
+										"target": 34,
 										"name": "CollectionResponse",
 										"package": "@proveanything/smartlinks"
 									}
@@ -414,26 +246,48 @@
 							}
 						}
 					]
-				},
+				}
+			],
+			"groups": [
 				{
-					"id": 30,
-					"name": "getProductItem",
+					"title": "Functions",
+					"children": [
+						13
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "api/collection.ts",
+					"line": 5,
+					"character": 17
+				}
+			]
+		},
+		{
+			"id": 16,
+			"name": "product",
+			"variant": "declaration",
+			"kind": 4,
+			"flags": {},
+			"children": [
+				{
+					"id": 17,
+					"name": "get",
 					"variant": "declaration",
-					"kind": 2048,
-					"flags": {
-						"isPublic": true
-					},
+					"kind": 64,
+					"flags": {},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 121,
-							"character": 15
+							"fileName": "api/product.ts",
+							"line": 13,
+							"character": 24
 						}
 					],
 					"signatures": [
 						{
-							"id": 31,
-							"name": "getProductItem",
+							"id": 18,
+							"name": "get",
 							"variant": "signature",
 							"kind": 4096,
 							"flags": {},
@@ -467,14 +321,14 @@
 							},
 							"sources": [
 								{
-									"fileName": "index.ts",
-									"line": 121,
-									"character": 15
+									"fileName": "api/product.ts",
+									"line": 13,
+									"character": 24
 								}
 							],
 							"parameters": [
 								{
-									"id": 32,
+									"id": 19,
 									"name": "collectionId",
 									"variant": "param",
 									"kind": 32768,
@@ -483,7 +337,7 @@
 										"summary": [
 											{
 												"kind": "text",
-												"text": "Identifier of the parent collection"
+												"text": "– Identifier of the parent collection"
 											}
 										]
 									},
@@ -493,7 +347,7 @@
 									}
 								},
 								{
-									"id": 33,
+									"id": 20,
 									"name": "productId",
 									"variant": "param",
 									"kind": 32768,
@@ -502,7 +356,7 @@
 										"summary": [
 											{
 												"kind": "text",
-												"text": "Identifier of the product item"
+												"text": "– Identifier of the product item"
 											}
 										]
 									},
@@ -521,7 +375,7 @@
 								"typeArguments": [
 									{
 										"type": "reference",
-										"target": 6,
+										"target": 39,
 										"name": "ProductResponse",
 										"package": "@proveanything/smartlinks"
 									}
@@ -533,24 +387,22 @@
 					]
 				},
 				{
-					"id": 38,
-					"name": "request",
+					"id": 21,
+					"name": "getAll",
 					"variant": "declaration",
-					"kind": 2048,
-					"flags": {
-						"isPrivate": true
-					},
+					"kind": 64,
+					"flags": {},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 144,
-							"character": 16
+							"fileName": "api/product.ts",
+							"line": 29,
+							"character": 24
 						}
 					],
 					"signatures": [
 						{
-							"id": 39,
-							"name": "request",
+							"id": 22,
+							"name": "getAll",
 							"variant": "signature",
 							"kind": 4096,
 							"flags": {},
@@ -558,7 +410,7 @@
 								"summary": [
 									{
 										"kind": "text",
-										"text": "Internal helper to perform a GET request and parse JSON."
+										"text": "Retrieves all Product Items for a Collection."
 									}
 								],
 								"blockTags": [
@@ -567,7 +419,7 @@
 										"content": [
 											{
 												"kind": "text",
-												"text": "Promise resolving to the parsed JSON of type T"
+												"text": "Promise resolving to an array of ProductResponse objects"
 											}
 										]
 									},
@@ -576,7 +428,7 @@
 										"content": [
 											{
 												"kind": "text",
-												"text": "Error if network error or a non-2xx response is returned"
+												"text": "ErrorResponse if the request fails"
 											}
 										]
 									}
@@ -584,24 +436,15 @@
 							},
 							"sources": [
 								{
-									"fileName": "index.ts",
-									"line": 144,
-									"character": 16
-								}
-							],
-							"typeParameter": [
-								{
-									"id": 40,
-									"name": "T",
-									"variant": "typeParam",
-									"kind": 131072,
-									"flags": {}
+									"fileName": "api/product.ts",
+									"line": 29,
+									"character": 24
 								}
 							],
 							"parameters": [
 								{
-									"id": 41,
-									"name": "path",
+									"id": 23,
+									"name": "collectionId",
 									"variant": "param",
 									"kind": 32768,
 									"flags": {},
@@ -609,7 +452,150 @@
 										"summary": [
 											{
 												"kind": "text",
-												"text": "The path (relative to baseURL) to request"
+												"text": "– Identifier of the parent collection"
+											}
+										]
+									},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"target": {
+									"sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+									"qualifiedName": "Promise"
+								},
+								"typeArguments": [
+									{
+										"type": "array",
+										"elementType": {
+											"type": "reference",
+											"target": 39,
+											"name": "ProductResponse",
+											"package": "@proveanything/smartlinks"
+										}
+									}
+								],
+								"name": "Promise",
+								"package": "typescript"
+							}
+						}
+					]
+				}
+			],
+			"groups": [
+				{
+					"title": "Functions",
+					"children": [
+						17,
+						21
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "api/product.ts",
+					"line": 5,
+					"character": 17
+				}
+			]
+		},
+		{
+			"id": 24,
+			"name": "proof",
+			"variant": "declaration",
+			"kind": 4,
+			"flags": {},
+			"children": [
+				{
+					"id": 25,
+					"name": "get",
+					"variant": "declaration",
+					"kind": 64,
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "api/proof.ts",
+							"line": 13,
+							"character": 24
+						}
+					],
+					"signatures": [
+						{
+							"id": 26,
+							"name": "get",
+							"variant": "signature",
+							"kind": 4096,
+							"flags": {},
+							"comment": {
+								"summary": [
+									{
+										"kind": "text",
+										"text": "Retrieves a single Proof by Collection ID and Proof ID."
+									}
+								],
+								"blockTags": [
+									{
+										"tag": "@returns",
+										"content": [
+											{
+												"kind": "text",
+												"text": "Promise resolving to a ProofResponse object"
+											}
+										]
+									},
+									{
+										"tag": "@throws",
+										"content": [
+											{
+												"kind": "text",
+												"text": "ErrorResponse if the request fails"
+											}
+										]
+									}
+								]
+							},
+							"sources": [
+								{
+									"fileName": "api/proof.ts",
+									"line": 13,
+									"character": 24
+								}
+							],
+							"parameters": [
+								{
+									"id": 27,
+									"name": "collectionId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"comment": {
+										"summary": [
+											{
+												"kind": "text",
+												"text": "– Identifier of the parent collection"
+											}
+										]
+									},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 28,
+									"name": "proofId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"comment": {
+										"summary": [
+											{
+												"kind": "text",
+												"text": "– Identifier of the proof"
 											}
 										]
 									},
@@ -628,10 +614,9 @@
 								"typeArguments": [
 									{
 										"type": "reference",
-										"target": 40,
-										"name": "T",
-										"package": "@proveanything/smartlinks",
-										"refersToTypeParameter": true
+										"target": 44,
+										"name": "ProofResponse",
+										"package": "@proveanything/smartlinks"
 									}
 								],
 								"name": "Promise",
@@ -643,39 +628,22 @@
 			],
 			"groups": [
 				{
-					"title": "Constructors",
+					"title": "Functions",
 					"children": [
-						19
-					]
-				},
-				{
-					"title": "Properties",
-					"children": [
-						25,
-						24,
-						26
-					]
-				},
-				{
-					"title": "Methods",
-					"children": [
-						34,
-						27,
-						30,
-						38
+						25
 					]
 				}
 			],
 			"sources": [
 				{
-					"fileName": "index.ts",
-					"line": 65,
-					"character": 13
+					"fileName": "api/proof.ts",
+					"line": 5,
+					"character": 17
 				}
 			]
 		},
 		{
-			"id": 11,
+			"id": 52,
 			"name": "AppConfigurationResponse",
 			"variant": "declaration",
 			"kind": 256,
@@ -690,7 +658,7 @@
 			},
 			"children": [
 				{
-					"id": 12,
+					"id": 53,
 					"name": "id",
 					"variant": "declaration",
 					"kind": 1024,
@@ -705,8 +673,8 @@
 					},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 40,
+							"fileName": "types/appConfiguration.ts",
+							"line": 7,
 							"character": 2
 						}
 					],
@@ -716,7 +684,7 @@
 					}
 				},
 				{
-					"id": 13,
+					"id": 54,
 					"name": "name",
 					"variant": "declaration",
 					"kind": 1024,
@@ -731,8 +699,8 @@
 					},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 42,
+							"fileName": "types/appConfiguration.ts",
+							"line": 9,
 							"character": 2
 						}
 					],
@@ -742,7 +710,7 @@
 					}
 				},
 				{
-					"id": 14,
+					"id": 55,
 					"name": "settings",
 					"variant": "declaration",
 					"kind": 1024,
@@ -753,14 +721,14 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "Key‐value pairs representing configuration settings"
+								"text": "Key-value pairs representing configuration settings"
 							}
 						]
 					},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 44,
+							"fileName": "types/appConfiguration.ts",
+							"line": 11,
 							"character": 2
 						}
 					],
@@ -789,22 +757,22 @@
 				{
 					"title": "Properties",
 					"children": [
-						12,
-						13,
-						14
+						53,
+						54,
+						55
 					]
 				}
 			],
 			"sources": [
 				{
-					"fileName": "index.ts",
-					"line": 38,
+					"fileName": "types/appConfiguration.ts",
+					"line": 5,
 					"character": 17
 				}
 			]
 		},
 		{
-			"id": 1,
+			"id": 34,
 			"name": "CollectionResponse",
 			"variant": "declaration",
 			"kind": 256,
@@ -819,7 +787,7 @@
 			},
 			"children": [
 				{
-					"id": 2,
+					"id": 35,
 					"name": "id",
 					"variant": "declaration",
 					"kind": 1024,
@@ -834,8 +802,8 @@
 					},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 12,
+							"fileName": "types/collection.ts",
+							"line": 7,
 							"character": 2
 						}
 					],
@@ -845,7 +813,7 @@
 					}
 				},
 				{
-					"id": 5,
+					"id": 38,
 					"name": "logoImage",
 					"variant": "declaration",
 					"kind": 1024,
@@ -860,8 +828,8 @@
 					},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 18,
+							"fileName": "types/collection.ts",
+							"line": 13,
 							"character": 2
 						}
 					],
@@ -871,7 +839,7 @@
 					}
 				},
 				{
-					"id": 3,
+					"id": 36,
 					"name": "name",
 					"variant": "declaration",
 					"kind": 1024,
@@ -880,14 +848,14 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "Machine‐readable name of the collection"
+								"text": "Machine-readable name of the collection"
 							}
 						]
 					},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 14,
+							"fileName": "types/collection.ts",
+							"line": 9,
 							"character": 2
 						}
 					],
@@ -897,7 +865,7 @@
 					}
 				},
 				{
-					"id": 4,
+					"id": 37,
 					"name": "title",
 					"variant": "declaration",
 					"kind": 1024,
@@ -906,14 +874,14 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "Human‐readable title of the collection"
+								"text": "Human-readable title of the collection"
 							}
 						]
 					},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 16,
+							"fileName": "types/collection.ts",
+							"line": 11,
 							"character": 2
 						}
 					],
@@ -927,23 +895,23 @@
 				{
 					"title": "Properties",
 					"children": [
-						2,
-						5,
-						3,
-						4
+						35,
+						38,
+						36,
+						37
 					]
 				}
 			],
 			"sources": [
 				{
-					"fileName": "index.ts",
-					"line": 10,
+					"fileName": "types/collection.ts",
+					"line": 5,
 					"character": 17
 				}
 			]
 		},
 		{
-			"id": 15,
+			"id": 56,
 			"name": "ErrorResponse",
 			"variant": "declaration",
 			"kind": 256,
@@ -958,7 +926,7 @@
 			},
 			"children": [
 				{
-					"id": 16,
+					"id": 57,
 					"name": "code",
 					"variant": "declaration",
 					"kind": 1024,
@@ -973,8 +941,8 @@
 					},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 52,
+							"fileName": "types/error.ts",
+							"line": 7,
 							"character": 2
 						}
 					],
@@ -984,7 +952,7 @@
 					}
 				},
 				{
-					"id": 17,
+					"id": 58,
 					"name": "message",
 					"variant": "declaration",
 					"kind": 1024,
@@ -993,14 +961,14 @@
 						"summary": [
 							{
 								"kind": "text",
-								"text": "Human‐readable error message"
+								"text": "Human-readable error message"
 							}
 						]
 					},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 54,
+							"fileName": "types/error.ts",
+							"line": 9,
 							"character": 2
 						}
 					],
@@ -1014,21 +982,21 @@
 				{
 					"title": "Properties",
 					"children": [
-						16,
-						17
+						57,
+						58
 					]
 				}
 			],
 			"sources": [
 				{
-					"fileName": "index.ts",
-					"line": 50,
+					"fileName": "types/error.ts",
+					"line": 5,
 					"character": 17
 				}
 			]
 		},
 		{
-			"id": 6,
+			"id": 39,
 			"name": "ProductResponse",
 			"variant": "declaration",
 			"kind": 256,
@@ -1043,7 +1011,7 @@
 			},
 			"children": [
 				{
-					"id": 9,
+					"id": 42,
 					"name": "description",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1058,8 +1026,8 @@
 					},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 30,
+							"fileName": "types/product.ts",
+							"line": 11,
 							"character": 2
 						}
 					],
@@ -1069,7 +1037,7 @@
 					}
 				},
 				{
-					"id": 10,
+					"id": 43,
 					"name": "heroImage",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1084,8 +1052,8 @@
 					},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 32,
+							"fileName": "types/product.ts",
+							"line": 13,
 							"character": 2
 						}
 					],
@@ -1095,7 +1063,7 @@
 					}
 				},
 				{
-					"id": 7,
+					"id": 40,
 					"name": "id",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1110,8 +1078,8 @@
 					},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 26,
+							"fileName": "types/product.ts",
+							"line": 7,
 							"character": 2
 						}
 					],
@@ -1121,7 +1089,7 @@
 					}
 				},
 				{
-					"id": 8,
+					"id": 41,
 					"name": "name",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1136,8 +1104,8 @@
 					},
 					"sources": [
 						{
-							"fileName": "index.ts",
-							"line": 28,
+							"fileName": "types/product.ts",
+							"line": 9,
 							"character": 2
 						}
 					],
@@ -1151,36 +1119,522 @@
 				{
 					"title": "Properties",
 					"children": [
-						9,
-						10,
-						7,
-						8
+						42,
+						43,
+						40,
+						41
 					]
 				}
 			],
 			"sources": [
 				{
-					"fileName": "index.ts",
-					"line": 24,
+					"fileName": "types/product.ts",
+					"line": 5,
 					"character": 17
+				}
+			]
+		},
+		{
+			"id": 44,
+			"name": "ProofResponse",
+			"variant": "declaration",
+			"kind": 256,
+			"flags": {},
+			"comment": {
+				"summary": [
+					{
+						"kind": "text",
+						"text": "Represents a Proof object."
+					}
+				]
+			},
+			"children": [
+				{
+					"id": 45,
+					"name": "collectionId",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Unique identifier for the collection"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "types/proof.ts",
+							"line": 7,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 46,
+					"name": "createdAt",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Creation timestamp"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "types/proof.ts",
+							"line": 9,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 47,
+					"name": "id",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Unique identifier for the proof"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "types/proof.ts",
+							"line": 11,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 48,
+					"name": "productId",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Unique identifier for the product"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "types/proof.ts",
+							"line": 13,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 49,
+					"name": "tokenId",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Unique identifier for the token"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "types/proof.ts",
+							"line": 15,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 50,
+					"name": "userId",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Unique identifier for the user"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "types/proof.ts",
+							"line": 17,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 51,
+					"name": "values",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Arbitrary key-value pairs for proof values"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "types/proof.ts",
+							"line": 19,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "reference",
+						"target": {
+							"sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+							"qualifiedName": "Record"
+						},
+						"typeArguments": [
+							{
+								"type": "intrinsic",
+								"name": "string"
+							},
+							{
+								"type": "intrinsic",
+								"name": "any"
+							}
+						],
+						"name": "Record",
+						"package": "typescript"
+					}
+				}
+			],
+			"groups": [
+				{
+					"title": "Properties",
+					"children": [
+						45,
+						46,
+						47,
+						48,
+						49,
+						50,
+						51
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "types/proof.ts",
+					"line": 5,
+					"character": 17
+				}
+			]
+		},
+		{
+			"id": 1,
+			"name": "initializeApi",
+			"variant": "declaration",
+			"kind": 64,
+			"flags": {},
+			"sources": [
+				{
+					"fileName": "http.ts",
+					"line": 17,
+					"character": 16
+				}
+			],
+			"signatures": [
+				{
+					"id": 2,
+					"name": "initializeApi",
+					"variant": "signature",
+					"kind": 4096,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Call this once (e.g. at app startup) to configure baseURL/auth."
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "http.ts",
+							"line": 17,
+							"character": 16
+						}
+					],
+					"parameters": [
+						{
+							"id": 3,
+							"name": "options",
+							"variant": "param",
+							"kind": 32768,
+							"flags": {},
+							"type": {
+								"type": "reflection",
+								"declaration": {
+									"id": 4,
+									"name": "__type",
+									"variant": "declaration",
+									"kind": 65536,
+									"flags": {},
+									"children": [
+										{
+											"id": 6,
+											"name": "apiKey",
+											"variant": "declaration",
+											"kind": 1024,
+											"flags": {
+												"isOptional": true
+											},
+											"comment": {
+												"summary": [
+													{
+														"kind": "text",
+														"text": "(Optional) API key for X-API-Key header"
+													}
+												]
+											},
+											"sources": [
+												{
+													"fileName": "http.ts",
+													"line": 19,
+													"character": 2
+												}
+											],
+											"type": {
+												"type": "intrinsic",
+												"name": "string"
+											}
+										},
+										{
+											"id": 5,
+											"name": "baseURL",
+											"variant": "declaration",
+											"kind": 1024,
+											"flags": {},
+											"comment": {
+												"summary": [
+													{
+														"kind": "text",
+														"text": "The root URL of the Smartlinks API (e.g. \"https://smartlinks.app/api/v1\")"
+													}
+												]
+											},
+											"sources": [
+												{
+													"fileName": "http.ts",
+													"line": 18,
+													"character": 2
+												}
+											],
+											"type": {
+												"type": "intrinsic",
+												"name": "string"
+											}
+										},
+										{
+											"id": 7,
+											"name": "bearerToken",
+											"variant": "declaration",
+											"kind": 1024,
+											"flags": {
+												"isOptional": true
+											},
+											"comment": {
+												"summary": [
+													{
+														"kind": "text",
+														"text": "(Optional) Bearer token for AUTHORIZATION header"
+													}
+												]
+											},
+											"sources": [
+												{
+													"fileName": "http.ts",
+													"line": 20,
+													"character": 2
+												}
+											],
+											"type": {
+												"type": "intrinsic",
+												"name": "string"
+											}
+										}
+									],
+									"groups": [
+										{
+											"title": "Properties",
+											"children": [
+												6,
+												5,
+												7
+											]
+										}
+									],
+									"sources": [
+										{
+											"fileName": "http.ts",
+											"line": 17,
+											"character": 39
+										}
+									]
+								}
+							}
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "void"
+					}
+				}
+			]
+		},
+		{
+			"id": 8,
+			"name": "request",
+			"variant": "declaration",
+			"kind": 64,
+			"flags": {},
+			"sources": [
+				{
+					"fileName": "http.ts",
+					"line": 32,
+					"character": 22
+				}
+			],
+			"signatures": [
+				{
+					"id": 9,
+					"name": "request",
+					"variant": "signature",
+					"kind": 4096,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Internal helper that performs a GET request to `\\${baseURL}\\${path}`, \ninjecting headers for apiKey or bearerToken if present. \nReturns the parsed JSON as T, or throws an Error."
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "http.ts",
+							"line": 32,
+							"character": 22
+						}
+					],
+					"typeParameter": [
+						{
+							"id": 10,
+							"name": "T",
+							"variant": "typeParam",
+							"kind": 131072,
+							"flags": {}
+						}
+					],
+					"parameters": [
+						{
+							"id": 11,
+							"name": "path",
+							"variant": "param",
+							"kind": 32768,
+							"flags": {},
+							"type": {
+								"type": "intrinsic",
+								"name": "string"
+							}
+						}
+					],
+					"type": {
+						"type": "reference",
+						"target": {
+							"sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+							"qualifiedName": "Promise"
+						},
+						"typeArguments": [
+							{
+								"type": "reference",
+								"target": 10,
+								"name": "T",
+								"package": "@proveanything/smartlinks",
+								"refersToTypeParameter": true
+							}
+						],
+						"name": "Promise",
+						"package": "typescript"
+					}
 				}
 			]
 		}
 	],
 	"groups": [
 		{
-			"title": "Classes",
+			"title": "Namespaces",
 			"children": [
-				18
+				29,
+				12,
+				16,
+				24
 			]
 		},
 		{
 			"title": "Interfaces",
 			"children": [
-				11,
+				52,
+				34,
+				56,
+				39,
+				44
+			]
+		},
+		{
+			"title": "Functions",
+			"children": [
 				1,
-				15,
-				6
+				8
 			]
 		}
 	],
@@ -1188,11 +1642,11 @@
 	"readme": [
 		{
 			"kind": "text",
-			"text": "# @smartlinks/sdk\n\nAn official JavaScript/TypeScript client SDK for the Smartlinks API. This package provides a simple wrapper around the Smartlinks REST endpoints, allowing you to fetch Collection, Product, and App Configuration data in both browser and Node.js environments.\n\n## Installation\n\n"
+			"text": "# @proveanything/smartlinks\n\nAn official JavaScript/TypeScript client SDK for the Smartlinks API. This package provides a simple wrapper around the Smartlinks REST endpoints, allowing you to fetch Collection, Product, and App Configuration data in both browser and Node.js environments.\n\n## Installation\n\n"
 		},
 		{
 			"kind": "code",
-			"text": "```bash\nnpm install @smartlinks/sdk\n# or\nyarn add @smartlinks/sdk\n```"
+			"text": "```bash\nnpm install @proveanything/smartlinks\n# or\nyarn add @proveanything/smartlinks\n```"
 		},
 		{
 			"kind": "text",
@@ -1200,7 +1654,7 @@
 		},
 		{
 			"kind": "code",
-			"text": "```ts\nimport { ApiClient, CollectionResponse, ProductResponse } from \"@smartlinks/sdk\";\n\nasync function main() {\n  // Instantiate the client (no apiKey needed for public endpoints, but shown here for reference)\n  const client = new ApiClient(\"https://smartlinks.app/api/v1\", \"YOUR_API_KEY_HERE\");\n\n  try {\n    // Fetch a collection by ID\n    const collection: CollectionResponse = await client.getCollection(\"abc123\");\n    console.log(\"Collection:\", collection);\n\n    // Fetch a product item by collection ID & product ID\n    const product: ProductResponse = await client.getProductItem(\"abc123\", \"prod789\");\n    console.log(\"Product Item:\", product);\n  } catch (err) {\n    console.error(\"Error fetching data:\", err);\n  }\n}\n\nmain();\n```"
+			"text": "```ts\nimport { ApiClient, CollectionResponse, ProductResponse } from \"@proveanything/smartlinks\";\n\nasync function main() {\n  // Instantiate the client (no apiKey needed for public endpoints, but shown here for reference)\n  const client = new ApiClient(\"https://smartlinks.app/api/v1\", \"YOUR_API_KEY_HERE\");\n\n  try {\n    // Fetch a collection by ID\n    const collection: CollectionResponse = await client.getCollection(\"abc123\");\n    console.log(\"Collection:\", collection);\n\n    // Fetch a product item by collection ID & product ID\n    const product: ProductResponse = await client.getProductItem(\"abc123\", \"prod789\");\n    console.log(\"Product Item:\", product);\n  } catch (err) {\n    console.error(\"Error fetching data:\", err);\n  }\n}\n\nmain();\n```"
 		},
 		{
 			"kind": "text",
@@ -1488,7 +1942,7 @@
 		},
 		{
 			"kind": "code",
-			"text": "```ts\nimport { ApiClient } from \"@smartlinks/sdk\";\n\nconst apiKey = \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\";\nconst client = new ApiClient(\"https://smartlinks.app/api/v1\", apiKey);\n```"
+			"text": "```ts\nimport { ApiClient } from \"@proveanything/smartlinks\";\n\nconst apiKey = \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\";\nconst client = new ApiClient(\"https://smartlinks.app/api/v1\", apiKey);\n```"
 		},
 		{
 			"kind": "text",
@@ -1528,7 +1982,7 @@
 		},
 		{
 			"kind": "code",
-			"text": "```ts\nimport { ApiClient } from \"@smartlinks/sdk\";\n\nasync function fetchData() {\n  const client = new ApiClient(\"https://smartlinks.app/api/v1\", \"INVALID_KEY\");\n\n  try {\n    await client.getCollection(\"nonexistent\");\n  } catch (err) {\n    // err.message might be: \"Error 401: Unauthorized\" or \"Error 404: Not Found\"\n    console.error(\"Request failed:\", err);\n  }\n}\n\nfetchData();\n```"
+			"text": "```ts\nimport { ApiClient } from \"@proveanything/smartlinks\";\n\nasync function fetchData() {\n  const client = new ApiClient(\"https://smartlinks.app/api/v1\", \"INVALID_KEY\");\n\n  try {\n    await client.getCollection(\"nonexistent\");\n  } catch (err) {\n    // err.message might be: \"Error 401: Unauthorized\" or \"Error 404: Not Found\"\n    console.error(\"Request failed:\", err);\n  }\n}\n\nfetchData();\n```"
 		},
 		{
 			"kind": "text",
@@ -1613,168 +2067,236 @@
 			"qualifiedName": ""
 		},
 		"1": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "CollectionResponse"
+			"sourceFileName": "src/http.ts",
+			"qualifiedName": "initializeApi"
 		},
 		"2": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "CollectionResponse.id"
+			"sourceFileName": "src/http.ts",
+			"qualifiedName": "initializeApi"
 		},
 		"3": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "CollectionResponse.name"
+			"sourceFileName": "src/http.ts",
+			"qualifiedName": "options"
 		},
 		"4": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "CollectionResponse.title"
+			"sourceFileName": "src/http.ts",
+			"qualifiedName": "__type"
 		},
 		"5": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "CollectionResponse.logoImage"
+			"sourceFileName": "src/http.ts",
+			"qualifiedName": "__type.baseURL"
 		},
 		"6": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ProductResponse"
+			"sourceFileName": "src/http.ts",
+			"qualifiedName": "__type.apiKey"
 		},
 		"7": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ProductResponse.id"
+			"sourceFileName": "src/http.ts",
+			"qualifiedName": "__type.bearerToken"
 		},
 		"8": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ProductResponse.name"
+			"sourceFileName": "src/http.ts",
+			"qualifiedName": "request"
 		},
 		"9": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ProductResponse.description"
+			"sourceFileName": "src/http.ts",
+			"qualifiedName": "request"
 		},
 		"10": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ProductResponse.heroImage"
+			"sourceFileName": "src/http.ts",
+			"qualifiedName": "T"
 		},
 		"11": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "AppConfigurationResponse"
+			"sourceFileName": "src/http.ts",
+			"qualifiedName": "path"
 		},
 		"12": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "AppConfigurationResponse.id"
+			"sourceFileName": "src/api/collection.ts",
+			"qualifiedName": "collection"
 		},
 		"13": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "AppConfigurationResponse.name"
+			"sourceFileName": "src/api/collection.ts",
+			"qualifiedName": "collection.get"
 		},
 		"14": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "AppConfigurationResponse.settings"
+			"sourceFileName": "src/api/collection.ts",
+			"qualifiedName": "collection.get"
 		},
 		"15": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ErrorResponse"
-		},
-		"16": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ErrorResponse.code"
-		},
-		"17": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ErrorResponse.message"
-		},
-		"18": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ApiClient"
-		},
-		"19": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ApiClient.__constructor"
-		},
-		"20": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ApiClient"
-		},
-		"21": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "baseURL"
-		},
-		"22": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "apiKey"
-		},
-		"23": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "bearerToken"
-		},
-		"24": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ApiClient.baseURL"
-		},
-		"25": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ApiClient.apiKey"
-		},
-		"26": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ApiClient.bearerToken"
-		},
-		"27": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ApiClient.getCollection"
-		},
-		"28": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ApiClient.getCollection"
-		},
-		"29": {
-			"sourceFileName": "src/index.ts",
+			"sourceFileName": "src/api/collection.ts",
 			"qualifiedName": "collectionId"
 		},
+		"16": {
+			"sourceFileName": "src/api/product.ts",
+			"qualifiedName": "product"
+		},
+		"17": {
+			"sourceFileName": "src/api/product.ts",
+			"qualifiedName": "product.get"
+		},
+		"18": {
+			"sourceFileName": "src/api/product.ts",
+			"qualifiedName": "product.get"
+		},
+		"19": {
+			"sourceFileName": "src/api/product.ts",
+			"qualifiedName": "collectionId"
+		},
+		"20": {
+			"sourceFileName": "src/api/product.ts",
+			"qualifiedName": "productId"
+		},
+		"21": {
+			"sourceFileName": "src/api/product.ts",
+			"qualifiedName": "product.getAll"
+		},
+		"22": {
+			"sourceFileName": "src/api/product.ts",
+			"qualifiedName": "product.getAll"
+		},
+		"23": {
+			"sourceFileName": "src/api/product.ts",
+			"qualifiedName": "collectionId"
+		},
+		"24": {
+			"sourceFileName": "src/api/proof.ts",
+			"qualifiedName": "proof"
+		},
+		"25": {
+			"sourceFileName": "src/api/proof.ts",
+			"qualifiedName": "proof.get"
+		},
+		"26": {
+			"sourceFileName": "src/api/proof.ts",
+			"qualifiedName": "proof.get"
+		},
+		"27": {
+			"sourceFileName": "src/api/proof.ts",
+			"qualifiedName": "collectionId"
+		},
+		"28": {
+			"sourceFileName": "src/api/proof.ts",
+			"qualifiedName": "proofId"
+		},
+		"29": {
+			"sourceFileName": "src/api/appConfiguration.ts",
+			"qualifiedName": "appConfiguration"
+		},
 		"30": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ApiClient.getProductItem"
+			"sourceFileName": "src/api/appConfiguration.ts",
+			"qualifiedName": "appConfiguration.get"
 		},
 		"31": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ApiClient.getProductItem"
+			"sourceFileName": "src/api/appConfiguration.ts",
+			"qualifiedName": "appConfiguration.get"
 		},
 		"32": {
-			"sourceFileName": "src/index.ts",
+			"sourceFileName": "src/api/appConfiguration.ts",
 			"qualifiedName": "collectionId"
 		},
 		"33": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "productId"
-		},
-		"34": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ApiClient.getAppConfiguration"
-		},
-		"35": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ApiClient.getAppConfiguration"
-		},
-		"36": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "collectionId"
-		},
-		"37": {
-			"sourceFileName": "src/index.ts",
+			"sourceFileName": "src/api/appConfiguration.ts",
 			"qualifiedName": "appId"
 		},
+		"34": {
+			"sourceFileName": "src/types/collection.ts",
+			"qualifiedName": "CollectionResponse"
+		},
+		"35": {
+			"sourceFileName": "src/types/collection.ts",
+			"qualifiedName": "CollectionResponse.id"
+		},
+		"36": {
+			"sourceFileName": "src/types/collection.ts",
+			"qualifiedName": "CollectionResponse.name"
+		},
+		"37": {
+			"sourceFileName": "src/types/collection.ts",
+			"qualifiedName": "CollectionResponse.title"
+		},
 		"38": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ApiClient.request"
+			"sourceFileName": "src/types/collection.ts",
+			"qualifiedName": "CollectionResponse.logoImage"
 		},
 		"39": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "ApiClient.request"
+			"sourceFileName": "src/types/product.ts",
+			"qualifiedName": "ProductResponse"
 		},
 		"40": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "T"
+			"sourceFileName": "src/types/product.ts",
+			"qualifiedName": "ProductResponse.id"
 		},
 		"41": {
-			"sourceFileName": "src/index.ts",
-			"qualifiedName": "path"
+			"sourceFileName": "src/types/product.ts",
+			"qualifiedName": "ProductResponse.name"
+		},
+		"42": {
+			"sourceFileName": "src/types/product.ts",
+			"qualifiedName": "ProductResponse.description"
+		},
+		"43": {
+			"sourceFileName": "src/types/product.ts",
+			"qualifiedName": "ProductResponse.heroImage"
+		},
+		"44": {
+			"sourceFileName": "src/types/proof.ts",
+			"qualifiedName": "ProofResponse"
+		},
+		"45": {
+			"sourceFileName": "src/types/proof.ts",
+			"qualifiedName": "ProofResponse.collectionId"
+		},
+		"46": {
+			"sourceFileName": "src/types/proof.ts",
+			"qualifiedName": "ProofResponse.createdAt"
+		},
+		"47": {
+			"sourceFileName": "src/types/proof.ts",
+			"qualifiedName": "ProofResponse.id"
+		},
+		"48": {
+			"sourceFileName": "src/types/proof.ts",
+			"qualifiedName": "ProofResponse.productId"
+		},
+		"49": {
+			"sourceFileName": "src/types/proof.ts",
+			"qualifiedName": "ProofResponse.tokenId"
+		},
+		"50": {
+			"sourceFileName": "src/types/proof.ts",
+			"qualifiedName": "ProofResponse.userId"
+		},
+		"51": {
+			"sourceFileName": "src/types/proof.ts",
+			"qualifiedName": "ProofResponse.values"
+		},
+		"52": {
+			"sourceFileName": "src/types/appConfiguration.ts",
+			"qualifiedName": "AppConfigurationResponse"
+		},
+		"53": {
+			"sourceFileName": "src/types/appConfiguration.ts",
+			"qualifiedName": "AppConfigurationResponse.id"
+		},
+		"54": {
+			"sourceFileName": "src/types/appConfiguration.ts",
+			"qualifiedName": "AppConfigurationResponse.name"
+		},
+		"55": {
+			"sourceFileName": "src/types/appConfiguration.ts",
+			"qualifiedName": "AppConfigurationResponse.settings"
+		},
+		"56": {
+			"sourceFileName": "src/types/error.ts",
+			"qualifiedName": "ErrorResponse"
+		},
+		"57": {
+			"sourceFileName": "src/types/error.ts",
+			"qualifiedName": "ErrorResponse.code"
+		},
+		"58": {
+			"sourceFileName": "src/types/error.ts",
+			"qualifiedName": "ErrorResponse.message"
 		}
 	}
 }
