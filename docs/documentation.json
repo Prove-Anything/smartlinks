@@ -22,7 +22,8 @@
 						{
 							"fileName": "api/appConfiguration.ts",
 							"line": 13,
-							"character": 24
+							"character": 24,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/api/appConfiguration.ts#L13"
 						}
 					],
 					"signatures": [
@@ -64,7 +65,8 @@
 								{
 									"fileName": "api/appConfiguration.ts",
 									"line": 13,
-									"character": 24
+									"character": 24,
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/api/appConfiguration.ts#L13"
 								}
 							],
 							"parameters": [
@@ -140,7 +142,8 @@
 				{
 					"fileName": "api/appConfiguration.ts",
 					"line": 5,
-					"character": 17
+					"character": 17,
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/api/appConfiguration.ts#L5"
 				}
 			]
 		},
@@ -161,7 +164,8 @@
 						{
 							"fileName": "api/collection.ts",
 							"line": 12,
-							"character": 24
+							"character": 24,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/api/collection.ts#L12"
 						}
 					],
 					"signatures": [
@@ -203,7 +207,8 @@
 								{
 									"fileName": "api/collection.ts",
 									"line": 12,
-									"character": 24
+									"character": 24,
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/api/collection.ts#L12"
 								}
 							],
 							"parameters": [
@@ -260,7 +265,8 @@
 				{
 					"fileName": "api/collection.ts",
 					"line": 5,
-					"character": 17
+					"character": 17,
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/api/collection.ts#L5"
 				}
 			]
 		},
@@ -281,7 +287,8 @@
 						{
 							"fileName": "api/product.ts",
 							"line": 13,
-							"character": 24
+							"character": 24,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/api/product.ts#L13"
 						}
 					],
 					"signatures": [
@@ -323,7 +330,8 @@
 								{
 									"fileName": "api/product.ts",
 									"line": 13,
-									"character": 24
+									"character": 24,
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/api/product.ts#L13"
 								}
 							],
 							"parameters": [
@@ -396,7 +404,8 @@
 						{
 							"fileName": "api/product.ts",
 							"line": 29,
-							"character": 24
+							"character": 24,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/api/product.ts#L29"
 						}
 					],
 					"signatures": [
@@ -438,7 +447,8 @@
 								{
 									"fileName": "api/product.ts",
 									"line": 29,
-									"character": 24
+									"character": 24,
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/api/product.ts#L29"
 								}
 							],
 							"parameters": [
@@ -499,7 +509,8 @@
 				{
 					"fileName": "api/product.ts",
 					"line": 5,
-					"character": 17
+					"character": 17,
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/api/product.ts#L5"
 				}
 			]
 		},
@@ -520,7 +531,8 @@
 						{
 							"fileName": "api/proof.ts",
 							"line": 13,
-							"character": 24
+							"character": 24,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/api/proof.ts#L13"
 						}
 					],
 					"signatures": [
@@ -562,7 +574,8 @@
 								{
 									"fileName": "api/proof.ts",
 									"line": 13,
-									"character": 24
+									"character": 24,
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/api/proof.ts#L13"
 								}
 							],
 							"parameters": [
@@ -638,7 +651,8 @@
 				{
 					"fileName": "api/proof.ts",
 					"line": 5,
-					"character": 17
+					"character": 17,
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/api/proof.ts#L5"
 				}
 			]
 		},
@@ -675,7 +689,8 @@
 						{
 							"fileName": "types/appConfiguration.ts",
 							"line": 7,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/appConfiguration.ts#L7"
 						}
 					],
 					"type": {
@@ -701,7 +716,8 @@
 						{
 							"fileName": "types/appConfiguration.ts",
 							"line": 9,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/appConfiguration.ts#L9"
 						}
 					],
 					"type": {
@@ -729,7 +745,8 @@
 						{
 							"fileName": "types/appConfiguration.ts",
 							"line": 11,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/appConfiguration.ts#L11"
 						}
 					],
 					"type": {
@@ -767,7 +784,8 @@
 				{
 					"fileName": "types/appConfiguration.ts",
 					"line": 5,
-					"character": 17
+					"character": 17,
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/appConfiguration.ts#L5"
 				}
 			]
 		},
@@ -804,7 +822,8 @@
 						{
 							"fileName": "types/collection.ts",
 							"line": 7,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/collection.ts#L7"
 						}
 					],
 					"type": {
@@ -830,7 +849,8 @@
 						{
 							"fileName": "types/collection.ts",
 							"line": 13,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/collection.ts#L13"
 						}
 					],
 					"type": {
@@ -856,7 +876,8 @@
 						{
 							"fileName": "types/collection.ts",
 							"line": 9,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/collection.ts#L9"
 						}
 					],
 					"type": {
@@ -882,7 +903,8 @@
 						{
 							"fileName": "types/collection.ts",
 							"line": 11,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/collection.ts#L11"
 						}
 					],
 					"type": {
@@ -906,7 +928,8 @@
 				{
 					"fileName": "types/collection.ts",
 					"line": 5,
-					"character": 17
+					"character": 17,
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/collection.ts#L5"
 				}
 			]
 		},
@@ -943,7 +966,8 @@
 						{
 							"fileName": "types/error.ts",
 							"line": 7,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/error.ts#L7"
 						}
 					],
 					"type": {
@@ -969,7 +993,8 @@
 						{
 							"fileName": "types/error.ts",
 							"line": 9,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/error.ts#L9"
 						}
 					],
 					"type": {
@@ -991,7 +1016,8 @@
 				{
 					"fileName": "types/error.ts",
 					"line": 5,
-					"character": 17
+					"character": 17,
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/error.ts#L5"
 				}
 			]
 		},
@@ -1028,7 +1054,8 @@
 						{
 							"fileName": "types/product.ts",
 							"line": 11,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/product.ts#L11"
 						}
 					],
 					"type": {
@@ -1054,7 +1081,8 @@
 						{
 							"fileName": "types/product.ts",
 							"line": 13,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/product.ts#L13"
 						}
 					],
 					"type": {
@@ -1080,7 +1108,8 @@
 						{
 							"fileName": "types/product.ts",
 							"line": 7,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/product.ts#L7"
 						}
 					],
 					"type": {
@@ -1106,7 +1135,8 @@
 						{
 							"fileName": "types/product.ts",
 							"line": 9,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/product.ts#L9"
 						}
 					],
 					"type": {
@@ -1130,7 +1160,8 @@
 				{
 					"fileName": "types/product.ts",
 					"line": 5,
-					"character": 17
+					"character": 17,
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/product.ts#L5"
 				}
 			]
 		},
@@ -1167,7 +1198,8 @@
 						{
 							"fileName": "types/proof.ts",
 							"line": 7,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/proof.ts#L7"
 						}
 					],
 					"type": {
@@ -1193,7 +1225,8 @@
 						{
 							"fileName": "types/proof.ts",
 							"line": 9,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/proof.ts#L9"
 						}
 					],
 					"type": {
@@ -1219,7 +1252,8 @@
 						{
 							"fileName": "types/proof.ts",
 							"line": 11,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/proof.ts#L11"
 						}
 					],
 					"type": {
@@ -1245,7 +1279,8 @@
 						{
 							"fileName": "types/proof.ts",
 							"line": 13,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/proof.ts#L13"
 						}
 					],
 					"type": {
@@ -1271,7 +1306,8 @@
 						{
 							"fileName": "types/proof.ts",
 							"line": 15,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/proof.ts#L15"
 						}
 					],
 					"type": {
@@ -1297,7 +1333,8 @@
 						{
 							"fileName": "types/proof.ts",
 							"line": 17,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/proof.ts#L17"
 						}
 					],
 					"type": {
@@ -1323,7 +1360,8 @@
 						{
 							"fileName": "types/proof.ts",
 							"line": 19,
-							"character": 2
+							"character": 2,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/proof.ts#L19"
 						}
 					],
 					"type": {
@@ -1365,7 +1403,8 @@
 				{
 					"fileName": "types/proof.ts",
 					"line": 5,
-					"character": 17
+					"character": 17,
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/types/proof.ts#L5"
 				}
 			]
 		},
@@ -1379,7 +1418,8 @@
 				{
 					"fileName": "http.ts",
 					"line": 17,
-					"character": 16
+					"character": 16,
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/http.ts#L17"
 				}
 			],
 			"signatures": [
@@ -1401,7 +1441,8 @@
 						{
 							"fileName": "http.ts",
 							"line": 17,
-							"character": 16
+							"character": 16,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/http.ts#L17"
 						}
 					],
 					"parameters": [
@@ -1440,7 +1481,8 @@
 												{
 													"fileName": "http.ts",
 													"line": 19,
-													"character": 2
+													"character": 2,
+													"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/http.ts#L19"
 												}
 											],
 											"type": {
@@ -1466,7 +1508,8 @@
 												{
 													"fileName": "http.ts",
 													"line": 18,
-													"character": 2
+													"character": 2,
+													"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/http.ts#L18"
 												}
 											],
 											"type": {
@@ -1494,7 +1537,8 @@
 												{
 													"fileName": "http.ts",
 													"line": 20,
-													"character": 2
+													"character": 2,
+													"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/http.ts#L20"
 												}
 											],
 											"type": {
@@ -1517,7 +1561,8 @@
 										{
 											"fileName": "http.ts",
 											"line": 17,
-											"character": 39
+											"character": 39,
+											"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/http.ts#L17"
 										}
 									]
 								}
@@ -1541,7 +1586,8 @@
 				{
 					"fileName": "http.ts",
 					"line": 32,
-					"character": 22
+					"character": 22,
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/http.ts#L32"
 				}
 			],
 			"signatures": [
@@ -1563,7 +1609,8 @@
 						{
 							"fileName": "http.ts",
 							"line": 32,
-							"character": 22
+							"character": 22,
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/72ea99dce6ffa4f5d9f2ff0c187779adce06ebd3/src/http.ts#L32"
 						}
 					],
 					"typeParameter": [
@@ -1642,7 +1689,7 @@
 	"readme": [
 		{
 			"kind": "text",
-			"text": "# @proveanything/smartlinks\n\nAn official JavaScript/TypeScript client SDK for the Smartlinks API. This package provides a simple wrapper around the Smartlinks REST endpoints, allowing you to fetch Collection, Product, and App Configuration data in both browser and Node.js environments.\n\n## Installation\n\n"
+			"text": "# @proveanything/smartlinks\n\nAn official JavaScript/TypeScript client SDK for the Smartlinks API. This package provides simple, namespaced functions to fetch Collection, Product, Proof, and App Configuration data in both browser and Node.js environments.\n\n## Installation\n\n"
 		},
 		{
 			"kind": "code",
@@ -1654,23 +1701,15 @@
 		},
 		{
 			"kind": "code",
-			"text": "```ts\nimport { ApiClient, CollectionResponse, ProductResponse } from \"@proveanything/smartlinks\";\n\nasync function main() {\n  // Instantiate the client (no apiKey needed for public endpoints, but shown here for reference)\n  const client = new ApiClient(\"https://smartlinks.app/api/v1\", \"YOUR_API_KEY_HERE\");\n\n  try {\n    // Fetch a collection by ID\n    const collection: CollectionResponse = await client.getCollection(\"abc123\");\n    console.log(\"Collection:\", collection);\n\n    // Fetch a product item by collection ID & product ID\n    const product: ProductResponse = await client.getProductItem(\"abc123\", \"prod789\");\n    console.log(\"Product Item:\", product);\n  } catch (err) {\n    console.error(\"Error fetching data:\", err);\n  }\n}\n\nmain();\n```"
+			"text": "```ts\nimport {\n  initializeApi,\n  collection,\n  product,\n  proof,\n  appConfiguration,\n} from \"@proveanything/smartlinks\";\n\nasync function main() {\n  // Initialize once (provide base URL and optional API key/bearer token)\n  initializeApi({\n    baseURL: \"https://smartlinks.app/api/v1\",\n    apiKey: \"YOUR_API_KEY_HERE\",       // optional\n    bearerToken: \"YOUR_BEARER_TOKEN\",  // optional\n  });\n\n  try {\n    // Fetch a collection by ID\n    const coll = await collection.get(\"abc123\");\n    console.log(\"Collection:\", coll);\n\n    // Fetch a product item by collection ID & product ID\n    const prod = await product.get(\"abc123\", \"prod789\");\n    console.log(\"Product Item:\", prod);\n\n    // Fetch a proof by collection ID & proof ID\n    const prf = await proof.get(\"abc123\", \"proof456\");\n    console.log(\"Proof:\", prf);\n\n    // Fetch an app configuration by collection ID & app ID\n    const cfg = await appConfiguration.get(\"abc123\", \"app789\");\n    console.log(\"App Configuration:\", cfg);\n  } catch (err) {\n    console.error(\"Error fetching data:\", err);\n  }\n}\n\nmain();\n```"
 		},
 		{
 			"kind": "text",
-			"text": "\n\n## API Reference\n\n### Class: "
+			"text": "\n\n## API Reference\n\n### Initialization\n\n"
 		},
 		{
 			"kind": "code",
-			"text": "`ApiClient`"
-		},
-		{
-			"kind": "text",
-			"text": "\n\n"
-		},
-		{
-			"kind": "code",
-			"text": "```ts\nconstructor(baseURL: string, apiKey?: string)\n```"
+			"text": "```ts\ninitializeApi(options: { baseURL: string; apiKey?: string; bearerToken?: string }): void\n```"
 		},
 		{
 			"kind": "text",
@@ -1698,11 +1737,35 @@
 		},
 		{
 			"kind": "text",
-			"text": ".  \n  - "
+			"text": ".\n  - "
 		},
 		{
 			"kind": "code",
 			"text": "`apiKey`"
+		},
+		{
+			"kind": "text",
+			"text": "  ("
+		},
+		{
+			"kind": "code",
+			"text": "`string`"
+		},
+		{
+			"kind": "text",
+			"text": ", optional): Your API key for the "
+		},
+		{
+			"kind": "code",
+			"text": "`X-API-Key`"
+		},
+		{
+			"kind": "text",
+			"text": " header.\n  - "
+		},
+		{
+			"kind": "code",
+			"text": "`bearerToken`"
 		},
 		{
 			"kind": "text",
@@ -1714,19 +1777,27 @@
 		},
 		{
 			"kind": "text",
-			"text": ", optional): Your Bearer token. If omitted, requests will be sent without an "
+			"text": ", optional): Your Bearer token for the "
 		},
 		{
 			"kind": "code",
-			"text": "`Authorization`"
+			"text": "`AUTHORIZATION`"
 		},
 		{
 			"kind": "text",
-			"text": " header.\n\n---\n\n#### "
+			"text": " header.\n\nAll subsequent calls to the API functions will use these settings.\n\n---\n\n### Namespace: "
 		},
 		{
 			"kind": "code",
-			"text": "`getCollection(collectionId: string): Promise<CollectionResponse>`"
+			"text": "`collection`"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n#### "
+		},
+		{
+			"kind": "code",
+			"text": "`collection.get(collectionId: string): Promise<CollectionResponse>`"
 		},
 		{
 			"kind": "text",
@@ -1774,15 +1845,23 @@
 		},
 		{
 			"kind": "code",
-			"text": "```ts\n  const client = new ApiClient(\"https://smartlinks.app/api/v1\", \"YOUR_API_KEY\");\n  const collection = await client.getCollection(\"abc123\");\n  console.log(\"Fetched collection:\", collection);\n  ```"
+			"text": "```ts\n  const coll = await collection.get(\"abc123\");\n  console.log(\"Fetched collection:\", coll.title);\n  ```"
 		},
 		{
 			"kind": "text",
-			"text": "\n\n---\n\n#### "
+			"text": "\n\n---\n\n### Namespace: "
 		},
 		{
 			"kind": "code",
-			"text": "`getProductItem(collectionId: string, productId: string): Promise<ProductResponse>`"
+			"text": "`product`"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n#### "
+		},
+		{
+			"kind": "code",
+			"text": "`product.get(collectionId: string, productId: string): Promise<ProductResponse>`"
 		},
 		{
 			"kind": "text",
@@ -1810,7 +1889,7 @@
 		},
 		{
 			"kind": "text",
-			"text": "   ("
+			"text": "    ("
 		},
 		{
 			"kind": "code",
@@ -1846,19 +1925,107 @@
 		},
 		{
 			"kind": "code",
-			"text": "```ts\n  const client = new ApiClient(\"https://smartlinks.app/api/v1\", \"YOUR_API_KEY\");\n  const product = await client.getProductItem(\"abc123\", \"prod789\");\n  console.log(\"Fetched product:\", product);\n  ```"
+			"text": "```ts\n  const prod = await product.get(\"abc123\", \"prod789\");\n  console.log(\"Fetched product:\", prod.name);\n  ```"
 		},
 		{
 			"kind": "text",
-			"text": "\n\n---\n\n#### "
+			"text": "\n\n---\n\n### Namespace: "
 		},
 		{
 			"kind": "code",
-			"text": "`getAppConfiguration(collectionId: string, appId: string): Promise<AppConfigurationResponse>`"
+			"text": "`proof`"
 		},
 		{
 			"kind": "text",
-			"text": "\n\nFetches a single app configuration within a collection.\n\n- **Parameters:**\n  - "
+			"text": "\n\n#### "
+		},
+		{
+			"kind": "code",
+			"text": "`proof.get(collectionId: string, proofId: string): Promise<ProofResponse>`"
+		},
+		{
+			"kind": "text",
+			"text": "\n\nFetches a single proof by collection ID and proof ID.\n\n- **Parameters:**\n  - "
+		},
+		{
+			"kind": "code",
+			"text": "`collectionId`"
+		},
+		{
+			"kind": "text",
+			"text": " ("
+		},
+		{
+			"kind": "code",
+			"text": "`string`"
+		},
+		{
+			"kind": "text",
+			"text": ", required): The parent collection’s ID.\n  - "
+		},
+		{
+			"kind": "code",
+			"text": "`proofId`"
+		},
+		{
+			"kind": "text",
+			"text": "      ("
+		},
+		{
+			"kind": "code",
+			"text": "`string`"
+		},
+		{
+			"kind": "text",
+			"text": ", required): The proof’s ID.\n- **Returns:**  \n  A "
+		},
+		{
+			"kind": "code",
+			"text": "`Promise`"
+		},
+		{
+			"kind": "text",
+			"text": " that resolves to a "
+		},
+		{
+			"kind": "code",
+			"text": "`ProofResponse`"
+		},
+		{
+			"kind": "text",
+			"text": " object:\n\n  "
+		},
+		{
+			"kind": "code",
+			"text": "```ts\n  export interface ProofResponse {\n    collectionId: string;\n    createdAt: string;\n    id: string;\n    productId: string;\n    tokenId: string;\n    userId: string;\n    values: Record<string, any>;\n  }\n  ```"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n- **Example:**\n  "
+		},
+		{
+			"kind": "code",
+			"text": "```ts\n  const prf = await proof.get(\"abc123\", \"proof456\");\n  console.log(\"Fetched proof:\", prf.id);\n  ```"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n---\n\n### Namespace: "
+		},
+		{
+			"kind": "code",
+			"text": "`appConfiguration`"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n#### "
+		},
+		{
+			"kind": "code",
+			"text": "`appConfiguration.get(collectionId: string, appId: string): Promise<AppConfigurationResponse>`"
+		},
+		{
+			"kind": "text",
+			"text": "\n\nFetches a single app configuration by collection ID and app ID.\n\n- **Parameters:**\n  - "
 		},
 		{
 			"kind": "code",
@@ -1918,59 +2085,11 @@
 		},
 		{
 			"kind": "code",
-			"text": "```ts\n  const client = new ApiClient(\"https://smartlinks.app/api/v1\", \"YOUR_API_KEY\");\n  const config = await client.getAppConfiguration(\"abc123\", \"app456\");\n  console.log(\"Fetched app configuration:\", config);\n  ```"
+			"text": "```ts\n  const cfg = await appConfiguration.get(\"abc123\", \"app789\");\n  console.log(\"Fetched app configuration:\", cfg.name);\n  ```"
 		},
 		{
 			"kind": "text",
-			"text": "\n\n---\n\n## Authentication\n\nAll endpoints require a Bearer token passed in the "
-		},
-		{
-			"kind": "code",
-			"text": "`AUTHORIZATION`"
-		},
-		{
-			"kind": "text",
-			"text": " header. When instantiating "
-		},
-		{
-			"kind": "code",
-			"text": "`ApiClient`"
-		},
-		{
-			"kind": "text",
-			"text": ", optionally supply your token:\n\n"
-		},
-		{
-			"kind": "code",
-			"text": "```ts\nimport { ApiClient } from \"@proveanything/smartlinks\";\n\nconst apiKey = \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\";\nconst client = new ApiClient(\"https://smartlinks.app/api/v1\", apiKey);\n```"
-		},
-		{
-			"kind": "text",
-			"text": "\n\nIf "
-		},
-		{
-			"kind": "code",
-			"text": "`apiKey`"
-		},
-		{
-			"kind": "text",
-			"text": " is omitted, requests will be sent without an "
-		},
-		{
-			"kind": "code",
-			"text": "`Authorization`"
-		},
-		{
-			"kind": "text",
-			"text": " header, which may cause a "
-		},
-		{
-			"kind": "code",
-			"text": "`401 Unauthorized`"
-		},
-		{
-			"kind": "text",
-			"text": " for protected endpoints.\n\n## Error Handling\n\nAll methods throw an "
+			"text": "\n\n---\n\n## Error Handling\n\nAll methods throw an "
 		},
 		{
 			"kind": "code",
@@ -1978,79 +2097,71 @@
 		},
 		{
 			"kind": "text",
-			"text": " when the server responds with a non-2xx status. The thrown error message includes the numeric error code and message from the API. Example:\n\n"
+			"text": " when the server responds with a non-2xx status. The thrown error message will include the numeric error code and message from the API. Example:\n\n"
 		},
 		{
 			"kind": "code",
-			"text": "```ts\nimport { ApiClient } from \"@proveanything/smartlinks\";\n\nasync function fetchData() {\n  const client = new ApiClient(\"https://smartlinks.app/api/v1\", \"INVALID_KEY\");\n\n  try {\n    await client.getCollection(\"nonexistent\");\n  } catch (err) {\n    // err.message might be: \"Error 401: Unauthorized\" or \"Error 404: Not Found\"\n    console.error(\"Request failed:\", err);\n  }\n}\n\nfetchData();\n```"
+			"text": "```ts\nimport { product } from \"@proveanything/smartlinks\";\n\nasync function fetchProduct() {\n  try {\n    await product.get(\"abc123\", \"invalidProdId\");\n  } catch (err) {\n    // err.message might be: \"Error 404: Not Found\"\n    console.error(\"Request failed:\", err);\n  }\n}\n\nfetchProduct();\n```"
 		},
 		{
 			"kind": "text",
-			"text": "\n\n## Examples\n\nSee the **examples/** folder for complete, runnable samples:\n\n- ["
+			"text": "\n\n---\n\n## Types\n\nYou can import any of the response interfaces directly:\n\n"
 		},
 		{
 			"kind": "code",
-			"text": "`examples/node-demo.ts`"
+			"text": "```ts\nimport {\n  CollectionResponse,\n  ProductResponse,\n  ProofResponse,\n  AppConfigurationResponse,\n} from \"@proveanything/smartlinks/types\";\n```"
 		},
 		{
 			"kind": "text",
-			"text": "](examples/node-demo.ts)  \n- ["
+			"text": "\n\n---\n\n## Changelog\n\n### 1.0.0\n\n- Initial release:\n  - "
 		},
 		{
 			"kind": "code",
-			"text": "`examples/browser-demo.html`"
+			"text": "`initializeApi`"
 		},
 		{
 			"kind": "text",
-			"text": "](examples/browser-demo.html)  \n- ["
+			"text": " function to configure baseURL and auth.\n  - Namespaced modules:\n    - "
 		},
 		{
 			"kind": "code",
-			"text": "`examples/react-demo.tsx`"
+			"text": "`collection.get(collectionId)`"
 		},
 		{
 			"kind": "text",
-			"text": "](examples/react-demo.tsx)  \n\n## OpenAPI Specification\n\nThis SDK is generated and maintained according to the [Smartlinks OpenAPI 3.0 specification](openapi.yaml).  \nYou can find the full API contract in ["
+			"text": "\n    - "
 		},
 		{
 			"kind": "code",
-			"text": "`openapi.yaml`"
+			"text": "`product.get(collectionId, productId)`"
 		},
 		{
 			"kind": "text",
-			"text": "](openapi.yaml) at the root of this package.\n\n## Changelog\n\n### 1.0.0\n\n- Initial release:  \n  - "
+			"text": "\n    - "
 		},
 		{
 			"kind": "code",
-			"text": "`ApiClient`"
+			"text": "`proof.get(collectionId, proofId)`"
 		},
 		{
 			"kind": "text",
-			"text": " class with "
+			"text": "\n    - "
 		},
 		{
 			"kind": "code",
-			"text": "`getCollection`"
+			"text": "`appConfiguration.get(collectionId, appId)`"
 		},
 		{
 			"kind": "text",
-			"text": ", "
+			"text": "\n  - Full TypeScript typings and JSDoc.\n  - Browser/Node fetch support via "
 		},
 		{
 			"kind": "code",
-			"text": "`getProductItem`"
+			"text": "`cross-fetch`"
 		},
 		{
 			"kind": "text",
-			"text": ", and "
-		},
-		{
-			"kind": "code",
-			"text": "`getAppConfiguration`"
-		},
-		{
-			"kind": "text",
-			"text": " methods.  \n  - Full TypeScript typings and JSDoc.  \n  - Browser/Node fetch support.  \n  - Error handling via thrown "
+			"text": ".\n  - Error handling via thrown "
 		},
 		{
 			"kind": "code",
