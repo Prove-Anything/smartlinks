@@ -1,0 +1,1780 @@
+{
+	"id": 0,
+	"name": "@proveanything/smartlinks",
+	"variant": "project",
+	"kind": 1,
+	"flags": {},
+	"children": [
+		{
+			"id": 18,
+			"name": "ApiClient",
+			"variant": "declaration",
+			"kind": 128,
+			"flags": {},
+			"comment": {
+				"summary": [
+					{
+						"kind": "text",
+						"text": "ApiClient for the Smartlinks API.\nSupports both browser (native fetch) and Node (using cross-fetch)."
+					}
+				]
+			},
+			"children": [
+				{
+					"id": 19,
+					"name": "constructor",
+					"variant": "declaration",
+					"kind": 512,
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 97,
+							"character": 2
+						}
+					],
+					"signatures": [
+						{
+							"id": 20,
+							"name": "new ApiClient",
+							"variant": "signature",
+							"kind": 16384,
+							"flags": {},
+							"comment": {
+								"summary": [
+									{
+										"kind": "text",
+										"text": "Creates an instance of ApiClient."
+									}
+								],
+								"blockTags": [
+									{
+										"tag": "@example",
+										"content": [
+											{
+												"kind": "code",
+												"text": "```ts\n// With both API key and bearer token\nconst client = new ApiClient(\n  'https://smartlinks.app/api/v1',\n  'your-api-key',\n  'your-bearer-token'\n);\n\n// With only API key\nconst client = new ApiClient(\n  'https://smartlinks.app/api/v1',\n  'your-api-key'\n);\n\n// With only bearer token\nconst client = new ApiClient(\n  'https://smartlinks.app/api/v1',\n  undefined,\n  'your-bearer-token'\n);\n```"
+											}
+										]
+									}
+								]
+							},
+							"sources": [
+								{
+									"fileName": "index.ts",
+									"line": 97,
+									"character": 2
+								}
+							],
+							"parameters": [
+								{
+									"id": 21,
+									"name": "baseURL",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"comment": {
+										"summary": [
+											{
+												"kind": "text",
+												"text": "The base URL of the Smartlinks API (e.g., https://smartlinks.app/api/v1)"
+											}
+										]
+									},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 22,
+									"name": "apiKey",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {
+										"isOptional": true
+									},
+									"comment": {
+										"summary": [
+											{
+												"kind": "text",
+												"text": "(Optional) API key for X-API-Key header"
+											}
+										]
+									},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 23,
+									"name": "bearerToken",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {
+										"isOptional": true
+									},
+									"comment": {
+										"summary": [
+											{
+												"kind": "text",
+												"text": "(Optional) Bearer token for AUTHORIZATION header"
+											}
+										]
+									},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"target": 18,
+								"name": "ApiClient",
+								"package": "@proveanything/smartlinks"
+							}
+						}
+					]
+				},
+				{
+					"id": 25,
+					"name": "apiKey",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {
+						"isPrivate": true,
+						"isOptional": true
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 67,
+							"character": 10
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 24,
+					"name": "baseURL",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {
+						"isPrivate": true
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 66,
+							"character": 10
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 26,
+					"name": "bearerToken",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {
+						"isPrivate": true,
+						"isOptional": true
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 68,
+							"character": 10
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 34,
+					"name": "getAppConfiguration",
+					"variant": "declaration",
+					"kind": 2048,
+					"flags": {
+						"isPublic": true
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 133,
+							"character": 15
+						}
+					],
+					"signatures": [
+						{
+							"id": 35,
+							"name": "getAppConfiguration",
+							"variant": "signature",
+							"kind": 4096,
+							"flags": {},
+							"comment": {
+								"summary": [
+									{
+										"kind": "text",
+										"text": "Retrieves a single App Configuration by Collection ID and App ID."
+									}
+								],
+								"blockTags": [
+									{
+										"tag": "@returns",
+										"content": [
+											{
+												"kind": "text",
+												"text": "Promise resolving to an AppConfigurationResponse object"
+											}
+										]
+									},
+									{
+										"tag": "@throws",
+										"content": [
+											{
+												"kind": "text",
+												"text": "ErrorResponse if the request fails"
+											}
+										]
+									}
+								]
+							},
+							"sources": [
+								{
+									"fileName": "index.ts",
+									"line": 133,
+									"character": 15
+								}
+							],
+							"parameters": [
+								{
+									"id": 36,
+									"name": "collectionId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"comment": {
+										"summary": [
+											{
+												"kind": "text",
+												"text": "Identifier of the parent collection"
+											}
+										]
+									},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 37,
+									"name": "appId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"comment": {
+										"summary": [
+											{
+												"kind": "text",
+												"text": "Identifier of the app configuration"
+											}
+										]
+									},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"target": {
+									"sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+									"qualifiedName": "Promise"
+								},
+								"typeArguments": [
+									{
+										"type": "reference",
+										"target": 11,
+										"name": "AppConfigurationResponse",
+										"package": "@proveanything/smartlinks"
+									}
+								],
+								"name": "Promise",
+								"package": "typescript"
+							}
+						}
+					]
+				},
+				{
+					"id": 27,
+					"name": "getCollection",
+					"variant": "declaration",
+					"kind": 2048,
+					"flags": {
+						"isPublic": true
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 109,
+							"character": 15
+						}
+					],
+					"signatures": [
+						{
+							"id": 28,
+							"name": "getCollection",
+							"variant": "signature",
+							"kind": 4096,
+							"flags": {},
+							"comment": {
+								"summary": [
+									{
+										"kind": "text",
+										"text": "Retrieves a single Collection by its ID."
+									}
+								],
+								"blockTags": [
+									{
+										"tag": "@returns",
+										"content": [
+											{
+												"kind": "text",
+												"text": "Promise resolving to a CollectionResponse object"
+											}
+										]
+									},
+									{
+										"tag": "@throws",
+										"content": [
+											{
+												"kind": "text",
+												"text": "ErrorResponse if the request fails"
+											}
+										]
+									}
+								]
+							},
+							"sources": [
+								{
+									"fileName": "index.ts",
+									"line": 109,
+									"character": 15
+								}
+							],
+							"parameters": [
+								{
+									"id": 29,
+									"name": "collectionId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"comment": {
+										"summary": [
+											{
+												"kind": "text",
+												"text": "Identifier of the collection"
+											}
+										]
+									},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"target": {
+									"sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+									"qualifiedName": "Promise"
+								},
+								"typeArguments": [
+									{
+										"type": "reference",
+										"target": 1,
+										"name": "CollectionResponse",
+										"package": "@proveanything/smartlinks"
+									}
+								],
+								"name": "Promise",
+								"package": "typescript"
+							}
+						}
+					]
+				},
+				{
+					"id": 30,
+					"name": "getProductItem",
+					"variant": "declaration",
+					"kind": 2048,
+					"flags": {
+						"isPublic": true
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 121,
+							"character": 15
+						}
+					],
+					"signatures": [
+						{
+							"id": 31,
+							"name": "getProductItem",
+							"variant": "signature",
+							"kind": 4096,
+							"flags": {},
+							"comment": {
+								"summary": [
+									{
+										"kind": "text",
+										"text": "Retrieves a single Product Item by Collection ID and Product ID."
+									}
+								],
+								"blockTags": [
+									{
+										"tag": "@returns",
+										"content": [
+											{
+												"kind": "text",
+												"text": "Promise resolving to a ProductResponse object"
+											}
+										]
+									},
+									{
+										"tag": "@throws",
+										"content": [
+											{
+												"kind": "text",
+												"text": "ErrorResponse if the request fails"
+											}
+										]
+									}
+								]
+							},
+							"sources": [
+								{
+									"fileName": "index.ts",
+									"line": 121,
+									"character": 15
+								}
+							],
+							"parameters": [
+								{
+									"id": 32,
+									"name": "collectionId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"comment": {
+										"summary": [
+											{
+												"kind": "text",
+												"text": "Identifier of the parent collection"
+											}
+										]
+									},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 33,
+									"name": "productId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"comment": {
+										"summary": [
+											{
+												"kind": "text",
+												"text": "Identifier of the product item"
+											}
+										]
+									},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"target": {
+									"sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+									"qualifiedName": "Promise"
+								},
+								"typeArguments": [
+									{
+										"type": "reference",
+										"target": 6,
+										"name": "ProductResponse",
+										"package": "@proveanything/smartlinks"
+									}
+								],
+								"name": "Promise",
+								"package": "typescript"
+							}
+						}
+					]
+				},
+				{
+					"id": 38,
+					"name": "request",
+					"variant": "declaration",
+					"kind": 2048,
+					"flags": {
+						"isPrivate": true
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 144,
+							"character": 16
+						}
+					],
+					"signatures": [
+						{
+							"id": 39,
+							"name": "request",
+							"variant": "signature",
+							"kind": 4096,
+							"flags": {},
+							"comment": {
+								"summary": [
+									{
+										"kind": "text",
+										"text": "Internal helper to perform a GET request and parse JSON."
+									}
+								],
+								"blockTags": [
+									{
+										"tag": "@returns",
+										"content": [
+											{
+												"kind": "text",
+												"text": "Promise resolving to the parsed JSON of type T"
+											}
+										]
+									},
+									{
+										"tag": "@throws",
+										"content": [
+											{
+												"kind": "text",
+												"text": "Error if network error or a non-2xx response is returned"
+											}
+										]
+									}
+								]
+							},
+							"sources": [
+								{
+									"fileName": "index.ts",
+									"line": 144,
+									"character": 16
+								}
+							],
+							"typeParameter": [
+								{
+									"id": 40,
+									"name": "T",
+									"variant": "typeParam",
+									"kind": 131072,
+									"flags": {}
+								}
+							],
+							"parameters": [
+								{
+									"id": 41,
+									"name": "path",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"comment": {
+										"summary": [
+											{
+												"kind": "text",
+												"text": "The path (relative to baseURL) to request"
+											}
+										]
+									},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"target": {
+									"sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+									"qualifiedName": "Promise"
+								},
+								"typeArguments": [
+									{
+										"type": "reference",
+										"target": 40,
+										"name": "T",
+										"package": "@proveanything/smartlinks",
+										"refersToTypeParameter": true
+									}
+								],
+								"name": "Promise",
+								"package": "typescript"
+							}
+						}
+					]
+				}
+			],
+			"groups": [
+				{
+					"title": "Constructors",
+					"children": [
+						19
+					]
+				},
+				{
+					"title": "Properties",
+					"children": [
+						25,
+						24,
+						26
+					]
+				},
+				{
+					"title": "Methods",
+					"children": [
+						34,
+						27,
+						30,
+						38
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "index.ts",
+					"line": 65,
+					"character": 13
+				}
+			]
+		},
+		{
+			"id": 11,
+			"name": "AppConfigurationResponse",
+			"variant": "declaration",
+			"kind": 256,
+			"flags": {},
+			"comment": {
+				"summary": [
+					{
+						"kind": "text",
+						"text": "Represents an App Configuration object."
+					}
+				]
+			},
+			"children": [
+				{
+					"id": 12,
+					"name": "id",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Unique identifier for the app configuration"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 40,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 13,
+					"name": "name",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Name of the app configuration"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 42,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 14,
+					"name": "settings",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {
+						"isOptional": true
+					},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Key‐value pairs representing configuration settings"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 44,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "reference",
+						"target": {
+							"sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+							"qualifiedName": "Record"
+						},
+						"typeArguments": [
+							{
+								"type": "intrinsic",
+								"name": "string"
+							},
+							{
+								"type": "intrinsic",
+								"name": "any"
+							}
+						],
+						"name": "Record",
+						"package": "typescript"
+					}
+				}
+			],
+			"groups": [
+				{
+					"title": "Properties",
+					"children": [
+						12,
+						13,
+						14
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "index.ts",
+					"line": 38,
+					"character": 17
+				}
+			]
+		},
+		{
+			"id": 1,
+			"name": "CollectionResponse",
+			"variant": "declaration",
+			"kind": 256,
+			"flags": {},
+			"comment": {
+				"summary": [
+					{
+						"kind": "text",
+						"text": "Represents a Collection object."
+					}
+				]
+			},
+			"children": [
+				{
+					"id": 2,
+					"name": "id",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Unique identifier for the collection"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 12,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 5,
+					"name": "logoImage",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "URL to the collection’s logo image"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 18,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 3,
+					"name": "name",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Machine‐readable name of the collection"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 14,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 4,
+					"name": "title",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Human‐readable title of the collection"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 16,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				}
+			],
+			"groups": [
+				{
+					"title": "Properties",
+					"children": [
+						2,
+						5,
+						3,
+						4
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "index.ts",
+					"line": 10,
+					"character": 17
+				}
+			]
+		},
+		{
+			"id": 15,
+			"name": "ErrorResponse",
+			"variant": "declaration",
+			"kind": 256,
+			"flags": {},
+			"comment": {
+				"summary": [
+					{
+						"kind": "text",
+						"text": "Represents a standardized error response."
+					}
+				]
+			},
+			"children": [
+				{
+					"id": 16,
+					"name": "code",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Numeric error code"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 52,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "number"
+					}
+				},
+				{
+					"id": 17,
+					"name": "message",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Human‐readable error message"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 54,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				}
+			],
+			"groups": [
+				{
+					"title": "Properties",
+					"children": [
+						16,
+						17
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "index.ts",
+					"line": 50,
+					"character": 17
+				}
+			]
+		},
+		{
+			"id": 6,
+			"name": "ProductResponse",
+			"variant": "declaration",
+			"kind": 256,
+			"flags": {},
+			"comment": {
+				"summary": [
+					{
+						"kind": "text",
+						"text": "Represents a Product Item object."
+					}
+				]
+			},
+			"children": [
+				{
+					"id": 9,
+					"name": "description",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Detailed description of the product"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 30,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 10,
+					"name": "heroImage",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "URL to the product’s hero image"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 32,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 7,
+					"name": "id",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Unique identifier for the product"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 26,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				},
+				{
+					"id": 8,
+					"name": "name",
+					"variant": "declaration",
+					"kind": 1024,
+					"flags": {},
+					"comment": {
+						"summary": [
+							{
+								"kind": "text",
+								"text": "Name of the product"
+							}
+						]
+					},
+					"sources": [
+						{
+							"fileName": "index.ts",
+							"line": 28,
+							"character": 2
+						}
+					],
+					"type": {
+						"type": "intrinsic",
+						"name": "string"
+					}
+				}
+			],
+			"groups": [
+				{
+					"title": "Properties",
+					"children": [
+						9,
+						10,
+						7,
+						8
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "index.ts",
+					"line": 24,
+					"character": 17
+				}
+			]
+		}
+	],
+	"groups": [
+		{
+			"title": "Classes",
+			"children": [
+				18
+			]
+		},
+		{
+			"title": "Interfaces",
+			"children": [
+				11,
+				1,
+				15,
+				6
+			]
+		}
+	],
+	"packageName": "@proveanything/smartlinks",
+	"readme": [
+		{
+			"kind": "text",
+			"text": "# @smartlinks/sdk\n\nAn official JavaScript/TypeScript client SDK for the Smartlinks API. This package provides a simple wrapper around the Smartlinks REST endpoints, allowing you to fetch Collection, Product, and App Configuration data in both browser and Node.js environments.\n\n## Installation\n\n"
+		},
+		{
+			"kind": "code",
+			"text": "```bash\nnpm install @smartlinks/sdk\n# or\nyarn add @smartlinks/sdk\n```"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n## Quickstart\n\n"
+		},
+		{
+			"kind": "code",
+			"text": "```ts\nimport { ApiClient, CollectionResponse, ProductResponse } from \"@smartlinks/sdk\";\n\nasync function main() {\n  // Instantiate the client (no apiKey needed for public endpoints, but shown here for reference)\n  const client = new ApiClient(\"https://smartlinks.app/api/v1\", \"YOUR_API_KEY_HERE\");\n\n  try {\n    // Fetch a collection by ID\n    const collection: CollectionResponse = await client.getCollection(\"abc123\");\n    console.log(\"Collection:\", collection);\n\n    // Fetch a product item by collection ID & product ID\n    const product: ProductResponse = await client.getProductItem(\"abc123\", \"prod789\");\n    console.log(\"Product Item:\", product);\n  } catch (err) {\n    console.error(\"Error fetching data:\", err);\n  }\n}\n\nmain();\n```"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n## API Reference\n\n### Class: "
+		},
+		{
+			"kind": "code",
+			"text": "`ApiClient`"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n"
+		},
+		{
+			"kind": "code",
+			"text": "```ts\nconstructor(baseURL: string, apiKey?: string)\n```"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n- **Parameters:**\n  - "
+		},
+		{
+			"kind": "code",
+			"text": "`baseURL`"
+		},
+		{
+			"kind": "text",
+			"text": " ("
+		},
+		{
+			"kind": "code",
+			"text": "`string`"
+		},
+		{
+			"kind": "text",
+			"text": ", required): The root URL of the Smartlinks API, e.g. "
+		},
+		{
+			"kind": "code",
+			"text": "`https://smartlinks.app/api/v1`"
+		},
+		{
+			"kind": "text",
+			"text": ".  \n  - "
+		},
+		{
+			"kind": "code",
+			"text": "`apiKey`"
+		},
+		{
+			"kind": "text",
+			"text": " ("
+		},
+		{
+			"kind": "code",
+			"text": "`string`"
+		},
+		{
+			"kind": "text",
+			"text": ", optional): Your Bearer token. If omitted, requests will be sent without an "
+		},
+		{
+			"kind": "code",
+			"text": "`Authorization`"
+		},
+		{
+			"kind": "text",
+			"text": " header.\n\n---\n\n#### "
+		},
+		{
+			"kind": "code",
+			"text": "`getCollection(collectionId: string): Promise<CollectionResponse>`"
+		},
+		{
+			"kind": "text",
+			"text": "\n\nFetches a single collection by its ID.\n\n- **Parameters:**\n  - "
+		},
+		{
+			"kind": "code",
+			"text": "`collectionId`"
+		},
+		{
+			"kind": "text",
+			"text": " ("
+		},
+		{
+			"kind": "code",
+			"text": "`string`"
+		},
+		{
+			"kind": "text",
+			"text": ", required): The unique identifier of the collection to fetch.\n- **Returns:**  \n  A "
+		},
+		{
+			"kind": "code",
+			"text": "`Promise`"
+		},
+		{
+			"kind": "text",
+			"text": " that resolves to a "
+		},
+		{
+			"kind": "code",
+			"text": "`CollectionResponse`"
+		},
+		{
+			"kind": "text",
+			"text": " object:\n\n  "
+		},
+		{
+			"kind": "code",
+			"text": "```ts\n  export interface CollectionResponse {\n    id: string;\n    name: string;\n    title: string;\n    logoImage: string;\n  }\n  ```"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n- **Example:**\n  "
+		},
+		{
+			"kind": "code",
+			"text": "```ts\n  const client = new ApiClient(\"https://smartlinks.app/api/v1\", \"YOUR_API_KEY\");\n  const collection = await client.getCollection(\"abc123\");\n  console.log(\"Fetched collection:\", collection);\n  ```"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n---\n\n#### "
+		},
+		{
+			"kind": "code",
+			"text": "`getProductItem(collectionId: string, productId: string): Promise<ProductResponse>`"
+		},
+		{
+			"kind": "text",
+			"text": "\n\nFetches a single product item within a collection.\n\n- **Parameters:**\n  - "
+		},
+		{
+			"kind": "code",
+			"text": "`collectionId`"
+		},
+		{
+			"kind": "text",
+			"text": " ("
+		},
+		{
+			"kind": "code",
+			"text": "`string`"
+		},
+		{
+			"kind": "text",
+			"text": ", required): The parent collection’s ID.\n  - "
+		},
+		{
+			"kind": "code",
+			"text": "`productId`"
+		},
+		{
+			"kind": "text",
+			"text": "   ("
+		},
+		{
+			"kind": "code",
+			"text": "`string`"
+		},
+		{
+			"kind": "text",
+			"text": ", required): The product item’s ID.\n- **Returns:**  \n  A "
+		},
+		{
+			"kind": "code",
+			"text": "`Promise`"
+		},
+		{
+			"kind": "text",
+			"text": " that resolves to a "
+		},
+		{
+			"kind": "code",
+			"text": "`ProductResponse`"
+		},
+		{
+			"kind": "text",
+			"text": " object:\n\n  "
+		},
+		{
+			"kind": "code",
+			"text": "```ts\n  export interface ProductResponse {\n    id: string;\n    name: string;\n    description: string;\n    heroImage: string;\n  }\n  ```"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n- **Example:**\n  "
+		},
+		{
+			"kind": "code",
+			"text": "```ts\n  const client = new ApiClient(\"https://smartlinks.app/api/v1\", \"YOUR_API_KEY\");\n  const product = await client.getProductItem(\"abc123\", \"prod789\");\n  console.log(\"Fetched product:\", product);\n  ```"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n---\n\n#### "
+		},
+		{
+			"kind": "code",
+			"text": "`getAppConfiguration(collectionId: string, appId: string): Promise<AppConfigurationResponse>`"
+		},
+		{
+			"kind": "text",
+			"text": "\n\nFetches a single app configuration within a collection.\n\n- **Parameters:**\n  - "
+		},
+		{
+			"kind": "code",
+			"text": "`collectionId`"
+		},
+		{
+			"kind": "text",
+			"text": " ("
+		},
+		{
+			"kind": "code",
+			"text": "`string`"
+		},
+		{
+			"kind": "text",
+			"text": ", required): The parent collection’s ID.\n  - "
+		},
+		{
+			"kind": "code",
+			"text": "`appId`"
+		},
+		{
+			"kind": "text",
+			"text": "        ("
+		},
+		{
+			"kind": "code",
+			"text": "`string`"
+		},
+		{
+			"kind": "text",
+			"text": ", required): The app configuration’s ID.\n- **Returns:**  \n  A "
+		},
+		{
+			"kind": "code",
+			"text": "`Promise`"
+		},
+		{
+			"kind": "text",
+			"text": " that resolves to an "
+		},
+		{
+			"kind": "code",
+			"text": "`AppConfigurationResponse`"
+		},
+		{
+			"kind": "text",
+			"text": " object:\n\n  "
+		},
+		{
+			"kind": "code",
+			"text": "```ts\n  export interface AppConfigurationResponse {\n    id: string;\n    name: string;\n    settings?: Record<string, any>;\n  }\n  ```"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n- **Example:**\n  "
+		},
+		{
+			"kind": "code",
+			"text": "```ts\n  const client = new ApiClient(\"https://smartlinks.app/api/v1\", \"YOUR_API_KEY\");\n  const config = await client.getAppConfiguration(\"abc123\", \"app456\");\n  console.log(\"Fetched app configuration:\", config);\n  ```"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n---\n\n## Authentication\n\nAll endpoints require a Bearer token passed in the "
+		},
+		{
+			"kind": "code",
+			"text": "`AUTHORIZATION`"
+		},
+		{
+			"kind": "text",
+			"text": " header. When instantiating "
+		},
+		{
+			"kind": "code",
+			"text": "`ApiClient`"
+		},
+		{
+			"kind": "text",
+			"text": ", optionally supply your token:\n\n"
+		},
+		{
+			"kind": "code",
+			"text": "```ts\nimport { ApiClient } from \"@smartlinks/sdk\";\n\nconst apiKey = \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\";\nconst client = new ApiClient(\"https://smartlinks.app/api/v1\", apiKey);\n```"
+		},
+		{
+			"kind": "text",
+			"text": "\n\nIf "
+		},
+		{
+			"kind": "code",
+			"text": "`apiKey`"
+		},
+		{
+			"kind": "text",
+			"text": " is omitted, requests will be sent without an "
+		},
+		{
+			"kind": "code",
+			"text": "`Authorization`"
+		},
+		{
+			"kind": "text",
+			"text": " header, which may cause a "
+		},
+		{
+			"kind": "code",
+			"text": "`401 Unauthorized`"
+		},
+		{
+			"kind": "text",
+			"text": " for protected endpoints.\n\n## Error Handling\n\nAll methods throw an "
+		},
+		{
+			"kind": "code",
+			"text": "`Error`"
+		},
+		{
+			"kind": "text",
+			"text": " when the server responds with a non-2xx status. The thrown error message includes the numeric error code and message from the API. Example:\n\n"
+		},
+		{
+			"kind": "code",
+			"text": "```ts\nimport { ApiClient } from \"@smartlinks/sdk\";\n\nasync function fetchData() {\n  const client = new ApiClient(\"https://smartlinks.app/api/v1\", \"INVALID_KEY\");\n\n  try {\n    await client.getCollection(\"nonexistent\");\n  } catch (err) {\n    // err.message might be: \"Error 401: Unauthorized\" or \"Error 404: Not Found\"\n    console.error(\"Request failed:\", err);\n  }\n}\n\nfetchData();\n```"
+		},
+		{
+			"kind": "text",
+			"text": "\n\n## Examples\n\nSee the **examples/** folder for complete, runnable samples:\n\n- ["
+		},
+		{
+			"kind": "code",
+			"text": "`examples/node-demo.ts`"
+		},
+		{
+			"kind": "text",
+			"text": "](examples/node-demo.ts)  \n- ["
+		},
+		{
+			"kind": "code",
+			"text": "`examples/browser-demo.html`"
+		},
+		{
+			"kind": "text",
+			"text": "](examples/browser-demo.html)  \n- ["
+		},
+		{
+			"kind": "code",
+			"text": "`examples/react-demo.tsx`"
+		},
+		{
+			"kind": "text",
+			"text": "](examples/react-demo.tsx)  \n\n## OpenAPI Specification\n\nThis SDK is generated and maintained according to the [Smartlinks OpenAPI 3.0 specification](openapi.yaml).  \nYou can find the full API contract in ["
+		},
+		{
+			"kind": "code",
+			"text": "`openapi.yaml`"
+		},
+		{
+			"kind": "text",
+			"text": "](openapi.yaml) at the root of this package.\n\n## Changelog\n\n### 1.0.0\n\n- Initial release:  \n  - "
+		},
+		{
+			"kind": "code",
+			"text": "`ApiClient`"
+		},
+		{
+			"kind": "text",
+			"text": " class with "
+		},
+		{
+			"kind": "code",
+			"text": "`getCollection`"
+		},
+		{
+			"kind": "text",
+			"text": ", "
+		},
+		{
+			"kind": "code",
+			"text": "`getProductItem`"
+		},
+		{
+			"kind": "text",
+			"text": ", and "
+		},
+		{
+			"kind": "code",
+			"text": "`getAppConfiguration`"
+		},
+		{
+			"kind": "text",
+			"text": " methods.  \n  - Full TypeScript typings and JSDoc.  \n  - Browser/Node fetch support.  \n  - Error handling via thrown "
+		},
+		{
+			"kind": "code",
+			"text": "`Error`"
+		},
+		{
+			"kind": "text",
+			"text": " objects."
+		}
+	],
+	"symbolIdMap": {
+		"0": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": ""
+		},
+		"1": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "CollectionResponse"
+		},
+		"2": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "CollectionResponse.id"
+		},
+		"3": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "CollectionResponse.name"
+		},
+		"4": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "CollectionResponse.title"
+		},
+		"5": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "CollectionResponse.logoImage"
+		},
+		"6": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ProductResponse"
+		},
+		"7": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ProductResponse.id"
+		},
+		"8": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ProductResponse.name"
+		},
+		"9": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ProductResponse.description"
+		},
+		"10": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ProductResponse.heroImage"
+		},
+		"11": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "AppConfigurationResponse"
+		},
+		"12": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "AppConfigurationResponse.id"
+		},
+		"13": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "AppConfigurationResponse.name"
+		},
+		"14": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "AppConfigurationResponse.settings"
+		},
+		"15": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ErrorResponse"
+		},
+		"16": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ErrorResponse.code"
+		},
+		"17": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ErrorResponse.message"
+		},
+		"18": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ApiClient"
+		},
+		"19": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ApiClient.__constructor"
+		},
+		"20": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ApiClient"
+		},
+		"21": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "baseURL"
+		},
+		"22": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "apiKey"
+		},
+		"23": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "bearerToken"
+		},
+		"24": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ApiClient.baseURL"
+		},
+		"25": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ApiClient.apiKey"
+		},
+		"26": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ApiClient.bearerToken"
+		},
+		"27": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ApiClient.getCollection"
+		},
+		"28": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ApiClient.getCollection"
+		},
+		"29": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "collectionId"
+		},
+		"30": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ApiClient.getProductItem"
+		},
+		"31": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ApiClient.getProductItem"
+		},
+		"32": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "collectionId"
+		},
+		"33": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "productId"
+		},
+		"34": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ApiClient.getAppConfiguration"
+		},
+		"35": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ApiClient.getAppConfiguration"
+		},
+		"36": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "collectionId"
+		},
+		"37": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "appId"
+		},
+		"38": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ApiClient.request"
+		},
+		"39": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "ApiClient.request"
+		},
+		"40": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "T"
+		},
+		"41": {
+			"sourceFileName": "src/index.ts",
+			"qualifiedName": "path"
+		}
+	}
+}

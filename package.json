@@ -1,0 +1,27 @@
+{
+  "name": "@proveanything/smartlinks",
+  "version": "1.0.1",
+  "description": "Official JavaScript/TypeScript SDK for the Smartlinks API",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "docs": "typedoc --out docs src/index.ts --json docs/documentation.json"
+  },
+  "author": "Glenn Shoosmith",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "cross-fetch": "^3.1.5"
+  },
+  "devDependencies": {
+    "typedoc": "^0.25.13",
+    "typescript": "^4.9.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Prove-Anything/smartlinks.git"
+  }
+}

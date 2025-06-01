@@ -1,0 +1,130 @@
+openapi: 3.0.3
+info:
+  title: Smartlinks API
+  version: "1.0.0"
+  description: |
+    OpenAPI 3.0 specification for the Smartlinks REST API.
+servers:
+  - url: https://smartlinks.app/api/v1
+paths:
+  /collections/{collectionId}:
+    get:
+      summary: Get a collection by ID
+      operationId: getCollection
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Collection found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CollectionResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+      security:
+        - bearerAuth: []
+  /collections/{collectionId}/products/{productId}:
+    get:
+      summary: Get a product item by collection and product ID
+      operationId: getProductItem
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Product found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+      security:
+        - bearerAuth: []
+  /collections/{collectionId}/apps/{appId}/configuration:
+    get:
+      summary: Get app configuration by collection and app ID
+      operationId: getAppConfiguration
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: App configuration found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppConfigurationResponse'
+        '401':
+          description: Unauthorized
+        '404':
+          description: Not Found
+      security:
+        - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CollectionResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        title:
+          type: string
+        logoImage:
+          type: string
+      required: [id, name, title, logoImage]
+    ProductResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        heroImage:
+          type: string
+      required: [id, name, description, heroImage]
+    AppConfigurationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        settings:
+          type: object
+          additionalProperties: true
+      required: [id, name]

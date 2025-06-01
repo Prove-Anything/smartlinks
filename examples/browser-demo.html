@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Smartlinks SDK Browser Demo</title>
+</head>
+<body>
+  <h1>Smartlinks SDK Browser Demo</h1>
+  <pre id="output"></pre>
+  <script type="module">
+    import { ApiClient } from '../dist/index.js';
+
+    async function run() {
+      // You can provide either or both of these values:
+      const apiKey = 'YOUR_API_KEY'; // sent as X-API-Key header (optional)
+      const bearerToken = 'YOUR_BEARER_TOKEN'; // sent as AUTHORIZATION: Bearer ... (optional)
+
+      // Example: with both headers
+      const client = new ApiClient('https://smartlinks.app/api/v1', apiKey, bearerToken);
+
+      try {
+        const collection = await client.getCollection('abc123');
+        const product = await client.getProductItem('abc123', 'prod789');
+        document.getElementById('output').textContent = JSON.stringify({ collection, product }, null, 2);
+      } catch (err) {
+        document.getElementById('output').textContent = 'Error: ' + err.message;
+      }
+    }
+    run();
+  </script>
+</body>
+</html>
