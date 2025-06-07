@@ -16,3 +16,14 @@ export declare function initializeApi(options: {
  * Returns the parsed JSON as T, or throws an Error.
  */
 export declare function request<T>(path: string): Promise<T>;
+/**
+ * Internal helper that performs a POST request to `${baseURL}${path}`,
+ * injecting headers for apiKey or bearerToken if present.
+ * If body is FormData, Content-Type is not set.
+ * Returns the parsed JSON as T, or throws an Error.
+ */
+export declare function post<T>(path: string, body: any, extraHeaders?: Record<string, string>): Promise<T>;
+/**
+ * Returns the common headers used for API requests, including apiKey and bearerToken if set.
+ */
+export declare function getApiHeaders(): Record<string, string>;
