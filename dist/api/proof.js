@@ -14,4 +14,12 @@ export var proof;
         return request(path);
     }
     proof.get = get;
+    /**
+     * List all Proofs for a Collection.
+     */
+    async function list(collectionId) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/proof`;
+        return request(path);
+    }
+    proof.list = list;
 })(proof || (proof = {}));

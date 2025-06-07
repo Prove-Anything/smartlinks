@@ -15,14 +15,14 @@ export var product;
     }
     product.get = get;
     /**
-     * Retrieves all Product Items for a Collection.
+     * List all Product Items for a Collection.
      * @param collectionId – Identifier of the parent collection
      * @returns Promise resolving to an array of ProductResponse objects
      * @throws ErrorResponse if the request fails
      */
-    async function getAll(collectionId) {
+    async function list(collectionId) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/product`;
         return request(path);
     }
-    product.getAll = getAll;
+    product.list = list;
 })(product || (product = {}));

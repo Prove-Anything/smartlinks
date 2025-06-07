@@ -1,11 +1,11 @@
 import { AssetResponse } from "../types/asset";
 export declare namespace asset {
     function getForCollection(collectionId: string, assetId: string): Promise<AssetResponse>;
-    function getAllForCollection(collectionId: string): Promise<AssetResponse[]>;
+    function listForCollection(collectionId: string): Promise<AssetResponse[]>;
     function getForProduct(collectionId: string, productId: string, assetId: string): Promise<AssetResponse>;
-    function getAllForProduct(collectionId: string, productId: string): Promise<AssetResponse[]>;
+    function listForProduct(collectionId: string, productId: string): Promise<AssetResponse[]>;
     function getForProof(collectionId: string, productId: string, proofId: string, assetId: string): Promise<AssetResponse>;
-    function getAllForProof(collectionId: string, productId: string, proofId: string, appId?: string): Promise<AssetResponse[]>;
+    function listForProof(collectionId: string, productId: string, proofId: string, appId?: string): Promise<AssetResponse[]>;
     /**
      * Uploads an asset file to a proof, with optional extraData as JSON.
      * Supports progress reporting via onProgress callback (browser only).

@@ -19,4 +19,14 @@ export namespace proof {
     )}/proof/${encodeURIComponent(proofId)}`
     return request<ProofResponse>(path)
   }
+
+  /**
+   * List all Proofs for a Collection.
+   */
+  export async function list(
+    collectionId: string
+  ): Promise<ProofResponse[]> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/proof`
+    return request<ProofResponse[]>(path)
+  }
 }

@@ -21,12 +21,12 @@ export namespace product {
   }
 
   /**
-   * Retrieves all Product Items for a Collection.
+   * List all Product Items for a Collection.
    * @param collectionId – Identifier of the parent collection
    * @returns Promise resolving to an array of ProductResponse objects
    * @throws ErrorResponse if the request fails
    */
-  export async function getAll(
+  export async function list(
     collectionId: string
   ): Promise<ProductResponse[]> {
     const path = `/public/collection/${encodeURIComponent(collectionId)}/product`

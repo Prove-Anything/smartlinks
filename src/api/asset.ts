@@ -11,7 +11,7 @@ export namespace asset {
     return request<AssetResponse>(path)
   }
 
-  export async function getAllForCollection(
+  export async function listForCollection(
     collectionId: string
   ): Promise<AssetResponse[]> {
     const path = `/public/collection/${encodeURIComponent(collectionId)}/asset`
@@ -28,7 +28,7 @@ export namespace asset {
     return request<AssetResponse>(path)
   }
 
-  export async function getAllForProduct(
+  export async function listForProduct(
     collectionId: string,
     productId: string
   ): Promise<AssetResponse[]> {
@@ -47,7 +47,7 @@ export namespace asset {
     return request<AssetResponse>(path)
   }
 
-  export async function getAllForProof(
+  export async function listForProof(
     collectionId: string,
     productId: string,
     proofId: string,

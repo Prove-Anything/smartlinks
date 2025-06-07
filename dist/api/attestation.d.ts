@@ -1,9 +1,9 @@
 import type { AttestationResponse, AttestationCreateRequest, AttestationUpdateRequest } from "../types/attestation";
 export declare namespace attestation {
     /**
-     * Get all attestations for a proof.
+     * List all attestations for a proof.
      */
-    function getAll(collectionId: string, productId: string, proofId: string): Promise<AttestationResponse[]>;
+    function list(collectionId: string, productId: string, proofId: string): Promise<AttestationResponse[]>;
     /**
      * Get a single attestation by ID.
      */

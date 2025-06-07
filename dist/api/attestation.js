@@ -2,13 +2,13 @@ import { request, post, put, del } from "../http";
 export var attestation;
 (function (attestation) {
     /**
-     * Get all attestations for a proof.
+     * List all attestations for a proof.
      */
-    async function getAll(collectionId, productId, proofId) {
+    async function list(collectionId, productId, proofId) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/attestation`;
         return request(path);
     }
-    attestation.getAll = getAll;
+    attestation.list = list;
     /**
      * Get a single attestation by ID.
      */

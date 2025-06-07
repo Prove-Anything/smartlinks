@@ -8,4 +8,8 @@ export declare namespace proof {
      * @throws ErrorResponse if the request fails
      */
     function get(collectionId: string, proofId: string): Promise<ProofResponse>;
+    /**
+     * List all Proofs for a Collection.
+     */
+    function list(collectionId: string): Promise<ProofResponse[]>;
 }

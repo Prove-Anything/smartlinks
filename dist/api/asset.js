@@ -7,36 +7,36 @@ export var asset;
         return request(path);
     }
     asset.getForCollection = getForCollection;
-    async function getAllForCollection(collectionId) {
+    async function listForCollection(collectionId) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/asset`;
         return request(path);
     }
-    asset.getAllForCollection = getAllForCollection;
+    asset.listForCollection = listForCollection;
     // Product-level
     async function getForProduct(collectionId, productId, assetId) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/asset/${encodeURIComponent(assetId)}`;
         return request(path);
     }
     asset.getForProduct = getForProduct;
-    async function getAllForProduct(collectionId, productId) {
+    async function listForProduct(collectionId, productId) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/asset`;
         return request(path);
     }
-    asset.getAllForProduct = getAllForProduct;
+    asset.listForProduct = listForProduct;
     // Proof-level
     async function getForProof(collectionId, productId, proofId, assetId) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/asset/${encodeURIComponent(assetId)}`;
         return request(path);
     }
     asset.getForProof = getForProof;
-    async function getAllForProof(collectionId, productId, proofId, appId) {
+    async function listForProof(collectionId, productId, proofId, appId) {
         let path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/asset`;
         if (appId) {
             path += `?appId=${encodeURIComponent(appId)}`;
         }
         return request(path);
     }
-    asset.getAllForProof = getAllForProof;
+    asset.listForProof = listForProof;
     /**
      * Uploads an asset file to a proof, with optional extraData as JSON.
      * Supports progress reporting via onProgress callback (browser only).

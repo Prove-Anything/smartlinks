@@ -3,9 +3,9 @@ import type { AttestationResponse, AttestationCreateRequest, AttestationUpdateRe
 
 export namespace attestation {
   /**
-   * Get all attestations for a proof.
+   * List all attestations for a proof.
    */
-  export async function getAll(
+  export async function list(
     collectionId: string,
     productId: string,
     proofId: string
