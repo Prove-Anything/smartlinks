@@ -24,6 +24,25 @@ export declare function request<T>(path: string): Promise<T>;
  */
 export declare function post<T>(path: string, body: any, extraHeaders?: Record<string, string>): Promise<T>;
 /**
+ * Internal helper that performs a PUT request to `${baseURL}${path}`,
+ * injecting headers for apiKey or bearerToken if present.
+ * If body is FormData, Content-Type is not set.
+ * Returns the parsed JSON as T, or throws an Error.
+ */
+export declare function put<T>(path: string, body: any, extraHeaders?: Record<string, string>): Promise<T>;
+/**
+ * Internal helper that performs a request to `${baseURL}${path}` with custom options,
+ * injecting headers for apiKey or bearerToken if present.
+ * Returns the parsed JSON as T, or throws an Error.
+ */
+export declare function requestWithOptions<T>(path: string, options: RequestInit): Promise<T>;
+/**
+ * Internal helper that performs a DELETE request to `${baseURL}${path}`,
+ * injecting headers for apiKey or bearerToken if present.
+ * Returns the parsed JSON as T, or throws an Error.
+ */
+export declare function del<T>(path: string, extraHeaders?: Record<string, string>): Promise<T>;
+/**
  * Returns the common headers used for API requests, including apiKey and bearerToken if set.
  */
 export declare function getApiHeaders(): Record<string, string>;

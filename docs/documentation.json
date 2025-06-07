@@ -23,7 +23,7 @@
 							"fileName": "api/appConfiguration.ts",
 							"line": 13,
 							"character": 24,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/appConfiguration.ts#L13"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/appConfiguration.ts#L13"
 						}
 					],
 					"signatures": [
@@ -66,7 +66,7 @@
 									"fileName": "api/appConfiguration.ts",
 									"line": 13,
 									"character": 24,
-									"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/appConfiguration.ts#L13"
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/appConfiguration.ts#L13"
 								}
 							],
 							"parameters": [
@@ -118,7 +118,7 @@
 								"typeArguments": [
 									{
 										"type": "reference",
-										"target": 92,
+										"target": 123,
 										"name": "AppConfigurationResponse",
 										"package": "@proveanything/smartlinks"
 									}
@@ -143,7 +143,7 @@
 					"fileName": "api/appConfiguration.ts",
 					"line": 5,
 					"character": 17,
-					"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/appConfiguration.ts#L5"
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/appConfiguration.ts#L5"
 				}
 			]
 		},
@@ -165,7 +165,7 @@
 							"fileName": "api/asset.ts",
 							"line": 14,
 							"character": 24,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L14"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L14"
 						}
 					],
 					"signatures": [
@@ -180,7 +180,7 @@
 									"fileName": "api/asset.ts",
 									"line": 14,
 									"character": 24,
-									"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L14"
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L14"
 								}
 							],
 							"parameters": [
@@ -207,7 +207,7 @@
 										"type": "array",
 										"elementType": {
 											"type": "reference",
-											"target": 99,
+											"target": 130,
 											"name": "AssetResponse",
 											"package": "@proveanything/smartlinks"
 										}
@@ -230,7 +230,7 @@
 							"fileName": "api/asset.ts",
 							"line": 31,
 							"character": 24,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L31"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L31"
 						}
 					],
 					"signatures": [
@@ -245,7 +245,7 @@
 									"fileName": "api/asset.ts",
 									"line": 31,
 									"character": 24,
-									"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L31"
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L31"
 								}
 							],
 							"parameters": [
@@ -283,7 +283,7 @@
 										"type": "array",
 										"elementType": {
 											"type": "reference",
-											"target": 99,
+											"target": 130,
 											"name": "AssetResponse",
 											"package": "@proveanything/smartlinks"
 										}
@@ -306,7 +306,7 @@
 							"fileName": "api/asset.ts",
 							"line": 50,
 							"character": 24,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L50"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L50"
 						}
 					],
 					"signatures": [
@@ -321,7 +321,7 @@
 									"fileName": "api/asset.ts",
 									"line": 50,
 									"character": 24,
-									"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L50"
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L50"
 								}
 							],
 							"parameters": [
@@ -383,7 +383,7 @@
 										"type": "array",
 										"elementType": {
 											"type": "reference",
-											"target": 99,
+											"target": 130,
 											"name": "AssetResponse",
 											"package": "@proveanything/smartlinks"
 										}
@@ -406,7 +406,7 @@
 							"fileName": "api/asset.ts",
 							"line": 6,
 							"character": 24,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L6"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L6"
 						}
 					],
 					"signatures": [
@@ -421,7 +421,7 @@
 									"fileName": "api/asset.ts",
 									"line": 6,
 									"character": 24,
-									"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L6"
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L6"
 								}
 							],
 							"parameters": [
@@ -457,7 +457,7 @@
 								"typeArguments": [
 									{
 										"type": "reference",
-										"target": 99,
+										"target": 130,
 										"name": "AssetResponse",
 										"package": "@proveanything/smartlinks"
 									}
@@ -479,7 +479,7 @@
 							"fileName": "api/asset.ts",
 							"line": 22,
 							"character": 24,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L22"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L22"
 						}
 					],
 					"signatures": [
@@ -494,7 +494,7 @@
 									"fileName": "api/asset.ts",
 									"line": 22,
 									"character": 24,
-									"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L22"
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L22"
 								}
 							],
 							"parameters": [
@@ -541,7 +541,7 @@
 								"typeArguments": [
 									{
 										"type": "reference",
-										"target": 99,
+										"target": 130,
 										"name": "AssetResponse",
 										"package": "@proveanything/smartlinks"
 									}
@@ -563,7 +563,7 @@
 							"fileName": "api/asset.ts",
 							"line": 40,
 							"character": 24,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L40"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L40"
 						}
 					],
 					"signatures": [
@@ -578,7 +578,7 @@
 									"fileName": "api/asset.ts",
 									"line": 40,
 									"character": 24,
-									"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L40"
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L40"
 								}
 							],
 							"parameters": [
@@ -636,7 +636,7 @@
 								"typeArguments": [
 									{
 										"type": "reference",
-										"target": 99,
+										"target": 130,
 										"name": "AssetResponse",
 										"package": "@proveanything/smartlinks"
 									}
@@ -658,7 +658,7 @@
 							"fileName": "api/asset.ts",
 							"line": 74,
 							"character": 24,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L74"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L74"
 						}
 					],
 					"signatures": [
@@ -692,7 +692,7 @@
 									"fileName": "api/asset.ts",
 									"line": 74,
 									"character": 24,
-									"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L74"
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L74"
 								}
 							],
 							"parameters": [
@@ -842,7 +842,7 @@
 													"fileName": "api/asset.ts",
 													"line": 80,
 													"character": 17,
-													"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L80"
+													"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L80"
 												}
 											],
 											"signatures": [
@@ -857,7 +857,7 @@
 															"fileName": "api/asset.ts",
 															"line": 80,
 															"character": 17,
-															"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L80"
+															"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L80"
 														}
 													],
 													"parameters": [
@@ -892,7 +892,7 @@
 								"typeArguments": [
 									{
 										"type": "reference",
-										"target": 99,
+										"target": 130,
 										"name": "AssetResponse",
 										"package": "@proveanything/smartlinks"
 									}
@@ -923,7 +923,563 @@
 					"fileName": "api/asset.ts",
 					"line": 4,
 					"character": 17,
-					"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/asset.ts#L4"
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/asset.ts#L4"
+				}
+			]
+		},
+		{
+			"id": 74,
+			"name": "attestation",
+			"variant": "declaration",
+			"kind": 4,
+			"flags": {},
+			"children": [
+				{
+					"id": 86,
+					"name": "create",
+					"variant": "declaration",
+					"kind": 64,
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "api/attestation.ts",
+							"line": 33,
+							"character": 24
+						}
+					],
+					"signatures": [
+						{
+							"id": 87,
+							"name": "create",
+							"variant": "signature",
+							"kind": 4096,
+							"flags": {},
+							"comment": {
+								"summary": [
+									{
+										"kind": "text",
+										"text": "Create a new attestation for a proof."
+									}
+								]
+							},
+							"sources": [
+								{
+									"fileName": "api/attestation.ts",
+									"line": 33,
+									"character": 24
+								}
+							],
+							"parameters": [
+								{
+									"id": 88,
+									"name": "collectionId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 89,
+									"name": "productId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 90,
+									"name": "proofId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 91,
+									"name": "data",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "reference",
+										"target": {
+											"sourceFileName": "src/types/attestation.ts",
+											"qualifiedName": "AttestationCreateRequest"
+										},
+										"name": "AttestationCreateRequest",
+										"package": "@proveanything/smartlinks"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"target": {
+									"sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+									"qualifiedName": "Promise"
+								},
+								"typeArguments": [
+									{
+										"type": "reference",
+										"target": {
+											"sourceFileName": "src/types/attestation.ts",
+											"qualifiedName": "AttestationResponse"
+										},
+										"name": "AttestationResponse",
+										"package": "@proveanything/smartlinks"
+									}
+								],
+								"name": "Promise",
+								"package": "typescript"
+							}
+						}
+					]
+				},
+				{
+					"id": 80,
+					"name": "get",
+					"variant": "declaration",
+					"kind": 64,
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "api/attestation.ts",
+							"line": 20,
+							"character": 24
+						}
+					],
+					"signatures": [
+						{
+							"id": 81,
+							"name": "get",
+							"variant": "signature",
+							"kind": 4096,
+							"flags": {},
+							"comment": {
+								"summary": [
+									{
+										"kind": "text",
+										"text": "Get a single attestation by ID."
+									}
+								]
+							},
+							"sources": [
+								{
+									"fileName": "api/attestation.ts",
+									"line": 20,
+									"character": 24
+								}
+							],
+							"parameters": [
+								{
+									"id": 82,
+									"name": "collectionId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 83,
+									"name": "productId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 84,
+									"name": "proofId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 85,
+									"name": "attestationId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"target": {
+									"sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+									"qualifiedName": "Promise"
+								},
+								"typeArguments": [
+									{
+										"type": "reference",
+										"target": {
+											"sourceFileName": "src/types/attestation.ts",
+											"qualifiedName": "AttestationResponse"
+										},
+										"name": "AttestationResponse",
+										"package": "@proveanything/smartlinks"
+									}
+								],
+								"name": "Promise",
+								"package": "typescript"
+							}
+						}
+					]
+				},
+				{
+					"id": 75,
+					"name": "getAll",
+					"variant": "declaration",
+					"kind": 64,
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "api/attestation.ts",
+							"line": 8,
+							"character": 24
+						}
+					],
+					"signatures": [
+						{
+							"id": 76,
+							"name": "getAll",
+							"variant": "signature",
+							"kind": 4096,
+							"flags": {},
+							"comment": {
+								"summary": [
+									{
+										"kind": "text",
+										"text": "Get all attestations for a proof."
+									}
+								]
+							},
+							"sources": [
+								{
+									"fileName": "api/attestation.ts",
+									"line": 8,
+									"character": 24
+								}
+							],
+							"parameters": [
+								{
+									"id": 77,
+									"name": "collectionId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 78,
+									"name": "productId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 79,
+									"name": "proofId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"target": {
+									"sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+									"qualifiedName": "Promise"
+								},
+								"typeArguments": [
+									{
+										"type": "array",
+										"elementType": {
+											"type": "reference",
+											"target": {
+												"sourceFileName": "src/types/attestation.ts",
+												"qualifiedName": "AttestationResponse"
+											},
+											"name": "AttestationResponse",
+											"package": "@proveanything/smartlinks"
+										}
+									}
+								],
+								"name": "Promise",
+								"package": "typescript"
+							}
+						}
+					]
+				},
+				{
+					"id": 99,
+					"name": "remove",
+					"variant": "declaration",
+					"kind": 64,
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "api/attestation.ts",
+							"line": 60,
+							"character": 24
+						}
+					],
+					"signatures": [
+						{
+							"id": 100,
+							"name": "remove",
+							"variant": "signature",
+							"kind": 4096,
+							"flags": {},
+							"comment": {
+								"summary": [
+									{
+										"kind": "text",
+										"text": "Delete an attestation."
+									}
+								]
+							},
+							"sources": [
+								{
+									"fileName": "api/attestation.ts",
+									"line": 60,
+									"character": 24
+								}
+							],
+							"parameters": [
+								{
+									"id": 101,
+									"name": "collectionId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 102,
+									"name": "productId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 103,
+									"name": "proofId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 104,
+									"name": "attestationId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"target": {
+									"sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+									"qualifiedName": "Promise"
+								},
+								"typeArguments": [
+									{
+										"type": "intrinsic",
+										"name": "void"
+									}
+								],
+								"name": "Promise",
+								"package": "typescript"
+							}
+						}
+					]
+				},
+				{
+					"id": 92,
+					"name": "update",
+					"variant": "declaration",
+					"kind": 64,
+					"flags": {},
+					"sources": [
+						{
+							"fileName": "api/attestation.ts",
+							"line": 46,
+							"character": 24
+						}
+					],
+					"signatures": [
+						{
+							"id": 93,
+							"name": "update",
+							"variant": "signature",
+							"kind": 4096,
+							"flags": {},
+							"comment": {
+								"summary": [
+									{
+										"kind": "text",
+										"text": "Update an attestation."
+									}
+								]
+							},
+							"sources": [
+								{
+									"fileName": "api/attestation.ts",
+									"line": 46,
+									"character": 24
+								}
+							],
+							"parameters": [
+								{
+									"id": 94,
+									"name": "collectionId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 95,
+									"name": "productId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 96,
+									"name": "proofId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 97,
+									"name": "attestationId",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "intrinsic",
+										"name": "string"
+									}
+								},
+								{
+									"id": 98,
+									"name": "data",
+									"variant": "param",
+									"kind": 32768,
+									"flags": {},
+									"type": {
+										"type": "reference",
+										"target": {
+											"sourceFileName": "src/types/attestation.ts",
+											"qualifiedName": "AttestationUpdateRequest"
+										},
+										"name": "AttestationUpdateRequest",
+										"package": "@proveanything/smartlinks"
+									}
+								}
+							],
+							"type": {
+								"type": "reference",
+								"target": {
+									"sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+									"qualifiedName": "Promise"
+								},
+								"typeArguments": [
+									{
+										"type": "reference",
+										"target": {
+											"sourceFileName": "src/types/attestation.ts",
+											"qualifiedName": "AttestationResponse"
+										},
+										"name": "AttestationResponse",
+										"package": "@proveanything/smartlinks"
+									}
+								],
+								"name": "Promise",
+								"package": "typescript"
+							}
+						}
+					]
+				}
+			],
+			"groups": [
+				{
+					"title": "Functions",
+					"children": [
+						86,
+						80,
+						75,
+						99,
+						92
+					]
+				}
+			],
+			"sources": [
+				{
+					"fileName": "api/attestation.ts",
+					"line": 4,
+					"character": 17
 				}
 			]
 		},
@@ -945,7 +1501,7 @@
 							"fileName": "api/collection.ts",
 							"line": 12,
 							"character": 24,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/collection.ts#L12"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/collection.ts#L12"
 						}
 					],
 					"signatures": [
@@ -988,7 +1544,7 @@
 									"fileName": "api/collection.ts",
 									"line": 12,
 									"character": 24,
-									"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/collection.ts#L12"
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/collection.ts#L12"
 								}
 							],
 							"parameters": [
@@ -1021,7 +1577,7 @@
 								"typeArguments": [
 									{
 										"type": "reference",
-										"target": 74,
+										"target": 105,
 										"name": "CollectionResponse",
 										"package": "@proveanything/smartlinks"
 									}
@@ -1046,7 +1602,7 @@
 					"fileName": "api/collection.ts",
 					"line": 5,
 					"character": 17,
-					"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/collection.ts#L5"
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/collection.ts#L5"
 				}
 			]
 		},
@@ -1068,7 +1624,7 @@
 							"fileName": "api/product.ts",
 							"line": 13,
 							"character": 24,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/product.ts#L13"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/product.ts#L13"
 						}
 					],
 					"signatures": [
@@ -1111,7 +1667,7 @@
 									"fileName": "api/product.ts",
 									"line": 13,
 									"character": 24,
-									"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/product.ts#L13"
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/product.ts#L13"
 								}
 							],
 							"parameters": [
@@ -1163,7 +1719,7 @@
 								"typeArguments": [
 									{
 										"type": "reference",
-										"target": 79,
+										"target": 110,
 										"name": "ProductResponse",
 										"package": "@proveanything/smartlinks"
 									}
@@ -1185,7 +1741,7 @@
 							"fileName": "api/product.ts",
 							"line": 29,
 							"character": 24,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/product.ts#L29"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/product.ts#L29"
 						}
 					],
 					"signatures": [
@@ -1228,7 +1784,7 @@
 									"fileName": "api/product.ts",
 									"line": 29,
 									"character": 24,
-									"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/product.ts#L29"
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/product.ts#L29"
 								}
 							],
 							"parameters": [
@@ -1263,7 +1819,7 @@
 										"type": "array",
 										"elementType": {
 											"type": "reference",
-											"target": 79,
+											"target": 110,
 											"name": "ProductResponse",
 											"package": "@proveanything/smartlinks"
 										}
@@ -1290,7 +1846,7 @@
 					"fileName": "api/product.ts",
 					"line": 5,
 					"character": 17,
-					"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/product.ts#L5"
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/product.ts#L5"
 				}
 			]
 		},
@@ -1312,7 +1868,7 @@
 							"fileName": "api/proof.ts",
 							"line": 13,
 							"character": 24,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/proof.ts#L13"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/proof.ts#L13"
 						}
 					],
 					"signatures": [
@@ -1355,7 +1911,7 @@
 									"fileName": "api/proof.ts",
 									"line": 13,
 									"character": 24,
-									"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/proof.ts#L13"
+									"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/proof.ts#L13"
 								}
 							],
 							"parameters": [
@@ -1407,7 +1963,7 @@
 								"typeArguments": [
 									{
 										"type": "reference",
-										"target": 84,
+										"target": 115,
 										"name": "ProofResponse",
 										"package": "@proveanything/smartlinks"
 									}
@@ -1432,12 +1988,12 @@
 					"fileName": "api/proof.ts",
 					"line": 5,
 					"character": 17,
-					"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/api/proof.ts#L5"
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/api/proof.ts#L5"
 				}
 			]
 		},
 		{
-			"id": 92,
+			"id": 123,
 			"name": "AppConfigurationResponse",
 			"variant": "declaration",
 			"kind": 256,
@@ -1452,7 +2008,7 @@
 			},
 			"children": [
 				{
-					"id": 93,
+					"id": 124,
 					"name": "id",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1470,7 +2026,7 @@
 							"fileName": "types/appConfiguration.ts",
 							"line": 7,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/appConfiguration.ts#L7"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/appConfiguration.ts#L7"
 						}
 					],
 					"type": {
@@ -1479,7 +2035,7 @@
 					}
 				},
 				{
-					"id": 94,
+					"id": 125,
 					"name": "name",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1497,7 +2053,7 @@
 							"fileName": "types/appConfiguration.ts",
 							"line": 9,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/appConfiguration.ts#L9"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/appConfiguration.ts#L9"
 						}
 					],
 					"type": {
@@ -1506,7 +2062,7 @@
 					}
 				},
 				{
-					"id": 95,
+					"id": 126,
 					"name": "settings",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1526,7 +2082,7 @@
 							"fileName": "types/appConfiguration.ts",
 							"line": 11,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/appConfiguration.ts#L11"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/appConfiguration.ts#L11"
 						}
 					],
 					"type": {
@@ -1554,9 +2110,9 @@
 				{
 					"title": "Properties",
 					"children": [
-						93,
-						94,
-						95
+						124,
+						125,
+						126
 					]
 				}
 			],
@@ -1565,12 +2121,12 @@
 					"fileName": "types/appConfiguration.ts",
 					"line": 5,
 					"character": 17,
-					"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/appConfiguration.ts#L5"
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/appConfiguration.ts#L5"
 				}
 			]
 		},
 		{
-			"id": 99,
+			"id": 130,
 			"name": "AssetResponse",
 			"variant": "declaration",
 			"kind": 256,
@@ -1585,7 +2141,7 @@
 			},
 			"children": [
 				{
-					"id": 100,
+					"id": 131,
 					"name": "id",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1595,7 +2151,7 @@
 							"fileName": "types/asset.ts",
 							"line": 5,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/asset.ts#L5"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/asset.ts#L5"
 						}
 					],
 					"type": {
@@ -1604,7 +2160,7 @@
 					}
 				},
 				{
-					"id": 101,
+					"id": 132,
 					"name": "name",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1614,7 +2170,7 @@
 							"fileName": "types/asset.ts",
 							"line": 6,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/asset.ts#L6"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/asset.ts#L6"
 						}
 					],
 					"type": {
@@ -1623,7 +2179,7 @@
 					}
 				},
 				{
-					"id": 102,
+					"id": 133,
 					"name": "url",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1633,7 +2189,7 @@
 							"fileName": "types/asset.ts",
 							"line": 7,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/asset.ts#L7"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/asset.ts#L7"
 						}
 					],
 					"type": {
@@ -1646,9 +2202,9 @@
 				{
 					"title": "Properties",
 					"children": [
-						100,
-						101,
-						102
+						131,
+						132,
+						133
 					]
 				}
 			],
@@ -1657,12 +2213,12 @@
 					"fileName": "types/asset.ts",
 					"line": 4,
 					"character": 17,
-					"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/asset.ts#L4"
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/asset.ts#L4"
 				}
 			]
 		},
 		{
-			"id": 74,
+			"id": 105,
 			"name": "CollectionResponse",
 			"variant": "declaration",
 			"kind": 256,
@@ -1677,7 +2233,7 @@
 			},
 			"children": [
 				{
-					"id": 75,
+					"id": 106,
 					"name": "id",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1695,7 +2251,7 @@
 							"fileName": "types/collection.ts",
 							"line": 7,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/collection.ts#L7"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/collection.ts#L7"
 						}
 					],
 					"type": {
@@ -1704,7 +2260,7 @@
 					}
 				},
 				{
-					"id": 78,
+					"id": 109,
 					"name": "logoImage",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1722,7 +2278,7 @@
 							"fileName": "types/collection.ts",
 							"line": 13,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/collection.ts#L13"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/collection.ts#L13"
 						}
 					],
 					"type": {
@@ -1731,7 +2287,7 @@
 					}
 				},
 				{
-					"id": 76,
+					"id": 107,
 					"name": "name",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1749,7 +2305,7 @@
 							"fileName": "types/collection.ts",
 							"line": 9,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/collection.ts#L9"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/collection.ts#L9"
 						}
 					],
 					"type": {
@@ -1758,7 +2314,7 @@
 					}
 				},
 				{
-					"id": 77,
+					"id": 108,
 					"name": "title",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1776,7 +2332,7 @@
 							"fileName": "types/collection.ts",
 							"line": 11,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/collection.ts#L11"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/collection.ts#L11"
 						}
 					],
 					"type": {
@@ -1789,10 +2345,10 @@
 				{
 					"title": "Properties",
 					"children": [
-						75,
-						78,
-						76,
-						77
+						106,
+						109,
+						107,
+						108
 					]
 				}
 			],
@@ -1801,12 +2357,12 @@
 					"fileName": "types/collection.ts",
 					"line": 5,
 					"character": 17,
-					"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/collection.ts#L5"
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/collection.ts#L5"
 				}
 			]
 		},
 		{
-			"id": 96,
+			"id": 127,
 			"name": "ErrorResponse",
 			"variant": "declaration",
 			"kind": 256,
@@ -1821,7 +2377,7 @@
 			},
 			"children": [
 				{
-					"id": 97,
+					"id": 128,
 					"name": "code",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1839,7 +2395,7 @@
 							"fileName": "types/error.ts",
 							"line": 7,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/error.ts#L7"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/error.ts#L7"
 						}
 					],
 					"type": {
@@ -1848,7 +2404,7 @@
 					}
 				},
 				{
-					"id": 98,
+					"id": 129,
 					"name": "message",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1866,7 +2422,7 @@
 							"fileName": "types/error.ts",
 							"line": 9,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/error.ts#L9"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/error.ts#L9"
 						}
 					],
 					"type": {
@@ -1879,8 +2435,8 @@
 				{
 					"title": "Properties",
 					"children": [
-						97,
-						98
+						128,
+						129
 					]
 				}
 			],
@@ -1889,12 +2445,12 @@
 					"fileName": "types/error.ts",
 					"line": 5,
 					"character": 17,
-					"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/error.ts#L5"
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/error.ts#L5"
 				}
 			]
 		},
 		{
-			"id": 79,
+			"id": 110,
 			"name": "ProductResponse",
 			"variant": "declaration",
 			"kind": 256,
@@ -1909,7 +2465,7 @@
 			},
 			"children": [
 				{
-					"id": 82,
+					"id": 113,
 					"name": "description",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1927,7 +2483,7 @@
 							"fileName": "types/product.ts",
 							"line": 11,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/product.ts#L11"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/product.ts#L11"
 						}
 					],
 					"type": {
@@ -1936,7 +2492,7 @@
 					}
 				},
 				{
-					"id": 83,
+					"id": 114,
 					"name": "heroImage",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1954,7 +2510,7 @@
 							"fileName": "types/product.ts",
 							"line": 13,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/product.ts#L13"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/product.ts#L13"
 						}
 					],
 					"type": {
@@ -1963,7 +2519,7 @@
 					}
 				},
 				{
-					"id": 80,
+					"id": 111,
 					"name": "id",
 					"variant": "declaration",
 					"kind": 1024,
@@ -1981,7 +2537,7 @@
 							"fileName": "types/product.ts",
 							"line": 7,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/product.ts#L7"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/product.ts#L7"
 						}
 					],
 					"type": {
@@ -1990,7 +2546,7 @@
 					}
 				},
 				{
-					"id": 81,
+					"id": 112,
 					"name": "name",
 					"variant": "declaration",
 					"kind": 1024,
@@ -2008,7 +2564,7 @@
 							"fileName": "types/product.ts",
 							"line": 9,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/product.ts#L9"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/product.ts#L9"
 						}
 					],
 					"type": {
@@ -2021,10 +2577,10 @@
 				{
 					"title": "Properties",
 					"children": [
-						82,
-						83,
-						80,
-						81
+						113,
+						114,
+						111,
+						112
 					]
 				}
 			],
@@ -2033,12 +2589,12 @@
 					"fileName": "types/product.ts",
 					"line": 5,
 					"character": 17,
-					"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/product.ts#L5"
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/product.ts#L5"
 				}
 			]
 		},
 		{
-			"id": 84,
+			"id": 115,
 			"name": "ProofResponse",
 			"variant": "declaration",
 			"kind": 256,
@@ -2053,7 +2609,7 @@
 			},
 			"children": [
 				{
-					"id": 85,
+					"id": 116,
 					"name": "collectionId",
 					"variant": "declaration",
 					"kind": 1024,
@@ -2071,7 +2627,7 @@
 							"fileName": "types/proof.ts",
 							"line": 7,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/proof.ts#L7"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/proof.ts#L7"
 						}
 					],
 					"type": {
@@ -2080,7 +2636,7 @@
 					}
 				},
 				{
-					"id": 86,
+					"id": 117,
 					"name": "createdAt",
 					"variant": "declaration",
 					"kind": 1024,
@@ -2098,7 +2654,7 @@
 							"fileName": "types/proof.ts",
 							"line": 9,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/proof.ts#L9"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/proof.ts#L9"
 						}
 					],
 					"type": {
@@ -2107,7 +2663,7 @@
 					}
 				},
 				{
-					"id": 87,
+					"id": 118,
 					"name": "id",
 					"variant": "declaration",
 					"kind": 1024,
@@ -2125,7 +2681,7 @@
 							"fileName": "types/proof.ts",
 							"line": 11,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/proof.ts#L11"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/proof.ts#L11"
 						}
 					],
 					"type": {
@@ -2134,7 +2690,7 @@
 					}
 				},
 				{
-					"id": 88,
+					"id": 119,
 					"name": "productId",
 					"variant": "declaration",
 					"kind": 1024,
@@ -2152,7 +2708,7 @@
 							"fileName": "types/proof.ts",
 							"line": 13,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/proof.ts#L13"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/proof.ts#L13"
 						}
 					],
 					"type": {
@@ -2161,7 +2717,7 @@
 					}
 				},
 				{
-					"id": 89,
+					"id": 120,
 					"name": "tokenId",
 					"variant": "declaration",
 					"kind": 1024,
@@ -2179,7 +2735,7 @@
 							"fileName": "types/proof.ts",
 							"line": 15,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/proof.ts#L15"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/proof.ts#L15"
 						}
 					],
 					"type": {
@@ -2188,7 +2744,7 @@
 					}
 				},
 				{
-					"id": 90,
+					"id": 121,
 					"name": "userId",
 					"variant": "declaration",
 					"kind": 1024,
@@ -2206,7 +2762,7 @@
 							"fileName": "types/proof.ts",
 							"line": 17,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/proof.ts#L17"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/proof.ts#L17"
 						}
 					],
 					"type": {
@@ -2215,7 +2771,7 @@
 					}
 				},
 				{
-					"id": 91,
+					"id": 122,
 					"name": "values",
 					"variant": "declaration",
 					"kind": 1024,
@@ -2233,7 +2789,7 @@
 							"fileName": "types/proof.ts",
 							"line": 19,
 							"character": 2,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/proof.ts#L19"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/proof.ts#L19"
 						}
 					],
 					"type": {
@@ -2261,13 +2817,13 @@
 				{
 					"title": "Properties",
 					"children": [
-						85,
-						86,
-						87,
-						88,
-						89,
-						90,
-						91
+						116,
+						117,
+						118,
+						119,
+						120,
+						121,
+						122
 					]
 				}
 			],
@@ -2276,7 +2832,7 @@
 					"fileName": "types/proof.ts",
 					"line": 5,
 					"character": 17,
-					"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/types/proof.ts#L5"
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/types/proof.ts#L5"
 				}
 			]
 		},
@@ -2291,7 +2847,7 @@
 					"fileName": "http.ts",
 					"line": 17,
 					"character": 16,
-					"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/http.ts#L17"
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/http.ts#L17"
 				}
 			],
 			"signatures": [
@@ -2314,7 +2870,7 @@
 							"fileName": "http.ts",
 							"line": 17,
 							"character": 16,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/http.ts#L17"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/http.ts#L17"
 						}
 					],
 					"parameters": [
@@ -2354,7 +2910,7 @@
 													"fileName": "http.ts",
 													"line": 19,
 													"character": 2,
-													"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/http.ts#L19"
+													"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/http.ts#L19"
 												}
 											],
 											"type": {
@@ -2381,7 +2937,7 @@
 													"fileName": "http.ts",
 													"line": 18,
 													"character": 2,
-													"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/http.ts#L18"
+													"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/http.ts#L18"
 												}
 											],
 											"type": {
@@ -2410,7 +2966,7 @@
 													"fileName": "http.ts",
 													"line": 20,
 													"character": 2,
-													"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/http.ts#L20"
+													"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/http.ts#L20"
 												}
 											],
 											"type": {
@@ -2434,7 +2990,7 @@
 											"fileName": "http.ts",
 											"line": 17,
 											"character": 39,
-											"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/http.ts#L17"
+											"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/http.ts#L17"
 										}
 									]
 								}
@@ -2459,7 +3015,7 @@
 					"fileName": "http.ts",
 					"line": 32,
 					"character": 22,
-					"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/http.ts#L32"
+					"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/http.ts#L32"
 				}
 			],
 			"signatures": [
@@ -2482,7 +3038,7 @@
 							"fileName": "http.ts",
 							"line": 32,
 							"character": 22,
-							"url": "https://github.com/Prove-Anything/smartlinks/blob/4a4aa523c93fa66ecc60b57bab64267bc2383b71/src/http.ts#L32"
+							"url": "https://github.com/Prove-Anything/smartlinks/blob/67378c4713b080fd3aff9e38bb2be0c7a3b1a687/src/http.ts#L32"
 						}
 					],
 					"typeParameter": [
@@ -2535,6 +3091,7 @@
 			"children": [
 				29,
 				34,
+				74,
 				12,
 				16,
 				24
@@ -2543,12 +3100,12 @@
 		{
 			"title": "Interfaces",
 			"children": [
-				92,
-				99,
-				74,
-				96,
-				79,
-				84
+				123,
+				130,
+				105,
+				127,
+				110,
+				115
 			]
 		},
 		{
@@ -3344,118 +3901,242 @@
 			"qualifiedName": "percent"
 		},
 		"74": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "attestation"
+		},
+		"75": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "attestation.getAll"
+		},
+		"76": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "attestation.getAll"
+		},
+		"77": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "collectionId"
+		},
+		"78": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "productId"
+		},
+		"79": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "proofId"
+		},
+		"80": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "attestation.get"
+		},
+		"81": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "attestation.get"
+		},
+		"82": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "collectionId"
+		},
+		"83": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "productId"
+		},
+		"84": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "proofId"
+		},
+		"85": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "attestationId"
+		},
+		"86": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "attestation.create"
+		},
+		"87": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "attestation.create"
+		},
+		"88": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "collectionId"
+		},
+		"89": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "productId"
+		},
+		"90": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "proofId"
+		},
+		"91": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "data"
+		},
+		"92": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "attestation.update"
+		},
+		"93": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "attestation.update"
+		},
+		"94": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "collectionId"
+		},
+		"95": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "productId"
+		},
+		"96": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "proofId"
+		},
+		"97": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "attestationId"
+		},
+		"98": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "data"
+		},
+		"99": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "attestation.remove"
+		},
+		"100": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "attestation.remove"
+		},
+		"101": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "collectionId"
+		},
+		"102": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "productId"
+		},
+		"103": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "proofId"
+		},
+		"104": {
+			"sourceFileName": "src/api/attestation.ts",
+			"qualifiedName": "attestationId"
+		},
+		"105": {
 			"sourceFileName": "src/types/collection.ts",
 			"qualifiedName": "CollectionResponse"
 		},
-		"75": {
+		"106": {
 			"sourceFileName": "src/types/collection.ts",
 			"qualifiedName": "CollectionResponse.id"
 		},
-		"76": {
+		"107": {
 			"sourceFileName": "src/types/collection.ts",
 			"qualifiedName": "CollectionResponse.name"
 		},
-		"77": {
+		"108": {
 			"sourceFileName": "src/types/collection.ts",
 			"qualifiedName": "CollectionResponse.title"
 		},
-		"78": {
+		"109": {
 			"sourceFileName": "src/types/collection.ts",
 			"qualifiedName": "CollectionResponse.logoImage"
 		},
-		"79": {
+		"110": {
 			"sourceFileName": "src/types/product.ts",
 			"qualifiedName": "ProductResponse"
 		},
-		"80": {
+		"111": {
 			"sourceFileName": "src/types/product.ts",
 			"qualifiedName": "ProductResponse.id"
 		},
-		"81": {
+		"112": {
 			"sourceFileName": "src/types/product.ts",
 			"qualifiedName": "ProductResponse.name"
 		},
-		"82": {
+		"113": {
 			"sourceFileName": "src/types/product.ts",
 			"qualifiedName": "ProductResponse.description"
 		},
-		"83": {
+		"114": {
 			"sourceFileName": "src/types/product.ts",
 			"qualifiedName": "ProductResponse.heroImage"
 		},
-		"84": {
+		"115": {
 			"sourceFileName": "src/types/proof.ts",
 			"qualifiedName": "ProofResponse"
 		},
-		"85": {
+		"116": {
 			"sourceFileName": "src/types/proof.ts",
 			"qualifiedName": "ProofResponse.collectionId"
 		},
-		"86": {
+		"117": {
 			"sourceFileName": "src/types/proof.ts",
 			"qualifiedName": "ProofResponse.createdAt"
 		},
-		"87": {
+		"118": {
 			"sourceFileName": "src/types/proof.ts",
 			"qualifiedName": "ProofResponse.id"
 		},
-		"88": {
+		"119": {
 			"sourceFileName": "src/types/proof.ts",
 			"qualifiedName": "ProofResponse.productId"
 		},
-		"89": {
+		"120": {
 			"sourceFileName": "src/types/proof.ts",
 			"qualifiedName": "ProofResponse.tokenId"
 		},
-		"90": {
+		"121": {
 			"sourceFileName": "src/types/proof.ts",
 			"qualifiedName": "ProofResponse.userId"
 		},
-		"91": {
+		"122": {
 			"sourceFileName": "src/types/proof.ts",
 			"qualifiedName": "ProofResponse.values"
 		},
-		"92": {
+		"123": {
 			"sourceFileName": "src/types/appConfiguration.ts",
 			"qualifiedName": "AppConfigurationResponse"
 		},
-		"93": {
+		"124": {
 			"sourceFileName": "src/types/appConfiguration.ts",
 			"qualifiedName": "AppConfigurationResponse.id"
 		},
-		"94": {
+		"125": {
 			"sourceFileName": "src/types/appConfiguration.ts",
 			"qualifiedName": "AppConfigurationResponse.name"
 		},
-		"95": {
+		"126": {
 			"sourceFileName": "src/types/appConfiguration.ts",
 			"qualifiedName": "AppConfigurationResponse.settings"
 		},
-		"96": {
+		"127": {
 			"sourceFileName": "src/types/error.ts",
 			"qualifiedName": "ErrorResponse"
 		},
-		"97": {
+		"128": {
 			"sourceFileName": "src/types/error.ts",
 			"qualifiedName": "ErrorResponse.code"
 		},
-		"98": {
+		"129": {
 			"sourceFileName": "src/types/error.ts",
 			"qualifiedName": "ErrorResponse.message"
 		},
-		"99": {
+		"130": {
 			"sourceFileName": "src/types/asset.ts",
 			"qualifiedName": "AssetResponse"
 		},
-		"100": {
+		"131": {
 			"sourceFileName": "src/types/asset.ts",
 			"qualifiedName": "AssetResponse.id"
 		},
-		"101": {
+		"132": {
 			"sourceFileName": "src/types/asset.ts",
 			"qualifiedName": "AssetResponse.name"
 		},
-		"102": {
+		"133": {
 			"sourceFileName": "src/types/asset.ts",
 			"qualifiedName": "AssetResponse.url"
 		}
