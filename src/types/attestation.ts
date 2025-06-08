@@ -1,15 +1,16 @@
 export interface AttestationResponse {
   id: string
-  proofId: string
   createdAt: string
   updatedAt: string
-  type: string
-  data: Record<string, any>
+  public: Record<string, any>
+  private: Record<string, any>
+  proof: Record<string, any>
 }
 
 export interface AttestationCreateRequest {
-  type: string
-  data: Record<string, any>
+  public: Record<string, any>
+  private: Record<string, any>
+  proof: Record<string, any>
 }
 
 export interface AttestationUpdateRequest {

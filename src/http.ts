@@ -25,6 +25,13 @@ export function initializeApi(options: {
 }
 
 /**
+ * Allows setting the bearerToken at runtime (e.g. after login/logout).
+ */
+export function setBearerToken(token: string | undefined) {
+  bearerToken = token
+}
+
+/**
  * Internal helper that performs a GET request to \`\${baseURL}\${path}\`, 
  * injecting headers for apiKey or bearerToken if present. 
  * Returns the parsed JSON as T, or throws an Error.
