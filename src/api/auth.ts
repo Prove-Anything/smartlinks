@@ -1,4 +1,4 @@
-import { post, setBearerToken } from "../http"
+import { post, setBearerToken, getApiHeaders } from "../http"
 
 type LoginResponse = {
   id: string
@@ -6,6 +6,21 @@ type LoginResponse = {
   email: string
   bearerToken: string
   account: Record<string, any>
+}
+
+type VerifyTokenResponse = {
+  valid: boolean
+  id?: string
+  name?: string
+  email?: string
+  account?: Record<string, any>
+}
+
+type AccountInfoResponse = {
+  user: Record<string, any>
+  owner: Record<string, any>
+  account: Record<string, any>
+  location: Record<string, any>
 }
 
 export namespace auth {
@@ -24,5 +39,30 @@ export namespace auth {
    */
   export function logout(): void {
     setBearerToken(undefined)
+  }
+
+  /**
+   * Verifies the current bearerToken (or a provided token).
+   * Returns user/account info if valid.
+   */
+  export async function verifyToken(token?: string): Promise<VerifyTokenResponse> {
+    // Use the provided token, or the one from getApiHeaders
+    const headers = { ...getApiHeaders() }
+    if (token) {
+      headers["AUTHORIZATION"] = `Bearer ${token}`
+    }
+    const result = await post<VerifyTokenResponse>("/public/auth/verify", {}, headers)
+    if (token && result.valid) {
+      setBearerToken(token)
+    }
+    return result
+  }
+
+  /**
+   * Gets current account information for the logged in user.
+   * Returns user, owner, account, and location objects.
+   */
+  export async function getAccount(): Promise<AccountInfoResponse> {
+    return post<AccountInfoResponse>("/public/auth/account", {})
   }
 }

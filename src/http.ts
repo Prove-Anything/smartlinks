@@ -6,6 +6,7 @@
 let baseURL: string | null = null
 let apiKey: string | undefined = undefined
 let bearerToken: string | undefined = undefined
+let proxyMode: boolean = false
 
 /**
  * Call this once (e.g. at app startup) to configure baseURL/auth. 
@@ -18,10 +19,12 @@ export function initializeApi(options: {
   baseURL: string
   apiKey?: string
   bearerToken?: string
+  proxyMode?: boolean
 }): void {
   baseURL = options.baseURL.replace(/\/+\$/, "") // trim trailing slash
   apiKey = options.apiKey
   bearerToken = options.bearerToken
+  proxyMode = !!options.proxyMode
 }
 
 /**
@@ -31,12 +34,68 @@ export function setBearerToken(token: string | undefined) {
   bearerToken = token
 }
 
+// Map of pending proxy requests: id -> {resolve, reject}
+const proxyPending: Record<string, { resolve: (data: any) => void, reject: (err: any) => void }> = {}
+
+function generateProxyId(): string {
+  return "proxy_" + Math.random().toString(36).slice(2) + Date.now()
+}
+
+// Shared listener for proxy responses
+function ensureProxyListener() {
+  if ((window as any)._smartlinksProxyListener) return
+  window.addEventListener("message", (event) => {
+    const msg = event.data
+    if (!msg || !msg._smartlinksProxyResponse || !msg.id) return
+    const pending = proxyPending[msg.id]
+    if (pending) {
+      if (msg.error) {
+        pending.reject(new Error(msg.error))
+      } else {
+        pending.resolve(msg.data)
+      }
+      delete proxyPending[msg.id]
+    }
+  })
+  ;(window as any)._smartlinksProxyListener = true
+}
+
+// Proxy request implementation
+async function proxyRequest<T>(
+  method: string,
+  path: string,
+  body?: any,
+  headers?: Record<string, string>,
+  options?: RequestInit
+): Promise<T> {
+  ensureProxyListener()
+  const id = generateProxyId()
+  const msg = {
+    _smartlinksProxyRequest: true,
+    id,
+    method,
+    path,
+    body,
+    headers,
+    options,
+  }
+  return new Promise<T>((resolve, reject) => {
+    proxyPending[id] = { resolve, reject }
+    window.parent.postMessage(msg, "*")
+    // Optionally: add a timeout here to reject if no response
+  })
+}
+
 /**
  * Internal helper that performs a GET request to \`\${baseURL}\${path}\`, 
  * injecting headers for apiKey or bearerToken if present. 
  * Returns the parsed JSON as T, or throws an Error.
  */
 export async function request<T>(path: string): Promise<T> {
+  if (proxyMode) {
+    return proxyRequest<T>("GET", path)
+  }
+
   if (!baseURL) {
     throw new Error("HTTP client is not initialized. Call initializeApi(...) first.")
   }
@@ -81,6 +140,10 @@ export async function post<T>(
   body: any,
   extraHeaders?: Record<string, string>
 ): Promise<T> {
+  if (proxyMode) {
+    return proxyRequest<T>("POST", path, body, extraHeaders)
+  }
+
   if (!baseURL) {
     throw new Error("HTTP client is not initialized. Call initializeApi(...) first.")
   }
@@ -125,6 +188,10 @@ export async function put<T>(
   body: any,
   extraHeaders?: Record<string, string>
 ): Promise<T> {
+  if (proxyMode) {
+    return proxyRequest<T>("PUT", path, body, extraHeaders)
+  }
+
   if (!baseURL) {
     throw new Error("HTTP client is not initialized. Call initializeApi(...) first.")
   }
@@ -167,6 +234,10 @@ export async function requestWithOptions<T>(
   path: string,
   options: RequestInit
 ): Promise<T> {
+  if (proxyMode) {
+    return proxyRequest<T>(options.method || "GET", path, options.body, options.headers as Record<string, string>, options)
+  }
+
   if (!baseURL) {
     throw new Error("HTTP client is not initialized. Call initializeApi(...) first.")
   }
@@ -221,6 +292,10 @@ export async function del<T>(
   path: string,
   extraHeaders?: Record<string, string>
 ): Promise<T> {
+  if (proxyMode) {
+    return proxyRequest<T>("DELETE", path, undefined, extraHeaders)
+  }
+
   if (!baseURL) {
     throw new Error("HTTP client is not initialized. Call initializeApi(...) first.")
   }
