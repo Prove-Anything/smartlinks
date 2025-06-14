@@ -1,16 +1,22 @@
-type LoginResponse = {
+export type LoginResponse = {
     id: string;
     name: string;
     email: string;
     bearerToken: string;
     account: Record<string, any>;
 };
-type VerifyTokenResponse = {
+export type VerifyTokenResponse = {
     valid: boolean;
     id?: string;
     name?: string;
     email?: string;
     account?: Record<string, any>;
+};
+export type AccountInfoResponse = {
+    user: Record<string, any>;
+    owner: Record<string, any>;
+    account: Record<string, any>;
+    location: Record<string, any>;
 };
 export declare namespace auth {
     /**
@@ -27,5 +33,9 @@ export declare namespace auth {
      * Returns user/account info if valid.
      */
     function verifyToken(token?: string): Promise<VerifyTokenResponse>;
+    /**
+     * Gets current account information for the logged in user.
+     * Returns user, owner, account, and location objects.
+     */
+    function getAccount(): Promise<AccountInfoResponse>;
 }
-export {};

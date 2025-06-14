@@ -1,4 +1,4 @@
-import { post, setBearerToken, getApiHeaders } from "../http";
+import { post, request, setBearerToken, getApiHeaders } from "../http";
 export var auth;
 (function (auth) {
     /**
@@ -35,4 +35,12 @@ export var auth;
         return result;
     }
     auth.verifyToken = verifyToken;
+    /**
+     * Gets current account information for the logged in user.
+     * Returns user, owner, account, and location objects.
+     */
+    async function getAccount() {
+        return request("/public/auth/account");
+    }
+    auth.getAccount = getAccount;
 })(auth || (auth = {}));

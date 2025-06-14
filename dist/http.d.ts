@@ -1,14 +1,17 @@
 /**
  * Call this once (e.g. at app startup) to configure baseURL/auth.
  *
- * @param options.baseURL - The root URL of the Smartlinks API (e.g. "https://smartlinks.app/api/v1")
- * @param options.apiKey - (Optional) API key for X-API-Key header
- * @param options.bearerToken - (Optional) Bearer token for AUTHORIZATION header
+ * @param options - Configuration options
+ * @property {string} options.baseURL - The root URL of the Smartlinks API (e.g. "https://smartlinks.app/api/v1")
+ * @property {string} [options.apiKey] - (Optional) API key for X-API-Key header
+ * @property {string} [options.bearerToken] - (Optional) Bearer token for AUTHORIZATION header
+ * @property {boolean} [options.proxyMode] - (Optional) Tells the API that it is running in an iframe via parent proxy
  */
 export declare function initializeApi(options: {
     baseURL: string;
     apiKey?: string;
     bearerToken?: string;
+    proxyMode?: boolean;
 }): void;
 /**
  * Allows setting the bearerToken at runtime (e.g. after login/logout).

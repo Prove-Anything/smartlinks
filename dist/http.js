@@ -5,17 +5,21 @@
 let baseURL = null;
 let apiKey = undefined;
 let bearerToken = undefined;
+let proxyMode = false;
 /**
  * Call this once (e.g. at app startup) to configure baseURL/auth.
  *
- * @param options.baseURL - The root URL of the Smartlinks API (e.g. "https://smartlinks.app/api/v1")
- * @param options.apiKey - (Optional) API key for X-API-Key header
- * @param options.bearerToken - (Optional) Bearer token for AUTHORIZATION header
+ * @param options - Configuration options
+ * @property {string} options.baseURL - The root URL of the Smartlinks API (e.g. "https://smartlinks.app/api/v1")
+ * @property {string} [options.apiKey] - (Optional) API key for X-API-Key header
+ * @property {string} [options.bearerToken] - (Optional) Bearer token for AUTHORIZATION header
+ * @property {boolean} [options.proxyMode] - (Optional) Tells the API that it is running in an iframe via parent proxy
  */
 export function initializeApi(options) {
     baseURL = options.baseURL.replace(/\/+\$/, ""); // trim trailing slash
     apiKey = options.apiKey;
     bearerToken = options.bearerToken;
+    proxyMode = !!options.proxyMode;
 }
 /**
  * Allows setting the bearerToken at runtime (e.g. after login/logout).
@@ -23,12 +27,60 @@ export function initializeApi(options) {
 export function setBearerToken(token) {
     bearerToken = token;
 }
+// Map of pending proxy requests: id -> {resolve, reject}
+const proxyPending = {};
+function generateProxyId() {
+    return "proxy_" + Math.random().toString(36).slice(2) + Date.now();
+}
+// Shared listener for proxy responses
+function ensureProxyListener() {
+    if (window._smartlinksProxyListener)
+        return;
+    window.addEventListener("message", (event) => {
+        const msg = event.data;
+        if (!msg || !msg._smartlinksProxyResponse || !msg.id)
+            return;
+        const pending = proxyPending[msg.id];
+        if (pending) {
+            if (msg.error) {
+                pending.reject(new Error(msg.error));
+            }
+            else {
+                pending.resolve(msg.data);
+            }
+            delete proxyPending[msg.id];
+        }
+    });
+    window._smartlinksProxyListener = true;
+}
+// Proxy request implementation
+async function proxyRequest(method, path, body, headers, options) {
+    ensureProxyListener();
+    const id = generateProxyId();
+    const msg = {
+        _smartlinksProxyRequest: true,
+        id,
+        method,
+        path,
+        body,
+        headers,
+        options,
+    };
+    return new Promise((resolve, reject) => {
+        proxyPending[id] = { resolve, reject };
+        window.parent.postMessage(msg, "*");
+        // Optionally: add a timeout here to reject if no response
+    });
+}
 /**
  * Internal helper that performs a GET request to \`\${baseURL}\${path}\`,
  * injecting headers for apiKey or bearerToken if present.
  * Returns the parsed JSON as T, or throws an Error.
  */
 export async function request(path) {
+    if (proxyMode) {
+        return proxyRequest("GET", path);
+    }
     if (!baseURL) {
         throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
     }
@@ -65,6 +117,9 @@ export async function request(path) {
  * Returns the parsed JSON as T, or throws an Error.
  */
 export async function post(path, body, extraHeaders) {
+    if (proxyMode) {
+        return proxyRequest("POST", path, body, extraHeaders);
+    }
     if (!baseURL) {
         throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
     }
@@ -101,6 +156,9 @@ export async function post(path, body, extraHeaders) {
  * Returns the parsed JSON as T, or throws an Error.
  */
 export async function put(path, body, extraHeaders) {
+    if (proxyMode) {
+        return proxyRequest("PUT", path, body, extraHeaders);
+    }
     if (!baseURL) {
         throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
     }
@@ -136,6 +194,9 @@ export async function put(path, body, extraHeaders) {
  * Returns the parsed JSON as T, or throws an Error.
  */
 export async function requestWithOptions(path, options) {
+    if (proxyMode) {
+        return proxyRequest(options.method || "GET", path, options.body, options.headers, options);
+    }
     if (!baseURL) {
         throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
     }
@@ -176,6 +237,9 @@ export async function requestWithOptions(path, options) {
  * Returns the parsed JSON as T, or throws an Error.
  */
 export async function del(path, extraHeaders) {
+    if (proxyMode) {
+        return proxyRequest("DELETE", path, undefined, extraHeaders);
+    }
     if (!baseURL) {
         throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
     }

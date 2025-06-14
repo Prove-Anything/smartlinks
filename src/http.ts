@@ -9,11 +9,13 @@ let bearerToken: string | undefined = undefined
 let proxyMode: boolean = false
 
 /**
- * Call this once (e.g. at app startup) to configure baseURL/auth. 
- * 
- * @param options.baseURL - The root URL of the Smartlinks API (e.g. "https://smartlinks.app/api/v1")
- * @param options.apiKey - (Optional) API key for X-API-Key header
- * @param options.bearerToken - (Optional) Bearer token for AUTHORIZATION header
+ * Call this once (e.g. at app startup) to configure baseURL/auth.
+ *
+ * @param options - Configuration options
+ * @property {string} options.baseURL - The root URL of the Smartlinks API (e.g. "https://smartlinks.app/api/v1")
+ * @property {string} [options.apiKey] - (Optional) API key for X-API-Key header
+ * @property {string} [options.bearerToken] - (Optional) Bearer token for AUTHORIZATION header
+ * @property {boolean} [options.proxyMode] - (Optional) Tells the API that it is running in an iframe via parent proxy
  */
 export function initializeApi(options: {
   baseURL: string

@@ -1,11 +1,22 @@
-import { AppConfigurationResponse } from "../types/appConfiguration";
+export type AppConfigOptions = {
+    appId: string;
+    collectionId?: string;
+    productId?: string;
+    variantId?: string;
+    batchId?: string;
+    itemId?: string;
+    user?: boolean;
+    userData?: boolean;
+    admin?: boolean;
+    config?: any;
+    data?: any;
+};
 export declare namespace appConfiguration {
-    /**
-     * Retrieves a single App Configuration by Collection ID and App ID.
-     * @param collectionId – Identifier of the parent collection
-     * @param appId        – Identifier of the app configuration
-     * @returns Promise resolving to an AppConfigurationResponse object
-     * @throws ErrorResponse if the request fails
-     */
-    function get(collectionId: string, appId: string): Promise<AppConfigurationResponse>;
+    function getConfig(opts: AppConfigOptions): Promise<any>;
+    function setConfig(opts: AppConfigOptions): Promise<any>;
+    function deleteConfig(opts: AppConfigOptions): Promise<void>;
+    function getData(opts: AppConfigOptions): Promise<any[]>;
+    function getDataItem(opts: AppConfigOptions): Promise<any>;
+    function setDataItem(opts: AppConfigOptions): Promise<any>;
+    function deleteDataItem(opts: AppConfigOptions): Promise<void>;
 }

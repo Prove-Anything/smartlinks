@@ -1,6 +1,6 @@
-import { post, setBearerToken, getApiHeaders } from "../http"
+import { post, request, setBearerToken, getApiHeaders } from "../http"
 
-type LoginResponse = {
+export type LoginResponse = {
   id: string
   name: string
   email: string
@@ -8,7 +8,7 @@ type LoginResponse = {
   account: Record<string, any>
 }
 
-type VerifyTokenResponse = {
+export type VerifyTokenResponse = {
   valid: boolean
   id?: string
   name?: string
@@ -16,7 +16,7 @@ type VerifyTokenResponse = {
   account?: Record<string, any>
 }
 
-type AccountInfoResponse = {
+export type AccountInfoResponse = {
   user: Record<string, any>
   owner: Record<string, any>
   account: Record<string, any>
@@ -63,6 +63,6 @@ export namespace auth {
    * Returns user, owner, account, and location objects.
    */
   export async function getAccount(): Promise<AccountInfoResponse> {
-    return post<AccountInfoResponse>("/public/auth/account", {})
+    return request<AccountInfoResponse>("/public/auth/account")
   }
 }
