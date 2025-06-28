@@ -5,3 +5,8 @@ export { appConfiguration } from "./appConfiguration";
 export { asset } from "./asset";
 export { attestation } from "./attestation";
 export { auth } from "./auth";
+export { form } from "./form";
+export { claimSet } from "./claimSet";
+export { crate } from "./crate";
+export { batch } from "./batch";
+export { variant } from "./variant";

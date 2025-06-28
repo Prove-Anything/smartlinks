@@ -17,7 +17,7 @@ Numeric error code
 
 #### Defined in
 
-[types/error.ts:7](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/error.ts#L7)
+[types/error.ts:7](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/error.ts#L7)
 
 ___
 
@@ -29,4 +29,4 @@ Human-readable error message
 
 #### Defined in
 
-[types/error.ts:9](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/error.ts#L9)
+[types/error.ts:9](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/error.ts#L9)

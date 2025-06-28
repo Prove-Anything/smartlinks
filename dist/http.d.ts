@@ -53,3 +53,10 @@ export declare function del<T>(path: string, extraHeaders?: Record<string, strin
  * Returns the common headers used for API requests, including apiKey and bearerToken if set.
  */
 export declare function getApiHeaders(): Record<string, string>;
+/**
+ * Sends a custom proxy message in proxyMode and waits for a matching reply.
+ * @param request - The request type string
+ * @param params - The parameters object
+ * @returns The data from the proxy response
+ */
+export declare function sendCustomProxyMessage<T = any>(request: string, params: any): Promise<T>;

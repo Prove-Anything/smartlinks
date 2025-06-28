@@ -32,7 +32,7 @@ ErrorResponse if the request fails
 
 #### Defined in
 
-[api/proof.ts:13](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/proof.ts#L13)
+[api/proof.ts:13](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/proof.ts#L13)
 
 ___
 
@@ -54,4 +54,4 @@ List all Proofs for a Collection.
 
 #### Defined in
 
-[api/proof.ts:26](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/proof.ts#L26)
+[api/proof.ts:26](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/proof.ts#L26)

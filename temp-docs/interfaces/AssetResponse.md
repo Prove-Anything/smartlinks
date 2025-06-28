@@ -16,7 +16,7 @@ Represents an Asset object.
 
 #### Defined in
 
-[types/asset.ts:5](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/asset.ts#L5)
+[types/asset.ts:5](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/asset.ts#L5)
 
 ___
 
@@ -26,7 +26,7 @@ ___
 
 #### Defined in
 
-[types/asset.ts:6](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/asset.ts#L6)
+[types/asset.ts:6](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/asset.ts#L6)
 
 ___
 
@@ -36,4 +36,4 @@ ___
 
 #### Defined in
 
-[types/asset.ts:7](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/asset.ts#L7)
+[types/asset.ts:7](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/asset.ts#L7)

@@ -29,7 +29,7 @@
 
 #### Defined in
 
-[api/asset.ts:6](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/asset.ts#L6)
+[api/asset.ts:6](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/asset.ts#L6)
 
 ___
 
@@ -51,7 +51,7 @@ ___
 
 #### Defined in
 
-[api/asset.ts:22](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/asset.ts#L22)
+[api/asset.ts:22](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/asset.ts#L22)
 
 ___
 
@@ -74,7 +74,7 @@ ___
 
 #### Defined in
 
-[api/asset.ts:40](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/asset.ts#L40)
+[api/asset.ts:40](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/asset.ts#L40)
 
 ___
 
@@ -94,7 +94,7 @@ ___
 
 #### Defined in
 
-[api/asset.ts:14](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/asset.ts#L14)
+[api/asset.ts:14](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/asset.ts#L14)
 
 ___
 
@@ -115,7 +115,7 @@ ___
 
 #### Defined in
 
-[api/asset.ts:31](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/asset.ts#L31)
+[api/asset.ts:31](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/asset.ts#L31)
 
 ___
 
@@ -138,7 +138,7 @@ ___
 
 #### Defined in
 
-[api/asset.ts:50](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/asset.ts#L50)
+[api/asset.ts:50](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/asset.ts#L50)
 
 ___
 
@@ -168,4 +168,4 @@ Promise resolving to an AssetResponse object
 
 #### Defined in
 
-[api/asset.ts:74](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/asset.ts#L74)
+[api/asset.ts:74](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/asset.ts#L74)

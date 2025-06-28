@@ -17,7 +17,7 @@
 
 #### Defined in
 
-[types/attestation.ts:3](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/attestation.ts#L3)
+[types/attestation.ts:3](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/attestation.ts#L3)
 
 ___
 
@@ -27,7 +27,7 @@ ___
 
 #### Defined in
 
-[types/attestation.ts:2](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/attestation.ts#L2)
+[types/attestation.ts:2](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/attestation.ts#L2)
 
 ___
 
@@ -37,7 +37,7 @@ ___
 
 #### Defined in
 
-[types/attestation.ts:6](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/attestation.ts#L6)
+[types/attestation.ts:6](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/attestation.ts#L6)
 
 ___
 
@@ -47,7 +47,7 @@ ___
 
 #### Defined in
 
-[types/attestation.ts:7](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/attestation.ts#L7)
+[types/attestation.ts:7](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/attestation.ts#L7)
 
 ___
 
@@ -57,7 +57,7 @@ ___
 
 #### Defined in
 
-[types/attestation.ts:5](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/attestation.ts#L5)
+[types/attestation.ts:5](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/attestation.ts#L5)
 
 ___
 
@@ -67,4 +67,4 @@ ___
 
 #### Defined in
 
-[types/attestation.ts:4](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/attestation.ts#L4)
+[types/attestation.ts:4](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/attestation.ts#L4)

@@ -17,12 +17,47 @@ export type VerifyTokenResponse = {
 }
 
 export type AccountInfoResponse = {
+  accessType: string;
+  analyticsCode: string;
+  analyticsId: string;
+  auth_time: number;
+  baseCollectionId: string;
+  clientType: string;
+  email: string;
+  email_verified: boolean;
+  features: {
+    actionLogger: boolean;
+    adminCollections: boolean;
+    adminApps: boolean;
+    apiKeys: boolean;
+    adminUsers: boolean;
+    [key: string]: boolean;
+  };
+  iat: number;
+  id: string;
+  iss: string;
+  location: string | null;
+  name: string;
+  picture: string;
+  sites: {
+    [siteName: string]: boolean;
+  };
+  sub: string;
+  uid: string;
+  user_id: string;
+  whitelabel: {
+    [key: string]: any;
+  }
+}
+
+
+/*
   user: Record<string, any>
   owner: Record<string, any>
   account: Record<string, any>
   location: Record<string, any>
 }
-
+*/
 export namespace auth {
   /**
    * Login with email and password.

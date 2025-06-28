@@ -336,3 +336,28 @@ export function getApiHeaders(): Record<string, string> {
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
   return headers
 }
+
+/**
+ * Sends a custom proxy message in proxyMode and waits for a matching reply.
+ * @param request - The request type string
+ * @param params - The parameters object
+ * @returns The data from the proxy response
+ */
+export async function sendCustomProxyMessage<T = any>(request: string, params: any): Promise<T> {
+  if (!proxyMode) {
+    throw new Error("sendCustomProxyMessage can only be used in proxyMode");
+  }
+  ensureProxyListener();
+  const id = generateProxyId();
+  const msg = {
+    _smartlinksCustomProxyRequest: true,
+    id,
+    request,
+    params,
+  };
+  return new Promise<T>((resolve, reject) => {
+    proxyPending[id] = { resolve, reject };
+    window.parent.postMessage(msg, "*");
+    // Optionally: add a timeout here to reject if no response
+  });
+}

@@ -19,7 +19,7 @@ Unique identifier for the collection
 
 #### Defined in
 
-[types/collection.ts:7](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/collection.ts#L7)
+[types/collection.ts:7](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/collection.ts#L7)
 
 ___
 
@@ -31,7 +31,7 @@ URL to the collection’s logo image
 
 #### Defined in
 
-[types/collection.ts:13](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/collection.ts#L13)
+[types/collection.ts:13](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/collection.ts#L13)
 
 ___
 
@@ -43,7 +43,7 @@ Machine-readable name of the collection
 
 #### Defined in
 
-[types/collection.ts:9](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/collection.ts#L9)
+[types/collection.ts:9](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/collection.ts#L9)
 
 ___
 
@@ -55,4 +55,4 @@ Human-readable title of the collection
 
 #### Defined in
 
-[types/collection.ts:11](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/collection.ts#L11)
+[types/collection.ts:11](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/collection.ts#L11)

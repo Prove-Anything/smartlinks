@@ -22,7 +22,7 @@ Unique identifier for the collection
 
 #### Defined in
 
-[types/proof.ts:7](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/proof.ts#L7)
+[types/proof.ts:7](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/proof.ts#L7)
 
 ___
 
@@ -34,7 +34,7 @@ Creation timestamp
 
 #### Defined in
 
-[types/proof.ts:9](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/proof.ts#L9)
+[types/proof.ts:9](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/proof.ts#L9)
 
 ___
 
@@ -46,7 +46,7 @@ Unique identifier for the proof
 
 #### Defined in
 
-[types/proof.ts:11](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/proof.ts#L11)
+[types/proof.ts:11](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/proof.ts#L11)
 
 ___
 
@@ -58,7 +58,7 @@ Unique identifier for the product
 
 #### Defined in
 
-[types/proof.ts:13](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/proof.ts#L13)
+[types/proof.ts:13](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/proof.ts#L13)
 
 ___
 
@@ -70,7 +70,7 @@ Unique identifier for the token
 
 #### Defined in
 
-[types/proof.ts:15](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/proof.ts#L15)
+[types/proof.ts:15](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/proof.ts#L15)
 
 ___
 
@@ -82,7 +82,7 @@ Unique identifier for the user
 
 #### Defined in
 
-[types/proof.ts:17](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/proof.ts#L17)
+[types/proof.ts:17](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/proof.ts#L17)
 
 ___
 
@@ -94,4 +94,4 @@ Arbitrary key-value pairs for proof values
 
 #### Defined in
 
-[types/proof.ts:19](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/types/proof.ts#L19)
+[types/proof.ts:19](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/types/proof.ts#L19)

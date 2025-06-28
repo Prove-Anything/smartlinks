@@ -32,7 +32,7 @@ ErrorResponse if the request fails
 
 #### Defined in
 
-[api/product.ts:13](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/product.ts#L13)
+[api/product.ts:13](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/product.ts#L13)
 
 ___
 
@@ -60,4 +60,4 @@ ErrorResponse if the request fails
 
 #### Defined in
 
-[api/product.ts:29](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/product.ts#L29)
+[api/product.ts:29](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/product.ts#L29)

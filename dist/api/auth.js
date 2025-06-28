@@ -1,4 +1,11 @@
 import { post, request, setBearerToken, getApiHeaders } from "../http";
+/*
+  user: Record<string, any>
+  owner: Record<string, any>
+  account: Record<string, any>
+  location: Record<string, any>
+}
+*/
 export var auth;
 (function (auth) {
     /**

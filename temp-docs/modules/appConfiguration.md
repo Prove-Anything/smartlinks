@@ -28,7 +28,7 @@
 
 #### Defined in
 
-[api/appConfiguration.ts:74](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/appConfiguration.ts#L74)
+[api/appConfiguration.ts:74](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/appConfiguration.ts#L74)
 
 ___
 
@@ -48,7 +48,7 @@ ___
 
 #### Defined in
 
-[api/appConfiguration.ts:99](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/appConfiguration.ts#L99)
+[api/appConfiguration.ts:99](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/appConfiguration.ts#L99)
 
 ___
 
@@ -68,7 +68,7 @@ ___
 
 #### Defined in
 
-[api/appConfiguration.ts:62](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/appConfiguration.ts#L62)
+[api/appConfiguration.ts:62](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/appConfiguration.ts#L62)
 
 ___
 
@@ -88,7 +88,7 @@ ___
 
 #### Defined in
 
-[api/appConfiguration.ts:80](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/appConfiguration.ts#L80)
+[api/appConfiguration.ts:80](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/appConfiguration.ts#L80)
 
 ___
 
@@ -108,7 +108,7 @@ ___
 
 #### Defined in
 
-[api/appConfiguration.ts:86](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/appConfiguration.ts#L86)
+[api/appConfiguration.ts:86](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/appConfiguration.ts#L86)
 
 ___
 
@@ -128,7 +128,7 @@ ___
 
 #### Defined in
 
-[api/appConfiguration.ts:68](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/appConfiguration.ts#L68)
+[api/appConfiguration.ts:68](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/appConfiguration.ts#L68)
 
 ___
 
@@ -148,4 +148,4 @@ ___
 
 #### Defined in
 
-[api/appConfiguration.ts:93](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/appConfiguration.ts#L93)
+[api/appConfiguration.ts:93](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/appConfiguration.ts#L93)

@@ -22,7 +22,7 @@ Returns user, owner, account, and location objects.
 
 #### Defined in
 
-[api/auth.ts:65](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/auth.ts#L65)
+[api/auth.ts:100](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/auth.ts#L100)
 
 ___
 
@@ -46,7 +46,7 @@ Sets the bearerToken for subsequent API calls.
 
 #### Defined in
 
-[api/auth.ts:31](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/auth.ts#L31)
+[api/auth.ts:66](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/auth.ts#L66)
 
 ___
 
@@ -62,7 +62,7 @@ Logout (clears bearerToken for future API calls).
 
 #### Defined in
 
-[api/auth.ts:40](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/auth.ts#L40)
+[api/auth.ts:75](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/auth.ts#L75)
 
 ___
 
@@ -85,4 +85,4 @@ Returns user/account info if valid.
 
 #### Defined in
 
-[api/auth.ts:48](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/auth.ts#L48)
+[api/auth.ts:83](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/auth.ts#L83)

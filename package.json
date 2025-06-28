@@ -1,13 +1,14 @@
 {
   "name": "@proveanything/smartlinks",
-  "version": "1.0.16",
+  "version": "1.0.21",
   "description": "Official JavaScript/TypeScript SDK for the Smartlinks API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc",
     "docs": "typedoc --out docs src/index.ts --json docs/documentation.json",
-    "build:docs": "tsc build-docs.ts --outDir dist && node dist/build-docs.js"
+    "build:docs": "tsc build-docs.ts --outDir dist && node dist/build-docs.js",
+    "postinstall": "node scripts/copy-docs.js"
   },
   "author": "Glenn Shoosmith",
   "license": "MIT",

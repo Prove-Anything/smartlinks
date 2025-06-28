@@ -31,7 +31,7 @@ Create a new attestation for a proof.
 
 #### Defined in
 
-[api/attestation.ts:33](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/attestation.ts#L33)
+[api/attestation.ts:33](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/attestation.ts#L33)
 
 ___
 
@@ -56,7 +56,7 @@ Get a single attestation by ID.
 
 #### Defined in
 
-[api/attestation.ts:20](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/attestation.ts#L20)
+[api/attestation.ts:20](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/attestation.ts#L20)
 
 ___
 
@@ -80,7 +80,7 @@ List all attestations for a proof.
 
 #### Defined in
 
-[api/attestation.ts:8](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/attestation.ts#L8)
+[api/attestation.ts:8](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/attestation.ts#L8)
 
 ___
 
@@ -105,7 +105,7 @@ Delete an attestation.
 
 #### Defined in
 
-[api/attestation.ts:60](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/attestation.ts#L60)
+[api/attestation.ts:60](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/attestation.ts#L60)
 
 ___
 
@@ -131,4 +131,4 @@ Update an attestation.
 
 #### Defined in
 
-[api/attestation.ts:46](https://github.com/Prove-Anything/smartlinks/blob/54a929dabe2ef3c5f4a5a559c656ea584231138a/src/api/attestation.ts#L46)
+[api/attestation.ts:46](https://github.com/Prove-Anything/smartlinks/blob/2322afa091763cbb81ba4db4b90e49b576099120/src/api/attestation.ts#L46)
