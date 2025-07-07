@@ -82,4 +82,37 @@ export var variant;
         return request(path);
     }
     variant.getPublic = getPublic;
+    /**
+     * Get serial numbers for a variant (admin only).
+     * @param collectionId - Identifier of the parent collection
+     * @param productId - Identifier of the parent product
+     * @param variantId - Identifier of the variant
+     * @param startIndex - Starting index for pagination (default: 0)
+     * @param count - Number of serial numbers to retrieve (default: 10)
+     * @returns Promise resolving to serial number data
+     * @throws ErrorResponse if the request fails
+     */
+    async function getSN(collectionId, productId, variantId, startIndex = 0, count = 10) {
+        const queryParams = new URLSearchParams({
+            startIndex: startIndex.toString(),
+            count: count.toString()
+        });
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/variant/${encodeURIComponent(variantId)}/getSN?${queryParams}`;
+        return request(path);
+    }
+    variant.getSN = getSN;
+    /**
+     * Look up a serial number by code for a variant (admin only).
+     * @param collectionId - Identifier of the parent collection
+     * @param productId - Identifier of the parent product
+     * @param variantId - Identifier of the variant
+     * @param codeId - The serial number code to look up
+     * @returns Promise resolving to serial number lookup data
+     * @throws ErrorResponse if the request fails
+     */
+    async function lookupSN(collectionId, productId, variantId, codeId) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/variant/${encodeURIComponent(variantId)}/lookupSN/${encodeURIComponent(codeId)}`;
+        return request(path);
+    }
+    variant.lookupSN = lookupSN;
 })(variant || (variant = {}));

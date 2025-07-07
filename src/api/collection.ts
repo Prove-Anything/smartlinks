@@ -1,5 +1,5 @@
 // src/api/collection.ts
-import { request } from "../http"
+import { request, post, put, del } from "../http"
 import { CollectionResponse } from "../types/collection"
 
 export namespace collection {
@@ -26,5 +26,92 @@ export namespace collection {
     const base = admin ? '/admin/collection' : '/public/collection';
     const path = `${base}`;
     return request<CollectionResponse[]>(path);
+  }
+
+  /**
+   * Create a new collection (admin only).
+   * @param data – Collection creation data
+   * @returns Promise resolving to a CollectionResponse object
+   * @throws ErrorResponse if the request fails
+   */
+  export async function create(data: any): Promise<CollectionResponse> {
+    const path = `/admin/collection`;
+    return post<CollectionResponse>(path, data);
+  }
+
+  /**
+   * Update a collection (admin only).
+   * @param collectionId – Identifier of the collection
+   * @param data – Collection update data
+   * @returns Promise resolving to a CollectionResponse object
+   * @throws ErrorResponse if the request fails
+   */
+  export async function update(collectionId: string, data: any): Promise<CollectionResponse> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}`;
+    return put<CollectionResponse>(path, data);
+  }
+
+  /**
+   * Delete a collection (admin only).
+   * @param collectionId – Identifier of the collection
+   * @returns Promise resolving to void
+   * @throws ErrorResponse if the request fails
+   */
+  export async function remove(collectionId: string): Promise<void> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}`;
+    return del<void>(path);
+  }
+
+  /**
+   * Get serial numbers for a collection (admin only).
+   * @param collectionId - Identifier of the collection
+   * @param startIndex - Starting index for pagination (default: 0)
+   * @param count - Number of serial numbers to retrieve (default: 10)
+   * @returns Promise resolving to serial number data
+   * @throws ErrorResponse if the request fails
+   */
+  export async function getSN(
+    collectionId: string,
+    startIndex: number = 0,
+    count: number = 10
+  ): Promise<any> {
+    const queryParams = new URLSearchParams({
+      startIndex: startIndex.toString(),
+      count: count.toString()
+    })
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/getSN?${queryParams}`
+    return request<any>(path)
+  }
+
+  /**
+   * Look up a serial number by code for a collection (admin only).
+   * @param collectionId - Identifier of the collection
+   * @param codeId - The serial number code to look up
+   * @returns Promise resolving to serial number lookup data
+   * @throws ErrorResponse if the request fails
+   */
+  export async function lookupSN(
+    collectionId: string,
+    codeId: string
+  ): Promise<any> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/lookupSN/${encodeURIComponent(codeId)}`
+    return request<any>(path)
+  }
+
+  /**
+   * Assign a value to a serial number for a collection (admin only).
+   * @param collectionId - Identifier of the collection
+   * @param codeId - The serial number code to assign
+   * @param value - The value to assign to the serial number
+   * @returns Promise resolving to assignment result
+   * @throws ErrorResponse if the request fails
+   */
+  export async function assignSN(
+    collectionId: string,
+    codeId: string,
+    value: any
+  ): Promise<any> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/lookupSN/${encodeURIComponent(codeId)}`
+    return post<any>(path, { value })
   }
 }

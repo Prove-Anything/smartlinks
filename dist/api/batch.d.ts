@@ -54,4 +54,25 @@ export declare namespace batch {
      * @throws ErrorResponse if the request fails
      */
     function getPublic(collectionId: string, productId: string, batchId: string): Promise<BatchResponse>;
+    /**
+     * Get serial numbers for a batch (admin only).
+     * @param collectionId - Identifier of the parent collection
+     * @param productId - Identifier of the parent product
+     * @param batchId - Identifier of the batch
+     * @param startIndex - Starting index for pagination (default: 0)
+     * @param count - Number of serial numbers to retrieve (default: 10)
+     * @returns Promise resolving to serial number data
+     * @throws ErrorResponse if the request fails
+     */
+    function getSN(collectionId: string, productId: string, batchId: string, startIndex?: number, count?: number): Promise<any>;
+    /**
+     * Look up a serial number by code for a batch (admin only).
+     * @param collectionId - Identifier of the parent collection
+     * @param productId - Identifier of the parent product
+     * @param batchId - Identifier of the batch
+     * @param codeId - The serial number code to look up
+     * @returns Promise resolving to serial number lookup data
+     * @throws ErrorResponse if the request fails
+     */
+    function lookupSN(collectionId: string, productId: string, batchId: string, codeId: string): Promise<any>;
 }

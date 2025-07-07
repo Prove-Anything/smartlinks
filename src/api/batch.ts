@@ -126,4 +126,48 @@ export namespace batch {
     )}/batch/${encodeURIComponent(batchId)}`
     return request<BatchResponse>(path)
   }
+
+  /**
+   * Get serial numbers for a batch (admin only).
+   * @param collectionId - Identifier of the parent collection
+   * @param productId - Identifier of the parent product
+   * @param batchId - Identifier of the batch
+   * @param startIndex - Starting index for pagination (default: 0)
+   * @param count - Number of serial numbers to retrieve (default: 10)
+   * @returns Promise resolving to serial number data
+   * @throws ErrorResponse if the request fails
+   */
+  export async function getSN(
+    collectionId: string,
+    productId: string,
+    batchId: string,
+    startIndex: number = 0,
+    count: number = 10
+  ): Promise<any> {
+    const queryParams = new URLSearchParams({
+      startIndex: startIndex.toString(),
+      count: count.toString()
+    })
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/batch/${encodeURIComponent(batchId)}/getSN?${queryParams}`
+    return request<any>(path)
+  }
+
+  /**
+   * Look up a serial number by code for a batch (admin only).
+   * @param collectionId - Identifier of the parent collection
+   * @param productId - Identifier of the parent product
+   * @param batchId - Identifier of the batch
+   * @param codeId - The serial number code to look up
+   * @returns Promise resolving to serial number lookup data
+   * @throws ErrorResponse if the request fails
+   */
+  export async function lookupSN(
+    collectionId: string,
+    productId: string,
+    batchId: string,
+    codeId: string
+  ): Promise<any> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/batch/${encodeURIComponent(batchId)}/lookupSN/${encodeURIComponent(codeId)}`
+    return request<any>(path)
+  }
 }

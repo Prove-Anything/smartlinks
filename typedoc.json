@@ -1,0 +1,18 @@
+{
+  "entryPoints": ["src/index.ts"],
+  "out": "docs",
+  "json": "docs/documentation.json",
+  "excludeInternal": true,
+  "excludePrivate": true,
+  "excludeProtected": true,
+  "excludeExternals": true,
+  "includeVersion": false,
+  "disableSources": true,
+  "hideGenerator": true,
+  "sort": ["source-order"],
+  "categorizeByGroup": false,
+  "searchInComments": false,
+  "cleanOutputDir": true,
+  "treatWarningsAsErrors": false,
+  "skipErrorChecking": true
+}
