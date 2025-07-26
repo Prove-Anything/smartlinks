@@ -2,24 +2,97 @@
 const fs = require('fs');
 const path = require('path');
 
-function extractFunctionsFromFile(filePath, moduleName) {
+function extractDescription(comment) {
+  if (!comment) return '';
+  
+  // Remove /** and */ and clean up the comment
+  let cleaned = comment.replace(/\/\*\*|\*\//g, '').trim();
+  
+  // Remove leading * from each line and clean up
+  const lines = cleaned.split('\n')
+    .map(line => line.replace(/^\s*\*\s?/, '').trim())
+    .filter(line => line && !line.startsWith('@')); // Skip @param, @returns, etc.
+  
+  return lines.join(' ').trim();
+}
+
+function extractTypesFromFile(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  
+  const content = fs.readFileSync(filePath, 'utf8');
+  const types = [];
+  
+  // Extract interfaces with proper bracket matching
+  const interfaceRegex = /export interface (\w+)\s*{/g;
+  let match;
+  
+  while ((match = interfaceRegex.exec(content)) !== null) {
+    const name = match[1];
+    const startPos = match.index + match[0].length - 1; // Position of opening {
+    
+    // Find matching closing brace
+    let braceCount = 1;
+    let endPos = startPos + 1;
+    
+    while (braceCount > 0 && endPos < content.length) {
+      if (content[endPos] === '{') braceCount++;
+      if (content[endPos] === '}') braceCount--;
+      endPos++;
+    }
+    
+    if (braceCount === 0) {
+      const body = content.substring(startPos + 1, endPos - 1);
+      const formattedBody = formatInterfaceBody(body);
+      
+      types.push({
+        name,
+        type: 'interface',
+        definition: `interface ${name} {\n${formattedBody}\n}`
+      });
+    }
+  }
+  
+  // Extract type aliases
+  const typeRegex = /export type (\w+)\s*=\s*([^;\n]+)/g;
+  while ((match = typeRegex.exec(content)) !== null) {
+    types.push({
+      name: match[1],
+      type: 'alias',
+      definition: match[2].trim()
+    });
+  }
+  
+  return types;
+}
+
+function formatInterfaceBody(body) {
+  const lines = body.split('\n')
+    .map(line => line.trim())
+    .filter(line => line && !line.includes('/**') && !line.includes('*/') && !line.startsWith('//'));
+  
+  return lines.map(line => `  ${line}`).join('\n');
+}
+
+function extractFunctionsFromFile(filePath) {
+  if (!fs.existsSync(filePath)) return [];
+  
   const content = fs.readFileSync(filePath, 'utf8');
   const functions = [];
   
-  // Extract export async function declarations
-  const functionRegex = /export\s+async\s+function\s+(\w+)\s*\((.*?)\)\s*:\s*Promise<([^>]+)>/gs;
+  // Extract exported functions (not in namespaces) - updated regex to handle generics
+  const functionRegex = /export\s+(?:async\s+)?function\s+(\w+)(?:<[^>]*>)?\s*\(([^)]*)\)(?:\s*:\s*([^{]+))?/g;
   let match;
   
   while ((match = functionRegex.exec(content)) !== null) {
-    const [, name, paramsStr, returnType] = match;
-    const params = paramsStr.split(',').map(p => p.trim()).filter(p => p);
+    const name = match[1];
+    const params = match[2].trim();
+    const returnType = match[3] ? match[3].trim() : 'void';
     
-    // Extract JSDoc comment if present
+    // Extract JSDoc comment
     const beforeFunction = content.substring(0, match.index);
-    const commentMatch = beforeFunction.match(/\/\*\*\s*(.*?)\s*\*\//s);
-    const description = commentMatch ? 
-      commentMatch[1].replace(/\s*\*\s*/g, ' ').replace(/\n/g, ' ').trim() : 
-      undefined;
+    const lastComment = beforeFunction.match(/\/\*\*([^*]|\*(?!\/))*\*\//g);
+    const comment = lastComment ? lastComment[lastComment.length - 1] : '';
+    const description = extractDescription(comment);
     
     functions.push({
       name,
@@ -29,251 +102,158 @@ function extractFunctionsFromFile(filePath, moduleName) {
     });
   }
   
-  return { name: moduleName, functions };
-}
-
-function extractTypesFromFile(filePath, moduleName) {
-  const content = fs.readFileSync(filePath, 'utf8');
-  const types = [];
-  
-  // Extract interface declarations with proper bracket matching
-  const interfaceRegex = /export\s+interface\s+(\w+)\s*\{/g;
-  let match;
-  
-  while ((match = interfaceRegex.exec(content)) !== null) {
-    const [, name] = match;
-    const startPos = match.index + match[0].length;
+  // Extract namespace functions
+  const namespaceRegex = /export namespace (\w+)\s*{([\s\S]*?)^}/gm;
+  while ((match = namespaceRegex.exec(content)) !== null) {
+    const namespaceName = match[1];
+    const namespaceBody = match[2];
     
-    // Find the matching closing bracket
-    let braceCount = 1;
-    let endPos = startPos;
-    
-    while (braceCount > 0 && endPos < content.length) {
-      if (content[endPos] === '{') braceCount++;
-      else if (content[endPos] === '}') braceCount--;
-      endPos++;
-    }
-    
-    if (braceCount === 0) {
-      const body = content.substring(startPos, endPos - 1);
-      
-      // Parse the interface body more carefully
-      const properties = parseInterfaceProperties(body);
-      
-      types.push({
-        name,
-        type: 'interface',
-        properties
-      });
-    }
+    const namespaceFunctions = extractNamespaceFunctions(namespaceBody, namespaceName);
+    functions.push(...namespaceFunctions);
   }
   
-  // Extract type aliases
-  const typeAliasRegex = /export\s+type\s+(\w+)\s*=\s*([^;\n]+)/g;
-  let typeMatch;
+  return functions;
+}
+
+function extractNamespaceFunctions(namespaceBody, namespaceName) {
+  const functions = [];
+  const functionRegex = /export\s+(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)(?:\s*:\s*([^{]+))?/g;
+  let match;
   
-  while ((typeMatch = typeAliasRegex.exec(content)) !== null) {
-    const [, name, definition] = typeMatch;
-    types.push({
+  while ((match = functionRegex.exec(namespaceBody)) !== null) {
+    const name = match[1];
+    const params = match[2].trim();
+    const returnType = match[3] ? match[3].trim() : 'void';
+    
+    // Extract JSDoc comment
+    const beforeFunction = namespaceBody.substring(0, match.index);
+    const lastComment = beforeFunction.match(/\/\*\*([^*]|\*(?!\/))*\*\//g);
+    const comment = lastComment ? lastComment[lastComment.length - 1] : '';
+    const description = extractDescription(comment);
+    
+    functions.push({
       name,
-      type: 'type',
-      definition: definition.trim()
+      params,
+      returnType,
+      description,
+      namespace: namespaceName
     });
   }
   
-  return { name: moduleName, types };
-}
-
-function parseInterfaceProperties(body, depth = 0) {
-  const properties = [];
-  const lines = body.split('\n');
-  let i = 0;
-  
-  while (i < lines.length) {
-    const line = lines[i].trim();
-    
-    // Skip empty lines and comments
-    if (!line || line.startsWith('/**') || line.startsWith('*') || line.startsWith('*/')) {
-      i++;
-      continue;
-    }
-    
-    // Check for property declaration
-    const propMatch = line.match(/^(\w+)(\??):\s*(.*)$/);
-    if (propMatch) {
-      const [, propName, optional, typeStart] = propMatch;
-      
-      // Check if this is a nested object starting with {
-      if (typeStart.trim() === '{') {
-        // Find the matching closing brace and parse nested properties
-        let braceCount = 1;
-        let j = i + 1;
-        let nestedLines = [];
-        
-        while (j < lines.length && braceCount > 0) {
-          const nestedLine = lines[j];
-          
-          // Count braces to find the matching closing brace
-          for (const char of nestedLine) {
-            if (char === '{') braceCount++;
-            else if (char === '}') braceCount--;
-          }
-          
-          if (braceCount > 0) {
-            nestedLines.push(nestedLine);
-          }
-          j++;
-        }
-        
-        // Parse the nested content recursively
-        const nestedBody = nestedLines.join('\n');
-        const nestedProps = parseInterfaceProperties(nestedBody, depth + 1);
-        
-        properties.push({
-          name: propName,
-          type: 'object',
-          nestedProperties: nestedProps,
-          optional: !!optional
-        });
-        
-        i = j;
-      } else {
-        // Simple property
-        let propType = typeStart.replace(/[;,]$/, '').trim();
-        properties.push({
-          name: propName,
-          type: propType,
-          optional: !!optional
-        });
-        i++;
-      }
-    } else {
-      i++;
-    }
-  }
-  
-  return properties;
-}
-
-function formatProperty(prop, indent = '  ') {
-  let result = '';
-  
-  if (prop.type === 'object' && prop.nestedProperties) {
-    // Format nested object property
-    result += `${indent}${prop.name}${prop.optional ? '?' : ''}: {\n`;
-    for (const nestedProp of prop.nestedProperties) {
-      result += formatProperty(nestedProp, indent + '  ');
-    }
-    result += `${indent}};\n`;
-  } else {
-    // Format simple property
-    result += `${indent}${prop.name}${prop.optional ? '?' : ''}: ${prop.type};\n`;
-  }
-  
-  return result;
-}
-
-function parseNestedProperties(lines) {
-  // This function is now replaced by the recursive parseInterfaceProperties
-  const nestedProps = [];
-  
-  for (const line of lines) {
-    const propMatch = line.match(/^(\w+)(\??):\s*(.+?)[;,]?$/);
-    if (propMatch) {
-      const [, propName, optional, propType] = propMatch;
-      nestedProps.push({
-        name: propName,
-        type: propType.trim(),
-        optional: !!optional
-      });
-    }
-  }
-  
-  return nestedProps;
+  return functions;
 }
 
 function generateAPISummary() {
-  const apiDir = path.join(__dirname, 'src', 'api');
-  const typesDir = path.join(__dirname, 'src', 'types');
-  const modules = [];
-  const typeModules = [];
+  const srcDir = path.join(__dirname, 'src');
+  const apiDir = path.join(srcDir, 'api');
+  const typesDir = path.join(srcDir, 'types');
   
-  // Get all TypeScript files in the API directory
-  const apiFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
-  
-  for (const file of apiFiles) {
-    const filePath = path.join(apiDir, file);
-    const moduleName = path.basename(file, '.ts');
-    const module = extractFunctionsFromFile(filePath, moduleName);
-    
-    if (module.functions.length > 0) {
-      modules.push(module);
-    }
-  }
-  
-  // Get all TypeScript files in the types directory
-  const typeFiles = fs.readdirSync(typesDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
-  
-  for (const file of typeFiles) {
-    const filePath = path.join(typesDir, file);
-    const moduleName = path.basename(file, '.ts');
-    const module = extractTypesFromFile(filePath, moduleName);
-    
-    if (module.types.length > 0) {
-      typeModules.push(module);
-    }
-  }
-  
-  // Generate clean summary
   let summary = '# Smartlinks API Summary\n\n';
   summary += 'This is a concise summary of all available API functions and types.\n\n';
   
-  // Add types section
-  if (typeModules.length > 0) {
-    summary += '## Types\n\n';
+  // Generate namespace overview
+  const apiFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
+  const namespaces = apiFiles.map(file => path.basename(file, '.ts')).sort();
+  
+  summary += '## API Namespaces\n\n';
+  summary += 'The Smartlinks SDK is organized into the following namespaces:\n\n';
+  namespaces.forEach(namespace => {
+    const descriptions = {
+      'appConfiguration': 'Application configuration and settings management',
+      'asset': 'File upload and asset management for collections, products, and proofs',
+      'attestation': 'Digital attestations and verification for products',
+      'auth': 'Authentication, login, and user account management',
+      'batch': 'Product batch management and tracking',
+      'claimSet': 'Claim creation, management, and verification',
+      'collection': 'Collection CRUD operations and management',
+      'crate': 'Container/crate management for organizing products',
+      'form': 'Dynamic form creation and submission',
+      'product': 'Product CRUD operations and management within collections',
+      'proof': 'Product proof retrieval and validation',
+      'variant': 'Product variant management and tracking'
+    };
+    const description = descriptions[namespace] || `Functions for ${namespace} operations`;
+    summary += `- **${namespace}** - ${description}\n`;
+  });
+  summary += '\n';
+  
+  // HTTP Utilities
+  summary += '## HTTP Utilities\n\n';
+  summary += 'Core HTTP functions for API configuration and communication:\n\n';
+  const httpFunctions = extractFunctionsFromFile(path.join(srcDir, 'http.ts'));
+  httpFunctions.forEach(func => {
+    summary += `**${func.name}**(${func.params}) → \`${func.returnType}\`\n`;
+    if (func.description) {
+      summary += `${func.description}\n`;
+    }
+    summary += '\n';
+  });
+  
+  // Generate types section
+  summary += '## Types\n\n';
+  
+  // Get all type files
+  const typeFiles = fs.readdirSync(typesDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
+  
+  typeFiles.forEach(file => {
+    const moduleName = path.basename(file, '.ts');
+    const types = extractTypesFromFile(path.join(typesDir, file));
     
-    for (const typeModule of typeModules) {
-      summary += `### ${typeModule.name}\n\n`;
+    if (types.length > 0) {
+      summary += `### ${moduleName}\n\n`;
       
-      for (const type of typeModule.types) {
+      types.forEach(type => {
         if (type.type === 'interface') {
           summary += `**${type.name}** (interface)\n`;
-          if (type.properties.length > 0) {
-            summary += '```typescript\n';
-            summary += `interface ${type.name} {\n`;
-            for (const prop of type.properties) {
-              summary += formatProperty(prop);
-            }
-            summary += '}\n';
-            summary += '```\n\n';
-          }
-        } else if (type.type === 'type') {
+          summary += '```typescript\n';
+          summary += type.definition;
+          summary += '\n```\n\n';
+        } else {
           summary += `**${type.name}** = \`${type.definition}\`\n\n`;
         }
-      }
+      });
     }
-  }
+  });
   
-  // Add API functions section
+  // Generate API functions section
   summary += '## API Functions\n\n';
   
-  for (const module of modules) {
-    summary += `### ${module.name}\n\n`;
+  // Group functions by namespace
+  const functionsByNamespace = {};
+  
+  apiFiles.forEach(file => {
+    const functions = extractFunctionsFromFile(path.join(apiDir, file));
+    functions.forEach(func => {
+      const namespace = func.namespace || path.basename(file, '.ts');
+      if (!functionsByNamespace[namespace]) {
+        functionsByNamespace[namespace] = [];
+      }
+      functionsByNamespace[namespace].push(func);
+    });
+  });
+  
+  // Output functions by namespace
+  Object.keys(functionsByNamespace).sort().forEach(namespace => {
+    summary += `### ${namespace}\n\n`;
     
-    for (const func of module.functions) {
-      summary += `**${func.name}**(${func.params.join(', ')}) → \`${func.returnType}\`\n`;
+    functionsByNamespace[namespace].forEach(func => {
+      summary += `**${func.name}**(${func.params}) → \`${func.returnType}\`\n`;
       if (func.description) {
         summary += `${func.description}\n`;
       }
       summary += '\n';
-    }
-  }
+    });
+  });
+  
+  const functionCount = Object.values(functionsByNamespace)
+    .reduce((total, funcs) => total + funcs.length, 0) + httpFunctions.length;
+  
+  console.log(`✅ Generated API summary with ${functionCount} functions`);
+  console.log(`📊 Found ${Object.keys(functionsByNamespace).length} API namespaces`);
+  console.log(`🔧 Found ${httpFunctions.length} HTTP utility functions`);
   
   // Write to file
   fs.writeFileSync(path.join(__dirname, 'API_SUMMARY.md'), summary);
-  console.log('✅ API summary generated: API_SUMMARY.md');
-  console.log(`📊 Found ${modules.length} API modules with ${modules.reduce((total, m) => total + m.functions.length, 0)} functions`);
-  console.log(`📝 Found ${typeModules.length} type modules with ${typeModules.reduce((total, m) => total + m.types.length, 0)} types`);
 }
 
 generateAPISummary();

@@ -1,50 +1,82 @@
-import { initializeApi } from "../dist/index";
-import { collection } from "../dist/api/collection";
-import { product } from "../dist/api/product";
-import { proof } from "../dist/api/proof";
-import { batch } from "../dist/api/batch";
+// examples/node-demo.ts
+// Node.js server-side usage examples for the Smartlinks SDK
+
+import { initializeApi } from "../src/index";
+import { auth } from "../src/api/auth";
+import { collection } from "../src/api/collection";
+import { product } from "../src/api/product";
+import { proof } from "../src/api/proof";
+import { batch } from "../src/api/batch";
 
 async function main() {
-  const apiKey = "YOUR_API_KEY"; // optional
-  const bearerToken = "YOUR_BEARER_TOKEN"; // optional
-
+  // Initialize SDK with API key for server-side usage
   initializeApi({
-    baseURL: "https://smartlinks.app/api/v1",
-    apiKey,
-    bearerToken,
-  });
+    baseURL: 'https://smartlinks.app/api/v1',
+    apiKey: process.env.SMARTLINKS_API_KEY || 'your-api-key'
+  })
 
   try {
-    const collectionData = await collection.get("abc123");
-    console.log("Collection:", collectionData);
+    // Example 1: Authentication
+    console.log('=== Authentication Example ===')
+    // Note: Replace with real credentials
+    // const loginResult = await auth.login('user@example.com', 'password')
+    // console.log('Login successful:', loginResult.bearerToken ? 'Yes' : 'No')
 
-    const productData = await product.get("abc123", "prod789");
-    console.log("Product Item:", productData);
+    // Example 2: Working with Collections (public access)
+    console.log('\n=== Collections Example ===')
+    try {
+      const collections = await collection.list(false) // Public endpoint
+      console.log(`Found ${collections.length} collections`)
+      
+      if (collections.length > 0) {
+        const firstCollection = collections[0]
+        console.log(`First collection: ${firstCollection.title}`)
+        
+        // Get detailed collection info
+        const collectionDetails = await collection.get(firstCollection.id, false)
+        console.log(`Collection description: ${collectionDetails.description}`)
+        
+        // Example 3: Working with Products
+        console.log('\n=== Products Example ===')
+        const products = await product.list(firstCollection.id, false)
+        console.log(`Found ${products.length} products in collection`)
+        
+        if (products.length > 0) {
+          const firstProduct = products[0]
+          console.log(`First product: ${firstProduct.name}`)
+          
+          // Get product details
+          const productDetails = await product.get(firstCollection.id, firstProduct.id, false)
+          console.log(`Product ID: ${productDetails.id}`)
+        }
+      }
+    } catch (error) {
+      console.log('Note: This example requires valid collection IDs')
+      console.log('Error details:', error.message)
+    }
 
-    const proofData = await proof.get("abc123", "proof456");
-    console.log("Proof:", proofData);
+    // Example 4: Error Handling
+    console.log('\n=== Error Handling Example ===')
+    try {
+      // Try to get a non-existent collection
+      await collection.get('non-existent-collection', false)
+    } catch (error) {
+      console.log(`Expected error caught: ${error.message}`)
+    }
 
-    // Batch API examples
-    // Admin operations (requires admin privileges)
-    const batchList = await batch.list("abc123", "prod789");
-    console.log("Batch List:", batchList);
-
-    const newBatch = await batch.create("abc123", "prod789", {
-      name: "New Batch",
-      description: "Example batch creation",
-      status: "active",
-    });
-    console.log("Created Batch:", newBatch);
-
-    const batchData = await batch.get("abc123", "prod789", newBatch.id);
-    console.log("Batch:", batchData);
-
-    // Public batch endpoint (read-only)
-    const publicBatchData = await batch.getPublic("abc123", "prod789", newBatch.id);
-    console.log("Public Batch:", publicBatchData);
-  } catch (err) {
-    console.error("Error fetching data:", err);
+  } catch (error) {
+    console.error('Error in example:', error)
   }
+}
+
+// Run the examples
+if (require.main === module) {
+  main().then(() => {
+    console.log('\n=== Examples completed ===')
+    console.log('Note: For admin operations, authenticate first with auth.login()')
+  }).catch(error => {
+    console.error('Fatal error:', error)
+  })
 }
 
 main();

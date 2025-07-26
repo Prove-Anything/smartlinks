@@ -1,15 +1,30 @@
 {
   "name": "@proveanything/smartlinks",
-  "version": "1.0.28",
+  "version": "1.0.30",
   "description": "Official JavaScript/TypeScript SDK for the Smartlinks API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "files": [
+    "dist/",
+    "README.md",
+    "API_SUMMARY.md"
+  ],
   "scripts": {
     "build": "tsc",
     "docs": "typedoc",
     "docs:summary": "node generate-api-summary.js",
-    "build:docs": "tsc build-docs.ts --outDir dist && node dist/build-docs.js"
+    "build:docs": "tsc build-docs.ts --outDir dist && node dist/build-docs.js",
+    "prepublishOnly": "npm run build && npm run docs:summary"
   },
+  "keywords": [
+    "smartlinks",
+    "api",
+    "authentication", 
+    "traceability",
+    "blockchain",
+    "typescript",
+    "sdk"
+  ],
   "author": "Glenn Shoosmith",
   "license": "MIT",
   "publishConfig": {
@@ -27,5 +42,6 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/Prove-Anything/smartlinks.git"
-  }
+  },
+  "homepage": "https://smartlinks.app"
 }

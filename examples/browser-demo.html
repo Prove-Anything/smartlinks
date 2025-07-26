@@ -3,41 +3,182 @@
 <head>
   <meta charset="UTF-8" />
   <title>Smartlinks SDK Browser Demo</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+    .error { background: #ffebee; color: #c62828; padding: 10px; border-radius: 3px; }
+    .success { background: #e8f5e8; color: #2e7d32; padding: 10px; border-radius: 3px; }
+    button { padding: 8px 16px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+    button:disabled { background: #ccc; cursor: not-allowed; }
+    input, select { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; }
+    pre { background: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+  </style>
 </head>
 <body>
-  <h1>Smartlinks SDK Browser Demo</h1>
-  <pre id="output"></pre>
+  <div class="container">
+    <h1>Smartlinks SDK Browser Demo</h1>
+    
+    <div class="section">
+      <h2>Authentication</h2>
+      <input type="email" id="email" placeholder="Email" />
+      <input type="password" id="password" placeholder="Password" />
+      <button onclick="login()">Login</button>
+      <button onclick="logout()">Logout</button>
+      <div id="auth-status"></div>
+    </div>
+
+    <div class="section">
+      <h2>Collections</h2>
+      <button onclick="loadCollections()">Load Collections</button>
+      <select id="collection-select" onchange="onCollectionChange()">
+        <option value="">Select a collection...</option>
+      </select>
+      <div id="collection-info"></div>
+    </div>
+
+    <div class="section">
+      <h2>Products</h2>
+      <button onclick="loadProducts()">Load Products</button>
+      <div id="products-list"></div>
+    </div>
+
+    <div class="section">
+      <h2>Output</h2>
+      <pre id="output"></pre>
+    </div>
+  </div>
+
   <script type="module">
-    import { initializeApi } from '../dist/index.js';
+    // Import SDK modules - adjust paths as needed for your setup
+    import { initializeApi, setBearerToken } from '../dist/index.js';
+    import { auth } from '../dist/api/auth.js';
     import { collection } from '../dist/api/collection.js';
     import { product } from '../dist/api/product.js';
-    import { proof } from '../dist/api/proof.js';
 
-    async function run() {
-      const apiKey = 'YOUR_API_KEY'; // optional
-      const bearerToken = 'YOUR_BEARER_TOKEN'; // optional
+    // Initialize the SDK
+    initializeApi({
+      baseURL: 'https://smartlinks.app/api/v1'
+    });
 
-      // Initialize global config for API requests
-      initializeApi({
-        baseURL: 'https://smartlinks.app/api/v1',
-        apiKey,
-        bearerToken,
-      });
+    let currentCollections = [];
+    let selectedCollectionId = '';
+
+    function log(message, isError = false) {
+      const output = document.getElementById('output');
+      const timestamp = new Date().toLocaleTimeString();
+      const prefix = isError ? 'ERROR' : 'INFO';
+      output.textContent += `[${timestamp}] ${prefix}: ${message}\n`;
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function showStatus(elementId, message, isError = false) {
+      const element = document.getElementById(elementId);
+      element.innerHTML = `<div class="${isError ? 'error' : 'success'}">${message}</div>`;
+    }
+
+    // Authentication functions
+    window.login = async function() {
+      const email = document.getElementById('email').value;
+      const password = document.getElementById('password').value;
+      
+      if (!email || !password) {
+        showStatus('auth-status', 'Please enter email and password', true);
+        return;
+      }
 
       try {
-        const collectionData = await collection.get('abc123');
-        const productData = await product.get('abc123', 'prod789');
-        const proofData = await proof.get('abc123', 'proof456');
-        document.getElementById('output').textContent = JSON.stringify(
-          { collection: collectionData, product: productData, proof: proofData },
-          null,
-          2
-        );
-      } catch (err) {
-        document.getElementById('output').textContent = 'Error: ' + err.message;
+        log(`Attempting login for ${email}`);
+        const result = await auth.login(email, password);
+        showStatus('auth-status', 'Login successful!');
+        log('Login successful');
+      } catch (error) {
+        showStatus('auth-status', `Login failed: ${error.message}`, true);
+        log(`Login failed: ${error.message}`, true);
       }
-    }
-    run();
+    };
+
+    window.logout = function() {
+      auth.logout();
+      setBearerToken(undefined);
+      showStatus('auth-status', 'Logged out');
+      log('Logged out');
+    };
+
+    // Collection functions
+    window.loadCollections = async function() {
+      try {
+        log('Loading collections...');
+        const collections = await collection.list(false); // Public endpoint
+        currentCollections = collections;
+        
+        const select = document.getElementById('collection-select');
+        select.innerHTML = '<option value="">Select a collection...</option>';
+        
+        collections.forEach(col => {
+          const option = document.createElement('option');
+          option.value = col.id;
+          option.textContent = col.title;
+          select.appendChild(option);
+        });
+        
+        log(`Loaded ${collections.length} collections`);
+        showStatus('collection-info', `Found ${collections.length} collections`);
+      } catch (error) {
+        showStatus('collection-info', `Failed to load collections: ${error.message}`, true);
+        log(`Failed to load collections: ${error.message}`, true);
+      }
+    };
+
+    window.onCollectionChange = function() {
+      const select = document.getElementById('collection-select');
+      selectedCollectionId = select.value;
+      
+      if (selectedCollectionId) {
+        const selectedCollection = currentCollections.find(c => c.id === selectedCollectionId);
+        if (selectedCollection) {
+          showStatus('collection-info', `Selected: ${selectedCollection.title}`);
+          log(`Selected collection: ${selectedCollection.title}`);
+        }
+      }
+    };
+
+    // Product functions
+    window.loadProducts = async function() {
+      if (!selectedCollectionId) {
+        showStatus('products-list', 'Please select a collection first', true);
+        return;
+      }
+
+      try {
+        log(`Loading products for collection ${selectedCollectionId}...`);
+        const products = await product.list(selectedCollectionId, false); // Public endpoint
+        
+        const productsDiv = document.getElementById('products-list');
+        if (products.length === 0) {
+          productsDiv.innerHTML = '<p>No products found in this collection.</p>';
+        } else {
+          productsDiv.innerHTML = products.map(prod => `
+            <div style="border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 3px;">
+              <h4>${prod.name}</h4>
+              <p>${prod.description || 'No description'}</p>
+              <small>ID: ${prod.id}</small>
+            </div>
+          `).join('');
+        }
+        
+        log(`Loaded ${products.length} products`);
+      } catch (error) {
+        showStatus('products-list', `Failed to load products: ${error.message}`, true);
+        log(`Failed to load products: ${error.message}`, true);
+      }
+    };
+
+    // Load collections on page load
+    window.addEventListener('load', () => {
+      log('SDK initialized');
+      loadCollections();
+    });
   </script>
 </body>
 </html>

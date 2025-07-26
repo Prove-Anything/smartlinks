@@ -99,7 +99,7 @@ export var collection;
      * @throws ErrorResponse if the request fails
      */
     async function assignSN(collectionId, codeId, value) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/lookupSN/${encodeURIComponent(codeId)}`;
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/assignSN/${encodeURIComponent(codeId)}`;
         return post(path, { value });
     }
     collection.assignSN = assignSN;

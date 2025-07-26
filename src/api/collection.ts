@@ -111,7 +111,7 @@ export namespace collection {
     codeId: string,
     value: any
   ): Promise<any> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/lookupSN/${encodeURIComponent(codeId)}`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/assignSN/${encodeURIComponent(codeId)}`
     return post<any>(path, { value })
   }
 }

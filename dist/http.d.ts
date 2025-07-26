@@ -54,9 +54,11 @@ export declare function del<T>(path: string, extraHeaders?: Record<string, strin
  */
 export declare function getApiHeaders(): Record<string, string>;
 /**
- * Sends a custom proxy message in proxyMode and waits for a matching reply.
- * @param request - The request type string
- * @param params - The parameters object
+ * Sends a custom proxy message to the parent Smartlinks application when running in an iframe.
+ * This function is used to communicate with the parent window when the SDK is embedded in an iframe
+ * and proxyMode is enabled. It sends a message to the parent and waits for a response.
+ * @param request - The request type string to identify the message type
+ * @param params - The parameters object containing data to send to the parent
  * @returns The data from the proxy response
  */
 export declare function sendCustomProxyMessage<T = any>(request: string, params: any): Promise<T>;
