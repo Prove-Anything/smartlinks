@@ -52,13 +52,38 @@ function extractTypesFromFile(filePath) {
     }
   }
   
-  // Extract type aliases
-  const typeRegex = /export type (\w+)\s*=\s*([^;\n]+)/g;
+  // Extract type aliases (including multi-line object types)
+  const typeRegex = /export type (\w+)\s*=\s*([^}]+}|[^;\n]+)/g;
   while ((match = typeRegex.exec(content)) !== null) {
+    let definition = match[2].trim();
+    
+    // If it starts with {, it's likely a multi-line object type
+    if (definition.startsWith('{')) {
+      // Find the matching closing brace
+      const startPos = content.indexOf(match[0]);
+      const typeStart = content.indexOf('=', startPos) + 1;
+      let braceCount = 0;
+      let endPos = typeStart;
+      
+      for (let i = typeStart; i < content.length; i++) {
+        const char = content[i];
+        if (char === '{') braceCount++;
+        else if (char === '}') {
+          braceCount--;
+          if (braceCount === 0) {
+            endPos = i + 1;
+            break;
+          }
+        }
+      }
+      
+      definition = content.substring(typeStart, endPos).trim();
+    }
+    
     types.push({
       name: match[1],
       type: 'alias',
-      definition: match[2].trim()
+      definition: definition
     });
   }
   
@@ -201,6 +226,32 @@ function generateAPISummary() {
     
     if (types.length > 0) {
       summary += `### ${moduleName}\n\n`;
+      
+      types.forEach(type => {
+        if (type.type === 'interface') {
+          summary += `**${type.name}** (interface)\n`;
+          summary += '```typescript\n';
+          summary += type.definition;
+          summary += '\n```\n\n';
+        } else {
+          summary += `**${type.name}** = \`${type.definition}\`\n\n`;
+        }
+      });
+    }
+  });
+  
+  // Also extract types from API files (like AppConfigOptions)
+  apiFiles.forEach(file => {
+    const moduleName = path.basename(file, '.ts');
+    const types = extractTypesFromFile(path.join(apiDir, file));
+    
+    if (types.length > 0) {
+      // Check if we already have a section for this module
+      const existingSection = typeFiles.includes(`${moduleName}.ts`);
+      
+      if (!existingSection) {
+        summary += `### ${moduleName}\n\n`;
+      }
       
       types.forEach(type => {
         if (type.type === 'interface') {

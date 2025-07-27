@@ -229,6 +229,72 @@ interface ProofResponse {
 
 **VariantUpdateRequest** = `any`
 
+**AppConfigOptions** = `{
+  appId: string
+  collectionId?: string
+  productId?: string
+  variantId?: string
+  batchId?: string
+  itemId?: string
+  user?: boolean
+  userData?: boolean
+  admin?: boolean
+  config?: any
+  data?: any
+}`
+
+### auth
+
+**LoginResponse** = `{
+  id: string
+  name: string
+  email: string
+  bearerToken: string
+  account: Record<string, any>
+}`
+
+**VerifyTokenResponse** = `{
+  valid: boolean
+  id?: string
+  name?: string
+  email?: string
+  account?: Record<string, any>
+}`
+
+**AccountInfoResponse** = `{
+  accessType: string;
+  analyticsCode: string;
+  analyticsId: string;
+  auth_time: number;
+  baseCollectionId: string;
+  clientType: string;
+  email: string;
+  email_verified: boolean;
+  features: {
+    actionLogger: boolean;
+    adminCollections: boolean;
+    adminApps: boolean;
+    apiKeys: boolean;
+    adminUsers: boolean;
+    [key: string]: boolean;
+  };
+  iat: number;
+  id: string;
+  iss: string;
+  location: string | null;
+  name: string;
+  picture: string;
+  sites: {
+    [siteName: string]: boolean;
+  };
+  sub: string;
+  uid: string;
+  user_id: string;
+  whitelabel: {
+    [key: string]: any;
+  }
+}`
+
 ## API Functions
 
 ### appConfiguration
