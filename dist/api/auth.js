@@ -43,6 +43,24 @@ export var auth;
     }
     auth.verifyToken = verifyToken;
     /**
+     * Requests an admin JWT for the current user and a specific collection
+     * Returns JWT if valid.
+     */
+    async function requestAdminJWT(collectionId) {
+        // Use the provided token, or the one from getApiHeaders
+        return post("/admin/auth/requestJWT", { collectionId });
+    }
+    auth.requestAdminJWT = requestAdminJWT;
+    /**
+     * Requests a JWT for the current user and a specific collection/product/proof
+     * Validates if the user has access to the resource, and returns a JWT
+     */
+    async function requestPublicJWT(collectionId, productId, proofId) {
+        // Use the provided token, or the one from getApiHeaders
+        return post("/public/auth/requestJWT", { collectionId, productId, proofId });
+    }
+    auth.requestPublicJWT = requestPublicJWT;
+    /**
      * Gets current account information for the logged in user.
      * Returns user, owner, account, and location objects.
      */

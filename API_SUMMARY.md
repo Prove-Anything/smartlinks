@@ -7,6 +7,7 @@ This is a concise summary of all available API functions and types.
 The Smartlinks SDK is organized into the following namespaces:
 
 - **appConfiguration** - Application configuration and settings management
+- **appRecord** - Functions for appRecord operations
 - **asset** - File upload and asset management for collections, products, and proofs
 - **attestation** - Digital attestations and verification for products
 - **auth** - Authentication, login, and user account management
@@ -327,6 +328,24 @@ interface ProofResponse {
 
 **deleteDataItem**(opts: AppConfigOptions) → `Promise<void>`
 
+### appRecord
+
+**get**(collectionId: string, appId: string) → `Promise<any>`
+
+**create**(collectionId: string, appId: string, data: any) → `Promise<any>`
+
+**update**(collectionId: string, appId: string, data: any) → `Promise<any>`
+
+**remove**(collectionId: string, appId: string) → `Promise<void>`
+
+**get**(collectionId: string, appId: string) → `Promise<any>`
+
+**create**(collectionId: string, appId: string, data: any) → `Promise<any>`
+
+**update**(collectionId: string, appId: string, data: any) → `Promise<any>`
+
+**remove**(collectionId: string, appId: string) → `Promise<void>`
+
 ### asset
 
 **getForCollection**(collectionId: string,
@@ -462,6 +481,12 @@ Logout (clears bearerToken for future API calls).
 **verifyToken**(token?: string) → `Promise<VerifyTokenResponse>`
 Verifies the current bearerToken (or a provided token). Returns user/account info if valid.
 
+**requestAdminJWT**(collectionId: string) → `Promise<string>`
+Requests an admin JWT for the current user and a specific collection Returns JWT if valid.
+
+**requestPublicJWT**(collectionId: string, productId: string, proofId: string) → `Promise<string>`
+Requests a JWT for the current user and a specific collection/product/proof Validates if the user has access to the resource, and returns a JWT
+
 **getAccount**() → `Promise<AccountInfoResponse>`
 Gets current account information for the logged in user. Returns user, owner, account, and location objects.
 
@@ -473,6 +498,12 @@ Logout (clears bearerToken for future API calls).
 
 **verifyToken**(token?: string) → `Promise<VerifyTokenResponse>`
 Verifies the current bearerToken (or a provided token). Returns user/account info if valid.
+
+**requestAdminJWT**(collectionId: string) → `Promise<string>`
+Requests an admin JWT for the current user and a specific collection Returns JWT if valid.
+
+**requestPublicJWT**(collectionId: string, productId: string, proofId: string) → `Promise<string>`
+Requests a JWT for the current user and a specific collection/product/proof Validates if the user has access to the resource, and returns a JWT
 
 **getAccount**() → `Promise<AccountInfoResponse>`
 Gets current account information for the logged in user. Returns user, owner, account, and location objects.

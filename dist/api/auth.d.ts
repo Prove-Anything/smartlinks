@@ -61,6 +61,16 @@ export declare namespace auth {
      */
     function verifyToken(token?: string): Promise<VerifyTokenResponse>;
     /**
+     * Requests an admin JWT for the current user and a specific collection
+     * Returns JWT if valid.
+     */
+    function requestAdminJWT(collectionId: string): Promise<string>;
+    /**
+     * Requests a JWT for the current user and a specific collection/product/proof
+     * Validates if the user has access to the resource, and returns a JWT
+     */
+    function requestPublicJWT(collectionId: string, productId: string, proofId: string): Promise<string>;
+    /**
      * Gets current account information for the logged in user.
      * Returns user, owner, account, and location objects.
      */

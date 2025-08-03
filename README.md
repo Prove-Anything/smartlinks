@@ -1,430 +1,13109 @@
-# Smartlinks SDK
+# @proveanything/smartlinks
 
-Official JavaScript/TypeScript SDK for the Smartlinks API - enabling digital product authentication, traceability, and engagement.
-
-## Installation
-
-```bash
-npm install @proveanything/smartlinks
-```
-
-## Quick Start
-
-```typescript
-import { initializeApi, auth, collection, product } from '@proveanything/smartlinks'
-
-// Initialize the SDK
-initializeApi({
-  baseURL: 'https://smartlinks.app/api/v1'
-})
-
-// Login
-const loginResponse = await auth.login('email@example.com', 'password')
-
-// Get collections
-const collections = await collection.list(true) // admin endpoint
-
-// Get products in a collection
-const products = await product.list('collection-id', true)
-
-// Get a specific product
-const productDetail = await product.get('collection-id', 'product-id')
-```
-
-## Configuration
-
-### Basic Setup
-
-```typescript
-import { initializeApi } from '@proveanything/smartlinks'
-
-// Initialize with base URL
-initializeApi({
-  baseURL: 'https://smartlinks.app/api/v1'
-})
-
-// Or with API key for server-side usage
-initializeApi({
-  baseURL: 'https://smartlinks.app/api/v1',
-  apiKey: 'your-api-key'
-})
-
-// For iframe/embedded usage
-initializeApi({
-  baseURL: 'https://smartlinks.app/api/v1',
-  proxyMode: true
-})
-```
-
-### Runtime Token Management
-
-```typescript
-import { setBearerToken } from '@proveanything/smartlinks'
-
-// Set token after login
-setBearerToken('your-bearer-token')
-
-// Clear token on logout
-setBearerToken(undefined)
-```
-
-## Authentication
-
-```typescript
-import { auth } from '@proveanything/smartlinks'
-
-// Login with email/password
-const response = await auth.login('user@example.com', 'password')
-console.log(response.bearerToken) // Token is automatically set for future calls
-
-// Verify current token
-const userInfo = await auth.verifyToken()
-
-// Get account information
-const account = await auth.getAccount()
-
-// Logout (clears token)
-auth.logout()
-```
-
-## Working with Collections
-
-Collections are the top-level containers for organizing products.
-
-```typescript
-import { collection } from '@proveanything/smartlinks'
-
-// Get all collections (public)
-const publicCollections = await collection.list(false)
-
-// Get all collections (admin - requires authentication)
-const adminCollections = await collection.list(true)
-
-// Get specific collection
-const col = await collection.get('collection-id', true)
-
-// Create collection (admin only)
-const newCollection = await collection.create({
-  title: 'New Collection',
-  description: 'Collection description'
-})
-
-// Update collection (admin only) 
-await collection.update('collection-id', { 
-  title: 'Updated Title' 
-})
-
-// Delete collection (admin only)
-await collection.remove('collection-id')
-```
-
-### Serial Number Management
-
-```typescript
-// Get serial numbers for a collection
-const serialNumbers = await collection.getSN('collection-id', 0, 10)
-
-// Look up a specific serial number
-const lookupResult = await collection.lookupSN('collection-id', 'serial-code')
-
-// Assign a value to a serial number
-await collection.assignSN('collection-id', 'serial-code', 'assigned-value')
-```
-
-## Working with Products
-
-Products represent individual items within collections.
-
-```typescript
-import { product } from '@proveanything/smartlinks'
-
-// List products in collection (public)
-const publicProducts = await product.list('collection-id', false)
-
-// List products in collection (admin)
-const adminProducts = await product.list('collection-id', true)
-
-// Get specific product
-const prod = await product.get('collection-id', 'product-id')
-
-// Create product (admin only)
-const newProduct = await product.create('collection-id', {
-  name: 'New Product',
-  description: 'Product description',
-  data: {
-    custom: 'properties'
-  }
-})
-
-// Update product (admin only)
-await product.update('collection-id', 'product-id', { 
-  name: 'Updated Name' 
-})
-
-// Delete product (admin only)
-await product.remove('collection-id', 'product-id')
-```
-
-### Product Serial Numbers
-
-```typescript
-// Get serial numbers for a product
-const serialNumbers = await product.getSN('collection-id', 'product-id', 0, 10)
-
-// Look up a serial number for a product
-const lookupResult = await product.lookupSN('collection-id', 'product-id', 'serial-code')
-```
-
-## Variants and Batches
-
-Manage product variants and production batches:
-
-```typescript
-import { variant, batch } from '@proveanything/smartlinks'
-
-// Work with variants
-const variants = await variant.list('collection-id', 'product-id')
-const newVariant = await variant.create('collection-id', 'product-id', {
-  name: 'Size Large',
-  properties: { size: 'L', color: 'blue' }
-})
-
-// Work with batches  
-const batches = await batch.list('collection-id', 'product-id')
-const newBatch = await batch.create('collection-id', 'product-id', {
-  name: 'Batch 001',
-  quantity: 100
-})
-
-// Serial numbers for variants/batches
-const variantSerials = await variant.getSN('collection-id', 'product-id', 'variant-id')
-const batchSerials = await batch.getSN('collection-id', 'product-id', 'batch-id')
-```
-
-## Asset Management
-
-Upload and manage files associated with collections, products, and proofs:
-
-```typescript
-import { asset } from '@proveanything/smartlinks'
-
-// Upload asset to a proof
-const file = document.getElementById('fileInput').files[0]
-const uploadResult = await asset.uploadAsset(
-  'collection-id', 
-  'product-id', 
-  'proof-id', 
-  file,
-  { description: 'Product image' }, // Optional extra data
-  (percent) => console.log(`Upload: ${percent}%`) // Progress callback
-)
-
-// Get asset information
-const assetInfo = await asset.getForProof('collection-id', 'product-id', 'proof-id', 'asset-id')
-
-// List all assets for a proof
-const proofAssets = await asset.listForProof('collection-id', 'product-id', 'proof-id')
-```
-
-## Attestations and Claims
-
-Manage digital attestations and claim verification:
-
-```typescript
-import { attestation, claimSet } from '@proveanything/smartlinks'
-
-// Work with attestations
-const attestations = await attestation.list('collection-id', 'product-id', 'proof-id')
-const newAttestation = await attestation.create('collection-id', 'product-id', 'proof-id', {
-  public: { verified: true },
-  private: { inspector: 'John Doe' },
-  proof: { signature: 'abc123' }
-})
-
-// Work with claim sets
-const claimSets = await claimSet.getAllForCollection('collection-id')
-const claimResult = await claimSet.makeClaim('collection-id', {
-  productId: 'product-id',
-  claimType: 'ownership'
-})
-```
-
-## Proofs
-
-Retrieve and validate product proofs:
-
-```typescript
-import { proof } from '@proveanything/smartlinks'
-
-// Get all proofs for a collection
-const proofs = await proof.list('collection-id')
-
-// Get specific proof
-const proofDetail = await proof.get('collection-id', 'proof-id')
-```
-
-## Forms
-
-Dynamic form creation and management:
-
-```typescript
-import { form } from '@proveanything/smartlinks'
-
-// List forms (public)
-const publicForms = await form.list('collection-id', false)
-
-// List forms (admin)
-const adminForms = await form.list('collection-id', true)
-
-// Create form (admin only)
-const newForm = await form.create('collection-id', {
-  name: 'Product Registration',
-  fields: [
-    { name: 'email', type: 'email', required: true },
-    { name: 'name', type: 'text', required: true }
-  ]
-})
-```
-
-## Advanced Usage
-
-### Proxy Mode (iframe Communication)
-
-When running in an iframe, use proxy mode to communicate with the parent window:
-
-```typescript
-import { initializeApi, sendCustomProxyMessage } from '@proveanything/smartlinks'
-
-// Initialize in proxy mode
-initializeApi({
-  baseURL: 'https://smartlinks.app/api/v1',
-  proxyMode: true
-})
-
-// Send custom messages to parent window
-const response = await sendCustomProxyMessage('custom-action', {
-  data: 'any-data'
-})
-```
-
-### Custom Configuration
-
-```typescript
-import { appConfiguration } from '@proveanything/smartlinks'
-
-// Get configuration
-const config = await appConfiguration.getConfig({ key: 'setting-name' })
-
-// Set configuration
-await appConfiguration.setConfig({ 
-  key: 'setting-name', 
-  value: 'setting-value' 
-})
-
-// Work with configuration data
-const data = await appConfiguration.getData({ category: 'user-preferences' })
-```
-
-## Error Handling
-
-```typescript
-import { ErrorResponse } from '@proveanything/smartlinks'
-
-try {
-  const result = await product.get('collection-id', 'product-id')
-} catch (error) {
-  if (error instanceof ErrorResponse) {
-    console.error('API Error:', error.message)
-    console.error('Status Code:', error.code)
-  } else {
-    console.error('Unexpected error:', error)
-  }
-}
-```
-
-## TypeScript Support
-
-The SDK is written in TypeScript and includes full type definitions:
-
-```typescript
-import { 
-  ProductResponse, 
-  CollectionResponse, 
-  AttestationCreateRequest 
-} from '@proveanything/smartlinks'
-
-const product: ProductResponse = await product.get('col-id', 'prod-id')
-const collection: CollectionResponse = await collection.get('col-id')
-
-const attestationData: AttestationCreateRequest = {
-  public: { verified: true },
-  private: { notes: 'Internal notes' },
-  proof: { signature: 'digital-signature' }
-}
-```
-
-## Admin vs Public Endpoints
-
-Many functions support both admin and public access modes:
-
-```typescript
-// Public access (limited data, no authentication required)
-const publicCollections = await collection.list(false)
-const publicProducts = await product.list('collection-id', false)
-
-// Admin access (full data + management capabilities, authentication required)  
-const adminCollections = await collection.list(true)
-const adminProducts = await product.list('collection-id', true)
-
-// Create/Update/Delete operations are admin-only
-await collection.create(data) // Requires authentication
-await product.update('col-id', 'prod-id', data) // Requires authentication
-```
-
-## Browser vs Node.js
-
-The SDK works in both browser and Node.js environments:
-
-### Browser Usage
-
-```html
-<script type="module">
-  import { initializeApi, auth } from '@proveanything/smartlinks'
-  
-  initializeApi({ baseURL: 'https://smartlinks.app/api/v1' })
-  // Use the SDK...
-</script>
-```
-
-### Node.js Usage
-
-```javascript
-const { initializeApi, auth } = require('@proveanything/smartlinks')
-
-initializeApi({ 
-  baseURL: 'https://smartlinks.app/api/v1',
-  apiKey: process.env.SMARTLINKS_API_KEY 
-})
-```
-
-## Examples
-
-Check out the [examples](./examples/) directory for complete implementation examples:
-
-- [Node.js Demo](./examples/node-demo.ts) - Server-side usage examples
-- [Browser Demo](./examples/browser-demo.html) - Frontend integration examples
-- [React Demo](./examples/react-demo.tsx) - React component examples
+This README is auto-generated from the TypeScript API documentation.
 
 ## API Reference
 
-For complete API documentation including all functions and types, see [API_SUMMARY.md](./API_SUMMARY.md).
+```json
+{
+  "id": 0,
+  "name": "@proveanything/smartlinks",
+  "variant": "project",
+  "kind": 1,
+  "flags": {},
+  "children": [
+    {
+      "id": 90,
+      "name": "AppConfigOptions",
+      "variant": "declaration",
+      "kind": 2097152,
+      "flags": {},
+      "type": {
+        "type": "reflection",
+        "declaration": {
+          "id": 91,
+          "name": "__type",
+          "variant": "declaration",
+          "kind": 65536,
+          "flags": {},
+          "children": [
+            {
+              "id": 92,
+              "name": "appId",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 93,
+              "name": "collectionId",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {
+                "isOptional": true
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 94,
+              "name": "productId",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {
+                "isOptional": true
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 95,
+              "name": "variantId",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {
+                "isOptional": true
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 96,
+              "name": "batchId",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {
+                "isOptional": true
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 97,
+              "name": "itemId",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {
+                "isOptional": true
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 98,
+              "name": "user",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {
+                "isOptional": true
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "boolean"
+              }
+            },
+            {
+              "id": 99,
+              "name": "userData",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {
+                "isOptional": true
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "boolean"
+              }
+            },
+            {
+              "id": 100,
+              "name": "admin",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {
+                "isOptional": true
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "boolean"
+              }
+            },
+            {
+              "id": 101,
+              "name": "config",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {
+                "isOptional": true
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "any"
+              }
+            },
+            {
+              "id": 102,
+              "name": "data",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {
+                "isOptional": true
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "any"
+              }
+            }
+          ],
+          "groups": [
+            {
+              "title": "Properties",
+              "children": [
+                92,
+                93,
+                94,
+                95,
+                96,
+                97,
+                98,
+                99,
+                100,
+                101,
+                102
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 177,
+      "name": "appConfiguration",
+      "variant": "declaration",
+      "kind": 4,
+      "flags": {},
+      "children": [
+        {
+          "id": 178,
+          "name": "getConfig",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 179,
+              "name": "getConfig",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 180,
+                  "name": "opts",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "reference",
+                    "target": 90,
+                    "name": "AppConfigOptions",
+                    "package": "@proveanything/smartlinks"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 181,
+          "name": "setConfig",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 182,
+              "name": "setConfig",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 183,
+                  "name": "opts",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "reference",
+                    "target": 90,
+                    "name": "AppConfigOptions",
+                    "package": "@proveanything/smartlinks"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 184,
+          "name": "deleteConfig",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 185,
+              "name": "deleteConfig",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 186,
+                  "name": "opts",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "reference",
+                    "target": 90,
+                    "name": "AppConfigOptions",
+                    "package": "@proveanything/smartlinks"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "void"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 187,
+          "name": "getData",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 188,
+              "name": "getData",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 189,
+                  "name": "opts",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "reference",
+                    "target": 90,
+                    "name": "AppConfigOptions",
+                    "package": "@proveanything/smartlinks"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "array",
+                    "elementType": {
+                      "type": "intrinsic",
+                      "name": "any"
+                    }
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 190,
+          "name": "getDataItem",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 191,
+              "name": "getDataItem",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 192,
+                  "name": "opts",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "reference",
+                    "target": 90,
+                    "name": "AppConfigOptions",
+                    "package": "@proveanything/smartlinks"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 193,
+          "name": "setDataItem",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 194,
+              "name": "setDataItem",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 195,
+                  "name": "opts",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "reference",
+                    "target": 90,
+                    "name": "AppConfigOptions",
+                    "package": "@proveanything/smartlinks"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 196,
+          "name": "deleteDataItem",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 197,
+              "name": "deleteDataItem",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 198,
+                  "name": "opts",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "reference",
+                    "target": 90,
+                    "name": "AppConfigOptions",
+                    "package": "@proveanything/smartlinks"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "void"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "title": "Functions",
+          "children": [
+            178,
+            181,
+            184,
+            187,
+            190,
+            193,
+            196
+          ]
+        }
+      ]
+    },
+    {
+      "id": 199,
+      "name": "appRecord",
+      "variant": "declaration",
+      "kind": 4,
+      "flags": {},
+      "children": [
+        {
+          "id": 200,
+          "name": "get",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 201,
+              "name": "get",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 202,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 203,
+                  "name": "appId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 204,
+          "name": "create",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 205,
+              "name": "create",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 206,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 207,
+                  "name": "appId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 208,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 209,
+          "name": "update",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 210,
+              "name": "update",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 211,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 212,
+                  "name": "appId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 213,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 214,
+          "name": "remove",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 215,
+              "name": "remove",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 216,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 217,
+                  "name": "appId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "void"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "title": "Functions",
+          "children": [
+            200,
+            204,
+            209,
+            214
+          ]
+        }
+      ]
+    },
+    {
+      "id": 218,
+      "name": "asset",
+      "variant": "declaration",
+      "kind": 4,
+      "flags": {},
+      "children": [
+        {
+          "id": 219,
+          "name": "getForCollection",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 220,
+              "name": "getForCollection",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 221,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 222,
+                  "name": "assetId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 555,
+                    "name": "AssetResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 223,
+          "name": "listForCollection",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 224,
+              "name": "listForCollection",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 225,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "array",
+                    "elementType": {
+                      "type": "reference",
+                      "target": 555,
+                      "name": "AssetResponse",
+                      "package": "@proveanything/smartlinks"
+                    }
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 226,
+          "name": "getForProduct",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 227,
+              "name": "getForProduct",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 228,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 229,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 230,
+                  "name": "assetId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 555,
+                    "name": "AssetResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 231,
+          "name": "listForProduct",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 232,
+              "name": "listForProduct",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 233,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 234,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "array",
+                    "elementType": {
+                      "type": "reference",
+                      "target": 555,
+                      "name": "AssetResponse",
+                      "package": "@proveanything/smartlinks"
+                    }
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 235,
+          "name": "getForProof",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 236,
+              "name": "getForProof",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 237,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 238,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 239,
+                  "name": "proofId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 240,
+                  "name": "assetId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 555,
+                    "name": "AssetResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 241,
+          "name": "listForProof",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 242,
+              "name": "listForProof",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "parameters": [
+                {
+                  "id": 243,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 244,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 245,
+                  "name": "proofId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 246,
+                  "name": "appId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {
+                    "isOptional": true
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "array",
+                    "elementType": {
+                      "type": "reference",
+                      "target": 555,
+                      "name": "AssetResponse",
+                      "package": "@proveanything/smartlinks"
+                    }
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 247,
+          "name": "uploadAsset",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 248,
+              "name": "uploadAsset",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Uploads an asset file to a proof, with optional extraData as JSON.\r\nSupports progress reporting via onProgress callback (browser only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to an AssetResponse object"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 249,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "The collection ID"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 250,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "The product ID"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 251,
+                  "name": "proofId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "The proof ID"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 252,
+                  "name": "file",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "The file to upload"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "reference",
+                    "target": {
+                      "sourceFileName": "node_modules/typescript/lib/lib.dom.d.ts",
+                      "qualifiedName": "File"
+                    },
+                    "name": "File",
+                    "package": "typescript"
+                  }
+                },
+                {
+                  "id": 253,
+                  "name": "extraData",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {
+                    "isOptional": true
+                  },
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Arbitrary extra data to include (will be stringified as JSON)"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "reference",
+                    "target": {
+                      "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                      "qualifiedName": "Record"
+                    },
+                    "typeArguments": [
+                      {
+                        "type": "intrinsic",
+                        "name": "string"
+                      },
+                      {
+                        "type": "intrinsic",
+                        "name": "any"
+                      }
+                    ],
+                    "name": "Record",
+                    "package": "typescript"
+                  }
+                },
+                {
+                  "id": 254,
+                  "name": "onProgress",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {
+                    "isOptional": true
+                  },
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Optional callback for upload progress (0-100)"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "reflection",
+                    "declaration": {
+                      "id": 255,
+                      "name": "__type",
+                      "variant": "declaration",
+                      "kind": 65536,
+                      "flags": {},
+                      "signatures": [
+                        {
+                          "id": 256,
+                          "name": "__type",
+                          "variant": "signature",
+                          "kind": 4096,
+                          "flags": {},
+                          "parameters": [
+                            {
+                              "id": 257,
+                              "name": "percent",
+                              "variant": "param",
+                              "kind": 32768,
+                              "flags": {},
+                              "type": {
+                                "type": "intrinsic",
+                                "name": "number"
+                              }
+                            }
+                          ],
+                          "type": {
+                            "type": "intrinsic",
+                            "name": "void"
+                          }
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 555,
+                    "name": "AssetResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "title": "Functions",
+          "children": [
+            219,
+            223,
+            226,
+            231,
+            235,
+            241,
+            247
+          ]
+        }
+      ]
+    },
+    {
+      "id": 258,
+      "name": "attestation",
+      "variant": "declaration",
+      "kind": 4,
+      "flags": {},
+      "children": [
+        {
+          "id": 259,
+          "name": "list",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 260,
+              "name": "list",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "List all attestations for a proof."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 261,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 262,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 263,
+                  "name": "proofId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "array",
+                    "elementType": {
+                      "type": "reference",
+                      "target": 70,
+                      "name": "AttestationResponse",
+                      "package": "@proveanything/smartlinks"
+                    }
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 264,
+          "name": "get",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 265,
+              "name": "get",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get a single attestation by ID."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 266,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 267,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 268,
+                  "name": "proofId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 269,
+                  "name": "attestationId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 70,
+                    "name": "AttestationResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 270,
+          "name": "create",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 271,
+              "name": "create",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Create a new attestation for a proof."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 272,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 273,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 274,
+                  "name": "proofId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 275,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "reference",
+                    "target": 77,
+                    "name": "AttestationCreateRequest",
+                    "package": "@proveanything/smartlinks"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 70,
+                    "name": "AttestationResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 276,
+          "name": "update",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 277,
+              "name": "update",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Update an attestation."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 278,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 279,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 280,
+                  "name": "proofId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 281,
+                  "name": "attestationId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 282,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "reference",
+                    "target": 81,
+                    "name": "AttestationUpdateRequest",
+                    "package": "@proveanything/smartlinks"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 70,
+                    "name": "AttestationResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 283,
+          "name": "remove",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 284,
+              "name": "remove",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Delete an attestation."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 285,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 286,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 287,
+                  "name": "proofId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 288,
+                  "name": "attestationId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "void"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "title": "Functions",
+          "children": [
+            259,
+            264,
+            270,
+            276,
+            283
+          ]
+        }
+      ]
+    },
+    {
+      "id": 18,
+      "name": "LoginResponse",
+      "variant": "declaration",
+      "kind": 2097152,
+      "flags": {},
+      "type": {
+        "type": "reflection",
+        "declaration": {
+          "id": 19,
+          "name": "__type",
+          "variant": "declaration",
+          "kind": 65536,
+          "flags": {},
+          "children": [
+            {
+              "id": 20,
+              "name": "id",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 21,
+              "name": "name",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 22,
+              "name": "email",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 23,
+              "name": "bearerToken",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 24,
+              "name": "account",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Record"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "string"
+                  },
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Record",
+                "package": "typescript"
+              }
+            }
+          ],
+          "groups": [
+            {
+              "title": "Properties",
+              "children": [
+                20,
+                21,
+                22,
+                23,
+                24
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 25,
+      "name": "VerifyTokenResponse",
+      "variant": "declaration",
+      "kind": 2097152,
+      "flags": {},
+      "type": {
+        "type": "reflection",
+        "declaration": {
+          "id": 26,
+          "name": "__type",
+          "variant": "declaration",
+          "kind": 65536,
+          "flags": {},
+          "children": [
+            {
+              "id": 27,
+              "name": "valid",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "boolean"
+              }
+            },
+            {
+              "id": 28,
+              "name": "id",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {
+                "isOptional": true
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 29,
+              "name": "name",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {
+                "isOptional": true
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 30,
+              "name": "email",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {
+                "isOptional": true
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 31,
+              "name": "account",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {
+                "isOptional": true
+              },
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Record"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "string"
+                  },
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Record",
+                "package": "typescript"
+              }
+            }
+          ],
+          "groups": [
+            {
+              "title": "Properties",
+              "children": [
+                27,
+                28,
+                29,
+                30,
+                31
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 32,
+      "name": "AccountInfoResponse",
+      "variant": "declaration",
+      "kind": 2097152,
+      "flags": {},
+      "type": {
+        "type": "reflection",
+        "declaration": {
+          "id": 33,
+          "name": "__type",
+          "variant": "declaration",
+          "kind": 65536,
+          "flags": {},
+          "children": [
+            {
+              "id": 34,
+              "name": "jwtToken",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 35,
+              "name": "jwtExpiry",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "number"
+              }
+            },
+            {
+              "id": 36,
+              "name": "accessType",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 37,
+              "name": "analyticsCode",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 38,
+              "name": "analyticsId",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 39,
+              "name": "auth_time",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "number"
+              }
+            },
+            {
+              "id": 40,
+              "name": "baseCollectionId",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 41,
+              "name": "clientType",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 42,
+              "name": "email",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 43,
+              "name": "email_verified",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "boolean"
+              }
+            },
+            {
+              "id": 44,
+              "name": "features",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "reflection",
+                "declaration": {
+                  "id": 45,
+                  "name": "__type",
+                  "variant": "declaration",
+                  "kind": 65536,
+                  "flags": {},
+                  "children": [
+                    {
+                      "id": 46,
+                      "name": "actionLogger",
+                      "variant": "declaration",
+                      "kind": 1024,
+                      "flags": {},
+                      "type": {
+                        "type": "intrinsic",
+                        "name": "boolean"
+                      }
+                    },
+                    {
+                      "id": 47,
+                      "name": "adminCollections",
+                      "variant": "declaration",
+                      "kind": 1024,
+                      "flags": {},
+                      "type": {
+                        "type": "intrinsic",
+                        "name": "boolean"
+                      }
+                    },
+                    {
+                      "id": 48,
+                      "name": "adminApps",
+                      "variant": "declaration",
+                      "kind": 1024,
+                      "flags": {},
+                      "type": {
+                        "type": "intrinsic",
+                        "name": "boolean"
+                      }
+                    },
+                    {
+                      "id": 49,
+                      "name": "apiKeys",
+                      "variant": "declaration",
+                      "kind": 1024,
+                      "flags": {},
+                      "type": {
+                        "type": "intrinsic",
+                        "name": "boolean"
+                      }
+                    },
+                    {
+                      "id": 50,
+                      "name": "adminUsers",
+                      "variant": "declaration",
+                      "kind": 1024,
+                      "flags": {},
+                      "type": {
+                        "type": "intrinsic",
+                        "name": "boolean"
+                      }
+                    }
+                  ],
+                  "groups": [
+                    {
+                      "title": "Properties",
+                      "children": [
+                        46,
+                        47,
+                        48,
+                        49,
+                        50
+                      ]
+                    }
+                  ],
+                  "indexSignature": {
+                    "id": 51,
+                    "name": "__index",
+                    "variant": "signature",
+                    "kind": 8192,
+                    "flags": {},
+                    "parameters": [
+                      {
+                        "id": 52,
+                        "name": "key",
+                        "variant": "param",
+                        "kind": 32768,
+                        "flags": {},
+                        "type": {
+                          "type": "intrinsic",
+                          "name": "string"
+                        }
+                      }
+                    ],
+                    "type": {
+                      "type": "intrinsic",
+                      "name": "boolean"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 53,
+              "name": "iat",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "number"
+              }
+            },
+            {
+              "id": 54,
+              "name": "id",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 55,
+              "name": "iss",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 56,
+              "name": "location",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "union",
+                "types": [
+                  {
+                    "type": "intrinsic",
+                    "name": "string"
+                  },
+                  {
+                    "type": "literal",
+                    "value": null
+                  }
+                ]
+              }
+            },
+            {
+              "id": 57,
+              "name": "name",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 58,
+              "name": "picture",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 59,
+              "name": "sites",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "reflection",
+                "declaration": {
+                  "id": 60,
+                  "name": "__type",
+                  "variant": "declaration",
+                  "kind": 65536,
+                  "flags": {},
+                  "indexSignature": {
+                    "id": 61,
+                    "name": "__index",
+                    "variant": "signature",
+                    "kind": 8192,
+                    "flags": {},
+                    "parameters": [
+                      {
+                        "id": 62,
+                        "name": "siteName",
+                        "variant": "param",
+                        "kind": 32768,
+                        "flags": {},
+                        "type": {
+                          "type": "intrinsic",
+                          "name": "string"
+                        }
+                      }
+                    ],
+                    "type": {
+                      "type": "intrinsic",
+                      "name": "boolean"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "id": 63,
+              "name": "sub",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 64,
+              "name": "uid",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 65,
+              "name": "user_id",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 66,
+              "name": "whitelabel",
+              "variant": "declaration",
+              "kind": 1024,
+              "flags": {},
+              "type": {
+                "type": "reflection",
+                "declaration": {
+                  "id": 67,
+                  "name": "__type",
+                  "variant": "declaration",
+                  "kind": 65536,
+                  "flags": {},
+                  "indexSignature": {
+                    "id": 68,
+                    "name": "__index",
+                    "variant": "signature",
+                    "kind": 8192,
+                    "flags": {},
+                    "parameters": [
+                      {
+                        "id": 69,
+                        "name": "key",
+                        "variant": "param",
+                        "kind": 32768,
+                        "flags": {},
+                        "type": {
+                          "type": "intrinsic",
+                          "name": "string"
+                        }
+                      }
+                    ],
+                    "type": {
+                      "type": "intrinsic",
+                      "name": "any"
+                    }
+                  }
+                }
+              }
+            }
+          ],
+          "groups": [
+            {
+              "title": "Properties",
+              "children": [
+                34,
+                35,
+                36,
+                37,
+                38,
+                39,
+                40,
+                41,
+                42,
+                43,
+                44,
+                53,
+                54,
+                55,
+                56,
+                57,
+                58,
+                59,
+                63,
+                64,
+                65,
+                66
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": 289,
+      "name": "auth",
+      "variant": "declaration",
+      "kind": 4,
+      "flags": {},
+      "children": [
+        {
+          "id": 290,
+          "name": "login",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 291,
+              "name": "login",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Login with email and password.\r\nSets the bearerToken for subsequent API calls."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 292,
+                  "name": "email",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 293,
+                  "name": "password",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 18,
+                    "name": "LoginResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 294,
+          "name": "logout",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 295,
+              "name": "logout",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Logout (clears bearerToken for future API calls)."
+                  }
+                ]
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "void"
+              }
+            }
+          ]
+        },
+        {
+          "id": 296,
+          "name": "verifyToken",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 297,
+              "name": "verifyToken",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Verifies the current bearerToken (or a provided token).\r\nReturns user/account info if valid."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 298,
+                  "name": "token",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {
+                    "isOptional": true
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 25,
+                    "name": "VerifyTokenResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 299,
+          "name": "getAccount",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 300,
+              "name": "getAccount",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Gets current account information for the logged in user.\r\nReturns user, owner, account, and location objects."
+                  }
+                ]
+              },
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 32,
+                    "name": "AccountInfoResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "title": "Functions",
+          "children": [
+            290,
+            294,
+            296,
+            299
+          ]
+        }
+      ]
+    },
+    {
+      "id": 392,
+      "name": "batch",
+      "variant": "declaration",
+      "kind": 4,
+      "flags": {},
+      "children": [
+        {
+          "id": 393,
+          "name": "get",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 394,
+              "name": "get",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get a single batch by ID for a collection and product (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a BatchResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 395,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 396,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 397,
+                  "name": "batchId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the batch"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 84,
+                    "name": "BatchResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 398,
+          "name": "list",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 399,
+              "name": "list",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "List all batches for a collection and product (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to an array of BatchResponse objects"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 400,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 401,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "array",
+                    "elementType": {
+                      "type": "reference",
+                      "target": 84,
+                      "name": "BatchResponse",
+                      "package": "@proveanything/smartlinks"
+                    }
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 402,
+          "name": "create",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 403,
+              "name": "create",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Create a new batch for a collection and product (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a BatchResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 404,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 405,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 406,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Batch creation data"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 84,
+                    "name": "BatchResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 407,
+          "name": "update",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 408,
+              "name": "update",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Update a batch for a collection and product (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a BatchResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 409,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 410,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 411,
+                  "name": "batchId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the batch"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 412,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Batch update data"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 84,
+                    "name": "BatchResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 413,
+          "name": "remove",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 414,
+              "name": "remove",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Delete a batch for a collection and product (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to void"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 415,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 416,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 417,
+                  "name": "batchId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the batch"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "void"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 418,
+          "name": "getPublic",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 419,
+              "name": "getPublic",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get a single batch by ID for a collection and product (public endpoint)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a BatchResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 420,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 421,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 422,
+                  "name": "batchId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the batch"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 84,
+                    "name": "BatchResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 423,
+          "name": "getSN",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 424,
+              "name": "getSN",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get serial numbers for a batch (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to serial number data"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 425,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 426,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 427,
+                  "name": "batchId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the batch"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 428,
+                  "name": "startIndex",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Starting index for pagination (default: 0)"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "number"
+                  },
+                  "defaultValue": "0"
+                },
+                {
+                  "id": 429,
+                  "name": "count",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Number of serial numbers to retrieve (default: 10)"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "number"
+                  },
+                  "defaultValue": "10"
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 430,
+          "name": "lookupSN",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 431,
+              "name": "lookupSN",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Look up a serial number by code for a batch (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to serial number lookup data"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 432,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 433,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 434,
+                  "name": "batchId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the batch"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 435,
+                  "name": "codeId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "The serial number code to look up"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "title": "Functions",
+          "children": [
+            393,
+            398,
+            402,
+            407,
+            413,
+            418,
+            423,
+            430
+          ]
+        }
+      ]
+    },
+    {
+      "id": 324,
+      "name": "claimSet",
+      "variant": "declaration",
+      "kind": 4,
+      "flags": {},
+      "children": [
+        {
+          "id": 325,
+          "name": "getAllForCollection",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 326,
+              "name": "getAllForCollection",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get all claim sets for a collection."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to an array of claim sets"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 327,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "array",
+                    "elementType": {
+                      "type": "intrinsic",
+                      "name": "any"
+                    }
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 328,
+          "name": "getForCollection",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 329,
+              "name": "getForCollection",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get a specific claim set for a collection."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a claim set object"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 330,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 331,
+                  "name": "claimSetId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The claim set identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 332,
+          "name": "getAllTags",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 333,
+              "name": "getAllTags",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get all tags for a claim set."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to an array of tags"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 334,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 335,
+                  "name": "claimSetId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The claim set identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "array",
+                    "elementType": {
+                      "type": "intrinsic",
+                      "name": "any"
+                    }
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 336,
+          "name": "getReport",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 337,
+              "name": "getReport",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get a report for a claim set."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a report object"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 338,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 339,
+                  "name": "claimSetId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The claim set identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 340,
+          "name": "getAssignedTags",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 341,
+              "name": "getAssignedTags",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get assigned tags for a claim set."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to assigned tags"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 342,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 343,
+                  "name": "claimSetId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The claim set identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 344,
+          "name": "getTagSummary",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 345,
+              "name": "getTagSummary",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get tag summary for a collection."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to tag summary"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 346,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 347,
+          "name": "tagQuery",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 348,
+              "name": "tagQuery",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Perform a tag query for a collection."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to query results"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 349,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 350,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The query data"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 351,
+          "name": "createForCollection",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 352,
+              "name": "createForCollection",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Create a new claim set for a collection."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to the created claim set"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 353,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 354,
+                  "name": "params",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The claim set creation parameters"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 355,
+          "name": "updateForCollection",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 356,
+              "name": "updateForCollection",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Update a claim set for a collection."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to the updated claim set"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 357,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 358,
+                  "name": "params",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The claim set update parameters (must include id)"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 359,
+          "name": "makeClaim",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 360,
+              "name": "makeClaim",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Make a claim for a claim set."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to the claim result"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 361,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 362,
+                  "name": "params",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The claim parameters (must include id)"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 363,
+          "name": "assignClaims",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 364,
+              "name": "assignClaims",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Assign claims to a claim set."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 365,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 366,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The claims data to assign"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 367,
+          "name": "updateClaimData",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 368,
+              "name": "updateClaimData",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Update claim data for a collection."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 369,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 370,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The claim data to update"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "title": "Functions",
+          "children": [
+            325,
+            328,
+            332,
+            336,
+            340,
+            344,
+            347,
+            351,
+            355,
+            359,
+            363,
+            367
+          ]
+        }
+      ]
+    },
+    {
+      "id": 103,
+      "name": "collection",
+      "variant": "declaration",
+      "kind": 4,
+      "flags": {},
+      "children": [
+        {
+          "id": 104,
+          "name": "get",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 105,
+              "name": "get",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Retrieves a single Collection by its ID."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a CollectionResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 106,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Identifier of the collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 107,
+                  "name": "admin",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {
+                    "isOptional": true
+                  },
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– If true, fetches from the admin endpoint"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "boolean"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 480,
+                    "name": "CollectionResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 108,
+          "name": "list",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 109,
+              "name": "list",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Retrieves all Collections."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to an array of CollectionResponse objects"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 110,
+                  "name": "admin",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {
+                    "isOptional": true
+                  },
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– If true, fetches from the admin endpoint"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "boolean"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "array",
+                    "elementType": {
+                      "type": "reference",
+                      "target": 480,
+                      "name": "CollectionResponse",
+                      "package": "@proveanything/smartlinks"
+                    }
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 111,
+          "name": "create",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 112,
+              "name": "create",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Create a new collection (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a CollectionResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 113,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Collection creation data"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 480,
+                    "name": "CollectionResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 114,
+          "name": "update",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 115,
+              "name": "update",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Update a collection (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a CollectionResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 116,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Identifier of the collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 117,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Collection update data"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 480,
+                    "name": "CollectionResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 118,
+          "name": "remove",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 119,
+              "name": "remove",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Delete a collection (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to void"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 120,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Identifier of the collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "void"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 121,
+          "name": "getSN",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 122,
+              "name": "getSN",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get serial numbers for a collection (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to serial number data"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 123,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 124,
+                  "name": "startIndex",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Starting index for pagination (default: 0)"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "number"
+                  },
+                  "defaultValue": "0"
+                },
+                {
+                  "id": 125,
+                  "name": "count",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Number of serial numbers to retrieve (default: 10)"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "number"
+                  },
+                  "defaultValue": "10"
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 126,
+          "name": "lookupSN",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 127,
+              "name": "lookupSN",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Look up a serial number by code for a collection (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to serial number lookup data"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 128,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 129,
+                  "name": "codeId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "The serial number code to look up"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 130,
+          "name": "assignSN",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 131,
+              "name": "assignSN",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Assign a value to a serial number for a collection (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to assignment result"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 132,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 133,
+                  "name": "codeId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "The serial number code to assign"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 134,
+                  "name": "value",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "The value to assign to the serial number"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "title": "Functions",
+          "children": [
+            104,
+            108,
+            111,
+            114,
+            118,
+            121,
+            126,
+            130
+          ]
+        }
+      ]
+    },
+    {
+      "id": 371,
+      "name": "crate",
+      "variant": "declaration",
+      "kind": 4,
+      "flags": {},
+      "children": [
+        {
+          "id": 372,
+          "name": "get",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 373,
+              "name": "get",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get a single crate by ID for a collection (admin only)."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 374,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 375,
+                  "name": "crateId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 376,
+          "name": "list",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 377,
+              "name": "list",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "List all crates for a collection (admin only)."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 378,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "array",
+                    "elementType": {
+                      "type": "intrinsic",
+                      "name": "any"
+                    }
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 379,
+          "name": "create",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 380,
+              "name": "create",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Create a new crate for a collection (admin only)."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 381,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 382,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 383,
+          "name": "update",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 384,
+              "name": "update",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Update a crate for a collection (admin only)."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 385,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 386,
+                  "name": "crateId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 387,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 388,
+          "name": "remove",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 389,
+              "name": "remove",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Delete a crate for a collection (admin only)."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 390,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 391,
+                  "name": "crateId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "void"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "title": "Functions",
+          "children": [
+            372,
+            376,
+            379,
+            383,
+            388
+          ]
+        }
+      ]
+    },
+    {
+      "id": 301,
+      "name": "form",
+      "variant": "declaration",
+      "kind": 4,
+      "flags": {},
+      "children": [
+        {
+          "id": 302,
+          "name": "get",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 303,
+              "name": "get",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get a single form by ID for a collection."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 304,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 305,
+                  "name": "formId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The form identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 306,
+                  "name": "admin",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {
+                    "isOptional": true
+                  },
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– If true, use admin endpoint; otherwise, use public"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "boolean"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 307,
+          "name": "list",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 308,
+              "name": "list",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "List all forms for a collection."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 309,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 310,
+                  "name": "admin",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {
+                    "isOptional": true
+                  },
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– If true, use admin endpoint; otherwise, use public"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "boolean"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "array",
+                    "elementType": {
+                      "type": "intrinsic",
+                      "name": "any"
+                    }
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 311,
+          "name": "create",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 312,
+              "name": "create",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Create a new form for a collection (admin only)."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 313,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 314,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The form data"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 315,
+          "name": "update",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 316,
+              "name": "update",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Update a form for a collection (admin only)."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 317,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 318,
+                  "name": "formId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The form identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 319,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The form data"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 320,
+          "name": "remove",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 321,
+              "name": "remove",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Delete a form for a collection (admin only)."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 322,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The collection identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 323,
+                  "name": "formId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– The form identifier"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "void"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "title": "Functions",
+          "children": [
+            302,
+            307,
+            311,
+            315,
+            320
+          ]
+        }
+      ]
+    },
+    {
+      "id": 135,
+      "name": "product",
+      "variant": "declaration",
+      "kind": 4,
+      "flags": {},
+      "children": [
+        {
+          "id": 136,
+          "name": "get",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 137,
+              "name": "get",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Retrieves a single Product Item by Collection ID and Product ID."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a ProductResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 138,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 139,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Identifier of the product item"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 140,
+                  "name": "admin",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {
+                    "isOptional": true
+                  },
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– If true, use admin endpoint; otherwise, use public"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "boolean"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 519,
+                    "name": "ProductResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 141,
+          "name": "list",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 142,
+              "name": "list",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "List all Product Items for a Collection."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to an array of ProductResponse objects"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 143,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 144,
+                  "name": "admin",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {
+                    "isOptional": true
+                  },
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– If true, use admin endpoint; otherwise, use public"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "boolean"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "array",
+                    "elementType": {
+                      "type": "reference",
+                      "target": 519,
+                      "name": "ProductResponse",
+                      "package": "@proveanything/smartlinks"
+                    }
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 145,
+          "name": "create",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 146,
+              "name": "create",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Create a new product for a collection (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a ProductResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 147,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 148,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Product creation data"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 519,
+                    "name": "ProductResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 149,
+          "name": "update",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 150,
+              "name": "update",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Update a product for a collection (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a ProductResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 151,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 152,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Identifier of the product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 153,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Product update data"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 519,
+                    "name": "ProductResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 154,
+          "name": "remove",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 155,
+              "name": "remove",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Delete a product for a collection (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to void"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 156,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 157,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Identifier of the product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "void"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 158,
+          "name": "getSN",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 159,
+              "name": "getSN",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get serial numbers for a product (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to serial number data"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 160,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 161,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 162,
+                  "name": "startIndex",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Starting index for pagination (default: 0)"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "number"
+                  },
+                  "defaultValue": "0"
+                },
+                {
+                  "id": 163,
+                  "name": "count",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Number of serial numbers to retrieve (default: 10)"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "number"
+                  },
+                  "defaultValue": "10"
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 164,
+          "name": "lookupSN",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 165,
+              "name": "lookupSN",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Look up a serial number by code for a product (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to serial number lookup data"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 166,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 167,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 168,
+                  "name": "codeId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "The serial number code to look up"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "title": "Functions",
+          "children": [
+            136,
+            141,
+            145,
+            149,
+            154,
+            158,
+            164
+          ]
+        }
+      ]
+    },
+    {
+      "id": 169,
+      "name": "proof",
+      "variant": "declaration",
+      "kind": 4,
+      "flags": {},
+      "children": [
+        {
+          "id": 170,
+          "name": "get",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 171,
+              "name": "get",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Retrieves a single Proof by Collection ID and Proof ID."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a ProofResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 172,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 173,
+                  "name": "proofId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "– Identifier of the proof"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 540,
+                    "name": "ProofResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 174,
+          "name": "list",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 175,
+              "name": "list",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "List all Proofs for a Collection."
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 176,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "array",
+                    "elementType": {
+                      "type": "reference",
+                      "target": 540,
+                      "name": "ProofResponse",
+                      "package": "@proveanything/smartlinks"
+                    }
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "title": "Functions",
+          "children": [
+            170,
+            174
+          ]
+        }
+      ]
+    },
+    {
+      "id": 436,
+      "name": "variant",
+      "variant": "declaration",
+      "kind": 4,
+      "flags": {},
+      "children": [
+        {
+          "id": 437,
+          "name": "get",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 438,
+              "name": "get",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get a single variant by ID for a collection and product (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a VariantResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 439,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 440,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 441,
+                  "name": "variantId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the variant"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 87,
+                    "name": "VariantResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 442,
+          "name": "list",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 443,
+              "name": "list",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "List all variants for a collection and product (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to an array of VariantResponse objects"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 444,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 445,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "array",
+                    "elementType": {
+                      "type": "reference",
+                      "target": 87,
+                      "name": "VariantResponse",
+                      "package": "@proveanything/smartlinks"
+                    }
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 446,
+          "name": "create",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 447,
+              "name": "create",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Create a new variant for a collection and product (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a VariantResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 448,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 449,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 450,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Variant creation data"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 87,
+                    "name": "VariantResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 451,
+          "name": "update",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 452,
+              "name": "update",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Update a variant for a collection and product (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a VariantResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 453,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 454,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 455,
+                  "name": "variantId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the variant"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 456,
+                  "name": "data",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Variant update data"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 87,
+                    "name": "VariantResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 457,
+          "name": "remove",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 458,
+              "name": "remove",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Delete a variant for a collection and product (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to void"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 459,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 460,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 461,
+                  "name": "variantId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the variant"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "void"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 462,
+          "name": "getPublic",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 463,
+              "name": "getPublic",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get a single variant by ID for a collection and product (public endpoint)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to a VariantResponse object"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 464,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 465,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 466,
+                  "name": "variantId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the variant"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "reference",
+                    "target": 87,
+                    "name": "VariantResponse",
+                    "package": "@proveanything/smartlinks"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 467,
+          "name": "getSN",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 468,
+              "name": "getSN",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Get serial numbers for a variant (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to serial number data"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 469,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 470,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 471,
+                  "name": "variantId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the variant"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 472,
+                  "name": "startIndex",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Starting index for pagination (default: 0)"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "number"
+                  },
+                  "defaultValue": "0"
+                },
+                {
+                  "id": 473,
+                  "name": "count",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Number of serial numbers to retrieve (default: 10)"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "number"
+                  },
+                  "defaultValue": "10"
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        },
+        {
+          "id": 474,
+          "name": "lookupSN",
+          "variant": "declaration",
+          "kind": 64,
+          "flags": {},
+          "signatures": [
+            {
+              "id": 475,
+              "name": "lookupSN",
+              "variant": "signature",
+              "kind": 4096,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Look up a serial number by code for a variant (admin only)."
+                  }
+                ],
+                "blockTags": [
+                  {
+                    "tag": "@returns",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "Promise resolving to serial number lookup data"
+                      }
+                    ]
+                  },
+                  {
+                    "tag": "@throws",
+                    "content": [
+                      {
+                        "kind": "text",
+                        "text": "ErrorResponse if the request fails"
+                      }
+                    ]
+                  }
+                ]
+              },
+              "parameters": [
+                {
+                  "id": 476,
+                  "name": "collectionId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent collection"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 477,
+                  "name": "productId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the parent product"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 478,
+                  "name": "variantId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Identifier of the variant"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 479,
+                  "name": "codeId",
+                  "variant": "param",
+                  "kind": 32768,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "The serial number code to look up"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "type": {
+                "type": "reference",
+                "target": {
+                  "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+                  "qualifiedName": "Promise"
+                },
+                "typeArguments": [
+                  {
+                    "type": "intrinsic",
+                    "name": "any"
+                  }
+                ],
+                "name": "Promise",
+                "package": "typescript"
+              }
+            }
+          ]
+        }
+      ],
+      "groups": [
+        {
+          "title": "Functions",
+          "children": [
+            437,
+            442,
+            446,
+            451,
+            457,
+            462,
+            467,
+            474
+          ]
+        }
+      ]
+    },
+    {
+      "id": 1,
+      "name": "initializeApi",
+      "variant": "declaration",
+      "kind": 64,
+      "flags": {},
+      "signatures": [
+        {
+          "id": 2,
+          "name": "initializeApi",
+          "variant": "signature",
+          "kind": 4096,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Call this once (e.g. at app startup) to configure baseURL/auth."
+              }
+            ]
+          },
+          "parameters": [
+            {
+              "id": 3,
+              "name": "options",
+              "variant": "param",
+              "kind": 32768,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "Configuration options"
+                  }
+                ]
+              },
+              "type": {
+                "type": "reflection",
+                "declaration": {
+                  "id": 4,
+                  "name": "__type",
+                  "variant": "declaration",
+                  "kind": 65536,
+                  "flags": {},
+                  "children": [
+                    {
+                      "id": 5,
+                      "name": "baseURL",
+                      "variant": "declaration",
+                      "kind": 1024,
+                      "flags": {},
+                      "type": {
+                        "type": "intrinsic",
+                        "name": "string"
+                      }
+                    },
+                    {
+                      "id": 6,
+                      "name": "apiKey",
+                      "variant": "declaration",
+                      "kind": 1024,
+                      "flags": {
+                        "isOptional": true
+                      },
+                      "type": {
+                        "type": "intrinsic",
+                        "name": "string"
+                      }
+                    },
+                    {
+                      "id": 7,
+                      "name": "bearerToken",
+                      "variant": "declaration",
+                      "kind": 1024,
+                      "flags": {
+                        "isOptional": true
+                      },
+                      "type": {
+                        "type": "intrinsic",
+                        "name": "string"
+                      }
+                    },
+                    {
+                      "id": 8,
+                      "name": "proxyMode",
+                      "variant": "declaration",
+                      "kind": 1024,
+                      "flags": {
+                        "isOptional": true
+                      },
+                      "type": {
+                        "type": "intrinsic",
+                        "name": "boolean"
+                      }
+                    }
+                  ],
+                  "groups": [
+                    {
+                      "title": "Properties",
+                      "children": [
+                        5,
+                        6,
+                        7,
+                        8
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          ],
+          "type": {
+            "type": "intrinsic",
+            "name": "void"
+          }
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "name": "request",
+      "variant": "declaration",
+      "kind": 64,
+      "flags": {},
+      "signatures": [
+        {
+          "id": 10,
+          "name": "request",
+          "variant": "signature",
+          "kind": 4096,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Internal helper that performs a GET request to `\\${baseURL}\\${path}`, \ninjecting headers for apiKey or bearerToken if present. \nReturns the parsed JSON as T, or throws an Error."
+              }
+            ]
+          },
+          "typeParameter": [
+            {
+              "id": 11,
+              "name": "T",
+              "variant": "typeParam",
+              "kind": 131072,
+              "flags": {}
+            }
+          ],
+          "parameters": [
+            {
+              "id": 12,
+              "name": "path",
+              "variant": "param",
+              "kind": 32768,
+              "flags": {},
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            }
+          ],
+          "type": {
+            "type": "reference",
+            "target": {
+              "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+              "qualifiedName": "Promise"
+            },
+            "typeArguments": [
+              {
+                "type": "reference",
+                "target": 11,
+                "name": "T",
+                "package": "@proveanything/smartlinks",
+                "refersToTypeParameter": true
+              }
+            ],
+            "name": "Promise",
+            "package": "typescript"
+          }
+        }
+      ]
+    },
+    {
+      "id": 13,
+      "name": "sendCustomProxyMessage",
+      "variant": "declaration",
+      "kind": 64,
+      "flags": {},
+      "signatures": [
+        {
+          "id": 14,
+          "name": "sendCustomProxyMessage",
+          "variant": "signature",
+          "kind": 4096,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Sends a custom proxy message to the parent Smartlinks application when running in an iframe.\nThis function is used to communicate with the parent window when the SDK is embedded in an iframe\nand proxyMode is enabled. It sends a message to the parent and waits for a response."
+              }
+            ],
+            "blockTags": [
+              {
+                "tag": "@returns",
+                "content": [
+                  {
+                    "kind": "text",
+                    "text": "The data from the proxy response"
+                  }
+                ]
+              }
+            ]
+          },
+          "typeParameter": [
+            {
+              "id": 15,
+              "name": "T",
+              "variant": "typeParam",
+              "kind": 131072,
+              "flags": {},
+              "default": {
+                "type": "intrinsic",
+                "name": "any"
+              }
+            }
+          ],
+          "parameters": [
+            {
+              "id": 16,
+              "name": "request",
+              "variant": "param",
+              "kind": 32768,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "The request type string to identify the message type"
+                  }
+                ]
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "string"
+              }
+            },
+            {
+              "id": 17,
+              "name": "params",
+              "variant": "param",
+              "kind": 32768,
+              "flags": {},
+              "comment": {
+                "summary": [
+                  {
+                    "kind": "text",
+                    "text": "The parameters object containing data to send to the parent"
+                  }
+                ]
+              },
+              "type": {
+                "type": "intrinsic",
+                "name": "any"
+              }
+            }
+          ],
+          "type": {
+            "type": "reference",
+            "target": {
+              "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+              "qualifiedName": "Promise"
+            },
+            "typeArguments": [
+              {
+                "type": "reference",
+                "target": 15,
+                "name": "T",
+                "package": "@proveanything/smartlinks",
+                "refersToTypeParameter": true
+              }
+            ],
+            "name": "Promise",
+            "package": "typescript"
+          }
+        }
+      ]
+    },
+    {
+      "id": 548,
+      "name": "AppConfigurationResponse",
+      "variant": "declaration",
+      "kind": 256,
+      "flags": {},
+      "comment": {
+        "summary": [
+          {
+            "kind": "text",
+            "text": "Represents an App Configuration object."
+          }
+        ]
+      },
+      "children": [
+        {
+          "id": 549,
+          "name": "id",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Unique identifier for the app configuration"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 550,
+          "name": "name",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Name of the app configuration"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 551,
+          "name": "settings",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {
+            "isOptional": true
+          },
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Key-value pairs representing configuration settings"
+              }
+            ]
+          },
+          "type": {
+            "type": "reference",
+            "target": {
+              "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+              "qualifiedName": "Record"
+            },
+            "typeArguments": [
+              {
+                "type": "intrinsic",
+                "name": "string"
+              },
+              {
+                "type": "intrinsic",
+                "name": "any"
+              }
+            ],
+            "name": "Record",
+            "package": "typescript"
+          }
+        }
+      ],
+      "groups": [
+        {
+          "title": "Properties",
+          "children": [
+            549,
+            550,
+            551
+          ]
+        }
+      ]
+    },
+    {
+      "id": 555,
+      "name": "AssetResponse",
+      "variant": "declaration",
+      "kind": 256,
+      "flags": {},
+      "comment": {
+        "summary": [
+          {
+            "kind": "text",
+            "text": "Represents an Asset object."
+          }
+        ]
+      },
+      "children": [
+        {
+          "id": 556,
+          "name": "id",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 557,
+          "name": "name",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 558,
+          "name": "url",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        }
+      ],
+      "groups": [
+        {
+          "title": "Properties",
+          "children": [
+            556,
+            557,
+            558
+          ]
+        }
+      ]
+    },
+    {
+      "id": 70,
+      "name": "AttestationResponse",
+      "variant": "declaration",
+      "kind": 256,
+      "flags": {},
+      "children": [
+        {
+          "id": 71,
+          "name": "id",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 72,
+          "name": "createdAt",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 73,
+          "name": "updatedAt",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 74,
+          "name": "public",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "type": {
+            "type": "reference",
+            "target": {
+              "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+              "qualifiedName": "Record"
+            },
+            "typeArguments": [
+              {
+                "type": "intrinsic",
+                "name": "string"
+              },
+              {
+                "type": "intrinsic",
+                "name": "any"
+              }
+            ],
+            "name": "Record",
+            "package": "typescript"
+          }
+        },
+        {
+          "id": 75,
+          "name": "private",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "type": {
+            "type": "reference",
+            "target": {
+              "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+              "qualifiedName": "Record"
+            },
+            "typeArguments": [
+              {
+                "type": "intrinsic",
+                "name": "string"
+              },
+              {
+                "type": "intrinsic",
+                "name": "any"
+              }
+            ],
+            "name": "Record",
+            "package": "typescript"
+          }
+        },
+        {
+          "id": 76,
+          "name": "proof",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "type": {
+            "type": "reference",
+            "target": {
+              "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+              "qualifiedName": "Record"
+            },
+            "typeArguments": [
+              {
+                "type": "intrinsic",
+                "name": "string"
+              },
+              {
+                "type": "intrinsic",
+                "name": "any"
+              }
+            ],
+            "name": "Record",
+            "package": "typescript"
+          }
+        }
+      ],
+      "groups": [
+        {
+          "title": "Properties",
+          "children": [
+            71,
+            72,
+            73,
+            74,
+            75,
+            76
+          ]
+        }
+      ]
+    },
+    {
+      "id": 77,
+      "name": "AttestationCreateRequest",
+      "variant": "declaration",
+      "kind": 256,
+      "flags": {},
+      "children": [
+        {
+          "id": 78,
+          "name": "public",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "type": {
+            "type": "reference",
+            "target": {
+              "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+              "qualifiedName": "Record"
+            },
+            "typeArguments": [
+              {
+                "type": "intrinsic",
+                "name": "string"
+              },
+              {
+                "type": "intrinsic",
+                "name": "any"
+              }
+            ],
+            "name": "Record",
+            "package": "typescript"
+          }
+        },
+        {
+          "id": 79,
+          "name": "private",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "type": {
+            "type": "reference",
+            "target": {
+              "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+              "qualifiedName": "Record"
+            },
+            "typeArguments": [
+              {
+                "type": "intrinsic",
+                "name": "string"
+              },
+              {
+                "type": "intrinsic",
+                "name": "any"
+              }
+            ],
+            "name": "Record",
+            "package": "typescript"
+          }
+        },
+        {
+          "id": 80,
+          "name": "proof",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "type": {
+            "type": "reference",
+            "target": {
+              "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+              "qualifiedName": "Record"
+            },
+            "typeArguments": [
+              {
+                "type": "intrinsic",
+                "name": "string"
+              },
+              {
+                "type": "intrinsic",
+                "name": "any"
+              }
+            ],
+            "name": "Record",
+            "package": "typescript"
+          }
+        }
+      ],
+      "groups": [
+        {
+          "title": "Properties",
+          "children": [
+            78,
+            79,
+            80
+          ]
+        }
+      ]
+    },
+    {
+      "id": 81,
+      "name": "AttestationUpdateRequest",
+      "variant": "declaration",
+      "kind": 256,
+      "flags": {},
+      "children": [
+        {
+          "id": 82,
+          "name": "type",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {
+            "isOptional": true
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 83,
+          "name": "data",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {
+            "isOptional": true
+          },
+          "type": {
+            "type": "reference",
+            "target": {
+              "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+              "qualifiedName": "Record"
+            },
+            "typeArguments": [
+              {
+                "type": "intrinsic",
+                "name": "string"
+              },
+              {
+                "type": "intrinsic",
+                "name": "any"
+              }
+            ],
+            "name": "Record",
+            "package": "typescript"
+          }
+        }
+      ],
+      "groups": [
+        {
+          "title": "Properties",
+          "children": [
+            82,
+            83
+          ]
+        }
+      ]
+    },
+    {
+      "id": 84,
+      "name": "BatchResponse",
+      "variant": "declaration",
+      "kind": 2097152,
+      "flags": {},
+      "comment": {
+        "summary": [
+          {
+            "kind": "text",
+            "text": "Represents a Batch object."
+          }
+        ]
+      },
+      "type": {
+        "type": "intrinsic",
+        "name": "any"
+      }
+    },
+    {
+      "id": 85,
+      "name": "BatchCreateRequest",
+      "variant": "declaration",
+      "kind": 2097152,
+      "flags": {},
+      "comment": {
+        "summary": [
+          {
+            "kind": "text",
+            "text": "Request payload for creating a new batch."
+          }
+        ]
+      },
+      "type": {
+        "type": "intrinsic",
+        "name": "any"
+      }
+    },
+    {
+      "id": 86,
+      "name": "BatchUpdateRequest",
+      "variant": "declaration",
+      "kind": 2097152,
+      "flags": {},
+      "comment": {
+        "summary": [
+          {
+            "kind": "text",
+            "text": "Request payload for updating an existing batch."
+          }
+        ]
+      },
+      "type": {
+        "type": "intrinsic",
+        "name": "any"
+      }
+    },
+    {
+      "id": 480,
+      "name": "CollectionResponse",
+      "variant": "declaration",
+      "kind": 256,
+      "flags": {},
+      "comment": {
+        "summary": [
+          {
+            "kind": "text",
+            "text": "Represents a Collection object."
+          }
+        ]
+      },
+      "children": [
+        {
+          "id": 481,
+          "name": "id",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Unique identifier for the collection"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 482,
+          "name": "title",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Human-readable title of the collection"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 483,
+          "name": "description",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Description of collection"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 484,
+          "name": "headerImage",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {
+            "isOptional": true
+          },
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "URL to the collection's larger header/hero image"
+              }
+            ]
+          },
+          "type": {
+            "type": "reflection",
+            "declaration": {
+              "id": 485,
+              "name": "__type",
+              "variant": "declaration",
+              "kind": 65536,
+              "flags": {},
+              "children": [
+                {
+                  "id": 486,
+                  "name": "url",
+                  "variant": "declaration",
+                  "kind": 1024,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "URL to the asset"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 487,
+                  "name": "thumbnails",
+                  "variant": "declaration",
+                  "kind": 1024,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Thumbnail URLs in different sizes"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "reflection",
+                    "declaration": {
+                      "id": 488,
+                      "name": "__type",
+                      "variant": "declaration",
+                      "kind": 65536,
+                      "flags": {},
+                      "children": [
+                        {
+                          "id": 489,
+                          "name": "x100",
+                          "variant": "declaration",
+                          "kind": 1024,
+                          "flags": {},
+                          "type": {
+                            "type": "intrinsic",
+                            "name": "string"
+                          }
+                        },
+                        {
+                          "id": 490,
+                          "name": "x200",
+                          "variant": "declaration",
+                          "kind": 1024,
+                          "flags": {},
+                          "type": {
+                            "type": "intrinsic",
+                            "name": "string"
+                          }
+                        },
+                        {
+                          "id": 491,
+                          "name": "x512",
+                          "variant": "declaration",
+                          "kind": 1024,
+                          "flags": {},
+                          "type": {
+                            "type": "intrinsic",
+                            "name": "string"
+                          }
+                        }
+                      ],
+                      "groups": [
+                        {
+                          "title": "Properties",
+                          "children": [
+                            489,
+                            490,
+                            491
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "groups": [
+                {
+                  "title": "Properties",
+                  "children": [
+                    486,
+                    487
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": 492,
+          "name": "logoImage",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {
+            "isOptional": true
+          },
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "URL to the collection's logo image"
+              }
+            ]
+          },
+          "type": {
+            "type": "reflection",
+            "declaration": {
+              "id": 493,
+              "name": "__type",
+              "variant": "declaration",
+              "kind": 65536,
+              "flags": {},
+              "children": [
+                {
+                  "id": 494,
+                  "name": "url",
+                  "variant": "declaration",
+                  "kind": 1024,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "URL to the asset"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 495,
+                  "name": "thumbnails",
+                  "variant": "declaration",
+                  "kind": 1024,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Thumbnail URLs in different sizes"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "reflection",
+                    "declaration": {
+                      "id": 496,
+                      "name": "__type",
+                      "variant": "declaration",
+                      "kind": 65536,
+                      "flags": {},
+                      "children": [
+                        {
+                          "id": 497,
+                          "name": "x100",
+                          "variant": "declaration",
+                          "kind": 1024,
+                          "flags": {},
+                          "type": {
+                            "type": "intrinsic",
+                            "name": "string"
+                          }
+                        },
+                        {
+                          "id": 498,
+                          "name": "x200",
+                          "variant": "declaration",
+                          "kind": 1024,
+                          "flags": {},
+                          "type": {
+                            "type": "intrinsic",
+                            "name": "string"
+                          }
+                        },
+                        {
+                          "id": 499,
+                          "name": "x512",
+                          "variant": "declaration",
+                          "kind": 1024,
+                          "flags": {},
+                          "type": {
+                            "type": "intrinsic",
+                            "name": "string"
+                          }
+                        }
+                      ],
+                      "groups": [
+                        {
+                          "title": "Properties",
+                          "children": [
+                            497,
+                            498,
+                            499
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "groups": [
+                {
+                  "title": "Properties",
+                  "children": [
+                    494,
+                    495
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": 500,
+          "name": "loaderImage",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {
+            "isOptional": true
+          },
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Collection's loader image"
+              }
+            ]
+          },
+          "type": {
+            "type": "reflection",
+            "declaration": {
+              "id": 501,
+              "name": "__type",
+              "variant": "declaration",
+              "kind": 65536,
+              "flags": {},
+              "children": [
+                {
+                  "id": 502,
+                  "name": "overwriteName",
+                  "variant": "declaration",
+                  "kind": 1024,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Override name for the file"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 503,
+                  "name": "name",
+                  "variant": "declaration",
+                  "kind": 1024,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Name of the asset"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 504,
+                  "name": "type",
+                  "variant": "declaration",
+                  "kind": 1024,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "File type/extension"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 505,
+                  "name": "url",
+                  "variant": "declaration",
+                  "kind": 1024,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "URL to the asset"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                }
+              ],
+              "groups": [
+                {
+                  "title": "Properties",
+                  "children": [
+                    502,
+                    503,
+                    504,
+                    505
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": 506,
+          "name": "languages",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {
+            "isOptional": true
+          },
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Array of supported languages"
+              }
+            ]
+          },
+          "type": {
+            "type": "array",
+            "elementType": {
+              "type": "reflection",
+              "declaration": {
+                "id": 507,
+                "name": "__type",
+                "variant": "declaration",
+                "kind": 65536,
+                "flags": {},
+                "children": [
+                  {
+                    "id": 508,
+                    "name": "code",
+                    "variant": "declaration",
+                    "kind": 1024,
+                    "flags": {},
+                    "comment": {
+                      "summary": [
+                        {
+                          "kind": "text",
+                          "text": "Language code (e.g., \"fr\", \"it\", \"es\")"
+                        }
+                      ]
+                    },
+                    "type": {
+                      "type": "intrinsic",
+                      "name": "string"
+                    }
+                  },
+                  {
+                    "id": 509,
+                    "name": "lang",
+                    "variant": "declaration",
+                    "kind": 1024,
+                    "flags": {},
+                    "comment": {
+                      "summary": [
+                        {
+                          "kind": "text",
+                          "text": "Human-readable language name (e.g., \"French\", \"Italian\")"
+                        }
+                      ]
+                    },
+                    "type": {
+                      "type": "intrinsic",
+                      "name": "string"
+                    }
+                  },
+                  {
+                    "id": 510,
+                    "name": "supported",
+                    "variant": "declaration",
+                    "kind": 1024,
+                    "flags": {},
+                    "comment": {
+                      "summary": [
+                        {
+                          "kind": "text",
+                          "text": "Whether this language is supported"
+                        }
+                      ]
+                    },
+                    "type": {
+                      "type": "intrinsic",
+                      "name": "boolean"
+                    }
+                  }
+                ],
+                "groups": [
+                  {
+                    "title": "Properties",
+                    "children": [
+                      508,
+                      509,
+                      510
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": 511,
+          "name": "roles",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "User roles mapping with user IDs as keys and role names as values"
+              }
+            ]
+          },
+          "type": {
+            "type": "reflection",
+            "declaration": {
+              "id": 512,
+              "name": "__type",
+              "variant": "declaration",
+              "kind": 65536,
+              "flags": {},
+              "indexSignature": {
+                "id": 513,
+                "name": "__index",
+                "variant": "signature",
+                "kind": 8192,
+                "flags": {},
+                "parameters": [
+                  {
+                    "id": 514,
+                    "name": "userId",
+                    "variant": "param",
+                    "kind": 32768,
+                    "flags": {},
+                    "type": {
+                      "type": "intrinsic",
+                      "name": "string"
+                    }
+                  }
+                ],
+                "type": {
+                  "type": "intrinsic",
+                  "name": "string"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 515,
+          "name": "groupTags",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {
+            "isOptional": true
+          },
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Array of group tag names"
+              }
+            ]
+          },
+          "type": {
+            "type": "array",
+            "elementType": {
+              "type": "intrinsic",
+              "name": "string"
+            }
+          }
+        },
+        {
+          "id": 516,
+          "name": "redirectUrl",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {
+            "isOptional": true
+          },
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Whether the collection has a custom domain"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 517,
+          "name": "shortId",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "The shortId of this collection"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 518,
+          "name": "dark",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {
+            "isOptional": true
+          },
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "if dark mode is enabled for this collection"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "boolean"
+          }
+        }
+      ],
+      "groups": [
+        {
+          "title": "Properties",
+          "children": [
+            481,
+            482,
+            483,
+            484,
+            492,
+            500,
+            506,
+            511,
+            515,
+            516,
+            517,
+            518
+          ]
+        }
+      ]
+    },
+    {
+      "id": 552,
+      "name": "ErrorResponse",
+      "variant": "declaration",
+      "kind": 256,
+      "flags": {},
+      "comment": {
+        "summary": [
+          {
+            "kind": "text",
+            "text": "Represents a standardized error response."
+          }
+        ]
+      },
+      "children": [
+        {
+          "id": 553,
+          "name": "code",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Numeric error code"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "number"
+          }
+        },
+        {
+          "id": 554,
+          "name": "message",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Human-readable error message"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        }
+      ],
+      "groups": [
+        {
+          "title": "Properties",
+          "children": [
+            553,
+            554
+          ]
+        }
+      ]
+    },
+    {
+      "id": 519,
+      "name": "ProductResponse",
+      "variant": "declaration",
+      "kind": 256,
+      "flags": {},
+      "comment": {
+        "summary": [
+          {
+            "kind": "text",
+            "text": "Represents a Product Item object."
+          }
+        ]
+      },
+      "children": [
+        {
+          "id": 520,
+          "name": "id",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Unique identifier for the product"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 521,
+          "name": "name",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Name of the product"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 522,
+          "name": "collectionId",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Unique identifier for the product's collection"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 523,
+          "name": "description",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Detailed description of the product"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 524,
+          "name": "heroImage",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Hero image asset object"
+              }
+            ]
+          },
+          "type": {
+            "type": "reflection",
+            "declaration": {
+              "id": 525,
+              "name": "__type",
+              "variant": "declaration",
+              "kind": 65536,
+              "flags": {},
+              "children": [
+                {
+                  "id": 526,
+                  "name": "url",
+                  "variant": "declaration",
+                  "kind": 1024,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "URL to the asset"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "intrinsic",
+                    "name": "string"
+                  }
+                },
+                {
+                  "id": 527,
+                  "name": "thumbnails",
+                  "variant": "declaration",
+                  "kind": 1024,
+                  "flags": {},
+                  "comment": {
+                    "summary": [
+                      {
+                        "kind": "text",
+                        "text": "Thumbnail URLs in different sizes"
+                      }
+                    ]
+                  },
+                  "type": {
+                    "type": "reflection",
+                    "declaration": {
+                      "id": 528,
+                      "name": "__type",
+                      "variant": "declaration",
+                      "kind": 65536,
+                      "flags": {},
+                      "children": [
+                        {
+                          "id": 529,
+                          "name": "x100",
+                          "variant": "declaration",
+                          "kind": 1024,
+                          "flags": {},
+                          "type": {
+                            "type": "intrinsic",
+                            "name": "string"
+                          }
+                        },
+                        {
+                          "id": 530,
+                          "name": "x200",
+                          "variant": "declaration",
+                          "kind": 1024,
+                          "flags": {},
+                          "type": {
+                            "type": "intrinsic",
+                            "name": "string"
+                          }
+                        },
+                        {
+                          "id": 531,
+                          "name": "x512",
+                          "variant": "declaration",
+                          "kind": 1024,
+                          "flags": {},
+                          "type": {
+                            "type": "intrinsic",
+                            "name": "string"
+                          }
+                        }
+                      ],
+                      "groups": [
+                        {
+                          "title": "Properties",
+                          "children": [
+                            529,
+                            530,
+                            531
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              ],
+              "groups": [
+                {
+                  "title": "Properties",
+                  "children": [
+                    526,
+                    527
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        {
+          "id": 532,
+          "name": "groupTags",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Flexible map of tags with true/false values"
+              }
+            ]
+          },
+          "type": {
+            "type": "reflection",
+            "declaration": {
+              "id": 533,
+              "name": "__type",
+              "variant": "declaration",
+              "kind": 65536,
+              "flags": {},
+              "indexSignature": {
+                "id": 534,
+                "name": "__index",
+                "variant": "signature",
+                "kind": 8192,
+                "flags": {},
+                "parameters": [
+                  {
+                    "id": 535,
+                    "name": "tagName",
+                    "variant": "param",
+                    "kind": 32768,
+                    "flags": {},
+                    "type": {
+                      "type": "intrinsic",
+                      "name": "string"
+                    }
+                  }
+                ],
+                "type": {
+                  "type": "intrinsic",
+                  "name": "boolean"
+                }
+              }
+            }
+          }
+        },
+        {
+          "id": 536,
+          "name": "data",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Flexible key/value data map"
+              }
+            ]
+          },
+          "type": {
+            "type": "reflection",
+            "declaration": {
+              "id": 537,
+              "name": "__type",
+              "variant": "declaration",
+              "kind": 65536,
+              "flags": {},
+              "indexSignature": {
+                "id": 538,
+                "name": "__index",
+                "variant": "signature",
+                "kind": 8192,
+                "flags": {},
+                "parameters": [
+                  {
+                    "id": 539,
+                    "name": "key",
+                    "variant": "param",
+                    "kind": 32768,
+                    "flags": {},
+                    "type": {
+                      "type": "intrinsic",
+                      "name": "string"
+                    }
+                  }
+                ],
+                "type": {
+                  "type": "intrinsic",
+                  "name": "any"
+                }
+              }
+            }
+          }
+        }
+      ],
+      "groups": [
+        {
+          "title": "Properties",
+          "children": [
+            520,
+            521,
+            522,
+            523,
+            524,
+            532,
+            536
+          ]
+        }
+      ]
+    },
+    {
+      "id": 540,
+      "name": "ProofResponse",
+      "variant": "declaration",
+      "kind": 256,
+      "flags": {},
+      "comment": {
+        "summary": [
+          {
+            "kind": "text",
+            "text": "Represents a Proof object."
+          }
+        ]
+      },
+      "children": [
+        {
+          "id": 541,
+          "name": "collectionId",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Unique identifier for the collection"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 542,
+          "name": "createdAt",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Creation timestamp"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 543,
+          "name": "id",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Unique identifier for the proof"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 544,
+          "name": "productId",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Unique identifier for the product"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 545,
+          "name": "tokenId",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Unique identifier for the token"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 546,
+          "name": "userId",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Unique identifier for the user"
+              }
+            ]
+          },
+          "type": {
+            "type": "intrinsic",
+            "name": "string"
+          }
+        },
+        {
+          "id": 547,
+          "name": "values",
+          "variant": "declaration",
+          "kind": 1024,
+          "flags": {},
+          "comment": {
+            "summary": [
+              {
+                "kind": "text",
+                "text": "Arbitrary key-value pairs for proof values"
+              }
+            ]
+          },
+          "type": {
+            "type": "reference",
+            "target": {
+              "sourceFileName": "node_modules/typescript/lib/lib.es5.d.ts",
+              "qualifiedName": "Record"
+            },
+            "typeArguments": [
+              {
+                "type": "intrinsic",
+                "name": "string"
+              },
+              {
+                "type": "intrinsic",
+                "name": "any"
+              }
+            ],
+            "name": "Record",
+            "package": "typescript"
+          }
+        }
+      ],
+      "groups": [
+        {
+          "title": "Properties",
+          "children": [
+            541,
+            542,
+            543,
+            544,
+            545,
+            546,
+            547
+          ]
+        }
+      ]
+    },
+    {
+      "id": 87,
+      "name": "VariantResponse",
+      "variant": "declaration",
+      "kind": 2097152,
+      "flags": {},
+      "comment": {
+        "summary": [
+          {
+            "kind": "text",
+            "text": "Represents a Variant object."
+          }
+        ]
+      },
+      "type": {
+        "type": "intrinsic",
+        "name": "any"
+      }
+    },
+    {
+      "id": 88,
+      "name": "VariantCreateRequest",
+      "variant": "declaration",
+      "kind": 2097152,
+      "flags": {},
+      "comment": {
+        "summary": [
+          {
+            "kind": "text",
+            "text": "Request payload for creating a new variant."
+          }
+        ]
+      },
+      "type": {
+        "type": "intrinsic",
+        "name": "any"
+      }
+    },
+    {
+      "id": 89,
+      "name": "VariantUpdateRequest",
+      "variant": "declaration",
+      "kind": 2097152,
+      "flags": {},
+      "comment": {
+        "summary": [
+          {
+            "kind": "text",
+            "text": "Request payload for updating an existing variant."
+          }
+        ]
+      },
+      "type": {
+        "type": "intrinsic",
+        "name": "any"
+      }
+    }
+  ],
+  "groups": [
+    {
+      "title": "Namespaces",
+      "children": [
+        177,
+        199,
+        218,
+        258,
+        289,
+        392,
+        324,
+        103,
+        371,
+        301,
+        135,
+        169,
+        436
+      ]
+    },
+    {
+      "title": "Interfaces",
+      "children": [
+        548,
+        555,
+        70,
+        77,
+        81,
+        480,
+        552,
+        519,
+        540
+      ]
+    },
+    {
+      "title": "Type Aliases",
+      "children": [
+        90,
+        18,
+        25,
+        32,
+        84,
+        85,
+        86,
+        87,
+        88,
+        89
+      ]
+    },
+    {
+      "title": "Functions",
+      "children": [
+        1,
+        9,
+        13
+      ]
+    }
+  ],
+  "packageName": "@proveanything/smartlinks",
+  "readme": [
+    {
+      "kind": "text",
+      "text": "# Smartlinks SDK\r\n\r\nOfficial JavaScript/TypeScript SDK for the Smartlinks API - enabling digital product authentication, traceability, and engagement.\r\n\r\n## Installation\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```bash\r\nnpm install @proveanything/smartlinks\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Quick Start\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { initializeApi, auth, collection, product } from '@proveanything/smartlinks'\r\n\r\n// Initialize the SDK\r\ninitializeApi({\r\n  baseURL: 'https://smartlinks.app/api/v1'\r\n})\r\n\r\n// Login\r\nconst loginResponse = await auth.login('email@example.com', 'password')\r\n\r\n// Get collections\r\nconst collections = await collection.list(true) // admin endpoint\r\n\r\n// Get products in a collection\r\nconst products = await product.list('collection-id', true)\r\n\r\n// Get a specific product\r\nconst productDetail = await product.get('collection-id', 'product-id')\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Configuration\r\n\r\n### Basic Setup\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { initializeApi } from '@proveanything/smartlinks'\r\n\r\n// Initialize with base URL\r\ninitializeApi({\r\n  baseURL: 'https://smartlinks.app/api/v1'\r\n})\r\n\r\n// Or with API key for server-side usage\r\ninitializeApi({\r\n  baseURL: 'https://smartlinks.app/api/v1',\r\n  apiKey: 'your-api-key'\r\n})\r\n\r\n// For iframe/embedded usage\r\ninitializeApi({\r\n  baseURL: 'https://smartlinks.app/api/v1',\r\n  proxyMode: true\r\n})\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n### Runtime Token Management\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { setBearerToken } from '@proveanything/smartlinks'\r\n\r\n// Set token after login\r\nsetBearerToken('your-bearer-token')\r\n\r\n// Clear token on logout\r\nsetBearerToken(undefined)\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Authentication\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { auth } from '@proveanything/smartlinks'\r\n\r\n// Login with email/password\r\nconst response = await auth.login('user@example.com', 'password')\r\nconsole.log(response.bearerToken) // Token is automatically set for future calls\r\n\r\n// Verify current token\r\nconst userInfo = await auth.verifyToken()\r\n\r\n// Get account information\r\nconst account = await auth.getAccount()\r\n\r\n// Logout (clears token)\r\nauth.logout()\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Working with Collections\r\n\r\nCollections are the top-level containers for organizing products.\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { collection } from '@proveanything/smartlinks'\r\n\r\n// Get all collections (public)\r\nconst publicCollections = await collection.list(false)\r\n\r\n// Get all collections (admin - requires authentication)\r\nconst adminCollections = await collection.list(true)\r\n\r\n// Get specific collection\r\nconst col = await collection.get('collection-id', true)\r\n\r\n// Create collection (admin only)\r\nconst newCollection = await collection.create({\r\n  title: 'New Collection',\r\n  description: 'Collection description'\r\n})\r\n\r\n// Update collection (admin only) \r\nawait collection.update('collection-id', { \r\n  title: 'Updated Title' \r\n})\r\n\r\n// Delete collection (admin only)\r\nawait collection.remove('collection-id')\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n### Serial Number Management\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\n// Get serial numbers for a collection\r\nconst serialNumbers = await collection.getSN('collection-id', 0, 10)\r\n\r\n// Look up a specific serial number\r\nconst lookupResult = await collection.lookupSN('collection-id', 'serial-code')\r\n\r\n// Assign a value to a serial number\r\nawait collection.assignSN('collection-id', 'serial-code', 'assigned-value')\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Working with Products\r\n\r\nProducts represent individual items within collections.\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { product } from '@proveanything/smartlinks'\r\n\r\n// List products in collection (public)\r\nconst publicProducts = await product.list('collection-id', false)\r\n\r\n// List products in collection (admin)\r\nconst adminProducts = await product.list('collection-id', true)\r\n\r\n// Get specific product\r\nconst prod = await product.get('collection-id', 'product-id')\r\n\r\n// Create product (admin only)\r\nconst newProduct = await product.create('collection-id', {\r\n  name: 'New Product',\r\n  description: 'Product description',\r\n  data: {\r\n    custom: 'properties'\r\n  }\r\n})\r\n\r\n// Update product (admin only)\r\nawait product.update('collection-id', 'product-id', { \r\n  name: 'Updated Name' \r\n})\r\n\r\n// Delete product (admin only)\r\nawait product.remove('collection-id', 'product-id')\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n### Product Serial Numbers\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\n// Get serial numbers for a product\r\nconst serialNumbers = await product.getSN('collection-id', 'product-id', 0, 10)\r\n\r\n// Look up a serial number for a product\r\nconst lookupResult = await product.lookupSN('collection-id', 'product-id', 'serial-code')\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Variants and Batches\r\n\r\nManage product variants and production batches:\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { variant, batch } from '@proveanything/smartlinks'\r\n\r\n// Work with variants\r\nconst variants = await variant.list('collection-id', 'product-id')\r\nconst newVariant = await variant.create('collection-id', 'product-id', {\r\n  name: 'Size Large',\r\n  properties: { size: 'L', color: 'blue' }\r\n})\r\n\r\n// Work with batches  \r\nconst batches = await batch.list('collection-id', 'product-id')\r\nconst newBatch = await batch.create('collection-id', 'product-id', {\r\n  name: 'Batch 001',\r\n  quantity: 100\r\n})\r\n\r\n// Serial numbers for variants/batches\r\nconst variantSerials = await variant.getSN('collection-id', 'product-id', 'variant-id')\r\nconst batchSerials = await batch.getSN('collection-id', 'product-id', 'batch-id')\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Asset Management\r\n\r\nUpload and manage files associated with collections, products, and proofs:\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { asset } from '@proveanything/smartlinks'\r\n\r\n// Upload asset to a proof\r\nconst file = document.getElementById('fileInput').files[0]\r\nconst uploadResult = await asset.uploadAsset(\r\n  'collection-id', \r\n  'product-id', \r\n  'proof-id', \r\n  file,\r\n  { description: 'Product image' }, // Optional extra data\r\n  (percent) => console.log(`Upload: ${percent}%`) // Progress callback\r\n)\r\n\r\n// Get asset information\r\nconst assetInfo = await asset.getForProof('collection-id', 'product-id', 'proof-id', 'asset-id')\r\n\r\n// List all assets for a proof\r\nconst proofAssets = await asset.listForProof('collection-id', 'product-id', 'proof-id')\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Attestations and Claims\r\n\r\nManage digital attestations and claim verification:\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { attestation, claimSet } from '@proveanything/smartlinks'\r\n\r\n// Work with attestations\r\nconst attestations = await attestation.list('collection-id', 'product-id', 'proof-id')\r\nconst newAttestation = await attestation.create('collection-id', 'product-id', 'proof-id', {\r\n  public: { verified: true },\r\n  private: { inspector: 'John Doe' },\r\n  proof: { signature: 'abc123' }\r\n})\r\n\r\n// Work with claim sets\r\nconst claimSets = await claimSet.getAllForCollection('collection-id')\r\nconst claimResult = await claimSet.makeClaim('collection-id', {\r\n  productId: 'product-id',\r\n  claimType: 'ownership'\r\n})\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Proofs\r\n\r\nRetrieve and validate product proofs:\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { proof } from '@proveanything/smartlinks'\r\n\r\n// Get all proofs for a collection\r\nconst proofs = await proof.list('collection-id')\r\n\r\n// Get specific proof\r\nconst proofDetail = await proof.get('collection-id', 'proof-id')\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Forms\r\n\r\nDynamic form creation and management:\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { form } from '@proveanything/smartlinks'\r\n\r\n// List forms (public)\r\nconst publicForms = await form.list('collection-id', false)\r\n\r\n// List forms (admin)\r\nconst adminForms = await form.list('collection-id', true)\r\n\r\n// Create form (admin only)\r\nconst newForm = await form.create('collection-id', {\r\n  name: 'Product Registration',\r\n  fields: [\r\n    { name: 'email', type: 'email', required: true },\r\n    { name: 'name', type: 'text', required: true }\r\n  ]\r\n})\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Advanced Usage\r\n\r\n### Proxy Mode (iframe Communication)\r\n\r\nWhen running in an iframe, use proxy mode to communicate with the parent window:\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { initializeApi, sendCustomProxyMessage } from '@proveanything/smartlinks'\r\n\r\n// Initialize in proxy mode\r\ninitializeApi({\r\n  baseURL: 'https://smartlinks.app/api/v1',\r\n  proxyMode: true\r\n})\r\n\r\n// Send custom messages to parent window\r\nconst response = await sendCustomProxyMessage('custom-action', {\r\n  data: 'any-data'\r\n})\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n### Custom Configuration\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { appConfiguration } from '@proveanything/smartlinks'\r\n\r\n// Get configuration\r\nconst config = await appConfiguration.getConfig({ key: 'setting-name' })\r\n\r\n// Set configuration\r\nawait appConfiguration.setConfig({ \r\n  key: 'setting-name', \r\n  value: 'setting-value' \r\n})\r\n\r\n// Work with configuration data\r\nconst data = await appConfiguration.getData({ category: 'user-preferences' })\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Error Handling\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { ErrorResponse } from '@proveanything/smartlinks'\r\n\r\ntry {\r\n  const result = await product.get('collection-id', 'product-id')\r\n} catch (error) {\r\n  if (error instanceof ErrorResponse) {\r\n    console.error('API Error:', error.message)\r\n    console.error('Status Code:', error.code)\r\n  } else {\r\n    console.error('Unexpected error:', error)\r\n  }\r\n}\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## TypeScript Support\r\n\r\nThe SDK is written in TypeScript and includes full type definitions:\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\nimport { \r\n  ProductResponse, \r\n  CollectionResponse, \r\n  AttestationCreateRequest \r\n} from '@proveanything/smartlinks'\r\n\r\nconst product: ProductResponse = await product.get('col-id', 'prod-id')\r\nconst collection: CollectionResponse = await collection.get('col-id')\r\n\r\nconst attestationData: AttestationCreateRequest = {\r\n  public: { verified: true },\r\n  private: { notes: 'Internal notes' },\r\n  proof: { signature: 'digital-signature' }\r\n}\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Admin vs Public Endpoints\r\n\r\nMany functions support both admin and public access modes:\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```typescript\r\n// Public access (limited data, no authentication required)\r\nconst publicCollections = await collection.list(false)\r\nconst publicProducts = await product.list('collection-id', false)\r\n\r\n// Admin access (full data + management capabilities, authentication required)  \r\nconst adminCollections = await collection.list(true)\r\nconst adminProducts = await product.list('collection-id', true)\r\n\r\n// Create/Update/Delete operations are admin-only\r\nawait collection.create(data) // Requires authentication\r\nawait product.update('col-id', 'prod-id', data) // Requires authentication\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Browser vs Node.js\r\n\r\nThe SDK works in both browser and Node.js environments:\r\n\r\n### Browser Usage\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```html\r\n<script type=\"module\">\r\n  import { initializeApi, auth } from '@proveanything/smartlinks'\r\n  \r\n  initializeApi({ baseURL: 'https://smartlinks.app/api/v1' })\r\n  // Use the SDK...\r\n</script>\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n### Node.js Usage\r\n\r\n"
+    },
+    {
+      "kind": "code",
+      "text": "```javascript\r\nconst { initializeApi, auth } = require('@proveanything/smartlinks')\r\n\r\ninitializeApi({ \r\n  baseURL: 'https://smartlinks.app/api/v1',\r\n  apiKey: process.env.SMARTLINKS_API_KEY \r\n})\r\n```"
+    },
+    {
+      "kind": "text",
+      "text": "\r\n\r\n## Examples\r\n\r\nCheck out the [examples](./examples/) directory for complete implementation examples:\r\n\r\n- [Node.js Demo](./examples/node-demo.ts) - Server-side usage examples\r\n- [Browser Demo](./examples/browser-demo.html) - Frontend integration examples\r\n- [React Demo](./examples/react-demo.tsx) - React component examples\r\n\r\n## API Reference\r\n\r\nFor complete API documentation including all functions and types, see [API_SUMMARY.md](./API_SUMMARY.md).\r\n\r\n## Support\r\n\r\n- **Documentation**: [API Reference](./API_SUMMARY.md)\r\n- **Issues**: [GitHub Issues](https://github.com/Prove-Anything/smartlinks/issues)\r\n- **Website**: [smartlinks.app](https://smartlinks.app)\r\n\r\n## License\r\n\r\nMIT License - see [LICENSE](./LICENSE) for details."
+    }
+  ],
+  "symbolIdMap": {
+    "0": {
+      "sourceFileName": "src/index.ts",
+      "qualifiedName": ""
+    },
+    "1": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "initializeApi"
+    },
+    "2": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "initializeApi"
+    },
+    "3": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "options"
+    },
+    "4": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "__type"
+    },
+    "5": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "__type.baseURL"
+    },
+    "6": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "__type.apiKey"
+    },
+    "7": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "__type.bearerToken"
+    },
+    "8": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "__type.proxyMode"
+    },
+    "9": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "request"
+    },
+    "10": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "request"
+    },
+    "11": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "T"
+    },
+    "12": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "path"
+    },
+    "13": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "sendCustomProxyMessage"
+    },
+    "14": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "sendCustomProxyMessage"
+    },
+    "15": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "T"
+    },
+    "16": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "request"
+    },
+    "17": {
+      "sourceFileName": "src/http.ts",
+      "qualifiedName": "params"
+    },
+    "18": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "LoginResponse"
+    },
+    "19": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type"
+    },
+    "20": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.id"
+    },
+    "21": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.name"
+    },
+    "22": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.email"
+    },
+    "23": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.bearerToken"
+    },
+    "24": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.account"
+    },
+    "25": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "VerifyTokenResponse"
+    },
+    "26": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type"
+    },
+    "27": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.valid"
+    },
+    "28": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.id"
+    },
+    "29": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.name"
+    },
+    "30": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.email"
+    },
+    "31": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.account"
+    },
+    "32": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "AccountInfoResponse"
+    },
+    "33": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type"
+    },
+    "34": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.jwtToken"
+    },
+    "35": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.jwtExpiry"
+    },
+    "36": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.accessType"
+    },
+    "37": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.analyticsCode"
+    },
+    "38": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.analyticsId"
+    },
+    "39": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.auth_time"
+    },
+    "40": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.baseCollectionId"
+    },
+    "41": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.clientType"
+    },
+    "42": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.email"
+    },
+    "43": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.email_verified"
+    },
+    "44": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.features"
+    },
+    "45": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type"
+    },
+    "46": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.actionLogger"
+    },
+    "47": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.adminCollections"
+    },
+    "48": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.adminApps"
+    },
+    "49": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.apiKeys"
+    },
+    "50": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.adminUsers"
+    },
+    "51": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.__index"
+    },
+    "53": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.iat"
+    },
+    "54": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.id"
+    },
+    "55": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.iss"
+    },
+    "56": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.location"
+    },
+    "57": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.name"
+    },
+    "58": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.picture"
+    },
+    "59": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.sites"
+    },
+    "60": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type"
+    },
+    "61": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.__index"
+    },
+    "63": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.sub"
+    },
+    "64": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.uid"
+    },
+    "65": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.user_id"
+    },
+    "66": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.whitelabel"
+    },
+    "67": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type"
+    },
+    "68": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "__type.__index"
+    },
+    "70": {
+      "sourceFileName": "src/types/attestation.ts",
+      "qualifiedName": "AttestationResponse"
+    },
+    "71": {
+      "sourceFileName": "src/types/attestation.ts",
+      "qualifiedName": "AttestationResponse.id"
+    },
+    "72": {
+      "sourceFileName": "src/types/attestation.ts",
+      "qualifiedName": "AttestationResponse.createdAt"
+    },
+    "73": {
+      "sourceFileName": "src/types/attestation.ts",
+      "qualifiedName": "AttestationResponse.updatedAt"
+    },
+    "74": {
+      "sourceFileName": "src/types/attestation.ts",
+      "qualifiedName": "AttestationResponse.public"
+    },
+    "75": {
+      "sourceFileName": "src/types/attestation.ts",
+      "qualifiedName": "AttestationResponse.private"
+    },
+    "76": {
+      "sourceFileName": "src/types/attestation.ts",
+      "qualifiedName": "AttestationResponse.proof"
+    },
+    "77": {
+      "sourceFileName": "src/types/attestation.ts",
+      "qualifiedName": "AttestationCreateRequest"
+    },
+    "78": {
+      "sourceFileName": "src/types/attestation.ts",
+      "qualifiedName": "AttestationCreateRequest.public"
+    },
+    "79": {
+      "sourceFileName": "src/types/attestation.ts",
+      "qualifiedName": "AttestationCreateRequest.private"
+    },
+    "80": {
+      "sourceFileName": "src/types/attestation.ts",
+      "qualifiedName": "AttestationCreateRequest.proof"
+    },
+    "81": {
+      "sourceFileName": "src/types/attestation.ts",
+      "qualifiedName": "AttestationUpdateRequest"
+    },
+    "82": {
+      "sourceFileName": "src/types/attestation.ts",
+      "qualifiedName": "AttestationUpdateRequest.type"
+    },
+    "83": {
+      "sourceFileName": "src/types/attestation.ts",
+      "qualifiedName": "AttestationUpdateRequest.data"
+    },
+    "84": {
+      "sourceFileName": "src/types/batch.ts",
+      "qualifiedName": "BatchResponse"
+    },
+    "85": {
+      "sourceFileName": "src/types/batch.ts",
+      "qualifiedName": "BatchCreateRequest"
+    },
+    "86": {
+      "sourceFileName": "src/types/batch.ts",
+      "qualifiedName": "BatchUpdateRequest"
+    },
+    "87": {
+      "sourceFileName": "src/types/variant.ts",
+      "qualifiedName": "VariantResponse"
+    },
+    "88": {
+      "sourceFileName": "src/types/variant.ts",
+      "qualifiedName": "VariantCreateRequest"
+    },
+    "89": {
+      "sourceFileName": "src/types/variant.ts",
+      "qualifiedName": "VariantUpdateRequest"
+    },
+    "90": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "AppConfigOptions"
+    },
+    "91": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "__type"
+    },
+    "92": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "__type.appId"
+    },
+    "93": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "__type.collectionId"
+    },
+    "94": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "__type.productId"
+    },
+    "95": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "__type.variantId"
+    },
+    "96": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "__type.batchId"
+    },
+    "97": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "__type.itemId"
+    },
+    "98": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "__type.user"
+    },
+    "99": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "__type.userData"
+    },
+    "100": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "__type.admin"
+    },
+    "101": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "__type.config"
+    },
+    "102": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "__type.data"
+    },
+    "103": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection"
+    },
+    "104": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.get"
+    },
+    "105": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.get"
+    },
+    "106": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collectionId"
+    },
+    "107": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "admin"
+    },
+    "108": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.list"
+    },
+    "109": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.list"
+    },
+    "110": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "admin"
+    },
+    "111": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.create"
+    },
+    "112": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.create"
+    },
+    "113": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "data"
+    },
+    "114": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.update"
+    },
+    "115": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.update"
+    },
+    "116": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collectionId"
+    },
+    "117": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "data"
+    },
+    "118": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.remove"
+    },
+    "119": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.remove"
+    },
+    "120": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collectionId"
+    },
+    "121": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.getSN"
+    },
+    "122": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.getSN"
+    },
+    "123": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collectionId"
+    },
+    "124": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "startIndex"
+    },
+    "125": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "count"
+    },
+    "126": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.lookupSN"
+    },
+    "127": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.lookupSN"
+    },
+    "128": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collectionId"
+    },
+    "129": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "codeId"
+    },
+    "130": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.assignSN"
+    },
+    "131": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collection.assignSN"
+    },
+    "132": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "collectionId"
+    },
+    "133": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "codeId"
+    },
+    "134": {
+      "sourceFileName": "src/api/collection.ts",
+      "qualifiedName": "value"
+    },
+    "135": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product"
+    },
+    "136": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product.get"
+    },
+    "137": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product.get"
+    },
+    "138": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "collectionId"
+    },
+    "139": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "productId"
+    },
+    "140": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "admin"
+    },
+    "141": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product.list"
+    },
+    "142": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product.list"
+    },
+    "143": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "collectionId"
+    },
+    "144": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "admin"
+    },
+    "145": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product.create"
+    },
+    "146": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product.create"
+    },
+    "147": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "collectionId"
+    },
+    "148": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "data"
+    },
+    "149": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product.update"
+    },
+    "150": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product.update"
+    },
+    "151": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "collectionId"
+    },
+    "152": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "productId"
+    },
+    "153": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "data"
+    },
+    "154": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product.remove"
+    },
+    "155": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product.remove"
+    },
+    "156": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "collectionId"
+    },
+    "157": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "productId"
+    },
+    "158": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product.getSN"
+    },
+    "159": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product.getSN"
+    },
+    "160": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "collectionId"
+    },
+    "161": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "productId"
+    },
+    "162": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "startIndex"
+    },
+    "163": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "count"
+    },
+    "164": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product.lookupSN"
+    },
+    "165": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "product.lookupSN"
+    },
+    "166": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "collectionId"
+    },
+    "167": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "productId"
+    },
+    "168": {
+      "sourceFileName": "src/api/product.ts",
+      "qualifiedName": "codeId"
+    },
+    "169": {
+      "sourceFileName": "src/api/proof.ts",
+      "qualifiedName": "proof"
+    },
+    "170": {
+      "sourceFileName": "src/api/proof.ts",
+      "qualifiedName": "proof.get"
+    },
+    "171": {
+      "sourceFileName": "src/api/proof.ts",
+      "qualifiedName": "proof.get"
+    },
+    "172": {
+      "sourceFileName": "src/api/proof.ts",
+      "qualifiedName": "collectionId"
+    },
+    "173": {
+      "sourceFileName": "src/api/proof.ts",
+      "qualifiedName": "proofId"
+    },
+    "174": {
+      "sourceFileName": "src/api/proof.ts",
+      "qualifiedName": "proof.list"
+    },
+    "175": {
+      "sourceFileName": "src/api/proof.ts",
+      "qualifiedName": "proof.list"
+    },
+    "176": {
+      "sourceFileName": "src/api/proof.ts",
+      "qualifiedName": "collectionId"
+    },
+    "177": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration"
+    },
+    "178": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration.getConfig"
+    },
+    "179": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration.getConfig"
+    },
+    "180": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "opts"
+    },
+    "181": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration.setConfig"
+    },
+    "182": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration.setConfig"
+    },
+    "183": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "opts"
+    },
+    "184": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration.deleteConfig"
+    },
+    "185": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration.deleteConfig"
+    },
+    "186": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "opts"
+    },
+    "187": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration.getData"
+    },
+    "188": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration.getData"
+    },
+    "189": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "opts"
+    },
+    "190": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration.getDataItem"
+    },
+    "191": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration.getDataItem"
+    },
+    "192": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "opts"
+    },
+    "193": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration.setDataItem"
+    },
+    "194": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration.setDataItem"
+    },
+    "195": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "opts"
+    },
+    "196": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration.deleteDataItem"
+    },
+    "197": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "appConfiguration.deleteDataItem"
+    },
+    "198": {
+      "sourceFileName": "src/api/appConfiguration.ts",
+      "qualifiedName": "opts"
+    },
+    "199": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "appRecord"
+    },
+    "200": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "appRecord.get"
+    },
+    "201": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "appRecord.get"
+    },
+    "202": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "collectionId"
+    },
+    "203": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "appId"
+    },
+    "204": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "appRecord.create"
+    },
+    "205": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "appRecord.create"
+    },
+    "206": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "collectionId"
+    },
+    "207": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "appId"
+    },
+    "208": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "data"
+    },
+    "209": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "appRecord.update"
+    },
+    "210": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "appRecord.update"
+    },
+    "211": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "collectionId"
+    },
+    "212": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "appId"
+    },
+    "213": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "data"
+    },
+    "214": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "appRecord.remove"
+    },
+    "215": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "appRecord.remove"
+    },
+    "216": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "collectionId"
+    },
+    "217": {
+      "sourceFileName": "src/api/appRecord.ts",
+      "qualifiedName": "appId"
+    },
+    "218": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset"
+    },
+    "219": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset.getForCollection"
+    },
+    "220": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset.getForCollection"
+    },
+    "221": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "collectionId"
+    },
+    "222": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "assetId"
+    },
+    "223": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset.listForCollection"
+    },
+    "224": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset.listForCollection"
+    },
+    "225": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "collectionId"
+    },
+    "226": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset.getForProduct"
+    },
+    "227": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset.getForProduct"
+    },
+    "228": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "collectionId"
+    },
+    "229": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "productId"
+    },
+    "230": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "assetId"
+    },
+    "231": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset.listForProduct"
+    },
+    "232": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset.listForProduct"
+    },
+    "233": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "collectionId"
+    },
+    "234": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "productId"
+    },
+    "235": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset.getForProof"
+    },
+    "236": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset.getForProof"
+    },
+    "237": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "collectionId"
+    },
+    "238": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "productId"
+    },
+    "239": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "proofId"
+    },
+    "240": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "assetId"
+    },
+    "241": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset.listForProof"
+    },
+    "242": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset.listForProof"
+    },
+    "243": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "collectionId"
+    },
+    "244": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "productId"
+    },
+    "245": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "proofId"
+    },
+    "246": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "appId"
+    },
+    "247": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset.uploadAsset"
+    },
+    "248": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "asset.uploadAsset"
+    },
+    "249": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "collectionId"
+    },
+    "250": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "productId"
+    },
+    "251": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "proofId"
+    },
+    "252": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "file"
+    },
+    "253": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "extraData"
+    },
+    "254": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "onProgress"
+    },
+    "255": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "__type"
+    },
+    "256": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "__type"
+    },
+    "257": {
+      "sourceFileName": "src/api/asset.ts",
+      "qualifiedName": "percent"
+    },
+    "258": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "attestation"
+    },
+    "259": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "attestation.list"
+    },
+    "260": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "attestation.list"
+    },
+    "261": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "collectionId"
+    },
+    "262": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "productId"
+    },
+    "263": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "proofId"
+    },
+    "264": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "attestation.get"
+    },
+    "265": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "attestation.get"
+    },
+    "266": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "collectionId"
+    },
+    "267": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "productId"
+    },
+    "268": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "proofId"
+    },
+    "269": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "attestationId"
+    },
+    "270": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "attestation.create"
+    },
+    "271": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "attestation.create"
+    },
+    "272": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "collectionId"
+    },
+    "273": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "productId"
+    },
+    "274": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "proofId"
+    },
+    "275": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "data"
+    },
+    "276": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "attestation.update"
+    },
+    "277": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "attestation.update"
+    },
+    "278": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "collectionId"
+    },
+    "279": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "productId"
+    },
+    "280": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "proofId"
+    },
+    "281": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "attestationId"
+    },
+    "282": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "data"
+    },
+    "283": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "attestation.remove"
+    },
+    "284": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "attestation.remove"
+    },
+    "285": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "collectionId"
+    },
+    "286": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "productId"
+    },
+    "287": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "proofId"
+    },
+    "288": {
+      "sourceFileName": "src/api/attestation.ts",
+      "qualifiedName": "attestationId"
+    },
+    "289": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "auth"
+    },
+    "290": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "auth.login"
+    },
+    "291": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "auth.login"
+    },
+    "292": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "email"
+    },
+    "293": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "password"
+    },
+    "294": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "auth.logout"
+    },
+    "295": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "auth.logout"
+    },
+    "296": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "auth.verifyToken"
+    },
+    "297": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "auth.verifyToken"
+    },
+    "298": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "token"
+    },
+    "299": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "auth.getAccount"
+    },
+    "300": {
+      "sourceFileName": "src/api/auth.ts",
+      "qualifiedName": "auth.getAccount"
+    },
+    "301": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "form"
+    },
+    "302": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "form.get"
+    },
+    "303": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "form.get"
+    },
+    "304": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "collectionId"
+    },
+    "305": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "formId"
+    },
+    "306": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "admin"
+    },
+    "307": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "form.list"
+    },
+    "308": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "form.list"
+    },
+    "309": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "collectionId"
+    },
+    "310": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "admin"
+    },
+    "311": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "form.create"
+    },
+    "312": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "form.create"
+    },
+    "313": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "collectionId"
+    },
+    "314": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "data"
+    },
+    "315": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "form.update"
+    },
+    "316": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "form.update"
+    },
+    "317": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "collectionId"
+    },
+    "318": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "formId"
+    },
+    "319": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "data"
+    },
+    "320": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "form.remove"
+    },
+    "321": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "form.remove"
+    },
+    "322": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "collectionId"
+    },
+    "323": {
+      "sourceFileName": "src/api/form.ts",
+      "qualifiedName": "formId"
+    },
+    "324": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet"
+    },
+    "325": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.getAllForCollection"
+    },
+    "326": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.getAllForCollection"
+    },
+    "327": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "collectionId"
+    },
+    "328": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.getForCollection"
+    },
+    "329": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.getForCollection"
+    },
+    "330": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "collectionId"
+    },
+    "331": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSetId"
+    },
+    "332": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.getAllTags"
+    },
+    "333": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.getAllTags"
+    },
+    "334": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "collectionId"
+    },
+    "335": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSetId"
+    },
+    "336": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.getReport"
+    },
+    "337": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.getReport"
+    },
+    "338": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "collectionId"
+    },
+    "339": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSetId"
+    },
+    "340": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.getAssignedTags"
+    },
+    "341": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.getAssignedTags"
+    },
+    "342": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "collectionId"
+    },
+    "343": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSetId"
+    },
+    "344": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.getTagSummary"
+    },
+    "345": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.getTagSummary"
+    },
+    "346": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "collectionId"
+    },
+    "347": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.tagQuery"
+    },
+    "348": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.tagQuery"
+    },
+    "349": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "collectionId"
+    },
+    "350": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "data"
+    },
+    "351": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.createForCollection"
+    },
+    "352": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.createForCollection"
+    },
+    "353": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "collectionId"
+    },
+    "354": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "params"
+    },
+    "355": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.updateForCollection"
+    },
+    "356": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.updateForCollection"
+    },
+    "357": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "collectionId"
+    },
+    "358": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "params"
+    },
+    "359": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.makeClaim"
+    },
+    "360": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.makeClaim"
+    },
+    "361": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "collectionId"
+    },
+    "362": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "params"
+    },
+    "363": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.assignClaims"
+    },
+    "364": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.assignClaims"
+    },
+    "365": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "collectionId"
+    },
+    "366": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "data"
+    },
+    "367": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.updateClaimData"
+    },
+    "368": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "claimSet.updateClaimData"
+    },
+    "369": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "collectionId"
+    },
+    "370": {
+      "sourceFileName": "src/api/claimSet.ts",
+      "qualifiedName": "data"
+    },
+    "371": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "crate"
+    },
+    "372": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "crate.get"
+    },
+    "373": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "crate.get"
+    },
+    "374": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "collectionId"
+    },
+    "375": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "crateId"
+    },
+    "376": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "crate.list"
+    },
+    "377": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "crate.list"
+    },
+    "378": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "collectionId"
+    },
+    "379": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "crate.create"
+    },
+    "380": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "crate.create"
+    },
+    "381": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "collectionId"
+    },
+    "382": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "data"
+    },
+    "383": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "crate.update"
+    },
+    "384": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "crate.update"
+    },
+    "385": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "collectionId"
+    },
+    "386": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "crateId"
+    },
+    "387": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "data"
+    },
+    "388": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "crate.remove"
+    },
+    "389": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "crate.remove"
+    },
+    "390": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "collectionId"
+    },
+    "391": {
+      "sourceFileName": "src/api/crate.ts",
+      "qualifiedName": "crateId"
+    },
+    "392": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch"
+    },
+    "393": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.get"
+    },
+    "394": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.get"
+    },
+    "395": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "collectionId"
+    },
+    "396": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "productId"
+    },
+    "397": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batchId"
+    },
+    "398": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.list"
+    },
+    "399": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.list"
+    },
+    "400": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "collectionId"
+    },
+    "401": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "productId"
+    },
+    "402": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.create"
+    },
+    "403": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.create"
+    },
+    "404": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "collectionId"
+    },
+    "405": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "productId"
+    },
+    "406": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "data"
+    },
+    "407": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.update"
+    },
+    "408": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.update"
+    },
+    "409": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "collectionId"
+    },
+    "410": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "productId"
+    },
+    "411": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batchId"
+    },
+    "412": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "data"
+    },
+    "413": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.remove"
+    },
+    "414": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.remove"
+    },
+    "415": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "collectionId"
+    },
+    "416": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "productId"
+    },
+    "417": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batchId"
+    },
+    "418": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.getPublic"
+    },
+    "419": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.getPublic"
+    },
+    "420": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "collectionId"
+    },
+    "421": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "productId"
+    },
+    "422": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batchId"
+    },
+    "423": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.getSN"
+    },
+    "424": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.getSN"
+    },
+    "425": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "collectionId"
+    },
+    "426": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "productId"
+    },
+    "427": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batchId"
+    },
+    "428": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "startIndex"
+    },
+    "429": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "count"
+    },
+    "430": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.lookupSN"
+    },
+    "431": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batch.lookupSN"
+    },
+    "432": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "collectionId"
+    },
+    "433": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "productId"
+    },
+    "434": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "batchId"
+    },
+    "435": {
+      "sourceFileName": "src/api/batch.ts",
+      "qualifiedName": "codeId"
+    },
+    "436": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant"
+    },
+    "437": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.get"
+    },
+    "438": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.get"
+    },
+    "439": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "collectionId"
+    },
+    "440": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "productId"
+    },
+    "441": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variantId"
+    },
+    "442": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.list"
+    },
+    "443": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.list"
+    },
+    "444": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "collectionId"
+    },
+    "445": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "productId"
+    },
+    "446": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.create"
+    },
+    "447": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.create"
+    },
+    "448": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "collectionId"
+    },
+    "449": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "productId"
+    },
+    "450": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "data"
+    },
+    "451": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.update"
+    },
+    "452": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.update"
+    },
+    "453": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "collectionId"
+    },
+    "454": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "productId"
+    },
+    "455": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variantId"
+    },
+    "456": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "data"
+    },
+    "457": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.remove"
+    },
+    "458": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.remove"
+    },
+    "459": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "collectionId"
+    },
+    "460": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "productId"
+    },
+    "461": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variantId"
+    },
+    "462": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.getPublic"
+    },
+    "463": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.getPublic"
+    },
+    "464": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "collectionId"
+    },
+    "465": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "productId"
+    },
+    "466": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variantId"
+    },
+    "467": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.getSN"
+    },
+    "468": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.getSN"
+    },
+    "469": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "collectionId"
+    },
+    "470": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "productId"
+    },
+    "471": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variantId"
+    },
+    "472": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "startIndex"
+    },
+    "473": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "count"
+    },
+    "474": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.lookupSN"
+    },
+    "475": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variant.lookupSN"
+    },
+    "476": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "collectionId"
+    },
+    "477": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "productId"
+    },
+    "478": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "variantId"
+    },
+    "479": {
+      "sourceFileName": "src/api/variant.ts",
+      "qualifiedName": "codeId"
+    },
+    "480": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "CollectionResponse"
+    },
+    "481": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "CollectionResponse.id"
+    },
+    "482": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "CollectionResponse.title"
+    },
+    "483": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "CollectionResponse.description"
+    },
+    "484": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "CollectionResponse.headerImage"
+    },
+    "485": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type"
+    },
+    "486": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.url"
+    },
+    "487": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.thumbnails"
+    },
+    "488": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type"
+    },
+    "489": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.x100"
+    },
+    "490": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.x200"
+    },
+    "491": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.x512"
+    },
+    "492": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "CollectionResponse.logoImage"
+    },
+    "493": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type"
+    },
+    "494": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.url"
+    },
+    "495": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.thumbnails"
+    },
+    "496": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type"
+    },
+    "497": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.x100"
+    },
+    "498": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.x200"
+    },
+    "499": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.x512"
+    },
+    "500": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "CollectionResponse.loaderImage"
+    },
+    "501": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type"
+    },
+    "502": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.overwriteName"
+    },
+    "503": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.name"
+    },
+    "504": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.type"
+    },
+    "505": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.url"
+    },
+    "506": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "CollectionResponse.languages"
+    },
+    "507": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type"
+    },
+    "508": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.code"
+    },
+    "509": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.lang"
+    },
+    "510": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.supported"
+    },
+    "511": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "CollectionResponse.roles"
+    },
+    "512": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type"
+    },
+    "513": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "__type.__index"
+    },
+    "515": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "CollectionResponse.groupTags"
+    },
+    "516": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "CollectionResponse.redirectUrl"
+    },
+    "517": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "CollectionResponse.shortId"
+    },
+    "518": {
+      "sourceFileName": "src/types/collection.ts",
+      "qualifiedName": "CollectionResponse.dark"
+    },
+    "519": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "ProductResponse"
+    },
+    "520": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "ProductResponse.id"
+    },
+    "521": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "ProductResponse.name"
+    },
+    "522": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "ProductResponse.collectionId"
+    },
+    "523": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "ProductResponse.description"
+    },
+    "524": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "ProductResponse.heroImage"
+    },
+    "525": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "__type"
+    },
+    "526": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "__type.url"
+    },
+    "527": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "__type.thumbnails"
+    },
+    "528": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "__type"
+    },
+    "529": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "__type.x100"
+    },
+    "530": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "__type.x200"
+    },
+    "531": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "__type.x512"
+    },
+    "532": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "ProductResponse.groupTags"
+    },
+    "533": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "__type"
+    },
+    "534": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "__type.__index"
+    },
+    "536": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "ProductResponse.data"
+    },
+    "537": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "__type"
+    },
+    "538": {
+      "sourceFileName": "src/types/product.ts",
+      "qualifiedName": "__type.__index"
+    },
+    "540": {
+      "sourceFileName": "src/types/proof.ts",
+      "qualifiedName": "ProofResponse"
+    },
+    "541": {
+      "sourceFileName": "src/types/proof.ts",
+      "qualifiedName": "ProofResponse.collectionId"
+    },
+    "542": {
+      "sourceFileName": "src/types/proof.ts",
+      "qualifiedName": "ProofResponse.createdAt"
+    },
+    "543": {
+      "sourceFileName": "src/types/proof.ts",
+      "qualifiedName": "ProofResponse.id"
+    },
+    "544": {
+      "sourceFileName": "src/types/proof.ts",
+      "qualifiedName": "ProofResponse.productId"
+    },
+    "545": {
+      "sourceFileName": "src/types/proof.ts",
+      "qualifiedName": "ProofResponse.tokenId"
+    },
+    "546": {
+      "sourceFileName": "src/types/proof.ts",
+      "qualifiedName": "ProofResponse.userId"
+    },
+    "547": {
+      "sourceFileName": "src/types/proof.ts",
+      "qualifiedName": "ProofResponse.values"
+    },
+    "548": {
+      "sourceFileName": "src/types/appConfiguration.ts",
+      "qualifiedName": "AppConfigurationResponse"
+    },
+    "549": {
+      "sourceFileName": "src/types/appConfiguration.ts",
+      "qualifiedName": "AppConfigurationResponse.id"
+    },
+    "550": {
+      "sourceFileName": "src/types/appConfiguration.ts",
+      "qualifiedName": "AppConfigurationResponse.name"
+    },
+    "551": {
+      "sourceFileName": "src/types/appConfiguration.ts",
+      "qualifiedName": "AppConfigurationResponse.settings"
+    },
+    "552": {
+      "sourceFileName": "src/types/error.ts",
+      "qualifiedName": "ErrorResponse"
+    },
+    "553": {
+      "sourceFileName": "src/types/error.ts",
+      "qualifiedName": "ErrorResponse.code"
+    },
+    "554": {
+      "sourceFileName": "src/types/error.ts",
+      "qualifiedName": "ErrorResponse.message"
+    },
+    "555": {
+      "sourceFileName": "src/types/asset.ts",
+      "qualifiedName": "AssetResponse"
+    },
+    "556": {
+      "sourceFileName": "src/types/asset.ts",
+      "qualifiedName": "AssetResponse.id"
+    },
+    "557": {
+      "sourceFileName": "src/types/asset.ts",
+      "qualifiedName": "AssetResponse.name"
+    },
+    "558": {
+      "sourceFileName": "src/types/asset.ts",
+      "qualifiedName": "AssetResponse.url"
+    }
+  }
+}
+```
 
-## Support
-
-- **Documentation**: [API Reference](./API_SUMMARY.md)
-- **Issues**: [GitHub Issues](https://github.com/Prove-Anything/smartlinks/issues)
-- **Website**: [smartlinks.app](https://smartlinks.app)
-
-## License
-
-MIT License - see [LICENSE](./LICENSE) for details.
+_Replace this with a full markdown generator for production use._
