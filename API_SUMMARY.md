@@ -190,6 +190,8 @@ interface ProductResponse {
   name: string
   collectionId: string
   description: string
+  gtin?: string
+  type?: string
   heroImage: {
   url: string
   thumbnails: {
@@ -206,6 +208,10 @@ interface ProductResponse {
   }
 }
 ```
+
+**ProductCreateRequest** = `Omit<ProductResponse, 'id' | 'collectionId'>`
+
+**ProductUpdateRequest** = `Partial<Omit<ProductResponse, 'id' | 'collectionId'>>`
 
 ### proof
 
@@ -806,13 +812,13 @@ Retrieves a single Product Item by Collection ID and Product ID.
 List all Product Items for a Collection.
 
 **create**(collectionId: string,
-    data: any) → `Promise<ProductResponse>`
-Create a new product for a collection (admin only).
+    data: ProductCreateRequest) → `Promise<ProductResponse>`
+Create a new product for a collection (admin only). The `data` payload follows the same shape as ProductResponse minus `id` and `collectionId`.
 
 **update**(collectionId: string,
     productId: string,
-    data: any) → `Promise<ProductResponse>`
-Update a product for a collection (admin only).
+    data: ProductUpdateRequest) → `Promise<ProductResponse>`
+Update a product for a collection (admin only). The `data` payload is a partial of ProductResponse minus `id` and `collectionId`.
 
 **remove**(collectionId: string,
     productId: string) → `Promise<void>`
@@ -839,13 +845,13 @@ Retrieves a single Product Item by Collection ID and Product ID.
 List all Product Items for a Collection.
 
 **create**(collectionId: string,
-    data: any) → `Promise<ProductResponse>`
-Create a new product for a collection (admin only).
+    data: ProductCreateRequest) → `Promise<ProductResponse>`
+Create a new product for a collection (admin only). The `data` payload follows the same shape as ProductResponse minus `id` and `collectionId`.
 
 **update**(collectionId: string,
     productId: string,
-    data: any) → `Promise<ProductResponse>`
-Update a product for a collection (admin only).
+    data: ProductUpdateRequest) → `Promise<ProductResponse>`
+Update a product for a collection (admin only). The `data` payload is a partial of ProductResponse minus `id` and `collectionId`.
 
 **remove**(collectionId: string,
     productId: string) → `Promise<void>`
@@ -865,18 +871,80 @@ Look up a serial number by code for a product (admin only).
 ### proof
 
 **get**(collectionId: string,
-    proofId: string) → `Promise<ProofResponse>`
-Retrieves a single Proof by Collection ID and Proof ID.
+    productId: string,
+    proofId: string,
+    admin?: boolean) → `Promise<ProofResponse>`
+Retrieves a single Proof by Collection ID, Product ID, and Proof ID. Both public and admin endpoints now include productId in the path.
 
 **list**(collectionId: string) → `Promise<ProofResponse[]>`
 List all Proofs for a Collection.
+
+**create**(collectionId: string,
+    productId: string,
+    values: any) → `Promise<ProofResponse>`
+Create a proof for a product (admin only). POST /admin/collection/:collectionId/product/:productId/proof
+
+**update**(collectionId: string,
+    productId: string,
+    proofId: string,
+    values: any) → `Promise<ProofResponse>`
+Update a proof for a product (admin only). PUT /admin/collection/:collectionId/product/:productId/proof/:proofId
+
+**getByUser**(collectionId: string,
+    userId: string) → `Promise<ProofResponse[]>`
+Get proofs for a user in a collection (admin only). GET /admin/collection/:collectionId/proof/findByUser/:userId
+
+**getByProduct**(collectionId: string,
+    productId: string) → `Promise<ProofResponse[]>`
+Get proofs for a product (admin only). GET /admin/collection/:collectionId/product/:productId/proof
+
+**findByProduct**(collectionId: string,
+    productId: string,
+    query: any) → `Promise<ProofResponse[]>`
+Find proofs for a product (admin only). POST /admin/collection/:collectionId/product/:productId/proof/find
+
+**getByBatch**(collectionId: string,
+    productId: string,
+    batchId: string) → `Promise<ProofResponse[]>`
+Get proofs for a batch (admin only). GET /admin/collection/:collectionId/product/:productId/batch/:batchId/proof
 
 **get**(collectionId: string,
-    proofId: string) → `Promise<ProofResponse>`
-Retrieves a single Proof by Collection ID and Proof ID.
+    productId: string,
+    proofId: string,
+    admin?: boolean) → `Promise<ProofResponse>`
+Retrieves a single Proof by Collection ID, Product ID, and Proof ID. Both public and admin endpoints now include productId in the path.
 
 **list**(collectionId: string) → `Promise<ProofResponse[]>`
 List all Proofs for a Collection.
+
+**create**(collectionId: string,
+    productId: string,
+    values: any) → `Promise<ProofResponse>`
+Create a proof for a product (admin only). POST /admin/collection/:collectionId/product/:productId/proof
+
+**update**(collectionId: string,
+    productId: string,
+    proofId: string,
+    values: any) → `Promise<ProofResponse>`
+Update a proof for a product (admin only). PUT /admin/collection/:collectionId/product/:productId/proof/:proofId
+
+**getByUser**(collectionId: string,
+    userId: string) → `Promise<ProofResponse[]>`
+Get proofs for a user in a collection (admin only). GET /admin/collection/:collectionId/proof/findByUser/:userId
+
+**getByProduct**(collectionId: string,
+    productId: string) → `Promise<ProofResponse[]>`
+Get proofs for a product (admin only). GET /admin/collection/:collectionId/product/:productId/proof
+
+**findByProduct**(collectionId: string,
+    productId: string,
+    query: any) → `Promise<ProofResponse[]>`
+Find proofs for a product (admin only). POST /admin/collection/:collectionId/product/:productId/proof/find
+
+**getByBatch**(collectionId: string,
+    productId: string,
+    batchId: string) → `Promise<ProofResponse[]>`
+Get proofs for a batch (admin only). GET /admin/collection/:collectionId/product/:productId/batch/:batchId/proof
 
 ### variant
 

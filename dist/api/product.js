@@ -31,8 +31,9 @@ export var product;
     product.list = list;
     /**
      * Create a new product for a collection (admin only).
+     * The `data` payload follows the same shape as ProductResponse minus `id` and `collectionId`.
      * @param collectionId – Identifier of the parent collection
-     * @param data – Product creation data
+     * @param data – Product creation data (see ProductCreateRequest)
      * @returns Promise resolving to a ProductResponse object
      * @throws ErrorResponse if the request fails
      */
@@ -43,9 +44,10 @@ export var product;
     product.create = create;
     /**
      * Update a product for a collection (admin only).
+     * The `data` payload is a partial of ProductResponse minus `id` and `collectionId`.
      * @param collectionId – Identifier of the parent collection
      * @param productId – Identifier of the product
-     * @param data – Product update data
+     * @param data – Product update data (see ProductUpdateRequest)
      * @returns Promise resolving to a ProductResponse object
      * @throws ErrorResponse if the request fails
      */

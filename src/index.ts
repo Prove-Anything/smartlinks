@@ -27,3 +27,7 @@ export type {
   VariantUpdateRequest,
 } from "./types/variant"
 export type { AppConfigOptions } from "./api/appConfiguration"
+export type {
+  ProductCreateRequest,
+  ProductUpdateRequest,
+} from "./types/product"

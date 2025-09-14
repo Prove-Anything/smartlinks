@@ -1,4 +1,4 @@
-import { ProductResponse } from "../types/product";
+import { ProductResponse, ProductCreateRequest, ProductUpdateRequest } from "../types/product";
 export declare namespace product {
     /**
      * Retrieves a single Product Item by Collection ID and Product ID.
@@ -19,21 +19,23 @@ export declare namespace product {
     function list(collectionId: string, admin?: boolean): Promise<ProductResponse[]>;
     /**
      * Create a new product for a collection (admin only).
+     * The `data` payload follows the same shape as ProductResponse minus `id` and `collectionId`.
      * @param collectionId – Identifier of the parent collection
-     * @param data – Product creation data
+     * @param data – Product creation data (see ProductCreateRequest)
      * @returns Promise resolving to a ProductResponse object
      * @throws ErrorResponse if the request fails
      */
-    function create(collectionId: string, data: any): Promise<ProductResponse>;
+    function create(collectionId: string, data: ProductCreateRequest): Promise<ProductResponse>;
     /**
      * Update a product for a collection (admin only).
+     * The `data` payload is a partial of ProductResponse minus `id` and `collectionId`.
      * @param collectionId – Identifier of the parent collection
      * @param productId – Identifier of the product
-     * @param data – Product update data
+     * @param data – Product update data (see ProductUpdateRequest)
      * @returns Promise resolving to a ProductResponse object
      * @throws ErrorResponse if the request fails
      */
-    function update(collectionId: string, productId: string, data: any): Promise<ProductResponse>;
+    function update(collectionId: string, productId: string, data: ProductUpdateRequest): Promise<ProductResponse>;
     /**
      * Delete a product for a collection (admin only).
      * @param collectionId – Identifier of the parent collection

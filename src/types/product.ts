@@ -11,6 +11,11 @@ export interface ProductResponse {
   collectionId: string
   /** Detailed description of the product */
   description: string
+  /** A product GTIN (Global Trade Item Number) */
+  gtin?: string
+  /** An optional product type from the standard smartlinks types */
+  type?: string
+
   /** Hero image asset object */
   heroImage: {
     /** URL to the asset */
@@ -31,3 +36,7 @@ export interface ProductResponse {
     [key: string]: any
   }
 }
+
+// Input types for creating/updating products
+export type ProductCreateRequest = Omit<ProductResponse, 'id' | 'collectionId'>
+export type ProductUpdateRequest = Partial<Omit<ProductResponse, 'id' | 'collectionId'>>

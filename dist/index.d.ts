@@ -6,3 +6,4 @@ export type { AttestationResponse, AttestationCreateRequest, AttestationUpdateRe
 export type { BatchResponse, BatchCreateRequest, BatchUpdateRequest, } from "./types/batch";
 export type { VariantResponse, VariantCreateRequest, VariantUpdateRequest, } from "./types/variant";
 export type { AppConfigOptions } from "./api/appConfiguration";
+export type { ProductCreateRequest, ProductUpdateRequest, } from "./types/product";
