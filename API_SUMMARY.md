@@ -1,5 +1,7 @@
 # Smartlinks API Summary
 
+Version: 1.0.35  |  Generated: 2025-09-16T14:55:44.581Z
+
 This is a concise summary of all available API functions and types.
 
 ## API Namespaces

@@ -172,8 +172,12 @@ function generateAPISummary() {
   const srcDir = path.join(__dirname, 'src');
   const apiDir = path.join(srcDir, 'api');
   const typesDir = path.join(srcDir, 'types');
+  const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, 'package.json'), 'utf8'));
+  const version = pkg.version || '0.0.0';
+  const date = new Date().toISOString();
   
   let summary = '# Smartlinks API Summary\n\n';
+  summary += `Version: ${version}  |  Generated: ${date}\n\n`;
   summary += 'This is a concise summary of all available API functions and types.\n\n';
   
   // Generate namespace overview
