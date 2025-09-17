@@ -20,6 +20,11 @@ export declare namespace proof {
      */
     function update(collectionId: string, productId: string, proofId: string, values: any): Promise<ProofResponse>;
     /**
+     * Delete a proof for a product (admin only).
+     * DELETE /admin/collection/:collectionId/product/:productId/proof/:proofId
+     */
+    function remove(collectionId: string, productId: string, proofId: string): Promise<void>;
+    /**
      * Get proofs for a user in a collection (admin only).
      * GET /admin/collection/:collectionId/proof/findByUser/:userId
      */

@@ -71,6 +71,19 @@ export declare namespace auth {
      */
     function requestPublicJWT(collectionId: string, productId: string, proofId: string): Promise<string>;
     /**
+     * Admin: Get a user bearer token (impersonation/automation).
+     * POST /admin/auth/userToken
+     * All fields are optional; at least one identifier should be provided.
+     */
+    function getUserToken(opts?: {
+        email?: string;
+        collectionId?: string;
+        userId?: string;
+        expiry?: string;
+    }): Promise<{
+        bearerToken: string;
+    }>;
+    /**
      * Gets current account information for the logged in user.
      * Returns user, owner, account, and location objects.
      */

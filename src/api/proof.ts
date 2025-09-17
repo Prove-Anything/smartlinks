@@ -1,5 +1,5 @@
 // src/api/proof.ts
-import { request, post, put } from "../http"
+import { request, post, put, del } from "../http"
 import { ProofResponse } from "../types/proof"
 
 export namespace proof {
@@ -55,6 +55,19 @@ export namespace proof {
   ): Promise<ProofResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}`
     return put<ProofResponse>(path, values)
+  }
+
+  /**
+   * Delete a proof for a product (admin only).
+   * DELETE /admin/collection/:collectionId/product/:productId/proof/:proofId
+   */
+  export async function remove(
+    collectionId: string,
+    productId: string,
+    proofId: string
+  ): Promise<void> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}`
+    return del<void>(path)
   }
 
   /**

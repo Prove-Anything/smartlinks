@@ -61,6 +61,16 @@ export var auth;
     }
     auth.requestPublicJWT = requestPublicJWT;
     /**
+     * Admin: Get a user bearer token (impersonation/automation).
+     * POST /admin/auth/userToken
+     * All fields are optional; at least one identifier should be provided.
+     */
+    async function getUserToken(opts) {
+        const body = opts !== null && opts !== void 0 ? opts : {};
+        return post("/admin/auth/getUserToken", body);
+    }
+    auth.getUserToken = getUserToken;
+    /**
      * Gets current account information for the logged in user.
      * Returns user, owner, account, and location objects.
      */

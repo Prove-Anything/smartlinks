@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.0.35  |  Generated: 2025-09-16T14:55:44.581Z
+Version: 1.0.37  |  Generated: 2025-09-17T14:45:53.635Z
 
 This is a concise summary of all available API functions and types.
 
@@ -495,6 +495,14 @@ Requests an admin JWT for the current user and a specific collection Returns JWT
 **requestPublicJWT**(collectionId: string, productId: string, proofId: string) → `Promise<string>`
 Requests a JWT for the current user and a specific collection/product/proof Validates if the user has access to the resource, and returns a JWT
 
+**getUserToken**(opts?: {
+    email?: string
+    collectionId?: string
+    userId?: string
+    expiry?: string
+  }) → `Promise<`
+Admin: Get a user bearer token (impersonation/automation). POST /admin/auth/userToken All fields are optional; at least one identifier should be provided.
+
 **getAccount**() → `Promise<AccountInfoResponse>`
 Gets current account information for the logged in user. Returns user, owner, account, and location objects.
 
@@ -512,6 +520,14 @@ Requests an admin JWT for the current user and a specific collection Returns JWT
 
 **requestPublicJWT**(collectionId: string, productId: string, proofId: string) → `Promise<string>`
 Requests a JWT for the current user and a specific collection/product/proof Validates if the user has access to the resource, and returns a JWT
+
+**getUserToken**(opts?: {
+    email?: string
+    collectionId?: string
+    userId?: string
+    expiry?: string
+  }) → `Promise<`
+Admin: Get a user bearer token (impersonation/automation). POST /admin/auth/userToken All fields are optional; at least one identifier should be provided.
 
 **getAccount**() → `Promise<AccountInfoResponse>`
 Gets current account information for the logged in user. Returns user, owner, account, and location objects.
@@ -892,6 +908,11 @@ Create a proof for a product (admin only). POST /admin/collection/:collectionId/
     values: any) → `Promise<ProofResponse>`
 Update a proof for a product (admin only). PUT /admin/collection/:collectionId/product/:productId/proof/:proofId
 
+**remove**(collectionId: string,
+    productId: string,
+    proofId: string) → `Promise<void>`
+Delete a proof for a product (admin only). DELETE /admin/collection/:collectionId/product/:productId/proof/:proofId
+
 **getByUser**(collectionId: string,
     userId: string) → `Promise<ProofResponse[]>`
 Get proofs for a user in a collection (admin only). GET /admin/collection/:collectionId/proof/findByUser/:userId
@@ -929,6 +950,11 @@ Create a proof for a product (admin only). POST /admin/collection/:collectionId/
     proofId: string,
     values: any) → `Promise<ProofResponse>`
 Update a proof for a product (admin only). PUT /admin/collection/:collectionId/product/:productId/proof/:proofId
+
+**remove**(collectionId: string,
+    productId: string,
+    proofId: string) → `Promise<void>`
+Delete a proof for a product (admin only). DELETE /admin/collection/:collectionId/product/:productId/proof/:proofId
 
 **getByUser**(collectionId: string,
     userId: string) → `Promise<ProofResponse[]>`

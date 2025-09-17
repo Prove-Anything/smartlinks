@@ -1,5 +1,5 @@
 // src/api/proof.ts
-import { request, post, put } from "../http";
+import { request, post, put, del } from "../http";
 export var proof;
 (function (proof) {
     /**
@@ -39,6 +39,15 @@ export var proof;
         return put(path, values);
     }
     proof.update = update;
+    /**
+     * Delete a proof for a product (admin only).
+     * DELETE /admin/collection/:collectionId/product/:productId/proof/:proofId
+     */
+    async function remove(collectionId, productId, proofId) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}`;
+        return del(path);
+    }
+    proof.remove = remove;
     /**
      * Get proofs for a user in a collection (admin only).
      * GET /admin/collection/:collectionId/proof/findByUser/:userId
