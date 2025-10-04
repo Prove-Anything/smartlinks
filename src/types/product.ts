@@ -28,7 +28,7 @@ export interface ProductResponse {
     }
   }
   /** Flexible map of tags with true/false values */
-  groupTags: {
+  tags: {
     [tagName: string]: boolean
   }
   /** Flexible key/value data map */

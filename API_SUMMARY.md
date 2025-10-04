@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.0.37  |  Generated: 2025-09-17T14:45:53.635Z
+Version: 1.0.37  |  Generated: 2025-09-17T16:29:43.169Z
 
 This is a concise summary of all available API functions and types.
 
@@ -202,7 +202,7 @@ interface ProductResponse {
   x512: string
   }
   }
-  groupTags: {
+  tags: {
   [tagName: string]: boolean
   }
   data: {
