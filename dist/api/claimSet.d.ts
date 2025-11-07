@@ -1,3 +1,4 @@
+import { UpdateClaimDataRequest, AssignClaimsRequest } from "../types";
 export declare namespace claimSet {
     /**
      * Get all claim sets for a collection.
@@ -71,12 +72,22 @@ export declare namespace claimSet {
      * Assign claims to a claim set.
      * @param collectionId – The collection identifier
      * @param data – The claims data to assign
+     *  {
+     *    id: string,          // claim set id (required)
+     *    collectionId: string,// required
+     *    productId: string,   // required
+     *    batchId?: string,    // optional
+     *    start?: number,      // optional bulk range start
+     *    end?: number,        // optional bulk range end
+     *    codeId?: string,     // optional single code
+     *    data?: { [k: string]: any } // optional claim key/values
+     *  }
      */
-    function assignClaims(collectionId: string, data: any): Promise<any>;
+    function assignClaims(collectionId: string, data: AssignClaimsRequest): Promise<any>;
     /**
      * Update claim data for a collection.
      * @param collectionId – The collection identifier
      * @param data – The claim data to update
      */
-    function updateClaimData(collectionId: string, data: any): Promise<any>;
+    function updateClaimData(collectionId: string, data: UpdateClaimDataRequest): Promise<any>;
 }

@@ -1,4 +1,5 @@
 import { request, post, put } from "../http";
+import { UpdateClaimDataRequest, AssignClaimsRequest } from "../types";
 
 export namespace claimSet {
   /**
@@ -113,8 +114,18 @@ export namespace claimSet {
    * Assign claims to a claim set.
    * @param collectionId – The collection identifier
    * @param data – The claims data to assign
+   *  {
+   *    id: string,          // claim set id (required)
+   *    collectionId: string,// required
+   *    productId: string,   // required
+   *    batchId?: string,    // optional
+   *    start?: number,      // optional bulk range start
+   *    end?: number,        // optional bulk range end
+   *    codeId?: string,     // optional single code
+   *    data?: { [k: string]: any } // optional claim key/values
+   *  }
    */
-  export async function assignClaims(collectionId: string, data: any): Promise<any> {
+  export async function assignClaims(collectionId: string, data: AssignClaimsRequest): Promise<any> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet/${encodeURIComponent(data.id)}/assignClaims`;
     return post<any>(path, data);
   }
@@ -124,7 +135,7 @@ export namespace claimSet {
    * @param collectionId – The collection identifier
    * @param data – The claim data to update
    */
-  export async function updateClaimData(collectionId: string, data: any): Promise<any> {
+  export async function updateClaimData(collectionId: string, data: UpdateClaimDataRequest): Promise<any> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet/updateClaimData`;
     return post<any>(path, data);
   }

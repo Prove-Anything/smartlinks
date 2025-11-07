@@ -6,3 +6,4 @@ export * from "./error";
 export * from "./asset";
 export * from "./batch";
 export * from "./variant";
+export * from "./claimSet";

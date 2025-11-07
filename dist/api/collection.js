@@ -28,6 +28,27 @@ export var collection;
     }
     collection.list = list;
     /**
+     * Retrieve a collection by its shortId (public endpoint).
+     * @param shortId – The short identifier of the collection
+     * @returns Promise resolving to a CollectionResponse object
+     */
+    async function getShortId(shortId) {
+        const path = `/public/collection/getShortId/${encodeURIComponent(shortId)}`;
+        return request(path);
+    }
+    collection.getShortId = getShortId;
+    /**
+     * Retrieve a specific settings group for a collection (public endpoint).
+     * @param collectionId – Identifier of the collection
+     * @param settingGroup – The settings group name
+     * @returns Promise resolving to the settings object
+     */
+    async function getSettings(collectionId, settingGroup) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/settings/${encodeURIComponent(settingGroup)}`;
+        return request(path);
+    }
+    collection.getSettings = getSettings;
+    /**
      * Create a new collection (admin only).
      * @param data – Collection creation data
      * @returns Promise resolving to a CollectionResponse object

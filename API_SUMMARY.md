@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.0.37  |  Generated: 2025-09-17T16:29:43.169Z
+Version: 1.0.39  |  Generated: 2025-10-07T14:54:51.574Z
 
 This is a concise summary of all available API functions and types.
 
@@ -8,6 +8,7 @@ This is a concise summary of all available API functions and types.
 
 The Smartlinks SDK is organized into the following namespaces:
 
+- **ai** - Functions for ai operations
 - **appConfiguration** - Application configuration and settings management
 - **appRecord** - Functions for appRecord operations
 - **asset** - File upload and asset management for collections, products, and proofs
@@ -128,6 +129,38 @@ interface AttestationUpdateRequest {
 
 **BatchUpdateRequest** = `any`
 
+### claimSet
+
+**ClaimCodeRef** (interface)
+```typescript
+interface ClaimCodeRef {
+  codeId: string
+  claimId: string
+}
+```
+
+**UpdateClaimDataRequest** (interface)
+```typescript
+interface UpdateClaimDataRequest {
+  data: Record<string, any>
+  codes: ClaimCodeRef[]
+}
+```
+
+**AssignClaimsRequest** (interface)
+```typescript
+interface AssignClaimsRequest {
+  id: string
+  collectionId: string
+  productId: string
+  batchId?: string
+  start?: number
+  end?: number
+  codeId?: string
+  data?: Record<string, any>
+}
+```
+
 ### collection
 
 **CollectionResponse** (interface)
@@ -238,6 +271,52 @@ interface ProofResponse {
 
 **VariantUpdateRequest** = `any`
 
+### ai
+
+**AIGenerateContentRequest** (interface)
+```typescript
+interface AIGenerateContentRequest {
+  contents: string | any
+  responseMimeType?: string
+  systemInstruction?: string
+  provider?: string
+  model?: string
+  [key: string]: any
+}
+```
+
+**AIGenerateImageRequest** (interface)
+```typescript
+interface AIGenerateImageRequest {
+  prompt: string
+  provider?: string
+  model?: string
+  size?: string
+  [key: string]: any
+}
+```
+
+**AISearchPhotosRequest** (interface)
+```typescript
+interface AISearchPhotosRequest {
+  query: string
+  per_page?: number
+  orientation?: 'landscape' | 'portrait' | 'squarish'
+  [key: string]: any
+}
+```
+
+**AISearchPhotosPhoto** (interface)
+```typescript
+interface AISearchPhotosPhoto {
+  url: string
+  alt?: string
+  photographer?: string
+  photographerUrl?: string
+  [key: string]: any
+}
+```
+
 **AppConfigOptions** = `{
   appId: string
   collectionId?: string
@@ -305,6 +384,50 @@ interface ProofResponse {
 }`
 
 ## API Functions
+
+### ai
+
+**generateContent**(collectionId: string,
+    params: AIGenerateContentRequest,
+    admin: boolean = true) → `Promise<any>`
+Generate text/content via AI (admin)
+
+**generateImage**(collectionId: string, params: AIGenerateImageRequest) → `Promise<any>`
+Generate an image via AI (admin)
+
+**searchPhotos**(collectionId: string,
+    params: AISearchPhotosRequest) → `Promise<AISearchPhotosPhoto[]>`
+Search stock photos or similar via AI (admin)
+
+**uploadFile**(collectionId: string, params: any) → `Promise<any>`
+Upload a file for AI usage (admin). Pass FormData for binary uploads.
+
+**createCache**(collectionId: string, params: any) → `Promise<any>`
+Create or warm a cache for AI (admin)
+
+**postChat**(collectionId: string, params: any, admin: boolean = true) → `Promise<any>`
+Post a chat message to the AI (admin or public)
+
+**generateContent**(collectionId: string,
+    params: AIGenerateContentRequest,
+    admin: boolean = true) → `Promise<any>`
+Generate text/content via AI (admin)
+
+**generateImage**(collectionId: string, params: AIGenerateImageRequest) → `Promise<any>`
+Generate an image via AI (admin)
+
+**searchPhotos**(collectionId: string,
+    params: AISearchPhotosRequest) → `Promise<AISearchPhotosPhoto[]>`
+Search stock photos or similar via AI (admin)
+
+**uploadFile**(collectionId: string, params: any) → `Promise<any>`
+Upload a file for AI usage (admin). Pass FormData for binary uploads.
+
+**createCache**(collectionId: string, params: any) → `Promise<any>`
+Create or warm a cache for AI (admin)
+
+**postChat**(collectionId: string, params: any, admin: boolean = true) → `Promise<any>`
+Post a chat message to the AI (admin or public)
 
 ### appConfiguration
 
@@ -652,10 +775,10 @@ Update a claim set for a collection.
 **makeClaim**(collectionId: string, params: any) → `Promise<any>`
 Make a claim for a claim set.
 
-**assignClaims**(collectionId: string, data: any) → `Promise<any>`
-Assign claims to a claim set.
+**assignClaims**(collectionId: string, data: AssignClaimsRequest) → `Promise<any>`
+Assign claims to a claim set. { id: string,          // claim set id (required) collectionId: string,// required productId: string,   // required batchId?: string,    // optional start?: number,      // optional bulk range start end?: number,        // optional bulk range end codeId?: string,     // optional single code data?: { [k: string]: any } // optional claim key/values }
 
-**updateClaimData**(collectionId: string, data: any) → `Promise<any>`
+**updateClaimData**(collectionId: string, data: UpdateClaimDataRequest) → `Promise<any>`
 Update claim data for a collection.
 
 **getAllForCollection**(collectionId: string) → `Promise<any[]>`
@@ -688,10 +811,10 @@ Update a claim set for a collection.
 **makeClaim**(collectionId: string, params: any) → `Promise<any>`
 Make a claim for a claim set.
 
-**assignClaims**(collectionId: string, data: any) → `Promise<any>`
-Assign claims to a claim set.
+**assignClaims**(collectionId: string, data: AssignClaimsRequest) → `Promise<any>`
+Assign claims to a claim set. { id: string,          // claim set id (required) collectionId: string,// required productId: string,   // required batchId?: string,    // optional start?: number,      // optional bulk range start end?: number,        // optional bulk range end codeId?: string,     // optional single code data?: { [k: string]: any } // optional claim key/values }
 
-**updateClaimData**(collectionId: string, data: any) → `Promise<any>`
+**updateClaimData**(collectionId: string, data: UpdateClaimDataRequest) → `Promise<any>`
 Update claim data for a collection.
 
 ### collection
@@ -701,6 +824,12 @@ Retrieves a single Collection by its ID.
 
 **list**(admin?: boolean) → `Promise<CollectionResponse[]>`
 Retrieves all Collections.
+
+**getShortId**(shortId: string) → `Promise<CollectionResponse>`
+Retrieve a collection by its shortId (public endpoint).
+
+**getSettings**(collectionId: string, settingGroup: string) → `Promise<any>`
+Retrieve a specific settings group for a collection (public endpoint).
 
 **create**(data: any) → `Promise<CollectionResponse>`
 Create a new collection (admin only).
@@ -730,6 +859,12 @@ Retrieves a single Collection by its ID.
 
 **list**(admin?: boolean) → `Promise<CollectionResponse[]>`
 Retrieves all Collections.
+
+**getShortId**(shortId: string) → `Promise<CollectionResponse>`
+Retrieve a collection by its shortId (public endpoint).
+
+**getSettings**(collectionId: string, settingGroup: string) → `Promise<any>`
+Retrieve a specific settings group for a collection (public endpoint).
 
 **create**(data: any) → `Promise<CollectionResponse>`
 Create a new collection (admin only).

@@ -113,6 +113,16 @@ export var claimSet;
      * Assign claims to a claim set.
      * @param collectionId – The collection identifier
      * @param data – The claims data to assign
+     *  {
+     *    id: string,          // claim set id (required)
+     *    collectionId: string,// required
+     *    productId: string,   // required
+     *    batchId?: string,    // optional
+     *    start?: number,      // optional bulk range start
+     *    end?: number,        // optional bulk range end
+     *    codeId?: string,     // optional single code
+     *    data?: { [k: string]: any } // optional claim key/values
+     *  }
      */
     async function assignClaims(collectionId, data) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet/${encodeURIComponent(data.id)}/assignClaims`;

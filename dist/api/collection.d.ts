@@ -16,6 +16,19 @@ export declare namespace collection {
      */
     function list(admin?: boolean): Promise<CollectionResponse[]>;
     /**
+     * Retrieve a collection by its shortId (public endpoint).
+     * @param shortId – The short identifier of the collection
+     * @returns Promise resolving to a CollectionResponse object
+     */
+    function getShortId(shortId: string): Promise<CollectionResponse>;
+    /**
+     * Retrieve a specific settings group for a collection (public endpoint).
+     * @param collectionId – Identifier of the collection
+     * @param settingGroup – The settings group name
+     * @returns Promise resolving to the settings object
+     */
+    function getSettings(collectionId: string, settingGroup: string): Promise<any>;
+    /**
      * Create a new collection (admin only).
      * @param data – Collection creation data
      * @returns Promise resolving to a CollectionResponse object

@@ -29,6 +29,27 @@ export namespace collection {
   }
 
   /**
+   * Retrieve a collection by its shortId (public endpoint).
+   * @param shortId – The short identifier of the collection
+   * @returns Promise resolving to a CollectionResponse object
+   */
+  export async function getShortId(shortId: string): Promise<CollectionResponse> {
+    const path = `/public/collection/getShortId/${encodeURIComponent(shortId)}`
+    return request<CollectionResponse>(path)
+  }
+
+  /**
+   * Retrieve a specific settings group for a collection (public endpoint).
+   * @param collectionId – Identifier of the collection
+   * @param settingGroup – The settings group name
+   * @returns Promise resolving to the settings object
+   */
+  export async function getSettings(collectionId: string, settingGroup: string): Promise<any> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/settings/${encodeURIComponent(settingGroup)}`
+    return request<any>(path)
+  }
+
+  /**
    * Create a new collection (admin only).
    * @param data – Collection creation data
    * @returns Promise resolving to a CollectionResponse object
