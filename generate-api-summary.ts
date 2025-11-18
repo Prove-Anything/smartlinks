@@ -61,14 +61,44 @@ function extractTypesFromFile(filePath: string): TypeDefinition[] {
     }
   }
   
-  // Extract type aliases
-  const typeRegex = /export type (\w+)\s*=\s*([^;\n]+)/g;
-  while ((match = typeRegex.exec(content)) !== null) {
-    types.push({
-      name: match[1],
-      type: 'alias',
-      definition: match[2].trim()
-    });
+  // Extract type aliases for object shapes: export type Name = { ... }
+  const aliasObjectRegex = /export type (\w+)\s*=\s*{\s*/g;
+  while ((match = aliasObjectRegex.exec(content)) !== null) {
+    const name = match[1];
+    const startPos = match.index + match[0].length - 1; // position at opening {
+    let braceCount = 1;
+    let endPos = startPos + 1;
+    while (braceCount > 0 && endPos < content.length) {
+      if (content[endPos] === '{') braceCount++;
+      if (content[endPos] === '}') braceCount--;
+      endPos++;
+    }
+    if (braceCount === 0) {
+      const body = content.substring(startPos + 1, endPos - 1);
+      const formattedBody = formatInterfaceBody(body);
+      types.push({
+        name,
+        type: 'alias',
+        definition: `{
+${formattedBody}
+}`
+      });
+    }
+  }
+
+  // Extract simple (non-object) type aliases on one line: export type Name = X | Y;
+  const typeSimpleRegex = /export type (\w+)\s*=\s*([^;\n]+);?/g;
+  while ((match = typeSimpleRegex.exec(content)) !== null) {
+    const name = match[1];
+    const def = match[2].trim();
+    // Skip if already captured via object regex
+    if (!types.find(t => t.name === name)) {
+      types.push({
+        name,
+        type: 'alias',
+        definition: def
+      });
+    }
   }
   
   return types;
@@ -88,8 +118,8 @@ function extractFunctionsFromFile(filePath: string): APIFunction[] {
   const content = fs.readFileSync(filePath, 'utf8');
   const functions: APIFunction[] = [];
   
-  // Extract exported functions (not in namespaces)
-  const functionRegex = /export\s+(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)(?:\s*:\s*([^{]+))?/g;
+  // Extract exported top-level functions (not in namespaces) - require line start
+  const functionRegex = /^export\s+(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)(?:\s*:\s*([^{]+))?/gm;
   let match;
   
   while ((match = functionRegex.exec(content)) !== null) {
@@ -184,27 +214,45 @@ function generateAPISummary(): void {
   // Generate types section
   summary += '## Types\n\n';
   
-  // Get all type files
+  // Collect types from src/types and src/api
   const typeFiles = fs.readdirSync(typesDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
-  
+  const apiFilesForTypes = fs.readdirSync(apiDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
+
+  const sections: Array<{ title: string, defs: TypeDefinition[] }> = [];
+
+  // From src/types
   typeFiles.forEach(file => {
     const moduleName = path.basename(file, '.ts');
-    const types = extractTypesFromFile(path.join(typesDir, file));
-    
-    if (types.length > 0) {
-      summary += `### ${moduleName}\n\n`;
-      
-      types.forEach(type => {
-        if (type.type === 'interface') {
-          summary += `**${type.name}** (interface)\n`;
+    const defs = extractTypesFromFile(path.join(typesDir, file));
+    if (defs.length) sections.push({ title: moduleName, defs });
+  });
+
+  // From src/api (to catch exported request/response shapes like auth types)
+  apiFilesForTypes.forEach(file => {
+    const moduleName = path.basename(file, '.ts');
+    const defs = extractTypesFromFile(path.join(apiDir, file));
+    if (defs.length) sections.push({ title: `${moduleName} (api)`, defs });
+  });
+
+  sections.forEach(section => {
+    summary += `### ${section.title}\n\n`;
+    section.defs.forEach(type => {
+      if (type.type === 'interface') {
+        summary += `**${type.name}** (interface)\n`;
+        summary += '```typescript\n';
+        summary += type.definition;
+        summary += '\n```\n\n';
+      } else {
+        if (type.definition.startsWith('{')) {
+          summary += `**${type.name}** (type)\n`;
           summary += '```typescript\n';
-          summary += type.definition;
+          summary += `type ${type.name} = ${type.definition}`;
           summary += '\n```\n\n';
         } else {
           summary += `**${type.name}** = \`${type.definition}\`\n\n`;
         }
-      });
-    }
+      }
+    });
   });
   
   // Generate API functions section

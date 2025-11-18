@@ -11,10 +11,12 @@ export namespace proof {
     collectionId: string,
     productId: string,
     proofId: string,
-    admin?: boolean
+    admin?: boolean,
+    include?: string[]
   ): Promise<ProofResponse> {
     const base = admin ? '/admin' : '/public'
-    const path = `${base}/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}`
+    const qp = include && include.length ? `?include=${encodeURIComponent(include.join(','))}` : ''
+    const path = `${base}/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}${qp}`
     return request<ProofResponse>(path)
   }
 
@@ -22,9 +24,11 @@ export namespace proof {
    * List all Proofs for a Collection.
    */
   export async function list(
-    collectionId: string
+    collectionId: string,
+    include?: string[]
   ): Promise<ProofResponse[]> {
-    const path = `/public/collection/${encodeURIComponent(collectionId)}/proof`
+    const qp = include && include.length ? `?include=${encodeURIComponent(include.join(','))}` : ''
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/proof${qp}`
     return request<ProofResponse[]>(path)
   }
 
@@ -56,6 +60,21 @@ export namespace proof {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}`
     return put<ProofResponse>(path, values)
   }
+
+
+  /**
+   * Claim a proof for a product.
+   * PUT /public/collection/:collectionId/product/:productId/proof/:proofId
+   */
+  export async function claim(
+    collectionId: string,
+    productId: string,
+    proofId: string,
+    values: any
+  ): Promise<ProofResponse> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}`
+    return put<ProofResponse>(path, values)
+  }  
 
   /**
    * Delete a proof for a product (admin only).

@@ -12,4 +12,5 @@ export { crate } from "./crate";
 export { batch } from "./batch";
 export { variant } from "./variant";
 export { ai } from "./ai";
+export { comms } from "./comms";
 export type { AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto } from "./ai";

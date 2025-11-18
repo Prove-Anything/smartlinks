@@ -1,3 +1,4 @@
+import type { UserAccountRegistrationRequest } from "../types/auth";
 export type LoginResponse = {
     id: string;
     name: string;
@@ -70,6 +71,10 @@ export declare namespace auth {
      * Validates if the user has access to the resource, and returns a JWT
      */
     function requestPublicJWT(collectionId: string, productId: string, proofId: string): Promise<string>;
+    /**
+     * Tries to register a new user account. Can return a bearer token, or a Firebase token
+     */
+    function registerUser(user: UserAccountRegistrationRequest): Promise<LoginResponse>;
     /**
      * Admin: Get a user bearer token (impersonation/automation).
      * POST /admin/auth/userToken

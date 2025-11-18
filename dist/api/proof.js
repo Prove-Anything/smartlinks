@@ -6,17 +6,19 @@ export var proof;
      * Retrieves a single Proof by Collection ID, Product ID, and Proof ID.
      * Both public and admin endpoints now include productId in the path.
      */
-    async function get(collectionId, productId, proofId, admin) {
+    async function get(collectionId, productId, proofId, admin, include) {
         const base = admin ? '/admin' : '/public';
-        const path = `${base}/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}`;
+        const qp = include && include.length ? `?include=${encodeURIComponent(include.join(','))}` : '';
+        const path = `${base}/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}${qp}`;
         return request(path);
     }
     proof.get = get;
     /**
      * List all Proofs for a Collection.
      */
-    async function list(collectionId) {
-        const path = `/public/collection/${encodeURIComponent(collectionId)}/proof`;
+    async function list(collectionId, include) {
+        const qp = include && include.length ? `?include=${encodeURIComponent(include.join(','))}` : '';
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/proof${qp}`;
         return request(path);
     }
     proof.list = list;
@@ -39,6 +41,15 @@ export var proof;
         return put(path, values);
     }
     proof.update = update;
+    /**
+     * Claim a proof for a product.
+     * PUT /public/collection/:collectionId/product/:productId/proof/:proofId
+     */
+    async function claim(collectionId, productId, proofId, values) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}`;
+        return put(path, values);
+    }
+    proof.claim = claim;
     /**
      * Delete a proof for a product (admin only).
      * DELETE /admin/collection/:collectionId/product/:productId/proof/:proofId

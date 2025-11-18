@@ -61,6 +61,17 @@ export var auth;
     }
     auth.requestPublicJWT = requestPublicJWT;
     /**
+     * Tries to register a new user account. Can return a bearer token, or a Firebase token
+     */
+    async function registerUser(user) {
+        // Use the provided token, or the one from getApiHeaders
+        const res = await post("/public/auth/register", user);
+        if (res.bearerToken)
+            setBearerToken(res.bearerToken);
+        return res;
+    }
+    auth.registerUser = registerUser;
+    /**
      * Admin: Get a user bearer token (impersonation/automation).
      * POST /admin/auth/userToken
      * All fields are optional; at least one identifier should be provided.

@@ -25,8 +25,6 @@ export interface ProductResponse {
             x512: string;
         };
     };
-    additionalImages: [ string ],
-
     /** Flexible map of tags with true/false values */
     tags: {
         [tagName: string]: boolean;

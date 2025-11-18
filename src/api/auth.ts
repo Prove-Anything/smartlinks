@@ -1,4 +1,5 @@
 import { post, request, setBearerToken, getApiHeaders } from "../http"
+import type { UserAccountRegistrationRequest } from "../types/auth"
 
 export type LoginResponse = {
   id: string
@@ -111,6 +112,19 @@ export namespace auth {
     // Use the provided token, or the one from getApiHeaders
     return post<string>("/public/auth/requestJWT", {collectionId, productId, proofId})
   }
+
+
+  /**
+   * Tries to register a new user account. Can return a bearer token, or a Firebase token
+   */
+  export async function registerUser(user: UserAccountRegistrationRequest): Promise<LoginResponse> {
+    // Use the provided token, or the one from getApiHeaders
+    const res = await post<LoginResponse>("/public/auth/register", user)
+    if (res.bearerToken)
+      setBearerToken(res.bearerToken)
+    return res
+  }
+
 
   /**
    * Admin: Get a user bearer token (impersonation/automation).

@@ -52,39 +52,31 @@ function extractTypesFromFile(filePath) {
     }
   }
   
-  // Extract type aliases (including multi-line object types)
-  const typeRegex = /export type (\w+)\s*=\s*([^}]+}|[^;\n]+)/g;
-  while ((match = typeRegex.exec(content)) !== null) {
-    let definition = match[2].trim();
-    
-    // If it starts with {, it's likely a multi-line object type
-    if (definition.startsWith('{')) {
-      // Find the matching closing brace
-      const startPos = content.indexOf(match[0]);
-      const typeStart = content.indexOf('=', startPos) + 1;
-      let braceCount = 0;
-      let endPos = typeStart;
-      
-      for (let i = typeStart; i < content.length; i++) {
-        const char = content[i];
-        if (char === '{') braceCount++;
-        else if (char === '}') {
-          braceCount--;
-          if (braceCount === 0) {
-            endPos = i + 1;
-            break;
-          }
-        }
+  // Extract type aliases robustly (handles multi-line object types)
+  const aliasRegex = /export type (\w+)\s*=\s*({|[^;\n]+)/g;
+  while ((match = aliasRegex.exec(content)) !== null) {
+    const name = match[1];
+    let afterEquals = match[2];
+    let definition = '';
+    if (afterEquals === '{') {
+      // We are at the start of an object type; capture until matching brace
+      const startPos = content.indexOf('{', match.index);
+      let braceCount = 1;
+      let i = startPos + 1;
+      while (braceCount > 0 && i < content.length) {
+        if (content[i] === '{') braceCount++;
+        else if (content[i] === '}') braceCount--;
+        i++;
       }
-      
-      definition = content.substring(typeStart, endPos).trim();
+      definition = content.substring(startPos, i).trim();
+    } else {
+      // Simple one-line alias
+      const lineEnd = content.indexOf('\n', match.index);
+      const semiPos = content.indexOf(';', match.index);
+      const endPos = (semiPos !== -1 && semiPos < lineEnd) ? semiPos : lineEnd;
+      definition = content.substring(content.indexOf('=', match.index) + 1, endPos).trim();
     }
-    
-    types.push({
-      name: match[1],
-      type: 'alias',
-      definition: definition
-    });
+    types.push({ name, type: 'alias', definition });
   }
   
   return types;
@@ -104,8 +96,9 @@ function extractFunctionsFromFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf8');
   const functions = [];
   
-  // Extract exported functions (not in namespaces) - updated regex to handle generics
-  const functionRegex = /export\s+(?:async\s+)?function\s+(\w+)(?:<[^>]*>)?\s*\(([^)]*)\)(?:\s*:\s*([^{]+))?/g;
+  // Extract exported top-level functions (not inside namespaces)
+  // Anchor at line start so indented `export function` inside namespaces won't match
+  const functionRegex = /^export\s+(?:async\s+)?function\s+(\w+)(?:<[^>]*>)?\s*\(([^)]*)\)(?:\s*:\s*([^{]+))?/gm;
   let match;
   
   while ((match = functionRegex.exec(content)) !== null) {
@@ -221,53 +214,42 @@ function generateAPISummary() {
   // Generate types section
   summary += '## Types\n\n';
   
-  // Get all type files
+  // Get all type files + api files to include request/response aliases
   const typeFiles = fs.readdirSync(typesDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
+  const apiTypeFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
   
+  const collectedSections = [];
+
   typeFiles.forEach(file => {
     const moduleName = path.basename(file, '.ts');
-    const types = extractTypesFromFile(path.join(typesDir, file));
-    
-    if (types.length > 0) {
-      summary += `### ${moduleName}\n\n`;
-      
-      types.forEach(type => {
-        if (type.type === 'interface') {
-          summary += `**${type.name}** (interface)\n`;
-          summary += '```typescript\n';
-          summary += type.definition;
-          summary += '\n```\n\n';
-        } else {
-          summary += `**${type.name}** = \`${type.definition}\`\n\n`;
-        }
-      });
-    }
+    const defs = extractTypesFromFile(path.join(typesDir, file));
+    if (defs.length) collectedSections.push({ title: moduleName, defs });
   });
-  
-  // Also extract types from API files (like AppConfigOptions)
-  apiFiles.forEach(file => {
+  apiTypeFiles.forEach(file => {
     const moduleName = path.basename(file, '.ts');
-    const types = extractTypesFromFile(path.join(apiDir, file));
-    
-    if (types.length > 0) {
-      // Check if we already have a section for this module
-      const existingSection = typeFiles.includes(`${moduleName}.ts`);
-      
-      if (!existingSection) {
-        summary += `### ${moduleName}\n\n`;
-      }
-      
-      types.forEach(type => {
-        if (type.type === 'interface') {
-          summary += `**${type.name}** (interface)\n`;
+    const defs = extractTypesFromFile(path.join(apiDir, file));
+    if (defs.length) collectedSections.push({ title: moduleName + ' (api)', defs });
+  });
+
+  collectedSections.forEach(section => {
+    summary += `### ${section.title}\n\n`;
+    section.defs.forEach(type => {
+      if (type.type === 'interface') {
+        summary += `**${type.name}** (interface)\n`;
+        summary += '```typescript\n';
+        summary += type.definition;
+        summary += '\n```\n\n';
+      } else {
+        if (type.definition.startsWith('{')) {
+          summary += `**${type.name}** (type)\n`;
           summary += '```typescript\n';
-          summary += type.definition;
+          summary += `type ${type.name} = ${type.definition}`;
           summary += '\n```\n\n';
         } else {
           summary += `**${type.name}** = \`${type.definition}\`\n\n`;
         }
-      });
-    }
+      }
+    });
   });
   
   // Generate API functions section

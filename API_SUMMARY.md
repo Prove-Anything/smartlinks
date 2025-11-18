@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.0.39  |  Generated: 2025-10-07T14:54:51.574Z
+Version: 1.0.42  |  Generated: 2025-11-18T13:09:06.423Z
 
 This is a concise summary of all available API functions and types.
 
@@ -17,6 +17,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **batch** - Product batch management and tracking
 - **claimSet** - Claim creation, management, and verification
 - **collection** - Collection CRUD operations and management
+- **comms** - Functions for comms operations
 - **crate** - Container/crate management for organizing products
 - **form** - Dynamic form creation and submission
 - **product** - Product CRUD operations and management within collections
@@ -121,6 +122,21 @@ interface AttestationUpdateRequest {
 }
 ```
 
+### auth
+
+**UserAccountRegistrationRequest** (type)
+```typescript
+type UserAccountRegistrationRequest = {
+  name: string
+  email?: string
+  phone?: string
+  password?: string
+  sendAccountConfirmation?: boolean
+  collectionId?: string,
+  tokenType?: 'bearer' | 'firebase'
+}
+```
+
 ### batch
 
 **BatchResponse** = `any`
@@ -206,6 +222,92 @@ interface CollectionResponse {
 }
 ```
 
+### comms
+
+**NotificationSubjectTarget** (interface)
+```typescript
+interface NotificationSubjectTarget {
+  type: 'product' | 'collection' | 'user' | 'batch' | 'proof'
+  id: string
+}
+```
+
+**PushNotificationTemplate** (interface)
+```typescript
+interface PushNotificationTemplate {
+  title: string
+  body: string
+  icon?: string
+}
+```
+
+**EmailNotificationTemplate** (interface)
+```typescript
+interface EmailNotificationTemplate {
+  subject: string
+  body: string
+}
+```
+
+**WalletUpdateTemplate** (interface)
+```typescript
+interface WalletUpdateTemplate {
+  textModulesData?: Array<{
+  id: string
+  header: string
+  body: string
+  }>
+}
+```
+
+**NotificationTemplate** (interface)
+```typescript
+interface NotificationTemplate {
+  push?: PushNotificationTemplate
+  email?: EmailNotificationTemplate
+  walletUpdate?: WalletUpdateTemplate
+}
+```
+
+**SendNotificationRequest** (interface)
+```typescript
+interface SendNotificationRequest {
+  subjectTargets: NotificationSubjectTarget[]
+  severity: 'low' | 'normal' | 'important' | 'critical'
+  mode: 'preferred' | 'all'
+  channels : ("push" | "email" | "wallet")[]
+  template: NotificationTemplate
+}
+```
+
+**SendNotificationResponse** (interface)
+```typescript
+interface SendNotificationResponse {
+  ok: boolean
+  notificationId: string
+  counts: {
+  contacts: number
+  attempts: number
+  }
+  status: {
+  notification: {
+  notificationId: string
+  state: 'queued' | 'sent' | 'failed' | 'confirmed' | string
+  subjectTargets: NotificationSubjectTarget[]
+  severity: 'low' | 'normal' | 'important' | 'critical' | string
+  channelsOverride: Record<string, any>
+  template: NotificationTemplate
+  }
+  totals: {
+  queued: number
+  sent: number
+  failed: number
+  confirmed: number
+  }
+  }
+}
+```
+
 ### error
 
 **ErrorResponse** (interface)
@@ -271,7 +373,7 @@ interface ProofResponse {
 
 **VariantUpdateRequest** = `any`
 
-### ai
+### ai (api)
 
 **AIGenerateContentRequest** (interface)
 ```typescript
@@ -317,7 +419,11 @@ interface AISearchPhotosPhoto {
 }
 ```
 
-**AppConfigOptions** = `{
+### appConfiguration (api)
+
+**AppConfigOptions** (type)
+```typescript
+type AppConfigOptions = {
   appId: string
   collectionId?: string
   productId?: string
@@ -329,27 +435,36 @@ interface AISearchPhotosPhoto {
   admin?: boolean
   config?: any
   data?: any
-}`
+}
+```
 
-### auth
+### auth (api)
 
-**LoginResponse** = `{
+**LoginResponse** (type)
+```typescript
+type LoginResponse = {
   id: string
   name: string
   email: string
   bearerToken: string
   account: Record<string, any>
-}`
+}
+```
 
-**VerifyTokenResponse** = `{
+**VerifyTokenResponse** (type)
+```typescript
+type VerifyTokenResponse = {
   valid: boolean
   id?: string
   name?: string
   email?: string
   account?: Record<string, any>
-}`
+}
+```
 
-**AccountInfoResponse** = `{
+**AccountInfoResponse** (type)
+```typescript
+type AccountInfoResponse = {
   accessType: string;
   analyticsCode: string;
   analyticsId: string;
@@ -381,32 +496,12 @@ interface AISearchPhotosPhoto {
   whitelabel: {
     [key: string]: any;
   }
-}`
+}
+```
 
 ## API Functions
 
 ### ai
-
-**generateContent**(collectionId: string,
-    params: AIGenerateContentRequest,
-    admin: boolean = true) → `Promise<any>`
-Generate text/content via AI (admin)
-
-**generateImage**(collectionId: string, params: AIGenerateImageRequest) → `Promise<any>`
-Generate an image via AI (admin)
-
-**searchPhotos**(collectionId: string,
-    params: AISearchPhotosRequest) → `Promise<AISearchPhotosPhoto[]>`
-Search stock photos or similar via AI (admin)
-
-**uploadFile**(collectionId: string, params: any) → `Promise<any>`
-Upload a file for AI usage (admin). Pass FormData for binary uploads.
-
-**createCache**(collectionId: string, params: any) → `Promise<any>`
-Create or warm a cache for AI (admin)
-
-**postChat**(collectionId: string, params: any, admin: boolean = true) → `Promise<any>`
-Post a chat message to the AI (admin or public)
 
 **generateContent**(collectionId: string,
     params: AIGenerateContentRequest,
@@ -445,20 +540,6 @@ Post a chat message to the AI (admin or public)
 
 **deleteDataItem**(opts: AppConfigOptions) → `Promise<void>`
 
-**getConfig**(opts: AppConfigOptions) → `Promise<any>`
-
-**setConfig**(opts: AppConfigOptions) → `Promise<any>`
-
-**deleteConfig**(opts: AppConfigOptions) → `Promise<void>`
-
-**getData**(opts: AppConfigOptions) → `Promise<any[]>`
-
-**getDataItem**(opts: AppConfigOptions) → `Promise<any>`
-
-**setDataItem**(opts: AppConfigOptions) → `Promise<any>`
-
-**deleteDataItem**(opts: AppConfigOptions) → `Promise<void>`
-
 ### appRecord
 
 **get**(collectionId: string, appId: string) → `Promise<any>`
@@ -469,45 +550,7 @@ Post a chat message to the AI (admin or public)
 
 **remove**(collectionId: string, appId: string) → `Promise<void>`
 
-**get**(collectionId: string, appId: string) → `Promise<any>`
-
-**create**(collectionId: string, appId: string, data: any) → `Promise<any>`
-
-**update**(collectionId: string, appId: string, data: any) → `Promise<any>`
-
-**remove**(collectionId: string, appId: string) → `Promise<void>`
-
 ### asset
-
-**getForCollection**(collectionId: string,
-    assetId: string) → `Promise<AssetResponse>`
-
-**listForCollection**(collectionId: string) → `Promise<AssetResponse[]>`
-
-**getForProduct**(collectionId: string,
-    productId: string,
-    assetId: string) → `Promise<AssetResponse>`
-
-**listForProduct**(collectionId: string,
-    productId: string) → `Promise<AssetResponse[]>`
-
-**getForProof**(collectionId: string,
-    productId: string,
-    proofId: string,
-    assetId: string) → `Promise<AssetResponse>`
-
-**listForProof**(collectionId: string,
-    productId: string,
-    proofId: string,
-    appId?: string) → `Promise<AssetResponse[]>`
-
-**uploadAsset**(collectionId: string,
-    productId: string,
-    proofId: string,
-    file: File,
-    extraData?: Record<string, any>,
-    onProgress?: (percent: number) → `void`
-Uploads an asset file to a proof, with optional extraData as JSON. Supports progress reporting via onProgress callback (browser only).
 
 **getForCollection**(collectionId: string,
     assetId: string) → `Promise<AssetResponse>`
@@ -571,36 +614,6 @@ Update an attestation.
     attestationId: string) → `Promise<void>`
 Delete an attestation.
 
-**list**(collectionId: string,
-    productId: string,
-    proofId: string) → `Promise<AttestationResponse[]>`
-List all attestations for a proof.
-
-**get**(collectionId: string,
-    productId: string,
-    proofId: string,
-    attestationId: string) → `Promise<AttestationResponse>`
-Get a single attestation by ID.
-
-**create**(collectionId: string,
-    productId: string,
-    proofId: string,
-    data: AttestationCreateRequest) → `Promise<AttestationResponse>`
-Create a new attestation for a proof.
-
-**update**(collectionId: string,
-    productId: string,
-    proofId: string,
-    attestationId: string,
-    data: AttestationUpdateRequest) → `Promise<AttestationResponse>`
-Update an attestation.
-
-**remove**(collectionId: string,
-    productId: string,
-    proofId: string,
-    attestationId: string) → `Promise<void>`
-Delete an attestation.
-
 ### auth
 
 **login**(email: string, password: string) → `Promise<LoginResponse>`
@@ -618,31 +631,8 @@ Requests an admin JWT for the current user and a specific collection Returns JWT
 **requestPublicJWT**(collectionId: string, productId: string, proofId: string) → `Promise<string>`
 Requests a JWT for the current user and a specific collection/product/proof Validates if the user has access to the resource, and returns a JWT
 
-**getUserToken**(opts?: {
-    email?: string
-    collectionId?: string
-    userId?: string
-    expiry?: string
-  }) → `Promise<`
-Admin: Get a user bearer token (impersonation/automation). POST /admin/auth/userToken All fields are optional; at least one identifier should be provided.
-
-**getAccount**() → `Promise<AccountInfoResponse>`
-Gets current account information for the logged in user. Returns user, owner, account, and location objects.
-
-**login**(email: string, password: string) → `Promise<LoginResponse>`
-Login with email and password. Sets the bearerToken for subsequent API calls.
-
-**logout**() → `void`
-Logout (clears bearerToken for future API calls).
-
-**verifyToken**(token?: string) → `Promise<VerifyTokenResponse>`
-Verifies the current bearerToken (or a provided token). Returns user/account info if valid.
-
-**requestAdminJWT**(collectionId: string) → `Promise<string>`
-Requests an admin JWT for the current user and a specific collection Returns JWT if valid.
-
-**requestPublicJWT**(collectionId: string, productId: string, proofId: string) → `Promise<string>`
-Requests a JWT for the current user and a specific collection/product/proof Validates if the user has access to the resource, and returns a JWT
+**registerUser**(user: UserAccountRegistrationRequest) → `Promise<LoginResponse>`
+Tries to register a new user account. Can return a bearer token, or a Firebase token
 
 **getUserToken**(opts?: {
     email?: string
@@ -656,49 +646,6 @@ Admin: Get a user bearer token (impersonation/automation). POST /admin/auth/user
 Gets current account information for the logged in user. Returns user, owner, account, and location objects.
 
 ### batch
-
-**get**(collectionId: string,
-    productId: string,
-    batchId: string) → `Promise<BatchResponse>`
-Get a single batch by ID for a collection and product (admin only).
-
-**list**(collectionId: string,
-    productId: string) → `Promise<BatchResponse[]>`
-List all batches for a collection and product (admin only).
-
-**create**(collectionId: string,
-    productId: string,
-    data: BatchCreateRequest) → `Promise<BatchResponse>`
-Create a new batch for a collection and product (admin only).
-
-**update**(collectionId: string,
-    productId: string,
-    batchId: string,
-    data: BatchUpdateRequest) → `Promise<BatchResponse>`
-Update a batch for a collection and product (admin only).
-
-**remove**(collectionId: string,
-    productId: string,
-    batchId: string) → `Promise<void>`
-Delete a batch for a collection and product (admin only).
-
-**getPublic**(collectionId: string,
-    productId: string,
-    batchId: string) → `Promise<BatchResponse>`
-Get a single batch by ID for a collection and product (public endpoint).
-
-**getSN**(collectionId: string,
-    productId: string,
-    batchId: string,
-    startIndex: number = 0,
-    count: number = 10) → `Promise<any>`
-Get serial numbers for a batch (admin only).
-
-**lookupSN**(collectionId: string,
-    productId: string,
-    batchId: string,
-    codeId: string) → `Promise<any>`
-Look up a serial number by code for a batch (admin only).
 
 **get**(collectionId: string,
     productId: string,
@@ -781,42 +728,6 @@ Assign claims to a claim set. { id: string,          // claim set id (required) 
 **updateClaimData**(collectionId: string, data: UpdateClaimDataRequest) → `Promise<any>`
 Update claim data for a collection.
 
-**getAllForCollection**(collectionId: string) → `Promise<any[]>`
-Get all claim sets for a collection.
-
-**getForCollection**(collectionId: string, claimSetId: string) → `Promise<any>`
-Get a specific claim set for a collection.
-
-**getAllTags**(collectionId: string, claimSetId: string) → `Promise<any[]>`
-Get all tags for a claim set.
-
-**getReport**(collectionId: string, claimSetId: string) → `Promise<any>`
-Get a report for a claim set.
-
-**getAssignedTags**(collectionId: string, claimSetId: string) → `Promise<any>`
-Get assigned tags for a claim set.
-
-**getTagSummary**(collectionId: string) → `Promise<any>`
-Get tag summary for a collection.
-
-**tagQuery**(collectionId: string, data: any) → `Promise<any>`
-Perform a tag query for a collection.
-
-**createForCollection**(collectionId: string, params: any) → `Promise<any>`
-Create a new claim set for a collection.
-
-**updateForCollection**(collectionId: string, params: any) → `Promise<any>`
-Update a claim set for a collection.
-
-**makeClaim**(collectionId: string, params: any) → `Promise<any>`
-Make a claim for a claim set.
-
-**assignClaims**(collectionId: string, data: AssignClaimsRequest) → `Promise<any>`
-Assign claims to a claim set. { id: string,          // claim set id (required) collectionId: string,// required productId: string,   // required batchId?: string,    // optional start?: number,      // optional bulk range start end?: number,        // optional bulk range end codeId?: string,     // optional single code data?: { [k: string]: any } // optional claim key/values }
-
-**updateClaimData**(collectionId: string, data: UpdateClaimDataRequest) → `Promise<any>`
-Update claim data for a collection.
-
 ### collection
 
 **get**(collectionId: string, admin?: boolean) → `Promise<CollectionResponse>`
@@ -854,40 +765,11 @@ Look up a serial number by code for a collection (admin only).
     value: any) → `Promise<any>`
 Assign a value to a serial number for a collection (admin only).
 
-**get**(collectionId: string, admin?: boolean) → `Promise<CollectionResponse>`
-Retrieves a single Collection by its ID.
+### comms
 
-**list**(admin?: boolean) → `Promise<CollectionResponse[]>`
-Retrieves all Collections.
-
-**getShortId**(shortId: string) → `Promise<CollectionResponse>`
-Retrieve a collection by its shortId (public endpoint).
-
-**getSettings**(collectionId: string, settingGroup: string) → `Promise<any>`
-Retrieve a specific settings group for a collection (public endpoint).
-
-**create**(data: any) → `Promise<CollectionResponse>`
-Create a new collection (admin only).
-
-**update**(collectionId: string, data: any) → `Promise<CollectionResponse>`
-Update a collection (admin only).
-
-**remove**(collectionId: string) → `Promise<void>`
-Delete a collection (admin only).
-
-**getSN**(collectionId: string,
-    startIndex: number = 0,
-    count: number = 10) → `Promise<any>`
-Get serial numbers for a collection (admin only).
-
-**lookupSN**(collectionId: string,
-    codeId: string) → `Promise<any>`
-Look up a serial number by code for a collection (admin only).
-
-**assignSN**(collectionId: string,
-    codeId: string,
-    value: any) → `Promise<any>`
-Assign a value to a serial number for a collection (admin only).
+**sendNotification**(collectionId: string,
+    request: SendNotificationRequest) → `Promise<SendNotificationResponse>`
+Send a notification to specified targets within a collection. Supports multiple delivery methods including push notifications, email, and wallet pass updates. The notification will be delivered based on user preferences and the specified delivery mode. ```typescript const result = await comms.sendNotification('my-collection', { subjectTargets: [{ type: 'product', id: 'prod_123' }], severity: 'important', mode: 'preferred', template: { push: { title: 'Update available', body: 'We\'ve shipped an important update.', icon: 'https://cdn.example.com/brand/logo-128.png' }, email: { subject: 'Important update for your product', body: 'There\'s an important update. Open your pass or profile to learn more.' }, walletUpdate: { textModulesData: [ { id: 'notice', header: 'Update', body: 'Open your wallet pass for details.' } ] } } }) if (result.ok) { console.log('Notification queued:', result.notificationId) console.log('Totals:', result.status.totals) } ```
 
 ### crate
 
@@ -906,37 +788,7 @@ Update a crate for a collection (admin only).
 **remove**(collectionId: string, crateId: string) → `Promise<void>`
 Delete a crate for a collection (admin only).
 
-**get**(collectionId: string, crateId: string) → `Promise<any>`
-Get a single crate by ID for a collection (admin only).
-
-**list**(collectionId: string) → `Promise<any[]>`
-List all crates for a collection (admin only).
-
-**create**(collectionId: string, data: any) → `Promise<any>`
-Create a new crate for a collection (admin only).
-
-**update**(collectionId: string, crateId: string, data: any) → `Promise<any>`
-Update a crate for a collection (admin only).
-
-**remove**(collectionId: string, crateId: string) → `Promise<void>`
-Delete a crate for a collection (admin only).
-
 ### form
-
-**get**(collectionId: string, formId: string, admin?: boolean) → `Promise<any>`
-Get a single form by ID for a collection.
-
-**list**(collectionId: string, admin?: boolean) → `Promise<any[]>`
-List all forms for a collection.
-
-**create**(collectionId: string, data: any) → `Promise<any>`
-Create a new form for a collection (admin only).
-
-**update**(collectionId: string, formId: string, data: any) → `Promise<any>`
-Update a form for a collection (admin only).
-
-**remove**(collectionId: string, formId: string) → `Promise<void>`
-Delete a form for a collection (admin only).
 
 **get**(collectionId: string, formId: string, admin?: boolean) → `Promise<any>`
 Get a single form by ID for a collection.
@@ -988,48 +840,17 @@ Get serial numbers for a product (admin only).
     codeId: string) → `Promise<any>`
 Look up a serial number by code for a product (admin only).
 
-**get**(collectionId: string,
-    productId: string,
-    admin?: boolean) → `Promise<ProductResponse>`
-Retrieves a single Product Item by Collection ID and Product ID.
-
-**list**(collectionId: string,
-    admin?: boolean) → `Promise<ProductResponse[]>`
-List all Product Items for a Collection.
-
-**create**(collectionId: string,
-    data: ProductCreateRequest) → `Promise<ProductResponse>`
-Create a new product for a collection (admin only). The `data` payload follows the same shape as ProductResponse minus `id` and `collectionId`.
-
-**update**(collectionId: string,
-    productId: string,
-    data: ProductUpdateRequest) → `Promise<ProductResponse>`
-Update a product for a collection (admin only). The `data` payload is a partial of ProductResponse minus `id` and `collectionId`.
-
-**remove**(collectionId: string,
-    productId: string) → `Promise<void>`
-Delete a product for a collection (admin only).
-
-**getSN**(collectionId: string,
-    productId: string,
-    startIndex: number = 0,
-    count: number = 10) → `Promise<any>`
-Get serial numbers for a product (admin only).
-
-**lookupSN**(collectionId: string,
-    productId: string,
-    codeId: string) → `Promise<any>`
-Look up a serial number by code for a product (admin only).
-
 ### proof
 
 **get**(collectionId: string,
     productId: string,
     proofId: string,
-    admin?: boolean) → `Promise<ProofResponse>`
+    admin?: boolean,
+    include?: string[]) → `Promise<ProofResponse>`
 Retrieves a single Proof by Collection ID, Product ID, and Proof ID. Both public and admin endpoints now include productId in the path.
 
-**list**(collectionId: string) → `Promise<ProofResponse[]>`
+**list**(collectionId: string,
+    include?: string[]) → `Promise<ProofResponse[]>`
 List all Proofs for a Collection.
 
 **create**(collectionId: string,
@@ -1043,48 +864,11 @@ Create a proof for a product (admin only). POST /admin/collection/:collectionId/
     values: any) → `Promise<ProofResponse>`
 Update a proof for a product (admin only). PUT /admin/collection/:collectionId/product/:productId/proof/:proofId
 
-**remove**(collectionId: string,
-    productId: string,
-    proofId: string) → `Promise<void>`
-Delete a proof for a product (admin only). DELETE /admin/collection/:collectionId/product/:productId/proof/:proofId
-
-**getByUser**(collectionId: string,
-    userId: string) → `Promise<ProofResponse[]>`
-Get proofs for a user in a collection (admin only). GET /admin/collection/:collectionId/proof/findByUser/:userId
-
-**getByProduct**(collectionId: string,
-    productId: string) → `Promise<ProofResponse[]>`
-Get proofs for a product (admin only). GET /admin/collection/:collectionId/product/:productId/proof
-
-**findByProduct**(collectionId: string,
-    productId: string,
-    query: any) → `Promise<ProofResponse[]>`
-Find proofs for a product (admin only). POST /admin/collection/:collectionId/product/:productId/proof/find
-
-**getByBatch**(collectionId: string,
-    productId: string,
-    batchId: string) → `Promise<ProofResponse[]>`
-Get proofs for a batch (admin only). GET /admin/collection/:collectionId/product/:productId/batch/:batchId/proof
-
-**get**(collectionId: string,
-    productId: string,
-    proofId: string,
-    admin?: boolean) → `Promise<ProofResponse>`
-Retrieves a single Proof by Collection ID, Product ID, and Proof ID. Both public and admin endpoints now include productId in the path.
-
-**list**(collectionId: string) → `Promise<ProofResponse[]>`
-List all Proofs for a Collection.
-
-**create**(collectionId: string,
-    productId: string,
-    values: any) → `Promise<ProofResponse>`
-Create a proof for a product (admin only). POST /admin/collection/:collectionId/product/:productId/proof
-
-**update**(collectionId: string,
+**claim**(collectionId: string,
     productId: string,
     proofId: string,
     values: any) → `Promise<ProofResponse>`
-Update a proof for a product (admin only). PUT /admin/collection/:collectionId/product/:productId/proof/:proofId
+Claim a proof for a product. PUT /public/collection/:collectionId/product/:productId/proof/:proofId
 
 **remove**(collectionId: string,
     productId: string,
@@ -1110,49 +894,6 @@ Find proofs for a product (admin only). POST /admin/collection/:collectionId/pro
 Get proofs for a batch (admin only). GET /admin/collection/:collectionId/product/:productId/batch/:batchId/proof
 
 ### variant
-
-**get**(collectionId: string,
-    productId: string,
-    variantId: string) → `Promise<VariantResponse>`
-Get a single variant by ID for a collection and product (admin only).
-
-**list**(collectionId: string,
-    productId: string) → `Promise<VariantResponse[]>`
-List all variants for a collection and product (admin only).
-
-**create**(collectionId: string,
-    productId: string,
-    data: VariantCreateRequest) → `Promise<VariantResponse>`
-Create a new variant for a collection and product (admin only).
-
-**update**(collectionId: string,
-    productId: string,
-    variantId: string,
-    data: VariantUpdateRequest) → `Promise<VariantResponse>`
-Update a variant for a collection and product (admin only).
-
-**remove**(collectionId: string,
-    productId: string,
-    variantId: string) → `Promise<void>`
-Delete a variant for a collection and product (admin only).
-
-**getPublic**(collectionId: string,
-    productId: string,
-    variantId: string) → `Promise<VariantResponse>`
-Get a single variant by ID for a collection and product (public endpoint).
-
-**getSN**(collectionId: string,
-    productId: string,
-    variantId: string,
-    startIndex: number = 0,
-    count: number = 10) → `Promise<any>`
-Get serial numbers for a variant (admin only).
-
-**lookupSN**(collectionId: string,
-    productId: string,
-    variantId: string,
-    codeId: string) → `Promise<any>`
-Look up a serial number by code for a variant (admin only).
 
 **get**(collectionId: string,
     productId: string,

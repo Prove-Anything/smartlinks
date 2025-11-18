@@ -9,3 +9,5 @@ export * from "./asset";
 export * from "./batch";
 export * from "./variant";
 export * from "./claimSet";
+export * from "./auth";
+export * from "./comms";
