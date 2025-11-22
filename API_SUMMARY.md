@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.0.42  |  Generated: 2025-11-18T13:09:06.423Z
+Version: 1.0.44  |  Generated: 2025-11-22T14:04:16.960Z
 
 This is a concise summary of all available API functions and types.
 
@@ -14,6 +14,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **asset** - File upload and asset management for collections, products, and proofs
 - **attestation** - Digital attestations and verification for products
 - **auth** - Authentication, login, and user account management
+- **authKit** - Functions for authKit operations
 - **batch** - Product batch management and tracking
 - **claimSet** - Claim creation, management, and verification
 - **collection** - Collection CRUD operations and management
@@ -134,6 +135,119 @@ type UserAccountRegistrationRequest = {
   sendAccountConfirmation?: boolean
   collectionId?: string,
   tokenType?: 'bearer' | 'firebase'
+}
+```
+
+### authKit
+
+**AuthKitUser** (interface)
+```typescript
+interface AuthKitUser {
+  uid: string
+  email?: string
+  displayName?: string | null
+  photoURL?: string | null
+  phoneNumber?: string | null
+  emailVerified?: boolean
+  accountData?: Record<string, any>
+}
+```
+
+**AuthLoginResponse** (interface)
+```typescript
+interface AuthLoginResponse {
+  token: string
+  user: AuthKitUser
+  accountData?: Record<string, any>
+}
+```
+
+**PhoneSendCodeResponse** (interface)
+```typescript
+interface PhoneSendCodeResponse {
+  verificationId: string
+  message: string
+}
+```
+
+**PhoneVerifyResponse** (interface)
+```typescript
+interface PhoneVerifyResponse {
+  token: string
+  user: AuthKitUser
+}
+```
+
+**PasswordResetRequestResponse** (interface)
+```typescript
+interface PasswordResetRequestResponse {
+  success: boolean
+  message: string
+}
+```
+
+**VerifyResetTokenResponse** (interface)
+```typescript
+interface VerifyResetTokenResponse {
+  valid: boolean
+  email?: string
+  expiresAt?: number
+  message?: string
+}
+```
+
+**PasswordResetCompleteResponse** (interface)
+```typescript
+interface PasswordResetCompleteResponse {
+  success: boolean
+  message: string
+}
+```
+
+**EmailVerificationActionResponse** (interface)
+```typescript
+interface EmailVerificationActionResponse {
+  success: boolean
+  message: string
+}
+```
+
+**EmailVerifyTokenResponse** (interface)
+```typescript
+interface EmailVerifyTokenResponse {
+  success: boolean
+  message: string
+  token?: string
+  user?: AuthKitUser
+}
+```
+
+**AuthKitBrandingConfig** (interface)
+```typescript
+interface AuthKitBrandingConfig {
+  logoUrl?: string
+  title?: string
+  subtitle?: string
+  primaryColor?: string
+  secondaryColor?: string
+  backgroundColor?: string
+  buttonStyle?: string
+  fontFamily?: string
+}
+```
+
+**AuthKitConfig** (interface)
+```typescript
+interface AuthKitConfig {
+  id: string
+  branding?: AuthKitBrandingConfig
+  enabledProviders?: string[]
+  customCss?: string
+  termsUrl?: string
+  privacyUrl?: string
+  supportEmail?: string
+  redirectUrl?: string
+  updatedAt?: string
 }
 ```
 
@@ -644,6 +758,59 @@ Admin: Get a user bearer token (impersonation/automation). POST /admin/auth/user
 
 **getAccount**() → `Promise<AccountInfoResponse>`
 Gets current account information for the logged in user. Returns user, owner, account, and location objects.
+
+### authKit
+
+**login**(clientId: string, email: string, password: string) → `Promise<AuthLoginResponse>`
+Login with email + password (public).
+
+**register**(clientId: string, data: { email: string; password: string; displayName?: string; accountData?: Record<string, any> }) → `Promise<AuthLoginResponse>`
+Register a new user (public).
+
+**googleLogin**(clientId: string, idToken: string) → `Promise<AuthLoginResponse>`
+Google OAuth login (public).
+
+**sendPhoneCode**(clientId: string, phoneNumber: string) → `Promise<PhoneSendCodeResponse>`
+Send phone verification code (public).
+
+**verifyPhoneCode**(clientId: string, verificationId: string, code: string) → `Promise<PhoneVerifyResponse>`
+Verify phone verification code (public).
+
+**requestPasswordReset**(clientId: string, data: { email: string; redirectUrl?: string; clientName?: string }) → `Promise<PasswordResetRequestResponse>`
+Verify phone verification code (public).
+
+**verifyResetToken**(clientId: string, token: string) → `Promise<VerifyResetTokenResponse>`
+Verify phone verification code (public).
+
+**completePasswordReset**(clientId: string, token: string, newPassword: string) → `Promise<PasswordResetCompleteResponse>`
+Verify phone verification code (public).
+
+**sendEmailVerification**(clientId: string, data: { userId: string; email: string; redirectUrl?: string; clientName?: string }) → `Promise<EmailVerificationActionResponse>`
+Verify phone verification code (public).
+
+**verifyEmail**(clientId: string, token: string) → `Promise<EmailVerifyTokenResponse>`
+Verify phone verification code (public).
+
+**resendEmailVerification**(clientId: string, data: { userId: string; email: string; redirectUrl?: string; clientName?: string }) → `Promise<EmailVerificationActionResponse>`
+Verify phone verification code (public).
+
+**load**(authKitId: string) → `Promise<AuthKitConfig>`
+Verify phone verification code (public).
+
+**get**(collectionId: string, authKitId: string) → `Promise<AuthKitConfig>`
+Verify phone verification code (public).
+
+**list**(collectionId: string, admin?: boolean) → `Promise<AuthKitConfig[]>`
+Verify phone verification code (public).
+
+**create**(collectionId: string, data: any) → `Promise<AuthKitConfig>`
+Verify phone verification code (public).
+
+**update**(collectionId: string, authKitId: string, data: any) → `Promise<AuthKitConfig>`
+Verify phone verification code (public).
+
+**remove**(collectionId: string, authKitId: string) → `Promise<void>`
+Verify phone verification code (public).
 
 ### batch
 

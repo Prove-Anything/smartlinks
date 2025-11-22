@@ -9,6 +9,7 @@ export { asset } from "./asset";
 export { attestation } from "./attestation";
 export { auth } from "./auth";
 export { form } from "./form";
+export { authKit } from "./authKit";
 export { claimSet } from "./claimSet";
 export { crate } from "./crate";
 export { batch } from "./batch";
