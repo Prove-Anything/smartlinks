@@ -12,7 +12,13 @@ export declare function initializeApi(options: {
     apiKey?: string;
     bearerToken?: string;
     proxyMode?: boolean;
+    ngrokSkipBrowserWarning?: boolean;
+    extraHeaders?: Record<string, string>;
 }): void;
+/** Enable/disable automatic "ngrok-skip-browser-warning" header. */
+export declare function setNgrokSkipBrowserWarning(flag: boolean): void;
+/** Replace or augment globally applied custom headers. */
+export declare function setExtraHeaders(headers: Record<string, string>): void;
 /**
  * Allows setting the bearerToken at runtime (e.g. after login/logout).
  */

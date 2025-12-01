@@ -21,14 +21,16 @@ npm install @proveanything/smartlinks
 
 ## Quick start
 
-Initialize once at app startup with your API base URL. In Node, you can also provide an API key for server-to-server calls.
+Initialize once at app startup with your API base URL. Trailing slashes are optional (normalized). In Node, you can also provide an API key for server-to-server calls. You can enable an ngrok header or supply custom headers.
 
 ```ts
 import { initializeApi } from '@proveanything/smartlinks'
 
 initializeApi({
-  baseURL: 'https://smartlinks.app/api/v1',
-  // apiKey: process.env.SMARTLINKS_API_KEY, // Node/server only (optional)
+  baseURL: 'https://smartlinks.app/api/v1',            // or 'https://smartlinks.app/api/v1/'
+  // apiKey: process.env.SMARTLINKS_API_KEY,            // Node/server only (optional)
+  // ngrokSkipBrowserWarning: true,                    // adds 'ngrok-skip-browser-warning: true'
+  // extraHeaders: { 'X-Debug': '1' }                  // merged into every request
 })
 ```
 
@@ -53,7 +55,7 @@ Use the built-in helpers to log in and verify tokens. After a successful login, 
 import { initializeApi } from '@proveanything/smartlinks'
 import { auth } from '@proveanything/smartlinks'
 
-initializeApi({ baseURL: 'https://smartlinks.app/api/v1' })
+initializeApi({ baseURL: 'https://smartlinks.app/api/v1/' }) // trailing slash OK
 
 // Email + password login (browser or Node)
 const user = await auth.login('user@example.com', 'password')
@@ -139,15 +141,74 @@ const collections = await collection.list(false)
 
 For a fuller UI example, see `examples/react-demo.tsx`.
 
+## Iframe Integration
+
+When embedding Smartlinks inside an iframe (set `proxyMode: true` in `initializeApi` if you need parent-proxy API calls), you can also send UI/control messages to the parent window. The SDK provides lightweight helpers in `iframe.ts`:
+
+```ts
+import { enableAutoIframeResize, disableAutoIframeResize, redirectParent, sendParentCustom, isIframe } from '@proveanything/smartlinks'
+
+// Automatically push height changes to parent so it can resize the iframe.
+enableAutoIframeResize({ intervalMs: 150 })
+
+// Later disable if not needed:
+disableAutoIframeResize()
+
+// Redirect parent window to a URL (e.g. after login):
+redirectParent('https://app.example.com/dashboard')
+
+// Send any custom event + payload:
+sendParentCustom('smartlinks:navigate', { url: '/profile' })
+
+if (isIframe()) {
+  console.log('Running inside an iframe')
+}
+```
+
+Parent page can listen for these messages:
+
+```ts
+window.addEventListener('message', (e) => {
+  const msg = e.data
+  if (!msg || !msg._smartlinksIframeMessage) return
+  switch (msg.type) {
+    case 'smartlinks:resize':
+      // adjust iframe height
+      const iframeEl = document.getElementById('smartlinks-frame') as HTMLIFrameElement
+      if (iframeEl) iframeEl.style.height = msg.payload.height + 'px'
+      break
+    case 'smartlinks:redirect':
+      window.location.href = msg.payload.url
+      break
+    case 'smartlinks:navigate':
+      // Custom example
+      console.log('Navigate request:', msg.payload.url)
+      break
+  }
+})
+```
+
+Notes:
+- Auto-resize uses `ResizeObserver` when available, falling back to `MutationObserver` + polling.
+- In non-browser or Node environments these helpers safely no-op.
+- Use `sendParentCustom` for any domain-specific integration events.
+
 ## Configuration reference
 
 ```ts
 initializeApi({
-  baseURL: string,
+  baseURL: string, // with or without trailing slash
   apiKey?: string,      // Node/server only
   bearerToken?: string, // optional at init; set by auth.login/verifyToken
   proxyMode?: boolean   // set true if running inside an iframe and using parent proxy
+  ngrokSkipBrowserWarning?: boolean // forces header 'ngrok-skip-browser-warning: true'
+  extraHeaders?: Record<string,string> // custom headers merged in each request
+  iframeAutoResize?: boolean // default true when embedded in an iframe
 })
+
+// Auto-detection: If baseURL contains '.ngrok.io' or '.ngrok-free.dev' the header is added automatically
+// unless you explicitly set ngrokSkipBrowserWarning: false.
+// Auto iframe resize: When in an iframe, resize messages are sent by default unless iframeAutoResize: false.
 ```
 
 When embedding the SDK in an iframe with `proxyMode: true`, you can also use:
@@ -155,6 +216,11 @@ When embedding the SDK in an iframe with `proxyMode: true`, you can also use:
 ```ts
 import { sendCustomProxyMessage } from '@proveanything/smartlinks'
 const data = await sendCustomProxyMessage('my-action', { foo: 'bar' })
+
+// Toggle ngrok header or update custom headers later:
+import { setNgrokSkipBrowserWarning, setExtraHeaders } from '@proveanything/smartlinks'
+setNgrokSkipBrowserWarning(true)
+setExtraHeaders({ 'X-Debug': '1' })
 ```
 
 ## Full API surface

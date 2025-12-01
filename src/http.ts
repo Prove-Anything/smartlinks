@@ -7,6 +7,8 @@ let baseURL: string | null = null
 let apiKey: string | undefined = undefined
 let bearerToken: string | undefined = undefined
 let proxyMode: boolean = false
+let ngrokSkipBrowserWarning: boolean = false
+let extraHeadersGlobal: Record<string, string> = {}
 
 /**
  * Call this once (e.g. at app startup) to configure baseURL/auth.
@@ -17,16 +19,43 @@ let proxyMode: boolean = false
  * @property {string} [options.bearerToken] - (Optional) Bearer token for AUTHORIZATION header
  * @property {boolean} [options.proxyMode] - (Optional) Tells the API that it is running in an iframe via parent proxy
  */
+import { enableAutoIframeResize, isIframe } from './iframe'
+
 export function initializeApi(options: {
   baseURL: string
   apiKey?: string
   bearerToken?: string
   proxyMode?: boolean
+  ngrokSkipBrowserWarning?: boolean
+  extraHeaders?: Record<string, string>
+  iframeAutoResize?: boolean // default true when in iframe
 }): void {
-  baseURL = options.baseURL.replace(/\/+\$/, "") // trim trailing slash
+  // Normalize baseURL by removing trailing slashes.
+  baseURL = options.baseURL.replace(/\/+$/g, "")
   apiKey = options.apiKey
   bearerToken = options.bearerToken
   proxyMode = !!options.proxyMode
+  // Auto-enable ngrok skip header if domain contains .ngrok.io and user did not explicitly set the flag.
+  // Infer ngrok usage from common domains (.ngrok.io or .ngrok-free.dev)
+  const inferredNgrok = /(\.ngrok\.io|\.ngrok-free\.dev)(\b|\/)/i.test(baseURL)
+  ngrokSkipBrowserWarning = options.ngrokSkipBrowserWarning !== undefined
+    ? !!options.ngrokSkipBrowserWarning
+    : inferredNgrok
+  extraHeadersGlobal = options.extraHeaders ? { ...options.extraHeaders } : {}
+  // Auto-enable iframe resize unless explicitly disabled
+  if (isIframe() && options.iframeAutoResize !== false) {
+    enableAutoIframeResize()
+  }
+}
+
+/** Enable/disable automatic "ngrok-skip-browser-warning" header. */
+export function setNgrokSkipBrowserWarning(flag: boolean) {
+  ngrokSkipBrowserWarning = flag
+}
+
+/** Replace or augment globally applied custom headers. */
+export function setExtraHeaders(headers: Record<string, string>) {
+  extraHeadersGlobal = { ...headers }
 }
 
 /**
@@ -103,15 +132,11 @@ export async function request<T>(path: string): Promise<T> {
   }
 
   const url = `${baseURL}${path}`
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-  }
-  if (apiKey) {
-    headers["X-API-Key"] = apiKey
-  }
-  if (bearerToken) {
-    headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
-  }
+  const headers: Record<string, string> = { "Content-Type": "application/json" }
+  if (apiKey) headers["X-API-Key"] = apiKey
+  if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
+  if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
+  for (const [k, v] of Object.entries(extraHeadersGlobal)) headers[k] = v
 
   const response = await fetch(url, {
     method: "GET",
@@ -152,9 +177,10 @@ export async function post<T>(
 
   const url = `${baseURL}${path}`
   const headers: Record<string, string> = extraHeaders ? { ...extraHeaders } : {}
-
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
+  if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
+  for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
 
   // Only set Content-Type for non-FormData bodies
   if (!(body instanceof FormData)) {
@@ -200,9 +226,10 @@ export async function put<T>(
 
   const url = `${baseURL}${path}`
   const headers: Record<string, string> = extraHeaders ? { ...extraHeaders } : {}
-
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
+  if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
+  for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
 
   // Only set Content-Type for non-FormData bodies
   if (!(body instanceof FormData)) {
@@ -265,8 +292,11 @@ export async function requestWithOptions<T>(
     "Content-Type": "application/json",
     ...(apiKey ? { "X-API-Key": apiKey } : {}),
     ...(bearerToken ? { "AUTHORIZATION": `Bearer ${bearerToken}` } : {}),
+    ...(ngrokSkipBrowserWarning ? { "ngrok-skip-browser-warning": "true" } : {}),
     ...extraHeaders,
   }
+  // Merge global custom headers (do not override existing keys from options.headers)
+  for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
 
   const response = await fetch(url, {
     ...options,
@@ -304,9 +334,10 @@ export async function del<T>(
 
   const url = `${baseURL}${path}`
   const headers: Record<string, string> = extraHeaders ? { ...extraHeaders } : {}
-
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
+  if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
+  for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
 
   const response = await fetch(url, {
     method: "DELETE",
@@ -334,6 +365,8 @@ export function getApiHeaders(): Record<string, string> {
   const headers: Record<string, string> = {}
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
+  if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
+  for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
   return headers
 }
 

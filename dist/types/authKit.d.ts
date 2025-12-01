@@ -7,10 +7,39 @@ export interface AuthKitUser {
     emailVerified?: boolean;
     accountData?: Record<string, any>;
 }
+export interface UserProfile {
+    uid: string;
+    email?: string;
+    displayName?: string | null;
+    phoneNumber?: string | null;
+    photoURL?: string | null;
+    emailVerified?: boolean;
+    accountData?: Record<string, any>;
+}
+export interface ProfileUpdateData {
+    displayName?: string;
+    photoURL?: string;
+    accountData?: Record<string, any>;
+}
+export interface SuccessResponse {
+    success: boolean;
+    message?: string;
+    token?: string;
+}
 export interface AuthLoginResponse {
-    token: string;
+    token?: string;
     user: AuthKitUser;
     accountData?: Record<string, any>;
+    emailVerificationMode?: 'immediate' | 'verify-auto-login' | 'verify-manual-login';
+    requiresEmailVerification?: boolean;
+    emailVerificationDeadline?: number;
+    accountLocked?: boolean;
+}
+export interface MagicLinkSendResponse {
+    success: boolean;
+    message: string;
+}
+export interface MagicLinkVerifyResponse extends AuthLoginResponse {
 }
 export interface PhoneSendCodeResponse {
     verificationId: string;
@@ -43,6 +72,8 @@ export interface EmailVerifyTokenResponse {
     message: string;
     token?: string;
     user?: AuthKitUser;
+    accountData?: Record<string, any>;
+    emailVerificationMode?: 'immediate' | 'verify-auto-login' | 'verify-manual-login';
 }
 export interface AuthKitBrandingConfig {
     logoUrl?: string;

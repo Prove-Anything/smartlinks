@@ -1,4 +1,4 @@
-import { request, post, put, del } from "../http";
+import { request, post, put, del, setBearerToken } from "../http";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
@@ -23,14 +23,27 @@ export var authKit;
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/google`, { idToken });
     }
     authKit.googleLogin = googleLogin;
+    /** Send a magic link email to the user (public). */
+    async function sendMagicLink(clientId, data) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/magic-link/send`, data);
+    }
+    authKit.sendMagicLink = sendMagicLink;
+    /** Verify a magic link token and authenticate/create the user (public). */
+    async function verifyMagicLink(clientId, token) {
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/magic-link/verify`, { token });
+        if (res.token)
+            setBearerToken(res.token);
+        return res;
+    }
+    authKit.verifyMagicLink = verifyMagicLink;
     /** Send phone verification code (public). */
     async function sendPhoneCode(clientId, phoneNumber) {
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/phone/send-code`, { phoneNumber });
     }
     authKit.sendPhoneCode = sendPhoneCode;
     /** Verify phone verification code (public). */
-    async function verifyPhoneCode(clientId, verificationId, code) {
-        return post(`/authkit/${encodeURIComponent(clientId)}/auth/phone/verify`, { verificationId, code });
+    async function verifyPhoneCode(clientId, phoneNumber, code) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/auth/phone/verify`, { phoneNumber, code });
     }
     authKit.verifyPhoneCode = verifyPhoneCode;
     /* ===================================
@@ -64,15 +77,52 @@ export var authKit;
     }
     authKit.resendEmailVerification = resendEmailVerification;
     /* ===================================
+     * Account Management (Authenticated)
+     * =================================== */
+    async function getProfile(clientId) {
+        return request(`/authkit/${encodeURIComponent(clientId)}/account/profile`);
+    }
+    authKit.getProfile = getProfile;
+    async function updateProfile(clientId, data) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/account/update-profile`, data);
+    }
+    authKit.updateProfile = updateProfile;
+    async function changePassword(clientId, currentPassword, newPassword) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/account/change-password`, { currentPassword, newPassword });
+    }
+    authKit.changePassword = changePassword;
+    async function changeEmail(clientId, newEmail, password, redirectUrl) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/account/change-email`, { newEmail, password, redirectUrl });
+    }
+    authKit.changeEmail = changeEmail;
+    async function verifyEmailChange(clientId, token) {
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/account/verify-email-change`, { token });
+        if (res.token)
+            setBearerToken(res.token);
+        return res;
+    }
+    authKit.verifyEmailChange = verifyEmailChange;
+    async function updatePhone(clientId, phoneNumber, verificationCode) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/account/update-phone`, { phoneNumber, verificationCode });
+    }
+    authKit.updatePhone = updatePhone;
+    async function deleteAccount(clientId, password, confirmText) {
+        // DELETE with body using requestWithOptions since del() doesn't send body
+        const path = `/authkit/${encodeURIComponent(clientId)}/account/delete`;
+        const res = await post(path, { password, confirmText }); // If backend truly requires DELETE, switch to requestWithOptions
+        return res;
+    }
+    authKit.deleteAccount = deleteAccount;
+    /* ===================================
      * Collection-based AuthKit
      * =================================== */
     async function load(authKitId) {
-        const path = `authKit/${encodeURIComponent(authKitId)}`;
+        const path = `/authKit/${encodeURIComponent(authKitId)}/config`;
         return request(path);
     }
     authKit.load = load;
     async function get(collectionId, authKitId) {
-        const path = `admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}`;
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}`;
         return request(path);
     }
     authKit.get = get;

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.0.44  |  Generated: 2025-11-22T14:04:16.960Z
+Version: 1.0.51  |  Generated: 2025-11-23T12:27:09.228Z
 
 This is a concise summary of all available API functions and types.
 
@@ -25,6 +25,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **proof** - Product proof retrieval and validation
 - **serialNumber** - Functions for serialNumber operations
 - **variant** - Product variant management and tracking
+ - **iframe** - Iframe communication and parent window interaction utilities
 
 ## HTTP Utilities
 
@@ -35,8 +36,16 @@ Core HTTP functions for API configuration and communication:
   apiKey?: string
   bearerToken?: string
   proxyMode?: boolean
+  ngrokSkipBrowserWarning?: boolean
+  extraHeaders?: Record<string, string>
 }) → `void`
 Call this once (e.g. at app startup) to configure baseURL/auth.
+
+**setNgrokSkipBrowserWarning**(flag: boolean) → `void`
+Enable/disable automatic "ngrok-skip-browser-warning" header.
+
+**setExtraHeaders**(headers: Record<string, string>) → `void`
+Replace or augment globally applied custom headers.
 
 **setBearerToken**(token: string | undefined) → `void`
 Allows setting the bearerToken at runtime (e.g. after login/logout).
@@ -67,6 +76,31 @@ Returns the common headers used for API requests, including apiKey and bearerTok
 
 **sendCustomProxyMessage**(request: string, params: any) → `Promise<T>`
 Sends a custom proxy message to the parent Smartlinks application when running in an iframe. This function is used to communicate with the parent window when the SDK is embedded in an iframe and proxyMode is enabled. It sends a message to the parent and waits for a response.
+
+## Iframe Utilities
+
+Helpers for parent iframe communication (browser-only; safely no-op in Node). All messages use the envelope `{ _smartlinksIframeMessage: true, type, payload }`.
+
+**redirectParent**(url: string) → `void`
+Request parent window to navigate to `url`.
+
+**sendHeight**(height?: number, extra?: Record<string, any>) → `void`
+Post current (or provided) content height to parent for dynamic iframe resizing.
+
+**enableAutoIframeResize**(options?: { intervalMs?: number; alwaysSend?: boolean; extra?: Record<string, any>; messageType?: string }) → `void`
+Start automatic height tracking using `ResizeObserver` (fallback: `MutationObserver` + polling). Sends resize messages of given `messageType` (default `smartlinks:resize`).
+
+**disableAutoIframeResize**() → `void`
+Stop automatic height tracking and messaging.
+
+**sendParentCustom**(type: string, payload: Record<string, any>) → `void`
+Send a custom named message (`type`) with arbitrary payload to parent.
+
+**isIframe**() → `boolean`
+Returns true if running inside an iframe in a browser context.
+
+**supportsResizeObserver**() → `boolean`
+Returns true if `ResizeObserver` is available in current environment.
 
 ## Types
 
@@ -153,12 +187,55 @@ interface AuthKitUser {
 }
 ```
 
+**UserProfile** (interface)
+```typescript
+interface UserProfile {
+  uid: string
+  email?: string
+  displayName?: string | null
+  phoneNumber?: string | null
+  photoURL?: string | null
+  emailVerified?: boolean
+  accountData?: Record<string, any>
+}
+```
+
+**ProfileUpdateData** (interface)
+```typescript
+interface ProfileUpdateData {
+  displayName?: string
+  photoURL?: string
+  accountData?: Record<string, any>
+}
+```
+
+**SuccessResponse** (interface)
+```typescript
+interface SuccessResponse {
+  success: boolean
+  message?: string
+  token?: string // some flows may return a refreshed token
+}
+```
+
 **AuthLoginResponse** (interface)
 ```typescript
 interface AuthLoginResponse {
-  token: string
+  token?: string
   user: AuthKitUser
   accountData?: Record<string, any>
+  emailVerificationMode?: 'immediate' | 'verify-auto-login' | 'verify-manual-login'
+  requiresEmailVerification?: boolean  // True if email verification is required but not yet completed
+  emailVerificationDeadline?: number   // Unix timestamp - for 'immediate' mode grace period deadline
+  accountLocked?: boolean              // True if account is locked due to expired verification deadline
+}
+```
+
+**MagicLinkSendResponse** (interface)
+```typescript
+interface MagicLinkSendResponse {
+  success: boolean
+  message: string
 }
 ```
 
@@ -219,6 +296,8 @@ interface EmailVerifyTokenResponse {
   message: string
   token?: string
   user?: AuthKitUser
+  accountData?: Record<string, any>
+  emailVerificationMode?: 'immediate' | 'verify-auto-login' | 'verify-manual-login'
 }
 ```
 
@@ -770,10 +849,16 @@ Register a new user (public).
 **googleLogin**(clientId: string, idToken: string) → `Promise<AuthLoginResponse>`
 Google OAuth login (public).
 
+**sendMagicLink**(clientId: string, data: { email: string; redirectUrl: string; accountData?: Record<string, any> }) → `Promise<MagicLinkSendResponse>`
+Send a magic link email to the user (public).
+
+**verifyMagicLink**(clientId: string, token: string) → `Promise<MagicLinkVerifyResponse>`
+Verify a magic link token and authenticate/create the user (public).
+
 **sendPhoneCode**(clientId: string, phoneNumber: string) → `Promise<PhoneSendCodeResponse>`
 Send phone verification code (public).
 
-**verifyPhoneCode**(clientId: string, verificationId: string, code: string) → `Promise<PhoneVerifyResponse>`
+**verifyPhoneCode**(clientId: string, phoneNumber: string, code: string) → `Promise<PhoneVerifyResponse>`
 Verify phone verification code (public).
 
 **requestPasswordReset**(clientId: string, data: { email: string; redirectUrl?: string; clientName?: string }) → `Promise<PasswordResetRequestResponse>`
@@ -792,6 +877,27 @@ Verify phone verification code (public).
 Verify phone verification code (public).
 
 **resendEmailVerification**(clientId: string, data: { userId: string; email: string; redirectUrl?: string; clientName?: string }) → `Promise<EmailVerificationActionResponse>`
+Verify phone verification code (public).
+
+**getProfile**(clientId: string) → `Promise<UserProfile>`
+Verify phone verification code (public).
+
+**updateProfile**(clientId: string, data: ProfileUpdateData) → `Promise<UserProfile>`
+Verify phone verification code (public).
+
+**changePassword**(clientId: string, currentPassword: string, newPassword: string) → `Promise<SuccessResponse>`
+Verify phone verification code (public).
+
+**changeEmail**(clientId: string, newEmail: string, password: string, redirectUrl: string) → `Promise<SuccessResponse>`
+Verify phone verification code (public).
+
+**verifyEmailChange**(clientId: string, token: string) → `Promise<SuccessResponse>`
+Verify phone verification code (public).
+
+**updatePhone**(clientId: string, phoneNumber: string, verificationCode: string) → `Promise<SuccessResponse>`
+Verify phone verification code (public).
+
+**deleteAccount**(clientId: string, password: string, confirmText: string) → `Promise<SuccessResponse>`
 Verify phone verification code (public).
 
 **load**(authKitId: string) → `Promise<AuthKitConfig>`

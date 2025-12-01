@@ -6,6 +6,8 @@ let baseURL = null;
 let apiKey = undefined;
 let bearerToken = undefined;
 let proxyMode = false;
+let ngrokSkipBrowserWarning = false;
+let extraHeadersGlobal = {};
 /**
  * Call this once (e.g. at app startup) to configure baseURL/auth.
  *
@@ -16,10 +18,26 @@ let proxyMode = false;
  * @property {boolean} [options.proxyMode] - (Optional) Tells the API that it is running in an iframe via parent proxy
  */
 export function initializeApi(options) {
-    baseURL = options.baseURL.replace(/\/+\$/, ""); // trim trailing slash
+    // Normalize baseURL by removing trailing slashes.
+    baseURL = options.baseURL.replace(/\/+$/g, "");
     apiKey = options.apiKey;
     bearerToken = options.bearerToken;
     proxyMode = !!options.proxyMode;
+    // Auto-enable ngrok skip header if domain contains .ngrok.io and user did not explicitly set the flag.
+    // Infer ngrok usage from common domains (.ngrok.io or .ngrok-free.dev)
+    const inferredNgrok = /(\.ngrok\.io|\.ngrok-free\.dev)(\b|\/)/i.test(baseURL);
+    ngrokSkipBrowserWarning = options.ngrokSkipBrowserWarning !== undefined
+        ? !!options.ngrokSkipBrowserWarning
+        : inferredNgrok;
+    extraHeadersGlobal = options.extraHeaders ? Object.assign({}, options.extraHeaders) : {};
+}
+/** Enable/disable automatic "ngrok-skip-browser-warning" header. */
+export function setNgrokSkipBrowserWarning(flag) {
+    ngrokSkipBrowserWarning = flag;
+}
+/** Replace or augment globally applied custom headers. */
+export function setExtraHeaders(headers) {
+    extraHeadersGlobal = Object.assign({}, headers);
 }
 /**
  * Allows setting the bearerToken at runtime (e.g. after login/logout).
@@ -85,15 +103,15 @@ export async function request(path) {
         throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
     }
     const url = `${baseURL}${path}`;
-    const headers = {
-        "Content-Type": "application/json",
-    };
-    if (apiKey) {
+    const headers = { "Content-Type": "application/json" };
+    if (apiKey)
         headers["X-API-Key"] = apiKey;
-    }
-    if (bearerToken) {
+    if (bearerToken)
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
-    }
+    if (ngrokSkipBrowserWarning)
+        headers["ngrok-skip-browser-warning"] = "true";
+    for (const [k, v] of Object.entries(extraHeadersGlobal))
+        headers[k] = v;
     const response = await fetch(url, {
         method: "GET",
         headers,
@@ -129,6 +147,11 @@ export async function post(path, body, extraHeaders) {
         headers["X-API-Key"] = apiKey;
     if (bearerToken)
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
+    if (ngrokSkipBrowserWarning)
+        headers["ngrok-skip-browser-warning"] = "true";
+    for (const [k, v] of Object.entries(extraHeadersGlobal))
+        if (!(k in headers))
+            headers[k] = v;
     // Only set Content-Type for non-FormData bodies
     if (!(body instanceof FormData)) {
         headers["Content-Type"] = "application/json";
@@ -168,6 +191,11 @@ export async function put(path, body, extraHeaders) {
         headers["X-API-Key"] = apiKey;
     if (bearerToken)
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
+    if (ngrokSkipBrowserWarning)
+        headers["ngrok-skip-browser-warning"] = "true";
+    for (const [k, v] of Object.entries(extraHeadersGlobal))
+        if (!(k in headers))
+            headers[k] = v;
     // Only set Content-Type for non-FormData bodies
     if (!(body instanceof FormData)) {
         headers["Content-Type"] = "application/json";
@@ -218,7 +246,11 @@ export async function requestWithOptions(path, options) {
             extraHeaders = Object.assign({}, options.headers);
         }
     }
-    const headers = Object.assign(Object.assign(Object.assign({ "Content-Type": "application/json" }, (apiKey ? { "X-API-Key": apiKey } : {})), (bearerToken ? { "AUTHORIZATION": `Bearer ${bearerToken}` } : {})), extraHeaders);
+    const headers = Object.assign(Object.assign(Object.assign(Object.assign({ "Content-Type": "application/json" }, (apiKey ? { "X-API-Key": apiKey } : {})), (bearerToken ? { "AUTHORIZATION": `Bearer ${bearerToken}` } : {})), (ngrokSkipBrowserWarning ? { "ngrok-skip-browser-warning": "true" } : {})), extraHeaders);
+    // Merge global custom headers (do not override existing keys from options.headers)
+    for (const [k, v] of Object.entries(extraHeadersGlobal))
+        if (!(k in headers))
+            headers[k] = v;
     const response = await fetch(url, Object.assign(Object.assign({}, options), { headers }));
     if (!response.ok) {
         try {
@@ -249,6 +281,11 @@ export async function del(path, extraHeaders) {
         headers["X-API-Key"] = apiKey;
     if (bearerToken)
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
+    if (ngrokSkipBrowserWarning)
+        headers["ngrok-skip-browser-warning"] = "true";
+    for (const [k, v] of Object.entries(extraHeadersGlobal))
+        if (!(k in headers))
+            headers[k] = v;
     const response = await fetch(url, {
         method: "DELETE",
         headers,
@@ -276,6 +313,11 @@ export function getApiHeaders() {
         headers["X-API-Key"] = apiKey;
     if (bearerToken)
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
+    if (ngrokSkipBrowserWarning)
+        headers["ngrok-skip-browser-warning"] = "true";
+    for (const [k, v] of Object.entries(extraHeadersGlobal))
+        if (!(k in headers))
+            headers[k] = v;
     return headers;
 }
 /**
