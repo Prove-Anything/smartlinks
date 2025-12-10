@@ -1,12 +1,10 @@
-/**
- * Call this once (e.g. at app startup) to configure baseURL/auth.
- *
- * @param options - Configuration options
- * @property {string} options.baseURL - The root URL of the Smartlinks API (e.g. "https://smartlinks.app/api/v1")
- * @property {string} [options.apiKey] - (Optional) API key for X-API-Key header
- * @property {string} [options.bearerToken] - (Optional) Bearer token for AUTHORIZATION header
- * @property {boolean} [options.proxyMode] - (Optional) Tells the API that it is running in an iframe via parent proxy
- */
+type Logger = {
+    debug?: (...args: any[]) => void;
+    info?: (...args: any[]) => void;
+    warn?: (...args: any[]) => void;
+    error?: (...args: any[]) => void;
+    log?: (...args: any[]) => void;
+} | ((...args: any[]) => void);
 export declare function initializeApi(options: {
     baseURL: string;
     apiKey?: string;
@@ -14,6 +12,8 @@ export declare function initializeApi(options: {
     proxyMode?: boolean;
     ngrokSkipBrowserWarning?: boolean;
     extraHeaders?: Record<string, string>;
+    iframeAutoResize?: boolean;
+    logger?: Logger;
 }): void;
 /** Enable/disable automatic "ngrok-skip-browser-warning" header. */
 export declare function setNgrokSkipBrowserWarning(flag: boolean): void;
@@ -68,3 +68,4 @@ export declare function getApiHeaders(): Record<string, string>;
  * @returns The data from the proxy response
  */
 export declare function sendCustomProxyMessage<T = any>(request: string, params: any): Promise<T>;
+export {};

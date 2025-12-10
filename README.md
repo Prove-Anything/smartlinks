@@ -28,6 +28,7 @@ import { initializeApi } from '@proveanything/smartlinks'
 
 initializeApi({
   baseURL: 'https://smartlinks.app/api/v1',            // or 'https://smartlinks.app/api/v1/'
+  // logger: console,                                   // optional: verbose logging of requests/responses and proxy messages
   // apiKey: process.env.SMARTLINKS_API_KEY,            // Node/server only (optional)
   // ngrokSkipBrowserWarning: true,                    // adds 'ngrok-skip-browser-warning: true'
   // extraHeaders: { 'X-Debug': '1' }                  // merged into every request
@@ -204,11 +205,13 @@ initializeApi({
   ngrokSkipBrowserWarning?: boolean // forces header 'ngrok-skip-browser-warning: true'
   extraHeaders?: Record<string,string> // custom headers merged in each request
   iframeAutoResize?: boolean // default true when embedded in an iframe
+  logger?: Function | { debug?: Function; info?: Function; warn?: Function; error?: Function; log?: Function } // optional verbose logging
 })
 
 // Auto-detection: If baseURL contains '.ngrok.io' or '.ngrok-free.dev' the header is added automatically
 // unless you explicitly set ngrokSkipBrowserWarning: false.
 // Auto iframe resize: When in an iframe, resize messages are sent by default unless iframeAutoResize: false.
+// Verbose logging: Pass a logger (e.g. console) to log outbound requests/responses and proxy postMessages.
 ```
 
 When embedding the SDK in an iframe with `proxyMode: true`, you can also use:

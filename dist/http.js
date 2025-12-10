@@ -8,6 +8,57 @@ let bearerToken = undefined;
 let proxyMode = false;
 let ngrokSkipBrowserWarning = false;
 let extraHeadersGlobal = {};
+let logger;
+function logDebug(...args) {
+    if (!logger)
+        return;
+    if (typeof logger === 'function')
+        return logger(...args);
+    if (logger.debug)
+        return logger.debug(...args);
+    if (logger.log)
+        return logger.log(...args);
+}
+function maskSensitive(value) {
+    if (!value)
+        return value;
+    if (value.length <= 8)
+        return '*'.repeat(Math.max(4, value.length));
+    return value.slice(0, 2) + '***' + value.slice(-4);
+}
+function redactHeaders(headers) {
+    const h = Object.assign({}, headers);
+    for (const key of Object.keys(h)) {
+        const k = key.toLowerCase();
+        if (k === 'authorization' || k === 'x-api-key' || k === 'auth' || k === 'proxy-authorization') {
+            h[key] = maskSensitive(h[key]);
+        }
+    }
+    return h;
+}
+function safeBodyPreview(body) {
+    if (body == null)
+        return undefined;
+    if (typeof FormData !== 'undefined' && body instanceof FormData)
+        return '[FormData]';
+    if (typeof body === 'string')
+        return body.slice(0, 1000);
+    if (typeof body === 'object') {
+        const copy = Array.isArray(body) ? [...body] : Object.assign({}, body);
+        const redactKeys = ['password', 'token', 'authorization', 'apiKey', 'bearerToken'];
+        for (const k of Object.keys(copy)) {
+            if (redactKeys.includes(k))
+                copy[k] = '[redacted]';
+        }
+        try {
+            return JSON.parse(JSON.stringify(copy));
+        }
+        catch (_a) {
+            return '[Object]';
+        }
+    }
+    return body;
+}
 /**
  * Call this once (e.g. at app startup) to configure baseURL/auth.
  *
@@ -17,6 +68,7 @@ let extraHeadersGlobal = {};
  * @property {string} [options.bearerToken] - (Optional) Bearer token for AUTHORIZATION header
  * @property {boolean} [options.proxyMode] - (Optional) Tells the API that it is running in an iframe via parent proxy
  */
+import { enableAutoIframeResize, isIframe } from './iframe';
 export function initializeApi(options) {
     // Normalize baseURL by removing trailing slashes.
     baseURL = options.baseURL.replace(/\/+$/g, "");
@@ -30,6 +82,19 @@ export function initializeApi(options) {
         ? !!options.ngrokSkipBrowserWarning
         : inferredNgrok;
     extraHeadersGlobal = options.extraHeaders ? Object.assign({}, options.extraHeaders) : {};
+    // Auto-enable iframe resize unless explicitly disabled
+    if (isIframe() && options.iframeAutoResize !== false) {
+        enableAutoIframeResize();
+    }
+    logger = options.logger;
+    logDebug('[smartlinks] initializeApi', {
+        baseURL,
+        proxyMode,
+        inferredNgrok,
+        ngrokSkipBrowserWarning,
+        extraHeaders: Object.keys(extraHeadersGlobal),
+        iframeAutoResizeEnabled: isIframe() && options.iframeAutoResize !== false,
+    });
 }
 /** Enable/disable automatic "ngrok-skip-browser-warning" header. */
 export function setNgrokSkipBrowserWarning(flag) {
@@ -58,6 +123,7 @@ function ensureProxyListener() {
         const msg = event.data;
         if (!msg || !msg._smartlinksProxyResponse || !msg.id)
             return;
+        logDebug('[smartlinks] proxy:response', { id: msg.id, ok: !msg.error, keys: Object.keys(msg) });
         const pending = proxyPending[msg.id];
         if (pending) {
             if (msg.error) {
@@ -84,6 +150,7 @@ async function proxyRequest(method, path, body, headers, options) {
         headers,
         options,
     };
+    logDebug('[smartlinks] proxy:postMessage', { id, method, path, headers: headers ? redactHeaders(headers) : undefined, hasBody: !!body });
     return new Promise((resolve, reject) => {
         proxyPending[id] = { resolve, reject };
         window.parent.postMessage(msg, "*");
@@ -97,6 +164,7 @@ async function proxyRequest(method, path, body, headers, options) {
  */
 export async function request(path) {
     if (proxyMode) {
+        logDebug('[smartlinks] GET via proxy', { path });
         return proxyRequest("GET", path);
     }
     if (!baseURL) {
@@ -112,10 +180,12 @@ export async function request(path) {
         headers["ngrok-skip-browser-warning"] = "true";
     for (const [k, v] of Object.entries(extraHeadersGlobal))
         headers[k] = v;
+    logDebug('[smartlinks] GET fetch', { url, headers: redactHeaders(headers) });
     const response = await fetch(url, {
         method: "GET",
         headers,
     });
+    logDebug('[smartlinks] GET response', { url, status: response.status, ok: response.ok });
     if (!response.ok) {
         // Try to parse ErrorResponse; if that fails, throw generic
         try {
@@ -136,6 +206,7 @@ export async function request(path) {
  */
 export async function post(path, body, extraHeaders) {
     if (proxyMode) {
+        logDebug('[smartlinks] POST via proxy', { path, body: safeBodyPreview(body) });
         return proxyRequest("POST", path, body, extraHeaders);
     }
     if (!baseURL) {
@@ -156,11 +227,13 @@ export async function post(path, body, extraHeaders) {
     if (!(body instanceof FormData)) {
         headers["Content-Type"] = "application/json";
     }
+    logDebug('[smartlinks] POST fetch', { url, headers: redactHeaders(headers), body: safeBodyPreview(body) });
     const response = await fetch(url, {
         method: "POST",
         headers,
         body: body instanceof FormData ? body : JSON.stringify(body),
     });
+    logDebug('[smartlinks] POST response', { url, status: response.status, ok: response.ok });
     if (!response.ok) {
         try {
             const errBody = (await response.json());
@@ -180,6 +253,7 @@ export async function post(path, body, extraHeaders) {
  */
 export async function put(path, body, extraHeaders) {
     if (proxyMode) {
+        logDebug('[smartlinks] PUT via proxy', { path, body: safeBodyPreview(body) });
         return proxyRequest("PUT", path, body, extraHeaders);
     }
     if (!baseURL) {
@@ -200,11 +274,13 @@ export async function put(path, body, extraHeaders) {
     if (!(body instanceof FormData)) {
         headers["Content-Type"] = "application/json";
     }
+    logDebug('[smartlinks] PUT fetch', { url, headers: redactHeaders(headers), body: safeBodyPreview(body) });
     const response = await fetch(url, {
         method: "PUT",
         headers,
         body: body instanceof FormData ? body : JSON.stringify(body),
     });
+    logDebug('[smartlinks] PUT response', { url, status: response.status, ok: response.ok });
     if (!response.ok) {
         try {
             const errBody = (await response.json());
@@ -223,6 +299,7 @@ export async function put(path, body, extraHeaders) {
  */
 export async function requestWithOptions(path, options) {
     if (proxyMode) {
+        logDebug('[smartlinks] requestWithOptions via proxy', { path, method: options.method || 'GET' });
         return proxyRequest(options.method || "GET", path, options.body, options.headers, options);
     }
     if (!baseURL) {
@@ -251,7 +328,9 @@ export async function requestWithOptions(path, options) {
     for (const [k, v] of Object.entries(extraHeadersGlobal))
         if (!(k in headers))
             headers[k] = v;
+    logDebug('[smartlinks] requestWithOptions fetch', { url, method: options.method || 'GET', headers: redactHeaders(headers), body: safeBodyPreview(options.body) });
     const response = await fetch(url, Object.assign(Object.assign({}, options), { headers }));
+    logDebug('[smartlinks] requestWithOptions response', { url, status: response.status, ok: response.ok });
     if (!response.ok) {
         try {
             const errBody = (await response.json());
@@ -270,6 +349,7 @@ export async function requestWithOptions(path, options) {
  */
 export async function del(path, extraHeaders) {
     if (proxyMode) {
+        logDebug('[smartlinks] DELETE via proxy', { path });
         return proxyRequest("DELETE", path, undefined, extraHeaders);
     }
     if (!baseURL) {
@@ -286,10 +366,12 @@ export async function del(path, extraHeaders) {
     for (const [k, v] of Object.entries(extraHeadersGlobal))
         if (!(k in headers))
             headers[k] = v;
+    logDebug('[smartlinks] DELETE fetch', { url, headers: redactHeaders(headers) });
     const response = await fetch(url, {
         method: "DELETE",
         headers,
     });
+    logDebug('[smartlinks] DELETE response', { url, status: response.status, ok: response.ok });
     if (!response.ok) {
         try {
             const errBody = (await response.json());
@@ -340,6 +422,7 @@ export async function sendCustomProxyMessage(request, params) {
         request,
         params,
     };
+    logDebug('[smartlinks] proxy:custom postMessage', { id, request, params: safeBodyPreview(params) });
     return new Promise((resolve, reject) => {
         proxyPending[id] = { resolve, reject };
         window.parent.postMessage(msg, "*");

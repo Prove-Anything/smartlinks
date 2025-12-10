@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.0.51  |  Generated: 2025-11-23T12:27:09.228Z
+Version: 1.0.56  |  Generated: 2025-12-10T12:01:50.310Z
 
 This is a concise summary of all available API functions and types.
 
@@ -21,11 +21,11 @@ The Smartlinks SDK is organized into the following namespaces:
 - **comms** - Functions for comms operations
 - **crate** - Container/crate management for organizing products
 - **form** - Dynamic form creation and submission
+- **nfc** - Functions for nfc operations
 - **product** - Product CRUD operations and management within collections
 - **proof** - Product proof retrieval and validation
 - **serialNumber** - Functions for serialNumber operations
 - **variant** - Product variant management and tracking
- - **iframe** - Iframe communication and parent window interaction utilities
 
 ## HTTP Utilities
 
@@ -38,6 +38,8 @@ Core HTTP functions for API configuration and communication:
   proxyMode?: boolean
   ngrokSkipBrowserWarning?: boolean
   extraHeaders?: Record<string, string>
+  iframeAutoResize?: boolean // default true when in iframe
+  logger?: Logger // optional console-like or function to enable verbose logging
 }) → `void`
 Call this once (e.g. at app startup) to configure baseURL/auth.
 
@@ -76,31 +78,6 @@ Returns the common headers used for API requests, including apiKey and bearerTok
 
 **sendCustomProxyMessage**(request: string, params: any) → `Promise<T>`
 Sends a custom proxy message to the parent Smartlinks application when running in an iframe. This function is used to communicate with the parent window when the SDK is embedded in an iframe and proxyMode is enabled. It sends a message to the parent and waits for a response.
-
-## Iframe Utilities
-
-Helpers for parent iframe communication (browser-only; safely no-op in Node). All messages use the envelope `{ _smartlinksIframeMessage: true, type, payload }`.
-
-**redirectParent**(url: string) → `void`
-Request parent window to navigate to `url`.
-
-**sendHeight**(height?: number, extra?: Record<string, any>) → `void`
-Post current (or provided) content height to parent for dynamic iframe resizing.
-
-**enableAutoIframeResize**(options?: { intervalMs?: number; alwaysSend?: boolean; extra?: Record<string, any>; messageType?: string }) → `void`
-Start automatic height tracking using `ResizeObserver` (fallback: `MutationObserver` + polling). Sends resize messages of given `messageType` (default `smartlinks:resize`).
-
-**disableAutoIframeResize**() → `void`
-Stop automatic height tracking and messaging.
-
-**sendParentCustom**(type: string, payload: Record<string, any>) → `void`
-Send a custom named message (`type`) with arbitrary payload to parent.
-
-**isIframe**() → `boolean`
-Returns true if running inside an iframe in a browser context.
-
-**supportsResizeObserver**() → `boolean`
-Returns true if `ResizeObserver` is available in current environment.
 
 ## Types
 
@@ -511,6 +488,65 @@ interface ErrorResponse {
 }
 ```
 
+### nfc
+
+**NfcTagInfo** (interface)
+```typescript
+interface NfcTagInfo {
+  id: string
+  tagId: string
+  claimSetId: string
+  collectionId?: string
+  productId?: string
+  batchId?: string
+  variantId?: string
+  proofId?: string
+  index?: number
+  data?: Record<string, any>
+}
+```
+
+**NfcValidateRequest** (interface)
+```typescript
+interface NfcValidateRequest {
+  claimSetId: string
+  codeId: string
+  mirror?: string
+  userId?: string
+}
+```
+
+**NfcValidateResponse** (interface)
+```typescript
+interface NfcValidateResponse {
+  claimSetId: string
+  codeId: string
+  tagId: string
+  index?: number
+  isAdmin: boolean
+  path?: string
+  collectionId?:  string
+  collection?:  Record<string, any>
+  count: number,
+  previousCount: number
+  data?: Record<string, any>
+  productId?:  string
+  product?:  Record<string, any>
+  batchId?:  string
+  variantId?:  string
+  proofId?:  string
+}
+```
+
+**NfcClaimTagRequest** (interface)
+```typescript
+interface NfcClaimTagRequest {
+  claimSetId: string
+  codeId: string
+  data: Record<string, any>
+}
+```
+
 ### product
 
 **ProductResponse** (interface)
@@ -554,6 +590,8 @@ interface ProofResponse {
   productId: string
   tokenId: string
   userId: string
+  claimable: boolean
+  transient: boolean
   values: Record<string, any>
 }
 ```

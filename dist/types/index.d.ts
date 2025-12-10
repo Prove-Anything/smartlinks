@@ -9,3 +9,4 @@ export * from "./variant";
 export * from "./claimSet";
 export * from "./auth";
 export * from "./comms";
+export * from "./nfc";

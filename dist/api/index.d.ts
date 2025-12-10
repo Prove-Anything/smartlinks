@@ -14,4 +14,5 @@ export { batch } from "./batch";
 export { variant } from "./variant";
 export { ai } from "./ai";
 export { comms } from "./comms";
+export { nfc } from "./nfc";
 export type { AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto } from "./ai";
