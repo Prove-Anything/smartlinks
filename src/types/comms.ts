@@ -37,7 +37,6 @@ export interface EmailNotificationTemplate {
  * Wallet pass update template content
  */
 export interface WalletUpdateTemplate {
-  /** Text modules to update in the wallet pass */
   textModulesData?: Array<{
     /** Module ID */
     id: string
@@ -68,8 +67,8 @@ export interface SendNotificationRequest {
   subjectTargets: NotificationSubjectTarget[]
   /** Severity level of the notification */
   severity: 'low' | 'normal' | 'important' | 'critical'
-  /** Delivery chanell mode preference */
-  mode: 'preferred' | 'all' 
+  /** Delivery channel mode preference */
+  mode: 'preferred' | 'all'
   /** Specific channels to use for delivery */
   channels : ("push" | "email" | "wallet")[]
   /** Notification content templates for different delivery methods */

@@ -55,14 +55,14 @@ export interface CollectionResponse {
   /** User roles mapping with user IDs as keys and role names as values */
   roles: {
     [userId: string]: string
-  }
+  } // User roles mapping with user IDs as keys and role names as values
   /** Array of group tag names */
-  groupTags?: string[]
+  groupTags?: string[] // Array of group tag names
   /** Whether the collection has a custom domain */
-  redirectUrl?: string
+  redirectUrl?: string // Whether the collection has a custom domain
   /** The shortId of this collection */
-  shortId: string,
+  shortId: string, // The shortId of this collection
   /** if dark mode is enabled for this collection */
-  dark?: boolean
+  dark?: boolean // if dark mode is enabled for this collection
 
 }

@@ -24,6 +24,7 @@ export interface ProfileUpdateData {
 export interface SuccessResponse {
     success: boolean;
     message?: string;
+    /** some flows may return a refreshed token */
     token?: string;
 }
 export interface AuthLoginResponse {
@@ -31,8 +32,11 @@ export interface AuthLoginResponse {
     user: AuthKitUser;
     accountData?: Record<string, any>;
     emailVerificationMode?: 'immediate' | 'verify-auto-login' | 'verify-manual-login';
+    /** True if email verification is required but not yet completed */
     requiresEmailVerification?: boolean;
+    /** Unix timestamp - for 'immediate' mode grace period deadline */
     emailVerificationDeadline?: number;
+    /** True if account is locked due to expired verification deadline */
     accountLocked?: boolean;
 }
 export interface MagicLinkSendResponse {

@@ -1,18 +1,18 @@
 import type { NfcValidateRequest, NfcValidateResponse, NfcTagInfo, NfcClaimTagRequest } from "../types/nfc";
-export declare const nfc: {
+export declare namespace nfc {
     /**
      * Claim an NFC tag (public).
-     * POST /api/va/public/nfc/claimTag
+     * POST /public/nfc/claimTag
      */
-    claimTag(data: NfcClaimTagRequest): Promise<NfcTagInfo>;
+    function claimTag(data: NfcClaimTagRequest): Promise<NfcTagInfo>;
     /**
      * Validate an NFC tag payload (public).
      * POST /public/nfc/validate
      */
-    validate(data: NfcValidateRequest): Promise<NfcValidateResponse>;
+    function validate(data: NfcValidateRequest): Promise<NfcValidateResponse>;
     /**
      * Lookup a tag by its ID (public).
      * GET /public/nfc/findByTag/:tagId
      */
-    lookupTag(tagId: string): Promise<NfcTagInfo[]>;
-};
+    function lookupTag(tagId: string): Promise<NfcTagInfo[]>;
+}

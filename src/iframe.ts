@@ -3,6 +3,7 @@
 // These helpers are optional and safe in non-browser / Node environments.
 // They build on the existing proxyMode infrastructure but can also be used standalone.
 
+export namespace iframe {
 interface IframeResizeOptions {
   /** Minimum ms between height postMessages (default 100). */
   intervalMs?: number
@@ -139,4 +140,5 @@ export function isIframe(): boolean {
 /** Returns true if ResizeObserver is supported in current environment. */
 export function supportsResizeObserver(): boolean {
   return typeof ResizeObserver !== 'undefined'
+}
 }

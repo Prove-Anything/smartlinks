@@ -46,7 +46,7 @@ export var proof;
      * PUT /public/collection/:collectionId/product/:productId/proof/:proofId
      */
     async function claim(collectionId, productId, proofId, values) {
-        const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}`;
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/claim`;
         return put(path, values);
     }
     proof.claim = claim;

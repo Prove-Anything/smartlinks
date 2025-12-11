@@ -30,11 +30,11 @@ export interface ProductResponse {
   /** Flexible map of tags with true/false values */
   tags: {
     [tagName: string]: boolean
-  }
+  } // Flexible map of tags with true/false values
   /** Flexible key/value data map */
   data: {
     [key: string]: any
-  }
+  } // Flexible key/value data map
 }
 
 // Input types for creating/updating products

@@ -1,6 +1,7 @@
 export { initializeApi, request, sendCustomProxyMessage } from "./http";
 export * from "./api";
 export * from "./types";
+export { iframe } from "./iframe";
 export type { LoginResponse, VerifyTokenResponse, AccountInfoResponse, } from "./api/auth";
 export type { UserAccountRegistrationRequest, } from "./types/auth";
 export type { SendNotificationRequest, SendNotificationResponse, NotificationSubjectTarget, NotificationTemplate, PushNotificationTemplate, EmailNotificationTemplate, WalletUpdateTemplate, } from "./types/comms";

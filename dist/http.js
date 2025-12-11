@@ -68,7 +68,7 @@ function safeBodyPreview(body) {
  * @property {string} [options.bearerToken] - (Optional) Bearer token for AUTHORIZATION header
  * @property {boolean} [options.proxyMode] - (Optional) Tells the API that it is running in an iframe via parent proxy
  */
-import { enableAutoIframeResize, isIframe } from './iframe';
+import { iframe } from './iframe';
 export function initializeApi(options) {
     // Normalize baseURL by removing trailing slashes.
     baseURL = options.baseURL.replace(/\/+$/g, "");
@@ -83,8 +83,8 @@ export function initializeApi(options) {
         : inferredNgrok;
     extraHeadersGlobal = options.extraHeaders ? Object.assign({}, options.extraHeaders) : {};
     // Auto-enable iframe resize unless explicitly disabled
-    if (isIframe() && options.iframeAutoResize !== false) {
-        enableAutoIframeResize();
+    if (iframe.isIframe() && options.iframeAutoResize !== false) {
+        iframe.enableAutoIframeResize();
     }
     logger = options.logger;
     logDebug('[smartlinks] initializeApi', {
@@ -93,7 +93,7 @@ export function initializeApi(options) {
         inferredNgrok,
         ngrokSkipBrowserWarning,
         extraHeaders: Object.keys(extraHeadersGlobal),
-        iframeAutoResizeEnabled: isIframe() && options.iframeAutoResize !== false,
+        iframeAutoResizeEnabled: iframe.isIframe() && options.iframeAutoResize !== false,
     });
 }
 /** Enable/disable automatic "ngrok-skip-browser-warning" header. */

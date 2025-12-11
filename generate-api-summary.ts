@@ -105,11 +105,63 @@ ${formattedBody}
 }
 
 function formatInterfaceBody(body: string): string {
-  const lines = body.split('\n')
-    .map(line => line.trim())
-    .filter(line => line && !line.includes('/**') && !line.includes('*/') && !line.startsWith('//'));
-  
-  return lines.map(line => `  ${line}`).join('\n');
+  const lines = body.split('\n');
+  let inJsDoc = false;
+  let jsDocBuffer: string[] = [];
+  let pendingDesc = '';
+  const out: string[] = [];
+
+  const pushLine = (raw: string) => {
+    const line = raw.trimEnd();
+    if (!line.trim()) return; // skip empty
+    // Determine if this is the start of a property signature (best-effort)
+    const looksLikePropStart = /^(?:[A-Za-z_$\[\"\'])[^:]*:/.test(line) || /^(?:[A-Za-z_$\[\"\']).*[?]:/.test(line);
+    let rendered = line;
+    if (looksLikePropStart && pendingDesc && !/\/\//.test(line)) {
+      rendered = `${line} // ${pendingDesc}`;
+      pendingDesc = '';
+    }
+    out.push(`  ${rendered}`);
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const trimmed = raw.trim();
+    if (!inJsDoc && trimmed.startsWith('/**')) {
+      inJsDoc = true;
+      jsDocBuffer = [raw];
+      if (trimmed.endsWith('*/')) {
+        // one-line jsdoc
+        inJsDoc = false;
+        const desc = extractDescription(jsDocBuffer.join('\n'));
+        pendingDesc = desc;
+        jsDocBuffer = [];
+      }
+      continue;
+    }
+    if (inJsDoc) {
+      jsDocBuffer.push(raw);
+      if (trimmed.endsWith('*/')) {
+        inJsDoc = false;
+        const desc = extractDescription(jsDocBuffer.join('\n'));
+        pendingDesc = desc;
+        jsDocBuffer = [];
+      }
+      continue;
+    }
+    if (!trimmed) {
+      // blank line
+      continue;
+    }
+    // Skip pure jsdoc artifacts or comment-only lines
+    if (trimmed.startsWith('//')) {
+      // keep standalone comments out of the compact summary
+      continue;
+    }
+    pushLine(raw);
+  }
+
+  return out.join('\n');
 }
 
 function extractFunctionsFromFile(filePath: string): APIFunction[] {

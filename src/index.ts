@@ -4,6 +4,8 @@
 export { initializeApi, request, sendCustomProxyMessage } from "./http"
 export * from "./api"
 export * from "./types"
+// Iframe namespace
+export { iframe } from "./iframe"
 
 // Explicitly re-export types for documentation
 export type {

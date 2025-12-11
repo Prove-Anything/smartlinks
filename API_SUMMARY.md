@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.0.56  |  Generated: 2025-12-10T12:01:50.310Z
+Version: 1.0.60  |  Generated: 2025-12-11T09:50:26.995Z
 
 This is a concise summary of all available API functions and types.
 
@@ -139,12 +139,19 @@ interface AttestationUpdateRequest {
 **UserAccountRegistrationRequest** (type)
 ```typescript
 type UserAccountRegistrationRequest = {
+  /** User's display name */
   name: string
+  /** Optional user email */
   email?: string
+  /** Optional user phone number */
   phone?: string
+  /** Optional password for email login */
   password?: string
+  /** Send confirmation email after registration */
   sendAccountConfirmation?: boolean
+  /** Optional collection context for registration */
   collectionId?: string,
+  /** Desired token type returned */
   tokenType?: 'bearer' | 'firebase'
 }
 ```
@@ -384,11 +391,11 @@ interface CollectionResponse {
   }[],
   roles: {
   [userId: string]: string
-  }
-  groupTags?: string[]
-  redirectUrl?: string
-  shortId: string,
-  dark?: boolean
+  } // User roles mapping with user IDs as keys and role names as values
+  groupTags?: string[] // Array of group tag names
+  redirectUrl?: string // Whether the collection has a custom domain
+  shortId: string, // The shortId of this collection
+  dark?: boolean // if dark mode is enabled for this collection
 }
 ```
 
@@ -568,10 +575,10 @@ interface ProductResponse {
   }
   tags: {
   [tagName: string]: boolean
-  }
+  } // Flexible map of tags with true/false values
   data: {
   [key: string]: any
-  }
+  } // Flexible key/value data map
 }
 ```
 
@@ -590,8 +597,8 @@ interface ProofResponse {
   productId: string
   tokenId: string
   userId: string
-  claimable: boolean
-  transient: boolean
+  claimable?: boolean
+  transient?: boolean
   values: Record<string, any>
 }
 ```
@@ -1115,6 +1122,17 @@ Update a form for a collection (admin only).
 
 **remove**(collectionId: string, formId: string) → `Promise<void>`
 Delete a form for a collection (admin only).
+
+### nfc
+
+**claimTag**(data: NfcClaimTagRequest) → `Promise<NfcTagInfo>`
+Claim an NFC tag (public). POST /public/nfc/claimTag
+
+**validate**(data: NfcValidateRequest) → `Promise<NfcValidateResponse>`
+Validate an NFC tag payload (public). POST /public/nfc/validate
+
+**lookupTag**(tagId: string) → `Promise<NfcTagInfo[]>`
+Lookup a tag by its ID (public). GET /public/nfc/findByTag/:tagId
 
 ### product
 

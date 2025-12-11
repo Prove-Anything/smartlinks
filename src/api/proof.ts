@@ -72,7 +72,7 @@ export namespace proof {
     proofId: string,
     values: any
   ): Promise<ProofResponse> {
-    const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}`
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/claim`
     return put<ProofResponse>(path, values)
   }  
 
