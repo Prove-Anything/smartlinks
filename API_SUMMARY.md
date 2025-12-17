@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.0.60  |  Generated: 2025-12-11T09:50:26.995Z
+Version: 1.0.63  |  Generated: 2025-12-17T18:37:00.024Z
 
 This is a concise summary of all available API functions and types.
 
@@ -19,6 +19,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **claimSet** - Claim creation, management, and verification
 - **collection** - Collection CRUD operations and management
 - **comms** - Functions for comms operations
+- **contact** - Functions for contact operations
 - **crate** - Container/crate management for organizing products
 - **form** - Dynamic form creation and submission
 - **nfc** - Functions for nfc operations
@@ -64,6 +65,11 @@ Internal helper that performs a POST request to `${baseURL}${path}`, injecting h
   body: any,
   extraHeaders?: Record<string, string>) → `Promise<T>`
 Internal helper that performs a PUT request to `${baseURL}${path}`, injecting headers for apiKey or bearerToken if present. If body is FormData, Content-Type is not set. Returns the parsed JSON as T, or throws an Error.
+
+**patch**(path: string,
+  body: any,
+  extraHeaders?: Record<string, string>) → `Promise<T>`
+Internal helper that performs a PATCH request to `${baseURL}${path}`, injecting headers for apiKey or bearerToken if present. If body is FormData, Content-Type is not set. Returns the parsed JSON as T, or throws an Error.
 
 **requestWithOptions**(path: string,
   options: RequestInit) → `Promise<T>`
@@ -484,6 +490,66 @@ interface SendNotificationResponse {
   }
 }
 ```
+
+### contact
+
+**ContactResponse** (interface)
+```typescript
+interface ContactResponse {
+  contactId: string
+  orgId: string
+  firstName: string | null
+  lastName: string | null
+  displayName: string | null
+  company: string | null
+  email: string | null
+  phone: string | null
+  emails?: string[]
+  phones?: string[]
+  customFields: ContactCustomFields
+  createdAt: string
+  updatedAt: string
+  deletedAt: string | null
+  erasedAt: string | null
+}
+```
+
+**ContactCreateRequest** (interface)
+```typescript
+interface ContactCreateRequest {
+  firstName?: string | null
+  lastName?: string | null
+  displayName?: string | null
+  company?: string | null
+  email?: string | null
+  phone?: string | null
+  customFields?: ContactCustomFields
+}
+```
+
+**ContactUpdateRequest** (interface)
+```typescript
+interface ContactUpdateRequest {
+  firstName?: string | null
+  lastName?: string | null
+  displayName?: string | null
+  company?: string | null
+  email?: string | null
+  phone?: string | null
+  customFields?: ContactCustomFields
+}
+```
+
+**ContactListResponse** (interface)
+```typescript
+interface ContactListResponse {
+  items: ContactResponse[]
+  limit: number
+  offset: number
+}
+```
+
+**ContactCustomFields** = `Record<string, any>`
 
 ### error
 
@@ -1088,6 +1154,31 @@ Assign a value to a serial number for a collection (admin only).
 **sendNotification**(collectionId: string,
     request: SendNotificationRequest) → `Promise<SendNotificationResponse>`
 Send a notification to specified targets within a collection. Supports multiple delivery methods including push notifications, email, and wallet pass updates. The notification will be delivered based on user preferences and the specified delivery mode. ```typescript const result = await comms.sendNotification('my-collection', { subjectTargets: [{ type: 'product', id: 'prod_123' }], severity: 'important', mode: 'preferred', template: { push: { title: 'Update available', body: 'We\'ve shipped an important update.', icon: 'https://cdn.example.com/brand/logo-128.png' }, email: { subject: 'Important update for your product', body: 'There\'s an important update. Open your pass or profile to learn more.' }, walletUpdate: { textModulesData: [ { id: 'notice', header: 'Update', body: 'Open your wallet pass for details.' } ] } } }) if (result.ok) { console.log('Notification queued:', result.notificationId) console.log('Totals:', result.status.totals) } ```
+
+### contact
+
+**create**(collectionId: string, data: ContactCreateRequest) → `Promise<ContactResponse>`
+
+**list**(collectionId: string,
+    params?: { limit?: number; offset?: number; includeDeleted?: boolean }) → `Promise<ContactListResponse>`
+
+**get**(collectionId: string,
+    contactId: string,
+    params?: { includeDeleted?: boolean }) → `Promise<ContactResponse>`
+
+**update**(collectionId: string,
+    contactId: string,
+    data: ContactUpdateRequest) → `Promise<ContactResponse>`
+
+**remove**(collectionId: string, contactId: string) → `Promise<void>`
+
+**lookup**(collectionId: string,
+    params: { email?: string; phone?: string }) → `Promise<ContactResponse>`
+
+**upsert**(collectionId: string,
+    data: ContactCreateRequest) → `Promise<ContactResponse>`
+
+**erase**(collectionId: string, contactId: string, body?: any) → `Promise<ContactResponse>`
 
 ### crate
 

@@ -17,3 +17,4 @@ export { variant } from "./variant";
 export { ai } from "./ai";
 export { comms } from "./comms";
 export { nfc } from "./nfc";
+export { contact } from "./contact";

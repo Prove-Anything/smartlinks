@@ -44,6 +44,13 @@ export declare function post<T>(path: string, body: any, extraHeaders?: Record<s
  */
 export declare function put<T>(path: string, body: any, extraHeaders?: Record<string, string>): Promise<T>;
 /**
+ * Internal helper that performs a PATCH request to `${baseURL}${path}`,
+ * injecting headers for apiKey or bearerToken if present.
+ * If body is FormData, Content-Type is not set.
+ * Returns the parsed JSON as T, or throws an Error.
+ */
+export declare function patch<T>(path: string, body: any, extraHeaders?: Record<string, string>): Promise<T>;
+/**
  * Internal helper that performs a request to `${baseURL}${path}` with custom options,
  * injecting headers for apiKey or bearerToken if present.
  * Returns the parsed JSON as T, or throws an Error.

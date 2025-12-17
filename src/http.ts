@@ -323,6 +323,58 @@ export async function put<T>(
 }
 
 /**
+ * Internal helper that performs a PATCH request to `${baseURL}${path}`,
+ * injecting headers for apiKey or bearerToken if present.
+ * If body is FormData, Content-Type is not set.
+ * Returns the parsed JSON as T, or throws an Error.
+ */
+export async function patch<T>(
+  path: string,
+  body: any,
+  extraHeaders?: Record<string, string>
+): Promise<T> {
+  if (proxyMode) {
+    logDebug('[smartlinks] PATCH via proxy', { path, body: safeBodyPreview(body) })
+    return proxyRequest<T>("PATCH", path, body, extraHeaders)
+  }
+
+  if (!baseURL) {
+    throw new Error("HTTP client is not initialized. Call initializeApi(...) first.")
+  }
+
+  const url = `${baseURL}${path}`
+  const headers: Record<string, string> = extraHeaders ? { ...extraHeaders } : {}
+  if (apiKey) headers["X-API-Key"] = apiKey
+  if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
+  if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
+  for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
+
+  // Only set Content-Type for non-FormData bodies
+  if (!(body instanceof FormData)) {
+    headers["Content-Type"] = "application/json"
+  }
+
+  logDebug('[smartlinks] PATCH fetch', { url, headers: redactHeaders(headers), body: safeBodyPreview(body) })
+  const response = await fetch(url, {
+    method: "PATCH",
+    headers,
+    body: body instanceof FormData ? body : JSON.stringify(body),
+  })
+  logDebug('[smartlinks] PATCH response', { url, status: response.status, ok: response.ok })
+
+  if (!response.ok) {
+    try {
+      const errBody = (await response.json()) as import("./types/error").ErrorResponse
+      throw new Error(`Error ${errBody.code}: ${errBody.message}`)
+    } catch {
+      throw new Error(`Request to ${url} failed with status ${response.status}`)
+    }
+  }
+
+  return (await response.json()) as T
+}
+
+/**
  * Internal helper that performs a request to `${baseURL}${path}` with custom options,
  * injecting headers for apiKey or bearerToken if present.
  * Returns the parsed JSON as T, or throws an Error.

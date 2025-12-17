@@ -12,3 +12,4 @@ export * from "./claimSet";
 export * from "./auth";
 export * from "./comms";
 export * from "./nfc";
+export * from "./contact";

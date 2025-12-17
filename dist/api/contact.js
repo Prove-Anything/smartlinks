@@ -1,0 +1,61 @@
+import { request, post, del, patch } from "../http";
+export var contact;
+(function (contact) {
+    async function create(collectionId, data) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts`;
+        return post(path, data);
+    }
+    contact.create = create;
+    async function list(collectionId, params) {
+        const query = new URLSearchParams();
+        if ((params === null || params === void 0 ? void 0 : params.limit) !== undefined)
+            query.set("limit", String(params.limit));
+        if ((params === null || params === void 0 ? void 0 : params.offset) !== undefined)
+            query.set("offset", String(params.offset));
+        if ((params === null || params === void 0 ? void 0 : params.includeDeleted) !== undefined)
+            query.set("includeDeleted", String(params.includeDeleted));
+        const qs = query.toString();
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts${qs ? `?${qs}` : ""}`;
+        return request(path);
+    }
+    contact.list = list;
+    async function get(collectionId, contactId, params) {
+        const query = new URLSearchParams();
+        if ((params === null || params === void 0 ? void 0 : params.includeDeleted) !== undefined)
+            query.set("includeDeleted", String(params.includeDeleted));
+        const qs = query.toString();
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts/${encodeURIComponent(contactId)}${qs ? `?${qs}` : ""}`;
+        return request(path);
+    }
+    contact.get = get;
+    async function update(collectionId, contactId, data) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts/${encodeURIComponent(contactId)}`;
+        return patch(path, data);
+    }
+    contact.update = update;
+    async function remove(collectionId, contactId) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts/${encodeURIComponent(contactId)}`;
+        return del(path);
+    }
+    contact.remove = remove;
+    async function lookup(collectionId, params) {
+        const query = new URLSearchParams();
+        if (params.email)
+            query.set("email", params.email);
+        if (params.phone)
+            query.set("phone", params.phone);
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts/lookup?${query.toString()}`;
+        return request(path);
+    }
+    contact.lookup = lookup;
+    async function upsert(collectionId, data) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts:upsert`;
+        return post(path, data);
+    }
+    contact.upsert = upsert;
+    async function erase(collectionId, contactId, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts/${encodeURIComponent(contactId)}/erase`;
+        return post(path, body || {});
+    }
+    contact.erase = erase;
+})(contact || (contact = {}));
