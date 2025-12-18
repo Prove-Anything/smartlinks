@@ -43,11 +43,24 @@ export var collection;
      * @param settingGroup – The settings group name
      * @returns Promise resolving to the settings object
      */
-    async function getSettings(collectionId, settingGroup) {
-        const path = `/public/collection/${encodeURIComponent(collectionId)}/settings/${encodeURIComponent(settingGroup)}`;
+    async function getSettings(collectionId, settingGroup, admin) {
+        const base = admin ? '/admin/collection' : '/public/collection';
+        const path = `${base}/${encodeURIComponent(collectionId)}/settings/${encodeURIComponent(settingGroup)}`;
         return request(path);
     }
     collection.getSettings = getSettings;
+    /**
+     * Update a specific settings group for a collection (admin endpoint).
+     * @param collectionId – Identifier of the collection
+     * @param settingGroup – The settings group name
+     * @param settings – The settings payload to persist
+     * @returns Promise resolving to the updated settings
+     */
+    async function updateSettings(collectionId, settingGroup, settings) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/settings/${encodeURIComponent(settingGroup)}`;
+        return post(path, settings);
+    }
+    collection.updateSettings = updateSettings;
     /**
      * Create a new collection (admin only).
      * @param data – Collection creation data

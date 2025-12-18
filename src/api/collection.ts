@@ -44,9 +44,22 @@ export namespace collection {
    * @param settingGroup – The settings group name
    * @returns Promise resolving to the settings object
    */
-  export async function getSettings(collectionId: string, settingGroup: string): Promise<any> {
-    const path = `/public/collection/${encodeURIComponent(collectionId)}/settings/${encodeURIComponent(settingGroup)}`
+  export async function getSettings(collectionId: string, settingGroup: string, admin?: boolean): Promise<any> {
+    const base = admin ? '/admin/collection' : '/public/collection'
+    const path = `${base}/${encodeURIComponent(collectionId)}/settings/${encodeURIComponent(settingGroup)}`
     return request<any>(path)
+  }
+
+  /**
+   * Update a specific settings group for a collection (admin endpoint).
+   * @param collectionId – Identifier of the collection
+   * @param settingGroup – The settings group name
+   * @param settings – The settings payload to persist
+   * @returns Promise resolving to the updated settings
+   */
+  export async function updateSettings(collectionId: string, settingGroup: string, settings: any): Promise<any> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/settings/${encodeURIComponent(settingGroup)}`
+    return post<any>(path, settings)
   }
 
   /**

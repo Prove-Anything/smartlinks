@@ -3,7 +3,7 @@ import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactLis
 
 export namespace contact {
   export async function create(collectionId: string, data: ContactCreateRequest): Promise<ContactResponse> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts`
     return post<ContactResponse>(path, data)
   }
 
@@ -16,7 +16,7 @@ export namespace contact {
     if (params?.offset !== undefined) query.set("offset", String(params.offset))
     if (params?.includeDeleted !== undefined) query.set("includeDeleted", String(params.includeDeleted))
     const qs = query.toString()
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts${qs ? `?${qs}` : ""}`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts${qs ? `?${qs}` : ""}`
     return request<ContactListResponse>(path)
   }
 
@@ -28,7 +28,7 @@ export namespace contact {
     const query = new URLSearchParams()
     if (params?.includeDeleted !== undefined) query.set("includeDeleted", String(params.includeDeleted))
     const qs = query.toString()
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts/${encodeURIComponent(contactId)}${qs ? `?${qs}` : ""}`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/${encodeURIComponent(contactId)}${qs ? `?${qs}` : ""}`
     return request<ContactResponse>(path)
   }
 
@@ -37,12 +37,12 @@ export namespace contact {
     contactId: string,
     data: ContactUpdateRequest
   ): Promise<ContactResponse> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts/${encodeURIComponent(contactId)}`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/${encodeURIComponent(contactId)}`
     return patch<ContactResponse>(path, data)
   }
 
   export async function remove(collectionId: string, contactId: string): Promise<void> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts/${encodeURIComponent(contactId)}`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/${encodeURIComponent(contactId)}`
     return del<void>(path)
   }
 
@@ -53,7 +53,7 @@ export namespace contact {
     const query = new URLSearchParams()
     if (params.email) query.set("email", params.email)
     if (params.phone) query.set("phone", params.phone)
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts/lookup?${query.toString()}`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/lookup?${query.toString()}`
     return request<ContactResponse>(path)
   }
 
@@ -61,12 +61,12 @@ export namespace contact {
     collectionId: string,
     data: ContactCreateRequest
   ): Promise<ContactResponse> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts:upsert`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts:upsert`
     return post<ContactResponse>(path, data)
   }
 
   export async function erase(collectionId: string, contactId: string, body?: any): Promise<ContactResponse> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/crm/contacts/${encodeURIComponent(contactId)}/erase`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/${encodeURIComponent(contactId)}/erase`
     return post<ContactResponse>(path, body || {})
   }
 }

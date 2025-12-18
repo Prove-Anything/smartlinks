@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.0.63  |  Generated: 2025-12-17T18:37:00.024Z
+Version: 1.0.65  |  Generated: 2025-12-17T23:15:40.346Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1123,8 +1123,11 @@ Retrieves all Collections.
 **getShortId**(shortId: string) → `Promise<CollectionResponse>`
 Retrieve a collection by its shortId (public endpoint).
 
-**getSettings**(collectionId: string, settingGroup: string) → `Promise<any>`
+**getSettings**(collectionId: string, settingGroup: string, admin?: boolean) → `Promise<any>`
 Retrieve a specific settings group for a collection (public endpoint).
+
+**updateSettings**(collectionId: string, settingGroup: string, settings: any) → `Promise<any>`
+Update a specific settings group for a collection (admin endpoint).
 
 **create**(data: any) → `Promise<CollectionResponse>`
 Create a new collection (admin only).

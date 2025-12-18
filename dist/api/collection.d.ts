@@ -27,7 +27,15 @@ export declare namespace collection {
      * @param settingGroup – The settings group name
      * @returns Promise resolving to the settings object
      */
-    function getSettings(collectionId: string, settingGroup: string): Promise<any>;
+    function getSettings(collectionId: string, settingGroup: string, admin?: boolean): Promise<any>;
+    /**
+     * Update a specific settings group for a collection (admin endpoint).
+     * @param collectionId – Identifier of the collection
+     * @param settingGroup – The settings group name
+     * @param settings – The settings payload to persist
+     * @returns Promise resolving to the updated settings
+     */
+    function updateSettings(collectionId: string, settingGroup: string, settings: any): Promise<any>;
     /**
      * Create a new collection (admin only).
      * @param data – Collection creation data
