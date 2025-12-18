@@ -18,3 +18,7 @@ export { ai } from "./ai";
 export { comms } from "./comms";
 export { nfc } from "./nfc";
 export { contact } from "./contact";
+export { actions } from "./actions";
+export { broadcasts } from "./broadcasts";
+export { segments } from "./segments";
+export { journeys } from "./journeys";

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.0.65  |  Generated: 2025-12-17T23:15:40.346Z
+Version: 1.1.0  |  Generated: 2025-12-18T21:39:05.733Z
 
 This is a concise summary of all available API functions and types.
 
@@ -8,6 +8,7 @@ This is a concise summary of all available API functions and types.
 
 The Smartlinks SDK is organized into the following namespaces:
 
+- **actions** - Functions for actions operations
 - **ai** - Functions for ai operations
 - **appConfiguration** - Application configuration and settings management
 - **appRecord** - Functions for appRecord operations
@@ -16,15 +17,18 @@ The Smartlinks SDK is organized into the following namespaces:
 - **auth** - Authentication, login, and user account management
 - **authKit** - Functions for authKit operations
 - **batch** - Product batch management and tracking
+- **broadcasts** - Functions for broadcasts operations
 - **claimSet** - Claim creation, management, and verification
 - **collection** - Collection CRUD operations and management
 - **comms** - Functions for comms operations
 - **contact** - Functions for contact operations
 - **crate** - Container/crate management for organizing products
 - **form** - Dynamic form creation and submission
+- **journeys** - Functions for journeys operations
 - **nfc** - Functions for nfc operations
 - **product** - Product CRUD operations and management within collections
 - **proof** - Product proof retrieval and validation
+- **segments** - Functions for segments operations
 - **serialNumber** - Functions for serialNumber operations
 - **variant** - Product variant management and tracking
 
@@ -86,6 +90,189 @@ Returns the common headers used for API requests, including apiKey and bearerTok
 Sends a custom proxy message to the parent Smartlinks application when running in an iframe. This function is used to communicate with the parent window when the SDK is embedded in an iframe and proxyMode is enabled. It sends a message to the parent and waits for a response.
 
 ## Types
+
+### actions
+
+**AdminByUserRequest** (interface)
+```typescript
+interface AdminByUserRequest {
+  userId?: string
+  contactId?: string
+  appId?: string
+  actionId?: string
+  broadcastId?: string
+  outcome?: string | null
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**AdminCountsByOutcomeRequest** (interface)
+```typescript
+interface AdminCountsByOutcomeRequest {
+  appId?: string
+  actionId?: string
+  from?: string
+  to?: string
+  limit?: number
+  dedupeLatest?: boolean
+  idField?: IdField
+}
+```
+
+**AdminActorIdsByActionRequest** (interface)
+```typescript
+interface AdminActorIdsByActionRequest {
+  actionId: string
+  idField?: IdField
+  outcome?: string | null
+  includeOutcome?: boolean
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**PublicCountsByOutcomeRequest** (interface)
+```typescript
+interface PublicCountsByOutcomeRequest {
+  appId: string
+  actionId: string
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**PublicByUserRequest** (interface)
+```typescript
+interface PublicByUserRequest {
+  appId: string
+  actionId: string
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**ActionEventRow** (interface)
+```typescript
+interface ActionEventRow {
+  orgId: string
+  timestamp: string
+  appId?: string
+  actionId?: string
+  broadcastId?: string
+  userId?: string
+  contactId?: string
+  outcome?: string | null
+  [k: string]: unknown
+}
+```
+
+**OutcomeCount** (interface)
+```typescript
+interface OutcomeCount {
+  outcome: string | null; count: number
+}
+```
+
+**ActorWithOutcome** (interface)
+```typescript
+interface ActorWithOutcome {
+  id: string; outcome: string | null
+}
+```
+
+**AppendActionBody** (interface)
+```typescript
+interface AppendActionBody {
+  userId?: string
+  contactId?: string
+  actionId: string
+  appId?: string
+  broadcastId?: string
+  outcome?: string
+  timestamp?: string
+  [k: string]: any
+}
+```
+
+**ActionPermissions** (interface)
+```typescript
+interface ActionPermissions {
+  allowOwnRead?: boolean
+  allowPublicSummary?: boolean
+  allowAuthenticatedSummary?: boolean
+}
+```
+
+**ActionRecord** (interface)
+```typescript
+interface ActionRecord {
+  id: string
+  collectionId: string
+  appId: string
+  permissions?: ActionPermissions
+  data?: {
+  display?: {
+  title?: string
+  description?: string
+  icon?: string
+  color?: string
+  }
+  actionType?: string
+  [key: string]: unknown
+  }
+  createdAt: string
+}
+```
+
+**ActionList** (interface)
+```typescript
+interface ActionList {
+  items: ActionRecord[]
+  limit: number
+  offset: number
+}
+```
+
+**CreateActionBody** (interface)
+```typescript
+interface CreateActionBody {
+  id: string
+  appId: string
+  permissions?: ActionPermissions
+  data?: Record<string, unknown>
+}
+```
+
+**UpdateActionBody** (interface)
+```typescript
+interface UpdateActionBody {
+  appId?: string
+  permissions?: ActionPermissions
+  data?: Record<string, unknown>
+}
+```
+
+**ListActionsQuery** (interface)
+```typescript
+interface ListActionsQuery {
+  appId?: string
+  limit?: number
+  offset?: number
+}
+```
+
+**ActorId** = `string`
+
+**ActionQueryByUser** = `AdminByUserRequest`
+
+**ActionCountsQuery** = `AdminCountsByOutcomeRequest`
+
+**ActorIdsByActionQuery** = `AdminActorIdsByActionRequest`
 
 ### appConfiguration
 
@@ -328,6 +515,174 @@ interface AuthKitConfig {
 
 **BatchUpdateRequest** = `any`
 
+### broadcasts
+
+**BroadcastEvent** (interface)
+```typescript
+interface BroadcastEvent {
+  orgId: string
+  broadcastId: string
+  userId?: string
+  contactId?: string
+  channel?: string
+  timestamp: string
+  [k: string]: any
+}
+```
+
+**BroadcastQueryByUser** (interface)
+```typescript
+interface BroadcastQueryByUser {
+  userId?: string
+  contactId?: string
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**RecipientIdsQuery** (interface)
+```typescript
+interface RecipientIdsQuery {
+  broadcastId: string
+  idField?: IdField
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**RecipientsWithoutActionQuery** (interface)
+```typescript
+interface RecipientsWithoutActionQuery {
+  broadcastId: string
+  actionId?: string
+  appId?: string
+  idField?: IdField
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**RecipientsWithActionQuery** (interface)
+```typescript
+interface RecipientsWithActionQuery {
+  broadcastId: string
+  actionId?: string
+  appId?: string
+  outcome?: string
+  idField?: IdField
+  includeOutcome?: boolean
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**RecipientWithOutcome** (interface)
+```typescript
+interface RecipientWithOutcome {
+  id: string; outcome: string
+}
+```
+
+**AppendBroadcastBody** (interface)
+```typescript
+interface AppendBroadcastBody {
+  broadcastId: string
+  userId?: string
+  contactId?: string
+  channel?: string
+  timestamp?: string
+  [k: string]: any
+}
+```
+
+**AppendBroadcastBulkBody** (interface)
+```typescript
+interface AppendBroadcastBulkBody {
+  params: { broadcastId: string; [k: string]: any }
+  ids: string[]
+  idField?: IdField
+}
+```
+
+**AppendResult** (interface)
+```typescript
+interface AppendResult {
+  success: true
+}
+```
+
+**AppendBulkResult** (interface)
+```typescript
+interface AppendBulkResult {
+  success: true; count: number
+}
+```
+
+**CreateBroadcastBody** (interface)
+```typescript
+interface CreateBroadcastBody {
+  appId: string
+  data?: Record<string, any>
+}
+```
+
+**UpdateBroadcastBody** (interface)
+```typescript
+interface UpdateBroadcastBody {
+  appId?: string
+  data?: Record<string, any>
+}
+```
+
+**ListBroadcastsQuery** (interface)
+```typescript
+interface ListBroadcastsQuery {
+  limit?: number
+  offset?: number
+  appId?: string
+}
+```
+
+**BroadcastRecord** (interface)
+```typescript
+interface BroadcastRecord {
+  id: string
+  collectionId: string
+  appId: string
+  templateId?: string
+  segmentId?: string
+  status?: 'draft' | 'scheduled' | 'sending' | 'sent' | string
+  scheduledAt?: string
+  sentAt?: string
+  data?: {
+  display?: {
+  title?: string
+  description?: string
+  icon?: string
+  color?: string
+  }
+  broadcastType?: string
+  [key: string]: unknown
+  }
+  createdAt: string
+}
+```
+
+**BroadcastList** (interface)
+```typescript
+interface BroadcastList {
+  items: BroadcastRecord[]
+  limit: number
+  offset: number
+}
+```
+
+**RecipientId** = `string`
+
 ### claimSet
 
 **ClaimCodeRef** (interface)
@@ -404,6 +759,10 @@ interface CollectionResponse {
   dark?: boolean // if dark mode is enabled for this collection
 }
 ```
+
+### common
+
+**IdField** = `'userId' | 'contactId'`
 
 ### comms
 
@@ -561,6 +920,78 @@ interface ErrorResponse {
 }
 ```
 
+### journeys
+
+**JourneyRecord** (interface)
+```typescript
+interface JourneyRecord {
+  id: string
+  collectionId: string
+  appId?: string
+  name: string
+  active: boolean
+  journeyType: 'event_triggered' | 'scheduled'
+  data?: {
+  display?: {
+  title?: string
+  description?: string
+  icon?: string
+  color?: string
+  }
+  steps?: Array<{ id: string; type: string; config?: Record<string, unknown> }>
+  triggers?: Array<{ type: string; config?: Record<string, unknown> }>
+  entryRules?: any[]
+  exitRules?: any[]
+  metadata?: Record<string, unknown>
+  [key: string]: unknown
+  }
+  createdAt: string
+  updatedAt: string
+}
+```
+
+**JourneyList** (interface)
+```typescript
+interface JourneyList {
+  items: JourneyRecord[]
+  limit: number
+  offset: number
+}
+```
+
+**ListJourneysQuery** (interface)
+```typescript
+interface ListJourneysQuery {
+  appId?: string
+  active?: boolean
+  journeyType?: 'event_triggered' | 'scheduled'
+  limit?: number
+  offset?: number
+}
+```
+
+**CreateJourneyBody** (interface)
+```typescript
+interface CreateJourneyBody {
+  appId?: string
+  name: string
+  active?: boolean
+  journeyType: 'event_triggered' | 'scheduled'
+  data?: Record<string, unknown>
+}
+```
+
+**UpdateJourneyBody** (interface)
+```typescript
+interface UpdateJourneyBody {
+  appId?: string
+  name?: string
+  active?: boolean
+  journeyType?: 'event_triggered' | 'scheduled'
+  data?: Record<string, unknown>
+}
+```
+
 ### nfc
 
 **NfcTagInfo** (interface)
@@ -666,6 +1097,68 @@ interface ProofResponse {
   claimable?: boolean
   transient?: boolean
   values: Record<string, any>
+}
+```
+
+### segments
+
+**SegmentRecord** (interface)
+```typescript
+interface SegmentRecord {
+  id: string
+  collectionId: string
+  appId?: string
+  name: string
+  filterType: 'dynamic' | 'static'
+  estimatedCount?: number
+  lastCalculatedAt?: string
+  createdAt: string
+  data?: {
+  filterRules: any[]
+  description?: string
+  staticContactIds?: string[]
+  [key: string]: unknown
+  }
+}
+```
+
+**ListSegmentsQuery** (interface)
+```typescript
+interface ListSegmentsQuery {
+  appId?: string
+  filterType?: 'dynamic' | 'static'
+  limit?: number
+  offset?: number
+}
+```
+
+**SegmentList** (interface)
+```typescript
+interface SegmentList {
+  items: SegmentRecord[]
+  limit: number
+  offset: number
+}
+```
+
+**SegmentCalculateResult** (interface)
+```typescript
+interface SegmentCalculateResult {
+  scheduled: true
+  lastCalculatedAt?: string
+  estimatedCount?: number | null
+  note?: string
+}
+```
+
+**SegmentRecipientsResponse** (interface)
+```typescript
+interface SegmentRecipientsResponse {
+  items: string[]
+  limit: number
+  offset: number
+  total: number
+  note?: string
 }
 ```
 
@@ -804,6 +1297,55 @@ type AccountInfoResponse = {
 ```
 
 ## API Functions
+
+### actions
+
+**byUser**(collectionId: string,
+    query: AdminByUserRequest | ActionQueryByUser = {}) → `Promise<ActionEventRow[]>`
+POST /admin/collection/:collectionId/actions/by-user Returns BigQuery action rows, newest first.
+
+**countsByOutcome**(collectionId: string,
+    query: AdminCountsByOutcomeRequest | ActionCountsQuery = {}) → `Promise<OutcomeCount[]>`
+POST /admin/collection/:collectionId/actions/counts-by-outcome Returns array of { outcome, count }.
+
+**actorIdsByAction**(collectionId: string,
+    query: AdminActorIdsByActionRequest | ActorIdsByActionQuery) → `Promise<ActorId[] | ActorWithOutcome[]>`
+POST /admin/collection/:collectionId/actions/actor-ids/by-action Returns list of IDs, optionally with outcome when includeOutcome=true.
+
+**append**(collectionId: string,
+    body: AppendActionBody) → `Promise<`
+POST /admin/collection/:collectionId/actions/append Appends one action event.
+
+**create**(collectionId: string,
+    body: CreateActionBody) → `Promise<ActionRecord>`
+POST /admin/collection/:collectionId/actions/append Appends one action event.
+
+**list**(collectionId: string,
+    query: ListActionsQuery = {}) → `Promise<ActionList>`
+POST /admin/collection/:collectionId/actions/append Appends one action event.
+
+**get**(collectionId: string,
+    id: string) → `Promise<ActionRecord>`
+POST /admin/collection/:collectionId/actions/append Appends one action event.
+
+**update**(collectionId: string,
+    id: string,
+    patchBody: UpdateActionBody) → `Promise<ActionRecord>`
+POST /admin/collection/:collectionId/actions/append Appends one action event.
+
+**remove**(collectionId: string,
+    id: string) → `Promise<void>`
+POST /admin/collection/:collectionId/actions/append Appends one action event.
+
+**publicCountsByOutcome**(collectionId: string,
+    body: PublicCountsByOutcomeRequest,
+    authToken?: string) → `Promise<OutcomeCount[]>`
+POST /admin/collection/:collectionId/actions/append Appends one action event.
+
+**publicMyActions**(collectionId: string,
+    body: PublicByUserRequest,
+    authToken?: string) → `Promise<ActionEventRow[]>`
+POST /admin/collection/:collectionId/actions/append Appends one action event.
 
 ### ai
 
@@ -1074,6 +1616,53 @@ Get serial numbers for a batch (admin only).
     codeId: string) → `Promise<any>`
 Look up a serial number by code for a batch (admin only).
 
+### broadcasts
+
+**byUser**(collectionId: string,
+    query: BroadcastQueryByUser = {}) → `Promise<BroadcastEvent[]>`
+POST /admin/collection/:collectionId/broadcasts/by-user Returns broadcast events array, newest first.
+
+**recipientIds**(collectionId: string,
+    query: RecipientIdsQuery) → `Promise<RecipientId[]>`
+POST /admin/collection/:collectionId/broadcasts/recipient-ids Returns recipient IDs for a broadcast.
+
+**recipientsWithoutAction**(collectionId: string,
+    query: RecipientsWithoutActionQuery) → `Promise<RecipientId[]>`
+POST /admin/collection/:collectionId/broadcasts/recipients/without-action Returns IDs who received the broadcast but did not perform an action.
+
+**recipientsWithAction**(collectionId: string,
+    query: RecipientsWithActionQuery) → `Promise<RecipientId[] | RecipientWithOutcome[]>`
+POST /admin/collection/:collectionId/broadcasts/recipients/with-action Returns IDs who received the broadcast and performed an action; optionally includes outcome.
+
+**append**(collectionId: string,
+    body: AppendBroadcastBody) → `Promise<AppendResult>`
+POST /admin/collection/:collectionId/broadcasts/append Appends one broadcast event.
+
+**appendBulk**(collectionId: string,
+    body: AppendBroadcastBulkBody | ({ broadcastId: string; ids: string[]; idField?: 'userId'|'contactId'; [k: string]: any }) → `void`
+POST /admin/collection/:collectionId/broadcasts/append/bulk Appends many broadcast recipients. Accepts preferred body shape with params + ids, and legacy flat shape.
+
+**create**(collectionId: string,
+    body: CreateBroadcastBody) → `Promise<BroadcastRecord>`
+POST /admin/collection/:collectionId/broadcasts/append/bulk Appends many broadcast recipients. Accepts preferred body shape with params + ids, and legacy flat shape.
+
+**list**(collectionId: string,
+    query: ListBroadcastsQuery = {}) → `Promise<BroadcastList>`
+POST /admin/collection/:collectionId/broadcasts/append/bulk Appends many broadcast recipients. Accepts preferred body shape with params + ids, and legacy flat shape.
+
+**get**(collectionId: string,
+    id: string) → `Promise<BroadcastRecord>`
+POST /admin/collection/:collectionId/broadcasts/append/bulk Appends many broadcast recipients. Accepts preferred body shape with params + ids, and legacy flat shape.
+
+**update**(collectionId: string,
+    id: string,
+    body: UpdateBroadcastBody) → `Promise<BroadcastRecord>`
+POST /admin/collection/:collectionId/broadcasts/append/bulk Appends many broadcast recipients. Accepts preferred body shape with params + ids, and legacy flat shape.
+
+**remove**(collectionId: string,
+    id: string) → `Promise<void>`
+POST /admin/collection/:collectionId/broadcasts/append/bulk Appends many broadcast recipients. Accepts preferred body shape with params + ids, and legacy flat shape.
+
 ### claimSet
 
 **getAllForCollection**(collectionId: string) → `Promise<any[]>`
@@ -1217,6 +1806,24 @@ Update a form for a collection (admin only).
 **remove**(collectionId: string, formId: string) → `Promise<void>`
 Delete a form for a collection (admin only).
 
+### journeys
+
+**create**(collectionId: string,
+    body: CreateJourneyBody) → `Promise<JourneyRecord>`
+
+**list**(collectionId: string,
+    query: ListJourneysQuery = {}) → `Promise<JourneyList>`
+
+**get**(collectionId: string,
+    id: string) → `Promise<JourneyRecord>`
+
+**update**(collectionId: string,
+    id: string,
+    body: UpdateJourneyBody) → `Promise<JourneyRecord>`
+
+**remove**(collectionId: string,
+    id: string) → `Promise<void>`
+
 ### nfc
 
 **claimTag**(data: NfcClaimTagRequest) → `Promise<NfcTagInfo>`
@@ -1315,6 +1922,31 @@ Find proofs for a product (admin only). POST /admin/collection/:collectionId/pro
     productId: string,
     batchId: string) → `Promise<ProofResponse[]>`
 Get proofs for a batch (admin only). GET /admin/collection/:collectionId/product/:productId/batch/:batchId/proof
+
+### segments
+
+**create**(collectionId: string,
+    body: Omit<SegmentRecord, 'id' | 'collectionId' | 'createdAt'>) → `Promise<SegmentRecord>`
+
+**list**(collectionId: string,
+    query: ListSegmentsQuery = {}) → `Promise<SegmentList>`
+
+**get**(collectionId: string,
+    id: string) → `Promise<SegmentRecord>`
+
+**update**(collectionId: string,
+    id: string,
+    body: Partial<Omit<SegmentRecord, 'id' | 'collectionId' | 'createdAt'>>) → `Promise<SegmentRecord>`
+
+**remove**(collectionId: string,
+    id: string) → `Promise<void>`
+
+**calculate**(collectionId: string,
+    id: string) → `Promise<SegmentCalculateResult>`
+
+**recipients**(collectionId: string,
+    id: string,
+    query: { limit?: number; offset?: number } = {}) → `Promise<SegmentRecipientsResponse>`
 
 ### variant
 

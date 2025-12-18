@@ -7,6 +7,8 @@ import { collection } from "../src/api/collection";
 import { product } from "../src/api/product";
 import { proof } from "../src/api/proof";
 import { batch } from "../src/api/batch";
+import { actions } from "../src/api/actions";
+import { broadcasts } from "../src/api/broadcasts";
 
 async function main() {
   // Initialize SDK with API key for server-side usage
@@ -64,6 +66,23 @@ async function main() {
       console.log(`Expected error caught: ${error.message}`)
     }
 
+    // Example 5: Analytics (admin)
+    console.log('\n=== Analytics Example (admin) ===')
+    try {
+      // Replace with real collection and IDs, and ensure auth is configured
+      const collectionId = 'your-collection-id'
+      const recent = await actions.byUser(collectionId, { userId: 'user_123', limit: 10 })
+      console.log(`Recent actions for user_123: ${recent.length}`)
+
+      const counts = await actions.countsByOutcome(collectionId, { actionId: 'click', dedupeLatest: true })
+      console.log('Outcome counts (latest per actor):', counts)
+
+      const recipients = await broadcasts.recipientIds(collectionId, { broadcastId: 'br_456', idField: 'userId' })
+      console.log('Broadcast recipients:', recipients.length)
+    } catch (error) {
+      console.log('Note: Admin analytics require valid credentials & IDs')
+      console.log('Error details:', (error as any).message)
+    }
   } catch (error) {
     console.error('Error in example:', error)
   }

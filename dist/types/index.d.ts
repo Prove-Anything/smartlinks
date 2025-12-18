@@ -11,3 +11,8 @@ export * from "./auth";
 export * from "./comms";
 export * from "./nfc";
 export * from "./contact";
+export * from "./actions";
+export * from "./broadcasts";
+export * from "./segments";
+export * from "./common";
+export * from "./journeys";

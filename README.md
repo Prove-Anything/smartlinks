@@ -128,6 +128,49 @@ const content = await ai.generateContent('collectionId', {
 console.log(content)
 ```
 
+### Analytics (Actions & Broadcasts)
+
+Track user actions and broadcast deliveries per collection. These endpoints live under admin and require valid auth (API key or bearer token).
+
+```ts
+import { actions, broadcasts } from '@proveanything/smartlinks'
+
+// List action events for a user
+const actionEvents = await actions.byUser('collectionId', {
+  userId: 'user_123',
+  from: '2025-01-01T00:00:00Z',
+  to: '2025-12-31T23:59:59Z',
+  limit: 100,
+})
+
+// Outcome counts, optionally deduping latest per actor
+const counts = await actions.countsByOutcome('collectionId', {
+  actionId: 'click',
+  dedupeLatest: true,
+  idField: 'userId',
+})
+
+// Append a single action event
+await actions.append('collectionId', {
+  userId: 'user_123',
+  actionId: 'click',
+  outcome: 'success',
+})
+
+// Broadcast recipients and filters
+const recipients = await broadcasts.recipientIds('collectionId', {
+  broadcastId: 'br_456',
+  idField: 'contactId',
+})
+
+// Append broadcast recipients in bulk (preferred shape)
+await broadcasts.appendBulk('collectionId', {
+  params: { broadcastId: 'br_456', channel: 'email' },
+  ids: ['contact_1','contact_2'],
+  idField: 'contactId',
+})
+```
+
 ## Browser and React
 
 The SDK works in modern browsers. Initialize once and call public endpoints without an API key; authenticate to access protected/admin endpoints.
