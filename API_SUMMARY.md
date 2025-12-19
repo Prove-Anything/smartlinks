@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.1.2  |  Generated: 2025-12-18T22:42:25.982Z
+Version: 1.1.2  |  Generated: 2025-12-19T16:02:23.756Z
 
 This is a concise summary of all available API functions and types.
 
@@ -344,22 +344,15 @@ interface AttestationUpdateRequest {
 
 ### auth
 
-**UserAccountRegistrationRequest** (type)
+**UserAccountRegistrationRequest** (interface)
 ```typescript
-type UserAccountRegistrationRequest = {
-  /** User's display name */
+interface UserAccountRegistrationRequest {
   name: string
-  /** Optional user email */
   email?: string
-  /** Optional user phone number */
   phone?: string
-  /** Optional password for email login */
   password?: string
-  /** Send confirmation email after registration */
   sendAccountConfirmation?: boolean
-  /** Optional collection context for registration */
   collectionId?: string,
-  /** Desired token type returned */
   tokenType?: 'bearer' | 'firebase'
 }
 ```
@@ -609,9 +602,9 @@ interface AssignClaimsRequest {
 
 ### collection
 
-**CollectionResponse** (interface)
+**Collection** (interface)
 ```typescript
-interface CollectionResponse {
+interface Collection {
   id: string
   title: string
   description: string
@@ -651,6 +644,12 @@ interface CollectionResponse {
   dark?: boolean // if dark mode is enabled for this collection
 }
 ```
+
+**CollectionResponse** = `Collection`
+
+**CollectionCreateRequest** = `Omit<Collection, 'id' | 'shortId'>`
+
+**CollectionUpdateRequest** = `Partial<Omit<Collection, 'id' | 'shortId'>>`
 
 ### common
 
@@ -1063,9 +1062,9 @@ interface NfcClaimTagRequest {
 
 ### product
 
-**ProductResponse** (interface)
+**Product** (interface)
 ```typescript
-interface ProductResponse {
+interface Product {
   id: string
   name: string
   collectionId: string
@@ -1089,15 +1088,17 @@ interface ProductResponse {
 }
 ```
 
-**ProductCreateRequest** = `Omit<ProductResponse, 'id' | 'collectionId'>`
+**ProductResponse** = `Product`
 
-**ProductUpdateRequest** = `Partial<Omit<ProductResponse, 'id' | 'collectionId'>>`
+**ProductCreateRequest** = `Omit<Product, 'id' | 'collectionId'>`
+
+**ProductUpdateRequest** = `Partial<Omit<Product, 'id' | 'collectionId'>>`
 
 ### proof
 
-**ProofResponse** (interface)
+**Proof** (interface)
 ```typescript
-interface ProofResponse {
+interface Proof {
   collectionId: string
   createdAt: string
   id: string
@@ -1109,6 +1110,21 @@ interface ProofResponse {
   values: Record<string, any>
 }
 ```
+
+**ProofCreateRequest** (interface)
+```typescript
+interface ProofCreateRequest {
+  values: Record<string, any>
+  claimable?: boolean
+  transient?: boolean
+}
+```
+
+**ProofResponse** = `Proof`
+
+**ProofUpdateRequest** = `Partial<ProofCreateRequest>`
+
+**ProofClaimRequest** = `Record<string, any>`
 
 ### segments
 
@@ -1699,10 +1715,10 @@ Retrieve a specific settings group for a collection (public endpoint).
 **updateSettings**(collectionId: string, settingGroup: string, settings: any) → `Promise<any>`
 Update a specific settings group for a collection (admin endpoint).
 
-**create**(data: any) → `Promise<CollectionResponse>`
+**create**(data: CollectionCreateRequest) → `Promise<CollectionResponse>`
 Create a new collection (admin only).
 
-**update**(collectionId: string, data: any) → `Promise<CollectionResponse>`
+**update**(collectionId: string, data: CollectionUpdateRequest) → `Promise<CollectionResponse>`
 Update a collection (admin only).
 
 **remove**(collectionId: string) → `Promise<void>`
@@ -1890,19 +1906,19 @@ List all Proofs for a Collection.
 
 **create**(collectionId: string,
     productId: string,
-    values: any) → `Promise<ProofResponse>`
+    values: ProofCreateRequest) → `Promise<ProofResponse>`
 Create a proof for a product (admin only). POST /admin/collection/:collectionId/product/:productId/proof
 
 **update**(collectionId: string,
     productId: string,
     proofId: string,
-    values: any) → `Promise<ProofResponse>`
+    values: ProofUpdateRequest) → `Promise<ProofResponse>`
 Update a proof for a product (admin only). PUT /admin/collection/:collectionId/product/:productId/proof/:proofId
 
 **claim**(collectionId: string,
     productId: string,
     proofId: string,
-    values: any) → `Promise<ProofResponse>`
+    values: ProofClaimRequest) → `Promise<ProofResponse>`
 Claim a proof for a product. PUT /public/collection/:collectionId/product/:productId/proof/:proofId
 
 **remove**(collectionId: string,

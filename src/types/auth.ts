@@ -1,7 +1,7 @@
 // src/types/auth.ts
 // Auth-related request/response type shapes used by the SDK.
 
-export type UserAccountRegistrationRequest = {
+export interface UserAccountRegistrationRequest {
   /** User's display name */
   name: string
   /** Optional user email */

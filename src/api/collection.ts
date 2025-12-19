@@ -1,6 +1,6 @@
 // src/api/collection.ts
 import { request, post, put, del } from "../http"
-import { CollectionResponse } from "../types/collection"
+import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest } from "../types/collection"
 
 export namespace collection {
   /**
@@ -68,7 +68,7 @@ export namespace collection {
    * @returns Promise resolving to a CollectionResponse object
    * @throws ErrorResponse if the request fails
    */
-  export async function create(data: any): Promise<CollectionResponse> {
+  export async function create(data: CollectionCreateRequest): Promise<CollectionResponse> {
     const path = `/admin/collection`;
     return post<CollectionResponse>(path, data);
   }
@@ -80,7 +80,7 @@ export namespace collection {
    * @returns Promise resolving to a CollectionResponse object
    * @throws ErrorResponse if the request fails
    */
-  export async function update(collectionId: string, data: any): Promise<CollectionResponse> {
+  export async function update(collectionId: string, data: CollectionUpdateRequest): Promise<CollectionResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}`;
     return put<CollectionResponse>(path, data);
   }

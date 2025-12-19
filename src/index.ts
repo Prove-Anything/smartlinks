@@ -25,6 +25,17 @@ export type {
   PushNotificationTemplate,
   EmailNotificationTemplate,
   WalletUpdateTemplate,
+  CommunicationEvent,
+  CommsQueryByUser,
+  CommsRecipientIdsQuery,
+  CommsRecipientsWithoutActionQuery,
+  CommsRecipientsWithActionQuery,
+  RecipientId,
+  RecipientWithOutcome,
+  LogCommunicationEventBody,
+  LogBulkCommunicationEventsBody,
+  AppendResult,
+  AppendBulkResult,
 } from "./types/comms"
 export type {
   AttestationResponse,
@@ -45,4 +56,20 @@ export type { AppConfigOptions } from "./api/appConfiguration"
 export type {
   ProductCreateRequest,
   ProductUpdateRequest,
+  Product,
 } from "./types/product"
+
+// Collections & Proofs
+export type {
+  Collection,
+  CollectionResponse,
+  CollectionCreateRequest,
+  CollectionUpdateRequest,
+} from "./types/collection"
+export type {
+  Proof,
+  ProofResponse,
+  ProofCreateRequest,
+  ProofUpdateRequest,
+  ProofClaimRequest,
+} from "./types/proof"

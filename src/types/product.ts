@@ -1,8 +1,8 @@
 // src/types/product.ts
 /**
- * Represents a Product Item object.
+ * Product domain model.
  */
-export interface ProductResponse {
+export interface Product {
   /** Unique identifier for the product */
   id: string
   /** Name of the product */
@@ -37,6 +37,9 @@ export interface ProductResponse {
   } // Flexible key/value data map
 }
 
+// Backwards compatibility alias
+export type ProductResponse = Product
+
 // Input types for creating/updating products
-export type ProductCreateRequest = Omit<ProductResponse, 'id' | 'collectionId'>
-export type ProductUpdateRequest = Partial<Omit<ProductResponse, 'id' | 'collectionId'>>
+export type ProductCreateRequest = Omit<Product, 'id' | 'collectionId'>
+export type ProductUpdateRequest = Partial<Omit<Product, 'id' | 'collectionId'>>

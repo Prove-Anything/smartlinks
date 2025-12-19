@@ -2,7 +2,7 @@
 /**
  * Represents a Collection object.
  */
-export interface CollectionResponse {
+export interface Collection {
   /** Unique identifier for the collection */
   id: string
   /** Human-readable title of the collection */
@@ -66,3 +66,10 @@ export interface CollectionResponse {
   dark?: boolean // if dark mode is enabled for this collection
 
 }
+
+// Backwards compatibility alias
+export type CollectionResponse = Collection
+
+// Derived request types
+export type CollectionCreateRequest = Omit<Collection, 'id' | 'shortId'>
+export type CollectionUpdateRequest = Partial<Omit<Collection, 'id' | 'shortId'>>

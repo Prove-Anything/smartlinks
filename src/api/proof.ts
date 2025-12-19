@@ -1,6 +1,6 @@
 // src/api/proof.ts
 import { request, post, put, del } from "../http"
-import { ProofResponse } from "../types/proof"
+import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofClaimRequest } from "../types/proof"
 
 export namespace proof {
   /**
@@ -41,7 +41,7 @@ export namespace proof {
   export async function create(
     collectionId: string,
     productId: string,
-    values: any
+    values: ProofCreateRequest
   ): Promise<ProofResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof`
     return post<ProofResponse>(path, values)
@@ -55,7 +55,7 @@ export namespace proof {
     collectionId: string,
     productId: string,
     proofId: string,
-    values: any
+    values: ProofUpdateRequest
   ): Promise<ProofResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}`
     return put<ProofResponse>(path, values)
@@ -70,7 +70,7 @@ export namespace proof {
     collectionId: string,
     productId: string,
     proofId: string,
-    values: any
+    values: ProofClaimRequest
   ): Promise<ProofResponse> {
     const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/claim`
     return put<ProofResponse>(path, values)
