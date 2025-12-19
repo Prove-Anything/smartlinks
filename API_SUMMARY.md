@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.1.0  |  Generated: 2025-12-18T21:39:05.733Z
+Version: 1.1.2  |  Generated: 2025-12-18T22:42:25.982Z
 
 This is a concise summary of all available API functions and types.
 
@@ -8,29 +8,44 @@ This is a concise summary of all available API functions and types.
 
 The Smartlinks SDK is organized into the following namespaces:
 
-- **actions** - Functions for actions operations
-- **ai** - Functions for ai operations
-- **appConfiguration** - Application configuration and settings management
-- **appRecord** - Functions for appRecord operations
-- **asset** - File upload and asset management for collections, products, and proofs
-- **attestation** - Digital attestations and verification for products
-- **auth** - Authentication, login, and user account management
-- **authKit** - Functions for authKit operations
-- **batch** - Product batch management and tracking
-- **broadcasts** - Functions for broadcasts operations
-- **claimSet** - Claim creation, management, and verification
-- **collection** - Collection CRUD operations and management
-- **comms** - Functions for comms operations
-- **contact** - Functions for contact operations
-- **crate** - Container/crate management for organizing products
-- **form** - Dynamic form creation and submission
-- **journeys** - Functions for journeys operations
-- **nfc** - Functions for nfc operations
-- **product** - Product CRUD operations and management within collections
-- **proof** - Product proof retrieval and validation
-- **segments** - Functions for segments operations
-- **serialNumber** - Functions for serialNumber operations
-- **variant** - Product variant management and tracking
+— Core Data & Configuration —
+- **collection** - Manage collections, settings, and identifiers for your workspace.
+- **product** - Create and manage products within a collection; metadata, tags, media.
+- **variant** - Manage product variants per product; includes serial number helpers.
+- **asset** - Upload and manage media assets for collections, products, and proofs.
+- **batch** - Group products into batches; manage serial number ranges and lookups.
+- **crate** - Organize products in containers/crates for logistics and grouping.
+- **form** - Build and manage dynamic forms used by apps and workflows.
+- **appRecord** - Store and retrieve application-level records tied to a collection.
+- **appConfiguration** - Read/write app configuration and scoped data (collection/product/proof).
+
+— Identity & Access —
+- **auth** - Admin authentication and account ops: login/logout, tokens, account info.
+- **authKit** - End‑user auth flows (email/password, OAuth, phone); profiles and verification.
+- **contact** - Manage customer contacts; CRUD, lookup, upsert, erase.
+
+— Messaging & Audience —
+- **comms** - Send notifications (push, email, wallet); templating, severity, delivery status.
+- **broadcasts** - Define broadcast campaigns; append recipients/events; analytics and CRUD.
+- **segments** - Define dynamic/static audience segments; estimate and list recipients; schedule calculations.
+
+— Analytics & Events —
+- **actions** - Log and analyze actions/outcomes; aggregates and actor lists; action definition CRUD.
+
+— Automation —
+- **journeys** - Configure automated flows triggered by events or schedules; steps, rules; full CRUD.
+
+— NFC, Proofs & Claims —
+- **nfc** - Claim and validate NFC tags; perform tag lookups.
+- **proof** - Create, update, claim, and list product proofs (digital certificates).
+- **claimSet** - Manage claim sets and tag assignments; queries, reports, and updates.
+
+— AI & Utilities —
+- **ai** - Generate content and images, search photos, chat, upload files, and cache.
+- **serialNumber** - Assign, lookup, and manage serial numbers across scopes.
+
+— Other —
+- **attestation** - Functions for attestation operations
 
 ## HTTP Utilities
 
@@ -517,127 +532,6 @@ interface AuthKitConfig {
 
 ### broadcasts
 
-**BroadcastEvent** (interface)
-```typescript
-interface BroadcastEvent {
-  orgId: string
-  broadcastId: string
-  userId?: string
-  contactId?: string
-  channel?: string
-  timestamp: string
-  [k: string]: any
-}
-```
-
-**BroadcastQueryByUser** (interface)
-```typescript
-interface BroadcastQueryByUser {
-  userId?: string
-  contactId?: string
-  from?: string
-  to?: string
-  limit?: number
-}
-```
-
-**RecipientIdsQuery** (interface)
-```typescript
-interface RecipientIdsQuery {
-  broadcastId: string
-  idField?: IdField
-  from?: string
-  to?: string
-  limit?: number
-}
-```
-
-**RecipientsWithoutActionQuery** (interface)
-```typescript
-interface RecipientsWithoutActionQuery {
-  broadcastId: string
-  actionId?: string
-  appId?: string
-  idField?: IdField
-  from?: string
-  to?: string
-  limit?: number
-}
-```
-
-**RecipientsWithActionQuery** (interface)
-```typescript
-interface RecipientsWithActionQuery {
-  broadcastId: string
-  actionId?: string
-  appId?: string
-  outcome?: string
-  idField?: IdField
-  includeOutcome?: boolean
-  from?: string
-  to?: string
-  limit?: number
-}
-```
-
-**RecipientWithOutcome** (interface)
-```typescript
-interface RecipientWithOutcome {
-  id: string; outcome: string
-}
-```
-
-**AppendBroadcastBody** (interface)
-```typescript
-interface AppendBroadcastBody {
-  broadcastId: string
-  userId?: string
-  contactId?: string
-  channel?: string
-  timestamp?: string
-  [k: string]: any
-}
-```
-
-**AppendBroadcastBulkBody** (interface)
-```typescript
-interface AppendBroadcastBulkBody {
-  params: { broadcastId: string; [k: string]: any }
-  ids: string[]
-  idField?: IdField
-}
-```
-
-**AppendResult** (interface)
-```typescript
-interface AppendResult {
-  success: true
-}
-```
-
-**AppendBulkResult** (interface)
-```typescript
-interface AppendBulkResult {
-  success: true; count: number
-}
-```
-
-**CreateBroadcastBody** (interface)
-```typescript
-interface CreateBroadcastBody {
-  appId: string
-  data?: Record<string, any>
-}
-```
-
-**UpdateBroadcastBody** (interface)
-```typescript
-interface UpdateBroadcastBody {
-  appId?: string
-  data?: Record<string, any>
-}
-```
-
 **ListBroadcastsQuery** (interface)
 ```typescript
 interface ListBroadcastsQuery {
@@ -653,11 +547,11 @@ interface BroadcastRecord {
   id: string
   collectionId: string
   appId: string
-  templateId?: string
-  segmentId?: string
-  status?: 'draft' | 'scheduled' | 'sending' | 'sent' | string
-  scheduledAt?: string
-  sentAt?: string
+  templateId?: string | null
+  segmentId?: string | null
+  status?: string | null
+  scheduledAt?: string | null
+  sentAt?: string | null
   data?: {
   display?: {
   title?: string
@@ -680,8 +574,6 @@ interface BroadcastList {
   offset: number
 }
 ```
-
-**RecipientId** = `string`
 
 ### claimSet
 
@@ -849,6 +741,124 @@ interface SendNotificationResponse {
   }
 }
 ```
+
+**CommunicationEvent** (interface)
+```typescript
+interface CommunicationEvent {
+  orgId: string
+  broadcastId?: string
+  journeyId?: string
+  userId?: string
+  contactId?: string
+  channel?: string
+  timestamp: string
+  eventType: string
+  outcome?: string | null
+  templateId?: string | null
+  [k: string]: any
+}
+```
+
+**CommsQueryByUser** (interface)
+```typescript
+interface CommsQueryByUser {
+  userId?: string
+  contactId?: string
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**RecipientWithOutcome** (interface)
+```typescript
+interface RecipientWithOutcome {
+  id: string; outcome: string
+}
+```
+
+**CommsRecipientIdsQuery** (interface)
+```typescript
+interface CommsRecipientIdsQuery {
+  broadcastId?: string
+  journeyId?: string
+  idField?: IdField
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**CommsRecipientsWithoutActionQuery** (interface)
+```typescript
+interface CommsRecipientsWithoutActionQuery {
+  broadcastId?: string
+  journeyId?: string
+  actionId?: string
+  appId?: string
+  idField?: IdField
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**CommsRecipientsWithActionQuery** (interface)
+```typescript
+interface CommsRecipientsWithActionQuery {
+  broadcastId?: string
+  journeyId?: string
+  actionId?: string
+  appId?: string
+  outcome?: string
+  idField?: IdField
+  includeOutcome?: boolean
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**LogCommunicationEventBody** (interface)
+```typescript
+interface LogCommunicationEventBody {
+  broadcastId?: string
+  journeyId?: string
+  userId?: string
+  contactId?: string
+  channel?: string
+  eventType: string
+  outcome?: string
+  templateId?: string
+  timestamp?: string
+  [k: string]: any
+}
+```
+
+**LogBulkCommunicationEventsBody** (interface)
+```typescript
+interface LogBulkCommunicationEventsBody {
+  params: { broadcastId?: string; journeyId?: string; [k: string]: any }
+  ids: string[]
+  idField?: IdField
+}
+```
+
+**AppendResult** (interface)
+```typescript
+interface AppendResult {
+  success: true
+}
+```
+
+**AppendBulkResult** (interface)
+```typescript
+interface AppendBulkResult {
+  success: true; count: number
+}
+```
+
+**RecipientId** = `string`
 
 ### contact
 
@@ -1618,50 +1628,21 @@ Look up a serial number by code for a batch (admin only).
 
 ### broadcasts
 
-**byUser**(collectionId: string,
-    query: BroadcastQueryByUser = {}) → `Promise<BroadcastEvent[]>`
-POST /admin/collection/:collectionId/broadcasts/by-user Returns broadcast events array, newest first.
-
-**recipientIds**(collectionId: string,
-    query: RecipientIdsQuery) → `Promise<RecipientId[]>`
-POST /admin/collection/:collectionId/broadcasts/recipient-ids Returns recipient IDs for a broadcast.
-
-**recipientsWithoutAction**(collectionId: string,
-    query: RecipientsWithoutActionQuery) → `Promise<RecipientId[]>`
-POST /admin/collection/:collectionId/broadcasts/recipients/without-action Returns IDs who received the broadcast but did not perform an action.
-
-**recipientsWithAction**(collectionId: string,
-    query: RecipientsWithActionQuery) → `Promise<RecipientId[] | RecipientWithOutcome[]>`
-POST /admin/collection/:collectionId/broadcasts/recipients/with-action Returns IDs who received the broadcast and performed an action; optionally includes outcome.
-
-**append**(collectionId: string,
-    body: AppendBroadcastBody) → `Promise<AppendResult>`
-POST /admin/collection/:collectionId/broadcasts/append Appends one broadcast event.
-
-**appendBulk**(collectionId: string,
-    body: AppendBroadcastBulkBody | ({ broadcastId: string; ids: string[]; idField?: 'userId'|'contactId'; [k: string]: any }) → `void`
-POST /admin/collection/:collectionId/broadcasts/append/bulk Appends many broadcast recipients. Accepts preferred body shape with params + ids, and legacy flat shape.
-
 **create**(collectionId: string,
-    body: CreateBroadcastBody) → `Promise<BroadcastRecord>`
-POST /admin/collection/:collectionId/broadcasts/append/bulk Appends many broadcast recipients. Accepts preferred body shape with params + ids, and legacy flat shape.
+    body: Omit<BroadcastRecord, 'id' | 'collectionId' | 'createdAt'>) → `Promise<BroadcastRecord>`
 
 **list**(collectionId: string,
     query: ListBroadcastsQuery = {}) → `Promise<BroadcastList>`
-POST /admin/collection/:collectionId/broadcasts/append/bulk Appends many broadcast recipients. Accepts preferred body shape with params + ids, and legacy flat shape.
 
 **get**(collectionId: string,
     id: string) → `Promise<BroadcastRecord>`
-POST /admin/collection/:collectionId/broadcasts/append/bulk Appends many broadcast recipients. Accepts preferred body shape with params + ids, and legacy flat shape.
 
 **update**(collectionId: string,
     id: string,
-    body: UpdateBroadcastBody) → `Promise<BroadcastRecord>`
-POST /admin/collection/:collectionId/broadcasts/append/bulk Appends many broadcast recipients. Accepts preferred body shape with params + ids, and legacy flat shape.
+    body: Partial<Omit<BroadcastRecord, 'id' | 'collectionId' | 'createdAt'>>) → `Promise<BroadcastRecord>`
 
 **remove**(collectionId: string,
     id: string) → `Promise<void>`
-POST /admin/collection/:collectionId/broadcasts/append/bulk Appends many broadcast recipients. Accepts preferred body shape with params + ids, and legacy flat shape.
 
 ### claimSet
 
@@ -1746,6 +1727,30 @@ Assign a value to a serial number for a collection (admin only).
 **sendNotification**(collectionId: string,
     request: SendNotificationRequest) → `Promise<SendNotificationResponse>`
 Send a notification to specified targets within a collection. Supports multiple delivery methods including push notifications, email, and wallet pass updates. The notification will be delivered based on user preferences and the specified delivery mode. ```typescript const result = await comms.sendNotification('my-collection', { subjectTargets: [{ type: 'product', id: 'prod_123' }], severity: 'important', mode: 'preferred', template: { push: { title: 'Update available', body: 'We\'ve shipped an important update.', icon: 'https://cdn.example.com/brand/logo-128.png' }, email: { subject: 'Important update for your product', body: 'There\'s an important update. Open your pass or profile to learn more.' }, walletUpdate: { textModulesData: [ { id: 'notice', header: 'Update', body: 'Open your wallet pass for details.' } ] } } }) if (result.ok) { console.log('Notification queued:', result.notificationId) console.log('Totals:', result.status.totals) } ```
+
+**queryByUser**(collectionId: string,
+    body: CommsQueryByUser = {}) → `Promise<CommunicationEvent[]>`
+Analytics: Query communication events by user or contact. POST /admin/collection/:collectionId/comm/query/by-user
+
+**queryRecipientIds**(collectionId: string,
+    body: CommsRecipientIdsQuery) → `Promise<RecipientId[]>`
+Analytics: Recipient IDs for a communication source. POST /admin/collection/:collectionId/comm/query/recipient-ids
+
+**queryRecipientsWithoutAction**(collectionId: string,
+    body: CommsRecipientsWithoutActionQuery) → `Promise<RecipientId[]>`
+Analytics: Recipients who did not perform an action. POST /admin/collection/:collectionId/comm/query/recipients/without-action
+
+**queryRecipientsWithAction**(collectionId: string,
+    body: CommsRecipientsWithActionQuery) → `Promise<RecipientId[] | RecipientWithOutcome[]>`
+Analytics: Recipients who performed an action, optionally with outcome. POST /admin/collection/:collectionId/comm/query/recipients/with-action
+
+**logCommunicationEvent**(collectionId: string,
+    body: LogCommunicationEventBody) → `Promise<AppendResult>`
+Logging: Append a single communication event. POST /admin/collection/:collectionId/comm/log
+
+**logBulkCommunicationEvents**(collectionId: string,
+    body: LogBulkCommunicationEventsBody | ({ sourceId: string; ids: string[]; idField?: 'userId'|'contactId'; [k: string]: any }) → `void`
+Logging: Append many communication events for a list of IDs. POST /admin/collection/:collectionId/comm/log/bulk
 
 ### contact
 

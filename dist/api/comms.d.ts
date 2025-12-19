@@ -1,4 +1,4 @@
-import type { SendNotificationRequest, SendNotificationResponse } from "../types/comms";
+import type { SendNotificationRequest, SendNotificationResponse, CommunicationEvent, CommsQueryByUser, CommsRecipientIdsQuery, CommsRecipientsWithoutActionQuery, CommsRecipientsWithActionQuery, RecipientId, RecipientWithOutcome, LogCommunicationEventBody, LogBulkCommunicationEventsBody, AppendResult, AppendBulkResult } from "../types/comms";
 /**
  * Communications namespace for sending notifications and managing user communications
  */
@@ -44,4 +44,39 @@ export declare namespace comms {
      * ```
      */
     function sendNotification(collectionId: string, request: SendNotificationRequest): Promise<SendNotificationResponse>;
+    /**
+     * Analytics: Query communication events by user or contact.
+     * POST /admin/collection/:collectionId/comm/query/by-user
+     */
+    function queryByUser(collectionId: string, body?: CommsQueryByUser): Promise<CommunicationEvent[]>;
+    /**
+     * Analytics: Recipient IDs for a communication source.
+     * POST /admin/collection/:collectionId/comm/query/recipient-ids
+     */
+    function queryRecipientIds(collectionId: string, body: CommsRecipientIdsQuery): Promise<RecipientId[]>;
+    /**
+     * Analytics: Recipients who did not perform an action.
+     * POST /admin/collection/:collectionId/comm/query/recipients/without-action
+     */
+    function queryRecipientsWithoutAction(collectionId: string, body: CommsRecipientsWithoutActionQuery): Promise<RecipientId[]>;
+    /**
+     * Analytics: Recipients who performed an action, optionally with outcome.
+     * POST /admin/collection/:collectionId/comm/query/recipients/with-action
+     */
+    function queryRecipientsWithAction(collectionId: string, body: CommsRecipientsWithActionQuery): Promise<RecipientId[] | RecipientWithOutcome[]>;
+    /**
+     * Logging: Append a single communication event.
+     * POST /admin/collection/:collectionId/comm/log
+     */
+    function logCommunicationEvent(collectionId: string, body: LogCommunicationEventBody): Promise<AppendResult>;
+    /**
+     * Logging: Append many communication events for a list of IDs.
+     * POST /admin/collection/:collectionId/comm/log/bulk
+     */
+    function logBulkCommunicationEvents(collectionId: string, body: LogBulkCommunicationEventsBody | ({
+        sourceId: string;
+        ids: string[];
+        idField?: 'userId' | 'contactId';
+        [k: string]: any;
+    })): Promise<AppendBulkResult>;
 }

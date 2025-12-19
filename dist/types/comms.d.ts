@@ -1,3 +1,4 @@
+import type { IdField } from './common';
 /**
  * Target subject for notifications (product, collection, etc.)
  */
@@ -103,4 +104,87 @@ export interface SendNotificationResponse {
             confirmed: number;
         };
     };
+}
+export interface CommunicationEvent {
+    orgId: string;
+    broadcastId?: string;
+    journeyId?: string;
+    userId?: string;
+    contactId?: string;
+    channel?: string;
+    timestamp: string;
+    eventType: string;
+    outcome?: string | null;
+    templateId?: string | null;
+    [k: string]: any;
+}
+export interface CommsQueryByUser {
+    userId?: string;
+    contactId?: string;
+    from?: string;
+    to?: string;
+    limit?: number;
+}
+export type RecipientId = string;
+export interface RecipientWithOutcome {
+    id: string;
+    outcome: string;
+}
+export interface CommsRecipientIdsQuery {
+    broadcastId?: string;
+    journeyId?: string;
+    idField?: IdField;
+    from?: string;
+    to?: string;
+    limit?: number;
+}
+export interface CommsRecipientsWithoutActionQuery {
+    broadcastId?: string;
+    journeyId?: string;
+    actionId?: string;
+    appId?: string;
+    idField?: IdField;
+    from?: string;
+    to?: string;
+    limit?: number;
+}
+export interface CommsRecipientsWithActionQuery {
+    broadcastId?: string;
+    journeyId?: string;
+    actionId?: string;
+    appId?: string;
+    outcome?: string;
+    idField?: IdField;
+    includeOutcome?: boolean;
+    from?: string;
+    to?: string;
+    limit?: number;
+}
+export interface LogCommunicationEventBody {
+    broadcastId?: string;
+    journeyId?: string;
+    userId?: string;
+    contactId?: string;
+    channel?: string;
+    eventType: string;
+    outcome?: string;
+    templateId?: string;
+    timestamp?: string;
+    [k: string]: any;
+}
+export interface LogBulkCommunicationEventsBody {
+    params: {
+        broadcastId?: string;
+        journeyId?: string;
+        [k: string]: any;
+    };
+    ids: string[];
+    idField?: IdField;
+}
+export interface AppendResult {
+    success: true;
+}
+export interface AppendBulkResult {
+    success: true;
+    count: number;
 }

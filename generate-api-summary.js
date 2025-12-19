@@ -173,31 +173,95 @@ function generateAPISummary() {
   summary += `Version: ${version}  |  Generated: ${date}\n\n`;
   summary += 'This is a concise summary of all available API functions and types.\n\n';
   
-  // Generate namespace overview
+  // Generate namespace overview (grouped + descriptive)
   const apiFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
   const namespaces = apiFiles.map(file => path.basename(file, '.ts')).sort();
-  
+  const present = new Set(namespaces);
+
+  const groups = [
+    {
+      title: '— Core Data & Configuration —',
+      items: [
+        { name: 'collection', desc: 'Manage collections, settings, and identifiers for your workspace.' },
+        { name: 'product', desc: 'Create and manage products within a collection; metadata, tags, media.' },
+        { name: 'variant', desc: 'Manage product variants per product; includes serial number helpers.' },
+        { name: 'asset', desc: 'Upload and manage media assets for collections, products, and proofs.' },
+        { name: 'batch', desc: 'Group products into batches; manage serial number ranges and lookups.' },
+        { name: 'crate', desc: 'Organize products in containers/crates for logistics and grouping.' },
+        { name: 'form', desc: 'Build and manage dynamic forms used by apps and workflows.' },
+        { name: 'appRecord', desc: 'Store and retrieve application-level records tied to a collection.' },
+        { name: 'appConfiguration', desc: 'Read/write app configuration and scoped data (collection/product/proof).' },
+      ]
+    },
+    {
+      title: '— Identity & Access —',
+      items: [
+        { name: 'auth', desc: 'Admin authentication and account ops: login/logout, tokens, account info.' },
+        { name: 'authKit', desc: 'End‑user auth flows (email/password, OAuth, phone); profiles and verification.' },
+        { name: 'contact', desc: 'Manage customer contacts; CRUD, lookup, upsert, erase.' },
+      ]
+    },
+    {
+      title: '— Messaging & Audience —',
+      items: [
+        { name: 'comms', desc: 'Send notifications (push, email, wallet); templating, severity, delivery status.' },
+        { name: 'broadcasts', desc: 'Define broadcast campaigns; append recipients/events; analytics and CRUD.' },
+        { name: 'segments', desc: 'Define dynamic/static audience segments; estimate and list recipients; schedule calculations.' },
+      ]
+    },
+    {
+      title: '— Analytics & Events —',
+      items: [
+        { name: 'actions', desc: 'Log and analyze actions/outcomes; aggregates and actor lists; action definition CRUD.' },
+      ]
+    },
+    {
+      title: '— Automation —',
+      items: [
+        { name: 'journeys', desc: 'Configure automated flows triggered by events or schedules; steps, rules; full CRUD.' },
+      ]
+    },
+    {
+      title: '— NFC, Proofs & Claims —',
+      items: [
+        { name: 'nfc', desc: 'Claim and validate NFC tags; perform tag lookups.' },
+        { name: 'proof', desc: 'Create, update, claim, and list product proofs (digital certificates).' },
+        { name: 'claimSet', desc: 'Manage claim sets and tag assignments; queries, reports, and updates.' },
+      ]
+    },
+    {
+      title: '— AI & Utilities —',
+      items: [
+        { name: 'ai', desc: 'Generate content and images, search photos, chat, upload files, and cache.' },
+        { name: 'serialNumber', desc: 'Assign, lookup, and manage serial numbers across scopes.' },
+      ]
+    },
+  ];
+
+  // Compute any namespaces not listed above
+  const known = new Set(groups.flatMap(g => g.items.map(i => i.name)));
+  const others = namespaces.filter(n => !known.has(n));
+
   summary += '## API Namespaces\n\n';
   summary += 'The Smartlinks SDK is organized into the following namespaces:\n\n';
-  namespaces.forEach(namespace => {
-    const descriptions = {
-      'appConfiguration': 'Application configuration and settings management',
-      'asset': 'File upload and asset management for collections, products, and proofs',
-      'attestation': 'Digital attestations and verification for products',
-      'auth': 'Authentication, login, and user account management',
-      'batch': 'Product batch management and tracking',
-      'claimSet': 'Claim creation, management, and verification',
-      'collection': 'Collection CRUD operations and management',
-      'crate': 'Container/crate management for organizing products',
-      'form': 'Dynamic form creation and submission',
-      'product': 'Product CRUD operations and management within collections',
-      'proof': 'Product proof retrieval and validation',
-      'variant': 'Product variant management and tracking'
-    };
-    const description = descriptions[namespace] || `Functions for ${namespace} operations`;
-    summary += `- **${namespace}** - ${description}\n`;
+
+  groups.forEach(group => {
+    const available = group.items.filter(i => present.has(i.name));
+    if (!available.length) return;
+    summary += `${group.title}\n`;
+    available.forEach(i => {
+      summary += `- **${i.name}** - ${i.desc}\n`;
+    });
+    summary += '\n';
   });
-  summary += '\n';
+
+  if (others.length) {
+    summary += '— Other —\n';
+    others.forEach(n => {
+      summary += `- **${n}** - Functions for ${n} operations\n`;
+    });
+    summary += '\n';
+  }
   
   // HTTP Utilities
   summary += '## HTTP Utilities\n\n';
