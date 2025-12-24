@@ -22,3 +22,4 @@ export { actions } from "./actions";
 export { broadcasts } from "./broadcasts";
 export { segments } from "./segments";
 export { journeys } from "./journeys";
+export { qr } from "./qr";

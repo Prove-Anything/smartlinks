@@ -1,7 +1,7 @@
 /**
  * Represents a Proof object.
  */
-export interface ProofResponse {
+export interface Proof {
     /** Unique identifier for the collection */
     collectionId: string;
     /** Creation timestamp */
@@ -21,3 +21,11 @@ export interface ProofResponse {
     /** Arbitrary key-value pairs for proof values */
     values: Record<string, any>;
 }
+export type ProofResponse = Proof;
+export interface ProofCreateRequest {
+    values: Record<string, any>;
+    claimable?: boolean;
+    transient?: boolean;
+}
+export type ProofUpdateRequest = Partial<ProofCreateRequest>;
+export type ProofClaimRequest = Record<string, any>;

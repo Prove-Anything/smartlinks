@@ -18,3 +18,4 @@ export * from "./broadcasts";
 export * from "./segments";
 export * from "./common";
 export * from "./journeys";
+export * from "./qr";

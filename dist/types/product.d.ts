@@ -1,7 +1,7 @@
 /**
- * Represents a Product Item object.
+ * Product domain model.
  */
-export interface ProductResponse {
+export interface Product {
     /** Unique identifier for the product */
     id: string;
     /** Name of the product */
@@ -34,5 +34,6 @@ export interface ProductResponse {
         [key: string]: any;
     };
 }
-export type ProductCreateRequest = Omit<ProductResponse, 'id' | 'collectionId'>;
-export type ProductUpdateRequest = Partial<Omit<ProductResponse, 'id' | 'collectionId'>>;
+export type ProductResponse = Product;
+export type ProductCreateRequest = Omit<Product, 'id' | 'collectionId'>;
+export type ProductUpdateRequest = Partial<Omit<Product, 'id' | 'collectionId'>>;

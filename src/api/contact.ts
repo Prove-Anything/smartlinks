@@ -1,5 +1,5 @@
 import { request, post, del, patch } from "../http"
-import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse } from "../types"
+import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, PublicContactUpsertRequest, PublicContactUpsertResponse } from "../types"
 
 export namespace contact {
   export async function create(collectionId: string, data: ContactCreateRequest): Promise<ContactResponse> {
@@ -63,6 +63,15 @@ export namespace contact {
   ): Promise<ContactResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts:upsert`
     return post<ContactResponse>(path, data)
+  }
+
+  // Public contact upsert (privacy-safe): returns only ok + contactId
+  export async function publicUpsert(
+    collectionId: string,
+    data: PublicContactUpsertRequest
+  ): Promise<PublicContactUpsertResponse> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/contact`
+    return post<PublicContactUpsertResponse>(path, data)
   }
 
   export async function erase(collectionId: string, contactId: string, body?: any): Promise<ContactResponse> {

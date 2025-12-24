@@ -1,4 +1,4 @@
-import { CollectionResponse } from "../types/collection";
+import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest } from "../types/collection";
 export declare namespace collection {
     /**
      * Retrieves a single Collection by its ID.
@@ -42,7 +42,7 @@ export declare namespace collection {
      * @returns Promise resolving to a CollectionResponse object
      * @throws ErrorResponse if the request fails
      */
-    function create(data: any): Promise<CollectionResponse>;
+    function create(data: CollectionCreateRequest): Promise<CollectionResponse>;
     /**
      * Update a collection (admin only).
      * @param collectionId – Identifier of the collection
@@ -50,7 +50,7 @@ export declare namespace collection {
      * @returns Promise resolving to a CollectionResponse object
      * @throws ErrorResponse if the request fails
      */
-    function update(collectionId: string, data: any): Promise<CollectionResponse>;
+    function update(collectionId: string, data: CollectionUpdateRequest): Promise<CollectionResponse>;
     /**
      * Delete a collection (admin only).
      * @param collectionId – Identifier of the collection

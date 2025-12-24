@@ -44,6 +44,7 @@ export interface PublicByUserRequest {
 }
 export interface ActionEventRow {
     orgId: string;
+    collectionId: string;
     timestamp: string;
     appId?: string;
     actionId?: string;
@@ -51,6 +52,7 @@ export interface ActionEventRow {
     userId?: string;
     contactId?: string;
     outcome?: string | null;
+    metadata?: Record<string, unknown>;
     [k: string]: unknown;
 }
 export interface OutcomeCount {
@@ -70,6 +72,7 @@ export interface AppendActionBody {
     broadcastId?: string;
     outcome?: string;
     timestamp?: string;
+    metadata?: Record<string, unknown>;
     [k: string]: any;
 }
 export interface ActionPermissions {

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.1.2  |  Generated: 2025-12-19T16:02:23.756Z
+Version: 1.1.8  |  Generated: 2025-12-23T17:18:29.420Z
 
 This is a concise summary of all available API functions and types.
 
@@ -39,6 +39,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **nfc** - Claim and validate NFC tags; perform tag lookups.
 - **proof** - Create, update, claim, and list product proofs (digital certificates).
 - **claimSet** - Manage claim sets and tag assignments; queries, reports, and updates.
+- **qr** - Lookup short codes to resolve collection/product/proof context.
 
 — AI & Utilities —
 - **ai** - Generate content and images, search photos, chat, upload files, and cache.
@@ -175,6 +176,7 @@ interface PublicByUserRequest {
 ```typescript
 interface ActionEventRow {
   orgId: string
+  collectionId: string
   timestamp: string
   appId?: string
   actionId?: string
@@ -182,6 +184,7 @@ interface ActionEventRow {
   userId?: string
   contactId?: string
   outcome?: string | null
+  metadata?: Record<string, unknown>
   [k: string]: unknown
 }
 ```
@@ -210,6 +213,7 @@ interface AppendActionBody {
   broadcastId?: string
   outcome?: string
   timestamp?: string
+  metadata?: Record<string, unknown>
   [k: string]: any
 }
 ```
@@ -917,6 +921,35 @@ interface ContactListResponse {
 }
 ```
 
+**PublicContactUpsertRequest** (interface)
+```typescript
+interface PublicContactUpsertRequest {
+  email?: string
+  phone?: string
+  userId?: string
+  firstName?: string
+  lastName?: string
+  displayName?: string
+  company?: string
+  tags?: string[]
+  source?: string
+  notes?: string
+  avatarUrl?: string
+  locale?: string
+  timezone?: string
+  externalIds?: Record<string, any>
+  customFields?: ContactCustomFields
+}
+```
+
+**PublicContactUpsertResponse** (interface)
+```typescript
+interface PublicContactUpsertResponse {
+  ok: boolean
+  contactId: string
+}
+```
+
 **ContactCustomFields** = `Record<string, any>`
 
 ### error
@@ -1125,6 +1158,18 @@ interface ProofCreateRequest {
 **ProofUpdateRequest** = `Partial<ProofCreateRequest>`
 
 **ProofClaimRequest** = `Record<string, any>`
+
+### qr
+
+**QrShortCodeLookupResponse** (interface)
+```typescript
+interface QrShortCodeLookupResponse {
+  collectionId?: string
+  productId?: string
+  proofId?: string
+  code: string
+}
+```
 
 ### segments
 
@@ -1791,6 +1836,9 @@ Logging: Append many communication events for a list of IDs. POST /admin/collect
 **upsert**(collectionId: string,
     data: ContactCreateRequest) → `Promise<ContactResponse>`
 
+**publicUpsert**(collectionId: string,
+    data: PublicContactUpsertRequest) → `Promise<PublicContactUpsertResponse>`
+
 **erase**(collectionId: string, contactId: string, body?: any) → `Promise<ContactResponse>`
 
 ### crate
@@ -1943,6 +1991,11 @@ Find proofs for a product (admin only). POST /admin/collection/:collectionId/pro
     productId: string,
     batchId: string) → `Promise<ProofResponse[]>`
 Get proofs for a batch (admin only). GET /admin/collection/:collectionId/product/:productId/batch/:batchId/proof
+
+### qr
+
+**lookupShortCode**(shortId: string, code: string) → `Promise<QrShortCodeLookupResponse>`
+Resolve a short code to related resource identifiers.
 
 ### segments
 

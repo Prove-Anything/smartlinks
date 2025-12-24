@@ -53,6 +53,12 @@ export var contact;
         return post(path, data);
     }
     contact.upsert = upsert;
+    // Public contact upsert (privacy-safe): returns only ok + contactId
+    async function publicUpsert(collectionId, data) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/contact`;
+        return post(path, data);
+    }
+    contact.publicUpsert = publicUpsert;
     async function erase(collectionId, contactId, body) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/${encodeURIComponent(contactId)}/erase`;
         return post(path, body || {});

@@ -1,4 +1,4 @@
-import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse } from "../types";
+import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, PublicContactUpsertRequest, PublicContactUpsertResponse } from "../types";
 export declare namespace contact {
     function create(collectionId: string, data: ContactCreateRequest): Promise<ContactResponse>;
     function list(collectionId: string, params?: {
@@ -16,5 +16,6 @@ export declare namespace contact {
         phone?: string;
     }): Promise<ContactResponse>;
     function upsert(collectionId: string, data: ContactCreateRequest): Promise<ContactResponse>;
+    function publicUpsert(collectionId: string, data: PublicContactUpsertRequest): Promise<PublicContactUpsertResponse>;
     function erase(collectionId: string, contactId: string, body?: any): Promise<ContactResponse>;
 }

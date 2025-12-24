@@ -50,3 +50,27 @@ export interface ContactListResponse {
   limit: number
   offset: number
 }
+
+// Public contact upsert (privacy-safe)
+export interface PublicContactUpsertRequest {
+  email?: string
+  phone?: string
+  userId?: string
+  firstName?: string
+  lastName?: string
+  displayName?: string
+  company?: string
+  tags?: string[]
+  source?: string
+  notes?: string
+  avatarUrl?: string
+  locale?: string
+  timezone?: string
+  externalIds?: Record<string, any>
+  customFields?: ContactCustomFields
+}
+
+export interface PublicContactUpsertResponse {
+  ok: boolean
+  contactId: string
+}

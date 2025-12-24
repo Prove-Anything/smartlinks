@@ -1,4 +1,4 @@
-import { ProofResponse } from "../types/proof";
+import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofClaimRequest } from "../types/proof";
 export declare namespace proof {
     /**
      * Retrieves a single Proof by Collection ID, Product ID, and Proof ID.
@@ -13,17 +13,17 @@ export declare namespace proof {
      * Create a proof for a product (admin only).
      * POST /admin/collection/:collectionId/product/:productId/proof
      */
-    function create(collectionId: string, productId: string, values: any): Promise<ProofResponse>;
+    function create(collectionId: string, productId: string, values: ProofCreateRequest): Promise<ProofResponse>;
     /**
      * Update a proof for a product (admin only).
      * PUT /admin/collection/:collectionId/product/:productId/proof/:proofId
      */
-    function update(collectionId: string, productId: string, proofId: string, values: any): Promise<ProofResponse>;
+    function update(collectionId: string, productId: string, proofId: string, values: ProofUpdateRequest): Promise<ProofResponse>;
     /**
      * Claim a proof for a product.
      * PUT /public/collection/:collectionId/product/:productId/proof/:proofId
      */
-    function claim(collectionId: string, productId: string, proofId: string, values: any): Promise<ProofResponse>;
+    function claim(collectionId: string, productId: string, proofId: string, values: ProofClaimRequest): Promise<ProofResponse>;
     /**
      * Delete a proof for a product (admin only).
      * DELETE /admin/collection/:collectionId/product/:productId/proof/:proofId

@@ -227,6 +227,7 @@ function generateAPISummary() {
         { name: 'nfc', desc: 'Claim and validate NFC tags; perform tag lookups.' },
         { name: 'proof', desc: 'Create, update, claim, and list product proofs (digital certificates).' },
         { name: 'claimSet', desc: 'Manage claim sets and tag assignments; queries, reports, and updates.' },
+        { name: 'qr', desc: 'Lookup short codes to resolve collection/product/proof context.' },
       ]
     },
     {

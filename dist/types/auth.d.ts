@@ -1,4 +1,4 @@
-export type UserAccountRegistrationRequest = {
+export interface UserAccountRegistrationRequest {
     /** User's display name */
     name: string;
     /** Optional user email */
@@ -13,4 +13,4 @@ export type UserAccountRegistrationRequest = {
     collectionId?: string;
     /** Desired token type returned */
     tokenType?: 'bearer' | 'firebase';
-};
+}

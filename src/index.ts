@@ -73,3 +73,8 @@ export type {
   ProofUpdateRequest,
   ProofClaimRequest,
 } from "./types/proof"
+
+// QR & Short Codes
+export type {
+  QrShortCodeLookupResponse,
+} from "./types/qr"
