@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.1.8  |  Generated: 2025-12-23T17:18:29.420Z
+Version: 1.1.9  |  Generated: 2025-12-24T13:18:43.320Z
 
 This is a concise summary of all available API functions and types.
 
@@ -47,6 +47,7 @@ The Smartlinks SDK is organized into the following namespaces:
 
 — Other —
 - **attestation** - Functions for attestation operations
+- **template** - Functions for template operations
 
 ## HTTP Utilities
 
@@ -230,7 +231,7 @@ interface ActionPermissions {
 **ActionRecord** (interface)
 ```typescript
 interface ActionRecord {
-  id: string
+  id?: string
   collectionId: string
   appId: string
   permissions?: ActionPermissions
@@ -1233,6 +1234,39 @@ interface SegmentRecipientsResponse {
 }
 ```
 
+### template
+
+**TemplateBase** (interface)
+```typescript
+interface TemplateBase {
+  id: string
+  collectionId: string
+  name: string
+  description?: string
+  type: string
+  resizeMode?: string
+  pdf?: {
+  base: { url: string }
+  orientation: 'portrait' | 'landscape'
+  }
+  subject?: string
+  body?: string
+  css?: string
+  public?: boolean
+  engine?: string
+  component?: string
+  defaultProps?: Record<string, any>
+  collections?: string[]
+  [k: string]: any
+}
+```
+
+**TemplateInput** = `Omit<TemplateBase, 'id' | 'collectionId'>`
+
+**TemplateUpdate** = `Partial<Omit<TemplateBase, 'id' | 'collectionId'>>`
+
+**TemplatePublic** = `TemplateBase`
+
 ### variant
 
 **VariantResponse** = `any`
@@ -2021,6 +2055,32 @@ Resolve a short code to related resource identifiers.
 **recipients**(collectionId: string,
     id: string,
     query: { limit?: number; offset?: number } = {}) → `Promise<SegmentRecipientsResponse>`
+
+### template
+
+**getAll**(collectionId: string) → `Promise<Template[]>`
+
+**get**(collectionId: string, templateId: string) → `Promise<Template>`
+
+**create**(collectionId: string, data: TemplateInput) → `Promise<Template>`
+
+**update**(collectionId: string,
+    templateId: string,
+    data: TemplateUpdate) → `Promise<Template>`
+
+**del**(collectionId: string, templateId: string) → `Promise<Template>`
+
+**uploadAsset**(collectionId: string,
+    templateId: string,
+    file: File | Blob) → `Promise<`
+
+**getAllowed**(collectionId: string) → `Promise<TemplatePublic[]>`
+
+**getPublic**(collectionId: string, templateId: string) → `Promise<TemplatePublic>`
+
+**getGlobal**(templateId: string) → `Promise<TemplatePublic>`
+
+**getAllowedGlobal**(collectionId: string) → `Promise<TemplatePublic[]>`
 
 ### variant
 
