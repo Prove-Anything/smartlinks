@@ -94,7 +94,7 @@ export interface ActionPermissions {
 }
 
 export interface ActionRecord {
-  id: string
+  id?: string
   collectionId: string
   appId: string
   permissions?: ActionPermissions
