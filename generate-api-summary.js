@@ -212,7 +212,7 @@ function generateAPISummary() {
     {
       title: '— Analytics & Events —',
       items: [
-        { name: 'actions', desc: 'Log and analyze actions/outcomes; aggregates and actor lists; action definition CRUD.' },
+        { name: 'interactions', desc: 'Log and analyze interactions/outcomes; aggregates and actor lists; interaction definition CRUD.' },
       ]
     },
     {

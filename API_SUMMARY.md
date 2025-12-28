@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.1.9  |  Generated: 2025-12-24T13:18:43.320Z
+Version: 1.1.11  |  Generated: 2025-12-26T15:12:34.830Z
 
 This is a concise summary of all available API functions and types.
 
@@ -30,7 +30,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **segments** - Define dynamic/static audience segments; estimate and list recipients; schedule calculations.
 
 — Analytics & Events —
-- **actions** - Log and analyze actions/outcomes; aggregates and actor lists; action definition CRUD.
+- **interactions** - Log and analyze interactions/outcomes; aggregates and actor lists; interaction definition CRUD.
 
 — Automation —
 - **journeys** - Configure automated flows triggered by events or schedules; steps, rules; full CRUD.
@@ -107,192 +107,6 @@ Returns the common headers used for API requests, including apiKey and bearerTok
 Sends a custom proxy message to the parent Smartlinks application when running in an iframe. This function is used to communicate with the parent window when the SDK is embedded in an iframe and proxyMode is enabled. It sends a message to the parent and waits for a response.
 
 ## Types
-
-### actions
-
-**AdminByUserRequest** (interface)
-```typescript
-interface AdminByUserRequest {
-  userId?: string
-  contactId?: string
-  appId?: string
-  actionId?: string
-  broadcastId?: string
-  outcome?: string | null
-  from?: string
-  to?: string
-  limit?: number
-}
-```
-
-**AdminCountsByOutcomeRequest** (interface)
-```typescript
-interface AdminCountsByOutcomeRequest {
-  appId?: string
-  actionId?: string
-  from?: string
-  to?: string
-  limit?: number
-  dedupeLatest?: boolean
-  idField?: IdField
-}
-```
-
-**AdminActorIdsByActionRequest** (interface)
-```typescript
-interface AdminActorIdsByActionRequest {
-  actionId: string
-  idField?: IdField
-  outcome?: string | null
-  includeOutcome?: boolean
-  from?: string
-  to?: string
-  limit?: number
-}
-```
-
-**PublicCountsByOutcomeRequest** (interface)
-```typescript
-interface PublicCountsByOutcomeRequest {
-  appId: string
-  actionId: string
-  from?: string
-  to?: string
-  limit?: number
-}
-```
-
-**PublicByUserRequest** (interface)
-```typescript
-interface PublicByUserRequest {
-  appId: string
-  actionId: string
-  from?: string
-  to?: string
-  limit?: number
-}
-```
-
-**ActionEventRow** (interface)
-```typescript
-interface ActionEventRow {
-  orgId: string
-  collectionId: string
-  timestamp: string
-  appId?: string
-  actionId?: string
-  broadcastId?: string
-  userId?: string
-  contactId?: string
-  outcome?: string | null
-  metadata?: Record<string, unknown>
-  [k: string]: unknown
-}
-```
-
-**OutcomeCount** (interface)
-```typescript
-interface OutcomeCount {
-  outcome: string | null; count: number
-}
-```
-
-**ActorWithOutcome** (interface)
-```typescript
-interface ActorWithOutcome {
-  id: string; outcome: string | null
-}
-```
-
-**AppendActionBody** (interface)
-```typescript
-interface AppendActionBody {
-  userId?: string
-  contactId?: string
-  actionId: string
-  appId?: string
-  broadcastId?: string
-  outcome?: string
-  timestamp?: string
-  metadata?: Record<string, unknown>
-  [k: string]: any
-}
-```
-
-**ActionPermissions** (interface)
-```typescript
-interface ActionPermissions {
-  allowOwnRead?: boolean
-  allowPublicSummary?: boolean
-  allowAuthenticatedSummary?: boolean
-}
-```
-
-**ActionRecord** (interface)
-```typescript
-interface ActionRecord {
-  id?: string
-  collectionId: string
-  appId: string
-  permissions?: ActionPermissions
-  data?: {
-  display?: {
-  title?: string
-  description?: string
-  icon?: string
-  color?: string
-  }
-  actionType?: string
-  [key: string]: unknown
-  }
-  createdAt: string
-}
-```
-
-**ActionList** (interface)
-```typescript
-interface ActionList {
-  items: ActionRecord[]
-  limit: number
-  offset: number
-}
-```
-
-**CreateActionBody** (interface)
-```typescript
-interface CreateActionBody {
-  id: string
-  appId: string
-  permissions?: ActionPermissions
-  data?: Record<string, unknown>
-}
-```
-
-**UpdateActionBody** (interface)
-```typescript
-interface UpdateActionBody {
-  appId?: string
-  permissions?: ActionPermissions
-  data?: Record<string, unknown>
-}
-```
-
-**ListActionsQuery** (interface)
-```typescript
-interface ListActionsQuery {
-  appId?: string
-  limit?: number
-  offset?: number
-}
-```
-
-**ActorId** = `string`
-
-**ActionQueryByUser** = `AdminByUserRequest`
-
-**ActionCountsQuery** = `AdminCountsByOutcomeRequest`
-
-**ActorIdsByActionQuery** = `AdminActorIdsByActionRequest`
 
 ### appConfiguration
 
@@ -963,6 +777,210 @@ interface ErrorResponse {
 }
 ```
 
+### interaction
+
+**AdminInteractionsByUserRequest** (interface)
+```typescript
+interface AdminInteractionsByUserRequest {
+  userId?: string
+  contactId?: string
+  appId?: string
+  interactionId?: string
+  broadcastId?: string
+  outcome?: string | null
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**AdminInteractionsCountsByOutcomeRequest** (interface)
+```typescript
+interface AdminInteractionsCountsByOutcomeRequest {
+  appId?: string
+  interactionId?: string
+  from?: string
+  to?: string
+  limit?: number
+  dedupeLatest?: boolean
+  idField?: IdField
+}
+```
+
+**AdminActorIdsByInteractionRequest** (interface)
+```typescript
+interface AdminActorIdsByInteractionRequest {
+  interactionId: string
+  idField?: IdField
+  outcome?: string | null
+  includeOutcome?: boolean
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**PublicInteractionsCountsByOutcomeRequest** (interface)
+```typescript
+interface PublicInteractionsCountsByOutcomeRequest {
+  appId: string
+  interactionId: string
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**PublicInteractionsByUserRequest** (interface)
+```typescript
+interface PublicInteractionsByUserRequest {
+  appId: string
+  interactionId: string
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**InteractionEventRow** (interface)
+```typescript
+interface InteractionEventRow {
+  orgId: string
+  collectionId: string
+  timestamp: string
+  appId?: string
+  interactionId?: string
+  broadcastId?: string
+  userId?: string
+  contactId?: string
+  outcome?: string | null
+  metadata?: Record<string, unknown>
+  [k: string]: unknown
+}
+```
+
+**OutcomeCount** (interface)
+```typescript
+interface OutcomeCount {
+  outcome: string | null; count: number
+}
+```
+
+**ActorWithOutcome** (interface)
+```typescript
+interface ActorWithOutcome {
+  id: string; outcome: string | null
+}
+```
+
+**InteractionEventBase** (interface)
+```typescript
+interface InteractionEventBase {
+  collectionId: string,
+  ordId: string,
+  userId?: string
+  contactId?: string
+  interactionId: string
+  appId?: string
+  broadcastId?: string
+  journeyId?: string
+  productId?: string
+  proofId?: string
+  variantId?: string
+  batchId?: string
+  source?: string,
+  eventType?: string
+  outcome?: string
+  timestamp?: string
+  metadata?: Record<string, unknown>
+  [k: string]: any
+}
+```
+
+**InteractionPermissions** (interface)
+```typescript
+interface InteractionPermissions {
+  enabled?: boolean
+  requireAuth?: boolean
+  allowPublicSubmit?: boolean
+  allowAnonymousSubmit?: boolean
+  allowedOrigins?: string[]
+  startAt?: string
+  endAt?: string
+  * Enforce uniqueness per user: prevent duplicate submissions for this interaction.
+  * If true, optionally use `uniquePerUserWindowSeconds` to scope the window.
+  uniquePerUser?: boolean
+  uniquePerUserWindowSeconds?: number
+  uniqueOutcome?: string
+  * Public summary visibility (counts, aggregates) without auth.
+  * If false, summaries require `allowAuthenticatedSummary` + user auth.
+  allowPublicSummary?: boolean
+  * Authenticated summary visibility (counts, aggregates) when user is signed in.
+  allowAuthenticatedSummary?: boolean
+  allowOwnRead?: boolean
+}
+```
+
+**InteractionTypeRecord** (interface)
+```typescript
+interface InteractionTypeRecord {
+  id?: string
+  collectionId: string
+  appId: string
+  permissions?: InteractionPermissions
+  data?: {
+  display?: {
+  title?: string
+  description?: string
+  icon?: string
+  color?: string
+  }
+  interactionType?: string
+  [key: string]: unknown
+  }
+  createdAt: string
+}
+```
+
+**InteractionTypeList** (interface)
+```typescript
+interface InteractionTypeList {
+  items: InteractionTypeRecord[]
+  limit: number
+  offset: number
+}
+```
+
+**CreateInteractionTypeBody** (interface)
+```typescript
+interface CreateInteractionTypeBody {
+  id: string
+  appId: string
+  permissions?: InteractionPermissions
+  data?: Record<string, unknown>
+}
+```
+
+**UpdateInteractionTypeBody** (interface)
+```typescript
+interface UpdateInteractionTypeBody {
+  appId?: string
+  permissions?: InteractionPermissions
+  data?: Record<string, unknown>
+}
+```
+
+**ListInteractionTypesQuery** (interface)
+```typescript
+interface ListInteractionTypesQuery {
+  appId?: string
+  limit?: number
+  offset?: number
+}
+```
+
+**ActorId** = `string`
+
 ### journeys
 
 **JourneyRecord** (interface)
@@ -1402,55 +1420,6 @@ type AccountInfoResponse = {
 ```
 
 ## API Functions
-
-### actions
-
-**byUser**(collectionId: string,
-    query: AdminByUserRequest | ActionQueryByUser = {}) → `Promise<ActionEventRow[]>`
-POST /admin/collection/:collectionId/actions/by-user Returns BigQuery action rows, newest first.
-
-**countsByOutcome**(collectionId: string,
-    query: AdminCountsByOutcomeRequest | ActionCountsQuery = {}) → `Promise<OutcomeCount[]>`
-POST /admin/collection/:collectionId/actions/counts-by-outcome Returns array of { outcome, count }.
-
-**actorIdsByAction**(collectionId: string,
-    query: AdminActorIdsByActionRequest | ActorIdsByActionQuery) → `Promise<ActorId[] | ActorWithOutcome[]>`
-POST /admin/collection/:collectionId/actions/actor-ids/by-action Returns list of IDs, optionally with outcome when includeOutcome=true.
-
-**append**(collectionId: string,
-    body: AppendActionBody) → `Promise<`
-POST /admin/collection/:collectionId/actions/append Appends one action event.
-
-**create**(collectionId: string,
-    body: CreateActionBody) → `Promise<ActionRecord>`
-POST /admin/collection/:collectionId/actions/append Appends one action event.
-
-**list**(collectionId: string,
-    query: ListActionsQuery = {}) → `Promise<ActionList>`
-POST /admin/collection/:collectionId/actions/append Appends one action event.
-
-**get**(collectionId: string,
-    id: string) → `Promise<ActionRecord>`
-POST /admin/collection/:collectionId/actions/append Appends one action event.
-
-**update**(collectionId: string,
-    id: string,
-    patchBody: UpdateActionBody) → `Promise<ActionRecord>`
-POST /admin/collection/:collectionId/actions/append Appends one action event.
-
-**remove**(collectionId: string,
-    id: string) → `Promise<void>`
-POST /admin/collection/:collectionId/actions/append Appends one action event.
-
-**publicCountsByOutcome**(collectionId: string,
-    body: PublicCountsByOutcomeRequest,
-    authToken?: string) → `Promise<OutcomeCount[]>`
-POST /admin/collection/:collectionId/actions/append Appends one action event.
-
-**publicMyActions**(collectionId: string,
-    body: PublicByUserRequest,
-    authToken?: string) → `Promise<ActionEventRow[]>`
-POST /admin/collection/:collectionId/actions/append Appends one action event.
 
 ### ai
 
@@ -1908,6 +1877,63 @@ Update a form for a collection (admin only).
 
 **remove**(collectionId: string, formId: string) → `Promise<void>`
 Delete a form for a collection (admin only).
+
+### interactions
+
+**byUser**(collectionId: string,
+    query: AdminInteractionsByUserRequest = {}) → `Promise<InteractionEventRow[]>`
+POST /admin/collection/:collectionId/interactions/by-user Returns BigQuery interaction rows, newest first.
+
+**countsByOutcome**(collectionId: string,
+    query: AdminInteractionsCountsByOutcomeRequest = {}) → `Promise<OutcomeCount[]>`
+POST /admin/collection/:collectionId/interactions/counts-by-outcome Returns array of { outcome, count }.
+
+**actorIdsByInteraction**(collectionId: string,
+    query: AdminActorIdsByInteractionRequest) → `Promise<ActorId[] | ActorWithOutcome[]>`
+POST /admin/collection/:collectionId/interactions/actor-ids/by-interaction Returns list of IDs, optionally with outcome when includeOutcome=true.
+
+**appendEvent**(collectionId: string,
+    body: AppendInteractionBody) → `Promise<`
+POST /admin/collection/:collectionId/interactions/append Appends one interaction event.
+
+**updateEvent**(collectionId: string,
+    body: UpdateInteractionBody) → `Promise<`
+POST /admin/collection/:collectionId/interactions/append Appends one interaction event.
+
+**submitPublicEvent**(collectionId: string,
+    body: AppendInteractionBody) → `Promise<`
+Appends one interaction event from a public source.
+
+**create**(collectionId: string,
+    body: CreateInteractionTypeBody) → `Promise<InteractionTypeRecord>`
+Appends one interaction event from a public source.
+
+**list**(collectionId: string,
+    query: ListInteractionTypesQuery = {}) → `Promise<InteractionTypeList>`
+Appends one interaction event from a public source.
+
+**get**(collectionId: string,
+    id: string) → `Promise<InteractionTypeRecord>`
+Appends one interaction event from a public source.
+
+**update**(collectionId: string,
+    id: string,
+    patchBody: UpdateInteractionTypeBody) → `Promise<InteractionTypeRecord>`
+Appends one interaction event from a public source.
+
+**remove**(collectionId: string,
+    id: string) → `Promise<void>`
+Appends one interaction event from a public source.
+
+**publicCountsByOutcome**(collectionId: string,
+    body: PublicInteractionsCountsByOutcomeRequest,
+    authToken?: string) → `Promise<OutcomeCount[]>`
+Appends one interaction event from a public source.
+
+**publicMyInteractions**(collectionId: string,
+    body: PublicInteractionsByUserRequest,
+    authToken?: string) → `Promise<InteractionEventRow[]>`
+Appends one interaction event from a public source.
 
 ### journeys
 
