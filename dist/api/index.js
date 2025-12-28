@@ -24,3 +24,4 @@ export { journeys } from "./journeys";
 export { qr } from "./qr";
 export { template } from "./template";
 export { interactions } from "./interactions";
+export { location } from "./location";

@@ -20,3 +20,4 @@ export * from "./journeys";
 export * from "./qr";
 export * from "./template";
 export * from "./interaction";
+export * from "./location";

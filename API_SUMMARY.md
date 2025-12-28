@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.1.11  |  Generated: 2025-12-26T15:12:34.830Z
+Version: 1.1.12  |  Generated: 2025-12-28T18:01:35.628Z
 
 This is a concise summary of all available API functions and types.
 
@@ -47,6 +47,7 @@ The Smartlinks SDK is organized into the following namespaces:
 
 — Other —
 - **attestation** - Functions for attestation operations
+- **location** - Functions for location operations
 - **template** - Functions for template operations
 
 ## HTTP Utilities
@@ -834,8 +835,8 @@ interface PublicInteractionsCountsByOutcomeRequest {
 **PublicInteractionsByUserRequest** (interface)
 ```typescript
 interface PublicInteractionsByUserRequest {
-  appId: string
-  interactionId: string
+  appId?: string
+  interactionId?: string
   from?: string
   to?: string
   limit?: number
@@ -877,7 +878,7 @@ interface ActorWithOutcome {
 ```typescript
 interface InteractionEventBase {
   collectionId: string,
-  ordId: string,
+  orgId?: string,
   userId?: string
   contactId?: string
   interactionId: string
@@ -1052,6 +1053,54 @@ interface UpdateJourneyBody {
   data?: Record<string, unknown>
 }
 ```
+
+### location
+
+**Location** (interface)
+```typescript
+interface Location {
+  locationId: string
+  collectionId: string | null
+  scope: 'global' | 'collection'
+  name: string
+  category?: string
+  description?: string
+  countryName?: string
+  countryCode?: string
+  websiteUrl?: string
+  logoUrl?: string
+  phone?: string
+  email?: string
+  geofence?: Geofence | {}
+  metadata?: Record<string, unknown>
+  createdAt: string
+  updatedAt: string
+}
+```
+
+**LocationSearchQuery** (interface)
+```typescript
+interface LocationSearchQuery {
+  q?: string
+  category?: string
+  countryCode?: string
+  countryName?: string
+  limit?: number // default 20; max 100
+  sort?: 'name' | 'countryCode' | 'countryName' // default 'name'
+}
+```
+
+**LocationSearchResponse** (interface)
+```typescript
+interface LocationSearchResponse {
+  items: Location[]
+  count: number
+}
+```
+
+**Geofence** = ``
+
+**LocationPayload** = `Omit<`
 
 ### nfc
 
@@ -1952,6 +2001,25 @@ Appends one interaction event from a public source.
 
 **remove**(collectionId: string,
     id: string) → `Promise<void>`
+
+### location
+
+**createGlobal**(params: LocationPayload) → `Promise<Location>`
+Platform: Create a global location (super admin; requires features.adminApps) POST /platform/location
+
+**create**(collectionId: string, params: LocationPayload) → `Promise<Location>`
+Admin: Create a collection-scoped location POST /admin/collection/:collectionId/location
+
+**search**(collectionId: string,
+    query: LocationSearchQuery = {}) → `Promise<LocationSearchResponse>`
+Admin: Search locations to pick during setup (combines collection + global) GET /admin/collection/:collectionId/location/search
+
+**getPublic**(locationId: string) → `Promise<Location>`
+Public: Fetch a global location by ID GET /public/location/:locationId
+
+**getPublicForCollection**(collectionId: string,
+    locationId: string) → `Promise<Location>`
+Public: Fetch a location for a collection; returns either a collection-owned or global fallback GET /public/collection/:collectionId/location/:locationId
 
 ### nfc
 

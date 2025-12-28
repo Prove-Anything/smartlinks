@@ -45,8 +45,8 @@ export interface PublicInteractionsCountsByOutcomeRequest {
 }
 
 export interface PublicInteractionsByUserRequest {
-  appId: string
-  interactionId: string
+  appId?: string
+  interactionId?: string
   from?: string
   to?: string
   limit?: number
@@ -76,7 +76,7 @@ export interface ActorWithOutcome { id: string; outcome: string | null }
 // Base for interaction event payloads to avoid duplication
 export interface InteractionEventBase {
   collectionId: string,
-  ordId: string,
+  orgId?: string,
   userId?: string
   contactId?: string
   interactionId: string
