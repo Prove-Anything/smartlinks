@@ -18,14 +18,14 @@ function encodeQuery(params) {
 export var interactions;
 (function (interactions) {
     /**
-     * POST /admin/collection/:collectionId/interactions/by-user
-     * Returns BigQuery interaction rows, newest first.
+     * POST /admin/collection/:collectionId/interactions/query
+     * Flexible query for interaction events with optional includes.
      */
-    async function byUser(collectionId, query = {}) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/by-user`;
-        return post(path, query);
+    async function query(collectionId, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/query`;
+        return post(path, body);
     }
-    interactions.byUser = byUser;
+    interactions.query = query;
     /**
      * POST /admin/collection/:collectionId/interactions/counts-by-outcome
      * Returns array of { outcome, count }.
@@ -35,15 +35,7 @@ export var interactions;
         return post(path, query);
     }
     interactions.countsByOutcome = countsByOutcome;
-    /**
-     * POST /admin/collection/:collectionId/interactions/actor-ids/by-interaction
-     * Returns list of IDs, optionally with outcome when includeOutcome=true.
-     */
-    async function actorIdsByInteraction(collectionId, query) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/actor-ids/by-interaction`;
-        return post(path, query);
-    }
-    interactions.actorIdsByInteraction = actorIdsByInteraction;
+    // Deprecated endpoint removed: actorIdsByInteraction
     /**
      * POST /admin/collection/:collectionId/interactions/append
      * Appends one interaction event.
@@ -60,7 +52,7 @@ export var interactions;
         if (!body.userId && !body.contactId) {
             throw new Error("AppendInteractionBody must include one of userId or contactId");
         }
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/append`;
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/events/update`;
         return post(path, body);
     }
     interactions.updateEvent = updateEvent;
@@ -115,4 +107,17 @@ export var interactions;
         return post(path, body, headers);
     }
     interactions.publicMyInteractions = publicMyInteractions;
+    // Public: list interaction definitions (Postgres)
+    async function publicList(collectionId, query = {}) {
+        const qs = encodeQuery(query);
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/interactions/${qs}`;
+        return request(path);
+    }
+    interactions.publicList = publicList;
+    // Public: get a single interaction definition (Postgres)
+    async function publicGet(collectionId, id) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/interactions/${encodeURIComponent(id)}`;
+        return request(path);
+    }
+    interactions.publicGet = publicGet;
 })(interactions || (interactions = {}));

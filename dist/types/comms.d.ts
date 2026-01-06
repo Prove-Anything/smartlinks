@@ -189,3 +189,11 @@ export interface AppendBulkResult {
     success: true;
     count: number;
 }
+export type Recipient = import('./contact').Contact;
+export interface RecipientsPage {
+    items: Recipient[];
+    total: number;
+    limit: number;
+    offset: number;
+    note?: string;
+}

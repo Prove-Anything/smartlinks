@@ -26,13 +26,13 @@ export interface SegmentList {
     offset: number;
 }
 export interface SegmentCalculateResult {
-    scheduled: true;
+    scheduled: boolean;
     lastCalculatedAt?: string;
     estimatedCount?: number | null;
     note?: string;
 }
 export interface SegmentRecipientsResponse {
-    items: string[];
+    items: import('./comms').Recipient[];
     limit: number;
     offset: number;
     total: number;

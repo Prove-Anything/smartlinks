@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.1.15  |  Generated: 2026-01-03T20:22:14.481Z
+Version: 1.1.21  |  Generated: 2026-01-05T12:21:27.209Z
 
 This is a concise summary of all available API functions and types.
 
@@ -389,6 +389,98 @@ interface BroadcastList {
 }
 ```
 
+**BroadcastRecipientsResponse** (interface)
+```typescript
+interface BroadcastRecipientsResponse {
+  items: import('./comms').Recipient[]
+  total: number
+  limit: number
+  offset: number
+  note?: string
+}
+```
+
+**BroadcastPreviewRequest** (interface)
+```typescript
+interface BroadcastPreviewRequest {
+  contactId?: string
+  email?: string
+  props?: Record<string, any>
+}
+```
+
+**BroadcastPreviewResponse** (interface)
+```typescript
+interface BroadcastPreviewResponse {
+  ok: boolean; html: string
+}
+```
+
+**BroadcastSendTestRequest** (interface)
+```typescript
+interface BroadcastSendTestRequest {
+  to: string
+  subject?: string
+  props?: Record<string, any>
+}
+```
+
+**BroadcastSendTestResponse** (interface)
+```typescript
+interface BroadcastSendTestResponse {
+  ok: boolean; id?: string
+}
+```
+
+**BroadcastSendManualRequest** (interface)
+```typescript
+interface BroadcastSendManualRequest {
+  limit?: number
+  offset?: number
+  dryRun?: boolean
+  sharedContext?: Record<string, any>
+}
+```
+
+**BroadcastSendManualResponse** (interface)
+```typescript
+interface BroadcastSendManualResponse {
+  ok: boolean
+  counts: { sent: number; failed: number; skipped: number }
+  page: { limit: number; offset: number; total: number }
+  results: Array<{
+  contactId: string
+  status: 'sent' | 'failed' | 'skipped' | 'dry_run'
+  id?: string
+  error?: string
+  message?: string
+  }>
+}
+```
+
+**BroadcastAppendEventBody** (interface)
+```typescript
+interface BroadcastAppendEventBody {
+  broadcastId: string
+  contactId?: string
+  channel?: 'email'
+  templateId?: string
+  eventType: string
+  outcome?: 'success' | 'failed'
+  failureReason?: string
+  metadata?: Record<string, any>
+}
+```
+
+**BroadcastAppendBulkBody** (interface)
+```typescript
+interface BroadcastAppendBulkBody {
+  ids: string[]
+  idField?: string
+  params: Record<string, any> // merged with collectionId server-side
+}
+```
+
 ### claimSet
 
 **ClaimCodeRef** (interface)
@@ -679,15 +771,29 @@ interface AppendBulkResult {
 }
 ```
 
+**RecipientsPage** (interface)
+```typescript
+interface RecipientsPage {
+  items: Recipient[]
+  total: number
+  limit: number
+  offset: number
+  note?: string
+}
+```
+
 **RecipientId** = `string`
+
+**Recipient** = `import('./contact').Contact`
 
 ### contact
 
-**ContactResponse** (interface)
+**Contact** (interface)
 ```typescript
-interface ContactResponse {
+interface Contact {
   contactId: string
   orgId: string
+  userId: string | null
   firstName: string | null
   lastName: string | null
   displayName: string | null
@@ -696,6 +802,13 @@ interface ContactResponse {
   phone: string | null
   emails?: string[]
   phones?: string[]
+  tags?: string[]
+  source?: string | null
+  notes?: string | null
+  avatarUrl?: string | null
+  locale?: string | null
+  timezone?: string | null
+  externalIds?: Record<string, any>
   customFields: ContactCustomFields
   createdAt: string
   updatedAt: string
@@ -704,59 +817,12 @@ interface ContactResponse {
 }
 ```
 
-**ContactCreateRequest** (interface)
-```typescript
-interface ContactCreateRequest {
-  firstName?: string | null
-  lastName?: string | null
-  displayName?: string | null
-  company?: string | null
-  email?: string | null
-  phone?: string | null
-  customFields?: ContactCustomFields
-}
-```
-
-**ContactUpdateRequest** (interface)
-```typescript
-interface ContactUpdateRequest {
-  firstName?: string | null
-  lastName?: string | null
-  displayName?: string | null
-  company?: string | null
-  email?: string | null
-  phone?: string | null
-  customFields?: ContactCustomFields
-}
-```
-
 **ContactListResponse** (interface)
 ```typescript
 interface ContactListResponse {
-  items: ContactResponse[]
+  items: Contact[]
   limit: number
   offset: number
-}
-```
-
-**PublicContactUpsertRequest** (interface)
-```typescript
-interface PublicContactUpsertRequest {
-  email?: string
-  phone?: string
-  userId?: string
-  firstName?: string
-  lastName?: string
-  displayName?: string
-  company?: string
-  tags?: string[]
-  source?: string
-  notes?: string
-  avatarUrl?: string
-  locale?: string
-  timezone?: string
-  externalIds?: Record<string, any>
-  customFields?: ContactCustomFields
 }
 ```
 
@@ -785,6 +851,14 @@ interface UserSearchResponse {
 
 **ContactCustomFields** = `Record<string, any>`
 
+**ContactResponse** = `Contact`
+
+**ContactCreateRequest** = `Omit<`
+
+**ContactUpdateRequest** = `Partial<ContactCreateRequest>`
+
+**PublicContactUpsertRequest** = `Partial<`
+
 ### error
 
 **ErrorResponse** (interface)
@@ -797,18 +871,23 @@ interface ErrorResponse {
 
 ### interaction
 
-**AdminInteractionsByUserRequest** (interface)
+**AdminInteractionsQueryRequest** (interface)
 ```typescript
-interface AdminInteractionsByUserRequest {
+interface AdminInteractionsQueryRequest {
   userId?: string
   contactId?: string
   appId?: string
   interactionId?: string
+  interactionIds?: string[]
   broadcastId?: string
   outcome?: string | null
   from?: string
   to?: string
   limit?: number
+  includeDeleted?: boolean
+  latestPerEventId?: boolean
+  order?: 'ASC' | 'DESC'
+  include?: Array<'interaction'>
 }
 ```
 
@@ -822,19 +901,6 @@ interface AdminInteractionsCountsByOutcomeRequest {
   limit?: number
   dedupeLatest?: boolean
   idField?: IdField
-}
-```
-
-**AdminActorIdsByInteractionRequest** (interface)
-```typescript
-interface AdminActorIdsByInteractionRequest {
-  interactionId: string
-  idField?: IdField
-  outcome?: string | null
-  includeOutcome?: boolean
-  from?: string
-  to?: string
-  limit?: number
 }
 ```
 
@@ -881,13 +947,6 @@ interface InteractionEventRow {
 ```typescript
 interface OutcomeCount {
   outcome: string | null; count: number
-}
-```
-
-**ActorWithOutcome** (interface)
-```typescript
-interface ActorWithOutcome {
-  id: string; outcome: string | null
 }
 ```
 
@@ -996,8 +1055,6 @@ interface ListInteractionTypesQuery {
   offset?: number
 }
 ```
-
-**ActorId** = `string`
 
 ### journeys
 
@@ -1367,7 +1424,7 @@ interface SegmentList {
 **SegmentCalculateResult** (interface)
 ```typescript
 interface SegmentCalculateResult {
-  scheduled: true
+  scheduled: boolean
   lastCalculatedAt?: string
   estimatedCount?: number | null
   note?: string
@@ -1377,7 +1434,7 @@ interface SegmentCalculateResult {
 **SegmentRecipientsResponse** (interface)
 ```typescript
 interface SegmentRecipientsResponse {
-  items: string[]
+  items: import('./comms').Recipient[]
   limit: number
   offset: number
   total: number
@@ -1409,6 +1466,37 @@ interface TemplateBase {
   defaultProps?: Record<string, any>
   collections?: string[]
   [k: string]: any
+}
+```
+
+**TemplateRenderRequest** (interface)
+```typescript
+interface TemplateRenderRequest {
+  props: Record<string, any>
+}
+```
+
+**TemplateRenderResponse** (interface)
+```typescript
+interface TemplateRenderResponse {
+  ok: boolean; html: string
+}
+```
+
+**TemplateRenderSourceRequest** (interface)
+```typescript
+interface TemplateRenderSourceRequest {
+  engine: 'liquid'
+  source: string
+  props?: Record<string, any>
+  component?: string
+}
+```
+
+**TemplateRenderSourceResponse** (interface)
+```typescript
+interface TemplateRenderSourceResponse {
+  ok: boolean; html: string
 }
 ```
 
@@ -1841,6 +1929,28 @@ Look up a serial number by code for a batch (admin only).
 **remove**(collectionId: string,
     id: string) → `Promise<void>`
 
+**recipients**(collectionId: string,
+    id: string,
+    query: { limit?: number; offset?: number } = {}) → `Promise<BroadcastRecipientsResponse>`
+
+**preview**(collectionId: string,
+    id: string,
+    body: BroadcastPreviewRequest) → `Promise<BroadcastPreviewResponse>`
+
+**sendTest**(collectionId: string,
+    id: string,
+    body: BroadcastSendTestRequest) → `Promise<BroadcastSendTestResponse>`
+
+**sendManual**(collectionId: string,
+    id: string,
+    body: BroadcastSendManualRequest) → `Promise<BroadcastSendManualResponse>`
+
+**append**(collectionId: string,
+    body: BroadcastAppendEventBody) → `Promise<AppendResult>`
+
+**appendBulk**(collectionId: string,
+    body: BroadcastAppendBulkBody) → `Promise<AppendBulkResult>`
+
 ### claimSet
 
 **getAllForCollection**(collectionId: string) → `Promise<any[]>`
@@ -2016,17 +2126,13 @@ Delete a form for a collection (admin only).
 
 ### interactions
 
-**byUser**(collectionId: string,
-    query: AdminInteractionsByUserRequest = {}) → `Promise<InteractionEventRow[]>`
-POST /admin/collection/:collectionId/interactions/by-user Returns BigQuery interaction rows, newest first.
+**query**(collectionId: string,
+    body: AdminInteractionsQueryRequest) → `Promise<InteractionEventRow[]>`
+POST /admin/collection/:collectionId/interactions/query Flexible query for interaction events with optional includes.
 
 **countsByOutcome**(collectionId: string,
     query: AdminInteractionsCountsByOutcomeRequest = {}) → `Promise<OutcomeCount[]>`
 POST /admin/collection/:collectionId/interactions/counts-by-outcome Returns array of { outcome, count }.
-
-**actorIdsByInteraction**(collectionId: string,
-    query: AdminActorIdsByInteractionRequest) → `Promise<ActorId[] | ActorWithOutcome[]>`
-POST /admin/collection/:collectionId/interactions/actor-ids/by-interaction Returns list of IDs, optionally with outcome when includeOutcome=true.
 
 **appendEvent**(collectionId: string,
     body: AppendInteractionBody) → `Promise<`
@@ -2069,6 +2175,14 @@ Appends one interaction event from a public source.
 **publicMyInteractions**(collectionId: string,
     body: PublicInteractionsByUserRequest,
     authToken?: string) → `Promise<InteractionEventRow[]>`
+Appends one interaction event from a public source.
+
+**publicList**(collectionId: string,
+    query: ListInteractionTypesQuery = {}) → `Promise<InteractionTypeList>`
+Appends one interaction event from a public source.
+
+**publicGet**(collectionId: string,
+    id: string) → `Promise<InteractionTypeRecord>`
 Appends one interaction event from a public source.
 
 ### journeys
@@ -2280,6 +2394,13 @@ Resolve a short code to related resource identifiers.
 **getGlobal**(templateId: string) → `Promise<TemplatePublic>`
 
 **getAllowedGlobal**(collectionId: string) → `Promise<TemplatePublic[]>`
+
+**render**(collectionId: string,
+    templateId: string,
+    body: TemplateRenderRequest) → `Promise<TemplateRenderResponse>`
+
+**renderSource**(collectionId: string,
+    body: TemplateRenderSourceRequest) → `Promise<TemplateRenderSourceResponse>`
 
 ### variant
 

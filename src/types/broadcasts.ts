@@ -40,3 +40,62 @@ export interface BroadcastList {
   limit: number
   offset: number
 }
+
+// New broadcast helpers for recipients and sending flows
+export interface BroadcastRecipientsResponse {
+  items: import('./comms').Recipient[]
+  total: number
+  limit: number
+  offset: number
+  note?: string
+}
+
+export interface BroadcastPreviewRequest {
+  contactId?: string
+  email?: string
+  props?: Record<string, any>
+}
+export interface BroadcastPreviewResponse { ok: boolean; html: string }
+
+export interface BroadcastSendTestRequest {
+  to: string
+  subject?: string
+  props?: Record<string, any>
+}
+export interface BroadcastSendTestResponse { ok: boolean; id?: string }
+
+export interface BroadcastSendManualRequest {
+  limit?: number
+  offset?: number
+  dryRun?: boolean
+  sharedContext?: Record<string, any>
+}
+export interface BroadcastSendManualResponse {
+  ok: boolean
+  counts: { sent: number; failed: number; skipped: number }
+  page: { limit: number; offset: number; total: number }
+  results: Array<{
+    contactId: string
+    status: 'sent' | 'failed' | 'skipped' | 'dry_run'
+    id?: string
+    error?: string
+    message?: string
+  }>
+}
+
+export interface BroadcastAppendEventBody {
+  broadcastId: string
+  contactId?: string
+  channel?: 'email'
+  templateId?: string
+  eventType: string
+  outcome?: 'success' | 'failed'
+  failureReason?: string
+  metadata?: Record<string, any>
+}
+
+export interface BroadcastAppendBulkBody {
+  ids: string[]
+  idField?: string
+  params: Record<string, any> // merged with collectionId server-side
+}

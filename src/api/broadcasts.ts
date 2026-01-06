@@ -4,7 +4,17 @@ import type {
   ListBroadcastsQuery,
   BroadcastRecord,
   BroadcastList,
+  BroadcastRecipientsResponse,
+  BroadcastPreviewRequest,
+  BroadcastPreviewResponse,
+  BroadcastSendTestRequest,
+  BroadcastSendTestResponse,
+  BroadcastSendManualRequest,
+  BroadcastSendManualResponse,
+  BroadcastAppendEventBody,
+  BroadcastAppendBulkBody,
 } from "../types/broadcasts"
+import type { AppendResult, AppendBulkResult } from "../types/comms"
 
 function encodeQuery(params: Record<string, any>): string {
   const search = new URLSearchParams()
@@ -65,5 +75,64 @@ export namespace broadcasts {
   ): Promise<void> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}`
     return del<void>(path)
+  }
+
+  // Recipients listing for a broadcast
+  export async function recipients(
+    collectionId: string,
+    id: string,
+    query: { limit?: number; offset?: number } = {}
+  ): Promise<BroadcastRecipientsResponse> {
+    const qs = encodeQuery(query as any)
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/recipients${qs}`
+    return request<BroadcastRecipientsResponse>(path)
+  }
+
+  // Preview a broadcast template/email
+  export async function preview(
+    collectionId: string,
+    id: string,
+    body: BroadcastPreviewRequest
+  ): Promise<BroadcastPreviewResponse> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/preview`
+    return post<BroadcastPreviewResponse>(path, body)
+  }
+
+  // Send a single test email
+  export async function sendTest(
+    collectionId: string,
+    id: string,
+    body: BroadcastSendTestRequest
+  ): Promise<BroadcastSendTestResponse> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/send/test`
+    return post<BroadcastSendTestResponse>(path, body)
+  }
+
+  // Manually send a page of emails
+  export async function sendManual(
+    collectionId: string,
+    id: string,
+    body: BroadcastSendManualRequest
+  ): Promise<BroadcastSendManualResponse> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/send/manual`
+    return post<BroadcastSendManualResponse>(path, body)
+  }
+
+  // Append a single broadcast event
+  export async function append(
+    collectionId: string,
+    body: BroadcastAppendEventBody
+  ): Promise<AppendResult> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/append`
+    return post<AppendResult>(path, body)
+  }
+
+  // Append many broadcast events
+  export async function appendBulk(
+    collectionId: string,
+    body: BroadcastAppendBulkBody
+  ): Promise<AppendBulkResult> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/append/bulk`
+    return post<AppendBulkResult>(path, body)
   }
 }

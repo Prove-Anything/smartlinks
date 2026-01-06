@@ -47,4 +47,41 @@ export var broadcasts;
         return del(path);
     }
     broadcasts.remove = remove;
+    // Recipients listing for a broadcast
+    async function recipients(collectionId, id, query = {}) {
+        const qs = encodeQuery(query);
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/recipients${qs}`;
+        return request(path);
+    }
+    broadcasts.recipients = recipients;
+    // Preview a broadcast template/email
+    async function preview(collectionId, id, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/preview`;
+        return post(path, body);
+    }
+    broadcasts.preview = preview;
+    // Send a single test email
+    async function sendTest(collectionId, id, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/send/test`;
+        return post(path, body);
+    }
+    broadcasts.sendTest = sendTest;
+    // Manually send a page of emails
+    async function sendManual(collectionId, id, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/send/manual`;
+        return post(path, body);
+    }
+    broadcasts.sendManual = sendManual;
+    // Append a single broadcast event
+    async function append(collectionId, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/append`;
+        return post(path, body);
+    }
+    broadcasts.append = append;
+    // Append many broadcast events
+    async function appendBulk(collectionId, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/append/bulk`;
+        return post(path, body);
+    }
+    broadcasts.appendBulk = appendBulk;
 })(broadcasts || (broadcasts = {}));

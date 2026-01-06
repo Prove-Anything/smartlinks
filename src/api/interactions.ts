@@ -2,14 +2,11 @@
 import { request, post, patch, del } from "../http"
 import type {
   // Admin/public analytics
-  AdminInteractionsByUserRequest,
   AdminInteractionsCountsByOutcomeRequest,
-  AdminActorIdsByInteractionRequest,
+  AdminInteractionsQueryRequest,
   AppendInteractionBody,
   UpdateInteractionBody,
   OutcomeCount,
-  ActorId,
-  ActorWithOutcome,
   InteractionEventRow,
   PublicInteractionsCountsByOutcomeRequest,
   PublicInteractionsByUserRequest,
@@ -37,15 +34,15 @@ function encodeQuery(params: Record<string, any>): string {
 
 export namespace interactions {
   /**
-   * POST /admin/collection/:collectionId/interactions/by-user
-   * Returns BigQuery interaction rows, newest first.
+   * POST /admin/collection/:collectionId/interactions/query
+   * Flexible query for interaction events with optional includes.
    */
-  export async function byUser(
+  export async function query(
     collectionId: string,
-    query: AdminInteractionsByUserRequest = {}
+    body: AdminInteractionsQueryRequest
   ): Promise<InteractionEventRow[]> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/by-user`
-    return post<InteractionEventRow[]>(path, query)
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/query`
+    return post<InteractionEventRow[]>(path, body)
   }
 
   /**
@@ -60,17 +57,7 @@ export namespace interactions {
     return post<OutcomeCount[]>(path, query)
   }
 
-  /**
-   * POST /admin/collection/:collectionId/interactions/actor-ids/by-interaction
-   * Returns list of IDs, optionally with outcome when includeOutcome=true.
-   */
-  export async function actorIdsByInteraction(
-    collectionId: string,
-    query: AdminActorIdsByInteractionRequest
-  ): Promise<ActorId[] | ActorWithOutcome[]> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/actor-ids/by-interaction`
-    return post<ActorId[] | ActorWithOutcome[]>(path, query)
-  }
+  // Deprecated endpoint removed: actorIdsByInteraction
 
   /**
    * POST /admin/collection/:collectionId/interactions/append
@@ -94,7 +81,7 @@ export namespace interactions {
     if (!body.userId && !body.contactId) {
       throw new Error("AppendInteractionBody must include one of userId or contactId")
     }
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/append`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/events/update`
     return post<{ success: true }>(path, body)
   }
 
@@ -175,5 +162,24 @@ export namespace interactions {
     const path = `/public/collection/${encodeURIComponent(collectionId)}/interactions/by-user`
     const headers = authToken ? { AUTHORIZATION: `Bearer ${authToken}` } : undefined
     return post<InteractionEventRow[]>(path, body, headers)
+  }
+
+  // Public: list interaction definitions (Postgres)
+  export async function publicList(
+    collectionId: string,
+    query: ListInteractionTypesQuery = {}
+  ): Promise<InteractionTypeList> {
+    const qs = encodeQuery(query as any)
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/interactions/${qs}`
+    return request<InteractionTypeList>(path)
+  }
+
+  // Public: get a single interaction definition (Postgres)
+  export async function publicGet(
+    collectionId: string,
+    id: string
+  ): Promise<InteractionTypeRecord> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/interactions/${encodeURIComponent(id)}`
+    return request<InteractionTypeRecord>(path)
   }
 }

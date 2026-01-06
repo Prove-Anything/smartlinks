@@ -1,5 +1,14 @@
 import { request, post, put, del as httpDel } from "../http"
-import type { Template, TemplateInput, TemplateUpdate, TemplatePublic } from "../types"
+import type {
+  Template,
+  TemplateInput,
+  TemplateUpdate,
+  TemplatePublic,
+  TemplateRenderRequest,
+  TemplateRenderResponse,
+  TemplateRenderSourceRequest,
+  TemplateRenderSourceResponse,
+} from "../types"
 
 export namespace template {
   // Admin APIs
@@ -63,5 +72,24 @@ export namespace template {
   export async function getAllowedGlobal(collectionId: string): Promise<TemplatePublic[]> {
     const path = `/public/template/getAllowed/${encodeURIComponent(collectionId)}`
     return request<TemplatePublic[]>(path)
+  }
+
+  // Render a template by ID (admin)
+  export async function render(
+    collectionId: string,
+    templateId: string,
+    body: TemplateRenderRequest
+  ): Promise<TemplateRenderResponse> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/template/${encodeURIComponent(templateId)}/render`
+    return post<TemplateRenderResponse>(path, body)
+  }
+
+  // Render from source (admin)
+  export async function renderSource(
+    collectionId: string,
+    body: TemplateRenderSourceRequest
+  ): Promise<TemplateRenderSourceResponse> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/template/render/source`
+    return post<TemplateRenderSourceResponse>(path, body)
   }
 }

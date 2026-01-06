@@ -56,4 +56,16 @@ export var template;
         return request(path);
     }
     template.getAllowedGlobal = getAllowedGlobal;
+    // Render a template by ID (admin)
+    async function render(collectionId, templateId, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/template/${encodeURIComponent(templateId)}/render`;
+        return post(path, body);
+    }
+    template.render = render;
+    // Render from source (admin)
+    async function renderSource(collectionId, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/template/render/source`;
+        return post(path, body);
+    }
+    template.renderSource = renderSource;
 })(template || (template = {}));

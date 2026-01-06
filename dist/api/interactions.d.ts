@@ -1,20 +1,15 @@
-import type { AdminInteractionsByUserRequest, AdminInteractionsCountsByOutcomeRequest, AdminActorIdsByInteractionRequest, AppendInteractionBody, UpdateInteractionBody, OutcomeCount, ActorId, ActorWithOutcome, InteractionEventRow, PublicInteractionsCountsByOutcomeRequest, PublicInteractionsByUserRequest, CreateInteractionTypeBody, UpdateInteractionTypeBody, ListInteractionTypesQuery, InteractionTypeRecord, InteractionTypeList } from "../types/interaction";
+import type { AdminInteractionsCountsByOutcomeRequest, AdminInteractionsQueryRequest, AppendInteractionBody, UpdateInteractionBody, OutcomeCount, InteractionEventRow, PublicInteractionsCountsByOutcomeRequest, PublicInteractionsByUserRequest, CreateInteractionTypeBody, UpdateInteractionTypeBody, ListInteractionTypesQuery, InteractionTypeRecord, InteractionTypeList } from "../types/interaction";
 export declare namespace interactions {
     /**
-     * POST /admin/collection/:collectionId/interactions/by-user
-     * Returns BigQuery interaction rows, newest first.
+     * POST /admin/collection/:collectionId/interactions/query
+     * Flexible query for interaction events with optional includes.
      */
-    function byUser(collectionId: string, query?: AdminInteractionsByUserRequest): Promise<InteractionEventRow[]>;
+    function query(collectionId: string, body: AdminInteractionsQueryRequest): Promise<InteractionEventRow[]>;
     /**
      * POST /admin/collection/:collectionId/interactions/counts-by-outcome
      * Returns array of { outcome, count }.
      */
     function countsByOutcome(collectionId: string, query?: AdminInteractionsCountsByOutcomeRequest): Promise<OutcomeCount[]>;
-    /**
-     * POST /admin/collection/:collectionId/interactions/actor-ids/by-interaction
-     * Returns list of IDs, optionally with outcome when includeOutcome=true.
-     */
-    function actorIdsByInteraction(collectionId: string, query: AdminActorIdsByInteractionRequest): Promise<ActorId[] | ActorWithOutcome[]>;
     /**
      * POST /admin/collection/:collectionId/interactions/append
      * Appends one interaction event.
@@ -38,4 +33,6 @@ export declare namespace interactions {
     function remove(collectionId: string, id: string): Promise<void>;
     function publicCountsByOutcome(collectionId: string, body: PublicInteractionsCountsByOutcomeRequest, authToken?: string): Promise<OutcomeCount[]>;
     function publicMyInteractions(collectionId: string, body: PublicInteractionsByUserRequest, authToken?: string): Promise<InteractionEventRow[]>;
+    function publicList(collectionId: string, query?: ListInteractionTypesQuery): Promise<InteractionTypeList>;
+    function publicGet(collectionId: string, id: string): Promise<InteractionTypeRecord>;
 }

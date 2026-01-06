@@ -28,3 +28,20 @@ export interface Template extends TemplateBase {
 export type TemplateInput = Omit<TemplateBase, 'id' | 'collectionId'>;
 export type TemplateUpdate = Partial<Omit<TemplateBase, 'id' | 'collectionId'>>;
 export type TemplatePublic = TemplateBase;
+export interface TemplateRenderRequest {
+    props: Record<string, any>;
+}
+export interface TemplateRenderResponse {
+    ok: boolean;
+    html: string;
+}
+export interface TemplateRenderSourceRequest {
+    engine: 'liquid';
+    source: string;
+    props?: Record<string, any>;
+    component?: string;
+}
+export interface TemplateRenderSourceResponse {
+    ok: boolean;
+    html: string;
+}

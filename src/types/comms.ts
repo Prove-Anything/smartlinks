@@ -197,3 +197,15 @@ export interface LogBulkCommunicationEventsBody {
 
 export interface AppendResult { success: true }
 export interface AppendBulkResult { success: true; count: number }
+
+// Common recipient type used by segments and broadcasts
+export type Recipient = import('./contact').Contact
+
+// Shared page response shape for recipient listings
+export interface RecipientsPage {
+  items: Recipient[]
+  total: number
+  limit: number
+  offset: number
+  note?: string
+}

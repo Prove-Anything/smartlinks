@@ -3,16 +3,22 @@
 import type { IdField } from './common'
 
 // Admin analytics inputs (Interactions)
-export interface AdminInteractionsByUserRequest {
+export interface AdminInteractionsQueryRequest {
   userId?: string
   contactId?: string
   appId?: string
   interactionId?: string
+  interactionIds?: string[]
   broadcastId?: string
   outcome?: string | null
   from?: string
   to?: string
   limit?: number
+  includeDeleted?: boolean
+  latestPerEventId?: boolean
+  order?: 'ASC' | 'DESC'
+  include?: Array<'interaction'>
+
 }
 
 export interface AdminInteractionsCountsByOutcomeRequest {
@@ -25,15 +31,7 @@ export interface AdminInteractionsCountsByOutcomeRequest {
   idField?: IdField
 }
 
-export interface AdminActorIdsByInteractionRequest {
-  interactionId: string
-  idField?: IdField
-  outcome?: string | null
-  includeOutcome?: boolean
-  from?: string
-  to?: string
-  limit?: number
-}
+// Deprecated: AdminActorIdsByInteractionRequest removed with flexible query endpoint
 
 // Public analytics inputs (Interactions)
 export interface PublicInteractionsCountsByOutcomeRequest {
@@ -67,10 +65,8 @@ export interface InteractionEventRow {
   [k: string]: unknown
 }
 
-// Outcome summaries and actor lists
+// Outcome summaries
 export interface OutcomeCount { outcome: string | null; count: number }
-export type ActorId = string
-export interface ActorWithOutcome { id: string; outcome: string | null }
 
 // Append single interaction event (admin)
 // Base for interaction event payloads to avoid duplication

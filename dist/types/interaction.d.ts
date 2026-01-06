@@ -1,14 +1,19 @@
 import type { IdField } from './common';
-export interface AdminInteractionsByUserRequest {
+export interface AdminInteractionsQueryRequest {
     userId?: string;
     contactId?: string;
     appId?: string;
     interactionId?: string;
+    interactionIds?: string[];
     broadcastId?: string;
     outcome?: string | null;
     from?: string;
     to?: string;
     limit?: number;
+    includeDeleted?: boolean;
+    latestPerEventId?: boolean;
+    order?: 'ASC' | 'DESC';
+    include?: Array<'interaction'>;
 }
 export interface AdminInteractionsCountsByOutcomeRequest {
     appId?: string;
@@ -18,15 +23,6 @@ export interface AdminInteractionsCountsByOutcomeRequest {
     limit?: number;
     dedupeLatest?: boolean;
     idField?: IdField;
-}
-export interface AdminActorIdsByInteractionRequest {
-    interactionId: string;
-    idField?: IdField;
-    outcome?: string | null;
-    includeOutcome?: boolean;
-    from?: string;
-    to?: string;
-    limit?: number;
 }
 export interface PublicInteractionsCountsByOutcomeRequest {
     appId: string;
@@ -58,11 +54,6 @@ export interface InteractionEventRow {
 export interface OutcomeCount {
     outcome: string | null;
     count: number;
-}
-export type ActorId = string;
-export interface ActorWithOutcome {
-    id: string;
-    outcome: string | null;
 }
 export interface InteractionEventBase {
     collectionId: string;

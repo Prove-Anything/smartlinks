@@ -35,3 +35,15 @@ export type TemplateUpdate = Partial<Omit<TemplateBase, 'id' | 'collectionId'>>
 
 // Public projection: privacy-safe fields
 export type TemplatePublic = TemplateBase
+
+// Rendering helpers
+export interface TemplateRenderRequest { props: Record<string, any> }
+export interface TemplateRenderResponse { ok: boolean; html: string }
+
+export interface TemplateRenderSourceRequest {
+  engine: 'liquid'
+  source: string
+  props?: Record<string, any>
+  component?: string
+}
+export interface TemplateRenderSourceResponse { ok: boolean; html: string }
