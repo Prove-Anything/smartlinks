@@ -19,6 +19,7 @@ export { contact } from "./contact";
 export { broadcasts } from "./broadcasts";
 export { segments } from "./segments";
 export { journeys } from "./journeys";
+export { journeysAnalytics } from "./journeysAnalytics";
 export { qr } from "./qr";
 export { template } from "./template";
 export { interactions } from "./interactions";

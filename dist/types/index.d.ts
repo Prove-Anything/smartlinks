@@ -15,6 +15,7 @@ export * from "./broadcasts";
 export * from "./segments";
 export * from "./common";
 export * from "./journeys";
+export * from "./journeysAnalytics";
 export * from "./qr";
 export * from "./template";
 export * from "./interaction";

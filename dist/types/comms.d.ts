@@ -133,6 +133,7 @@ export interface RecipientWithOutcome {
 export interface CommsRecipientIdsQuery {
     broadcastId?: string;
     journeyId?: string;
+    journeyStepId?: string;
     idField?: IdField;
     from?: string;
     to?: string;

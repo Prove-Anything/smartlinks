@@ -49,7 +49,7 @@ export var contact;
     }
     contact.lookup = lookup;
     async function upsert(collectionId, data) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts:upsert`;
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/upsert`;
         return post(path, data);
     }
     contact.upsert = upsert;
@@ -64,4 +64,10 @@ export var contact;
         return post(path, body || {});
     }
     contact.erase = erase;
+    // get user
+    async function getUser(collectionId, userId) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/owner/${encodeURIComponent(userId)}`;
+        return request(path);
+    }
+    contact.getUser = getUser;
 })(contact || (contact = {}));

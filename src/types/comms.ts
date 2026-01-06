@@ -145,6 +145,7 @@ export interface RecipientWithOutcome { id: string; outcome: string }
 export interface CommsRecipientIdsQuery {
   broadcastId?: string
   journeyId?: string
+  journeyStepId?: string
   idField?: IdField
   from?: string
   to?: string

@@ -1,8 +1,12 @@
 export type ContactCustomFields = Record<string, any>
 
-export interface ContactResponse {
+// Unified Contact domain model
+export interface Contact {
   contactId: string
   orgId: string
+
+  // linkage to a user when available
+  userId: string | null
 
   firstName: string | null
   lastName: string | null
@@ -17,6 +21,15 @@ export interface ContactResponse {
   emails?: string[]
   phones?: string[]
 
+  // optional enriched fields
+  tags?: string[]
+  source?: string | null
+  notes?: string | null
+  avatarUrl?: string | null
+  locale?: string | null
+  timezone?: string | null
+  externalIds?: Record<string, any>
+
   customFields: ContactCustomFields
 
   createdAt: string
@@ -25,52 +38,57 @@ export interface ContactResponse {
   erasedAt: string | null
 }
 
-export interface ContactCreateRequest {
-  firstName?: string | null
-  lastName?: string | null
-  displayName?: string | null
-  company?: string | null
-  email?: string | null
-  phone?: string | null
-  customFields?: ContactCustomFields
-}
+// Backwards compatibility alias
+export type ContactResponse = Contact
 
-export interface ContactUpdateRequest {
-  firstName?: string | null
-  lastName?: string | null
-  displayName?: string | null
-  company?: string | null
-  email?: string | null
-  phone?: string | null
-  customFields?: ContactCustomFields
-}
+// Input types derived from the unified model
+export type ContactCreateRequest = Omit<
+  Contact,
+  "contactId" | "orgId" | "createdAt" | "updatedAt" | "deletedAt" | "erasedAt"
+>
+export type ContactUpdateRequest = Partial<ContactCreateRequest>
 
 export interface ContactListResponse {
-  items: ContactResponse[]
+  items: Contact[]
   limit: number
   offset: number
 }
 
-// Public contact upsert (privacy-safe)
-export interface PublicContactUpsertRequest {
-  email?: string
-  phone?: string
-  userId?: string
-  firstName?: string
-  lastName?: string
-  displayName?: string
-  company?: string
-  tags?: string[]
-  source?: string
-  notes?: string
-  avatarUrl?: string
-  locale?: string
-  timezone?: string
-  externalIds?: Record<string, any>
-  customFields?: ContactCustomFields
-}
+// Public contact upsert (privacy-safe) derived from Contact
+export type PublicContactUpsertRequest = Partial<
+  Pick<
+    Contact,
+    | "email"
+    | "phone"
+    | "userId"
+    | "firstName"
+    | "lastName"
+    | "displayName"
+    | "company"
+    | "tags"
+    | "source"
+    | "notes"
+    | "avatarUrl"
+    | "locale"
+    | "timezone"
+    | "externalIds"
+  >
+> & { customFields?: ContactCustomFields }
 
 export interface PublicContactUpsertResponse {
   ok: boolean
   contactId: string
+}
+
+
+export interface UserSearchResponse {
+  user: {
+    uid: string,
+    displayName: string | null,
+    email: string | null,
+    phoneNumber: string | null,
+    photoURL: string | null
+  },
+  contact: ContactResponse | null
+  existsAsContact: boolean
 }

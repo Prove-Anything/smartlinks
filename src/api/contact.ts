@@ -1,5 +1,5 @@
 import { request, post, del, patch } from "../http"
-import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, PublicContactUpsertRequest, PublicContactUpsertResponse } from "../types"
+import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse } from "../types"
 
 export namespace contact {
   export async function create(collectionId: string, data: ContactCreateRequest): Promise<ContactResponse> {
@@ -61,7 +61,7 @@ export namespace contact {
     collectionId: string,
     data: ContactCreateRequest
   ): Promise<ContactResponse> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts:upsert`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/upsert`
     return post<ContactResponse>(path, data)
   }
 
@@ -77,5 +77,14 @@ export namespace contact {
   export async function erase(collectionId: string, contactId: string, body?: any): Promise<ContactResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/${encodeURIComponent(contactId)}/erase`
     return post<ContactResponse>(path, body || {})
+  }
+
+  // get user
+  export async function getUser(
+    collectionId: string,
+    userId: string,
+  ): Promise<UserSearchResponse> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/owner/${encodeURIComponent(userId)}`
+    return request<UserSearchResponse>(path)
   }
 }

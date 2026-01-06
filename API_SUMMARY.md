@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.1.12  |  Generated: 2025-12-28T18:01:35.628Z
+Version: 1.1.15  |  Generated: 2026-01-03T20:22:14.481Z
 
 This is a concise summary of all available API functions and types.
 
@@ -47,6 +47,7 @@ The Smartlinks SDK is organized into the following namespaces:
 
 — Other —
 - **attestation** - Functions for attestation operations
+- **journeysAnalytics** - Functions for journeysAnalytics operations
 - **location** - Functions for location operations
 - **template** - Functions for template operations
 
@@ -601,6 +602,7 @@ interface RecipientWithOutcome {
 interface CommsRecipientIdsQuery {
   broadcastId?: string
   journeyId?: string
+  journeyStepId?: string
   idField?: IdField
   from?: string
   to?: string
@@ -763,6 +765,21 @@ interface PublicContactUpsertRequest {
 interface PublicContactUpsertResponse {
   ok: boolean
   contactId: string
+}
+```
+
+**UserSearchResponse** (interface)
+```typescript
+interface UserSearchResponse {
+  user: {
+  uid: string,
+  displayName: string | null,
+  email: string | null,
+  phoneNumber: string | null,
+  photoURL: string | null
+  },
+  contact: ContactResponse | null
+  existsAsContact: boolean
 }
 ```
 
@@ -1053,6 +1070,73 @@ interface UpdateJourneyBody {
   data?: Record<string, unknown>
 }
 ```
+
+### journeysAnalytics
+
+**JourneyStatsRequest** (interface)
+```typescript
+interface JourneyStatsRequest {
+  idField?: IdField // 'userId' | 'contactId'
+  from?: string
+  to?: string
+  finalStepId?: string
+  stepMappings?: Array<{ stepId: string; interactionId?: string; outcome?: string }>
+}
+```
+
+**JourneyStatsResponse** (interface)
+```typescript
+interface JourneyStatsResponse {
+  journeyId: string
+  totalEntered: number
+  currentlyActive?: number
+  completed?: number
+  exitedViaGoal?: number
+  lastUpdated: string
+  stepStats: Array<{ stepId: string; entered: number; completed: number; pending: number }>
+}
+```
+
+**JourneyStepRecipientsRequest** (interface)
+```typescript
+interface JourneyStepRecipientsRequest {
+  status?: 'entered' | 'completed' | 'pending'
+  idField?: IdField
+  interactionId?: string
+  outcome?: string
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**JourneyFunnelReportRequest** (interface)
+```typescript
+interface JourneyFunnelReportRequest {
+  idField?: IdField
+  periodStart?: string
+  periodEnd?: string
+  stepMappings: Array<{ stepId: string; interactionId?: string; outcome?: string }>
+}
+```
+
+**JourneyFunnelReportResponse** (interface)
+```typescript
+interface JourneyFunnelReportResponse {
+  journeyId: string
+  periodStart: string | null
+  periodEnd: string | null
+  steps: Array<{
+  stepId: string
+  enteredCount: number
+  completedCount: number
+  conversionRate: number
+  avgTimeToComplete: number | null
+  }>
+}
+```
+
+**JourneyStepRecipientsResponse** = `string[]`
 
 ### location
 
@@ -1893,6 +1977,9 @@ Logging: Append many communication events for a list of IDs. POST /admin/collect
 
 **erase**(collectionId: string, contactId: string, body?: any) → `Promise<ContactResponse>`
 
+**getUser**(collectionId: string,
+    userId: string,) → `Promise<UserSearchResponse>`
+
 ### crate
 
 **get**(collectionId: string, crateId: string) → `Promise<any>`
@@ -2001,6 +2088,24 @@ Appends one interaction event from a public source.
 
 **remove**(collectionId: string,
     id: string) → `Promise<void>`
+
+### journeysAnalytics
+
+**stats**(collectionId: string,
+    journeyId: string,
+    body: JourneyStatsRequest = {}) → `Promise<JourneyStatsResponse>`
+POST /admin/collection/:collectionId/journeys.analytics/:journeyId/stats Computes journey stats over a time window; outcome defaults to 'success'. If `finalStepId` is provided, includes `currentlyActive` and `completed` fields.
+
+**recipients**(collectionId: string,
+    journeyId: string,
+    stepId: string,
+    body: JourneyStepRecipientsRequest = {}) → `Promise<JourneyStepRecipientsResponse>`
+POST /admin/collection/:collectionId/journeys.analytics/:journeyId/steps/:stepId/recipients Returns recipient IDs for a given journey step. For completed/pending, `interactionId` is required; outcome defaults to 'success'.
+
+**funnelReport**(collectionId: string,
+    journeyId: string,
+    body: JourneyFunnelReportRequest) → `Promise<JourneyFunnelReportResponse>`
+POST /admin/collection/:collectionId/journeys.analytics/:journeyId/funnel-report Computes conversion, counts, and avg time across mapped steps in a period.
 
 ### location
 
