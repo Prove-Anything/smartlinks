@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.1.21  |  Generated: 2026-01-05T12:21:27.209Z
+Version: 1.1.22  |  Generated: 2026-01-07T12:13:29.397Z
 
 This is a concise summary of all available API functions and types.
 
@@ -46,7 +46,9 @@ The Smartlinks SDK is organized into the following namespaces:
 - **serialNumber** - Assign, lookup, and manage serial numbers across scopes.
 
 — Other —
+- **async** - Functions for async operations
 - **attestation** - Functions for attestation operations
+- **jobs** - Functions for jobs operations
 - **journeysAnalytics** - Functions for journeysAnalytics operations
 - **location** - Functions for location operations
 - **template** - Functions for template operations
@@ -1056,6 +1058,71 @@ interface ListInteractionTypesQuery {
 }
 ```
 
+### jobs
+
+**Job** (interface)
+```typescript
+interface Job {
+  id: number
+  task: string
+  payload: any
+  priority: number
+  runAt: string | null
+  createdAt: string
+  attempts: number
+  lastError: string | null
+  lockedAt: string | null
+  key: string | null
+  queueName: string | null
+  status: JobStatus
+}
+```
+
+**ListJobsQuery** (interface)
+```typescript
+interface ListJobsQuery {
+  state?: JobStatus
+  task?: string
+  limit?: number
+  offset?: number
+  from?: string
+  to?: string
+}
+```
+
+**JobsPage** (interface)
+```typescript
+interface JobsPage {
+  items: Job[]
+  limit: number
+  offset: number
+}
+```
+
+**EnqueueAsyncJobRequest** (interface)
+```typescript
+interface EnqueueAsyncJobRequest {
+  task: string
+  payload?: Record<string, any>
+  runAt?: string | Date
+  priority?: number
+  key?: string
+  queueName?: string
+}
+```
+
+**EnqueueAsyncJobResponse** (interface)
+```typescript
+interface EnqueueAsyncJobResponse {
+  id: number
+  task: string
+  runAt?: string
+  key?: string
+}
+```
+
+**JobStatus** = `'queued' | 'running' | 'errored'`
+
 ### journeys
 
 **JourneyRecord** (interface)
@@ -1723,6 +1790,16 @@ Post a chat message to the AI (admin or public)
     onProgress?: (percent: number) → `void`
 Uploads an asset file to a proof, with optional extraData as JSON. Supports progress reporting via onProgress callback (browser only).
 
+### async
+
+**enqueueAsyncJob**(collectionId: string,
+    params: EnqueueAsyncJobRequest) → `Promise<EnqueueAsyncJobResponse>`
+Enqueue a background job for a collection POST /admin/collection/:collectionId/async/jobs (202)
+
+**getAsyncJobStatus**(collectionId: string,
+    jobId: number) → `Promise<Job>`
+Get job status by ID (may return 404 if completed/removed) GET /admin/collection/:collectionId/async/jobs/:jobId
+
 ### attestation
 
 **list**(collectionId: string,
@@ -1936,6 +2013,10 @@ Look up a serial number by code for a batch (admin only).
 **preview**(collectionId: string,
     id: string,
     body: BroadcastPreviewRequest) → `Promise<BroadcastPreviewResponse>`
+
+**send**(collectionId: string,
+    id: string,
+    body: { pageSize?: number; maxPages?: number; sharedContext?: Record<string, any>; subject?: string } = {}) → `Promise<`
 
 **sendTest**(collectionId: string,
     id: string,
@@ -2184,6 +2265,16 @@ Appends one interaction event from a public source.
 **publicGet**(collectionId: string,
     id: string) → `Promise<InteractionTypeRecord>`
 Appends one interaction event from a public source.
+
+### jobs
+
+**listJobs**(collectionId: string,
+    query: ListJobsQuery = {}) → `Promise<JobsPage>`
+List visible jobs for a collection GET /admin/collection/:collectionId/jobs
+
+**getJob**(collectionId: string,
+    jobId: number) → `Promise<Job>`
+Get a single job GET /admin/collection/:collectionId/jobs/:jobId
 
 ### journeys
 

@@ -11,6 +11,16 @@ export declare namespace broadcasts {
         offset?: number;
     }): Promise<BroadcastRecipientsResponse>;
     function preview(collectionId: string, id: string, body: BroadcastPreviewRequest): Promise<BroadcastPreviewResponse>;
+    function send(collectionId: string, id: string, body?: {
+        pageSize?: number;
+        maxPages?: number;
+        sharedContext?: Record<string, any>;
+        subject?: string;
+    }): Promise<{
+        ok: true;
+        enqueued: true;
+    }>;
+    const sendBroadcast: typeof send;
     function sendTest(collectionId: string, id: string, body: BroadcastSendTestRequest): Promise<BroadcastSendTestResponse>;
     function sendManual(collectionId: string, id: string, body: BroadcastSendManualRequest): Promise<BroadcastSendManualResponse>;
     function append(collectionId: string, body: BroadcastAppendEventBody): Promise<AppendResult>;

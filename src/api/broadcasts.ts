@@ -98,6 +98,19 @@ export namespace broadcasts {
     return post<BroadcastPreviewResponse>(path, body)
   }
 
+  // Enqueue send for a broadcast (202 Accepted)
+  export async function send(
+    collectionId: string,
+    id: string,
+    body: { pageSize?: number; maxPages?: number; sharedContext?: Record<string, any>; subject?: string } = {}
+  ): Promise<{ ok: true; enqueued: true }> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/send`
+    return post<{ ok: true; enqueued: true }>(path, body)
+  }
+
+  // Alias for clarity with docs naming
+  export const sendBroadcast = send
+
   // Send a single test email
   export async function sendTest(
     collectionId: string,

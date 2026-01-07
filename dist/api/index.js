@@ -19,6 +19,8 @@ export { comms } from "./comms";
 export { nfc } from "./nfc";
 export { contact } from "./contact";
 export { broadcasts } from "./broadcasts";
+export { async } from "./async";
+export { jobs } from "./jobs";
 export { segments } from "./segments";
 export { journeys } from "./journeys";
 export { journeysAnalytics } from "./journeysAnalytics";

@@ -171,6 +171,60 @@ await broadcasts.appendBulk('collectionId', {
 })
 ```
 
+### Broadcast sending and previews
+
+```ts
+import { broadcasts } from '@proveanything/smartlinks'
+
+// Preview a broadcast (HTML)
+const preview = await broadcasts.preview('collectionId', 'broadcastId', {
+  contactId: 'contact_123',
+  props: { firstName: 'Sam' },
+})
+
+// Send a test email
+await broadcasts.sendTest('collectionId', 'broadcastId', {
+  to: 'test@example.com',
+  subject: 'Test subject',
+  props: { foo: 'bar' },
+})
+
+// Enqueue broadcast sending (background)
+await broadcasts.send('collectionId', 'broadcastId', {
+  pageSize: 100,
+  sharedContext: { campaign: 'summer' },
+})
+
+// Manual page send (for testing/UX)
+const manual = await broadcasts.sendManual('collectionId', 'broadcastId', {
+  limit: 50,
+  dryRun: true,
+})
+```
+
+### Async jobs
+
+```ts
+import { async as slAsync, jobs } from '@proveanything/smartlinks'
+
+// Enqueue an async job
+const queued = await slAsync.enqueueAsyncJob('collectionId', {
+  task: 'email:daily-digest',
+  payload: { segmentId: 'seg_1' },
+  priority: 5,
+  key: 'digest:seg_1',
+})
+
+// Check job status
+const status = await slAsync.getAsyncJobStatus('collectionId', queued.id)
+
+// List recent jobs
+const recent = await jobs.listJobs('collectionId', { state: 'queued', limit: 20 })
+
+// Get a single job
+const job = await jobs.getJob('collectionId', queued.id)
+```
+
 ## Browser and React
 
 The SDK works in modern browsers. Initialize once and call public endpoints without an API key; authenticate to access protected/admin endpoints.

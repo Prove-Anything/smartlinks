@@ -60,6 +60,14 @@ export var broadcasts;
         return post(path, body);
     }
     broadcasts.preview = preview;
+    // Enqueue send for a broadcast (202 Accepted)
+    async function send(collectionId, id, body = {}) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/send`;
+        return post(path, body);
+    }
+    broadcasts.send = send;
+    // Alias for clarity with docs naming
+    broadcasts.sendBroadcast = send;
     // Send a single test email
     async function sendTest(collectionId, id, body) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/send/test`;
