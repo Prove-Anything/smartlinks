@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.1.22  |  Generated: 2026-01-07T12:13:29.397Z
+Version: 1.1.24  |  Generated: 2026-01-11T11:29:10.460Z
 
 This is a concise summary of all available API functions and types.
 
@@ -125,14 +125,83 @@ interface AppConfigurationResponse {
 
 ### asset
 
-**AssetResponse** (interface)
+**Asset** (interface)
 ```typescript
-interface AssetResponse {
+interface Asset {
   id: string
-  name: string
   url: string
+  name: string
+  mimeType?: string
+  size?: number
+  createdAt?: string
+  metadata?: Record<string, any>
+  assetType?: string
+  type?: string
+  collectionId?: string
+  hash?: string
+  thumbnails?: {
+  x100?: string
+  x200?: string
+  x512?: string
+  [key: string]: string | undefined
+  }
+  site?: string
+  cleanName?: string
 }
 ```
+
+**UploadAssetOptions** (interface)
+```typescript
+interface UploadAssetOptions {
+  file: File
+  scope:
+  | { type: 'collection'; collectionId: string }
+  | { type: 'product'; collectionId: string; productId: string }
+  | { type: 'proof'; collectionId: string; productId: string; proofId: string }
+  name?: string
+  metadata?: Record<string, any>
+  onProgress?: (percent: number) => void
+  appId?: string
+}
+```
+
+**ListAssetsOptions** (interface)
+```typescript
+interface ListAssetsOptions {
+  scope:
+  | { type: 'collection'; collectionId: string }
+  | { type: 'product'; collectionId: string; productId: string }
+  | { type: 'proof'; collectionId: string; productId: string; proofId: string }
+  appId?: string
+  mimeTypePrefix?: string
+  limit?: number
+  offset?: number
+}
+```
+
+**GetAssetOptions** (interface)
+```typescript
+interface GetAssetOptions {
+  assetId: string
+  scope:
+  | { type: 'collection'; collectionId: string }
+  | { type: 'product'; collectionId: string; productId: string }
+  | { type: 'proof'; collectionId: string; productId: string; proofId: string }
+}
+```
+
+**RemoveAssetOptions** (interface)
+```typescript
+interface RemoveAssetOptions {
+  assetId: string
+  scope:
+  | { type: 'collection'; collectionId: string }
+  | { type: 'product'; collectionId: string; productId: string }
+  | { type: 'proof'; collectionId: string; productId: string; proofId: string }
+}
+```
+
+**AssetResponse** = `Asset`
 
 ### attestation
 
@@ -851,6 +920,38 @@ interface UserSearchResponse {
 }
 ```
 
+**ContactPublic** (interface)
+```typescript
+interface ContactPublic {
+  contactId: string
+  firstName?: string | null
+  lastName?: string | null
+  displayName?: string | null
+  company?: string | null
+  avatarUrl?: string | null
+  locale?: string | null
+  timezone?: string | null
+  email?: string | null
+  phone?: string | null
+  externalIds?: Record<string, any>
+  customFields?: ContactCustomFields
+}
+```
+
+**PublicGetMyContactResponse** (interface)
+```typescript
+interface PublicGetMyContactResponse {
+  ok: boolean; contact: ContactPublic | null
+}
+```
+
+**PublicUpdateMyContactResponse** (interface)
+```typescript
+interface PublicUpdateMyContactResponse {
+  ok: boolean; contact: ContactPublic
+}
+```
+
 **ContactCustomFields** = `Record<string, any>`
 
 **ContactResponse** = `Contact`
@@ -860,6 +961,8 @@ interface UserSearchResponse {
 **ContactUpdateRequest** = `Partial<ContactCreateRequest>`
 
 **PublicContactUpsertRequest** = `Partial<`
+
+**ContactPatch** = `Partial<`
 
 ### error
 
@@ -1518,11 +1621,17 @@ interface TemplateBase {
   collectionId: string
   name: string
   description?: string
-  type: string
+  type: 'pdf' | 'email' | 'multichannel' | 'label'
   resizeMode?: string
   pdf?: {
   base: { url: string }
   orientation: 'portrait' | 'landscape'
+  }
+  channels?: {
+  email?: {subject: string; body: string},
+  sms?: { body: string },
+  push: { title: string; body: string, url?: string, iconUrl?: string },
+  wallet?: { header: string; body: string; imageUri?: string }
   }
   subject?: string
   body?: string
@@ -1760,27 +1869,36 @@ Post a chat message to the AI (admin or public)
 
 ### asset
 
+**upload**(options: UploadAssetOptions) → `Promise<Asset>`
+Upload an asset file
+
 **getForCollection**(collectionId: string,
     assetId: string) → `Promise<AssetResponse>`
+Upload an asset file
 
 **listForCollection**(collectionId: string) → `Promise<AssetResponse[]>`
+Upload an asset file
 
 **getForProduct**(collectionId: string,
     productId: string,
     assetId: string) → `Promise<AssetResponse>`
+Upload an asset file
 
 **listForProduct**(collectionId: string,
     productId: string) → `Promise<AssetResponse[]>`
+Upload an asset file
 
 **getForProof**(collectionId: string,
     productId: string,
     proofId: string,
     assetId: string) → `Promise<AssetResponse>`
+Upload an asset file
 
 **listForProof**(collectionId: string,
     productId: string,
     proofId: string,
     appId?: string) → `Promise<AssetResponse[]>`
+Upload an asset file
 
 **uploadAsset**(collectionId: string,
     productId: string,
@@ -1789,6 +1907,15 @@ Post a chat message to the AI (admin or public)
     extraData?: Record<string, any>,
     onProgress?: (percent: number) → `void`
 Uploads an asset file to a proof, with optional extraData as JSON. Supports progress reporting via onProgress callback (browser only).
+
+**list**(options: ListAssetsOptions) → `Promise<Asset[]>`
+List assets for a given scope
+
+**get**(options: GetAssetOptions) → `Promise<Asset>`
+Get an asset by id within a scope (public)
+
+**remove**(options: RemoveAssetOptions) → `Promise<void>`
+Remove an asset by id within a scope (admin)
 
 ### async
 
@@ -2165,6 +2292,11 @@ Logging: Append many communication events for a list of IDs. POST /admin/collect
 
 **publicUpsert**(collectionId: string,
     data: PublicContactUpsertRequest) → `Promise<PublicContactUpsertResponse>`
+
+**publicGetMine**(collectionId: string) → `Promise<PublicGetMyContactResponse>`
+
+**publicUpdateMine**(collectionId: string,
+    data: ContactPatch) → `Promise<PublicUpdateMyContactResponse>`
 
 **erase**(collectionId: string, contactId: string, body?: any) → `Promise<ContactResponse>`
 

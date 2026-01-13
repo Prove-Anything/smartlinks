@@ -96,22 +96,88 @@ await product.update('collectionId', 'productId', { description: 'Updated' })
 await product.remove('collectionId', 'productId')
 ```
 
-### Assets (upload)
+### Assets
 
-Browser-side upload to a proof with progress callback:
+Upload, list, get, and remove assets within a scope (collection/product/proof).
+
+#### Upload (new)
 
 ```ts
 import { asset } from '@proveanything/smartlinks'
 
-const result = await asset.uploadAsset(
-  'collectionId',
-  'productId',
-  'proofId',
+const uploaded = await asset.upload({
   file, // File from an <input type="file">
-  { description: 'Uploaded via SDK' },
-  (progress) => console.log(`Upload: ${progress}%`)
-)
-console.log('Uploaded asset:', result)
+  scope: { type: 'proof', collectionId, productId, proofId },
+  name: 'hero.png',
+  metadata: { description: 'Uploaded via SDK' },
+  onProgress: (p) => console.log(`Upload: ${p}%`),
+  // appId: 'microapp-123' // optional
+})
+console.log('Uploaded asset:', uploaded)
+```
+
+Deprecated upload helper (wraps to the new `upload` internally):
+
+```ts
+// @deprecated Use asset.upload(options)
+const legacy = await asset.uploadAsset(collectionId, productId, proofId, file)
+```
+
+#### List
+
+```ts
+// Collection assets, first 20 images
+const list1 = await asset.list({
+  scope: { type: 'collection', collectionId },
+  mimeTypePrefix: 'image/',
+  limit: 20,
+})
+
+// Product assets, filter by appId
+const list2 = await asset.list({
+  scope: { type: 'product', collectionId, productId },
+  appId: 'microapp-123',
+})
+```
+
+#### Get (scoped)
+
+```ts
+const a = await asset.get({
+  assetId,
+  scope: { type: 'proof', collectionId, productId, proofId },
+})
+```
+
+#### Remove (scoped, admin)
+
+```ts
+await asset.remove({
+  assetId,
+  scope: { type: 'product', collectionId, productId },
+})
+```
+
+#### Asset response example
+
+```json
+{
+  "name": "Screenshot 2025-09-15 at 15.21.14",
+  "assetType": "Image",
+  "type": "png",
+  "collectionId": "ChaseAtlantic",
+  "url": "https://cdn.smartlinks.app/sites%2FChaseAtlantic%2Fimages%2F2025%2F9%2FScreenshot%202025-09-15%20at%2015%2C21%2C14-1757946214537.png",
+  "createdAt": "2005-10-10T23:15:03",
+  "hash": "fb98140a6b41ee69b824f29cc8b6795444246f871e4ab2379528b34a4d16284e",
+  "thumbnails": {
+    "x100": "https://cdn.smartlinks.app/..._100x100.png",
+    "x200": "https://cdn.smartlinks.app/..._200x200.png",
+    "x512": "https://cdn.smartlinks.app/..._512x512.png"
+  },
+  "id": "7k1cGErrlmQ94J8yDlVj",
+  "site": "ChaseAtlantic",
+  "cleanName": "Screenshot 2025-09-15 at 15.21"
+}
 ```
 
 ### AI helpers

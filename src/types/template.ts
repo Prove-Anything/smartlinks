@@ -6,11 +6,17 @@ export interface TemplateBase {
   collectionId: string
   name: string
   description?: string
-  type: string
+  type: 'pdf' | 'email' | 'multichannel' | 'label'
   resizeMode?: string
   pdf?: {
     base: { url: string }
     orientation: 'portrait' | 'landscape'
+  }
+  channels?: {
+    email?: {subject: string; body: string},
+    sms?: { body: string },
+    push: { title: string; body: string, url?: string, iconUrl?: string },
+    wallet?: { header: string; body: string; imageUri?: string }
   }
   subject?: string
   body?: string

@@ -92,3 +92,40 @@ export interface UserSearchResponse {
   contact: ContactResponse | null
   existsAsContact: boolean
 }
+
+// Public visibility shape for "my contact" endpoints
+export interface ContactPublic {
+  contactId: string
+  firstName?: string | null
+  lastName?: string | null
+  displayName?: string | null
+  company?: string | null
+  avatarUrl?: string | null
+  locale?: string | null
+  timezone?: string | null
+  email?: string | null
+  phone?: string | null
+  externalIds?: Record<string, any>
+  customFields?: ContactCustomFields
+}
+
+// Patch payload for updating "my contact" (public)
+export type ContactPatch = Partial<
+  Pick<
+    Contact,
+    | "firstName"
+    | "lastName"
+    | "displayName"
+    | "company"
+    | "avatarUrl"
+    | "locale"
+    | "timezone"
+    | "email"
+    | "phone"
+    | "externalIds"
+  >
+> & { customFields?: ContactCustomFields }
+
+// Responses for public "my contact" endpoints
+export interface PublicGetMyContactResponse { ok: boolean; contact: ContactPublic | null }
+export interface PublicUpdateMyContactResponse { ok: boolean; contact: ContactPublic }

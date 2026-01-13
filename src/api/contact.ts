@@ -1,5 +1,5 @@
 import { request, post, del, patch } from "../http"
-import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse } from "../types"
+import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse, ContactPublic, ContactPatch, PublicGetMyContactResponse, PublicUpdateMyContactResponse } from "../types"
 
 export namespace contact {
   export async function create(collectionId: string, data: ContactCreateRequest): Promise<ContactResponse> {
@@ -72,6 +72,23 @@ export namespace contact {
   ): Promise<PublicContactUpsertResponse> {
     const path = `/public/collection/${encodeURIComponent(collectionId)}/contact`
     return post<PublicContactUpsertResponse>(path, data)
+  }
+
+  // Public: Get "my" contact (requires auth bearer token)
+  export async function publicGetMine(
+    collectionId: string
+  ): Promise<PublicGetMyContactResponse> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/contact/me`
+    return request<PublicGetMyContactResponse>(path)
+  }
+
+  // Public: Update "my" contact (requires auth bearer token)
+  export async function publicUpdateMine(
+    collectionId: string,
+    data: ContactPatch
+  ): Promise<PublicUpdateMyContactResponse> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/contact/me`
+    return patch<PublicUpdateMyContactResponse>(path, data)
   }
 
   export async function erase(collectionId: string, contactId: string, body?: any): Promise<ContactResponse> {

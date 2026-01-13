@@ -59,6 +59,18 @@ export var contact;
         return post(path, data);
     }
     contact.publicUpsert = publicUpsert;
+    // Public: Get "my" contact (requires auth bearer token)
+    async function publicGetMine(collectionId) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/contact/me`;
+        return request(path);
+    }
+    contact.publicGetMine = publicGetMine;
+    // Public: Update "my" contact (requires auth bearer token)
+    async function publicUpdateMine(collectionId, data) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/contact/me`;
+        return patch(path, data);
+    }
+    contact.publicUpdateMine = publicUpdateMine;
     async function erase(collectionId, contactId, body) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/${encodeURIComponent(contactId)}/erase`;
         return post(path, body || {});

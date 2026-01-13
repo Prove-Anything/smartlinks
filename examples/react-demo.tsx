@@ -7,6 +7,7 @@ import { auth } from '../src/api/auth';
 import { collection } from '../src/api/collection';
 import { product } from '../src/api/product';
 import { asset } from '../src/api/asset';
+import type { Asset } from '../src/types/asset';
 import type { CollectionResponse } from '../src/types/collection';
 import type { ProductResponse } from '../src/types/product';
 
@@ -22,6 +23,8 @@ const SmartlinksDemo: React.FC = () => {
   const [collections, setCollections] = useState<CollectionResponse[]>([]);
   const [selectedCollection, setSelectedCollection] = useState<string>('');
   const [products, setProducts] = useState<ProductResponse[]>([]);
+  const [assets, setAssets] = useState<Asset[]>([]);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string>('');
 
@@ -65,19 +68,29 @@ const SmartlinksDemo: React.FC = () => {
     setLoading(false);
   };
 
-  // Handle file upload
-  const handleFileUpload = async (file: File, collectionId: string, productId: string, proofId: string) => {
-    setLoading(true);
+  // Load assets for current collection
+  const loadCollectionAssets = async (collectionId: string) => {
     try {
-      const result = await asset.uploadAsset(
-        collectionId,
-        productId,
-        proofId,
+      const list = await asset.list({ scope: { type: 'collection', collectionId }, mimeTypePrefix: 'image/' });
+      setAssets(list);
+    } catch (err: any) {
+      setError(err.message || 'Failed to load assets');
+    }
+  };
+
+  // Handle file upload to collection using new API with progress
+  const handleCollectionUpload = async (file: File, collectionId: string) => {
+    setLoading(true);
+    setUploadProgress(0);
+    try {
+      const uploaded = await asset.upload({
         file,
-        { description: 'Uploaded from React demo' },
-        (progress) => console.log(`Upload progress: ${progress}%`)
-      );
-      console.log('File uploaded successfully:', result);
+        scope: { type: 'collection', collectionId },
+        metadata: { description: 'Uploaded from React demo' },
+        onProgress: (p) => setUploadProgress(p),
+      });
+      console.log('File uploaded successfully:', uploaded);
+      await loadCollectionAssets(collectionId);
     } catch (err: any) {
       setError(err.message || 'File upload failed');
     }
@@ -93,6 +106,7 @@ const SmartlinksDemo: React.FC = () => {
   useEffect(() => {
     if (selectedCollection) {
       loadProducts(selectedCollection);
+      loadCollectionAssets(selectedCollection);
     }
   }, [selectedCollection]);
 
@@ -135,6 +149,40 @@ const SmartlinksDemo: React.FC = () => {
                 <div style={{ display: 'grid', gap: '10px' }}>
                   {products.map(prod => (
                     <ProductCard key={prod.id} product={prod} />
+                  ))}
+                </div>
+              )}
+
+              <h3 style={{ marginTop: '24px' }}>Assets in Collection</h3>
+              <div style={{ marginBottom: '12px' }}>
+                <input
+                  type="file"
+                  accept="image/*,video/*"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleCollectionUpload(f, selectedCollection);
+                  }}
+                />
+                {uploadProgress > 0 && uploadProgress < 100 && (
+                  <div style={{ fontSize: 12 }}>Upload: {uploadProgress}%</div>
+                )}
+              </div>
+
+              {assets.length === 0 ? (
+                <p>No assets yet.</p>
+              ) : (
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '12px' }}>
+                  {assets.map(a => (
+                    <div key={a.id} style={{ border: '1px solid #ddd', borderRadius: 6, padding: 8, background: '#fff' }}>
+                      <div style={{ marginBottom: 8, height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                        <img
+                          src={a.thumbnails?.x200 || a.url}
+                          alt={a.name}
+                          style={{ maxWidth: '100%', maxHeight: '100%' }}
+                        />
+                      </div>
+                      <div style={{ fontSize: 12, color: '#333' }}>{a.cleanName || a.name}</div>
+                    </div>
                   ))}
                 </div>
               )}
