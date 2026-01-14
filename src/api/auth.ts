@@ -45,7 +45,8 @@ export type AccountInfoResponse = {
   };
   sub: string;
   uid: string;
-  user_id: string;
+  userId: string;
+  contactId: string
   whitelabel: {
     [key: string]: any;
   }

@@ -19,6 +19,10 @@ function logDebug(...args) {
     if (logger.log)
         return logger.log(...args);
 }
+/** Return whether proxy mode is currently enabled. */
+export function isProxyEnabled() {
+    return proxyMode;
+}
 function maskSensitive(value) {
     if (!value)
         return value;
@@ -138,15 +142,26 @@ function ensureProxyListener() {
     window._smartlinksProxyListener = true;
 }
 // Proxy request implementation
+function serializeFormDataForProxy(fd) {
+    const entries = [];
+    // FormData#forEach iterates values which can be string | Blob (File extends Blob)
+    fd.forEach((value, key) => {
+        entries.push([key, value]);
+    });
+    return { _isFormData: true, entries };
+}
 async function proxyRequest(method, path, body, headers, options) {
     ensureProxyListener();
+    const payloadBody = (typeof FormData !== 'undefined' && body instanceof FormData)
+        ? serializeFormDataForProxy(body)
+        : body;
     const id = generateProxyId();
     const msg = {
         _smartlinksProxyRequest: true,
         id,
         method,
         path,
-        body,
+        body: payloadBody,
         headers,
         options,
     };
@@ -156,6 +171,140 @@ async function proxyRequest(method, path, body, headers, options) {
         window.parent.postMessage(msg, "*");
         // Optionally: add a timeout here to reject if no response
     });
+}
+/**
+ * Upload a FormData payload via proxy with progress events using chunked postMessage.
+ * Parent is expected to implement the counterpart protocol.
+ */
+export async function proxyUploadFormData(path, formData, onProgress) {
+    var _a;
+    if (!proxyMode) {
+        throw new Error('proxyUploadFormData called when proxyMode is disabled');
+    }
+    ensureProxyListener();
+    // Extract file and plain fields
+    let fileKey = null;
+    let file = null;
+    const fields = [];
+    formData.forEach((value, key) => {
+        const isFile = typeof value !== 'string';
+        if (!file && isFile) {
+            fileKey = key;
+            file = value; // File | Blob in browser
+        }
+        else {
+            fields.push([key, String(value)]);
+        }
+    });
+    if (!file || !fileKey) {
+        throw new Error('proxyUploadFormData requires a File/Blob in FormData');
+    }
+    const id = generateProxyId();
+    const headers = getApiHeaders();
+    let resolveDone;
+    let rejectDone;
+    const done = new Promise((resolve, reject) => { resolveDone = resolve; rejectDone = reject; });
+    function handleMessage(event) {
+        const msg = event.data;
+        if (!msg || msg.id !== id)
+            return;
+        // Unified envelope support
+        if (msg._smartlinksProxyUpload === true) {
+            if (msg.phase === 'progress' && typeof msg.percent === 'number') {
+                try {
+                    onProgress && onProgress(Math.max(0, Math.min(100, Math.round(msg.percent))));
+                }
+                catch (_a) { }
+                return;
+            }
+            if (msg.phase === 'done') {
+                window.removeEventListener('message', handleMessage);
+                if (msg.ok) {
+                    resolveDone(msg.data);
+                }
+                else {
+                    rejectDone(new Error(msg.error || 'Upload failed'));
+                }
+                return;
+            }
+            return;
+        }
+        // Backward-compat flags (older docs)
+        if (msg._smartlinksProxyUploadProgress === true && typeof msg.percent === 'number') {
+            try {
+                onProgress && onProgress(Math.max(0, Math.min(100, Math.round(msg.percent))));
+            }
+            catch (_b) { }
+            return;
+        }
+        if (msg._smartlinksProxyUploadDone === true) {
+            window.removeEventListener('message', handleMessage);
+            if (msg.ok) {
+                resolveDone(msg.data);
+            }
+            else {
+                rejectDone(new Error(msg.error || 'Upload failed'));
+            }
+            return;
+        }
+    }
+    window.addEventListener('message', handleMessage);
+    // Start
+    const startMsg = {
+        _smartlinksProxyUpload: true,
+        phase: 'start',
+        id,
+        path,
+        method: 'POST',
+        headers,
+        fields,
+        fileInfo: { name: file.name || fileKey, size: file.size || undefined, type: file.type || undefined, key: fileKey },
+    };
+    window.parent.postMessage(startMsg, '*');
+    // Send chunks with simple ack pacing
+    const CHUNK_SIZE = 256 * 1024; // 256KB
+    const totalSize = (_a = file.size) !== null && _a !== void 0 ? _a : 0;
+    let offset = 0;
+    let seq = 0;
+    while (totalSize && offset < totalSize) {
+        const end = Math.min(offset + CHUNK_SIZE, totalSize);
+        const blob = file.slice(offset, end);
+        // eslint-disable-next-line no-await-in-loop
+        const buf = await blob.arrayBuffer();
+        const chunkMsg = {
+            _smartlinksProxyUpload: true,
+            phase: 'chunk',
+            id,
+            seq,
+            chunk: buf,
+        };
+        window.parent.postMessage(chunkMsg, '*', [buf]);
+        // Wait for ack for this seq
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise((res) => {
+            function onAck(ev) {
+                const m = ev.data;
+                // Unified envelope ack
+                if (m && m._smartlinksProxyUpload === true && m.id === id && m.phase === 'ack' && m.seq === seq) {
+                    window.removeEventListener('message', onAck);
+                    res();
+                    return;
+                }
+                // Backward-compat ack
+                if (m && m._smartlinksProxyUploadAck === true && m.id === id && m.seq === seq) {
+                    window.removeEventListener('message', onAck);
+                    res();
+                }
+            }
+            window.addEventListener('message', onAck);
+        });
+        offset = end;
+        seq += 1;
+    }
+    // End
+    const endMsg = { _smartlinksProxyUpload: true, phase: 'end', id };
+    window.parent.postMessage(endMsg, '*');
+    return done;
 }
 /**
  * Internal helper that performs a GET request to \`\${baseURL}\${path}\`,

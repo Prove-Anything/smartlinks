@@ -5,6 +5,8 @@ type Logger = {
     error?: (...args: any[]) => void;
     log?: (...args: any[]) => void;
 } | ((...args: any[]) => void);
+/** Return whether proxy mode is currently enabled. */
+export declare function isProxyEnabled(): boolean;
 export declare function initializeApi(options: {
     baseURL: string;
     apiKey?: string;
@@ -23,6 +25,11 @@ export declare function setExtraHeaders(headers: Record<string, string>): void;
  * Allows setting the bearerToken at runtime (e.g. after login/logout).
  */
 export declare function setBearerToken(token: string | undefined): void;
+/**
+ * Upload a FormData payload via proxy with progress events using chunked postMessage.
+ * Parent is expected to implement the counterpart protocol.
+ */
+export declare function proxyUploadFormData<T>(path: string, formData: FormData, onProgress?: (percent: number) => void): Promise<T>;
 /**
  * Internal helper that performs a GET request to \`\${baseURL}\${path}\`,
  * injecting headers for apiKey or bearerToken if present.

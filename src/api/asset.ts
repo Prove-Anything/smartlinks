@@ -1,4 +1,4 @@
-import { request, post, del, getApiHeaders } from "../http"
+import { request, post, del, getApiHeaders, isProxyEnabled, proxyUploadFormData } from "../http"
 import { Asset, AssetResponse, UploadAssetOptions, ListAssetsOptions, GetAssetOptions, RemoveAssetOptions } from "../types/asset"
 
 export namespace asset {
@@ -45,8 +45,8 @@ export namespace asset {
     if (options.name) formData.append("name", options.name)
     if (options.metadata) formData.append("metadata", JSON.stringify(options.metadata))
 
-    // If progress callback provided, use XHR for progress events (browser-only)
-    if (options.onProgress && typeof window !== "undefined") {
+    // If progress callback provided and NOT in proxy mode, use XHR for progress events (browser-only)
+    if (options.onProgress && typeof window !== "undefined" && !isProxyEnabled()) {
       const url = (typeof window !== "undefined" && (window as any).SMARTLINKS_API_BASEURL)
         ? (window as any).SMARTLINKS_API_BASEURL + path
         : path
@@ -90,7 +90,17 @@ export namespace asset {
       })
     }
 
-    // Otherwise use fetch helper
+    // If in proxy mode and progress requested, use enhanced proxy upload to support progress
+    if (options.onProgress && isProxyEnabled()) {
+      try {
+        return await proxyUploadFormData<Asset>(path, formData, options.onProgress)
+      } catch (e: any) {
+        const msg = e?.message || 'Upload failed'
+        throw new AssetUploadError(msg, 'UNKNOWN')
+      }
+    }
+
+    // Otherwise use fetch helper (in proxy mode this becomes a postMessage with serialized FormData)
     try {
       return await post<Asset>(path, formData)
     } catch (e: any) {

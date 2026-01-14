@@ -180,6 +180,90 @@ await asset.remove({
 }
 ```
 
+#### Proxy mode and uploads
+
+When `initializeApi({ proxyMode: true })` is active (e.g., SDK runs inside an iframe and the parent performs API calls), the SDK serializes `FormData` for upload into a proxy-safe shape and posts a message to the parent window. The parent proxy handler should detect this payload and reconstruct a native `FormData` before performing the actual HTTP request.
+
+- SDK proxy message body shape for uploads:
+  - `{ _isFormData: true, entries: Array<[name: string, value: string | File]> }`
+  - Each entry’s value is either a string or a `File` object (structured-cloneable).
+- Direct XHR uploads are only used when NOT in proxy mode. In proxy mode, the SDK uses the proxy channel and `postMessage`.
+
+Progress support in proxy mode:
+
+- If you pass `onProgress`, the SDK uses an enhanced upload protocol with chunked messages and progress events.
+- Unified envelope protocol (single message shape):
+  - Iframe → Parent
+    - `{ _smartlinksProxyUpload: true, phase: 'start', id, path, method: 'POST', headers, fields, fileInfo }`
+    - `{ _smartlinksProxyUpload: true, phase: 'chunk', id, seq, chunk: ArrayBuffer }`
+    - `{ _smartlinksProxyUpload: true, phase: 'end', id }`
+  - Parent → Iframe
+    - `{ _smartlinksProxyUpload: true, phase: 'ack', id, seq }` (reply via `event.source.postMessage`)
+    - `{ _smartlinksProxyUpload: true, phase: 'progress', id, percent }` (reply via `event.source.postMessage`)
+    - `{ _smartlinksProxyUpload: true, phase: 'done', id, ok, data? | error? }` (reply via `event.source.postMessage`)
+
+Example parent handler (buffered, simple):
+
+```html
+<script>
+  const uploads = new Map();
+  window.addEventListener('message', async (e) => {
+    const m = e.data;
+    if (!m || m._smartlinksProxyUpload !== true) return;
+    const target = e.source; // reply to the sender iframe
+    const origin = e.origin; // consider validating and passing a strict origin
+    switch (m.phase) {
+      case 'start': {
+        uploads.set(m.id, { chunks: [], fields: m.fields, fileInfo: m.fileInfo, path: m.path, headers: m.headers });
+        break;
+      }
+      case 'chunk': {
+        const u = uploads.get(m.id);
+        if (!u) break;
+        u.chunks.push(new Uint8Array(m.chunk));
+        target && target.postMessage({ _smartlinksProxyUpload: true, phase: 'ack', id: m.id, seq: m.seq }, origin);
+        break;
+      }
+      case 'end': {
+        const u = uploads.get(m.id);
+        if (!u) break;
+        const blob = new Blob(u.chunks, { type: u.fileInfo.type || 'application/octet-stream' });
+        const fd = new FormData();
+        for (const [k, v] of u.fields) fd.append(k, v);
+        fd.append(u.fileInfo.key || 'file', blob, u.fileInfo.name || 'upload.bin');
+
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', (window.SMARTLINKS_API_BASEURL || '') + u.path);
+        for (const [k, v] of Object.entries(u.headers || {})) xhr.setRequestHeader(k, v);
+        xhr.upload.onprogress = (ev) => {
+          if (ev.lengthComputable) {
+            const pct = Math.round((ev.loaded / ev.total) * 100);
+            target && target.postMessage({ _smartlinksProxyUpload: true, phase: 'progress', id: m.id, percent: pct }, origin);
+          }
+        };
+        xhr.onload = () => {
+          const ok = xhr.status >= 200 && xhr.status < 300;
+          try {
+            const data = JSON.parse(xhr.responseText);
+            target && target.postMessage({ _smartlinksProxyUpload: true, phase: 'done', id: m.id, ok, data, error: ok ? undefined : data?.message }, origin);
+          } catch (err) {
+            target && target.postMessage({ _smartlinksProxyUpload: true, phase: 'done', id: m.id, ok: false, error: 'Invalid server response' }, origin);
+          }
+        };
+        xhr.onerror = () => target && target.postMessage({ _smartlinksProxyUpload: true, phase: 'done', id: m.id, ok: false, error: 'Network error' }, origin);
+        xhr.send(fd);
+        uploads.delete(m.id);
+        break;
+      }
+    }
+  });
+</script>
+```
+
+If you maintain the parent proxy, ensure its handler for `_smartlinksProxyRequest`:
+- Detects `body._isFormData === true` and rebuilds `const fd = new FormData(); for (const [k,v] of body.entries) fd.append(k, v);`
+- Issues the HTTP request with that `FormData` and returns the parsed JSON response back to the iframe.
+
 ### AI helpers
 
 ```ts

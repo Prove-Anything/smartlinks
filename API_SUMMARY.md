@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.1.24  |  Generated: 2026-01-11T11:29:10.460Z
+Version: 1.1.25  |  Generated: 2026-01-13T20:46:10.365Z
 
 This is a concise summary of all available API functions and types.
 
@@ -57,6 +57,9 @@ The Smartlinks SDK is organized into the following namespaces:
 
 Core HTTP functions for API configuration and communication:
 
+**isProxyEnabled**() → `boolean`
+Return whether proxy mode is currently enabled.
+
 **initializeApi**(options: {
   baseURL: string
   apiKey?: string
@@ -77,6 +80,11 @@ Replace or augment globally applied custom headers.
 
 **setBearerToken**(token: string | undefined) → `void`
 Allows setting the bearerToken at runtime (e.g. after login/logout).
+
+**proxyUploadFormData**(path: string,
+  formData: FormData,
+  onProgress?: (percent: number) → `void`
+Upload a FormData payload via proxy with progress events using chunked postMessage. Parent is expected to implement the counterpart protocol.
 
 **request**(path: string) → `Promise<T>`
 Internal helper that performs a GET request to \`\${baseURL}\${path}\`, injecting headers for apiKey or bearerToken if present. Returns the parsed JSON as T, or throws an Error.
