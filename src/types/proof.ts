@@ -17,8 +17,8 @@ export interface Proof {
   userId: string
   /** Is this proof available to be claimed */
   claimable?: boolean
-  /** Is this proof transient */
-  transient?: boolean
+  /** Is this proof virtual */
+  virtual?: boolean
   /** Arbitrary key-value pairs for proof values */
   values: Record<string, any>
 }
@@ -31,7 +31,7 @@ export type ProofResponse = Proof
 export interface ProofCreateRequest {
   values: Record<string, any>
   claimable?: boolean
-  transient?: boolean
+  virtual?: boolean
 }
 
 // Update may partially change values or flags

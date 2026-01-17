@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.1.25  |  Generated: 2026-01-13T20:46:10.365Z
+Version: 1.1.26  |  Generated: 2026-01-17T11:03:13.776Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1526,7 +1526,7 @@ interface Proof {
   tokenId: string
   userId: string
   claimable?: boolean
-  transient?: boolean
+  virtual?: boolean
   values: Record<string, any>
 }
 ```
@@ -1536,7 +1536,7 @@ interface Proof {
 interface ProofCreateRequest {
   values: Record<string, any>
   claimable?: boolean
-  transient?: boolean
+  virtual?: boolean
 }
 ```
 
@@ -1817,7 +1817,8 @@ type AccountInfoResponse = {
   };
   sub: string;
   uid: string;
-  user_id: string;
+  userId: string;
+  contactId: string
   whitelabel: {
     [key: string]: any;
   }
