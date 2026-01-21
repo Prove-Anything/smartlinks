@@ -18,13 +18,6 @@ export type {
   UserAccountRegistrationRequest,
 } from "./types/auth"
 export type {
-  SendNotificationRequest,
-  SendNotificationResponse,
-  NotificationSubjectTarget,
-  NotificationTemplate,
-  PushNotificationTemplate,
-  EmailNotificationTemplate,
-  WalletUpdateTemplate,
   CommunicationEvent,
   CommsQueryByUser,
   CommsRecipientIdsQuery,
@@ -36,6 +29,26 @@ export type {
   LogBulkCommunicationEventsBody,
   AppendResult,
   AppendBulkResult,
+  CommsSettings,
+  TopicConfig,
+  CommsSettingsGetResponse,
+  CommsSettingsPatchBody,
+  CommsPublicTopicsResponse,
+  UnsubscribeQuery,
+  UnsubscribeResponse,
+  CommsConsentUpsertRequest,
+  CommsPreferencesUpsertRequest,
+  CommsSubscribeRequest,
+  CommsSubscribeResponse,
+  CommsSubscriptionCheckQuery,
+  CommsSubscriptionCheckResponse,
+  CommsListMethodsQuery,
+  CommsListMethodsResponse,
+  RegisterEmailMethodRequest,
+  RegisterSmsMethodRequest,
+  RegisterMethodResponse,
+  SubscriptionsResolveRequest,
+  SubscriptionsResolveResponse,
 } from "./types/comms"
 export type {
   AttestationResponse,
@@ -52,6 +65,7 @@ export type {
   VariantCreateRequest,
   VariantUpdateRequest,
 } from "./types/variant"
+export type { BroadcastSendRequest } from "./types/broadcasts"
 export type { AppConfigOptions } from "./api/appConfiguration"
 export type {
   ProductCreateRequest,

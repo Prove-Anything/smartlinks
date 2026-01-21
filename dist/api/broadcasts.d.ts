@@ -1,4 +1,4 @@
-import type { ListBroadcastsQuery, BroadcastRecord, BroadcastList, BroadcastRecipientsResponse, BroadcastPreviewRequest, BroadcastPreviewResponse, BroadcastSendTestRequest, BroadcastSendTestResponse, BroadcastSendManualRequest, BroadcastSendManualResponse, BroadcastAppendEventBody, BroadcastAppendBulkBody } from "../types/broadcasts";
+import type { ListBroadcastsQuery, BroadcastRecord, BroadcastList, BroadcastRecipientsResponse, BroadcastPreviewRequest, BroadcastPreviewResponse, BroadcastSendTestRequest, BroadcastSendTestResponse, BroadcastSendManualRequest, BroadcastSendManualResponse, BroadcastAppendEventBody, BroadcastAppendBulkBody, BroadcastSendRequest } from "../types/broadcasts";
 import type { AppendResult, AppendBulkResult } from "../types/comms";
 export declare namespace broadcasts {
     function create(collectionId: string, body: Omit<BroadcastRecord, 'id' | 'collectionId' | 'createdAt'>): Promise<BroadcastRecord>;
@@ -11,12 +11,7 @@ export declare namespace broadcasts {
         offset?: number;
     }): Promise<BroadcastRecipientsResponse>;
     function preview(collectionId: string, id: string, body: BroadcastPreviewRequest): Promise<BroadcastPreviewResponse>;
-    function send(collectionId: string, id: string, body?: {
-        pageSize?: number;
-        maxPages?: number;
-        sharedContext?: Record<string, any>;
-        subject?: string;
-    }): Promise<{
+    function send(collectionId: string, id: string, body?: BroadcastSendRequest): Promise<{
         ok: true;
         enqueued: true;
     }>;

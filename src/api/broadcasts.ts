@@ -13,6 +13,8 @@ import type {
   BroadcastSendManualResponse,
   BroadcastAppendEventBody,
   BroadcastAppendBulkBody,
+  BroadcastChannel,
+  BroadcastSendRequest,
 } from "../types/broadcasts"
 import type { AppendResult, AppendBulkResult } from "../types/comms"
 
@@ -102,7 +104,7 @@ export namespace broadcasts {
   export async function send(
     collectionId: string,
     id: string,
-    body: { pageSize?: number; maxPages?: number; sharedContext?: Record<string, any>; subject?: string } = {}
+    body: BroadcastSendRequest = {}
   ): Promise<{ ok: true; enqueued: true }> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/send`
     return post<{ ok: true; enqueued: true }>(path, body)

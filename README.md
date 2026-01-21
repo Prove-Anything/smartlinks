@@ -352,6 +352,10 @@ const manual = await broadcasts.sendManual('collectionId', 'broadcastId', {
 })
 ```
 
+## Communications Overview
+
+End-to-end explainer covering comms settings (unsubscribe, types), Web Push registration, and multi-channel broadcasts with SDK examples: [src/docs/smartlinks/comms-explainer.md](src/docs/smartlinks/comms-explainer.md)
+
 ### Async jobs
 
 ```ts

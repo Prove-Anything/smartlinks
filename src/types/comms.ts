@@ -1,6 +1,7 @@
 // src/types/comms.ts
 // Communication and notification types for the Smartlinks API
 import type { IdField } from './common'
+import type { BroadcastChannel } from './broadcasts'
 
 /**
  * Target subject for notifications (product, collection, etc.)
@@ -12,108 +13,6 @@ export interface NotificationSubjectTarget {
   id: string
 }
 
-/**
- * Push notification template content
- */
-export interface PushNotificationTemplate {
-  /** Notification title */
-  title: string
-  /** Notification body text */
-  body: string
-  /** Optional icon URL for the notification */
-  icon?: string
-}
-
-/**
- * Email notification template content
- */
-export interface EmailNotificationTemplate {
-  /** Email subject line */
-  subject: string
-  /** Email body content (plain text or HTML) */
-  body: string
-}
-
-/**
- * Wallet pass update template content
- */
-export interface WalletUpdateTemplate {
-  textModulesData?: Array<{
-    /** Module ID */
-    id: string
-    /** Module header text */
-    header: string
-    /** Module body text */
-    body: string
-  }>
-}
-
-/**
- * Notification template containing different delivery methods
- */
-export interface NotificationTemplate {
-  /** Push notification content */
-  push?: PushNotificationTemplate
-  /** Email notification content */
-  email?: EmailNotificationTemplate
-  /** Wallet pass update content */
-  walletUpdate?: WalletUpdateTemplate
-}
-
-/**
- * Request payload for sending notifications
- */
-export interface SendNotificationRequest {
-  /** Target subjects that should receive the notification */
-  subjectTargets: NotificationSubjectTarget[]
-  /** Severity level of the notification */
-  severity: 'low' | 'normal' | 'important' | 'critical'
-  /** Delivery channel mode preference */
-  mode: 'preferred' | 'all'
-  /** Specific channels to use for delivery */
-  channels : ("push" | "email" | "wallet")[]
-  /** Notification content templates for different delivery methods */
-  template: NotificationTemplate
-}
-
-/**
- * Response from sending notifications
- */
-export interface SendNotificationResponse {
-  /** Whether the request was accepted */
-  ok: boolean
-  /** Unique ID for this notification */
-  notificationId: string
-  /** Basic counts for contacts and attempts */
-  counts: {
-    contacts: number
-    attempts: number
-  }
-  /** Detailed status for the notification */
-  status: {
-    notification: {
-      /** The notification ID (repeated for convenience) */
-      notificationId: string
-      /** Current processing state */
-      state: 'queued' | 'sent' | 'failed' | 'confirmed' | string
-      /** Targets this notification refers to */
-      subjectTargets: NotificationSubjectTarget[]
-      /** Severity of this notification */
-      severity: 'low' | 'normal' | 'important' | 'critical' | string
-      /** Optional channel overrides used when sending */
-      channelsOverride: Record<string, any>
-      /** The effective template used */
-      template: NotificationTemplate
-    }
-    /** Totals across all contacts */
-    totals: {
-      queued: number
-      sent: number
-      failed: number
-      confirmed: number
-    }
-  }
-}
 
 // Analytics & logging (communication events)
 
@@ -208,4 +107,139 @@ export interface RecipientsPage {
   limit: number
   offset: number
   note?: string
+}
+
+// Web Push (public client registration)
+
+export interface PushSubscriptionJSON {
+  endpoint: string
+  keys?: {
+    p256dh?: string
+    auth?: string
+  }
+}
+
+export interface PushVapidResponse { publicKey: string }
+export interface PushSubscribeResponse { ok: true; id: string }
+
+// Public: register a push contact method
+export interface RegisterPushMethodRequest {
+  contactId: string
+  endpoint: string
+  keys: { p256dh: string; auth: string }
+  meta?: Record<string, any>
+}
+
+// Admin Comms Settings
+
+export interface CommsSettings {
+  unsub?: {
+    requireToken?: boolean
+    /** Secret for token generation; omitted unless includeSecret=true */
+    secret?: string
+    /** Convenience flag indicating a secret is set (masked responses) */
+    hasSecret?: boolean
+  }
+  /** Map of topic keys to topic config */
+  topics?: Record<string, TopicConfig>
+  [k: string]: any
+}
+
+export interface TopicConfig {
+  label?: string
+  description?: string
+  /** Optional UI-only grouping labels */
+  labels?: string[]
+  defaults?: {
+    channels?: Partial<Record<BroadcastChannel, boolean>>
+    topics?: Record<string, boolean | undefined>
+  }
+  rules?: {
+    allowChannels?: BroadcastChannel[]
+    allowUnsubscribe?: boolean
+    required?: boolean
+  }
+  [k: string]: any
+}
+
+export interface CommsSettingsGetResponse {
+  ok: true
+  settings: CommsSettings
+}
+
+export type CommsSettingsPatchBody = Partial<CommsSettings>
+
+// Public types listing (array form for public API)
+export interface CommsPublicTopicsResponse { ok: true; topics: Record<string, TopicConfig> }
+
+export interface UnsubscribeQuery {
+  contactId: string
+  topic?: string
+  channel?: BroadcastChannel
+  token?: string
+}
+
+export interface UnsubscribeResponse { ok: true; applied?: { channels?: Record<string, boolean>; topics?: Record<string, boolean> } }
+
+// Public consent/preferences/subscribe
+export type ConsentChannels = Partial<Record<BroadcastChannel, boolean>>
+type SubjectType = import('./contact').SubjectType
+
+export interface CommsConsentUpsertRequest {
+  contactId: string
+  channels?: ConsentChannels
+  topics?: Record<string, boolean>
+  topicsByChannel?: Partial<Record<BroadcastChannel, Record<string, boolean>>>
+}
+
+export interface CommsPreferencesUpsertRequest {
+  contactId: string
+  subject?: { type: SubjectType; id: string; productId?: string }
+  channels?: ConsentChannels
+  topics?: Record<string, boolean>
+  topicsByChannel?: Partial<Record<BroadcastChannel, Record<string, boolean>>>
+}
+
+export interface CommsSubscribeRequest {
+  contactId: string
+  subject: { type: SubjectType; id: string; productId?: string }
+  subscribe: boolean
+  source?: string
+}
+export interface CommsSubscribeResponse { ok: true; subscriptionId: string }
+
+export interface CommsSubscriptionCheckQuery {
+  contactId: string
+  subjectType: SubjectType
+  subjectId: string
+  productId?: string
+}
+export interface CommsSubscriptionCheckResponse { ok: true; subscribed: boolean }
+
+export interface CommsListMethodsQuery {
+  contactId: string
+  type?: BroadcastChannel
+}
+export interface CommsListMethodsResponse { ok: true; methods: import('./contact').CommMethod[] }
+
+export interface RegisterEmailMethodRequest { contactId?: string; email?: string; userId?: string }
+export interface RegisterSmsMethodRequest { contactId?: string; phone?: string; userId?: string }
+export interface RegisterMethodResponse { ok: true; contactId: string }
+
+export interface SubscriptionsResolveRequest {
+  subject: { type: SubjectType; id: string; productId?: string }
+  hints: { userId?: string; pushEndpoint?: string; email?: string; walletObjectId?: string }
+}
+export interface SubscriptionsResolveResponse {
+  ok: true
+  subject: { type: SubjectType; id: string; productId?: string }
+  contacts: Array<{
+    contactId: string
+    subscribed: boolean
+    channels?: Partial<Record<BroadcastChannel, boolean>>
+    walletForSubject?: boolean
+  }>
+  anySubscribed: boolean
+  anyMethods: boolean
+  anyWalletForSubject: boolean
 }

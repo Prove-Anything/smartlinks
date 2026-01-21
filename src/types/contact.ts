@@ -30,6 +30,9 @@ export interface Contact {
   timezone?: string | null
   externalIds?: Record<string, any>
 
+  /** First-party communications state (preferred). If absent, may exist under customFields.comms */
+  comms?: CommsState
+
   customFields: ContactCustomFields
 
   createdAt: string
@@ -129,3 +132,67 @@ export type ContactPatch = Partial<
 // Responses for public "my contact" endpoints
 export interface PublicGetMyContactResponse { ok: boolean; contact: ContactPublic | null }
 export interface PublicUpdateMyContactResponse { ok: boolean; contact: ContactPublic }
+
+// Communications state embedded in contact
+
+export type ChannelName = import('./broadcasts').BroadcastChannel
+export type SubjectType = 'product' | 'proof' | 'batch'
+
+/** Registered delivery method for a contact */
+export interface CommMethodMeta {
+  // Push
+  pushEndpoint?: string
+  p256dh?: string
+  auth?: string
+  // SMS
+  phone?: string
+  // Email
+  email?: string
+  // Wallet (can be tied to a subject)
+  walletObjectId?: string
+  subjectType?: SubjectType
+  subjectId?: string
+  productId?: string
+}
+
+export interface CommMethod {
+  id?: string
+  type: ChannelName
+  meta?: CommMethodMeta
+  verified?: boolean
+  suppressed?: boolean
+  createdAt?: string
+}
+
+/** Subject-level opt-in linking contact to a subject (audience targeting) */
+export interface Subscription {
+  id: string // canonical key derived from subject (opaque to clients)
+  subjectType: SubjectType
+  subjectId: string
+  productId?: string | null
+  contactId: string
+  source?: string // e.g., 'api'
+  createdAt?: string
+  deletedAt?: string | null
+}
+
+/** Per-subject consent (or `_default` when no subject) */
+export interface PreferenceEntry {
+  subjectType?: SubjectType | null
+  subjectId?: string | null
+  /** Channel-level toggles for delivery */
+  channels?: Partial<Record<ChannelName, boolean>>
+  /** Topic-level toggles (apply across channels) */
+  topics?: Record<string, boolean>
+  /** Optional per-channel topic preferences */
+  topicsByChannel?: Partial<Record<ChannelName, Record<string, boolean>>>
+  updatedAt?: string
+}
+
+/** Communications state embedded in contact customFields or first-party column */
+export interface CommsState {
+  methods?: CommMethod[]
+  subscriptions?: Subscription[]
+  /** Keyed by `_default` or `${type}_${id}` */
+  preferences?: Record<string, PreferenceEntry>
+}

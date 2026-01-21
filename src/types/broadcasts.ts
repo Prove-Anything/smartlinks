@@ -30,6 +30,18 @@ export interface BroadcastRecord {
       color?: string
     }
     broadcastType?: string
+    /** Required topic key for consent enforcement (e.g. newsletter, marketing, critical) */
+    topic: string
+    /** Per-channel enablement/priority and optional template overrides */
+    channelSettings?: {
+      mode?: 'preferred' | 'channels' | 'all'
+      channels?: Array<{
+        channel: import('./broadcasts').BroadcastChannel
+        enabled?: boolean
+        priority?: number
+        templateId?: string
+      }>
+    }
     [key: string]: unknown
   }
   createdAt: string
@@ -50,19 +62,34 @@ export interface BroadcastRecipientsResponse {
   note?: string
 }
 
+export type BroadcastChannel = 'email' | 'push' | 'sms' | 'wallet'
+
 export interface BroadcastPreviewRequest {
   contactId?: string
   email?: string
+  phone?: string
   props?: Record<string, any>
+  channelOverride?: BroadcastChannel
+  hydrate?: boolean
+  include?: { product?: boolean; proof?: boolean; user?: boolean; [k: string]: boolean | undefined }
 }
-export interface BroadcastPreviewResponse { ok: boolean; html: string }
+
+export type BroadcastPreviewResponse =
+  | { channel: 'email'; html: string; subject?: string; templateId?: string }
+  | { channel: 'push'; payload: any; subject?: string }
+  | { channel: 'sms'; body: string }
+  | { channel: 'wallet'; payload: any }
 
 export interface BroadcastSendTestRequest {
-  to: string
-  subject?: string
+  contactId?: string
+  email?: string
+  phone?: string
   props?: Record<string, any>
+  channelOverride?: BroadcastChannel
+  hydrate?: boolean
+  include?: { product?: boolean; proof?: boolean; user?: boolean; [k: string]: boolean | undefined }
 }
-export interface BroadcastSendTestResponse { ok: boolean; id?: string }
+export interface BroadcastSendTestResponse { ok: boolean; id?: string; channel?: BroadcastChannel }
 
 export interface BroadcastSendManualRequest {
   limit?: number
@@ -83,10 +110,20 @@ export interface BroadcastSendManualResponse {
   }>
 }
 
+// Unified typed body for enqueueing production send
+export interface BroadcastSendRequest {
+  pageSize?: number
+  maxPages?: number
+  sharedContext?: Record<string, any>
+  channel?: BroadcastChannel
+  hydrate?: boolean
+  include?: { product?: boolean; proof?: boolean; user?: boolean; [k: string]: boolean | undefined }
+}
+
 export interface BroadcastAppendEventBody {
   broadcastId: string
   contactId?: string
-  channel?: 'email'
+  channel?: BroadcastChannel
   templateId?: string
   eventType: string
   outcome?: 'success' | 'failed'

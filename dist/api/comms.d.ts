@@ -1,49 +1,86 @@
-import type { SendNotificationRequest, SendNotificationResponse, CommunicationEvent, CommsQueryByUser, CommsRecipientIdsQuery, CommsRecipientsWithoutActionQuery, CommsRecipientsWithActionQuery, RecipientId, RecipientWithOutcome, LogCommunicationEventBody, LogBulkCommunicationEventsBody, AppendResult, AppendBulkResult } from "../types/comms";
+import type { CommunicationEvent, CommsQueryByUser, CommsRecipientIdsQuery, CommsRecipientsWithoutActionQuery, CommsRecipientsWithActionQuery, RecipientId, RecipientWithOutcome, LogCommunicationEventBody, LogBulkCommunicationEventsBody, AppendResult, AppendBulkResult } from "../types/comms";
 /**
  * Communications namespace for sending notifications and managing user communications
  */
 export declare namespace comms {
     /**
-     * Send a notification to specified targets within a collection.
-     *
-     * Supports multiple delivery methods including push notifications, email, and wallet pass updates.
-     * The notification will be delivered based on user preferences and the specified delivery mode.
-     *
-     * @param collectionId - ID of the collection containing the notification targets
-     * @param request - Notification configuration including targets, severity, and content templates
-    * @returns Promise resolving to the notification enqueue/queue status and totals
-     * @throws ErrorResponse if the request fails or targets are invalid
-     *
-     * @example
-     * ```typescript
-     * const result = await comms.sendNotification('my-collection', {
-     *   subjectTargets: [{ type: 'product', id: 'prod_123' }],
-     *   severity: 'important',
-     *   mode: 'preferred',
-     *   template: {
-     *     push: {
-     *       title: 'Update available',
-     *       body: 'We\'ve shipped an important update.',
-     *       icon: 'https://cdn.example.com/brand/logo-128.png'
-     *     },
-     *     email: {
-     *       subject: 'Important update for your product',
-     *       body: 'There\'s an important update. Open your pass or profile to learn more.'
-     *     },
-     *     walletUpdate: {
-     *       textModulesData: [
-     *         { id: 'notice', header: 'Update', body: 'Open your wallet pass for details.' }
-     *       ]
-     *     }
-     *   }
-     * })
-     * if (result.ok) {
-     *   console.log('Notification queued:', result.notificationId)
-     *   console.log('Totals:', result.status.totals)
-     * }
-     * ```
+     * Public: Get VAPID public key used for Web Push subscriptions.
+     * GET /public/collection/:collectionId/comm/push/vapidPublicKey
+     * Note: Key may be global; path is collection-scoped for consistency.
      */
-    function sendNotification(collectionId: string, request: SendNotificationRequest): Promise<SendNotificationResponse>;
+    function getPushVapidPublicKey(collectionId: string): Promise<import("../types/comms").PushVapidResponse>;
+    /**
+     * Public: Register a Web Push subscription under unified comms.
+     * POST /public/collection/:collectionId/comm/push/register
+     */
+    function registerPush(collectionId: string, body: import("../types/comms").RegisterPushMethodRequest): Promise<import("../types/comms").PushSubscribeResponse>;
+    /**
+     * Admin: Get current comms settings for a collection.
+     * GET /admin/collection/:collectionId/comm.settings
+     * Optional query: includeSecret=true to include unsub.secret in response.
+     */
+    function getSettings(collectionId: string, opts?: {
+        includeSecret?: boolean;
+    }): Promise<import("../types/comms").CommsSettingsGetResponse>;
+    /**
+     * Admin: Patch comms settings for a collection.
+     * PATCH /admin/collection/:collectionId/comm.settings
+     */
+    function patchSettings(collectionId: string, body: import("../types/comms").CommsSettingsPatchBody): Promise<import("../types/comms").CommsSettingsGetResponse>;
+    /**
+     * Public: Fetch configured topics for a collection.
+     * GET /public/collection/:collectionId/comm/topics
+     */
+    function getPublicTopics(collectionId: string): Promise<import("../types/comms").CommsPublicTopicsResponse>;
+    /**
+     * Public: Unsubscribe a contact from a category or channel.
+     * GET /public/collection/:collectionId/comm/unsubscribe
+     */
+    function unsubscribe(collectionId: string, query: import("../types/comms").UnsubscribeQuery): Promise<import("../types/comms").UnsubscribeResponse>;
+    /**
+     * Public: Upsert default consent for a contact.
+     * POST /public/collection/:collectionId/comm/consent
+     */
+    function upsertConsent(collectionId: string, body: import("../types/comms").CommsConsentUpsertRequest): Promise<{
+        ok: true;
+    }>;
+    /**
+     * Public: Upsert preferences for a specific subject (or default if subject omitted).
+     * POST /public/collection/:collectionId/comm/preferences
+     */
+    function upsertPreferences(collectionId: string, body: import("../types/comms").CommsPreferencesUpsertRequest): Promise<{
+        ok: true;
+    }>;
+    /**
+     * Public: Subscribe/unsubscribe contact to a subject.
+     * POST /public/collection/:collectionId/comm/subscribe
+     */
+    function subscribe(collectionId: string, body: import("../types/comms").CommsSubscribeRequest): Promise<import("../types/comms").CommsSubscribeResponse>;
+    /**
+     * Public: Check subscription status for a subject.
+     * GET /public/collection/:collectionId/comm/subscription/check
+     */
+    function checkSubscription(collectionId: string, query: import("../types/comms").CommsSubscriptionCheckQuery): Promise<import("../types/comms").CommsSubscriptionCheckResponse>;
+    /**
+     * Public: List registered contact methods.
+     * GET /public/collection/:collectionId/comm/methods
+     */
+    function listMethods(collectionId: string, query: import("../types/comms").CommsListMethodsQuery): Promise<import("../types/comms").CommsListMethodsResponse>;
+    /**
+     * Public: Register email method for a contact.
+     * POST /public/collection/:collectionId/comm/email/register
+     */
+    function registerEmail(collectionId: string, body: import("../types/comms").RegisterEmailMethodRequest): Promise<import("../types/comms").RegisterMethodResponse>;
+    /**
+     * Public: Register SMS method for a contact.
+     * POST /public/collection/:collectionId/comm/sms/register
+     */
+    function registerSms(collectionId: string, body: import("../types/comms").RegisterSmsMethodRequest): Promise<import("../types/comms").RegisterMethodResponse>;
+    /**
+     * Public: Resolve contacts for a subject with identity hints.
+     * POST /public/collection/:collectionId/comm/subscriptions/resolve
+     */
+    function resolveSubscriptions(collectionId: string, body: import("../types/comms").SubscriptionsResolveRequest): Promise<import("../types/comms").SubscriptionsResolveResponse>;
     /**
      * Analytics: Query communication events by user or contact.
      * POST /admin/collection/:collectionId/comm/query/by-user

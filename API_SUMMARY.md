@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.1.26  |  Generated: 2026-01-17T11:03:13.776Z
+Version: 1.2.1  |  Generated: 2026-01-21T17:11:59.946Z
 
 This is a concise summary of all available API functions and types.
 
@@ -453,6 +453,16 @@ interface BroadcastRecord {
   color?: string
   }
   broadcastType?: string
+  topic: string
+  channelSettings?: {
+  mode?: 'preferred' | 'channels' | 'all'
+  channels?: Array<{
+  channel: import('./broadcasts').BroadcastChannel
+  enabled?: boolean
+  priority?: number
+  templateId?: string
+  }>
+  }
   [key: string]: unknown
   }
   createdAt: string
@@ -484,30 +494,31 @@ interface BroadcastRecipientsResponse {
 interface BroadcastPreviewRequest {
   contactId?: string
   email?: string
+  phone?: string
   props?: Record<string, any>
-}
-```
-
-**BroadcastPreviewResponse** (interface)
-```typescript
-interface BroadcastPreviewResponse {
-  ok: boolean; html: string
+  channelOverride?: BroadcastChannel
+  hydrate?: boolean
+  include?: { product?: boolean; proof?: boolean; user?: boolean; [k: string]: boolean | undefined }
 }
 ```
 
 **BroadcastSendTestRequest** (interface)
 ```typescript
 interface BroadcastSendTestRequest {
-  to: string
-  subject?: string
+  contactId?: string
+  email?: string
+  phone?: string
   props?: Record<string, any>
+  channelOverride?: BroadcastChannel
+  hydrate?: boolean
+  include?: { product?: boolean; proof?: boolean; user?: boolean; [k: string]: boolean | undefined }
 }
 ```
 
 **BroadcastSendTestResponse** (interface)
 ```typescript
 interface BroadcastSendTestResponse {
-  ok: boolean; id?: string
+  ok: boolean; id?: string; channel?: BroadcastChannel
 }
 ```
 
@@ -537,12 +548,24 @@ interface BroadcastSendManualResponse {
 }
 ```
 
+**BroadcastSendRequest** (interface)
+```typescript
+interface BroadcastSendRequest {
+  pageSize?: number
+  maxPages?: number
+  sharedContext?: Record<string, any>
+  channel?: BroadcastChannel
+  hydrate?: boolean
+  include?: { product?: boolean; proof?: boolean; user?: boolean; [k: string]: boolean | undefined }
+}
+```
+
 **BroadcastAppendEventBody** (interface)
 ```typescript
 interface BroadcastAppendEventBody {
   broadcastId: string
   contactId?: string
-  channel?: 'email'
+  channel?: BroadcastChannel
   templateId?: string
   eventType: string
   outcome?: 'success' | 'failed'
@@ -559,6 +582,10 @@ interface BroadcastAppendBulkBody {
   params: Record<string, any> // merged with collectionId server-side
 }
 ```
+
+**BroadcastChannel** = `'email' | 'push' | 'sms' | 'wallet'`
+
+**BroadcastPreviewResponse** = ``
 
 ### claimSet
 
@@ -654,82 +681,6 @@ interface Collection {
 interface NotificationSubjectTarget {
   type: 'product' | 'collection' | 'user' | 'batch' | 'proof'
   id: string
-}
-```
-
-**PushNotificationTemplate** (interface)
-```typescript
-interface PushNotificationTemplate {
-  title: string
-  body: string
-  icon?: string
-}
-```
-
-**EmailNotificationTemplate** (interface)
-```typescript
-interface EmailNotificationTemplate {
-  subject: string
-  body: string
-}
-```
-
-**WalletUpdateTemplate** (interface)
-```typescript
-interface WalletUpdateTemplate {
-  textModulesData?: Array<{
-  id: string
-  header: string
-  body: string
-  }>
-}
-```
-
-**NotificationTemplate** (interface)
-```typescript
-interface NotificationTemplate {
-  push?: PushNotificationTemplate
-  email?: EmailNotificationTemplate
-  walletUpdate?: WalletUpdateTemplate
-}
-```
-
-**SendNotificationRequest** (interface)
-```typescript
-interface SendNotificationRequest {
-  subjectTargets: NotificationSubjectTarget[]
-  severity: 'low' | 'normal' | 'important' | 'critical'
-  mode: 'preferred' | 'all'
-  channels : ("push" | "email" | "wallet")[]
-  template: NotificationTemplate
-}
-```
-
-**SendNotificationResponse** (interface)
-```typescript
-interface SendNotificationResponse {
-  ok: boolean
-  notificationId: string
-  counts: {
-  contacts: number
-  attempts: number
-  }
-  status: {
-  notification: {
-  notificationId: string
-  state: 'queued' | 'sent' | 'failed' | 'confirmed' | string
-  subjectTargets: NotificationSubjectTarget[]
-  severity: 'low' | 'normal' | 'important' | 'critical' | string
-  channelsOverride: Record<string, any>
-  template: NotificationTemplate
-  }
-  totals: {
-  queued: number
-  sent: number
-  failed: number
-  confirmed: number
-  }
-  }
 }
 ```
 
@@ -861,9 +812,228 @@ interface RecipientsPage {
 }
 ```
 
+**PushSubscriptionJSON** (interface)
+```typescript
+interface PushSubscriptionJSON {
+  endpoint: string
+  keys?: {
+  p256dh?: string
+  auth?: string
+  }
+}
+```
+
+**PushVapidResponse** (interface)
+```typescript
+interface PushVapidResponse {
+  publicKey: string
+}
+```
+
+**PushSubscribeResponse** (interface)
+```typescript
+interface PushSubscribeResponse {
+  ok: true; id: string
+}
+```
+
+**RegisterPushMethodRequest** (interface)
+```typescript
+interface RegisterPushMethodRequest {
+  contactId: string
+  endpoint: string
+  keys: { p256dh: string; auth: string }
+  meta?: Record<string, any>
+}
+```
+
+**CommsSettings** (interface)
+```typescript
+interface CommsSettings {
+  unsub?: {
+  requireToken?: boolean
+  secret?: string
+  hasSecret?: boolean
+  }
+  topics?: Record<string, TopicConfig>
+  [k: string]: any
+}
+```
+
+**TopicConfig** (interface)
+```typescript
+interface TopicConfig {
+  label?: string
+  description?: string
+  labels?: string[]
+  defaults?: {
+  channels?: Partial<Record<BroadcastChannel, boolean>>
+  topics?: Record<string, boolean | undefined>
+  }
+  rules?: {
+  allowChannels?: BroadcastChannel[]
+  allowUnsubscribe?: boolean
+  required?: boolean
+  }
+  [k: string]: any
+}
+```
+
+**CommsSettingsGetResponse** (interface)
+```typescript
+interface CommsSettingsGetResponse {
+  ok: true
+  settings: CommsSettings
+}
+```
+
+**CommsPublicTopicsResponse** (interface)
+```typescript
+interface CommsPublicTopicsResponse {
+  ok: true; topics: Record<string, TopicConfig>
+}
+```
+
+**UnsubscribeQuery** (interface)
+```typescript
+interface UnsubscribeQuery {
+  contactId: string
+  topic?: string
+  channel?: BroadcastChannel
+  token?: string
+}
+```
+
+**UnsubscribeResponse** (interface)
+```typescript
+interface UnsubscribeResponse {
+  ok: true; applied?: { channels?: Record<string, boolean>; topics?: Record<string, boolean> }
+}
+```
+
+**CommsConsentUpsertRequest** (interface)
+```typescript
+interface CommsConsentUpsertRequest {
+  contactId: string
+  channels?: ConsentChannels
+  topics?: Record<string, boolean>
+  topicsByChannel?: Partial<Record<BroadcastChannel, Record<string, boolean>>>
+}
+```
+
+**CommsPreferencesUpsertRequest** (interface)
+```typescript
+interface CommsPreferencesUpsertRequest {
+  contactId: string
+  subject?: { type: SubjectType; id: string; productId?: string }
+  channels?: ConsentChannels
+  topics?: Record<string, boolean>
+  topicsByChannel?: Partial<Record<BroadcastChannel, Record<string, boolean>>>
+}
+```
+
+**CommsSubscribeRequest** (interface)
+```typescript
+interface CommsSubscribeRequest {
+  contactId: string
+  subject: { type: SubjectType; id: string; productId?: string }
+  subscribe: boolean
+  source?: string
+}
+```
+
+**CommsSubscribeResponse** (interface)
+```typescript
+interface CommsSubscribeResponse {
+  ok: true; subscriptionId: string
+}
+```
+
+**CommsSubscriptionCheckQuery** (interface)
+```typescript
+interface CommsSubscriptionCheckQuery {
+  contactId: string
+  subjectType: SubjectType
+  subjectId: string
+  productId?: string
+}
+```
+
+**CommsSubscriptionCheckResponse** (interface)
+```typescript
+interface CommsSubscriptionCheckResponse {
+  ok: true; subscribed: boolean
+}
+```
+
+**CommsListMethodsQuery** (interface)
+```typescript
+interface CommsListMethodsQuery {
+  contactId: string
+  type?: BroadcastChannel
+}
+```
+
+**CommsListMethodsResponse** (interface)
+```typescript
+interface CommsListMethodsResponse {
+  ok: true; methods: import('./contact').CommMethod[]
+}
+```
+
+**RegisterEmailMethodRequest** (interface)
+```typescript
+interface RegisterEmailMethodRequest {
+  contactId?: string; email?: string; userId?: string
+}
+```
+
+**RegisterSmsMethodRequest** (interface)
+```typescript
+interface RegisterSmsMethodRequest {
+  contactId?: string; phone?: string; userId?: string
+}
+```
+
+**RegisterMethodResponse** (interface)
+```typescript
+interface RegisterMethodResponse {
+  ok: true; contactId: string
+}
+```
+
+**SubscriptionsResolveRequest** (interface)
+```typescript
+interface SubscriptionsResolveRequest {
+  subject: { type: SubjectType; id: string; productId?: string }
+  hints: { userId?: string; pushEndpoint?: string; email?: string; walletObjectId?: string }
+}
+```
+
+**SubscriptionsResolveResponse** (interface)
+```typescript
+interface SubscriptionsResolveResponse {
+  ok: true
+  subject: { type: SubjectType; id: string; productId?: string }
+  contacts: Array<{
+  contactId: string
+  subscribed: boolean
+  channels?: Partial<Record<BroadcastChannel, boolean>>
+  walletForSubject?: boolean
+  }>
+  anySubscribed: boolean
+  anyMethods: boolean
+  anyWalletForSubject: boolean
+}
+```
+
 **RecipientId** = `string`
 
 **Recipient** = `import('./contact').Contact`
+
+**CommsSettingsPatchBody** = `Partial<CommsSettings>`
+
+**ConsentChannels** = `Partial<Record<BroadcastChannel, boolean>>`
 
 ### contact
 
@@ -888,6 +1058,7 @@ interface Contact {
   locale?: string | null
   timezone?: string | null
   externalIds?: Record<string, any>
+  comms?: CommsState
   customFields: ContactCustomFields
   createdAt: string
   updatedAt: string
@@ -960,6 +1131,68 @@ interface PublicUpdateMyContactResponse {
 }
 ```
 
+**CommMethodMeta** (interface)
+```typescript
+interface CommMethodMeta {
+  pushEndpoint?: string
+  p256dh?: string
+  auth?: string
+  phone?: string
+  email?: string
+  walletObjectId?: string
+  subjectType?: SubjectType
+  subjectId?: string
+  productId?: string
+}
+```
+
+**CommMethod** (interface)
+```typescript
+interface CommMethod {
+  id?: string
+  type: ChannelName
+  meta?: CommMethodMeta
+  verified?: boolean
+  suppressed?: boolean
+  createdAt?: string
+}
+```
+
+**Subscription** (interface)
+```typescript
+interface Subscription {
+  id: string // canonical key derived from subject (opaque to clients)
+  subjectType: SubjectType
+  subjectId: string
+  productId?: string | null
+  contactId: string
+  source?: string // e.g., 'api'
+  createdAt?: string
+  deletedAt?: string | null
+}
+```
+
+**PreferenceEntry** (interface)
+```typescript
+interface PreferenceEntry {
+  subjectType?: SubjectType | null
+  subjectId?: string | null
+  channels?: Partial<Record<ChannelName, boolean>>
+  topics?: Record<string, boolean>
+  topicsByChannel?: Partial<Record<ChannelName, Record<string, boolean>>>
+  updatedAt?: string
+}
+```
+
+**CommsState** (interface)
+```typescript
+interface CommsState {
+  methods?: CommMethod[]
+  subscriptions?: Subscription[]
+  preferences?: Record<string, PreferenceEntry>
+}
+```
+
 **ContactCustomFields** = `Record<string, any>`
 
 **ContactResponse** = `Contact`
@@ -971,6 +1204,10 @@ interface PublicUpdateMyContactResponse {
 **PublicContactUpsertRequest** = `Partial<`
 
 **ContactPatch** = `Partial<`
+
+**ChannelName** = `import('./broadcasts').BroadcastChannel`
+
+**SubjectType** = `'product' | 'proof' | 'batch'`
 
 ### error
 
@@ -2152,7 +2389,7 @@ Look up a serial number by code for a batch (admin only).
 
 **send**(collectionId: string,
     id: string,
-    body: { pageSize?: number; maxPages?: number; sharedContext?: Record<string, any>; subject?: string } = {}) → `Promise<`
+    body: BroadcastSendRequest = {}) → `Promise<`
 
 **sendTest**(collectionId: string,
     id: string,
@@ -2248,9 +2485,59 @@ Assign a value to a serial number for a collection (admin only).
 
 ### comms
 
-**sendNotification**(collectionId: string,
-    request: SendNotificationRequest) → `Promise<SendNotificationResponse>`
-Send a notification to specified targets within a collection. Supports multiple delivery methods including push notifications, email, and wallet pass updates. The notification will be delivered based on user preferences and the specified delivery mode. ```typescript const result = await comms.sendNotification('my-collection', { subjectTargets: [{ type: 'product', id: 'prod_123' }], severity: 'important', mode: 'preferred', template: { push: { title: 'Update available', body: 'We\'ve shipped an important update.', icon: 'https://cdn.example.com/brand/logo-128.png' }, email: { subject: 'Important update for your product', body: 'There\'s an important update. Open your pass or profile to learn more.' }, walletUpdate: { textModulesData: [ { id: 'notice', header: 'Update', body: 'Open your wallet pass for details.' } ] } } }) if (result.ok) { console.log('Notification queued:', result.notificationId) console.log('Totals:', result.status.totals) } ```
+**getPushVapidPublicKey**(collectionId: string) → `Promise<import("../types/comms").PushVapidResponse>`
+Public: Get VAPID public key used for Web Push subscriptions. GET /public/collection/:collectionId/comm/push/vapidPublicKey Note: Key may be global; path is collection-scoped for consistency.
+
+**registerPush**(collectionId: string,
+    body: import("../types/comms") → `void`
+Public: Register a Web Push subscription under unified comms. POST /public/collection/:collectionId/comm/push/register
+
+**getSettings**(collectionId: string,
+    opts: { includeSecret?: boolean } = {}) → `Promise<import("../types/comms").CommsSettingsGetResponse>`
+Admin: Get current comms settings for a collection. GET /admin/collection/:collectionId/comm.settings Optional query: includeSecret=true to include unsub.secret in response.
+
+**patchSettings**(collectionId: string,
+    body: import("../types/comms") → `void`
+Admin: Patch comms settings for a collection. PATCH /admin/collection/:collectionId/comm.settings
+
+**getPublicTopics**(collectionId: string) → `Promise<import("../types/comms").CommsPublicTopicsResponse>`
+Public: Fetch configured topics for a collection. GET /public/collection/:collectionId/comm/topics
+
+**unsubscribe**(collectionId: string,
+    query: import("../types/comms") → `void`
+Public: Unsubscribe a contact from a category or channel. GET /public/collection/:collectionId/comm/unsubscribe
+
+**upsertConsent**(collectionId: string,
+    body: import("../types/comms") → `void`
+Public: Upsert default consent for a contact. POST /public/collection/:collectionId/comm/consent
+
+**upsertPreferences**(collectionId: string,
+    body: import("../types/comms") → `void`
+Public: Upsert preferences for a specific subject (or default if subject omitted). POST /public/collection/:collectionId/comm/preferences
+
+**subscribe**(collectionId: string,
+    body: import("../types/comms") → `void`
+Public: Subscribe/unsubscribe contact to a subject. POST /public/collection/:collectionId/comm/subscribe
+
+**checkSubscription**(collectionId: string,
+    query: import("../types/comms") → `void`
+Public: Check subscription status for a subject. GET /public/collection/:collectionId/comm/subscription/check
+
+**listMethods**(collectionId: string,
+    query: import("../types/comms") → `void`
+Public: List registered contact methods. GET /public/collection/:collectionId/comm/methods
+
+**registerEmail**(collectionId: string,
+    body: import("../types/comms") → `void`
+Public: Register email method for a contact. POST /public/collection/:collectionId/comm/email/register
+
+**registerSms**(collectionId: string,
+    body: import("../types/comms") → `void`
+Public: Register SMS method for a contact. POST /public/collection/:collectionId/comm/sms/register
+
+**resolveSubscriptions**(collectionId: string,
+    body: import("../types/comms") → `void`
+Public: Resolve contacts for a subject with identity hints. POST /public/collection/:collectionId/comm/subscriptions/resolve
 
 **queryByUser**(collectionId: string,
     body: CommsQueryByUser = {}) → `Promise<CommunicationEvent[]>`
