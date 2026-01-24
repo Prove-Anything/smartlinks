@@ -9,6 +9,7 @@ import { proof } from "../src/api/proof";
 import { batch } from "../src/api/batch";
 import { actions } from "../src/api/actions";
 import { broadcasts } from "../src/api/broadcasts";
+import { contact } from "../src/api/contact";
 
 async function main() {
   // Initialize SDK with API key for server-side usage
@@ -37,6 +38,10 @@ async function main() {
         // Get detailed collection info
         const collectionDetails = await collection.get(firstCollection.id, false)
         console.log(`Collection description: ${collectionDetails.description}`)
+
+        // Get public contact schema for this collection
+        const schema = await contact.publicGetSchema(firstCollection.id)
+        console.log(`Schema v${schema.version}: core=${schema.fields.length}, custom=${schema.customFields.length}`)
         
         // Example 3: Working with Products
         console.log('\n=== Products Example ===')

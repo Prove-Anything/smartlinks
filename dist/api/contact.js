@@ -71,6 +71,12 @@ export var contact;
         return patch(path, data);
     }
     contact.publicUpdateMine = publicUpdateMine;
+    // Public: Get contact update schema for a collection
+    async function publicGetSchema(collectionId) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/contacts/schema`;
+        return request(path);
+    }
+    contact.publicGetSchema = publicGetSchema;
     async function erase(collectionId, contactId, body) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/${encodeURIComponent(contactId)}/erase`;
         return post(path, body || {});

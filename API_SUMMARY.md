@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.2.1  |  Generated: 2026-01-21T17:11:59.946Z
+Version: 1.2.2  |  Generated: 2026-01-23T13:52:47.824Z
 
 This is a concise summary of all available API functions and types.
 
@@ -454,13 +454,13 @@ interface BroadcastRecord {
   }
   broadcastType?: string
   topic: string
+  templateParams?: Record<string, unknown>;
   channelSettings?: {
   mode?: 'preferred' | 'channels' | 'all'
   channels?: Array<{
-  channel: import('./broadcasts').BroadcastChannel
+  channel: BroadcastChannel
   enabled?: boolean
   priority?: number
-  templateId?: string
   }>
   }
   [key: string]: unknown
@@ -866,9 +866,12 @@ interface TopicConfig {
   label?: string
   description?: string
   labels?: string[]
+  classification?: 'transactional' | 'marketing'
   defaults?: {
   channels?: Partial<Record<BroadcastChannel, boolean>>
   topics?: Record<string, boolean | undefined>
+  policy?: 'opt-in' | 'opt-out'
+  byChannel?: Partial<Record<BroadcastChannel, 'opt-in' | 'opt-out'>>
   }
   rules?: {
   allowChannels?: BroadcastChannel[]
@@ -1193,6 +1196,33 @@ interface CommsState {
 }
 ```
 
+**BaseField** (interface)
+```typescript
+interface BaseField {
+  key: string
+  label: string
+  type: FieldType
+  widget: FieldWidget
+  visible: boolean
+  editable: boolean
+  readOnly: boolean
+}
+```
+
+**ContactSchema** (interface)
+```typescript
+interface ContactSchema {
+  version: number          // 1
+  fields: CoreField[]      // core fields
+  customFields: CustomField[]
+  settings: {
+  publicVisibleFields: string[]
+  publicEditableFields: string[]
+  customFieldsVersion: number
+  }
+}
+```
+
 **ContactCustomFields** = `Record<string, any>`
 
 **ContactResponse** = `Contact`
@@ -1208,6 +1238,10 @@ interface CommsState {
 **ChannelName** = `import('./broadcasts').BroadcastChannel`
 
 **SubjectType** = `'product' | 'proof' | 'batch'`
+
+**FieldWidget** = `'text' | 'email' | 'tel' | 'select' | 'checkbox'`
+
+**FieldType** = ``
 
 ### error
 
@@ -1878,6 +1912,7 @@ interface TemplateBase {
   push: { title: string; body: string, url?: string, iconUrl?: string },
   wallet?: { header: string; body: string; imageUri?: string }
   }
+  parameters: TemplateParameterSchema[]
   subject?: string
   body?: string
   css?: string
@@ -2593,6 +2628,8 @@ Logging: Append many communication events for a list of IDs. POST /admin/collect
 
 **publicUpdateMine**(collectionId: string,
     data: ContactPatch) → `Promise<PublicUpdateMyContactResponse>`
+
+**publicGetSchema**(collectionId: string) → `Promise<ContactSchema>`
 
 **erase**(collectionId: string, contactId: string, body?: any) → `Promise<ContactResponse>`
 

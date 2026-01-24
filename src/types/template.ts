@@ -1,5 +1,15 @@
 // src/types/template.ts
 
+
+interface TemplateParameterSchema {
+  key: string;
+  label?: string;
+  type?: string;
+  required?: boolean;
+  defaultValue?: string;
+}
+
+
 // Base shape shared across admin/public projections
 export interface TemplateBase {
   id: string
@@ -18,6 +28,7 @@ export interface TemplateBase {
     push: { title: string; body: string, url?: string, iconUrl?: string },
     wallet?: { header: string; body: string; imageUri?: string }
   }
+  parameters: TemplateParameterSchema[]
   subject?: string
   body?: string
   css?: string

@@ -129,3 +129,32 @@ export interface CommsState {
     /** Keyed by `_default` or `${type}_${id}` */
     preferences?: Record<string, PreferenceEntry>;
 }
+export type FieldWidget = 'text' | 'email' | 'tel' | 'select' | 'checkbox';
+export type FieldType = 'string' | 'url' | 'email' | 'tel' | 'text' | 'select' | 'checkbox' | 'boolean';
+export interface BaseField {
+    key: string;
+    label: string;
+    type: FieldType;
+    widget: FieldWidget;
+    visible: boolean;
+    editable: boolean;
+    readOnly: boolean;
+}
+export interface CoreField extends BaseField {
+}
+export interface CustomField extends BaseField {
+    path: string;
+    required: boolean;
+    order?: number;
+    options?: string[];
+}
+export interface ContactSchema {
+    version: number;
+    fields: CoreField[];
+    customFields: CustomField[];
+    settings: {
+        publicVisibleFields: string[];
+        publicEditableFields: string[];
+        customFieldsVersion: number;
+    };
+}

@@ -1,5 +1,5 @@
 import { request, post, del, patch } from "../http"
-import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse, ContactPublic, ContactPatch, PublicGetMyContactResponse, PublicUpdateMyContactResponse } from "../types"
+import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse, ContactPublic, ContactPatch, PublicGetMyContactResponse, PublicUpdateMyContactResponse, ContactSchema } from "../types"
 
 export namespace contact {
   export async function create(collectionId: string, data: ContactCreateRequest): Promise<ContactResponse> {
@@ -89,6 +89,14 @@ export namespace contact {
   ): Promise<PublicUpdateMyContactResponse> {
     const path = `/public/collection/${encodeURIComponent(collectionId)}/contact/me`
     return patch<PublicUpdateMyContactResponse>(path, data)
+  }
+
+  // Public: Get contact update schema for a collection
+  export async function publicGetSchema(
+    collectionId: string
+  ): Promise<ContactSchema> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/contacts/schema`
+    return request<ContactSchema>(path)
   }
 
   export async function erase(collectionId: string, contactId: string, body?: any): Promise<ContactResponse> {

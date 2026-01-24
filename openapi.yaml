@@ -144,6 +144,27 @@ paths:
         '404':
           description: Not found
 
+  /public/collection/{collectionId}/contacts/schema:
+    get:
+      tags: [Collection]
+      summary: Get public contact update schema for a collection
+      operationId: getPublicContactSchema
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Contact schema returned
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ContactSchema'
+        '404':
+          description: Not found
+
   /admin/collection/{collectionId}/claimSet/{id}/assignClaims:
     post:
       tags: [ClaimSet]
@@ -249,6 +270,84 @@ components:
       type: object
       description: Arbitrary settings for the specified group
       additionalProperties: true
+
+    FieldWidget:
+      type: string
+      enum: ['text','email','tel','select','checkbox']
+
+    FieldType:
+      type: string
+      enum: ['string','url','email','tel','text','select','checkbox','boolean']
+
+    BaseField:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        type:
+          $ref: '#/components/schemas/FieldType'
+        widget:
+          $ref: '#/components/schemas/FieldWidget'
+        visible:
+          type: boolean
+        editable:
+          type: boolean
+        readOnly:
+          type: boolean
+      required: [key,label,type,widget,visible,editable,readOnly]
+
+    CoreField:
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+
+    CustomField:
+      allOf:
+        - $ref: '#/components/schemas/BaseField'
+        - type: object
+          properties:
+            path:
+              type: string
+              description: e.g. "customFields.City"
+            required:
+              type: boolean
+            order:
+              type: integer
+            options:
+              type: array
+              items:
+                type: string
+          required: [path,required]
+
+    ContactSchema:
+      type: object
+      properties:
+        version:
+          type: integer
+          example: 1
+        fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/CoreField'
+        customFields:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomField'
+        settings:
+          type: object
+          properties:
+            publicVisibleFields:
+              type: array
+              items:
+                type: string
+            publicEditableFields:
+              type: array
+              items:
+                type: string
+            customFieldsVersion:
+              type: integer
+      required: [version,fields,customFields,settings]
 
     ClaimCodeRef:
       type: object

@@ -3,6 +3,7 @@ export interface ListBroadcastsQuery {
     offset?: number;
     appId?: string;
 }
+export type BroadcastChannel = 'email' | 'push' | 'sms' | 'wallet';
 export interface BroadcastRecord {
     id: string;
     collectionId: string;
@@ -22,14 +23,15 @@ export interface BroadcastRecord {
         broadcastType?: string;
         /** Required topic key for consent enforcement (e.g. newsletter, marketing, critical) */
         topic: string;
+        /** Required topic key for consent enforcement (e.g. newsletter, marketing, critical) */
+        templateParams?: Record<string, unknown>;
         /** Per-channel enablement/priority and optional template overrides */
         channelSettings?: {
             mode?: 'preferred' | 'channels' | 'all';
             channels?: Array<{
-                channel: import('./broadcasts').BroadcastChannel;
+                channel: BroadcastChannel;
                 enabled?: boolean;
                 priority?: number;
-                templateId?: string;
             }>;
         };
         [key: string]: unknown;
@@ -48,7 +50,6 @@ export interface BroadcastRecipientsResponse {
     offset: number;
     note?: string;
 }
-export type BroadcastChannel = 'email' | 'push' | 'sms' | 'wallet';
 export interface BroadcastPreviewRequest {
     contactId?: string;
     email?: string;

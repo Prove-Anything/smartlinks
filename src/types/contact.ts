@@ -196,3 +196,47 @@ export interface CommsState {
   /** Keyed by `_default` or `${type}_${id}` */
   preferences?: Record<string, PreferenceEntry>
 }
+
+// Public contact schema for update forms
+export type FieldWidget = 'text' | 'email' | 'tel' | 'select' | 'checkbox'
+export type FieldType =
+  | 'string'     // core text-like fields
+  | 'url'
+  | 'email'
+  | 'tel'
+  | 'text'       // custom text
+  | 'select'
+  | 'checkbox'
+  | 'boolean'    // alias for checkbox
+
+export interface BaseField {
+  key: string
+  label: string
+  type: FieldType
+  widget: FieldWidget
+  visible: boolean
+  editable: boolean
+  readOnly: boolean
+}
+
+export interface CoreField extends BaseField {
+  // keys like: contactId, firstName, lastName, displayName, company, avatarUrl, locale, timezone, email, phone
+}
+
+export interface CustomField extends BaseField {
+  path: string         // e.g. "customFields.City"
+  required: boolean
+  order?: number
+  options?: string[]   // present for select
+}
+
+export interface ContactSchema {
+  version: number          // 1
+  fields: CoreField[]      // core fields
+  customFields: CustomField[]
+  settings: {
+    publicVisibleFields: string[]
+    publicEditableFields: string[]
+    customFieldsVersion: number
+  }
+}

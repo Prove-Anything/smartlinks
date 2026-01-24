@@ -150,9 +150,15 @@ export interface TopicConfig {
   description?: string
   /** Optional UI-only grouping labels */
   labels?: string[]
+  /** Classification for UI and default policy guidance */
+  classification?: 'transactional' | 'marketing'
   defaults?: {
     channels?: Partial<Record<BroadcastChannel, boolean>>
     topics?: Record<string, boolean | undefined>
+    /** Default consent policy when explicit preferences are absent */
+    policy?: 'opt-in' | 'opt-out'
+    /** Per-channel default policy (overrides policy when present) */
+    byChannel?: Partial<Record<BroadcastChannel, 'opt-in' | 'opt-out'>>
   }
   rules?: {
     allowChannels?: BroadcastChannel[]

@@ -131,6 +131,9 @@ await comms.patchSettings('collectionId', {
 #### Topics
 - Manage under `settings.topics` (map: topic key → config).
 - Public clients fetch via `GET public/collection/:collectionId/comm/topics`.
+- Each topic can declare `classification` and default consent `policy`:
+  - Classification: `transactional` (order confirmations, password resets) vs `marketing` (newsletters, promos).
+  - Default policy: `opt-in` or `opt-out`, with optional per-channel overrides under `defaults.byChannel`.
 
 SDK:
 ```ts
@@ -144,7 +147,10 @@ Example topic config:
     "label": "Product Updates",
     "description": "News and updates about products",
     "labels": ["news", "releases"],
+    "classification": "marketing",
     "defaults": {
+      "policy": "opt-in",
+      "byChannel": { "email": "opt-in", "push": "opt-in" },
       "channels": { "email": true, "sms": false, "push": true },
       "topics": { "news": true, "releases": true }
     },
@@ -153,6 +159,25 @@ Example topic config:
       "allowUnsubscribe": true
     },
     "required": false
+  }
+}
+```
+
+Transactional example:
+```json
+{
+  "critical": {
+    "label": "Critical Notices",
+    "description": "Security and operational alerts",
+    "classification": "transactional",
+    "defaults": {
+      "policy": "opt-out",
+      "byChannel": { "email": "opt-out", "push": "opt-out" },
+      "channels": { "email": true, "push": true },
+      "topics": { "critical": true }
+    },
+    "rules": { "allowChannels": ["email", "push"], "allowUnsubscribe": false },
+    "required": true
   }
 }
 ```
@@ -194,6 +219,29 @@ List configured topics (admin-defined).
 SDK:
 ```ts
 const { topics } = await comms.getPublicTopics('collectionId')
+```
+
+Response includes UI metadata for defaults and classification:
+- `topics[key].classification`: `transactional` | `marketing`
+- `topics[key].defaults.policy`: `opt-in` | `opt-out`
+- `topics[key].defaults.byChannel[channel]`: `opt-in` | `opt-out`
+
+UI guidance for toggles:
+- If `defaults.byChannel[channel]` exists, use it to set the default toggle position.
+- Else use `defaults.policy` for all channels.
+- If neither is present, fall back by classification: transactional → opt-out; marketing → opt-in.
+- Explicit preferences always override defaults.
+
+Helper to compute effective policy per channel:
+```ts
+type Policy = 'opt-in' | 'opt-out'
+function effectivePolicy(topic: any, channel: 'email'|'sms'|'push'|'wallet'): Policy {
+  return (
+    topic?.defaults?.byChannel?.[channel] ??
+    topic?.defaults?.policy ??
+    (topic?.classification === 'marketing' ? 'opt-in' : 'opt-out')
+  ) as Policy
+}
 ```
 
 ### Consent (default)

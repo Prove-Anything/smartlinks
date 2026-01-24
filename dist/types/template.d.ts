@@ -1,3 +1,10 @@
+interface TemplateParameterSchema {
+    key: string;
+    label?: string;
+    type?: string;
+    required?: boolean;
+    defaultValue?: string;
+}
 export interface TemplateBase {
     id: string;
     collectionId: string;
@@ -31,6 +38,7 @@ export interface TemplateBase {
             imageUri?: string;
         };
     };
+    parameters: TemplateParameterSchema[];
     subject?: string;
     body?: string;
     css?: string;
@@ -65,3 +73,4 @@ export interface TemplateRenderSourceResponse {
     ok: boolean;
     html: string;
 }
+export {};
