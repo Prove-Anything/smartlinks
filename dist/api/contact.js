@@ -73,7 +73,7 @@ export var contact;
     contact.publicUpdateMine = publicUpdateMine;
     // Public: Get contact update schema for a collection
     async function publicGetSchema(collectionId) {
-        const path = `/public/collection/${encodeURIComponent(collectionId)}/contacts/schema`;
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/contact/schema`;
         return request(path);
     }
     contact.publicGetSchema = publicGetSchema;

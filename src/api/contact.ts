@@ -95,7 +95,7 @@ export namespace contact {
   export async function publicGetSchema(
     collectionId: string
   ): Promise<ContactSchema> {
-    const path = `/public/collection/${encodeURIComponent(collectionId)}/contacts/schema`
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/contact/schema`
     return request<ContactSchema>(path)
   }
 
