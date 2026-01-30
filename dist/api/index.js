@@ -28,3 +28,5 @@ export { qr } from "./qr";
 export { template } from "./template";
 export { interactions } from "./interactions";
 export { location } from "./location";
+import * as realtime_1 from "./realtime";
+export { realtime_1 as realtime };

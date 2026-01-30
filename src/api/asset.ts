@@ -16,15 +16,19 @@ export namespace asset {
     }
   }
 
-  function buildScopeBase(scope: UploadAssetOptions['scope'] | ListAssetsOptions['scope']): string {
+  function buildScopeBase(
+    scope: UploadAssetOptions['scope'] | ListAssetsOptions['scope'],
+    isAdmin: boolean = false
+  ): string {
+    const prefix = isAdmin ? '/admin' : '/public'
     if (scope.type === 'collection') {
-      return `/public/collection/${encodeURIComponent(scope.collectionId)}`
+      return `${prefix}/collection/${encodeURIComponent(scope.collectionId)}`
     }
     if (scope.type === 'product') {
-      return `/public/collection/${encodeURIComponent(scope.collectionId)}/product/${encodeURIComponent(scope.productId)}`
+      return `${prefix}/collection/${encodeURIComponent(scope.collectionId)}/product/${encodeURIComponent(scope.productId)}`
     }
     // proof
-    return `/public/collection/${encodeURIComponent(scope.collectionId)}/product/${encodeURIComponent(scope.productId)}/proof/${encodeURIComponent(scope.proofId)}`
+    return `${prefix}/collection/${encodeURIComponent(scope.collectionId)}/product/${encodeURIComponent(scope.productId)}/proof/${encodeURIComponent(scope.proofId)}`
   }
 
   /**
@@ -33,7 +37,7 @@ export namespace asset {
    * @throws AssetUploadError if upload fails
    */
   export async function upload(options: UploadAssetOptions): Promise<Asset> {
-    const base = buildScopeBase(options.scope)
+    const base = buildScopeBase(options.scope, !!options.admin)
     let path = `${base}/asset`
     if (options.appId) {
       const qp = new URLSearchParams({ appId: options.appId })

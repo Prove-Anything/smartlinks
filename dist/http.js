@@ -2,6 +2,18 @@
 // This module replaces the ApiClient constructor. It keeps baseURL, apiKey, bearerToken
 // in module-scope variables, and provides a shared `request<T>(path)` helper that will
 // be used by all namespaced files (collection.ts, product.ts, etc.).
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
+import { SmartlinksApiError } from "./types/error";
 let baseURL = null;
 let apiKey = undefined;
 let bearerToken = undefined;
@@ -62,6 +74,88 @@ function safeBodyPreview(body) {
         }
     }
     return body;
+}
+/**
+ * Normalizes various server error response formats into a consistent ErrorResponse shape.
+ * Handles multiple formats:
+ * - { code: number, message: string } (standard)
+ * - { errorCode: string, errorText: string }
+ * - { error: string, message: string }
+ * - { error: string } (just error field)
+ * - { ok: false, error: string }
+ * - Plain string
+ *
+ * @param responseBody - The parsed JSON response body from the server
+ * @param statusCode - HTTP status code
+ * @returns Normalized ErrorResponse object
+ */
+function normalizeErrorResponse(responseBody, statusCode) {
+    if (!responseBody || typeof responseBody !== 'object') {
+        // Plain string or non-object response
+        const message = typeof responseBody === 'string' ? responseBody : 'Request failed';
+        return {
+            code: statusCode,
+            message,
+        };
+    }
+    // Extract all possible fields from the response
+    const { code, errorCode, error, message, errorText, ok } = responseBody, rest = __rest(responseBody
+    // Determine the error code (prefer numeric code, fall back to errorCode or error string)
+    , ["code", "errorCode", "error", "message", "errorText", "ok"]);
+    // Determine the error code (prefer numeric code, fall back to errorCode or error string)
+    let normalizedCode = statusCode;
+    if (typeof code === 'number') {
+        normalizedCode = code;
+    }
+    else if (typeof errorCode === 'string' || typeof error === 'string') {
+        // Keep statusCode as numeric code, but preserve the string code in details
+    }
+    // Determine the error message
+    let normalizedMessage;
+    if (message) {
+        normalizedMessage = String(message);
+    }
+    else if (errorText) {
+        normalizedMessage = String(errorText);
+    }
+    else if (error) {
+        normalizedMessage = String(error);
+    }
+    else if (ok === false) {
+        normalizedMessage = 'Request failed';
+    }
+    else {
+        normalizedMessage = `Request failed with status ${statusCode}`;
+    }
+    // Extract the server-specific error code string (distinct from HTTP status code)
+    let normalizedErrorCode;
+    if (errorCode && typeof errorCode === 'string') {
+        normalizedErrorCode = errorCode;
+    }
+    else if (error && typeof error === 'string') {
+        normalizedErrorCode = error;
+    }
+    // Collect any additional details
+    const details = Object.assign({}, rest);
+    // Preserve error fields in details for backward compatibility
+    if (errorCode && typeof errorCode === 'string') {
+        details.errorCode = errorCode;
+    }
+    if (error && typeof error === 'string') {
+        details.error = error;
+    }
+    if (errorText && errorText !== normalizedMessage) {
+        details.errorText = errorText;
+    }
+    if (ok === false) {
+        details.ok = ok;
+    }
+    return {
+        code: normalizedCode,
+        errorCode: normalizedErrorCode,
+        message: normalizedMessage,
+        details: Object.keys(details).length > 0 ? details : undefined,
+    };
 }
 /**
  * Call this once (e.g. at app startup) to configure baseURL/auth.
@@ -336,14 +430,18 @@ export async function request(path) {
     });
     logDebug('[smartlinks] GET response', { url, status: response.status, ok: response.ok });
     if (!response.ok) {
-        // Try to parse ErrorResponse; if that fails, throw generic
+        // Try to parse error response body and normalize it
+        let responseBody;
         try {
-            const errBody = (await response.json());
-            throw new Error(`Error ${errBody.code}: ${errBody.message}`);
+            responseBody = await response.json();
         }
         catch (_a) {
-            throw new Error(`Request to ${url} failed with status ${response.status}`);
+            // Failed to parse JSON, use status code only
+            responseBody = null;
         }
+        const errBody = normalizeErrorResponse(responseBody, response.status);
+        const message = `Error ${errBody.code}: ${errBody.message}`;
+        throw new SmartlinksApiError(message, response.status, errBody, url);
     }
     return (await response.json());
 }
@@ -384,13 +482,16 @@ export async function post(path, body, extraHeaders) {
     });
     logDebug('[smartlinks] POST response', { url, status: response.status, ok: response.ok });
     if (!response.ok) {
+        let responseBody;
         try {
-            const errBody = (await response.json());
-            throw new Error(`Error ${errBody.code}: ${errBody.message}`);
+            responseBody = await response.json();
         }
         catch (_a) {
-            throw new Error(`Request to ${url} failed with status ${response.status}`);
+            responseBody = null;
         }
+        const errBody = normalizeErrorResponse(responseBody, response.status);
+        const message = `Error ${errBody.code}: ${errBody.message}`;
+        throw new SmartlinksApiError(message, response.status, errBody, url);
     }
     return (await response.json());
 }
@@ -431,13 +532,16 @@ export async function put(path, body, extraHeaders) {
     });
     logDebug('[smartlinks] PUT response', { url, status: response.status, ok: response.ok });
     if (!response.ok) {
+        let responseBody;
         try {
-            const errBody = (await response.json());
-            throw new Error(`Error ${errBody.code}: ${errBody.message}`);
+            responseBody = await response.json();
         }
         catch (_a) {
-            throw new Error(`Request to ${url} failed with status ${response.status}`);
+            responseBody = null;
         }
+        const errBody = normalizeErrorResponse(responseBody, response.status);
+        const message = `Error ${errBody.code}: ${errBody.message}`;
+        throw new SmartlinksApiError(message, response.status, errBody, url);
     }
     return (await response.json());
 }
@@ -478,13 +582,16 @@ export async function patch(path, body, extraHeaders) {
     });
     logDebug('[smartlinks] PATCH response', { url, status: response.status, ok: response.ok });
     if (!response.ok) {
+        let responseBody;
         try {
-            const errBody = (await response.json());
-            throw new Error(`Error ${errBody.code}: ${errBody.message}`);
+            responseBody = await response.json();
         }
         catch (_a) {
-            throw new Error(`Request to ${url} failed with status ${response.status}`);
+            responseBody = null;
         }
+        const errBody = normalizeErrorResponse(responseBody, response.status);
+        const message = `Error ${errBody.code}: ${errBody.message}`;
+        throw new SmartlinksApiError(message, response.status, errBody, url);
     }
     return (await response.json());
 }
@@ -528,13 +635,16 @@ export async function requestWithOptions(path, options) {
     const response = await fetch(url, Object.assign(Object.assign({}, options), { headers }));
     logDebug('[smartlinks] requestWithOptions response', { url, status: response.status, ok: response.ok });
     if (!response.ok) {
+        let responseBody;
         try {
-            const errBody = (await response.json());
-            throw new Error(`Error ${errBody.code}: ${errBody.message}`);
+            responseBody = await response.json();
         }
         catch (_a) {
-            throw new Error(`Request to ${url} failed with status ${response.status}`);
+            responseBody = null;
         }
+        const errBody = normalizeErrorResponse(responseBody, response.status);
+        const message = `Error ${errBody.code}: ${errBody.message}`;
+        throw new SmartlinksApiError(message, response.status, errBody, url);
     }
     return (await response.json());
 }
@@ -569,13 +679,16 @@ export async function del(path, extraHeaders) {
     });
     logDebug('[smartlinks] DELETE response', { url, status: response.status, ok: response.ok });
     if (!response.ok) {
+        let responseBody;
         try {
-            const errBody = (await response.json());
-            throw new Error(`Error ${errBody.code}: ${errBody.message}`);
+            responseBody = await response.json();
         }
         catch (_a) {
-            throw new Error(`Request to ${url} failed with status ${response.status}`);
+            responseBody = null;
         }
+        const errBody = normalizeErrorResponse(responseBody, response.status);
+        const message = `Error ${errBody.code}: ${errBody.message}`;
+        throw new SmartlinksApiError(message, response.status, errBody, url);
     }
     // If the response is empty, just return undefined
     if (response.status === 204)

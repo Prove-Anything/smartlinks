@@ -3,6 +3,8 @@
 // in module-scope variables, and provides a shared `request<T>(path)` helper that will
 // be used by all namespaced files (collection.ts, product.ts, etc.).
 
+import { SmartlinksApiError, ErrorResponse } from "./types/error"
+
 let baseURL: string | null = null
 let apiKey: string | undefined = undefined
 let bearerToken: string | undefined = undefined
@@ -60,6 +62,96 @@ function safeBodyPreview(body: any): any {
     try { return JSON.parse(JSON.stringify(copy)) } catch { return '[Object]' }
   }
   return body
+}
+
+/**
+ * Normalizes various server error response formats into a consistent ErrorResponse shape.
+ * Handles multiple formats:
+ * - { code: number, message: string } (standard)
+ * - { errorCode: string, errorText: string }
+ * - { error: string, message: string }
+ * - { error: string } (just error field)
+ * - { ok: false, error: string }
+ * - Plain string
+ * 
+ * @param responseBody - The parsed JSON response body from the server
+ * @param statusCode - HTTP status code
+ * @returns Normalized ErrorResponse object
+ */
+function normalizeErrorResponse(responseBody: any, statusCode: number): ErrorResponse {
+  if (!responseBody || typeof responseBody !== 'object') {
+    // Plain string or non-object response
+    const message = typeof responseBody === 'string' ? responseBody : 'Request failed'
+    return {
+      code: statusCode,
+      message,
+    }
+  }
+
+  // Extract all possible fields from the response
+  const {
+    code,
+    errorCode,
+    error,
+    message,
+    errorText,
+    ok,
+    ...rest
+  } = responseBody
+
+  // Determine the error code (prefer numeric code, fall back to errorCode or error string)
+  let normalizedCode: number = statusCode
+  if (typeof code === 'number') {
+    normalizedCode = code
+  } else if (typeof errorCode === 'string' || typeof error === 'string') {
+    // Keep statusCode as numeric code, but preserve the string code in details
+  }
+
+  // Determine the error message
+  let normalizedMessage: string
+  if (message) {
+    normalizedMessage = String(message)
+  } else if (errorText) {
+    normalizedMessage = String(errorText)
+  } else if (error) {
+    normalizedMessage = String(error)
+  } else if (ok === false) {
+    normalizedMessage = 'Request failed'
+  } else {
+    normalizedMessage = `Request failed with status ${statusCode}`
+  }
+
+  // Extract the server-specific error code string (distinct from HTTP status code)
+  let normalizedErrorCode: string | undefined
+  if (errorCode && typeof errorCode === 'string') {
+    normalizedErrorCode = errorCode
+  } else if (error && typeof error === 'string') {
+    normalizedErrorCode = error
+  }
+
+  // Collect any additional details
+  const details: Record<string, any> = { ...rest }
+  
+  // Preserve error fields in details for backward compatibility
+  if (errorCode && typeof errorCode === 'string') {
+    details.errorCode = errorCode
+  }
+  if (error && typeof error === 'string') {
+    details.error = error
+  }
+  if (errorText && errorText !== normalizedMessage) {
+    details.errorText = errorText
+  }
+  if (ok === false) {
+    details.ok = ok
+  }
+
+  return {
+    code: normalizedCode,
+    errorCode: normalizedErrorCode,
+    message: normalizedMessage,
+    details: Object.keys(details).length > 0 ? details : undefined,
+  }
 }
 
 /**
@@ -363,13 +455,17 @@ export async function request<T>(path: string): Promise<T> {
   logDebug('[smartlinks] GET response', { url, status: response.status, ok: response.ok })
 
   if (!response.ok) {
-    // Try to parse ErrorResponse; if that fails, throw generic
+    // Try to parse error response body and normalize it
+    let responseBody: any
     try {
-      const errBody = (await response.json()) as import("./types/error").ErrorResponse
-      throw new Error(`Error ${errBody.code}: ${errBody.message}`)
+      responseBody = await response.json()
     } catch {
-      throw new Error(`Request to ${url} failed with status ${response.status}`)
+      // Failed to parse JSON, use status code only
+      responseBody = null
     }
+    const errBody = normalizeErrorResponse(responseBody, response.status)
+    const message = `Error ${errBody.code}: ${errBody.message}`
+    throw new SmartlinksApiError(message, response.status, errBody, url)
   }
 
   return (await response.json()) as T
@@ -416,12 +512,15 @@ export async function post<T>(
   logDebug('[smartlinks] POST response', { url, status: response.status, ok: response.ok })
 
   if (!response.ok) {
+    let responseBody: any
     try {
-      const errBody = (await response.json()) as import("./types/error").ErrorResponse
-      throw new Error(`Error ${errBody.code}: ${errBody.message}`)
+      responseBody = await response.json()
     } catch {
-      throw new Error(`Request to ${url} failed with status ${response.status}`)
+      responseBody = null
     }
+    const errBody = normalizeErrorResponse(responseBody, response.status)
+    const message = `Error ${errBody.code}: ${errBody.message}`
+    throw new SmartlinksApiError(message, response.status, errBody, url)
   }
 
   return (await response.json()) as T
@@ -468,12 +567,15 @@ export async function put<T>(
   logDebug('[smartlinks] PUT response', { url, status: response.status, ok: response.ok })
 
   if (!response.ok) {
+    let responseBody: any
     try {
-      const errBody = (await response.json()) as import("./types/error").ErrorResponse
-      throw new Error(`Error ${errBody.code}: ${errBody.message}`)
+      responseBody = await response.json()
     } catch {
-      throw new Error(`Request to ${url} failed with status ${response.status}`)
+      responseBody = null
     }
+    const errBody = normalizeErrorResponse(responseBody, response.status)
+    const message = `Error ${errBody.code}: ${errBody.message}`
+    throw new SmartlinksApiError(message, response.status, errBody, url)
   }
 
   return (await response.json()) as T
@@ -520,12 +622,15 @@ export async function patch<T>(
   logDebug('[smartlinks] PATCH response', { url, status: response.status, ok: response.ok })
 
   if (!response.ok) {
+    let responseBody: any
     try {
-      const errBody = (await response.json()) as import("./types/error").ErrorResponse
-      throw new Error(`Error ${errBody.code}: ${errBody.message}`)
+      responseBody = await response.json()
     } catch {
-      throw new Error(`Request to ${url} failed with status ${response.status}`)
+      responseBody = null
     }
+    const errBody = normalizeErrorResponse(responseBody, response.status)
+    const message = `Error ${errBody.code}: ${errBody.message}`
+    throw new SmartlinksApiError(message, response.status, errBody, url)
   }
 
   return (await response.json()) as T
@@ -584,12 +689,15 @@ export async function requestWithOptions<T>(
   logDebug('[smartlinks] requestWithOptions response', { url, status: response.status, ok: response.ok })
 
   if (!response.ok) {
+    let responseBody: any
     try {
-      const errBody = (await response.json()) as import("./types/error").ErrorResponse
-      throw new Error(`Error ${errBody.code}: ${errBody.message}`)
+      responseBody = await response.json()
     } catch {
-      throw new Error(`Request to ${url} failed with status ${response.status}`)
+      responseBody = null
     }
+    const errBody = normalizeErrorResponse(responseBody, response.status)
+    const message = `Error ${errBody.code}: ${errBody.message}`
+    throw new SmartlinksApiError(message, response.status, errBody, url)
   }
 
   return (await response.json()) as T
@@ -628,12 +736,15 @@ export async function del<T>(
   logDebug('[smartlinks] DELETE response', { url, status: response.status, ok: response.ok })
 
   if (!response.ok) {
+    let responseBody: any
     try {
-      const errBody = (await response.json()) as import("./types/error").ErrorResponse
-      throw new Error(`Error ${errBody.code}: ${errBody.message}`)
+      responseBody = await response.json()
     } catch {
-      throw new Error(`Request to ${url} failed with status ${response.status}`)
+      responseBody = null
     }
+    const errBody = normalizeErrorResponse(responseBody, response.status)
+    const message = `Error ${errBody.code}: ${errBody.message}`
+    throw new SmartlinksApiError(message, response.status, errBody, url)
   }
 
   // If the response is empty, just return undefined

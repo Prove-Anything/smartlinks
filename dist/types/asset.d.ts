@@ -85,6 +85,8 @@ export interface UploadAssetOptions {
     onProgress?: (percent: number) => void;
     /** Optional: App ID for scoping to a specific microapp */
     appId?: string;
+    /** Optional: Upload via admin route instead of public */
+    admin?: boolean;
 }
 export interface ListAssetsOptions {
     scope: {

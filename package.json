@@ -1,16 +1,16 @@
 {
   "name": "@proveanything/smartlinks",
-  "version": "1.2.3",
+  "version": "1.3.2",
   "description": "Official JavaScript/TypeScript SDK for the Smartlinks API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
     "dist/",
-    "README.md",
-    "API_SUMMARY.md"
+    "docs/",
+    "README.md"
   ],
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node scripts/copy-docs-to-dist.js",
     "docs": "typedoc",
     "docs:summary": "node generate-api-summary.js",
     "build:docs": "tsc build-docs.ts --outDir dist && node dist/build-docs.js",

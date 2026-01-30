@@ -151,7 +151,9 @@ try {
 - `error.isRateLimited()` - 429
 - `error.toJSON()` - Serializable object for logging
 
-For comprehensive error handling examples and migration guidance, see [examples/error-handling-demo.ts](examples/error-handling-demo.ts).
+For comprehensive error handling examples and migration guidance, see:
+- [examples/error-handling-demo.ts](examples/error-handling-demo.ts) - Complete error handling patterns
+- [docs/ERROR_HANDLING_MIGRATION.md](docs/ERROR_HANDLING_MIGRATION.md) - Migration guide from old error handling
 
 ## Common tasks
 
@@ -554,18 +556,7 @@ setExtraHeaders({ 'X-Debug': '1' })
 
 Explore every function, parameter, and type here:
 
-- [API_SUMMARY.md](docs/API_SUMMARY.md) - Complete API reference
-
-## Additional Documentation
-
-The SDK includes comprehensive guides for advanced features:
-
-- **[Liquid Templates](docs/liquid-templates.md)** - Dynamic templating for emails and notifications with personalized data
-- **[Real-Time Messaging](docs/realtime.md)** - Ably integration for live chat, presence, and real-time updates
-- **[Theme System](docs/theme.system.md)** - Dynamic theming for iframe apps with CSS variables and postMessage
-- **[Theme Defaults](docs/theme-defaults.md)** - Default theme configuration reference
-- **[Widgets](docs/widgets.md)** - React widget system for embeddable components
-- **[Internationalization](docs/i18n.md)** - Multi-language support and localization
+- API Summary (API_SUMMARY.md)
 
 ## Requirements
 

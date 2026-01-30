@@ -276,6 +276,187 @@ function generateAPISummary() {
     summary += '\n';
   });
   
+  // Error Handling section
+  summary += '## Error Handling\n\n';
+  summary += 'All API functions throw `SmartlinksApiError` when requests fail. This error class provides structured access to HTTP status codes, server error codes, and additional context.\n\n';
+  
+  summary += '### SmartlinksApiError\n\n';
+  summary += '**Properties:**\n';
+  summary += '- **message** `string` - Human-readable error message in English (e.g., "Error 400: Not Authorized")\n';
+  summary += '- **statusCode** `number` - HTTP status code (400, 401, 404, 500, etc.)\n';
+  summary += '- **code** `number` - Numeric error code (same as statusCode)\n';
+  summary += '- **details** `Record<string, any> | undefined` - Additional server response data, including string error codes\n';
+  summary += '- **url** `string | undefined` - The URL that was requested\n\n';
+  
+  summary += '**Helper Methods:**\n';
+  summary += '- **isAuthError()** `boolean` - Returns true for 401 or 403 status codes\n';
+  summary += '- **isNotFound()** `boolean` - Returns true for 404 status code\n';
+  summary += '- **isRateLimited()** `boolean` - Returns true for 429 status code\n';
+  summary += '- **isClientError()** `boolean` - Returns true for 4xx status codes\n';
+  summary += '- **isServerError()** `boolean` - Returns true for 5xx status codes\n';
+  summary += '- **toJSON()** `object` - Returns a serializable object for logging\n\n';
+  
+  summary += '### Error Format Normalization\n\n';
+  summary += 'The SDK automatically normalizes various server error response formats into a consistent structure. The server may return errors in different formats, but they are all accessible through the same properties.\n\n';
+  
+  summary += '**Server String Error Codes:**\n';
+  summary += 'Server-specific error identifiers are preserved in `error.details`:\n';
+  summary += '- Access via: `error.details?.errorCode` or `error.details?.error`\n';
+  summary += '- Format examples: `"NOT_AUTHORIZED"`, `"broadcasts.topic.invalid"`, `"sendgrid.provision.failed"`\n';
+  summary += '- Use these for programmatic error handling (switch statements, conditional logic)\n\n';
+  
+  summary += '### Usage Examples\n\n';
+  summary += '**Basic Error Handling:**\n';
+  summary += '```typescript\n';
+  summary += 'import { SmartlinksApiError, product } from \'@proveanything/smartlinks\'\n\n';
+  summary += 'try {\n';
+  summary += '  const item = await product.get(\'collectionId\', \'productId\')\n';
+  summary += '} catch (error) {\n';
+  summary += '  if (error instanceof SmartlinksApiError) {\n';
+  summary += '    console.error(\'Status:\', error.statusCode)      // 404\n';
+  summary += '    console.error(\'Message:\', error.message)        // "Error 404: Not found"\n';
+  summary += '    console.error(\'URL:\', error.url)                // "/public/collection/..."\n';
+  summary += '  }\n';
+  summary += '}\n';
+  summary += '```\n\n';
+  
+  summary += '**Using Helper Methods:**\n';
+  summary += '```typescript\n';
+  summary += 'try {\n';
+  summary += '  await product.create(\'collectionId\', data)\n';
+  summary += '} catch (error) {\n';
+  summary += '  if (error instanceof SmartlinksApiError) {\n';
+  summary += '    if (error.isAuthError()) {\n';
+  summary += '      // Handle 401/403 - redirect to login\n';
+  summary += '      redirectToLogin()\n';
+  summary += '    } else if (error.isNotFound()) {\n';
+  summary += '      // Handle 404\n';
+  summary += '      showNotFound()\n';
+  summary += '    } else if (error.isRateLimited()) {\n';
+  summary += '      // Handle 429 - implement retry with backoff\n';
+  summary += '      await retryAfterDelay()\n';
+  summary += '    } else if (error.isServerError()) {\n';
+  summary += '      // Handle 5xx\n';
+  summary += '      showMaintenanceMessage()\n';
+  summary += '    }\n';
+  summary += '  }\n';
+  summary += '}\n';
+  summary += '```\n\n';
+  
+  summary += '**Accessing Server Error Codes:**\n';
+  summary += '```typescript\n';
+  summary += 'try {\n';
+  summary += '  await broadcasts.send(\'collectionId\', \'broadcastId\', options)\n';
+  summary += '} catch (error) {\n';
+  summary += '  if (error instanceof SmartlinksApiError) {\n';
+  summary += '    // Extract server-defined string error code\n';
+  summary += '    const serverCode = error.details?.errorCode || error.details?.error\n';
+  summary += '    \n';
+  summary += '    switch (serverCode) {\n';
+  summary += '      case \'NOT_AUTHORIZED\':\n';
+  summary += '        redirectToLogin()\n';
+  summary += '        break\n';
+  summary += '      case \'broadcasts.topic.invalid\':\n';
+  summary += '        showTopicSelector()\n';
+  summary += '        break\n';
+  summary += '      case \'sendgrid.provision.failed\':\n';
+  summary += '        alertAdmin(\'Email service error\')\n';
+  summary += '        break\n';
+  summary += '      default:\n';
+  summary += '        showError(error.message)\n';
+  summary += '    }\n';
+  summary += '  }\n';
+  summary += '}\n';
+  summary += '```\n\n';
+  
+  summary += '**Error Logging for Monitoring:**\n';
+  summary += '```typescript\n';
+  summary += 'try {\n';
+  summary += '  await api.someMethod()\n';
+  summary += '} catch (error) {\n';
+  summary += '  if (error instanceof SmartlinksApiError) {\n';
+  summary += '    // Log structured error data\n';
+  summary += '    logger.error(\'API Error\', error.toJSON())\n';
+  summary += '    \n';
+  summary += '    // Send to monitoring service\n';
+  summary += '    Sentry.captureException(error, {\n';
+  summary += '      extra: error.toJSON(),\n';
+  summary += '      tags: {\n';
+  summary += '        statusCode: error.statusCode,\n';
+  summary += '        serverErrorCode: error.details?.errorCode || error.details?.error,\n';
+  summary += '      }\n';
+  summary += '    })\n';
+  summary += '  }\n';
+  summary += '}\n';
+  summary += '```\n\n';
+  
+  summary += '**Handling Validation Errors:**\n';
+  summary += '```typescript\n';
+  summary += 'try {\n';
+  summary += '  await product.create(\'collectionId\', formData)\n';
+  summary += '} catch (error) {\n';
+  summary += '  if (error instanceof SmartlinksApiError && error.statusCode === 400) {\n';
+  summary += '    // Access field-specific validation errors if available\n';
+  summary += '    if (error.details?.fields) {\n';
+  summary += '      Object.entries(error.details.fields).forEach(([field, message]) => {\n';
+  summary += '        showFieldError(field, String(message))\n';
+  summary += '      })\n';
+  summary += '    } else {\n';
+  summary += '      showError(error.message)\n';
+  summary += '    }\n';
+  summary += '  }\n';
+  summary += '}\n';
+  summary += '```\n\n';
+  
+  summary += '**Retry Logic for Transient Errors:**\n';
+  summary += '```typescript\n';
+  summary += 'async function withRetry<T>(fn: () => Promise<T>, maxRetries = 3): Promise<T> {\n';
+  summary += '  for (let attempt = 0; attempt < maxRetries; attempt++) {\n';
+  summary += '    try {\n';
+  summary += '      return await fn()\n';
+  summary += '    } catch (error) {\n';
+  summary += '      if (error instanceof SmartlinksApiError) {\n';
+  summary += '        // Only retry server errors and rate limiting\n';
+  summary += '        const shouldRetry = error.isServerError() || error.isRateLimited()\n';
+  summary += '        \n';
+  summary += '        if (!shouldRetry || attempt === maxRetries - 1) {\n';
+  summary += '          throw error\n';
+  summary += '        }\n';
+  summary += '        \n';
+  summary += '        // Exponential backoff\n';
+  summary += '        const delay = 1000 * Math.pow(2, attempt)\n';
+  summary += '        await new Promise(resolve => setTimeout(resolve, delay))\n';
+  summary += '      } else {\n';
+  summary += '        throw error\n';
+  summary += '      }\n';
+  summary += '    }\n';
+  summary += '  }\n';
+  summary += '  throw new Error(\'Max retries exceeded\')\n';
+  summary += '}\n\n';
+  summary += '// Usage\n';
+  summary += 'const collections = await withRetry(() => collection.list())\n';
+  summary += '```\n\n';
+  
+  summary += '### Error Code Reference\n\n';
+  summary += '**HTTP Status Codes (numeric):**\n';
+  summary += '- `400` - Bad Request (invalid input)\n';
+  summary += '- `401` - Unauthorized (authentication required)\n';
+  summary += '- `403` - Forbidden (insufficient permissions)\n';
+  summary += '- `404` - Not Found (resource doesn\'t exist)\n';
+  summary += '- `429` - Too Many Requests (rate limited)\n';
+  summary += '- `500` - Internal Server Error\n';
+  summary += '- `502` - Bad Gateway\n';
+  summary += '- `503` - Service Unavailable\n\n';
+  
+  summary += '**Server Error Codes (strings in `details.errorCode` or `details.error`):**\n';
+  summary += 'Examples include:\n';
+  summary += '- `"NOT_AUTHORIZED"` - Not authorized for this action\n';
+  summary += '- `"broadcasts.topic.invalid"` - Invalid communication topic\n';
+  summary += '- `"broadcasts.manual.segment.missing"` - Missing required segment\n';
+  summary += '- `"sendgrid.provision.failed"` - Email service provisioning failed\n';
+  summary += '- `"validation.failed"` - Request validation failed\n\n';
+  summary += '*Note: Server error codes use either `UPPERCASE_UNDERSCORE` or `dotted.notation` format. Both are supported.*\n\n';
+  
   // Generate types section
   summary += '## Types\n\n';
   
@@ -354,8 +535,13 @@ function generateAPISummary() {
   console.log(`📊 Found ${Object.keys(functionsByNamespace).length} API namespaces`);
   console.log(`🔧 Found ${httpFunctions.length} HTTP utility functions`);
   
-  // Write to file
-  fs.writeFileSync(path.join(__dirname, 'API_SUMMARY.md'), summary);
+  // Write to docs folder
+  const docsDir = path.join(__dirname, 'docs');
+  if (!fs.existsSync(docsDir)) {
+    fs.mkdirSync(docsDir, { recursive: true });
+  }
+  fs.writeFileSync(path.join(docsDir, 'API_SUMMARY.md'), summary);
+  console.log('✓ Generated docs/API_SUMMARY.md');
 }
 
 generateAPISummary();
