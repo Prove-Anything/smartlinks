@@ -198,7 +198,32 @@ export interface CommsState {
 }
 
 // Public contact schema for update forms
-export type FieldWidget = 'text' | 'email' | 'tel' | 'select' | 'checkbox'
+
+/**
+ * Operators for conditional field visibility.
+ * Use these to control when a custom field is shown based on another field's value.
+ */
+export type ConditionOperator = 
+  | 'equals'       // value === target
+  | 'notEquals'    // value !== target
+  | 'contains'     // for multiselect: array includes value
+  | 'notContains'  // for multiselect: array does not include value
+  | 'isEmpty'      // value is null/undefined/empty
+  | 'isNotEmpty'   // value has a value
+  | 'isTrue'       // for boolean fields
+  | 'isFalse'      // for boolean fields
+
+/**
+ * Condition that determines when a field should be visible.
+ * When present, the field only renders if the condition evaluates to true.
+ */
+export interface FieldCondition {
+  dependsOn: string          // key of the field to check (not path)
+  operator: ConditionOperator
+  value?: string | string[]  // required for equals/notEquals/contains/notContains
+}
+
+export type FieldWidget = 'text' | 'email' | 'tel' | 'select' | 'multiselect' | 'checkbox' | 'number' | 'date' | 'url'
 export type FieldType =
   | 'string'     // core text-like fields
   | 'url'
@@ -223,11 +248,17 @@ export interface CoreField extends BaseField {
   // keys like: contactId, firstName, lastName, displayName, company, avatarUrl, locale, timezone, email, phone
 }
 
+/**
+ * Custom field definition returned by the schema endpoint.
+ */
 export interface CustomField extends BaseField {
-  path: string         // e.g. "customFields.City"
+  path: string                // e.g. "customFields.City"
   required: boolean
   order?: number
-  options?: string[]   // present for select
+  options?: string[]          // for select/multiselect widgets
+  placeholder?: string
+  description?: string
+  condition?: FieldCondition  // if set, field only shows when condition is met
 }
 
 export interface ContactSchema {
@@ -238,5 +269,45 @@ export interface ContactSchema {
     publicVisibleFields: string[]
     publicEditableFields: string[]
     customFieldsVersion: number
+  }
+}
+
+/**
+ * Evaluate whether a field's condition is satisfied.
+ * Returns true if the field should be visible.
+ * 
+ * @example
+ * ```typescript
+ * const field = schema.customFields.find(f => f.key === 'city')
+ * const isVisible = evaluateCondition(field.condition, formValues)
+ * ```
+ */
+export function evaluateCondition(
+  condition: FieldCondition | undefined,
+  fieldValues: Record<string, any>
+): boolean {
+  if (!condition) return true // No condition = always visible
+  
+  const value = fieldValues[condition.dependsOn]
+  
+  switch (condition.operator) {
+    case 'isEmpty':
+      return value == null || value === '' || (Array.isArray(value) && !value.length)
+    case 'isNotEmpty':
+      return value != null && value !== '' && !(Array.isArray(value) && !value.length)
+    case 'isTrue':
+      return value === true
+    case 'isFalse':
+      return value === false
+    case 'equals':
+      return value === condition.value
+    case 'notEquals':
+      return value !== condition.value
+    case 'contains':
+      return Array.isArray(value) && value.includes(condition.value)
+    case 'notContains':
+      return !Array.isArray(value) || !value.includes(condition.value)
+    default:
+      return true
   }
 }

@@ -22,3 +22,5 @@ export * from "./interaction";
 export * from "./location";
 export * from "./jobs";
 export * from "./realtime";
+export * from "./tags";
+export * from "./order";

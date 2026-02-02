@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.3.1  |  Generated: 2026-01-30T18:12:23.404Z
+Version: 1.3.4  |  Generated: 2026-02-02T14:36:48.206Z
 
 This is a concise summary of all available API functions and types.
 
@@ -51,7 +51,9 @@ The Smartlinks SDK is organized into the following namespaces:
 - **jobs** - Functions for jobs operations
 - **journeysAnalytics** - Functions for journeysAnalytics operations
 - **location** - Functions for location operations
+- **order** - Functions for order operations
 - **realtime** - Functions for realtime operations
+- **tags** - Functions for tags operations
 - **template** - Functions for template operations
 
 ## HTTP Utilities
@@ -1386,6 +1388,15 @@ interface CommsState {
 }
 ```
 
+**FieldCondition** (interface)
+```typescript
+interface FieldCondition {
+  dependsOn: string          // key of the field to check (not path)
+  operator: ConditionOperator
+  value?: string | string[]  // required for equals/notEquals/contains/notContains
+}
+```
+
 **BaseField** (interface)
 ```typescript
 interface BaseField {
@@ -1429,7 +1440,9 @@ interface ContactSchema {
 
 **SubjectType** = `'product' | 'proof' | 'batch'`
 
-**FieldWidget** = `'text' | 'email' | 'tel' | 'select' | 'checkbox'`
+**ConditionOperator** = ``
+
+**FieldWidget** = `'text' | 'email' | 'tel' | 'select' | 'multiselect' | 'checkbox' | 'number' | 'date' | 'url'`
 
 **FieldType** = ``
 
@@ -1943,6 +1956,124 @@ interface NfcClaimTagRequest {
 }
 ```
 
+### order
+
+**OrderItem** (interface)
+```typescript
+interface OrderItem {
+  id: string                        // UUID
+  orderId: string                   // Parent order ID
+  itemType: 'tag' | 'proof' | 'serial' // Type of item
+  itemId: string                    // The tag ID, proof ID, or serial number
+  metadata: Record<string, any>     // Item-specific metadata
+  createdAt: string                 // ISO 8601 timestamp
+}
+```
+
+**Order** (interface)
+```typescript
+interface Order {
+  id: string                        // UUID
+  orgId: string                     // Organization ID
+  collectionId: string              // Collection ID
+  orderRef?: string                 // Customer's own order reference/ID (e.g., "ORD-12345")
+  customerId?: string               // Customer's own customer ID (can map to CRM/contacts)
+  status: string                    // e.g., "pending", "processing", "shipped", "completed"
+  itemCount: number                 // Cached count of items (maintained automatically)
+  metadata: Record<string, any>     // Flexible additional data
+  items: OrderItem[]                // Array of items in this order
+  createdAt: string                 // ISO 8601 timestamp
+  updatedAt: string                 // ISO 8601 timestamp
+}
+```
+
+**CreateOrderRequest** (interface)
+```typescript
+interface CreateOrderRequest {
+  items: Array<{
+  itemType: 'tag' | 'proof' | 'serial' // Required: Type of item
+  itemId: string                        // Required: Item identifier
+  metadata?: Record<string, any>        // Optional: Item-specific data
+  }>
+  orderRef?: string                       // Optional: Your own order reference/ID
+  customerId?: string                     // Optional: Your customer ID
+  status?: string                         // Optional: Order status (default: "pending")
+  metadata?: Record<string, any>          // Optional: Order-level metadata
+}
+```
+
+**UpdateOrderRequest** (interface)
+```typescript
+interface UpdateOrderRequest {
+  orderRef?: string                 // Optional: Update order reference
+  customerId?: string               // Optional: Update customer ID
+  status?: string                   // Optional: Update status
+  metadata?: Record<string, any>    // Optional: Merge with existing metadata
+}
+```
+
+**DeleteOrderResponse** (interface)
+```typescript
+interface DeleteOrderResponse {
+  success: boolean
+}
+```
+
+**ListOrdersRequest** (interface)
+```typescript
+interface ListOrdersRequest {
+  limit?: number                    // Optional: Max results (default: 100)
+  offset?: number                   // Optional: Pagination offset (default: 0)
+  status?: string                   // Optional: Filter by status
+  orderRef?: string                 // Optional: Filter by order reference
+  customerId?: string               // Optional: Filter by customer ID
+}
+```
+
+**ListOrdersResponse** (interface)
+```typescript
+interface ListOrdersResponse {
+  orders: Order[]
+  limit: number
+  offset: number
+}
+```
+
+**AddItemsRequest** (interface)
+```typescript
+interface AddItemsRequest {
+  items: Array<{
+  itemType: 'tag' | 'proof' | 'serial' // Required: Type of item
+  itemId: string                        // Required: Item identifier
+  metadata?: Record<string, any>        // Optional: Item-specific data
+  }>
+}
+```
+
+**RemoveItemsRequest** (interface)
+```typescript
+interface RemoveItemsRequest {
+  itemIds: string[]                 // Array of OrderItem IDs to remove
+}
+```
+
+**LookupOrdersRequest** (interface)
+```typescript
+interface LookupOrdersRequest {
+  items: Array<{
+  itemType: 'tag' | 'proof' | 'serial' // Required: Type of item
+  itemId: string                        // Required: Item identifier
+  }>
+}
+```
+
+**LookupOrdersResponse** (interface)
+```typescript
+interface LookupOrdersResponse {
+  orders: Order[]                   // All orders containing any of the specified items
+}
+```
+
 ### product
 
 **Product** (interface)
@@ -2105,6 +2236,164 @@ interface SegmentRecipientsResponse {
   offset: number
   total: number
   note?: string
+}
+```
+
+### tags
+
+**Tag** (interface)
+```typescript
+interface Tag {
+  id: string                        // UUID
+  orgId: string                     // Organization ID
+  tagId: string                     // Unique tag identifier (globally unique)
+  collectionId: string              // Collection ID
+  productId: string                 // Product ID
+  variantId?: string | null         // Optional: Variant ID
+  batchId?: string | null           // Optional: Batch ID
+  proofId: string                   // Proof ID (serial number or explicit)
+  metadata: Record<string, any>     // Additional metadata (e.g., serialIndex)
+  createdAt: string                 // ISO 8601 timestamp
+  updatedAt: string                 // ISO 8601 timestamp
+}
+```
+
+**CreateTagRequest** (interface)
+```typescript
+interface CreateTagRequest {
+  tagId: string                     // Required: Unique tag identifier
+  productId: string                 // Required: Product ID
+  variantId?: string                // Optional: Variant ID
+  batchId?: string                  // Optional: Batch ID
+  proofId?: string                  // Optional: Explicit proof ID (if omitted, auto-generates serial)
+  useSerialNumber?: boolean         // Optional: Explicitly request serial number generation
+  metadata?: Record<string, any>    // Optional: Additional metadata
+  force?: boolean                   // Optional: Overwrite if tag exists in same collection (default: false)
+}
+```
+
+**CreateTagsBatchRequest** (interface)
+```typescript
+interface CreateTagsBatchRequest {
+  tags: Array<{
+  tagId: string                   // Required: Unique tag identifier
+  productId: string               // Required: Product ID
+  variantId?: string              // Optional: Variant ID
+  batchId?: string                // Optional: Batch ID
+  proofId?: string                // Optional: If omitted, auto-generates serial number
+  metadata?: Record<string, any>  // Optional: Additional metadata
+  }>
+  force?: boolean                   // Optional: Overwrite existing tags in same collection (default: false)
+}
+```
+
+**CreateTagsBatchResponse** (interface)
+```typescript
+interface CreateTagsBatchResponse {
+  summary: {
+  total: number                   // Total tags in request
+  created: number                 // Successfully created
+  updated: number                 // Successfully updated (with force=true)
+  failed: number                  // Failed to create/update
+  conflicts: number               // Already exist (without force=true)
+  }
+  results: {
+  created: Tag[]                  // Array of successfully created tags
+  updated: Tag[]                  // Array of successfully updated tags
+  failed: Array<{
+  tagId: string
+  reason: string                // Error code (e.g., "TAG_ASSIGNED_ELSEWHERE", "CREATE_FAILED")
+  message: string               // Human-readable error message
+  existingTag?: Tag             // Existing tag if applicable
+  }>
+  conflicts: Array<{
+  tagId: string
+  reason: string                // "TAG_ALREADY_ASSIGNED"
+  message: string
+  existingTag: Tag              // The existing tag
+  }>
+  }
+}
+```
+
+**UpdateTagRequest** (interface)
+```typescript
+interface UpdateTagRequest {
+  productId?: string                // Optional: Update product ID
+  variantId?: string | null         // Optional: Update variant ID (null to clear)
+  batchId?: string | null           // Optional: Update batch ID (null to clear)
+  proofId?: string                  // Optional: Update proof ID
+  metadata?: Record<string, any>    // Optional: Merge with existing metadata
+}
+```
+
+**DeleteTagResponse** (interface)
+```typescript
+interface DeleteTagResponse {
+  success: boolean
+}
+```
+
+**ListTagsRequest** (interface)
+```typescript
+interface ListTagsRequest {
+  limit?: number                    // Optional: Max results (default: 100)
+  offset?: number                   // Optional: Pagination offset (default: 0)
+  productId?: string                // Optional: Filter by product ID
+  variantId?: string                // Optional: Filter by variant ID
+  batchId?: string                  // Optional: Filter by batch ID
+}
+```
+
+**ListTagsResponse** (interface)
+```typescript
+interface ListTagsResponse {
+  tags: Tag[]
+  limit: number
+  offset: number
+}
+```
+
+**PublicGetTagRequest** (interface)
+```typescript
+interface PublicGetTagRequest {
+  embed?: string                    // Optional: Comma-separated values: "collection", "product", "proof"
+}
+```
+
+**PublicGetTagResponse** (interface)
+```typescript
+interface PublicGetTagResponse {
+  tag: Tag
+  collection?: any                  // Included if embed contains "collection"
+  product?: any                     // Included if embed contains "product"
+  proof?: any                       // Included if embed contains "proof"
+}
+```
+
+**PublicBatchLookupRequest** (interface)
+```typescript
+interface PublicBatchLookupRequest {
+  tagIds: string[]                  // Array of tag IDs to lookup
+  embed?: string                    // Optional: Comma-separated: "collection", "product", "proof"
+}
+```
+
+**PublicBatchLookupResponse** (interface)
+```typescript
+interface PublicBatchLookupResponse {
+  tags: Record<string, Tag>         // Map: tagId → Tag object
+  collections?: Record<string, any> // Map: collectionId → Collection (if embed=collection)
+  products?: Record<string, any>    // Map: productId → Product (if embed=product)
+  proofs?: Record<string, any>      // Map: proofId → Proof (if embed=proof)
+}
+```
+
+**PublicBatchLookupQueryRequest** (interface)
+```typescript
+interface PublicBatchLookupQueryRequest {
+  tagIds: string                    // Comma-separated tag IDs
+  embed?: string                    // Optional: Comma-separated: "collection", "product", "proof"
 }
 ```
 
@@ -2847,11 +3136,14 @@ Logging: Append many communication events for a list of IDs. POST /admin/collect
     data: ContactPatch) → `Promise<PublicUpdateMyContactResponse>`
 
 **publicGetSchema**(collectionId: string) → `Promise<ContactSchema>`
+Public: Get contact update schema for a collection Fetches the public contact schema including core fields, custom fields with conditional visibility rules, and visibility/editability settings. Custom fields may include a `condition` property that specifies when the field should be displayed. Apps rendering these forms should: 1. Evaluate each field's `condition` against current form values 2. Hide fields whose conditions are not met 3. Skip validation for hidden fields (they shouldn't be required when not visible)
 
 **erase**(collectionId: string, contactId: string, body?: any) → `Promise<ContactResponse>`
+Public: Get contact update schema for a collection Fetches the public contact schema including core fields, custom fields with conditional visibility rules, and visibility/editability settings. Custom fields may include a `condition` property that specifies when the field should be displayed. Apps rendering these forms should: 1. Evaluate each field's `condition` against current form values 2. Hide fields whose conditions are not met 3. Skip validation for hidden fields (they shouldn't be required when not visible)
 
 **getUser**(collectionId: string,
     userId: string,) → `Promise<UserSearchResponse>`
+Public: Get contact update schema for a collection Fetches the public contact schema including core fields, custom fields with conditional visibility rules, and visibility/editability settings. Custom fields may include a `condition` property that specifies when the field should be displayed. Apps rendering these forms should: 1. Evaluate each field's `condition` against current form values 2. Hide fields whose conditions are not met 3. Skip validation for hidden fields (they shouldn't be required when not visible)
 
 ### crate
 
@@ -3024,6 +3316,43 @@ Validate an NFC tag payload (public). POST /public/nfc/validate
 **lookupTag**(tagId: string) → `Promise<NfcTagInfo[]>`
 Lookup a tag by its ID (public). GET /public/nfc/findByTag/:tagId
 
+### order
+
+**create**(collectionId: string,
+    data: CreateOrderRequest) → `Promise<CreateOrderResponse>`
+Create a new order with items. ```typescript const order = await order.create('coll_123', { orderRef: 'ORD-12345', customerId: 'CUST-789', items: [ { itemType: 'tag', itemId: 'TAG001' }, { itemType: 'tag', itemId: 'TAG002' }, { itemType: 'serial', itemId: 'SN12345' } ], status: 'pending', metadata: { shipmentId: 'SHIP-789', destination: 'Warehouse B' } }) ```
+
+**get**(collectionId: string,
+    orderId: string) → `Promise<GetOrderResponse>`
+Get a single order by ID with all its items. ```typescript const order = await order.get('coll_123', 'order_abc123') console.log(`Order has ${order.itemCount} items`) ```
+
+**update**(collectionId: string,
+    orderId: string,
+    data: UpdateOrderRequest) → `Promise<UpdateOrderResponse>`
+Update order status or metadata. Items are managed separately via addItems/removeItems. ```typescript const updated = await order.update('coll_123', 'order_abc123', { status: 'shipped', metadata: { trackingNumber: '1Z999AA10123456784', shippedAt: '2026-02-02T14:30:00Z' } }) ```
+
+**remove**(collectionId: string,
+    orderId: string) → `Promise<DeleteOrderResponse>`
+Delete an order and all its items (cascade delete). ```typescript await order.remove('coll_123', 'order_abc123') ```
+
+**list**(collectionId: string,
+    params?: ListOrdersRequest) → `Promise<ListOrdersResponse>`
+List orders for a collection with optional filters and pagination. Orders are returned in descending order by createdAt (newest first). ```typescript // List all orders const all = await order.list('coll_123') // List with filters const pending = await order.list('coll_123', { status: 'pending', limit: 50, offset: 0 }) // Filter by customer const customerOrders = await order.list('coll_123', { customerId: 'CUST-789' }) ```
+
+**addItems**(collectionId: string,
+    orderId: string,
+    data: AddItemsRequest) → `Promise<AddItemsResponse>`
+Add additional items to an existing order. ```typescript const updated = await order.addItems('coll_123', 'order_abc123', { items: [ { itemType: 'tag', itemId: 'TAG003' }, { itemType: 'proof', itemId: 'proof_xyz' } ] }) console.log(`Order now has ${updated.itemCount} items`) ```
+
+**removeItems**(collectionId: string,
+    orderId: string,
+    data: RemoveItemsRequest) → `Promise<RemoveItemsResponse>`
+Remove specific items from an order. ```typescript const updated = await order.removeItems('coll_123', 'order_abc123', { itemIds: ['item_001', 'item_002'] }) ```
+
+**lookup**(collectionId: string,
+    data: LookupOrdersRequest) → `Promise<LookupOrdersResponse>`
+Find all orders containing specific items (tags, proofs, or serial numbers). Use case: Scan a tag and immediately see if it's part of any order. ```typescript // Scan a tag and find associated orders const result = await order.lookup('coll_123', { items: [ { itemType: 'tag', itemId: 'TAG001' } ] }) if (result.orders.length > 0) { console.log(`Tag is part of ${result.orders.length} order(s)`) result.orders.forEach(ord => { console.log(`Order ${ord.orderRef}: ${ord.status}`) }) } // Batch lookup multiple items const batchResult = await order.lookup('coll_123', { items: [ { itemType: 'tag', itemId: 'TAG001' }, { itemType: 'serial', itemId: 'SN12345' }, { itemType: 'proof', itemId: 'proof_xyz' } ] }) ```
+
 ### product
 
 **get**(collectionId: string,
@@ -3149,6 +3478,46 @@ Get an Ably token for admin real-time communication. This endpoint returns an Ab
 **recipients**(collectionId: string,
     id: string,
     query: { limit?: number; offset?: number } = {}) → `Promise<SegmentRecipientsResponse>`
+
+### tags
+
+**create**(collectionId: string,
+    data: CreateTagRequest) → `Promise<CreateTagResponse>`
+Create a single tag mapping. If proofId is not provided, automatically generates a serial number. ```typescript // Auto-generate serial number const tag = await tags.create('coll_123', { tagId: 'TAG001', productId: 'prod_456', variantId: 'var_789' }) // Use explicit proof ID const tag2 = await tags.create('coll_123', { tagId: 'TAG002', productId: 'prod_456', proofId: 'proof_explicit_123' }) ```
+
+**createBatch**(collectionId: string,
+    data: CreateTagsBatchRequest) → `Promise<CreateTagsBatchResponse>`
+Create multiple tag mappings efficiently in a batch operation. By default, auto-generates serial numbers for all tags without explicit proofId. Tags are grouped by product/variant/batch and serial numbers are generated in a single transaction per group for optimal performance. ```typescript const result = await tags.createBatch('coll_123', { tags: [ { tagId: 'TAG001', productId: 'prod_456', variantId: 'var_789' }, { tagId: 'TAG002', productId: 'prod_456', variantId: 'var_789' }, { tagId: 'TAG003', productId: 'prod_456', batchId: 'batch_100' } ] }) console.log(`Created: ${result.summary.created}, Failed: ${result.summary.failed}`) ```
+
+**update**(collectionId: string,
+    tagId: string,
+    data: UpdateTagRequest) → `Promise<UpdateTagResponse>`
+Update an existing tag mapping. ```typescript const updated = await tags.update('coll_123', 'TAG001', { variantId: 'var_999', metadata: { notes: 'Updated variant' } }) ```
+
+**remove**(collectionId: string,
+    tagId: string) → `Promise<DeleteTagResponse>`
+Delete a tag mapping. ```typescript await tags.remove('coll_123', 'TAG001') ```
+
+**get**(collectionId: string,
+    tagId: string) → `Promise<GetTagResponse>`
+Get a single tag mapping by tagId. ```typescript const tag = await tags.get('coll_123', 'TAG001') ```
+
+**list**(collectionId: string,
+    params?: ListTagsRequest) → `Promise<ListTagsResponse>`
+List all tags for a collection with optional filters and pagination. ```typescript // List all tags const all = await tags.list('coll_123') // List with filters const filtered = await tags.list('coll_123', { productId: 'prod_456', variantId: 'var_789', limit: 50, offset: 0 }) ```
+
+**publicGet**(collectionId: string,
+    tagId: string,
+    params?: PublicGetTagRequest) → `Promise<PublicGetTagResponse>`
+Public lookup of a single tag by tagId within a specific collection. Optionally embed related collection, product, or proof data. No authentication required. ```typescript // Simple lookup const result = await tags.publicGet('coll_123', 'TAG001') // With embedded data const withData = await tags.publicGet('coll_123', 'TAG001', { embed: 'collection,product,proof' }) console.log(withData.tag, withData.collection, withData.product, withData.proof) ```
+
+**publicBatchLookup**(collectionId: string,
+    data: PublicBatchLookupRequest) → `Promise<PublicBatchLookupResponse>`
+Public batch lookup of multiple tags in a single request (POST). Only returns tags from the specified collection. Optionally embed related data. Related data is deduplicated and batch-fetched. No authentication required. ```typescript const result = await tags.publicBatchLookup('coll_123', { tagIds: ['TAG001', 'TAG002', 'TAG003'], embed: 'collection,product' }) // Access tags and deduplicated collections/products console.log(result.tags['TAG001']) console.log(result.collections) console.log(result.products) ```
+
+**publicBatchLookupQuery**(collectionId: string,
+    params: PublicBatchLookupQueryRequest) → `Promise<PublicBatchLookupQueryResponse>`
+Public batch lookup of multiple tags using query parameters (GET). Only returns tags from the specified collection. Alternative to publicBatchLookup for simple GET requests. No authentication required. ```typescript const result = await tags.publicBatchLookupQuery('coll_123', { tagIds: 'TAG001,TAG002,TAG003', embed: 'collection' }) ```
 
 ### template
 

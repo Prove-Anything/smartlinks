@@ -91,7 +91,18 @@ export namespace contact {
     return patch<PublicUpdateMyContactResponse>(path, data)
   }
 
-  // Public: Get contact update schema for a collection
+  /**
+   * Public: Get contact update schema for a collection
+   * 
+   * Fetches the public contact schema including core fields, custom fields with 
+   * conditional visibility rules, and visibility/editability settings.
+   * 
+   * Custom fields may include a `condition` property that specifies when the field 
+   * should be displayed. Apps rendering these forms should:
+   * 1. Evaluate each field's `condition` against current form values
+   * 2. Hide fields whose conditions are not met
+   * 3. Skip validation for hidden fields (they shouldn't be required when not visible)
+   */
   export async function publicGetSchema(
     collectionId: string
   ): Promise<ContactSchema> {

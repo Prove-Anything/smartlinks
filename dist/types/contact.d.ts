@@ -129,7 +129,21 @@ export interface CommsState {
     /** Keyed by `_default` or `${type}_${id}` */
     preferences?: Record<string, PreferenceEntry>;
 }
-export type FieldWidget = 'text' | 'email' | 'tel' | 'select' | 'checkbox';
+/**
+ * Operators for conditional field visibility.
+ * Use these to control when a custom field is shown based on another field's value.
+ */
+export type ConditionOperator = 'equals' | 'notEquals' | 'contains' | 'notContains' | 'isEmpty' | 'isNotEmpty' | 'isTrue' | 'isFalse';
+/**
+ * Condition that determines when a field should be visible.
+ * When present, the field only renders if the condition evaluates to true.
+ */
+export interface FieldCondition {
+    dependsOn: string;
+    operator: ConditionOperator;
+    value?: string | string[];
+}
+export type FieldWidget = 'text' | 'email' | 'tel' | 'select' | 'multiselect' | 'checkbox' | 'number' | 'date' | 'url';
 export type FieldType = 'string' | 'url' | 'email' | 'tel' | 'text' | 'select' | 'checkbox' | 'boolean';
 export interface BaseField {
     key: string;
@@ -142,11 +156,17 @@ export interface BaseField {
 }
 export interface CoreField extends BaseField {
 }
+/**
+ * Custom field definition returned by the schema endpoint.
+ */
 export interface CustomField extends BaseField {
     path: string;
     required: boolean;
     order?: number;
     options?: string[];
+    placeholder?: string;
+    description?: string;
+    condition?: FieldCondition;
 }
 export interface ContactSchema {
     version: number;
@@ -158,3 +178,14 @@ export interface ContactSchema {
         customFieldsVersion: number;
     };
 }
+/**
+ * Evaluate whether a field's condition is satisfied.
+ * Returns true if the field should be visible.
+ *
+ * @example
+ * ```typescript
+ * const field = schema.customFields.find(f => f.key === 'city')
+ * const isVisible = evaluateCondition(field.condition, formValues)
+ * ```
+ */
+export declare function evaluateCondition(condition: FieldCondition | undefined, fieldValues: Record<string, any>): boolean;

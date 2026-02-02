@@ -19,6 +19,18 @@ export declare namespace contact {
     function publicUpsert(collectionId: string, data: PublicContactUpsertRequest): Promise<PublicContactUpsertResponse>;
     function publicGetMine(collectionId: string): Promise<PublicGetMyContactResponse>;
     function publicUpdateMine(collectionId: string, data: ContactPatch): Promise<PublicUpdateMyContactResponse>;
+    /**
+     * Public: Get contact update schema for a collection
+     *
+     * Fetches the public contact schema including core fields, custom fields with
+     * conditional visibility rules, and visibility/editability settings.
+     *
+     * Custom fields may include a `condition` property that specifies when the field
+     * should be displayed. Apps rendering these forms should:
+     * 1. Evaluate each field's `condition` against current form values
+     * 2. Hide fields whose conditions are not met
+     * 3. Skip validation for hidden fields (they shouldn't be required when not visible)
+     */
     function publicGetSchema(collectionId: string): Promise<ContactSchema>;
     function erase(collectionId: string, contactId: string, body?: any): Promise<ContactResponse>;
     function getUser(collectionId: string, userId: string): Promise<UserSearchResponse>;
