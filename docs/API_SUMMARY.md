@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.3.5  |  Generated: 2026-02-02T20:16:48.361Z
+Version: 1.3.8  |  Generated: 2026-02-05T19:14:34.871Z
 
 This is a concise summary of all available API functions and types.
 
@@ -853,6 +853,37 @@ interface Collection {
   redirectUrl?: string // Whether the collection has a custom domain
   shortId: string, // The shortId of this collection
   dark?: boolean // if dark mode is enabled for this collection
+}
+```
+
+**AppConfig** (interface)
+```typescript
+interface AppConfig {
+  id: string
+  srcAppId: string
+  name: string
+  description?: string
+  faIcon?: string
+  category: "Authenticity" | "Documentation" | "Commerce" | "Engagement" | "AI" | "Digital Product Passports" | "Integration" | "Web3" | "Other";
+  active?: boolean
+  ownersOnly?: boolean
+  hidden?: boolean
+  publicIframeUrl?: string
+  supportsDeepLinks?: boolean;
+  usage: {
+  collection: boolean;  // use at the collecton level
+  product: boolean; // use at the product level
+  proof: boolean;  // use at the proof level
+  widget: boolean; // has a widget component available
+  }
+  [key: string]: any
+}
+```
+
+**AppsConfigResponse** (interface)
+```typescript
+interface AppsConfigResponse {
+  apps: AppConfig[]
 }
 ```
 
@@ -2998,6 +3029,9 @@ Retrieve a collection by its shortId (public endpoint).
 **getSettings**(collectionId: string, settingGroup: string, admin?: boolean) → `Promise<any>`
 Retrieve a specific settings group for a collection (public endpoint).
 
+**getAppsConfig**(collectionId: string) → `Promise<AppsConfigResponse>`
+Retrieve all configured app module definitions for a collection (public endpoint).
+
 **updateSettings**(collectionId: string, settingGroup: string, settings: any) → `Promise<any>`
 Update a specific settings group for a collection (admin endpoint).
 
@@ -3506,18 +3540,28 @@ Get a single tag mapping by tagId. ```typescript const tag = await tags.get('col
     params?: ListTagsRequest) → `Promise<ListTagsResponse>`
 List all tags for a collection with optional filters and pagination. ```typescript // List all tags const all = await tags.list('coll_123') // List with filters const filtered = await tags.list('coll_123', { productId: 'prod_456', variantId: 'var_789', limit: 50, offset: 0 }) ```
 
-**publicGet**(collectionId: string,
+**getTag**(tagId: string,
+    params?: PublicGetTagRequest) → `Promise<PublicGetTagResponse>`
+Public lookup of a single tag by tagId (global). Optionally embed related collection, product, or proof data. No authentication required. ```typescript // Simple lookup const result = await tags.getTag('TAG001') // With embedded data const withData = await tags.getTag('TAG001', { embed: 'collection,product,proof' }) console.log(withData.tag, withData.collection, withData.product, withData.proof) ```
+
+**publicGet**(_collectionId: string,
     tagId: string,
     params?: PublicGetTagRequest) → `Promise<PublicGetTagResponse>`
-Public lookup of a single tag by tagId within a specific collection. Optionally embed related collection, product, or proof data. No authentication required. ```typescript // Simple lookup const result = await tags.publicGet('coll_123', 'TAG001') // With embedded data const withData = await tags.publicGet('coll_123', 'TAG001', { embed: 'collection,product,proof' }) console.log(withData.tag, withData.collection, withData.product, withData.proof) ```
+Backward-compat: Public lookup with collectionId parameter (ignored). Calls global route under /public/tags/:tagId.
 
-**publicBatchLookup**(collectionId: string,
-    data: PublicBatchLookupRequest) → `Promise<PublicBatchLookupResponse>`
+**lookupTags**(data: PublicBatchLookupRequest) → `Promise<PublicBatchLookupResponse>`
 Public batch lookup of multiple tags in a single request (POST). Only returns tags from the specified collection. Optionally embed related data. Related data is deduplicated and batch-fetched. No authentication required. ```typescript const result = await tags.publicBatchLookup('coll_123', { tagIds: ['TAG001', 'TAG002', 'TAG003'], embed: 'collection,product' }) // Access tags and deduplicated collections/products console.log(result.tags['TAG001']) console.log(result.collections) console.log(result.products) ```
 
-**publicBatchLookupQuery**(collectionId: string,
-    params: PublicBatchLookupQueryRequest) → `Promise<PublicBatchLookupQueryResponse>`
+**publicBatchLookup**(_collectionId: string,
+    data: PublicBatchLookupRequest) → `Promise<PublicBatchLookupResponse>`
+Backward-compat: Public batch lookup with collectionId parameter (ignored). Calls global route under /public/tags/lookup.
+
+**lookupTagsQuery**(params: PublicBatchLookupQueryRequest) → `Promise<PublicBatchLookupQueryResponse>`
 Public batch lookup of multiple tags using query parameters (GET). Only returns tags from the specified collection. Alternative to publicBatchLookup for simple GET requests. No authentication required. ```typescript const result = await tags.publicBatchLookupQuery('coll_123', { tagIds: 'TAG001,TAG002,TAG003', embed: 'collection' }) ```
+
+**publicBatchLookupQuery**(_collectionId: string,
+    params: PublicBatchLookupQueryRequest) → `Promise<PublicBatchLookupQueryResponse>`
+Backward-compat: Public batch lookup (GET) with collectionId parameter (ignored). Calls global route under /public/tags/lookup.
 
 ### template
 

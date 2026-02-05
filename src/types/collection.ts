@@ -73,3 +73,56 @@ export type CollectionResponse = Collection
 // Derived request types
 export type CollectionCreateRequest = Omit<Collection, 'id' | 'shortId'>
 export type CollectionUpdateRequest = Partial<Omit<Collection, 'id' | 'shortId'>>
+
+/**
+ * Configuration for an app module within a collection.
+ */
+export interface AppConfig {
+  // App Definition Fields
+  /** Unique identifier for the app */
+  id: string
+  /** Underling app module id */
+  srcAppId: string
+  /** Display name of the app */
+  name: string
+  /** Optional description of the app */
+  description?: string
+  /** Optional icon for the app */
+  faIcon?: string
+  /** app category */
+  category: "Authenticity" | "Documentation" | "Commerce" | "Engagement" | "AI" | "Digital Product Passports" | "Integration" | "Web3" | "Other";
+
+  // Collection-Specific Configuration
+  /** Whether the app is enabled for this collection */
+  active?: boolean
+  /** Whether the app is only accessible to owners */
+  ownersOnly?: boolean
+  /** Whether the app is hidden in the UI */
+  hidden?: boolean
+  
+  /** Universal iframe URL for external embedding */
+  publicIframeUrl?: string
+
+  /** supports multiple pages / deep links into the app */
+  supportsDeepLinks?: boolean;
+
+  // App Component Configuration
+  /** App component configuration */
+  usage: {
+    collection: boolean;  // use at the collecton level
+    product: boolean; // use at the product level
+    proof: boolean;  // use at the proof level
+    widget: boolean; // has a widget component available
+  }
+  
+  // Additional app definition fields
+  [key: string]: any
+}
+
+/**
+ * Response containing app configurations for a collection.
+ */
+export interface AppsConfigResponse {
+  /** Array of app configurations */
+  apps: AppConfig[]
+}

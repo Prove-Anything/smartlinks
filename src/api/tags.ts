@@ -209,39 +209,49 @@ export namespace tags {
   // ============================================================================
 
   /**
-   * Public lookup of a single tag by tagId within a specific collection.
+   * Public lookup of a single tag by tagId (global).
    * Optionally embed related collection, product, or proof data.
    * No authentication required.
-   * 
-   * @param collectionId - Identifier of the collection to search within
-   * @param tagId - Unique tag identifier
+   *
+   * @param tagId - Unique tag identifier (globally unique)
    * @param params - Optional parameters (embed)
    * @returns Promise resolving to a PublicGetTagResponse with optional embedded data
    * @throws ErrorResponse if the request fails
-   * 
+   *
    * @example
    * ```typescript
    * // Simple lookup
-   * const result = await tags.publicGet('coll_123', 'TAG001')
-   * 
+   * const result = await tags.getTag('TAG001')
+   *
    * // With embedded data
-   * const withData = await tags.publicGet('coll_123', 'TAG001', {
+   * const withData = await tags.getTag('TAG001', {
    *   embed: 'collection,product,proof'
    * })
    * console.log(withData.tag, withData.collection, withData.product, withData.proof)
    * ```
    */
-  export async function publicGet(
-    collectionId: string,
+  export async function getTag(
     tagId: string,
     params?: PublicGetTagRequest
   ): Promise<PublicGetTagResponse> {
     const queryParams = new URLSearchParams()
     if (params?.embed) queryParams.append('embed', params.embed)
-    
+
     const query = queryParams.toString()
-    const path = `/public/collection/${encodeURIComponent(collectionId)}/tags/${encodeURIComponent(tagId)}${query ? `?${query}` : ''}`
+    const path = `/public/tags/${encodeURIComponent(tagId)}${query ? `?${query}` : ''}`
     return request<PublicGetTagResponse>(path)
+  }
+
+  /**
+   * Backward-compat: Public lookup with collectionId parameter (ignored).
+   * Calls global route under /public/tags/:tagId.
+   */
+  export async function publicGet(
+    _collectionId: string,
+    tagId: string,
+    params?: PublicGetTagRequest
+  ): Promise<PublicGetTagResponse> {
+    return getTag(tagId, params)
   }
 
   /**
@@ -268,12 +278,22 @@ export namespace tags {
    * console.log(result.products)
    * ```
    */
-  export async function publicBatchLookup(
-    collectionId: string,
+  export async function lookupTags(
     data: PublicBatchLookupRequest
   ): Promise<PublicBatchLookupResponse> {
-    const path = `/public/collection/${encodeURIComponent(collectionId)}/tags/lookup`
+    const path = `/public/tags/lookup`
     return post<PublicBatchLookupResponse>(path, data)
+  }
+
+  /**
+   * Backward-compat: Public batch lookup with collectionId parameter (ignored).
+   * Calls global route under /public/tags/lookup.
+   */
+  export async function publicBatchLookup(
+    _collectionId: string,
+    data: PublicBatchLookupRequest
+  ): Promise<PublicBatchLookupResponse> {
+    return lookupTags(data)
   }
 
   /**
@@ -295,15 +315,25 @@ export namespace tags {
    * })
    * ```
    */
-  export async function publicBatchLookupQuery(
-    collectionId: string,
+  export async function lookupTagsQuery(
     params: PublicBatchLookupQueryRequest
   ): Promise<PublicBatchLookupQueryResponse> {
     const queryParams = new URLSearchParams()
     queryParams.append('tagIds', params.tagIds)
     if (params.embed) queryParams.append('embed', params.embed)
-    
-    const path = `/public/collection/${encodeURIComponent(collectionId)}/tags/lookup?${queryParams.toString()}`
+
+    const path = `/public/tags/lookup?${queryParams.toString()}`
     return request<PublicBatchLookupQueryResponse>(path)
+  }
+
+  /**
+   * Backward-compat: Public batch lookup (GET) with collectionId parameter (ignored).
+   * Calls global route under /public/tags/lookup.
+   */
+  export async function publicBatchLookupQuery(
+    _collectionId: string,
+    params: PublicBatchLookupQueryRequest
+  ): Promise<PublicBatchLookupQueryResponse> {
+    return lookupTagsQuery(params)
   }
 }

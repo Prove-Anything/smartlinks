@@ -1,4 +1,4 @@
-import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest } from "../types/collection";
+import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest, AppsConfigResponse } from "../types/collection";
 export declare namespace collection {
     /**
      * Retrieves a single Collection by its ID.
@@ -28,6 +28,13 @@ export declare namespace collection {
      * @returns Promise resolving to the settings object
      */
     function getSettings(collectionId: string, settingGroup: string, admin?: boolean): Promise<any>;
+    /**
+     * Retrieve all configured app module definitions for a collection (public endpoint).
+     * @param collectionId – Identifier of the collection
+     * @returns Promise resolving to an AppsConfigResponse containing all app configurations
+     * @throws ErrorResponse if the request fails
+     */
+    function getAppsConfig(collectionId: string): Promise<AppsConfigResponse>;
     /**
      * Update a specific settings group for a collection (admin endpoint).
      * @param collectionId – Identifier of the collection

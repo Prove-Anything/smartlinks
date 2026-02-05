@@ -128,12 +128,11 @@ export declare namespace tags {
      */
     function list(collectionId: string, params?: ListTagsRequest): Promise<ListTagsResponse>;
     /**
-     * Public lookup of a single tag by tagId within a specific collection.
+     * Public lookup of a single tag by tagId (global).
      * Optionally embed related collection, product, or proof data.
      * No authentication required.
      *
-     * @param collectionId - Identifier of the collection to search within
-     * @param tagId - Unique tag identifier
+     * @param tagId - Unique tag identifier (globally unique)
      * @param params - Optional parameters (embed)
      * @returns Promise resolving to a PublicGetTagResponse with optional embedded data
      * @throws ErrorResponse if the request fails
@@ -141,16 +140,21 @@ export declare namespace tags {
      * @example
      * ```typescript
      * // Simple lookup
-     * const result = await tags.publicGet('coll_123', 'TAG001')
+     * const result = await tags.getTag('TAG001')
      *
      * // With embedded data
-     * const withData = await tags.publicGet('coll_123', 'TAG001', {
+     * const withData = await tags.getTag('TAG001', {
      *   embed: 'collection,product,proof'
      * })
      * console.log(withData.tag, withData.collection, withData.product, withData.proof)
      * ```
      */
-    function publicGet(collectionId: string, tagId: string, params?: PublicGetTagRequest): Promise<PublicGetTagResponse>;
+    function getTag(tagId: string, params?: PublicGetTagRequest): Promise<PublicGetTagResponse>;
+    /**
+     * Backward-compat: Public lookup with collectionId parameter (ignored).
+     * Calls global route under /public/tags/:tagId.
+     */
+    function publicGet(_collectionId: string, tagId: string, params?: PublicGetTagRequest): Promise<PublicGetTagResponse>;
     /**
      * Public batch lookup of multiple tags in a single request (POST).
      * Only returns tags from the specified collection.
@@ -175,7 +179,12 @@ export declare namespace tags {
      * console.log(result.products)
      * ```
      */
-    function publicBatchLookup(collectionId: string, data: PublicBatchLookupRequest): Promise<PublicBatchLookupResponse>;
+    function lookupTags(data: PublicBatchLookupRequest): Promise<PublicBatchLookupResponse>;
+    /**
+     * Backward-compat: Public batch lookup with collectionId parameter (ignored).
+     * Calls global route under /public/tags/lookup.
+     */
+    function publicBatchLookup(_collectionId: string, data: PublicBatchLookupRequest): Promise<PublicBatchLookupResponse>;
     /**
      * Public batch lookup of multiple tags using query parameters (GET).
      * Only returns tags from the specified collection.
@@ -195,5 +204,10 @@ export declare namespace tags {
      * })
      * ```
      */
-    function publicBatchLookupQuery(collectionId: string, params: PublicBatchLookupQueryRequest): Promise<PublicBatchLookupQueryResponse>;
+    function lookupTagsQuery(params: PublicBatchLookupQueryRequest): Promise<PublicBatchLookupQueryResponse>;
+    /**
+     * Backward-compat: Public batch lookup (GET) with collectionId parameter (ignored).
+     * Calls global route under /public/tags/lookup.
+     */
+    function publicBatchLookupQuery(_collectionId: string, params: PublicBatchLookupQueryRequest): Promise<PublicBatchLookupQueryResponse>;
 }

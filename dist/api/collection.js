@@ -50,6 +50,17 @@ export var collection;
     }
     collection.getSettings = getSettings;
     /**
+     * Retrieve all configured app module definitions for a collection (public endpoint).
+     * @param collectionId – Identifier of the collection
+     * @returns Promise resolving to an AppsConfigResponse containing all app configurations
+     * @throws ErrorResponse if the request fails
+     */
+    async function getAppsConfig(collectionId) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/apps-config`;
+        return request(path);
+    }
+    collection.getAppsConfig = getAppsConfig;
+    /**
      * Update a specific settings group for a collection (admin endpoint).
      * @param collectionId – Identifier of the collection
      * @param settingGroup – The settings group name

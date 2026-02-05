@@ -1,6 +1,6 @@
 // src/api/collection.ts
 import { request, post, put, del } from "../http"
-import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest } from "../types/collection"
+import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest, AppsConfigResponse } from "../types/collection"
 
 export namespace collection {
   /**
@@ -48,6 +48,17 @@ export namespace collection {
     const base = admin ? '/admin/collection' : '/public/collection'
     const path = `${base}/${encodeURIComponent(collectionId)}/settings/${encodeURIComponent(settingGroup)}`
     return request<any>(path)
+  }
+
+  /**
+   * Retrieve all configured app module definitions for a collection (public endpoint).
+   * @param collectionId – Identifier of the collection
+   * @returns Promise resolving to an AppsConfigResponse containing all app configurations
+   * @throws ErrorResponse if the request fails
+   */
+  export async function getAppsConfig(collectionId: string): Promise<AppsConfigResponse> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/apps-config`
+    return request<AppsConfigResponse>(path)
   }
 
   /**
