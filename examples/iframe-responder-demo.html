@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SmartLinks IframeResponder Demo</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .header {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .control-group {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #666;
+      text-transform: uppercase;
+    }
+
+    input, select {
+      padding: 8px 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.2s;
+    }
+
+    input:focus, select:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:hover {
+      background: #5568d3;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .iframe-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+      position: relative;
+      min-height: 500px;
+    }
+
+    iframe {
+      width: 100%;
+      border: none;
+      display: block;
+      min-height: 500px;
+      transition: height 0.3s ease;
+    }
+
+    .loading {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: #667eea;
+      font-weight: 600;
+    }
+
+    .spinner {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 10px;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .status {
+      background: white;
+      padding: 15px;
+      border-radius: 12px;
+      margin-top: 20px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .status h3 {
+      margin-bottom: 10px;
+      color: #333;
+      font-size: 14px;
+    }
+
+    .log {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      color: #333;
+    }
+
+    .log-entry {
+      padding: 4px 0;
+      border-bottom: 1px solid #e0e0e0;
+    }
+
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+
+    .log-time {
+      color: #999;
+      margin-right: 10px;
+    }
+
+    .log-type {
+      font-weight: 600;
+      margin-right: 10px;
+    }
+
+    .log-type.info { color: #667eea; }
+    .log-type.success { color: #10b981; }
+    .log-type.error { color: #ef4444; }
+    .log-type.warning { color: #f59e0b; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🎯 SmartLinks IframeResponder Demo</h1>
+      <p>Demonstration of parent-side iframe communication and app embedding</p>
+      
+      <div class="controls">
+        <div class="control-group">
+          <label for="collectionId">Collection ID</label>
+          <input type="text" id="collectionId" placeholder="acme-wines" value="acme-wines">
+        </div>
+        
+        <div class="control-group">
+          <label for="appId">App ID</label>
+          <input type="text" id="appId" placeholder="warranty-registration" value="warranty">
+        </div>
+        
+        <div class="control-group">
+          <label for="productId">Product ID (Optional)</label>
+          <input type="text" id="productId" placeholder="wine-bottle-123">
+        </div>
+        
+        <div class="control-group">
+          <label for="version">Version</label>
+          <select id="version">
+            <option value="stable">Stable</option>
+            <option value="development">Development</option>
+          </select>
+        </div>
+        
+        <div class="control-group">
+          <label for="appUrl">Override URL (Optional)</label>
+          <input type="text" id="appUrl" placeholder="http://localhost:5173">
+        </div>
+        
+        <div class="control-group" style="justify-content: flex-end;">
+          <label>&nbsp;</label>
+          <button id="loadBtn">Load App</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="iframe-container">
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Loading app...</div>
+      </div>
+      <iframe id="appIframe" style="display: none;"></iframe>
+    </div>
+
+    <div class="status">
+      <h3>📋 Event Log</h3>
+      <div class="log" id="log">
+        <div class="log-entry">
+          <span class="log-time">--:--:--</span>
+          <span class="log-type info">[INFO]</span>
+          <span>Ready to load app</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- In a real implementation, you would import from the installed package -->
+  <!-- <script type="module">
+    import * as smartlinks from '@proveanything/smartlinks';
+    
+    // Your code here
+  </script> -->
+  
+  <script type="module">
+    // This is a mock for demonstration purposes
+    // In production, use: import * as smartlinks from '@proveanything/smartlinks';
+    
+    let responder = null;
+    const iframe = document.getElementById('appIframe');
+    const loading = document.getElementById('loading');
+    const logEl = document.getElementById('log');
+    
+    function log(type, message, data = null) {
+      const time = new Date().toLocaleTimeString();
+      const entry = document.createElement('div');
+      entry.className = 'log-entry';
+      
+      let text = `<span class="log-time">${time}</span>`;
+      text += `<span class="log-type ${type}">[${type.toUpperCase()}]</span>`;
+      text += `<span>${message}</span>`;
+      
+      if (data) {
+        text += ` <code>${JSON.stringify(data, null, 2)}</code>`;
+      }
+      
+      entry.innerHTML = text;
+      logEl.appendChild(entry);
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+    
+    // Mock SmartLinks SDK for demo
+    const mockSmartlinks = {
+      IframeResponder: class {
+        constructor(options) {
+          log('info', 'Creating IframeResponder', {
+            collectionId: options.collectionId,
+            appId: options.appId,
+            productId: options.productId,
+          });
+          
+          this.options = options;
+          this.resolveUrl();
+        }
+        
+        async resolveUrl() {
+          // Simulate API call to get apps
+          await new Promise(resolve => setTimeout(resolve, 500));
+          log('success', 'App URL resolved');
+        }
+        
+        async attach(iframe) {
+          log('info', 'Attaching to iframe element');
+          
+          const params = new URLSearchParams({
+            collectionId: this.options.collectionId,
+            appId: this.options.appId,
+            productId: this.options.productId || '',
+            version: this.options.version || 'stable',
+          });
+          
+          const appUrl = this.options.appUrl || 'https://example.lovable.app';
+          const src = `${appUrl}/#/?${params.toString()}`;
+          
+          // Set up message listener
+          window.addEventListener('message', (e) => this.handleMessage(e));
+          
+          return src;
+        }
+        
+        handleMessage(event) {
+          const data = event.data;
+          
+          if (data?.type === 'smartlinks-route-change') {
+            log('info', 'Route changed', { path: data.path });
+            this.options.onRouteChange?.(data.path, data.state);
+          }
+          
+          if (data?._smartlinksIframeMessage) {
+            if (data.type === 'smartlinks:resize') {
+              log('info', 'Resize requested', { height: data.payload?.height });
+              this.options.onResize?.(data.payload?.height);
+            }
+            
+            if (data.type === 'smartlinks:authkit:login') {
+              log('success', 'Auth login received', { user: data.payload?.user?.email });
+              this.options.onAuthLogin?.(data.payload?.token, data.payload?.user);
+            }
+          }
+        }
+        
+        destroy() {
+          log('warning', 'Responder destroyed');
+        }
+      },
+      
+      setBearerToken: (token) => {
+        log('info', 'Bearer token updated');
+      },
+    };
+    
+    document.getElementById('loadBtn').addEventListener('click', async () => {
+      const collectionId = document.getElementById('collectionId').value;
+      const appId = document.getElementById('appId').value;
+      const productId = document.getElementById('productId').value;
+      const version = document.getElementById('version').value;
+      const appUrl = document.getElementById('appUrl').value;
+      
+      if (!collectionId || !appId) {
+        log('error', 'Collection ID and App ID are required');
+        return;
+      }
+      
+      // Clean up existing responder
+      if (responder) {
+        responder.destroy();
+      }
+      
+      // Show loading
+      loading.style.display = 'block';
+      iframe.style.display = 'none';
+      
+      try {
+        log('info', 'Initializing IframeResponder...');
+        
+        // Create responder
+        responder = new mockSmartlinks.IframeResponder({
+          collectionId,
+          appId,
+          productId: productId || undefined,
+          version,
+          appUrl: appUrl || undefined,
+          
+          onAuthLogin: async (token, user) => {
+            mockSmartlinks.setBearerToken(token);
+            log('success', 'User authenticated', { email: user?.email });
+          },
+          
+          onAuthLogout: async () => {
+            log('warning', 'User logged out');
+          },
+          
+          onRouteChange: (path, state) => {
+            log('info', 'Route synchronized', { path, state });
+          },
+          
+          onResize: (height) => {
+            iframe.style.height = `${height}px`;
+            log('info', `Height adjusted to ${height}px`);
+          },
+          
+          onError: (error) => {
+            log('error', error.message);
+          },
+        });
+        
+        // Attach and load
+        const src = await responder.attach(iframe);
+        iframe.src = src;
+        
+        log('success', 'App loaded successfully', { src });
+        
+        // Show iframe, hide loading
+        setTimeout(() => {
+          loading.style.display = 'none';
+          iframe.style.display = 'block';
+        }, 1000);
+        
+      } catch (error) {
+        log('error', 'Failed to load app', { error: error.message });
+        loading.style.display = 'none';
+      }
+    });
+    
+    // Simulate some events for demo purposes
+    setTimeout(() => {
+      log('info', 'Demo ready - Click "Load App" to start');
+    }, 500);
+  </script>
+</body>
+</html>

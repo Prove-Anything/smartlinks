@@ -5,3 +5,7 @@ export * from "./api";
 export * from "./types";
 // Iframe namespace
 export { iframe } from "./iframe";
+import * as cache_1 from './cache';
+export { cache_1 as cache };
+// IframeResponder (also exported via iframe namespace)
+export { IframeResponder, isAdminFromRoles, buildIframeSrc, } from './iframeResponder';

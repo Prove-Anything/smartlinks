@@ -2,6 +2,8 @@ export { initializeApi, request, sendCustomProxyMessage } from "./http";
 export * from "./api";
 export * from "./types";
 export { iframe } from "./iframe";
+export * as cache from './cache';
+export { IframeResponder, isAdminFromRoles, buildIframeSrc, } from './iframeResponder';
 export type { LoginResponse, VerifyTokenResponse, AccountInfoResponse, } from "./api/auth";
 export type { UserAccountRegistrationRequest, } from "./types/auth";
 export type { CommunicationEvent, CommsQueryByUser, CommsRecipientIdsQuery, CommsRecipientsWithoutActionQuery, CommsRecipientsWithActionQuery, RecipientId, RecipientWithOutcome, LogCommunicationEventBody, LogBulkCommunicationEventsBody, AppendResult, AppendBulkResult, CommsSettings, TopicConfig, CommsSettingsGetResponse, CommsSettingsPatchBody, CommsPublicTopicsResponse, UnsubscribeQuery, UnsubscribeResponse, CommsConsentUpsertRequest, CommsPreferencesUpsertRequest, CommsSubscribeRequest, CommsSubscribeResponse, CommsSubscriptionCheckQuery, CommsSubscriptionCheckResponse, CommsListMethodsQuery, CommsListMethodsResponse, RegisterEmailMethodRequest, RegisterSmsMethodRequest, RegisterMethodResponse, SubscriptionsResolveRequest, SubscriptionsResolveResponse, } from "./types/comms";

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.3.8  |  Generated: 2026-02-05T19:14:34.871Z
+Version: 1.3.9  |  Generated: 2026-02-05T20:01:56.914Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1488,6 +1488,165 @@ interface ErrorResponse {
   details?: Record<string, any>
 }
 ```
+
+### iframeResponder
+
+**CachedData** (interface)
+```typescript
+interface CachedData {
+  collection?: Record<string, any>;
+  product?: Record<string, any>;
+  proof?: Record<string, any>;
+  user?: {
+  uid: string;
+  email?: string;
+  displayName?: string;
+  accountData?: Record<string, any>;
+  } | null;
+  apps?: AppConfig[];
+}
+```
+
+**IframeResponderOptions** (interface)
+```typescript
+interface IframeResponderOptions {
+  collectionId: string;
+  appId: string;
+  productId?: string;
+  proofId?: string;
+  version?: string;
+  appUrl?: string;
+  initialPath?: string;
+  isAdmin?: boolean;
+  cache?: CachedData;
+  onAuthLogin?: (
+  token: string,
+  user: any,
+  accountData?: Record<string, any>
+  ) => Promise<void>;
+  onAuthLogout?: () => Promise<void>;
+  onRouteChange?: (path: string, state: Record<string, string>) => void;
+  onResize?: (height: number) => void;
+  onError?: (error: Error) => void;
+  onReady?: () => void;
+}
+```
+
+**RouteChangeMessage** (interface)
+```typescript
+interface RouteChangeMessage {
+  type: 'smartlinks-route-change';
+  path: string;
+  context: Record<string, string>;
+  state: Record<string, string>;
+  appId?: string;
+}
+```
+
+**SmartlinksIframeMessage** (interface)
+```typescript
+interface SmartlinksIframeMessage {
+  _smartlinksIframeMessage: true;
+  type:
+  | 'smartlinks:resize'
+  | 'smartlinks:redirect'
+  | 'smartlinks:authkit:login'
+  | 'smartlinks:authkit:logout'
+  | 'smartlinks:authkit:redirect';
+  payload: Record<string, any>;
+  messageId?: string;
+}
+```
+
+**ProxyRequest** (interface)
+```typescript
+interface ProxyRequest {
+  _smartlinksProxyRequest: true;
+  id: string;
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  path: string;
+  body?: any;
+  headers?: Record<string, string>;
+}
+```
+
+**CustomProxyRequest** (interface)
+```typescript
+interface CustomProxyRequest {
+  _smartlinksProxyRequest: true;
+  _smartlinksCustomProxyRequest: true;
+  id: string;
+  request: 'REDIRECT' | string;
+  params: Record<string, any>;
+}
+```
+
+**ProxyResponse** (interface)
+```typescript
+interface ProxyResponse {
+  _smartlinksProxyResponse: true;
+  id: string;
+  data?: any;
+  error?: string;
+}
+```
+
+**UploadStartMessage** (interface)
+```typescript
+interface UploadStartMessage {
+  _smartlinksProxyUpload: true;
+  phase: 'start';
+  id: string;
+  fields: [string, string][];
+  fileInfo: { type?: string; name?: string; key?: string };
+  path: string;
+  headers?: Record<string, string>;
+}
+```
+
+**UploadChunkMessage** (interface)
+```typescript
+interface UploadChunkMessage {
+  _smartlinksProxyUpload: true;
+  phase: 'chunk';
+  id: string;
+  seq: number;
+  chunk: ArrayBuffer;
+}
+```
+
+**UploadEndMessage** (interface)
+```typescript
+interface UploadEndMessage {
+  _smartlinksProxyUpload: true;
+  phase: 'end';
+  id: string;
+}
+```
+
+**UploadAckMessage** (interface)
+```typescript
+interface UploadAckMessage {
+  _smartlinksProxyUpload: true;
+  phase: 'ack';
+  id: string;
+  seq: number;
+}
+```
+
+**UploadDoneMessage** (interface)
+```typescript
+interface UploadDoneMessage {
+  _smartlinksProxyUpload: true;
+  phase: 'done';
+  id: string;
+  ok: boolean;
+  data?: any;
+  error?: string;
+}
+```
+
+**UploadMessage** = ``
 
 ### interaction
 

@@ -3,6 +3,26 @@
 // These helpers are optional and safe in non-browser / Node environments.
 // They build on the existing proxyMode infrastructure but can also be used standalone.
 
+// Re-export IframeResponder for parent-side iframe communication
+export { 
+  IframeResponder,
+  isAdminFromRoles,
+  buildIframeSrc,
+} from './iframeResponder';
+
+export type {
+  IframeResponderOptions,
+  CachedData,
+  CollectionApp,
+  RouteChangeMessage,
+  SmartlinksIframeMessage,
+  ProxyRequest,
+  CustomProxyRequest,
+  UploadStartMessage,
+  UploadChunkMessage,
+  UploadEndMessage,
+} from './types/iframeResponder';
+
 export namespace iframe {
 interface IframeResizeOptions {
   /** Minimum ms between height postMessages (default 100). */

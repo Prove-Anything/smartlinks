@@ -2,6 +2,8 @@
 // Utilities to communicate with parent window when running inside an iframe.
 // These helpers are optional and safe in non-browser / Node environments.
 // They build on the existing proxyMode infrastructure but can also be used standalone.
+// Re-export IframeResponder for parent-side iframe communication
+export { IframeResponder, isAdminFromRoles, buildIframeSrc, } from './iframeResponder';
 export var iframe;
 (function (iframe) {
     let autoResizeTimer;

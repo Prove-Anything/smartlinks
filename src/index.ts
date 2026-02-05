@@ -6,6 +6,14 @@ export * from "./api"
 export * from "./types"
 // Iframe namespace
 export { iframe } from "./iframe"
+// Cache utilities
+export * as cache from './cache'
+// IframeResponder (also exported via iframe namespace)
+export { 
+  IframeResponder,
+  isAdminFromRoles,
+  buildIframeSrc,
+} from './iframeResponder'
 
 // Explicitly re-export types for documentation
 export type {

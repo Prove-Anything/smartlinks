@@ -1,3 +1,5 @@
+export { IframeResponder, isAdminFromRoles, buildIframeSrc, } from './iframeResponder';
+export type { IframeResponderOptions, CachedData, CollectionApp, RouteChangeMessage, SmartlinksIframeMessage, ProxyRequest, CustomProxyRequest, UploadStartMessage, UploadChunkMessage, UploadEndMessage, } from './types/iframeResponder';
 export declare namespace iframe {
     interface IframeResizeOptions {
         /** Minimum ms between height postMessages (default 100). */
