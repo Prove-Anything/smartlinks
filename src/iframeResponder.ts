@@ -267,22 +267,43 @@ export class IframeResponder {
       }
     }
 
-    // Build URL
-    let base = this.appUrl.replace(/#\/?$/, '');
-    if (base.endsWith('/')) {
-      base = base.slice(0, -1);
+    // Build URL - respect the URL format from server (hash routing or not)
+    let finalUrl = this.appUrl;
+    
+    // Check if this URL uses hash routing (has a # in it)
+    const hasHash = finalUrl.includes('#');
+    console.log('[IframeResponder] URL has hash routing:', hasHash);
+    
+    if (hasHash) {
+      // Hash-routed app - build params into the hash portion
+      const [baseWithHash, existingQuery = ''] = finalUrl.split('?');
+      const existingParams = new URLSearchParams(existingQuery);
+      params.forEach((value, key) => existingParams.set(key, value));
+      
+      // Add initialPath if provided
+      if (this.options.initialPath) {
+        const path = this.options.initialPath.startsWith('/') ? this.options.initialPath : '/' + this.options.initialPath;
+        // Insert path before the ?
+        const [beforeHash, afterHash] = baseWithHash.split('#');
+        finalUrl = `${beforeHash}#${afterHash || ''}${path}?${existingParams.toString()}`;
+      } else {
+        finalUrl = `${baseWithHash}?${existingParams.toString()}`;
+      }
+    } else {
+      // Path-routed app - use URL API to add params normally
+      const url = new URL(finalUrl);
+      
+      // Add initialPath if provided
+      if (this.options.initialPath) {
+        const path = this.options.initialPath.startsWith('/') ? this.options.initialPath : '/' + this.options.initialPath;
+        url.pathname = url.pathname.replace(/\/$/, '') + path;
+      }
+      
+      // Add query params
+      params.forEach((value, key) => url.searchParams.set(key, value));
+      finalUrl = url.toString();
     }
 
-    // Build hash path
-    let hashPath = this.options.initialPath || '';
-    if (hashPath && !hashPath.startsWith('/')) {
-      hashPath = '/' + hashPath;
-    }
-    if (hashPath === '/') {
-      hashPath = '';
-    }
-
-    const finalUrl = `${base}/#/${hashPath}?${params.toString()}`.replace('/#//', '/#/');
     console.log('[IframeResponder] Final iframe URL:', finalUrl);
     return finalUrl;
   }

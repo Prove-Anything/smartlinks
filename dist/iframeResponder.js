@@ -32,6 +32,7 @@ import { collection } from './api/collection';
  */
 export class IframeResponder {
     constructor(options) {
+        var _a;
         this.iframe = null;
         this.uploads = new Map();
         this.isInitialLoad = true;
@@ -39,6 +40,17 @@ export class IframeResponder {
         this.resizeHandler = null;
         this.appUrl = null;
         this.resolveReady = null;
+        console.log('[IframeResponder] Constructor called', {
+            collectionId: options.collectionId,
+            appId: options.appId,
+            productId: options.productId,
+            hasCache: !!options.cache,
+            hasCachedApps: !!((_a = options.cache) === null || _a === void 0 ? void 0 : _a.apps),
+        });
+        console.log('[IframeResponder] SDK version check:', {
+            hasCache: typeof cache !== 'undefined',
+            hasCacheGetOrFetch: typeof (cache === null || cache === void 0 ? void 0 : cache.getOrFetch) === 'function',
+        });
         this.options = options;
         this.cache = options.cache || {};
         // Create ready promise
@@ -46,9 +58,18 @@ export class IframeResponder {
             this.resolveReady = resolve;
         });
         // Start resolving app URL
-        this.resolveAppUrl().then(() => {
+        this.resolveAppUrl()
+            .then(() => {
             var _a;
+            console.log('[IframeResponder] App URL resolved successfully:', this.appUrl);
             (_a = this.resolveReady) === null || _a === void 0 ? void 0 : _a.call(this);
+        })
+            .catch((err) => {
+            var _a, _b, _c;
+            console.error('[IframeResponder] App URL resolution failed:', err);
+            (_b = (_a = this.options).onError) === null || _b === void 0 ? void 0 : _b.call(_a, err);
+            // Still resolve to prevent hanging, but with null URL
+            (_c = this.resolveReady) === null || _c === void 0 ? void 0 : _c.call(this);
         });
     }
     /**
@@ -56,7 +77,9 @@ export class IframeResponder {
      * Returns the src URL to set on the iframe.
      */
     async attach(iframe) {
+        console.log('[IframeResponder] attach() called, waiting for ready...');
         await this.ready;
+        console.log('[IframeResponder] Ready resolved, appUrl:', this.appUrl);
         this.iframe = iframe;
         // Set up message listener
         this.messageHandler = this.handleMessage.bind(this);
@@ -65,7 +88,9 @@ export class IframeResponder {
         this.resizeHandler = this.calculateViewportHeight.bind(this);
         window.addEventListener('resize', this.resizeHandler);
         window.addEventListener('orientationchange', this.resizeHandler);
-        return this.buildIframeSrc();
+        const src = this.buildIframeSrc();
+        console.log('[IframeResponder] Built iframe src:', src);
+        return src;
     }
     /**
      * Update cached data (e.g., after user logs in).
@@ -94,31 +119,45 @@ export class IframeResponder {
     // ===========================================================================
     async resolveAppUrl() {
         var _a, _b;
+        console.log('[IframeResponder] resolveAppUrl started');
         // Use explicit override if provided
         if (this.options.appUrl) {
             this.appUrl = this.options.appUrl;
+            console.log('[IframeResponder] Using override URL:', this.appUrl);
             return;
         }
         // Check pre-populated cache
         const cachedApps = this.cache.apps;
         if (cachedApps) {
+            console.log('[IframeResponder] Found cached apps:', cachedApps.length);
             const app = cachedApps.find(a => a.id === this.options.appId);
             if (app) {
                 this.appUrl = this.getVersionUrl(app);
+                console.log('[IframeResponder] Using cached app URL:', this.appUrl);
                 return;
             }
+            console.log('[IframeResponder] App not found in cache, fetching from API');
+        }
+        else {
+            console.log('[IframeResponder] No cached apps, fetching from API');
         }
         // Fetch from API with caching
         try {
+            console.log('[IframeResponder] Calling cache.getOrFetch for apps');
             const appsConfig = await cache.getOrFetch(`apps:${this.options.collectionId}`, () => collection.getAppsConfig(this.options.collectionId), { ttl: 5 * 60 * 1000, storage: 'session' });
+            console.log('[IframeResponder] Got appsConfig from API:', appsConfig);
             const apps = appsConfig.apps;
+            console.log('[IframeResponder] Extracted apps array:', apps === null || apps === void 0 ? void 0 : apps.length, apps);
             const app = apps.find(a => a.id === this.options.appId);
             if (!app) {
+                console.error('[IframeResponder] App not found:', this.options.appId, 'Available:', apps.map(a => a.id));
                 throw new Error(`App "${this.options.appId}" not found in collection "${this.options.collectionId}"`);
             }
             this.appUrl = this.getVersionUrl(app);
+            console.log('[IframeResponder] Resolved app URL:', this.appUrl);
         }
         catch (err) {
+            console.error('[IframeResponder] resolveAppUrl error:', err);
             (_b = (_a = this.options).onError) === null || _b === void 0 ? void 0 : _b.call(_a, err);
             throw err;
         }
@@ -135,7 +174,9 @@ export class IframeResponder {
     // ===========================================================================
     buildIframeSrc() {
         var _a, _b;
+        console.log('[IframeResponder] buildIframeSrc called, appUrl:', this.appUrl);
         if (!this.appUrl) {
+            console.error('[IframeResponder] Cannot build src - appUrl is null!');
             throw new Error('App URL not resolved');
         }
         const params = new URLSearchParams();
@@ -175,20 +216,41 @@ export class IframeResponder {
                 // Ignore encoding errors
             }
         }
-        // Build URL
-        let base = this.appUrl.replace(/#\/?$/, '');
-        if (base.endsWith('/')) {
-            base = base.slice(0, -1);
+        // Build URL - respect the URL format from server (hash routing or not)
+        let finalUrl = this.appUrl;
+        // Check if this URL uses hash routing (has a # in it)
+        const hasHash = finalUrl.includes('#');
+        console.log('[IframeResponder] URL has hash routing:', hasHash);
+        if (hasHash) {
+            // Hash-routed app - build params into the hash portion
+            const [baseWithHash, existingQuery = ''] = finalUrl.split('?');
+            const existingParams = new URLSearchParams(existingQuery);
+            params.forEach((value, key) => existingParams.set(key, value));
+            // Add initialPath if provided
+            if (this.options.initialPath) {
+                const path = this.options.initialPath.startsWith('/') ? this.options.initialPath : '/' + this.options.initialPath;
+                // Insert path before the ?
+                const [beforeHash, afterHash] = baseWithHash.split('#');
+                finalUrl = `${beforeHash}#${afterHash || ''}${path}?${existingParams.toString()}`;
+            }
+            else {
+                finalUrl = `${baseWithHash}?${existingParams.toString()}`;
+            }
         }
-        // Build hash path
-        let hashPath = this.options.initialPath || '';
-        if (hashPath && !hashPath.startsWith('/')) {
-            hashPath = '/' + hashPath;
+        else {
+            // Path-routed app - use URL API to add params normally
+            const url = new URL(finalUrl);
+            // Add initialPath if provided
+            if (this.options.initialPath) {
+                const path = this.options.initialPath.startsWith('/') ? this.options.initialPath : '/' + this.options.initialPath;
+                url.pathname = url.pathname.replace(/\/$/, '') + path;
+            }
+            // Add query params
+            params.forEach((value, key) => url.searchParams.set(key, value));
+            finalUrl = url.toString();
         }
-        if (hashPath === '/') {
-            hashPath = '';
-        }
-        return `${base}/#/${hashPath}?${params.toString()}`.replace('/#//', '/#/');
+        console.log('[IframeResponder] Final iframe URL:', finalUrl);
+        return finalUrl;
     }
     // ===========================================================================
     // Viewport Resize Calculation
