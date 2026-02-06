@@ -219,6 +219,14 @@ export function setBearerToken(token: string | undefined) {
   bearerToken = token
 }
 
+/**
+ * Get the currently configured API base URL.
+ * Returns null if initializeApi() has not been called yet.
+ */
+export function getBaseURL(): string | null {
+  return baseURL
+}
+
 // Map of pending proxy requests: id -> {resolve, reject}
 const proxyPending: Record<string, { resolve: (data: any) => void, reject: (err: any) => void }> = {}
 

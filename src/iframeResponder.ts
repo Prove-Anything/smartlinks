@@ -4,6 +4,7 @@
 
 import * as cache from './cache';
 import { collection } from './api/collection';
+import { getBaseURL } from './http';
 import type {
   IframeResponderOptions,
   CachedData,
@@ -522,9 +523,12 @@ export class IframeResponder {
         }
       }
 
-      // Forward to actual API using SDK's http utilities
-      // Build full URL and use fetch for now (can be replaced with SDK request when needed)
-      const baseUrl = '/api/v1';
+      // Forward to actual API using SDK's configured baseURL
+      const baseUrl = getBaseURL();
+      if (!baseUrl) {
+        throw new Error('SDK not initialized - call initializeApi() first');
+      }
+      
       const fetchOptions: RequestInit = {
         method: proxyData.method,
         headers: proxyData.headers,
@@ -644,7 +648,10 @@ export class IframeResponder {
           );
 
           const path = upload.path.startsWith('/') ? upload.path.slice(1) : upload.path;
-          const baseUrl = '/api/v1';
+          const baseUrl = getBaseURL();
+          if (!baseUrl) {
+            throw new Error('SDK not initialized - call initializeApi() first');
+          }
           
           const response = await fetch(`${baseUrl}/${path}`, {
             method: 'POST',
