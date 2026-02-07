@@ -1,8 +1,21 @@
 # Smartlinks API Summary
 
-Version: 1.3.14  |  Generated: 2026-02-06T10:28:03.532Z
+Version: 1.3.17  |  Generated: 2026-02-07T10:31:27.478Z
 
 This is a concise summary of all available API functions and types.
+
+## Documentation
+
+For detailed guides on specific features:
+
+- **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation
+- **[Widgets](widgets.md)** - Embeddable React components for parent applications
+- **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections
+- **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication
+- **[i18n](i18n.md)** - Internationalization and localization
+- **[Liquid Templates](liquid-templates.md)** - Dynamic templating for content generation
+- **[Theme System](theme.system.md)** - Theme configuration and customization
+- **[Theme Defaults](theme-defaults.md)** - Default theme values and presets
 
 ## API Namespaces
 
@@ -42,7 +55,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **qr** - Lookup short codes to resolve collection/product/proof context.
 
 — AI & Utilities —
-- **ai** - Generate content and images, search photos, chat, upload files, and cache.
+- **ai** - Chat completions, RAG (document Q&A), podcast generation, TTS, content/image generation, voice integration.
 - **serialNumber** - Assign, lookup, and manage serial numbers across scopes.
 
 — Other —
@@ -83,6 +96,9 @@ Replace or augment globally applied custom headers.
 
 **setBearerToken**(token: string | undefined) → `void`
 Allows setting the bearerToken at runtime (e.g. after login/logout).
+
+**getBaseURL**() → `string | null`
+Get the currently configured API base URL. Returns null if initializeApi() has not been called yet.
 
 **proxyUploadFormData**(path: string,
   formData: FormData,
@@ -2668,6 +2684,426 @@ interface TemplateRenderSourceResponse {
 
 ### ai (api)
 
+**ContentPart** (interface)
+```typescript
+interface ContentPart {
+  type: 'text' | 'image_url'
+  text?: string
+  image_url?: {
+  url: string
+  detail?: 'auto' | 'low' | 'high'
+  }
+}
+```
+
+**FunctionCall** (interface)
+```typescript
+interface FunctionCall {
+  name: string
+  arguments: string
+}
+```
+
+**ToolCall** (interface)
+```typescript
+interface ToolCall {
+  id: string
+  type: 'function'
+  function: {
+  name: string
+  arguments: string
+  }
+}
+```
+
+**ChatMessage** (interface)
+```typescript
+interface ChatMessage {
+  role: 'system' | 'user' | 'assistant' | 'function' | 'tool'
+  content: string | ContentPart[]
+  name?: string
+  function_call?: FunctionCall
+  tool_calls?: ToolCall[]
+  tool_call_id?: string
+}
+```
+
+**ToolDefinition** (interface)
+```typescript
+interface ToolDefinition {
+  type: 'function'
+  function: {
+  name: string
+  description: string
+  parameters: {
+  type: 'object'
+  properties: Record<string, {
+  type: string
+  description?: string
+  enum?: string[]
+  }>
+  required?: string[]
+  }
+  }
+}
+```
+
+**ChatCompletionRequest** (interface)
+```typescript
+interface ChatCompletionRequest {
+  messages: ChatMessage[]
+  model?: string
+  stream?: boolean
+  tools?: ToolDefinition[]
+  tool_choice?: 'none' | 'auto' | 'required' | { type: 'function'; function: { name: string } }
+  temperature?: number
+  max_tokens?: number
+  top_p?: number
+  frequency_penalty?: number
+  presence_penalty?: number
+  response_format?: { type: 'text' | 'json_object' }
+  user?: string
+}
+```
+
+**ChatCompletionChoice** (interface)
+```typescript
+interface ChatCompletionChoice {
+  index: number
+  message: ChatMessage
+  finish_reason: 'stop' | 'length' | 'function_call' | 'tool_calls' | 'content_filter' | null
+}
+```
+
+**ChatCompletionResponse** (interface)
+```typescript
+interface ChatCompletionResponse {
+  id: string
+  object: 'chat.completion'
+  created: number
+  model: string
+  choices: ChatCompletionChoice[]
+  usage: {
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  }
+}
+```
+
+**ChatCompletionChunk** (interface)
+```typescript
+interface ChatCompletionChunk {
+  id: string
+  object: 'chat.completion.chunk'
+  created: number
+  model: string
+  choices: Array<{
+  index: number
+  delta: Partial<ChatMessage>
+  finish_reason: string | null
+  }>
+}
+```
+
+**AIModel** (interface)
+```typescript
+interface AIModel {
+  id: string
+  provider: 'gemini' | 'openai'
+  modelId: string
+  name: string
+  description: string
+  capabilities: Array<'text' | 'vision' | 'audio' | 'code'>
+  contextWindow: number
+  pricing: {
+  input: number
+  output: number
+  cached?: number
+  }
+  features: string[]
+  recommended?: string
+}
+```
+
+**ModelList** (interface)
+```typescript
+interface ModelList {
+  object: 'list'
+  data: AIModel[]
+}
+```
+
+**DocumentChunk** (interface)
+```typescript
+interface DocumentChunk {
+  text: string
+  embedding: number[]
+  metadata: {
+  chunkIndex: number
+  documentId: string
+  [key: string]: any
+  }
+}
+```
+
+**IndexDocumentRequest** (interface)
+```typescript
+interface IndexDocumentRequest {
+  productId: string
+  text?: string
+  documentUrl?: string
+  metadata?: Record<string, any>
+  chunkSize?: number
+  overlap?: number
+  provider?: 'openai' | 'gemini'
+}
+```
+
+**IndexDocumentResponse** (interface)
+```typescript
+interface IndexDocumentResponse {
+  success: boolean
+  productId: string
+  documentId: string
+  chunks: number
+  metadata: {
+  textLength: number
+  chunkSize: number
+  overlap: number
+  embeddingDimensions: number
+  }
+  sample?: {
+  text: string
+  chunkIndex: number
+  }
+}
+```
+
+**ConfigureAssistantRequest** (interface)
+```typescript
+interface ConfigureAssistantRequest {
+  productId: string
+  systemPrompt?: string
+  model?: string
+  maxTokensPerResponse?: number
+  temperature?: number
+  rateLimitPerUser?: number
+  allowedTopics?: string[]
+  customInstructions?: {
+  tone?: string
+  additionalRules?: string
+  [key: string]: any
+  }
+}
+```
+
+**ConfigureAssistantResponse** (interface)
+```typescript
+interface ConfigureAssistantResponse {
+  success: boolean
+  configuration: {
+  productId: string
+  systemPrompt: string
+  model: string
+  maxTokensPerResponse: number
+  temperature: number
+  rateLimitPerUser: number
+  allowedTopics: string[]
+  customInstructions?: Record<string, any>
+  updatedAt: string
+  }
+}
+```
+
+**PublicChatRequest** (interface)
+```typescript
+interface PublicChatRequest {
+  productId: string
+  userId: string
+  message: string
+  sessionId?: string
+  stream?: boolean
+}
+```
+
+**PublicChatResponse** (interface)
+```typescript
+interface PublicChatResponse {
+  message: string
+  sessionId: string
+  usage: {
+  prompt_tokens: number
+  completion_tokens: number
+  total_tokens: number
+  }
+  context?: {
+  chunksUsed: number
+  topSimilarity: number
+  }
+}
+```
+
+**Session** (interface)
+```typescript
+interface Session {
+  sessionId: string
+  productId: string
+  userId: string
+  messageCount: number
+  createdAt: string
+  lastActivityAt: string
+  messages: ChatMessage[]
+}
+```
+
+**RateLimitStatus** (interface)
+```typescript
+interface RateLimitStatus {
+  used: number
+  remaining: number
+  resetAt: string
+}
+```
+
+**SessionStatistics** (interface)
+```typescript
+interface SessionStatistics {
+  totalSessions: number
+  activeSessions: number
+  totalMessages: number
+  rateLimitedUsers: number
+}
+```
+
+**VoiceSessionRequest** (interface)
+```typescript
+interface VoiceSessionRequest {
+  productId: string
+  userId: string
+  collectionId: string
+  settings?: {
+  voice?: string
+  language?: string
+  model?: string
+  }
+}
+```
+
+**VoiceSessionResponse** (interface)
+```typescript
+interface VoiceSessionResponse {
+  token: string
+  systemInstruction: string
+  expiresAt: string
+  productName: string
+}
+```
+
+**EphemeralTokenRequest** (interface)
+```typescript
+interface EphemeralTokenRequest {
+  settings?: {
+  ttl?: number
+  voice?: string
+  language?: string
+  model?: string
+  }
+}
+```
+
+**EphemeralTokenResponse** (interface)
+```typescript
+interface EphemeralTokenResponse {
+  token: string
+  expiresAt: string
+}
+```
+
+**TranscriptionResponse** (interface)
+```typescript
+interface TranscriptionResponse {
+  text: string
+}
+```
+
+**TTSRequest** (interface)
+```typescript
+interface TTSRequest {
+  text: string
+  voice?: 'alloy' | 'echo' | 'fable' | 'onyx' | 'nova' | 'shimmer'
+  speed?: number
+  format?: 'mp3' | 'opus' | 'aac' | 'flac'
+}
+```
+
+**GeneratePodcastRequest** (interface)
+```typescript
+interface GeneratePodcastRequest {
+  productId: string
+  documentText?: string
+  duration?: number
+  style?: 'casual' | 'professional' | 'educational' | 'entertaining'
+  voices?: {
+  host1?: string
+  host2?: string
+  }
+  includeAudio?: boolean
+  language?: string
+  customInstructions?: string
+}
+```
+
+**PodcastSegment** (interface)
+```typescript
+interface PodcastSegment {
+  speaker: 'host1' | 'host2'
+  text: string
+  timestamp?: number
+  duration?: number
+}
+```
+
+**PodcastScript** (interface)
+```typescript
+interface PodcastScript {
+  title: string
+  description: string
+  segments: PodcastSegment[]
+}
+```
+
+**GeneratePodcastResponse** (interface)
+```typescript
+interface GeneratePodcastResponse {
+  success: boolean
+  podcastId: string
+  script: PodcastScript
+  audio?: {
+  host1Url?: string
+  host2Url?: string
+  mixedUrl?: string
+  }
+  metadata: {
+  duration: number
+  wordCount: number
+  generatedAt: string
+  }
+}
+```
+
+**PodcastStatus** (interface)
+```typescript
+interface PodcastStatus {
+  podcastId: string
+  status: 'generating_script' | 'generating_audio' | 'mixing' | 'completed' | 'failed'
+  progress: number
+  estimatedTimeRemaining?: number
+  error?: string
+  result?: GeneratePodcastResponse
+}
+```
+
 **AIGenerateContentRequest** (interface)
 ```typescript
 interface AIGenerateContentRequest {
@@ -2796,6 +3232,67 @@ type AccountInfoResponse = {
 ## API Functions
 
 ### ai
+
+**create**(collectionId: string,
+        request: ChatCompletionRequest) → `Promise<ChatCompletionResponse | AsyncIterable<ChatCompletionChunk>>`
+Create a chat completion (streaming or non-streaming)
+
+**list**(collectionId: string) → `Promise<ModelList>`
+List available AI models
+
+**get**(collectionId: string, modelId: string) → `Promise<AIModel>`
+Get specific model information
+
+**indexDocument**(collectionId: string,
+      request: IndexDocumentRequest) → `Promise<IndexDocumentResponse>`
+Index a document for RAG
+
+**configureAssistant**(collectionId: string,
+      request: ConfigureAssistantRequest) → `Promise<ConfigureAssistantResponse>`
+Configure AI assistant behavior
+
+**stats**(collectionId: string) → `Promise<SessionStatistics>`
+Get session statistics
+
+**reset**(collectionId: string, userId: string) → `Promise<`
+Reset rate limit for a user
+
+**generate**(collectionId: string,
+      request: GeneratePodcastRequest) → `Promise<GeneratePodcastResponse>`
+Generate a NotebookLM-style conversational podcast from product documents
+
+**getStatus**(collectionId: string, podcastId: string) → `Promise<PodcastStatus>`
+Get podcast generation status
+
+**generate**(collectionId: string,
+      request: TTSRequest) → `Promise<Blob>`
+Generate text-to-speech audio
+
+**chat**(collectionId: string,
+      request: PublicChatRequest) → `Promise<PublicChatResponse>`
+Chat with product assistant (RAG)
+
+**getSession**(collectionId: string, sessionId: string) → `Promise<Session>`
+Get session history
+
+**clearSession**(collectionId: string, sessionId: string) → `Promise<`
+Clear session history
+
+**getRateLimit**(collectionId: string, userId: string) → `Promise<RateLimitStatus>`
+Check rate limit status
+
+**getToken**(collectionId: string,
+      request: EphemeralTokenRequest) → `Promise<EphemeralTokenResponse>`
+Generate ephemeral token for Gemini Live
+
+**isSupported**() → `boolean`
+Check if voice is supported in browser
+
+**listen**(language = 'en-US') → `Promise<string>`
+Listen for voice input
+
+**speak**(text: string, options?: { voice?: string; rate?: number }) → `Promise<void>`
+Speak text
 
 **generateContent**(collectionId: string,
     params: AIGenerateContentRequest,

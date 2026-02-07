@@ -3,6 +3,7 @@
 // =============================================================================
 import * as cache from './cache';
 import { collection } from './api/collection';
+import { getBaseURL } from './http';
 /**
  * Parent-side iframe responder for SmartLinks microapp embedding.
  *
@@ -431,9 +432,11 @@ export class IframeResponder {
                     return;
                 }
             }
-            // Forward to actual API using SDK's http utilities
-            // Build full URL and use fetch for now (can be replaced with SDK request when needed)
-            const baseUrl = '/api/v1';
+            // Forward to actual API using SDK's configured baseURL
+            const baseUrl = getBaseURL();
+            if (!baseUrl) {
+                throw new Error('SDK not initialized - call initializeApi() first');
+            }
             const fetchOptions = {
                 method: proxyData.method,
                 headers: proxyData.headers,
@@ -524,7 +527,10 @@ export class IframeResponder {
                     upload.fields.forEach(([key, value]) => formData.append(key, value));
                     formData.append(upload.fileInfo.key || 'file', blob, upload.fileInfo.name || 'upload.bin');
                     const path = upload.path.startsWith('/') ? upload.path.slice(1) : upload.path;
-                    const baseUrl = '/api/v1';
+                    const baseUrl = getBaseURL();
+                    if (!baseUrl) {
+                        throw new Error('SDK not initialized - call initializeApi() first');
+                    }
                     const response = await fetch(`${baseUrl}/${path}`, {
                         method: 'POST',
                         body: formData,

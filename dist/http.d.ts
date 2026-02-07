@@ -26,6 +26,11 @@ export declare function setExtraHeaders(headers: Record<string, string>): void;
  */
 export declare function setBearerToken(token: string | undefined): void;
 /**
+ * Get the currently configured API base URL.
+ * Returns null if initializeApi() has not been called yet.
+ */
+export declare function getBaseURL(): string | null;
+/**
  * Upload a FormData payload via proxy with progress events using chunked postMessage.
  * Parent is expected to implement the counterpart protocol.
  */

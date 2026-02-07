@@ -31,4 +31,54 @@ export { location } from "./location"
 export * as realtime from "./realtime"
 export { tags } from "./tags"
 export { order } from "./order"
-export type { AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto } from "./ai"
+
+// Export AI types
+export type { 
+  // Legacy types
+  AIGenerateContentRequest, 
+  AIGenerateImageRequest, 
+  AISearchPhotosRequest, 
+  AISearchPhotosPhoto,
+  
+  // Chat Completions types
+  ContentPart,
+  FunctionCall,
+  ToolCall,
+  ChatMessage,
+  ToolDefinition,
+  ChatCompletionRequest,
+  ChatCompletionChoice,
+  ChatCompletionResponse,
+  ChatCompletionChunk,
+  
+  // Model types
+  AIModel,
+  ModelList,
+  
+  // RAG types
+  DocumentChunk,
+  IndexDocumentRequest,
+  IndexDocumentResponse,
+  ConfigureAssistantRequest,
+  ConfigureAssistantResponse,
+  PublicChatRequest,
+  PublicChatResponse,
+  Session,
+  RateLimitStatus,
+  SessionStatistics,
+  
+  // Voice types
+  VoiceSessionRequest,
+  VoiceSessionResponse,
+  EphemeralTokenRequest,
+  EphemeralTokenResponse,
+  TranscriptionResponse,
+  TTSRequest,
+  
+  // Podcast types
+  GeneratePodcastRequest,
+  GeneratePodcastResponse,
+  PodcastScript,
+  PodcastSegment,
+  PodcastStatus,
+} from "./ai"

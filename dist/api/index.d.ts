@@ -29,4 +29,4 @@ export { location } from "./location";
 export * as realtime from "./realtime";
 export { tags } from "./tags";
 export { order } from "./order";
-export type { AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto } from "./ai";
+export type { AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto, ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, ModelList, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, GeneratePodcastResponse, PodcastScript, PodcastSegment, PodcastStatus, } from "./ai";

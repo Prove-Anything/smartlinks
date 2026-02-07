@@ -11,7 +11,13 @@ Build Smartlinks-powered apps in Node.js or the browser: list collections and pr
 • Optional iframe proxy mode for embedded apps
 
 For the full list of functions and types, see the API summary:
-→ API Summary (API_SUMMARY.md)
+→ [API Summary](API_SUMMARY.md)
+
+**Documentation:**
+- [AI & Chat Completions](docs/ai.md) - Chat completions, RAG, voice integration
+- [Widgets](docs/widgets.md) - Embeddable React components
+- [Realtime](docs/realtime.md) - Realtime data updates
+- [iframe Responder](docs/iframe-responder.md) - iframe integration
 
 ## Install
 

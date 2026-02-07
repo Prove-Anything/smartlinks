@@ -208,6 +208,13 @@ export function setExtraHeaders(headers) {
 export function setBearerToken(token) {
     bearerToken = token;
 }
+/**
+ * Get the currently configured API base URL.
+ * Returns null if initializeApi() has not been called yet.
+ */
+export function getBaseURL() {
+    return baseURL;
+}
 // Map of pending proxy requests: id -> {resolve, reject}
 const proxyPending = {};
 function generateProxyId() {

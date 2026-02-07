@@ -173,6 +173,18 @@ function generateAPISummary() {
   summary += `Version: ${version}  |  Generated: ${date}\n\n`;
   summary += 'This is a concise summary of all available API functions and types.\n\n';
   
+  // Add documentation links
+  summary += '## Documentation\n\n';
+  summary += 'For detailed guides on specific features:\n\n';
+  summary += '- **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation\n';
+  summary += '- **[Widgets](widgets.md)** - Embeddable React components for parent applications\n';
+  summary += '- **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections\n';
+  summary += '- **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication\n';
+  summary += '- **[i18n](i18n.md)** - Internationalization and localization\n';
+  summary += '- **[Liquid Templates](liquid-templates.md)** - Dynamic templating for content generation\n';
+  summary += '- **[Theme System](theme.system.md)** - Theme configuration and customization\n';
+  summary += '- **[Theme Defaults](theme-defaults.md)** - Default theme values and presets\n\n';
+  
   // Generate namespace overview (grouped + descriptive)
   const apiFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
   const namespaces = apiFiles.map(file => path.basename(file, '.ts')).sort();
@@ -233,7 +245,7 @@ function generateAPISummary() {
     {
       title: '— AI & Utilities —',
       items: [
-        { name: 'ai', desc: 'Generate content and images, search photos, chat, upload files, and cache.' },
+        { name: 'ai', desc: 'Chat completions, RAG (document Q&A), podcast generation, TTS, content/image generation, voice integration.' },
         { name: 'serialNumber', desc: 'Assign, lookup, and manage serial numbers across scopes.' },
       ]
     },
