@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.3.17  |  Generated: 2026-02-07T10:31:27.478Z
+Version: 1.3.20  |  Generated: 2026-02-08T14:25:23.483Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1493,6 +1493,74 @@ interface ContactSchema {
 
 **FieldType** = ``
 
+### crate
+
+**CrateItem** (interface)
+```typescript
+interface CrateItem {
+  id: string                      // Item ID (tag ID)
+  codeId: string                  // Code identifier
+  batchId?: string                // Batch identifier
+  productId?: string              // Product identifier
+  claimId?: string                // Claim identifier
+  productName?: string            // Product name
+  productGtin?: string            // Product GTIN
+  productImage?: string           // Product image URL
+  data?: Record<string, any>      // Additional item data
+}
+```
+
+**Crate** (interface)
+```typescript
+interface Crate {
+  id: string                      // Crate ID
+  items?: CrateItem[]             // Array of items in the crate
+  deleted?: boolean               // Whether the crate is soft-deleted
+  deletedAt?: string | null       // ISO 8601 timestamp when deleted
+}
+```
+
+**ListCratesRequest** (interface)
+```typescript
+interface ListCratesRequest {
+  limit?: number                  // Number of results per page (default: 100, max: 100)
+  startAfter?: string             // Crate ID to start after for pagination
+  includeDeleted?: boolean        // Include soft-deleted crates (default: false)
+}
+```
+
+**ListCratesResponse** (interface)
+```typescript
+interface ListCratesResponse {
+  items: Crate[]                  // Array of crates
+  hasMore: boolean                // Whether more results are available
+  lastId: string | null           // ID of last crate (use as startAfter for next page)
+}
+```
+
+**CreateCrateRequest** (interface)
+```typescript
+interface CreateCrateRequest {
+  items?: CrateItem[]             // Initial items for the crate
+  [key: string]: any              // Additional fields
+}
+```
+
+**UpdateCrateRequest** (interface)
+```typescript
+interface UpdateCrateRequest {
+  items?: CrateItem[]             // Updated items
+  [key: string]: any              // Additional fields
+}
+```
+
+**DeleteCrateResponse** (interface)
+```typescript
+interface DeleteCrateResponse {
+  success: boolean
+}
+```
+
 ### error
 
 **ErrorResponse** (interface)
@@ -2186,8 +2254,11 @@ interface Order {
   customerId?: string               // Customer's own customer ID (can map to CRM/contacts)
   status: string                    // e.g., "pending", "processing", "shipped", "completed"
   itemCount: number                 // Cached count of items (maintained automatically)
-  metadata: Record<string, any>     // Flexible additional data
-  items: OrderItem[]                // Array of items in this order
+  metadata: {
+  productSummary?: Record<string, number>  // productId -> count (auto-maintained)
+  [key: string]: any              // Flexible additional data
+  }
+  items?: OrderItem[]               // Array of items (only when includeItems=true)
   createdAt: string                 // ISO 8601 timestamp
   updatedAt: string                 // ISO 8601 timestamp
 }
@@ -2205,6 +2276,13 @@ interface CreateOrderRequest {
   customerId?: string                     // Optional: Your customer ID
   status?: string                         // Optional: Order status (default: "pending")
   metadata?: Record<string, any>          // Optional: Order-level metadata
+}
+```
+
+**GetOrderParams** (interface)
+```typescript
+interface GetOrderParams {
+  includeItems?: boolean            // Optional: Include items array (default: false)
 }
 ```
 
@@ -2233,6 +2311,7 @@ interface ListOrdersRequest {
   status?: string                   // Optional: Filter by status
   orderRef?: string                 // Optional: Filter by order reference
   customerId?: string               // Optional: Filter by customer ID
+  includeItems?: boolean            // Optional: Include items array (default: false)
 }
 ```
 
@@ -2277,6 +2356,281 @@ interface LookupOrdersRequest {
 ```typescript
 interface LookupOrdersResponse {
   orders: Order[]                   // All orders containing any of the specified items
+}
+```
+
+**GetOrderItemsParams** (interface)
+```typescript
+interface GetOrderItemsParams {
+  limit?: number                    // Optional: Max results (default: 100)
+  offset?: number                   // Optional: Pagination offset (default: 0)
+}
+```
+
+**GetOrderItemsResponse** (interface)
+```typescript
+interface GetOrderItemsResponse {
+  items: OrderItem[]
+  limit: number
+  offset: number
+}
+```
+
+**QueryOrdersRequest** (interface)
+```typescript
+interface QueryOrdersRequest {
+  query?: {
+  status?: string
+  orderRef?: string
+  customerId?: string
+  createdAfter?: string           // ISO 8601 date
+  createdBefore?: string          // ISO 8601 date
+  updatedAfter?: string           // ISO 8601 date
+  updatedBefore?: string          // ISO 8601 date
+  minItemCount?: number
+  maxItemCount?: number
+  metadata?: Record<string, any>
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+  }
+  limit?: number                    // Optional: Max results (default: 100)
+  offset?: number                   // Optional: Pagination offset (default: 0)
+  includeItems?: boolean            // Optional: Include items array (default: false)
+}
+```
+
+**QueryOrdersResponse** (interface)
+```typescript
+interface QueryOrdersResponse {
+  orders: Order[]
+  limit: number
+  offset: number
+}
+```
+
+**ReportsParams** (interface)
+```typescript
+interface ReportsParams {
+  groupByStatus?: boolean
+  groupByCollection?: boolean
+  groupByCustomer?: boolean
+  groupByDate?: boolean
+  groupByItemType?: boolean
+  groupByProduct?: boolean
+  includeItemStats?: boolean
+  includeCount?: boolean            // default: true
+  topN?: number                     // for customer/product grouping (default: 10)
+  status?: string
+  createdAfter?: string             // ISO 8601 date
+  createdBefore?: string            // ISO 8601 date
+}
+```
+
+**ReportsResponse** (interface)
+```typescript
+interface ReportsResponse {
+  totalOrders?: number
+  ordersByStatus?: Record<string, number>
+  ordersByCollection?: Record<string, number>
+  ordersByCustomer?: Record<string, number>
+  ordersByDate?: Record<string, number>
+  itemsByType?: Record<string, number>
+  itemsByProduct?: Record<string, number>
+  itemStats?: {
+  totalItems: number
+  avgItemsPerOrder: number
+  maxItemsInOrder: number
+  minItemsInOrder: number
+  }
+}
+```
+
+**LookupByProductParams** (interface)
+```typescript
+interface LookupByProductParams {
+  limit?: number                    // Optional: Max results (default: 100)
+  offset?: number                   // Optional: Pagination offset (default: 0)
+  includeItems?: boolean            // Optional: Include items array (default: false)
+}
+```
+
+**LookupByProductResponse** (interface)
+```typescript
+interface LookupByProductResponse {
+  orders: Order[]
+  limit: number
+  offset: number
+}
+```
+
+**TagScanSummary** (interface)
+```typescript
+interface TagScanSummary {
+  tagId: string
+  totalScans: number
+  adminScans: number
+  customerScans: number
+  earliestScanAt: string | null
+  earliestAdminScanAt: string | null
+}
+```
+
+**OrderAnalyticsResponse** (interface)
+```typescript
+interface OrderAnalyticsResponse {
+  orderRef: string
+  orderId: string
+  itemCount: number
+  tagCount: number
+  analytics: {
+  totalScans: number
+  adminScans: number
+  customerScans: number
+  earliestScanAt: string              // ISO 8601
+  latestScanAt: string                // ISO 8601
+  earliestAdminScanAt: string | null  // ISO 8601
+  earliestCustomerScanAt: string | null // ISO 8601
+  estimatedCreatedAt: string          // ISO 8601 - earliest admin scan or earliest scan
+  uniqueLocations: number
+  locations: string[]                 // Array of location strings
+  uniqueDevices: number
+  devices: string[]                   // Array of device types
+  eventTypes: string[]                // e.g., ["scan_tag", "verify_tag"]
+  tagSummaries: TagScanSummary[]
+  } | null                              // null if no tags found
+  message?: string                      // Only present if no tags found
+}
+```
+
+**TagScanEvent** (interface)
+```typescript
+interface TagScanEvent {
+  codeId: string
+  claimId: string
+  proofId: string | null
+  productId: string | null
+  variantId: string | null
+  batchId: string | null
+  collectionId: string
+  timestamp: string                     // ISO 8601
+  isAdmin: boolean
+  eventType: string | null              // e.g., "scan_tag"
+  location: string | null               // GPS coordinates or location string
+  location_accuracy: number | null
+  deviceType: string | null
+  ip: string | null
+  country: string | null
+  sessionId: string | null
+  metadata: Record<string, any> | null
+}
+```
+
+**TimelineRequest** (interface)
+```typescript
+interface TimelineRequest {
+  limit?: number                        // Max results (default: 1000)
+  from?: string                         // ISO 8601 start date filter
+  to?: string                           // ISO 8601 end date filter
+  isAdmin?: boolean                     // Filter by admin scans only
+}
+```
+
+**TimelineResponse** (interface)
+```typescript
+interface TimelineResponse {
+  orderRef: string
+  orderId: string
+  timeline: TagScanEvent[]
+  count: number
+}
+```
+
+**LocationRequest** (interface)
+```typescript
+interface LocationRequest {
+  limit?: number                        // Max results (default: 1000)
+}
+```
+
+**LocationResponse** (interface)
+```typescript
+interface LocationResponse {
+  orderRef: string
+  orderId: string
+  locations: LocationScan[]
+  count: number
+}
+```
+
+**BulkAnalyticsRequest** (interface)
+```typescript
+interface BulkAnalyticsRequest {
+  orderIds: string[]                    // Array of order IDs
+  from?: string                         // ISO 8601 start date filter
+  to?: string                           // ISO 8601 end date filter
+}
+```
+
+**OrderAnalyticsSummary** (interface)
+```typescript
+interface OrderAnalyticsSummary {
+  orderId: string
+  orderRef: string
+  analytics: {
+  totalScans: number
+  adminScans: number
+  customerScans: number
+  earliestScanAt: string | null
+  earliestAdminScanAt: string | null
+  estimatedCreatedAt: string | null
+  tagCount: number
+  tagSummaries: TagScanSummary[]
+  } | null
+}
+```
+
+**BulkAnalyticsResponse** (interface)
+```typescript
+interface BulkAnalyticsResponse {
+  results: OrderAnalyticsSummary[]
+}
+```
+
+**DailyScanCount** (interface)
+```typescript
+interface DailyScanCount {
+  date: string                          // YYYY-MM-DD
+  scanCount: number
+}
+```
+
+**AdminActivityEvent** (interface)
+```typescript
+interface AdminActivityEvent {
+  timestamp: string                     // ISO 8601
+  eventType: string
+  codeId: string
+}
+```
+
+**SummaryRequest** (interface)
+```typescript
+interface SummaryRequest {
+  from?: string                         // ISO 8601 start date filter
+  to?: string                           // ISO 8601 end date filter
+}
+```
+
+**CollectionSummaryResponse** (interface)
+```typescript
+interface CollectionSummaryResponse {
+  adminActivity: {
+  count: number
+  recent: AdminActivityEvent[]        // Last 100 events
+  }
+  scansByDay: DailyScanCount[]
+  adminScansByDay: DailyScanCount[]
+  customerScansByDay: DailyScanCount[]
 }
 ```
 
@@ -3837,20 +4191,26 @@ Public: Get contact update schema for a collection Fetches the public contact sc
 
 ### crate
 
-**get**(collectionId: string, crateId: string) → `Promise<any>`
-Get a single crate by ID for a collection (admin only).
+**list**(collectionId: string,
+    params?: ListCratesRequest) → `Promise<ListCratesResponse>`
+List crates for a collection with pagination support. Returns crates in pages, with support for soft-deleted crates. ```typescript // Get first page const page1 = await crate.list('coll_123', { limit: 100 }) console.log(`Found ${page1.items.length} crates`) // Get next page if (page1.hasMore) { const page2 = await crate.list('coll_123', { limit: 100, startAfter: page1.lastId }) } // Include soft-deleted crates const withDeleted = await crate.list('coll_123', { includeDeleted: true }) ```
 
-**list**(collectionId: string) → `Promise<any[]>`
-List all crates for a collection (admin only).
+**get**(collectionId: string,
+    crateId: string) → `Promise<GetCrateResponse>`
+Get a single crate by ID for a collection (admin only). ```typescript const crate = await crate.get('coll_123', 'crate_abc123') console.log(`Crate has ${crate.items?.length ?? 0} items`) ```
 
-**create**(collectionId: string, data: any) → `Promise<any>`
-Create a new crate for a collection (admin only).
+**create**(collectionId: string,
+    data: CreateCrateRequest) → `Promise<CreateCrateResponse>`
+Create a new crate for a collection (admin only). ```typescript const newCrate = await crate.create('coll_123', { items: [ { id: 'tag_001', codeId: 'ABC123', productId: 'prod_1', productName: 'Product Name' } ] }) console.log(`Created crate ${newCrate.id}`) ```
 
-**update**(collectionId: string, crateId: string, data: any) → `Promise<any>`
-Update a crate for a collection (admin only).
+**update**(collectionId: string,
+    crateId: string,
+    data: UpdateCrateRequest) → `Promise<UpdateCrateResponse>`
+Update a crate for a collection (admin only). ```typescript const updated = await crate.update('coll_123', 'crate_abc123', { items: [ { id: 'tag_002', codeId: 'XYZ789', productId: 'prod_2' } ] }) ```
 
-**remove**(collectionId: string, crateId: string) → `Promise<void>`
-Delete a crate for a collection (admin only).
+**remove**(collectionId: string,
+    crateId: string) → `Promise<DeleteCrateResponse>`
+Delete a crate for a collection (admin only). This performs a soft delete. ```typescript await crate.remove('coll_123', 'crate_abc123') ```
 
 ### form
 
@@ -4013,8 +4373,9 @@ Lookup a tag by its ID (public). GET /public/nfc/findByTag/:tagId
 Create a new order with items. ```typescript const order = await order.create('coll_123', { orderRef: 'ORD-12345', customerId: 'CUST-789', items: [ { itemType: 'tag', itemId: 'TAG001' }, { itemType: 'tag', itemId: 'TAG002' }, { itemType: 'serial', itemId: 'SN12345' } ], status: 'pending', metadata: { shipmentId: 'SHIP-789', destination: 'Warehouse B' } }) ```
 
 **get**(collectionId: string,
-    orderId: string) → `Promise<GetOrderResponse>`
-Get a single order by ID with all its items. ```typescript const order = await order.get('coll_123', 'order_abc123') console.log(`Order has ${order.itemCount} items`) ```
+    orderId: string,
+    params?: GetOrderParams) → `Promise<GetOrderResponse>`
+Get a single order by ID. ```typescript // Get order without items (faster) const order = await order.get('coll_123', 'order_abc123') console.log(`Order has ${order.itemCount} items`) // Get order with items const orderWithItems = await order.get('coll_123', 'order_abc123', { includeItems: true }) console.log(orderWithItems.items) // Items array available ```
 
 **update**(collectionId: string,
     orderId: string,
@@ -4027,7 +4388,12 @@ Delete an order and all its items (cascade delete). ```typescript await order.re
 
 **list**(collectionId: string,
     params?: ListOrdersRequest) → `Promise<ListOrdersResponse>`
-List orders for a collection with optional filters and pagination. Orders are returned in descending order by createdAt (newest first). ```typescript // List all orders const all = await order.list('coll_123') // List with filters const pending = await order.list('coll_123', { status: 'pending', limit: 50, offset: 0 }) // Filter by customer const customerOrders = await order.list('coll_123', { customerId: 'CUST-789' }) ```
+List orders for a collection with optional filters and pagination. Orders are returned in descending order by createdAt (newest first). ```typescript // List all orders (without items for better performance) const all = await order.list('coll_123') // List with filters const pending = await order.list('coll_123', { status: 'pending', limit: 50, offset: 0 }) // Filter by customer with items const customerOrders = await order.list('coll_123', { customerId: 'CUST-789', includeItems: true }) ```
+
+**getItems**(collectionId: string,
+    orderId: string,
+    params?: GetOrderItemsParams) → `Promise<GetOrderItemsResponse>`
+Get items from an order with pagination support. Use this for orders with many items instead of includeItems. ```typescript // Get first page of items const page1 = await order.getItems('coll_123', 'order_abc123', { limit: 100, offset: 0 }) // Get next page const page2 = await order.getItems('coll_123', 'order_abc123', { limit: 100, offset: 100 }) ```
 
 **addItems**(collectionId: string,
     orderId: string,
@@ -4042,6 +4408,41 @@ Remove specific items from an order. ```typescript const updated = await order.r
 **lookup**(collectionId: string,
     data: LookupOrdersRequest) → `Promise<LookupOrdersResponse>`
 Find all orders containing specific items (tags, proofs, or serial numbers). Use case: Scan a tag and immediately see if it's part of any order. ```typescript // Scan a tag and find associated orders const result = await order.lookup('coll_123', { items: [ { itemType: 'tag', itemId: 'TAG001' } ] }) if (result.orders.length > 0) { console.log(`Tag is part of ${result.orders.length} order(s)`) result.orders.forEach(ord => { console.log(`Order ${ord.orderRef}: ${ord.status}`) }) } // Batch lookup multiple items const batchResult = await order.lookup('coll_123', { items: [ { itemType: 'tag', itemId: 'TAG001' }, { itemType: 'serial', itemId: 'SN12345' }, { itemType: 'proof', itemId: 'proof_xyz' } ] }) ```
+
+**query**(collectionId: string,
+    data: QueryOrdersRequest) → `Promise<QueryOrdersResponse>`
+Advanced query for orders with date filtering, metadata search, and sorting. More powerful than the basic list() function. ```typescript // Find pending orders created in January 2026 const result = await order.query('coll_123', { query: { status: 'pending', createdAfter: '2026-01-01T00:00:00Z', createdBefore: '2026-02-01T00:00:00Z', sortBy: 'createdAt', sortOrder: 'desc' }, limit: 50 }) // Find orders with specific metadata and item count const highPriority = await order.query('coll_123', { query: { metadata: { priority: 'high' }, minItemCount: 10, maxItemCount: 100 }, includeItems: true }) ```
+
+**reports**(collectionId: string,
+    params?: ReportsParams) → `Promise<ReportsResponse>`
+Get reports and aggregations for orders. Provides analytics grouped by status, customer, product, date, etc. ```typescript // Get order counts by status const statusReport = await order.reports('coll_123', { groupByStatus: true }) console.log(statusReport.ordersByStatus) // { pending: 45, shipped: 123, completed: 789 } // Get comprehensive analytics const fullReport = await order.reports('coll_123', { groupByStatus: true, groupByProduct: true, includeItemStats: true, createdAfter: '2026-01-01T00:00:00Z' }) console.log(fullReport.itemStats?.avgItemsPerOrder) // Get top 10 customers by order count const topCustomers = await order.reports('coll_123', { groupByCustomer: true, topN: 10 }) ```
+
+**findByProduct**(collectionId: string,
+    productId: string,
+    params?: LookupByProductParams) → `Promise<LookupByProductResponse>`
+Find all orders containing items with a specific product ID. Uses the automatic productSummary tracking in order metadata. ```typescript // Find all orders with a specific product const result = await order.findByProduct('coll_123', 'product_abc123', { limit: 50, includeItems: false }) result.orders.forEach(ord => { const count = ord.metadata.productSummary?.['product_abc123'] ?? 0 console.log(`Order ${ord.orderRef} has ${count} items of this product`) }) ```
+
+**getAnalytics**(collectionId: string,
+    orderId: string) → `Promise<OrderAnalyticsResponse>`
+Get comprehensive scan analytics for all tags in an order. Returns scan counts, timestamps, locations, devices, and per-tag summaries. ```typescript const analytics = await order.getAnalytics('coll_123', 'order_abc123') if (analytics.analytics) { console.log(`Total scans: ${analytics.analytics.totalScans}`) console.log(`Admin scans: ${analytics.analytics.adminScans}`) console.log(`Created at: ${analytics.analytics.estimatedCreatedAt}`) console.log(`Unique locations: ${analytics.analytics.uniqueLocations}`) analytics.analytics.tagSummaries.forEach(tag => { console.log(`Tag ${tag.tagId}: ${tag.totalScans} scans`) }) } ```
+
+**getTimeline**(collectionId: string,
+    orderId: string,
+    params?: TimelineRequest) → `Promise<TimelineResponse>`
+Get chronological timeline of all scan events for an order's tags. Supports filtering by date range and admin/customer scans. ```typescript // Get all scan events const timeline = await order.getTimeline('coll_123', 'order_abc123') timeline.timeline.forEach(event => { console.log(`${event.timestamp}: ${event.eventType} by ${event.isAdmin ? 'admin' : 'customer'}`) }) // Get admin scans only from last week const adminScans = await order.getTimeline('coll_123', 'order_abc123', { isAdmin: true, from: '2026-02-01T00:00:00Z', limit: 500 }) ```
+
+**getLocationHistory**(collectionId: string,
+    orderId: string,
+    params?: LocationRequest) → `Promise<LocationResponse>`
+Get location-based scan history for an order's tags. Shows where the order's tags have been scanned. ```typescript const locations = await order.getLocationHistory('coll_123', 'order_abc123', { limit: 100 }) console.log(`Order scanned in ${locations.count} locations`) locations.locations.forEach(scan => { console.log(`${scan.location} at ${scan.timestamp}`) }) ```
+
+**getBulkAnalytics**(collectionId: string,
+    data: BulkAnalyticsRequest) → `Promise<BulkAnalyticsResponse>`
+Get analytics summary for multiple orders at once. Efficient way to retrieve scan data for many orders. ```typescript const bulk = await order.getBulkAnalytics('coll_123', { orderIds: ['order_1', 'order_2', 'order_3'], from: '2026-01-01T00:00:00Z' }) bulk.results.forEach(result => { if (result.analytics) { console.log(`${result.orderRef}: ${result.analytics.totalScans} scans`) } }) ```
+
+**getCollectionSummary**(collectionId: string,
+    params?: SummaryRequest) → `Promise<CollectionSummaryResponse>`
+Get collection-wide analytics summary across all orders. Returns daily scan counts and admin activity overview. ```typescript // Get all-time collection summary const summary = await order.getCollectionSummary('coll_123') console.log(`Admin activity count: ${summary.adminActivity.count}`) console.log('Scans by day:') summary.scansByDay.forEach(day => { console.log(`  ${day.date}: ${day.scanCount} scans`) }) // Get summary for last 30 days const recentSummary = await order.getCollectionSummary('coll_123', { from: '2026-01-08T00:00:00Z', to: '2026-02-08T00:00:00Z' }) ```
 
 ### product
 

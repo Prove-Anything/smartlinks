@@ -28,8 +28,11 @@ export interface Order {
   customerId?: string               // Customer's own customer ID (can map to CRM/contacts)
   status: string                    // e.g., "pending", "processing", "shipped", "completed"
   itemCount: number                 // Cached count of items (maintained automatically)
-  metadata: Record<string, any>     // Flexible additional data
-  items: OrderItem[]                // Array of items in this order
+  metadata: {
+    productSummary?: Record<string, number>  // productId -> count (auto-maintained)
+    [key: string]: any              // Flexible additional data
+  }
+  items?: OrderItem[]               // Array of items (only when includeItems=true)
   createdAt: string                 // ISO 8601 timestamp
   updatedAt: string                 // ISO 8601 timestamp
 }
@@ -53,6 +56,13 @@ export interface CreateOrderRequest {
  * Response from creating an order.
  */
 export interface CreateOrderResponse extends Order {}
+
+/**
+ * Query parameters for getting a single order.
+ */
+export interface GetOrderParams {
+  includeItems?: boolean            // Optional: Include items array (default: false)
+}
 
 /**
  * Response from getting a single order.
@@ -91,6 +101,7 @@ export interface ListOrdersRequest {
   status?: string                   // Optional: Filter by status
   orderRef?: string                 // Optional: Filter by order reference
   customerId?: string               // Optional: Filter by customer ID
+  includeItems?: boolean            // Optional: Include items array (default: false)
 }
 
 /**
@@ -145,4 +156,287 @@ export interface LookupOrdersRequest {
  */
 export interface LookupOrdersResponse {
   orders: Order[]                   // All orders containing any of the specified items
+}
+
+/**
+ * Query parameters for getting order items.
+ */
+export interface GetOrderItemsParams {
+  limit?: number                    // Optional: Max results (default: 100)
+  offset?: number                   // Optional: Pagination offset (default: 0)
+}
+
+/**
+ * Response from getting order items.
+ */
+export interface GetOrderItemsResponse {
+  items: OrderItem[]
+  limit: number
+  offset: number
+}
+
+/**
+ * Request for advanced order querying.
+ */
+export interface QueryOrdersRequest {
+  query?: {
+    status?: string
+    orderRef?: string
+    customerId?: string
+    createdAfter?: string           // ISO 8601 date
+    createdBefore?: string          // ISO 8601 date
+    updatedAfter?: string           // ISO 8601 date
+    updatedBefore?: string          // ISO 8601 date
+    minItemCount?: number
+    maxItemCount?: number
+    metadata?: Record<string, any>
+    sortBy?: string
+    sortOrder?: 'asc' | 'desc'
+  }
+  limit?: number                    // Optional: Max results (default: 100)
+  offset?: number                   // Optional: Pagination offset (default: 0)
+  includeItems?: boolean            // Optional: Include items array (default: false)
+}
+
+/**
+ * Response from advanced order querying.
+ */
+export interface QueryOrdersResponse {
+  orders: Order[]
+  limit: number
+  offset: number
+}
+
+/**
+ * Query parameters for order reports.
+ */
+export interface ReportsParams {
+  groupByStatus?: boolean
+  groupByCollection?: boolean
+  groupByCustomer?: boolean
+  groupByDate?: boolean
+  groupByItemType?: boolean
+  groupByProduct?: boolean
+  includeItemStats?: boolean
+  includeCount?: boolean            // default: true
+  topN?: number                     // for customer/product grouping (default: 10)
+  status?: string
+  createdAfter?: string             // ISO 8601 date
+  createdBefore?: string            // ISO 8601 date
+}
+
+/**
+ * Response from order reports.
+ */
+export interface ReportsResponse {
+  totalOrders?: number
+  ordersByStatus?: Record<string, number>
+  ordersByCollection?: Record<string, number>
+  ordersByCustomer?: Record<string, number>
+  ordersByDate?: Record<string, number>
+  itemsByType?: Record<string, number>
+  itemsByProduct?: Record<string, number>
+  itemStats?: {
+    totalItems: number
+    avgItemsPerOrder: number
+    maxItemsInOrder: number
+    minItemsInOrder: number
+  }
+}
+
+/**
+ * Query parameters for looking up orders by product.
+ */
+export interface LookupByProductParams {
+  limit?: number                    // Optional: Max results (default: 100)
+  offset?: number                   // Optional: Pagination offset (default: 0)
+  includeItems?: boolean            // Optional: Include items array (default: false)
+}
+
+/**
+ * Response from looking up orders by product.
+ */
+export interface LookupByProductResponse {
+  orders: Order[]
+  limit: number
+  offset: number
+}
+
+/**
+ * Summary of scans for a single tag.
+ */
+export interface TagScanSummary {
+  tagId: string
+  totalScans: number
+  adminScans: number
+  customerScans: number
+  earliestScanAt: string | null
+  earliestAdminScanAt: string | null
+}
+
+/**
+ * Complete analytics for an order.
+ */
+export interface OrderAnalyticsResponse {
+  orderRef: string
+  orderId: string
+  itemCount: number
+  tagCount: number
+  analytics: {
+    totalScans: number
+    adminScans: number
+    customerScans: number
+    earliestScanAt: string              // ISO 8601
+    latestScanAt: string                // ISO 8601
+    earliestAdminScanAt: string | null  // ISO 8601
+    earliestCustomerScanAt: string | null // ISO 8601
+    estimatedCreatedAt: string          // ISO 8601 - earliest admin scan or earliest scan
+    uniqueLocations: number
+    locations: string[]                 // Array of location strings
+    uniqueDevices: number
+    devices: string[]                   // Array of device types
+    eventTypes: string[]                // e.g., ["scan_tag", "verify_tag"]
+    tagSummaries: TagScanSummary[]
+  } | null                              // null if no tags found
+  message?: string                      // Only present if no tags found
+}
+
+/**
+ * Individual scan event from timeline.
+ */
+export interface TagScanEvent {
+  codeId: string
+  claimId: string
+  proofId: string | null
+  productId: string | null
+  variantId: string | null
+  batchId: string | null
+  collectionId: string
+  timestamp: string                     // ISO 8601
+  isAdmin: boolean
+  eventType: string | null              // e.g., "scan_tag"
+  location: string | null               // GPS coordinates or location string
+  location_accuracy: number | null
+  deviceType: string | null
+  ip: string | null
+  country: string | null
+  sessionId: string | null
+  metadata: Record<string, any> | null
+}
+
+/**
+ * Request for timeline analytics.
+ */
+export interface TimelineRequest {
+  limit?: number                        // Max results (default: 1000)
+  from?: string                         // ISO 8601 start date filter
+  to?: string                           // ISO 8601 end date filter
+  isAdmin?: boolean                     // Filter by admin scans only
+}
+
+/**
+ * Response with scan timeline.
+ */
+export interface TimelineResponse {
+  orderRef: string
+  orderId: string
+  timeline: TagScanEvent[]
+  count: number
+}
+
+/**
+ * Location-based scan event.
+ */
+export interface LocationScan extends TagScanEvent {
+  // Inherits all TagScanEvent fields
+}
+
+/**
+ * Request for location history.
+ */
+export interface LocationRequest {
+  limit?: number                        // Max results (default: 1000)
+}
+
+/**
+ * Response with location history.
+ */
+export interface LocationResponse {
+  orderRef: string
+  orderId: string
+  locations: LocationScan[]
+  count: number
+}
+
+/**
+ * Request for bulk analytics.
+ */
+export interface BulkAnalyticsRequest {
+  orderIds: string[]                    // Array of order IDs
+  from?: string                         // ISO 8601 start date filter
+  to?: string                           // ISO 8601 end date filter
+}
+
+/**
+ * Summary analytics for a single order in bulk request.
+ */
+export interface OrderAnalyticsSummary {
+  orderId: string
+  orderRef: string
+  analytics: {
+    totalScans: number
+    adminScans: number
+    customerScans: number
+    earliestScanAt: string | null
+    earliestAdminScanAt: string | null
+    estimatedCreatedAt: string | null
+    tagCount: number
+    tagSummaries: TagScanSummary[]
+  } | null
+}
+
+/**
+ * Response from bulk analytics request.
+ */
+export interface BulkAnalyticsResponse {
+  results: OrderAnalyticsSummary[]
+}
+
+/**
+ * Daily scan count for summary analytics.
+ */
+export interface DailyScanCount {
+  date: string                          // YYYY-MM-DD
+  scanCount: number
+}
+
+/**
+ * Admin activity event.
+ */
+export interface AdminActivityEvent {
+  timestamp: string                     // ISO 8601
+  eventType: string
+  codeId: string
+  // Additional fields from scan events
+}
+
+/**
+ * Request for collection summary.
+ */
+export interface SummaryRequest {
+  from?: string                         // ISO 8601 start date filter
+  to?: string                           // ISO 8601 end date filter
+}
+
+/**
+ * Response with collection-wide analytics summary.
+ */
+export interface CollectionSummaryResponse {
+  adminActivity: {
+    count: number
+    recent: AdminActivityEvent[]        // Last 100 events
+  }
+  scansByDay: DailyScanCount[]
+  adminScansByDay: DailyScanCount[]
+  customerScansByDay: DailyScanCount[]
 }

@@ -1,8 +1,66 @@
 import { request, post, put, del } from "../http";
+/**
+ * Crate Management API
+ *
+ * Manage crates (containers for tags/products) within collections.
+ */
 export var crate;
 (function (crate) {
     /**
+     * List crates for a collection with pagination support.
+     * Returns crates in pages, with support for soft-deleted crates.
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param params - Optional query parameters for pagination and filtering
+     * @returns Promise resolving to a ListCratesResponse object
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * // Get first page
+     * const page1 = await crate.list('coll_123', { limit: 100 })
+     * console.log(`Found ${page1.items.length} crates`)
+     *
+     * // Get next page
+     * if (page1.hasMore) {
+     *   const page2 = await crate.list('coll_123', {
+     *     limit: 100,
+     *     startAfter: page1.lastId
+     *   })
+     * }
+     *
+     * // Include soft-deleted crates
+     * const withDeleted = await crate.list('coll_123', {
+     *   includeDeleted: true
+     * })
+     * ```
+     */
+    async function list(collectionId, params) {
+        const queryParams = new URLSearchParams();
+        if (params === null || params === void 0 ? void 0 : params.limit)
+            queryParams.append('limit', params.limit.toString());
+        if (params === null || params === void 0 ? void 0 : params.startAfter)
+            queryParams.append('startAfter', params.startAfter);
+        if (params === null || params === void 0 ? void 0 : params.includeDeleted)
+            queryParams.append('includeDeleted', 'true');
+        const query = queryParams.toString();
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/crate${query ? `?${query}` : ''}`;
+        return request(path);
+    }
+    crate.list = list;
+    /**
      * Get a single crate by ID for a collection (admin only).
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param crateId - Crate ID
+     * @returns Promise resolving to a GetCrateResponse object
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * const crate = await crate.get('coll_123', 'crate_abc123')
+     * console.log(`Crate has ${crate.items?.length ?? 0} items`)
+     * ```
      */
     async function get(collectionId, crateId) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/crate/${encodeURIComponent(crateId)}`;
@@ -10,15 +68,27 @@ export var crate;
     }
     crate.get = get;
     /**
-     * List all crates for a collection (admin only).
-     */
-    async function list(collectionId) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/crate`;
-        return request(path);
-    }
-    crate.list = list;
-    /**
      * Create a new crate for a collection (admin only).
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param data - Crate creation data
+     * @returns Promise resolving to a CreateCrateResponse object
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * const newCrate = await crate.create('coll_123', {
+     *   items: [
+     *     {
+     *       id: 'tag_001',
+     *       codeId: 'ABC123',
+     *       productId: 'prod_1',
+     *       productName: 'Product Name'
+     *     }
+     *   ]
+     * })
+     * console.log(`Created crate ${newCrate.id}`)
+     * ```
      */
     async function create(collectionId, data) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/crate`;
@@ -27,6 +97,21 @@ export var crate;
     crate.create = create;
     /**
      * Update a crate for a collection (admin only).
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param crateId - Crate ID
+     * @param data - Update data
+     * @returns Promise resolving to an UpdateCrateResponse object
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * const updated = await crate.update('coll_123', 'crate_abc123', {
+     *   items: [
+     *     { id: 'tag_002', codeId: 'XYZ789', productId: 'prod_2' }
+     *   ]
+     * })
+     * ```
      */
     async function update(collectionId, crateId, data) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/crate/${encodeURIComponent(crateId)}`;
@@ -35,6 +120,17 @@ export var crate;
     crate.update = update;
     /**
      * Delete a crate for a collection (admin only).
+     * This performs a soft delete.
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param crateId - Crate ID
+     * @returns Promise resolving to a DeleteCrateResponse object
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * await crate.remove('coll_123', 'crate_abc123')
+     * ```
      */
     async function remove(collectionId, crateId) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/crate/${encodeURIComponent(crateId)}`;

@@ -1,4 +1,4 @@
-import { CreateOrderRequest, CreateOrderResponse, GetOrderResponse, UpdateOrderRequest, UpdateOrderResponse, DeleteOrderResponse, ListOrdersRequest, ListOrdersResponse, AddItemsRequest, AddItemsResponse, RemoveItemsRequest, RemoveItemsResponse, LookupOrdersRequest, LookupOrdersResponse } from "../types/order";
+import { CreateOrderRequest, CreateOrderResponse, GetOrderParams, GetOrderResponse, UpdateOrderRequest, UpdateOrderResponse, DeleteOrderResponse, ListOrdersRequest, ListOrdersResponse, GetOrderItemsParams, GetOrderItemsResponse, AddItemsRequest, AddItemsResponse, RemoveItemsRequest, RemoveItemsResponse, QueryOrdersRequest, QueryOrdersResponse, ReportsParams, ReportsResponse, LookupOrdersRequest, LookupOrdersResponse, LookupByProductParams, LookupByProductResponse, OrderAnalyticsResponse, TimelineRequest, TimelineResponse, LocationRequest, LocationResponse, BulkAnalyticsRequest, BulkAnalyticsResponse, SummaryRequest, CollectionSummaryResponse } from "../types/order";
 /**
  * Order Management API
  *
@@ -34,20 +34,26 @@ export declare namespace order {
      */
     function create(collectionId: string, data: CreateOrderRequest): Promise<CreateOrderResponse>;
     /**
-     * Get a single order by ID with all its items.
+     * Get a single order by ID.
      *
      * @param collectionId - Identifier of the parent collection
      * @param orderId - Order ID
+     * @param params - Optional parameters (includeItems)
      * @returns Promise resolving to a GetOrderResponse object
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
+     * // Get order without items (faster)
      * const order = await order.get('coll_123', 'order_abc123')
      * console.log(`Order has ${order.itemCount} items`)
+     *
+     * // Get order with items
+     * const orderWithItems = await order.get('coll_123', 'order_abc123', { includeItems: true })
+     * console.log(orderWithItems.items) // Items array available
      * ```
      */
-    function get(collectionId: string, orderId: string): Promise<GetOrderResponse>;
+    function get(collectionId: string, orderId: string, params?: GetOrderParams): Promise<GetOrderResponse>;
     /**
      * Update order status or metadata.
      * Items are managed separately via addItems/removeItems.
@@ -95,7 +101,7 @@ export declare namespace order {
      *
      * @example
      * ```typescript
-     * // List all orders
+     * // List all orders (without items for better performance)
      * const all = await order.list('coll_123')
      *
      * // List with filters
@@ -105,13 +111,40 @@ export declare namespace order {
      *   offset: 0
      * })
      *
-     * // Filter by customer
+     * // Filter by customer with items
      * const customerOrders = await order.list('coll_123', {
-     *   customerId: 'CUST-789'
+     *   customerId: 'CUST-789',
+     *   includeItems: true
      * })
      * ```
      */
     function list(collectionId: string, params?: ListOrdersRequest): Promise<ListOrdersResponse>;
+    /**
+     * Get items from an order with pagination support.
+     * Use this for orders with many items instead of includeItems.
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param orderId - Order ID
+     * @param params - Optional pagination parameters
+     * @returns Promise resolving to a GetOrderItemsResponse object
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * // Get first page of items
+     * const page1 = await order.getItems('coll_123', 'order_abc123', {
+     *   limit: 100,
+     *   offset: 0
+     * })
+     *
+     * // Get next page
+     * const page2 = await order.getItems('coll_123', 'order_abc123', {
+     *   limit: 100,
+     *   offset: 100
+     * })
+     * ```
+     */
+    function getItems(collectionId: string, orderId: string, params?: GetOrderItemsParams): Promise<GetOrderItemsResponse>;
     /**
      * Add additional items to an existing order.
      *
@@ -186,4 +219,228 @@ export declare namespace order {
      * ```
      */
     function lookup(collectionId: string, data: LookupOrdersRequest): Promise<LookupOrdersResponse>;
+    /**
+     * Advanced query for orders with date filtering, metadata search, and sorting.
+     * More powerful than the basic list() function.
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param data - Query parameters with filters, sorting, and pagination
+     * @returns Promise resolving to a QueryOrdersResponse
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * // Find pending orders created in January 2026
+     * const result = await order.query('coll_123', {
+     *   query: {
+     *     status: 'pending',
+     *     createdAfter: '2026-01-01T00:00:00Z',
+     *     createdBefore: '2026-02-01T00:00:00Z',
+     *     sortBy: 'createdAt',
+     *     sortOrder: 'desc'
+     *   },
+     *   limit: 50
+     * })
+     *
+     * // Find orders with specific metadata and item count
+     * const highPriority = await order.query('coll_123', {
+     *   query: {
+     *     metadata: { priority: 'high' },
+     *     minItemCount: 10,
+     *     maxItemCount: 100
+     *   },
+     *   includeItems: true
+     * })
+     * ```
+     */
+    function query(collectionId: string, data: QueryOrdersRequest): Promise<QueryOrdersResponse>;
+    /**
+     * Get reports and aggregations for orders.
+     * Provides analytics grouped by status, customer, product, date, etc.
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param params - Report parameters specifying grouping and filters
+     * @returns Promise resolving to a ReportsResponse with aggregated data
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * // Get order counts by status
+     * const statusReport = await order.reports('coll_123', {
+     *   groupByStatus: true
+     * })
+     * console.log(statusReport.ordersByStatus)
+     * // { pending: 45, shipped: 123, completed: 789 }
+     *
+     * // Get comprehensive analytics
+     * const fullReport = await order.reports('coll_123', {
+     *   groupByStatus: true,
+     *   groupByProduct: true,
+     *   includeItemStats: true,
+     *   createdAfter: '2026-01-01T00:00:00Z'
+     * })
+     * console.log(fullReport.itemStats?.avgItemsPerOrder)
+     *
+     * // Get top 10 customers by order count
+     * const topCustomers = await order.reports('coll_123', {
+     *   groupByCustomer: true,
+     *   topN: 10
+     * })
+     * ```
+     */
+    function reports(collectionId: string, params?: ReportsParams): Promise<ReportsResponse>;
+    /**
+     * Find all orders containing items with a specific product ID.
+     * Uses the automatic productSummary tracking in order metadata.
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param productId - Product ID to search for
+     * @param params - Optional pagination and includeItems parameters
+     * @returns Promise resolving to a LookupByProductResponse
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * // Find all orders with a specific product
+     * const result = await order.findByProduct('coll_123', 'product_abc123', {
+     *   limit: 50,
+     *   includeItems: false
+     * })
+     *
+     * result.orders.forEach(ord => {
+     *   const count = ord.metadata.productSummary?.['product_abc123'] ?? 0
+     *   console.log(`Order ${ord.orderRef} has ${count} items of this product`)
+     * })
+     * ```
+     */
+    function findByProduct(collectionId: string, productId: string, params?: LookupByProductParams): Promise<LookupByProductResponse>;
+    /**
+     * Get comprehensive scan analytics for all tags in an order.
+     * Returns scan counts, timestamps, locations, devices, and per-tag summaries.
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param orderId - Order ID
+     * @returns Promise resolving to an OrderAnalyticsResponse with scan analytics
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * const analytics = await order.getAnalytics('coll_123', 'order_abc123')
+     *
+     * if (analytics.analytics) {
+     *   console.log(`Total scans: ${analytics.analytics.totalScans}`)
+     *   console.log(`Admin scans: ${analytics.analytics.adminScans}`)
+     *   console.log(`Created at: ${analytics.analytics.estimatedCreatedAt}`)
+     *   console.log(`Unique locations: ${analytics.analytics.uniqueLocations}`)
+     *
+     *   analytics.analytics.tagSummaries.forEach(tag => {
+     *     console.log(`Tag ${tag.tagId}: ${tag.totalScans} scans`)
+     *   })
+     * }
+     * ```
+     */
+    function getAnalytics(collectionId: string, orderId: string): Promise<OrderAnalyticsResponse>;
+    /**
+     * Get chronological timeline of all scan events for an order's tags.
+     * Supports filtering by date range and admin/customer scans.
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param orderId - Order ID
+     * @param params - Optional filters (limit, date range, isAdmin)
+     * @returns Promise resolving to a TimelineResponse with scan events
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * // Get all scan events
+     * const timeline = await order.getTimeline('coll_123', 'order_abc123')
+     *
+     * timeline.timeline.forEach(event => {
+     *   console.log(`${event.timestamp}: ${event.eventType} by ${event.isAdmin ? 'admin' : 'customer'}`)
+     * })
+     *
+     * // Get admin scans only from last week
+     * const adminScans = await order.getTimeline('coll_123', 'order_abc123', {
+     *   isAdmin: true,
+     *   from: '2026-02-01T00:00:00Z',
+     *   limit: 500
+     * })
+     * ```
+     */
+    function getTimeline(collectionId: string, orderId: string, params?: TimelineRequest): Promise<TimelineResponse>;
+    /**
+     * Get location-based scan history for an order's tags.
+     * Shows where the order's tags have been scanned.
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param orderId - Order ID
+     * @param params - Optional limit parameter
+     * @returns Promise resolving to a LocationResponse with location scans
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * const locations = await order.getLocationHistory('coll_123', 'order_abc123', {
+     *   limit: 100
+     * })
+     *
+     * console.log(`Order scanned in ${locations.count} locations`)
+     * locations.locations.forEach(scan => {
+     *   console.log(`${scan.location} at ${scan.timestamp}`)
+     * })
+     * ```
+     */
+    function getLocationHistory(collectionId: string, orderId: string, params?: LocationRequest): Promise<LocationResponse>;
+    /**
+     * Get analytics summary for multiple orders at once.
+     * Efficient way to retrieve scan data for many orders.
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param data - Request with array of order IDs and optional date filters
+     * @returns Promise resolving to a BulkAnalyticsResponse with summaries
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * const bulk = await order.getBulkAnalytics('coll_123', {
+     *   orderIds: ['order_1', 'order_2', 'order_3'],
+     *   from: '2026-01-01T00:00:00Z'
+     * })
+     *
+     * bulk.results.forEach(result => {
+     *   if (result.analytics) {
+     *     console.log(`${result.orderRef}: ${result.analytics.totalScans} scans`)
+     *   }
+     * })
+     * ```
+     */
+    function getBulkAnalytics(collectionId: string, data: BulkAnalyticsRequest): Promise<BulkAnalyticsResponse>;
+    /**
+     * Get collection-wide analytics summary across all orders.
+     * Returns daily scan counts and admin activity overview.
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param params - Optional date range filters
+     * @returns Promise resolving to a CollectionSummaryResponse
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * // Get all-time collection summary
+     * const summary = await order.getCollectionSummary('coll_123')
+     *
+     * console.log(`Admin activity count: ${summary.adminActivity.count}`)
+     * console.log('Scans by day:')
+     * summary.scansByDay.forEach(day => {
+     *   console.log(`  ${day.date}: ${day.scanCount} scans`)
+     * })
+     *
+     * // Get summary for last 30 days
+     * const recentSummary = await order.getCollectionSummary('coll_123', {
+     *   from: '2026-01-08T00:00:00Z',
+     *   to: '2026-02-08T00:00:00Z'
+     * })
+     * ```
+     */
+    function getCollectionSummary(collectionId: string, params?: SummaryRequest): Promise<CollectionSummaryResponse>;
 }
