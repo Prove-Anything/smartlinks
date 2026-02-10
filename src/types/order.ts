@@ -13,7 +13,23 @@ export interface OrderItem {
   orderId: string                   // Parent order ID
   itemType: 'tag' | 'proof' | 'serial' // Type of item
   itemId: string                    // The tag ID, proof ID, or serial number
+  collectionId?: string             // Collection ID
+  productId?: string                // Product ID
+  variantId?: string | null         // Variant ID
+  batchId?: string | null           // Batch ID
   metadata: Record<string, any>     // Item-specific metadata
+  createdAt: string                 // ISO 8601 timestamp
+  order?: OrderSummary              // Optional order summary (when includeOrder=true)
+}
+
+/**
+ * Summary of order details (included with items when requested).
+ */
+export interface OrderSummary {
+  id: string                        // Order ID
+  orderRef?: string                 // Order reference
+  status: string                    // Order status
+  customerId?: string               // Customer ID
   createdAt: string                 // ISO 8601 timestamp
 }
 
@@ -260,6 +276,61 @@ export interface LookupByProductResponse {
   orders: Order[]
   limit: number
   offset: number
+}
+
+/**
+ * Query parameters for finding orders by batch/product/variant.
+ */
+export interface FindOrdersByAttributeParams {
+  limit?: number                    // Max results (default: 100)
+  offset?: number                   // Pagination offset (default: 0)
+  includeItems?: boolean            // Include items array (default: false)
+}
+
+/**
+ * Response from finding orders by batch/product/variant.
+ */
+export interface FindOrdersByAttributeResponse {
+  orders: Order[]
+  limit: number
+  offset: number
+}
+
+/**
+ * Query parameters for finding items by batch/product/variant.
+ */
+export interface FindItemsByAttributeParams {
+  limit?: number                    // Max results (default: 100)
+  offset?: number                   // Pagination offset (default: 0)
+  includeOrder?: boolean            // Include order summary (default: false)
+}
+
+/**
+ * Response from finding items by batch/product/variant.
+ */
+export interface FindItemsByAttributeResponse {
+  items: OrderItem[]
+  count: number
+  limit: number
+  offset: number
+}
+
+/**
+ * Query parameters for getting order IDs by attribute.
+ */
+export interface GetOrderIdsParams {
+  limit?: number                    // Max results (default: 1000)
+  offset?: number                   // Pagination offset (default: 0)
+}
+
+/**
+ * Response from getting order IDs by attribute.
+ */
+export interface GetOrderIdsResponse {
+  orderIds: string[]
+  count: number
+  attribute: 'batchId' | 'productId' | 'variantId'
+  value: string
 }
 
 /**

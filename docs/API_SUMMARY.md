@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.3.20  |  Generated: 2026-02-08T14:25:23.483Z
+Version: 1.3.21  |  Generated: 2026-02-09T12:29:22.158Z
 
 This is a concise summary of all available API functions and types.
 
@@ -625,11 +625,66 @@ interface AuthKitConfig {
 
 ### batch
 
-**BatchResponse** = `any`
+**FirebaseTimestamp** (interface)
+```typescript
+interface FirebaseTimestamp {
+  seconds: number                 // Unix timestamp in seconds
+  nanoseconds?: number            // Nanoseconds component
+}
+```
 
-**BatchCreateRequest** = `any`
+**BatchResponse** (interface)
+```typescript
+interface BatchResponse {
+  id: string                      // Batch ID
+  name?: string                   // Batch name
+  expiryDate?: FirebaseTimestamp | string  // Firebase timestamp or ISO 8601 date
+  productId?: string              // Product ID (for collection-level searches)
+  collectionId?: string           // Collection ID
+  [key: string]: any              // Additional batch fields
+}
+```
 
-**BatchUpdateRequest** = `any`
+**BatchCreateRequest** (interface)
+```typescript
+interface BatchCreateRequest {
+  id: string                      // Batch ID
+  name?: string                   // Batch name
+  expiryDate?: FirebaseTimestamp | string  // Firebase timestamp or ISO 8601 date
+  [key: string]: any              // Additional batch fields
+}
+```
+
+**BatchUpdateRequest** (interface)
+```typescript
+interface BatchUpdateRequest {
+  name?: string                   // Batch name
+  expiryDate?: FirebaseTimestamp | string  // Firebase timestamp or ISO 8601 date
+  [key: string]: any              // Additional batch fields
+}
+```
+
+**SearchBatchesRequest** (interface)
+```typescript
+interface SearchBatchesRequest {
+  search?: string                 // Search term (batch ID or name)
+  productId?: string              // Filter by specific product
+  limit?: number                  // Max results (default: 100)
+}
+```
+
+**BatchTag** (interface)
+```typescript
+interface BatchTag {
+  code: string                    // Code/tag ID
+  claimSetId: string              // Claim set ID
+  collectionId?: string           // Collection ID
+  productId?: string              // Associated product ID
+  batchId?: string                // Batch ID
+  tagId?: string                  // Tag identifier
+  index?: number                  // Position in claim set
+}
+```
 
 ### broadcasts
 
@@ -2239,7 +2294,23 @@ interface OrderItem {
   orderId: string                   // Parent order ID
   itemType: 'tag' | 'proof' | 'serial' // Type of item
   itemId: string                    // The tag ID, proof ID, or serial number
+  collectionId?: string             // Collection ID
+  productId?: string                // Product ID
+  variantId?: string | null         // Variant ID
+  batchId?: string | null           // Batch ID
   metadata: Record<string, any>     // Item-specific metadata
+  createdAt: string                 // ISO 8601 timestamp
+  order?: OrderSummary              // Optional order summary (when includeOrder=true)
+}
+```
+
+**OrderSummary** (interface)
+```typescript
+interface OrderSummary {
+  id: string                        // Order ID
+  orderRef?: string                 // Order reference
+  status: string                    // Order status
+  customerId?: string               // Customer ID
   createdAt: string                 // ISO 8601 timestamp
 }
 ```
@@ -2460,6 +2531,61 @@ interface LookupByProductResponse {
   orders: Order[]
   limit: number
   offset: number
+}
+```
+
+**FindOrdersByAttributeParams** (interface)
+```typescript
+interface FindOrdersByAttributeParams {
+  limit?: number                    // Max results (default: 100)
+  offset?: number                   // Pagination offset (default: 0)
+  includeItems?: boolean            // Include items array (default: false)
+}
+```
+
+**FindOrdersByAttributeResponse** (interface)
+```typescript
+interface FindOrdersByAttributeResponse {
+  orders: Order[]
+  limit: number
+  offset: number
+}
+```
+
+**FindItemsByAttributeParams** (interface)
+```typescript
+interface FindItemsByAttributeParams {
+  limit?: number                    // Max results (default: 100)
+  offset?: number                   // Pagination offset (default: 0)
+  includeOrder?: boolean            // Include order summary (default: false)
+}
+```
+
+**FindItemsByAttributeResponse** (interface)
+```typescript
+interface FindItemsByAttributeResponse {
+  items: OrderItem[]
+  count: number
+  limit: number
+  offset: number
+}
+```
+
+**GetOrderIdsParams** (interface)
+```typescript
+interface GetOrderIdsParams {
+  limit?: number                    // Max results (default: 1000)
+  offset?: number                   // Pagination offset (default: 0)
+}
+```
+
+**GetOrderIdsResponse** (interface)
+```typescript
+interface GetOrderIdsResponse {
+  orderIds: string[]
+  count: number
+  attribute: 'batchId' | 'productId' | 'variantId'
+  value: string
 }
 ```
 
@@ -3943,6 +4069,19 @@ Get serial numbers for a batch (admin only).
     codeId: string) → `Promise<any>`
 Look up a serial number by code for a batch (admin only).
 
+**searchInCollection**(collectionId: string,
+    params?: SearchBatchesRequest) → `Promise<BatchResponse[]>`
+Search for batches across all products in a collection. Allows searching by batch ID or name, with optional product filtering. ```typescript // Search for batches containing "2024" const batches = await batch.searchInCollection('coll_123', { search: 'BATCH-2024', limit: 50 }) // Filter batches for a specific product const productBatches = await batch.searchInCollection('coll_123', { productId: 'prod_abc', limit: 100 }) // Get all batches in collection const allBatches = await batch.searchInCollection('coll_123') // Check for expired batches batches.forEach(batch => { if (batch.expiryDate?.seconds) { const expiryDate = new Date(batch.expiryDate.seconds * 1000) if (expiryDate < new Date()) { console.log(`Batch ${batch.id} is expired`) } } }) ```
+
+**findInCollection**(collectionId: string,
+    batchId: string) → `Promise<BatchResponse>`
+Find a specific batch by ID across all products in a collection. Returns the batch along with the productId it belongs to. ```typescript // Find which product contains a specific batch const batch = await batch.findInCollection('coll_123', 'BATCH-2024-001') console.log(`Batch found in product: ${batch.productId}`) console.log(`Expires: ${batch.expiryDate}`) ```
+
+**getBatchTags**(collectionId: string,
+    batchId: string,
+    claimSetId?: string) → `Promise<BatchTag[]>`
+Get all tags/codes assigned to a specific batch. Shows which claim set codes have been assigned to this batch. ```typescript // Get all tags assigned to a batch const tags = await batch.getBatchTags('coll_123', 'BATCH-2024-001') console.log(`Batch has ${tags.length} tags assigned`) tags.forEach(tag => { console.log(`Code: ${tag.code}, ClaimSet: ${tag.claimSetId}, TagID: ${tag.tagId}`) }) // Get tags from a specific claim set const claimSetTags = await batch.getBatchTags('coll_123', 'BATCH-2024-001', '000001') ```
+
 ### broadcasts
 
 **create**(collectionId: string,
@@ -4443,6 +4582,42 @@ Get analytics summary for multiple orders at once. Efficient way to retrieve sca
 **getCollectionSummary**(collectionId: string,
     params?: SummaryRequest) → `Promise<CollectionSummaryResponse>`
 Get collection-wide analytics summary across all orders. Returns daily scan counts and admin activity overview. ```typescript // Get all-time collection summary const summary = await order.getCollectionSummary('coll_123') console.log(`Admin activity count: ${summary.adminActivity.count}`) console.log('Scans by day:') summary.scansByDay.forEach(day => { console.log(`  ${day.date}: ${day.scanCount} scans`) }) // Get summary for last 30 days const recentSummary = await order.getCollectionSummary('coll_123', { from: '2026-01-08T00:00:00Z', to: '2026-02-08T00:00:00Z' }) ```
+
+**findByBatch**(collectionId: string,
+    batchId: string,
+    params?: FindOrdersByAttributeParams) → `Promise<FindOrdersByAttributeResponse>`
+Find all orders containing items from a specific batch. Uses indexed queries for fast lookups across order items. ```typescript // Find orders with items from a specific batch const { orders } = await order.findByBatch('coll_123', 'BATCH-2024-001', { includeItems: true, limit: 50 }) // Get unique customers who received this batch const customers = [...new Set(orders.map(o => o.customerId).filter(Boolean))] console.log(`Batch delivered to ${customers.length} customers`) ```
+
+**findOrdersByProduct**(collectionId: string,
+    productId: string,
+    params?: FindOrdersByAttributeParams) → `Promise<FindOrdersByAttributeResponse>`
+Find all orders containing items from a specific product. Uses indexed queries for fast lookups across order items. ```typescript // Find all orders containing a product const { orders, limit, offset } = await order.findOrdersByProduct('coll_123', 'prod_789', { limit: 100 }) console.log(`Product appears in ${orders.length} orders`) ```
+
+**findByVariant**(collectionId: string,
+    variantId: string,
+    params?: FindOrdersByAttributeParams) → `Promise<FindOrdersByAttributeResponse>`
+Find all orders containing items from a specific variant. Uses indexed queries for fast lookups across order items. ```typescript // Find orders with a specific variant const { orders } = await order.findByVariant('coll_123', 'var_456', { includeItems: true }) console.log(`Variant ${variantId} in ${orders.length} orders`) ```
+
+**findItemsByBatch**(collectionId: string,
+    batchId: string,
+    params?: FindItemsByAttributeParams) → `Promise<FindItemsByAttributeResponse>`
+Get individual order items (not full orders) for a specific batch. Returns all matching items with optional order summary. ```typescript // Get items from a batch with order info const { items, count } = await order.findItemsByBatch('coll_123', 'BATCH-2024-001', { includeOrder: true, limit: 100 }) // Group by order status const byStatus = items.reduce((acc, item) => { const status = item.order?.status || 'unknown' acc[status] = (acc[status] || 0) + 1 return acc }, {}) ```
+
+**findItemsByProduct**(collectionId: string,
+    productId: string,
+    params?: FindItemsByAttributeParams) → `Promise<FindItemsByAttributeResponse>`
+Get individual order items for a specific product. Returns all matching items with optional order summary. ```typescript // Get all items for a product const { items } = await order.findItemsByProduct('coll_123', 'prod_789', { includeOrder: true }) console.log(`Product delivered in ${items.length} order items`) ```
+
+**findItemsByVariant**(collectionId: string,
+    variantId: string,
+    params?: FindItemsByAttributeParams) → `Promise<FindItemsByAttributeResponse>`
+Get individual order items for a specific variant. Returns all matching items with optional order summary. ```typescript // Get variant items with order details const { items, count } = await order.findItemsByVariant('coll_123', 'var_456', { includeOrder: true, limit: 50 }) ```
+
+**getOrderIdsByAttribute**(collectionId: string,
+    attribute: 'batchId' | 'productId' | 'variantId',
+    value: string,
+    params?: GetOrderIdsParams) → `Promise<GetOrderIdsResponse>`
+Get unique order IDs containing items matching the specified attribute. Lightweight query that only returns order IDs, not full order objects. ```typescript // Get order IDs for a batch (fast count) const { orderIds, count } = await order.getOrderIdsByAttribute( 'coll_123', 'batchId', 'BATCH-2024-001' ) console.log(`Batch appears in ${count} orders`) // Get order IDs for a product const productOrders = await order.getOrderIdsByAttribute( 'coll_123', 'productId', 'prod_789', { limit: 500 } ) ```
 
 ### product
 
