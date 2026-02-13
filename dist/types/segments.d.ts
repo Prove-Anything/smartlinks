@@ -1,3 +1,41 @@
+export interface InteractionFilterValue {
+    interactionId: string;
+    scope?: string;
+    outcome?: string;
+    from?: string;
+    to?: string;
+}
+export type SegmentFilterRule = {
+    field: 'interaction';
+    op: 'had' | 'exists';
+    value: InteractionFilterValue;
+} | {
+    field: 'tags';
+    op: 'hasSome';
+    value: string[];
+} | {
+    field: 'locale';
+    op: 'equals';
+    value: string;
+} | {
+    field: 'source';
+    op: 'equals';
+    value: string;
+} | {
+    field: 'createdAt';
+    op: 'between';
+    value: {
+        from?: string;
+        to?: string;
+    };
+} | {
+    type: 'interaction';
+    interactionId: string;
+    scope?: string;
+    outcome?: string;
+    from?: string;
+    to?: string;
+};
 export interface SegmentRecord {
     id: string;
     collectionId: string;
@@ -8,7 +46,7 @@ export interface SegmentRecord {
     lastCalculatedAt?: string;
     createdAt: string;
     data?: {
-        filterRules: any[];
+        filterRules: SegmentFilterRule[];
         description?: string;
         staticContactIds?: string[];
         [key: string]: unknown;

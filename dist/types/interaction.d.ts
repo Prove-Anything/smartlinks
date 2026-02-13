@@ -4,6 +4,7 @@ export interface AdminInteractionsQueryRequest {
     contactId?: string;
     appId?: string;
     interactionId?: string;
+    scope?: string;
     interactionIds?: string[];
     broadcastId?: string;
     outcome?: string | null;
@@ -18,6 +19,7 @@ export interface AdminInteractionsQueryRequest {
 export interface AdminInteractionsCountsByOutcomeRequest {
     appId?: string;
     interactionId?: string;
+    scope?: string;
     from?: string;
     to?: string;
     limit?: number;
@@ -27,6 +29,7 @@ export interface AdminInteractionsCountsByOutcomeRequest {
 export interface PublicInteractionsCountsByOutcomeRequest {
     appId: string;
     interactionId: string;
+    scope?: string;
     from?: string;
     to?: string;
     limit?: number;
@@ -34,6 +37,7 @@ export interface PublicInteractionsCountsByOutcomeRequest {
 export interface PublicInteractionsByUserRequest {
     appId?: string;
     interactionId?: string;
+    scope?: string;
     from?: string;
     to?: string;
     limit?: number;
@@ -44,6 +48,7 @@ export interface InteractionEventRow {
     timestamp: string;
     appId?: string;
     interactionId?: string;
+    scope?: string;
     broadcastId?: string;
     userId?: string;
     contactId?: string;
@@ -61,6 +66,7 @@ export interface InteractionEventBase {
     userId?: string;
     contactId?: string;
     interactionId: string;
+    scope?: string;
     appId?: string;
     broadcastId?: string;
     journeyId?: string;
@@ -123,18 +129,20 @@ export interface InteractionPermissions {
     /** Allow an authenticated user to read their own interaction history via the public API. */
     allowOwnRead?: boolean;
 }
+export interface InteractionDisplay {
+    title?: string;
+    description?: string;
+    icon?: string;
+    color?: string;
+}
 export interface InteractionTypeRecord {
     id?: string;
     collectionId: string;
     appId: string;
     permissions?: InteractionPermissions;
     data?: {
-        display?: {
-            title?: string;
-            description?: string;
-            icon?: string;
-            color?: string;
-        };
+        display?: InteractionDisplay;
+        scopes?: Record<string, InteractionDisplay>;
         interactionType?: string;
         [key: string]: unknown;
     };

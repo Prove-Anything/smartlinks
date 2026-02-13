@@ -8,6 +8,7 @@ export interface AdminInteractionsQueryRequest {
   contactId?: string
   appId?: string
   interactionId?: string
+  scope?: string 
   interactionIds?: string[]
   broadcastId?: string
   outcome?: string | null
@@ -24,6 +25,7 @@ export interface AdminInteractionsQueryRequest {
 export interface AdminInteractionsCountsByOutcomeRequest {
   appId?: string
   interactionId?: string
+  scope?: string
   from?: string
   to?: string
   limit?: number
@@ -37,6 +39,7 @@ export interface AdminInteractionsCountsByOutcomeRequest {
 export interface PublicInteractionsCountsByOutcomeRequest {
   appId: string
   interactionId: string
+  scope?: string
   from?: string
   to?: string
   limit?: number
@@ -45,6 +48,7 @@ export interface PublicInteractionsCountsByOutcomeRequest {
 export interface PublicInteractionsByUserRequest {
   appId?: string
   interactionId?: string
+  scope?: string
   from?: string
   to?: string
   limit?: number
@@ -56,7 +60,8 @@ export interface InteractionEventRow {
   collectionId: string
   timestamp: string
   appId?: string
-  interactionId?: string
+  interactionId?: string  // a link to a Interaction Object
+  scope?: string       // a customizable string to segment interactions 
   broadcastId?: string
   userId?: string
   contactId?: string
@@ -76,6 +81,7 @@ export interface InteractionEventBase {
   userId?: string
   contactId?: string
   interactionId: string
+  scope?: string
   appId?: string
   broadcastId?: string
   journeyId?: string
@@ -153,6 +159,12 @@ export interface InteractionPermissions {
   allowOwnRead?: boolean
 }
 
+export interface InteractionDisplay {
+  title?: string
+  description?: string
+  icon?: string
+  color?: string
+}
 
 export interface InteractionTypeRecord {
   id?: string
@@ -160,12 +172,8 @@ export interface InteractionTypeRecord {
   appId: string
   permissions?: InteractionPermissions
   data?: {
-    display?: {
-      title?: string
-      description?: string
-      icon?: string
-      color?: string
-    }
+    display?: InteractionDisplay
+    scopes?: Record<string, InteractionDisplay>;
     interactionType?: string
     [key: string]: unknown
   }

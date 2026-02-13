@@ -1,5 +1,24 @@
 // src/types/segments.ts
 
+// Filter rule types based on actual segment code
+export interface InteractionFilterValue {
+  interactionId: string
+  scope?: string  // ← NEW: Scope filtering
+  outcome?: string
+  from?: string  // ISO date string
+  to?: string    // ISO date string
+}
+
+
+export type SegmentFilterRule = 
+  | { field: 'interaction'; op: 'had' | 'exists'; value: InteractionFilterValue }
+  | { field: 'tags'; op: 'hasSome'; value: string[] }
+  | { field: 'locale'; op: 'equals'; value: string }
+  | { field: 'source'; op: 'equals'; value: string }
+  | { field: 'createdAt'; op: 'between'; value: { from?: string; to?: string } }
+  | { type: 'interaction'; interactionId: string; scope?: string; outcome?: string; from?: string; to?: string }  // Legacy format
+
+  
 export interface SegmentRecord {
   id: string
   collectionId: string
@@ -10,7 +29,7 @@ export interface SegmentRecord {
   lastCalculatedAt?: string
   createdAt: string
   data?: {
-    filterRules: any[]
+    filterRules: SegmentFilterRule[]
     description?: string
     staticContactIds?: string[]
     [key: string]: unknown

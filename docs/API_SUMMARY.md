@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.3.21  |  Generated: 2026-02-09T12:29:22.158Z
+Version: 1.3.25  |  Generated: 2026-02-13T14:34:37.476Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1796,6 +1796,7 @@ interface AdminInteractionsQueryRequest {
   contactId?: string
   appId?: string
   interactionId?: string
+  scope?: string
   interactionIds?: string[]
   broadcastId?: string
   outcome?: string | null
@@ -1814,6 +1815,7 @@ interface AdminInteractionsQueryRequest {
 interface AdminInteractionsCountsByOutcomeRequest {
   appId?: string
   interactionId?: string
+  scope?: string
   from?: string
   to?: string
   limit?: number
@@ -1827,6 +1829,7 @@ interface AdminInteractionsCountsByOutcomeRequest {
 interface PublicInteractionsCountsByOutcomeRequest {
   appId: string
   interactionId: string
+  scope?: string
   from?: string
   to?: string
   limit?: number
@@ -1838,6 +1841,7 @@ interface PublicInteractionsCountsByOutcomeRequest {
 interface PublicInteractionsByUserRequest {
   appId?: string
   interactionId?: string
+  scope?: string
   from?: string
   to?: string
   limit?: number
@@ -1851,7 +1855,8 @@ interface InteractionEventRow {
   collectionId: string
   timestamp: string
   appId?: string
-  interactionId?: string
+  interactionId?: string  // a link to a Interaction Object
+  scope?: string       // a customizable string to segment interactions
   broadcastId?: string
   userId?: string
   contactId?: string
@@ -1876,6 +1881,7 @@ interface InteractionEventBase {
   userId?: string
   contactId?: string
   interactionId: string
+  scope?: string
   appId?: string
   broadcastId?: string
   journeyId?: string
@@ -1916,6 +1922,16 @@ interface InteractionPermissions {
 }
 ```
 
+**InteractionDisplay** (interface)
+```typescript
+interface InteractionDisplay {
+  title?: string
+  description?: string
+  icon?: string
+  color?: string
+}
+```
+
 **InteractionTypeRecord** (interface)
 ```typescript
 interface InteractionTypeRecord {
@@ -1924,12 +1940,8 @@ interface InteractionTypeRecord {
   appId: string
   permissions?: InteractionPermissions
   data?: {
-  display?: {
-  title?: string
-  description?: string
-  icon?: string
-  color?: string
-  }
+  display?: InteractionDisplay
+  scopes?: Record<string, InteractionDisplay>;
   interactionType?: string
   [key: string]: unknown
   }
@@ -2865,6 +2877,17 @@ interface AblyTokenRequest {
 
 ### segments
 
+**InteractionFilterValue** (interface)
+```typescript
+interface InteractionFilterValue {
+  interactionId: string
+  scope?: string  // ← NEW: Scope filtering
+  outcome?: string
+  from?: string  // ISO date string
+  to?: string    // ISO date string
+}
+```
+
 **SegmentRecord** (interface)
 ```typescript
 interface SegmentRecord {
@@ -2877,7 +2900,7 @@ interface SegmentRecord {
   lastCalculatedAt?: string
   createdAt: string
   data?: {
-  filterRules: any[]
+  filterRules: SegmentFilterRule[]
   description?: string
   staticContactIds?: string[]
   [key: string]: unknown
@@ -2924,6 +2947,8 @@ interface SegmentRecipientsResponse {
   note?: string
 }
 ```
+
+**SegmentFilterRule** = ``
 
 ### tags
 
