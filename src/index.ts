@@ -14,8 +14,21 @@ export {
   isAdminFromRoles,
   buildIframeSrc,
 } from './iframeResponder'
+// Utility functions
+export * as utils from './utils'
 
 // Explicitly re-export types for documentation
+export type {
+  PortalPathParams,
+  ConditionParams,
+  ConditionSet,
+  Condition,
+  UserInfo,
+  ProductInfo,
+  ProofInfo,
+  CollectionInfo,
+} from './utils'
+
 export type {
   LoginResponse,
   VerifyTokenResponse,

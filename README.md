@@ -18,6 +18,7 @@ For the full list of functions and types, see the API summary:
 - [Widgets](docs/widgets.md) - Embeddable React components
 - [Realtime](docs/realtime.md) - Realtime data updates
 - [iframe Responder](docs/iframe-responder.md) - iframe integration
+- [Utilities](docs/utils.md) - Helper functions for paths, URLs, and common tasks
 
 ## Install
 
@@ -158,6 +159,53 @@ try {
 - `error.toJSON()` - Serializable object for logging
 
 For comprehensive error handling examples and migration guidance, see [examples/error-handling-demo.ts](examples/error-handling-demo.ts).
+
+## Utility Functions
+
+The SDK includes a simple utility for building portal URLs. Pass in objects and it extracts what it needs:
+
+### Build Portal Paths
+
+```ts
+import { utils } from '@proveanything/smartlinks'
+
+// Pass in objects - extracts shortId, portalUrl, product ID, GTIN, etc.
+const url = utils.buildPortalPath({
+  collection: myCollection,
+  product: myProduct  // reads ownGtin from product
+})
+// Returns: https://portal.smartlinks.io/c/abc123/prod1
+
+// With proof object
+const withProof = utils.buildPortalPath({
+  collection: myCollection,
+  product: myProduct,
+  proof: myProof
+})
+// Returns: https://portal.smartlinks.io/c/abc123/prod1/proof1
+
+// GTIN path (ownGtin read from product.ownGtin)
+const gtinPath = utils.buildPortalPath({
+  collection: myCollection,
+  product: myProduct,  // if product.ownGtin is true, uses /01/ format
+  batch: myBatch,      // extracts batch ID and expiry date
+  variant: myVariant
+})
+// Returns: https://portal.smartlinks.io/01/1234567890123/10/batch1/22/var1?17=260630
+
+// Or pass just IDs if you don't have full objects
+const simple = utils.buildPortalPath({
+  collection: { shortId: 'abc123' },
+  productId: 'prod1',
+  batchId: 'batch1',  // just string, no expiry
+  queryParams: { utm_source: 'email' }
+})
+// Returns: /c/abc123/prod1?utm_source=email
+```
+
+Pass objects where you have them (collection, product, batch, variant, proof) and the function extracts the needed properties. Or pass just IDs (productId, batchId) for simpler cases.
+
+For complete documentation, see [docs/utils.md](docs/utils.md).
 
 ## Common tasks
 

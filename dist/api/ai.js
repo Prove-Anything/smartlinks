@@ -17,7 +17,7 @@ export var ai;
              * @returns Chat completion response or async iterable for streaming
              */
             async function create(collectionId, request) {
-                const path = `/admin/${encodeURIComponent(collectionId)}/ai/v1/chat/completions`;
+                const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/v1/chat/completions`;
                 if (request.stream) {
                     // TODO: Implement streaming via SSE
                     throw new Error('Streaming not yet implemented');
@@ -36,7 +36,7 @@ export var ai;
          * List available AI models
          */
         async function list(collectionId) {
-            const path = `/admin/${encodeURIComponent(collectionId)}/ai/models`;
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/models`;
             return request(path);
         }
         models.list = list;
@@ -44,7 +44,7 @@ export var ai;
          * Get specific model information
          */
         async function get(collectionId, modelId) {
-            const path = `/admin/${encodeURIComponent(collectionId)}/ai/models/${encodeURIComponent(modelId)}`;
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/models/${encodeURIComponent(modelId)}`;
             return request(path);
         }
         models.get = get;
@@ -58,7 +58,7 @@ export var ai;
          * Index a document for RAG
          */
         async function indexDocument(collectionId, request) {
-            const path = `/admin/${encodeURIComponent(collectionId)}/ai/indexDocument`;
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/indexDocument`;
             return post(path, request);
         }
         rag.indexDocument = indexDocument;
@@ -66,7 +66,7 @@ export var ai;
          * Configure AI assistant behavior
          */
         async function configureAssistant(collectionId, request) {
-            const path = `/admin/${encodeURIComponent(collectionId)}/ai/configureAssistant`;
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/configureAssistant`;
             return post(path, request);
         }
         rag.configureAssistant = configureAssistant;
@@ -80,7 +80,7 @@ export var ai;
          * Get session statistics
          */
         async function stats(collectionId) {
-            const path = `/admin/${encodeURIComponent(collectionId)}/ai/sessions/stats`;
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/sessions/stats`;
             return request(path);
         }
         sessions.stats = stats;
@@ -94,7 +94,7 @@ export var ai;
          * Reset rate limit for a user
          */
         async function reset(collectionId, userId) {
-            const path = `/admin/${encodeURIComponent(collectionId)}/ai/rate-limit/${encodeURIComponent(userId)}/reset`;
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/rate-limit/${encodeURIComponent(userId)}/reset`;
             return post(path, {});
         }
         rateLimit.reset = reset;
@@ -108,7 +108,7 @@ export var ai;
          * Generate a NotebookLM-style conversational podcast from product documents
          */
         async function generate(collectionId, request) {
-            const path = `/admin/${encodeURIComponent(collectionId)}/ai/generatePodcast`;
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/generatePodcast`;
             return post(path, request);
         }
         podcast.generate = generate;
@@ -116,7 +116,7 @@ export var ai;
          * Get podcast generation status
          */
         async function getStatus(collectionId, podcastId) {
-            const path = `/admin/${encodeURIComponent(collectionId)}/ai/podcast/${encodeURIComponent(podcastId)}`;
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/podcast/${encodeURIComponent(podcastId)}`;
             return request(path);
         }
         podcast.getStatus = getStatus;
@@ -130,7 +130,7 @@ export var ai;
          * Generate text-to-speech audio
          */
         async function generate(collectionId, request) {
-            const path = `/admin/${encodeURIComponent(collectionId)}/ai/tts`;
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/tts`;
             // Note: This would need special handling for binary response
             return post(path, request);
         }
@@ -145,7 +145,7 @@ export var ai;
          * Chat with product assistant (RAG)
          */
         async function chat(collectionId, request) {
-            const path = `/${encodeURIComponent(collectionId)}/ai/chat`;
+            const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/chat`;
             return post(path, request);
         }
         publicApi.chat = chat;
@@ -153,7 +153,7 @@ export var ai;
          * Get session history
          */
         async function getSession(collectionId, sessionId) {
-            const path = `/${encodeURIComponent(collectionId)}/ai/session/${encodeURIComponent(sessionId)}`;
+            const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/session/${encodeURIComponent(sessionId)}`;
             return request(path);
         }
         publicApi.getSession = getSession;
@@ -161,7 +161,7 @@ export var ai;
          * Clear session history
          */
         async function clearSession(collectionId, sessionId) {
-            const path = `/${encodeURIComponent(collectionId)}/ai/session/${encodeURIComponent(sessionId)}`;
+            const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/session/${encodeURIComponent(sessionId)}`;
             return del(path);
         }
         publicApi.clearSession = clearSession;
@@ -169,7 +169,7 @@ export var ai;
          * Check rate limit status
          */
         async function getRateLimit(collectionId, userId) {
-            const path = `/${encodeURIComponent(collectionId)}/ai/rate-limit/${encodeURIComponent(userId)}`;
+            const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/rate-limit/${encodeURIComponent(userId)}`;
             return request(path);
         }
         publicApi.getRateLimit = getRateLimit;
@@ -177,7 +177,7 @@ export var ai;
          * Generate ephemeral token for Gemini Live
          */
         async function getToken(collectionId, request) {
-            const path = `/${encodeURIComponent(collectionId)}/ai/token`;
+            const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/token`;
             return post(path, request);
         }
         publicApi.getToken = getToken;

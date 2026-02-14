@@ -242,6 +242,19 @@ function generateAPISummary(): void {
   let summary = '# Smartlinks API Summary\n\n';
   summary += 'This is a concise summary of all available API functions and types.\n\n';
   
+  // Documentation section
+  summary += '## Documentation\n\n';
+  summary += 'For detailed guides on specific features:\n\n';
+  summary += '- **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation\n';
+  summary += '- **[Widgets](widgets.md)** - Embeddable React components for parent applications\n';
+  summary += '- **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections\n';
+  summary += '- **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication\n';
+  summary += '- **[Utilities](utils.md)** - Helper functions for building portal paths, URLs, and common tasks\n';
+  summary += '- **[i18n](i18n.md)** - Internationalization and localization\n';
+  summary += '- **[Liquid Templates](liquid-templates.md)** - Dynamic templating for content generation\n';
+  summary += '- **[Theme System](theme.system.md)** - Theme configuration and customization\n';
+  summary += '- **[Theme Defaults](theme-defaults.md)** - Default theme values and presets\n\n';
+  
   // Generate namespace overview
   const apiFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
   const namespaces = apiFiles.map(file => path.basename(file, '.ts')).sort();
@@ -257,6 +270,21 @@ function generateAPISummary(): void {
   const httpFunctions = extractFunctionsFromFile(path.join(srcDir, 'http.ts'));
   httpFunctions.forEach(func => {
     summary += `**${func.name}**(${func.params}) → \`${func.returnType}\`\n`;
+    if (func.description) {
+      summary += `${func.description}\n`;
+    }
+    summary += '\n';
+  });
+  
+  // Path & URL Utilities
+  summary += '## Path & URL Utilities\n\n';
+  summary += 'Functions for building portal paths and URLs. These utilities help generate consistent paths for QR codes, NFC tags, emails, and other integrations.\n\n';
+  summary += 'See **[docs/utils.md](docs/utils.md)** for detailed documentation and examples.\n\n';
+  
+  const utilsDir = path.join(srcDir, 'utils');
+  const utilsFunctions = extractFunctionsFromFile(path.join(utilsDir, 'paths.ts'));
+  utilsFunctions.forEach(func => {
+    summary += `**utils.${func.name}**(${func.params}) → \`${func.returnType}\`\n`;
     if (func.description) {
       summary += `${func.description}\n`;
     }
@@ -466,6 +494,17 @@ function generateAPISummary(): void {
     const defs = extractTypesFromFile(path.join(apiDir, file));
     if (defs.length) sections.push({ title: `${moduleName} (api)`, defs });
   });
+
+  // From src/utils (to catch utility types like PortalPathParams)
+  const utilsDir = path.join(srcDir, 'utils');
+  if (fs.existsSync(utilsDir)) {
+    const utilsFiles = fs.readdirSync(utilsDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
+    utilsFiles.forEach(file => {
+      const moduleName = path.basename(file, '.ts');
+      const defs = extractTypesFromFile(path.join(utilsDir, file));
+      if (defs.length) sections.push({ title: `${moduleName} (utils)`, defs });
+    });
+  }
 
   sections.forEach(section => {
     summary += `### ${section.title}\n\n`;

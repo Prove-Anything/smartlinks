@@ -9,3 +9,5 @@ import * as cache_1 from './cache';
 export { cache_1 as cache };
 // IframeResponder (also exported via iframe namespace)
 export { IframeResponder, isAdminFromRoles, buildIframeSrc, } from './iframeResponder';
+import * as utils_1 from './utils';
+export { utils_1 as utils };
