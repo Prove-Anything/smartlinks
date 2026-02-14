@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.3.25  |  Generated: 2026-02-13T14:34:37.476Z
+Version: 1.3.26  |  Generated: 2026-02-14T08:48:11.873Z
 
 This is a concise summary of all available API functions and types.
 
@@ -924,6 +924,7 @@ interface Collection {
   redirectUrl?: string // Whether the collection has a custom domain
   shortId: string, // The shortId of this collection
   dark?: boolean // if dark mode is enabled for this collection
+  portalUrl?: string // URL for the collection's portal (if applicable)
 }
 ```
 

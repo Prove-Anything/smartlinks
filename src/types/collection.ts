@@ -64,7 +64,7 @@ export interface Collection {
   shortId: string, // The shortId of this collection
   /** if dark mode is enabled for this collection */
   dark?: boolean // if dark mode is enabled for this collection
-
+  portalUrl?: string // URL for the collection's portal (if applicable)
 }
 
 // Backwards compatibility alias

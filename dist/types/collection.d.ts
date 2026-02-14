@@ -62,6 +62,7 @@ export interface Collection {
     shortId: string;
     /** if dark mode is enabled for this collection */
     dark?: boolean;
+    portalUrl?: string;
 }
 export type CollectionResponse = Collection;
 export type CollectionCreateRequest = Omit<Collection, 'id' | 'shortId'>;
