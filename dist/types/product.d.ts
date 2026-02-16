@@ -14,7 +14,12 @@ export interface Product {
     gtin?: string;
     /** An optional product type from the standard smartlinks types */
     type?: string;
-    /** Hero image asset object */
+    /**
+     * Hero image asset object.
+     * When creating/updating, you can pass either:
+     * - A full asset object with url and thumbnails
+     * - A string URL - the system will automatically fetch and store the image
+     */
     heroImage: {
         /** URL to the asset */
         url: string;
@@ -35,5 +40,9 @@ export interface Product {
     };
 }
 export type ProductResponse = Product;
-export type ProductCreateRequest = Omit<Product, 'id' | 'collectionId'>;
-export type ProductUpdateRequest = Partial<Omit<Product, 'id' | 'collectionId'>>;
+export type ProductCreateRequest = Omit<Product, 'id' | 'collectionId'> & {
+    heroImage?: Product['heroImage'] | string;
+};
+export type ProductUpdateRequest = Partial<Omit<Product, 'id' | 'collectionId'>> & {
+    heroImage?: Product['heroImage'] | string;
+};

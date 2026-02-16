@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.3.33  |  Generated: 2026-02-15T09:39:22.347Z
+Version: 1.3.35  |  Generated: 2026-02-16T09:53:23.211Z
 
 This is a concise summary of all available API functions and types.
 
@@ -29,6 +29,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **batch** - Group products into batches; manage serial number ranges and lookups.
 - **crate** - Organize products in containers/crates for logistics and grouping.
 - **form** - Build and manage dynamic forms used by apps and workflows.
+- **appRecord** - Store and retrieve application-level records tied to a collection.
 - **appConfiguration** - Read/write app configuration and scoped data (collection/product/proof).
 
 — Identity & Access —
@@ -753,6 +754,9 @@ interface AIGenerateImageRequest {
   prompt: string
   provider?: string
   model?: string
+  * Requested image size.
+  * OpenAI supported values: '1024x1024', '1024x1792', '1792x1024'
+  * Other providers may support different sizes.
   size?: string
   [key: string]: any
 }
@@ -935,6 +939,21 @@ interface UploadAssetOptions {
   name?: string
   metadata?: Record<string, any>
   onProgress?: (percent: number) => void
+  appId?: string
+  admin?: boolean
+}
+```
+
+**UploadFromUrlOptions** (interface)
+```typescript
+interface UploadFromUrlOptions {
+  url: string
+  scope:
+  | { type: 'collection'; collectionId: string }
+  | { type: 'product'; collectionId: string; productId: string }
+  | { type: 'proof'; collectionId: string; productId: string; proofId: string }
+  folder?: 'images' | 'videos' | 'documents'
+  metadata?: Record<string, any>
   appId?: string
   admin?: boolean
 }
@@ -3344,6 +3363,10 @@ interface Product {
   description: string
   gtin?: string
   type?: string
+  * Hero image asset object.
+  * When creating/updating, you can pass either:
+  * - A full asset object with url and thumbnails
+  * - A string URL - the system will automatically fetch and store the image
   heroImage: {
   url: string
   thumbnails: {
@@ -3363,9 +3386,9 @@ interface Product {
 
 **ProductResponse** = `Product`
 
-**ProductCreateRequest** = `Omit<Product, 'id' | 'collectionId'>`
+**ProductCreateRequest** = `Omit<Product, 'id' | 'collectionId'> & {`
 
-**ProductUpdateRequest** = `Partial<Omit<Product, 'id' | 'collectionId'>>`
+**ProductUpdateRequest** = `Partial<Omit<Product, 'id' | 'collectionId'>> & {`
 
 ### proof
 
@@ -3935,38 +3958,51 @@ Post a chat message to the AI (admin or public)
     options?: GetCollectionWidgetsOptions) → `Promise<CollectionWidgetsResponse>`
 Fetches ALL widget data (manifests + bundle files) for a collection in one call. Returns everything needed to render widgets with zero additional requests. This solves N+1 query problems by fetching manifests, JavaScript bundles, and CSS files in parallel on the server. ```typescript // Fetch all widget data for a collection const { apps } = await Api.AppConfiguration.getWidgets(collectionId); // Returns: [{ appId, manifestUrl, manifest, bundleSource, bundleCss }, ...] // Convert bundle source to dynamic imports for (const app of apps) { const blob = new Blob([app.bundleSource], { type: 'application/javascript' }); const blobUrl = URL.createObjectURL(blob); const widgetModule = await import(blobUrl); // Inject CSS if present if (app.bundleCss) { const styleTag = document.createElement('style'); styleTag.textContent = app.bundleCss; document.head.appendChild(styleTag); } } // Force refresh all widgets const { apps } = await Api.AppConfiguration.getWidgets(collectionId, { force: true }); ```
 
+### appRecord
+
+**get**(collectionId: string, appId: string) → `Promise<any>`
+
+**create**(collectionId: string, appId: string, data: any) → `Promise<any>`
+
+**update**(collectionId: string, appId: string, data: any) → `Promise<any>`
+
+**remove**(collectionId: string, appId: string) → `Promise<void>`
+
 ### asset
 
 **upload**(options: UploadAssetOptions) → `Promise<Asset>`
 Upload an asset file
 
+**uploadFromUrl**(options: UploadFromUrlOptions) → `Promise<Asset>`
+Upload an asset from a URL The server will fetch the file from the provided URL and store it permanently in your CDN. This solves CORS issues and ensures files are permanently stored. ```typescript // Upload AI-generated image const asset = await asset.uploadFromUrl({ url: 'https://oaidalleapiprodscus.blob.core.windows.net/...', scope: { type: 'collection', collectionId: 'my-collection' }, metadata: { name: 'AI Generated Image', app: 'gallery' } }); // Upload stock photo const asset = await asset.uploadFromUrl({ url: 'https://images.unsplash.com/photo-...', scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' }, folder: 'images', metadata: { name: 'Product Photo' } }); ```
+
 **getForCollection**(collectionId: string,
     assetId: string) → `Promise<AssetResponse>`
-Upload an asset file
+Upload an asset from a URL The server will fetch the file from the provided URL and store it permanently in your CDN. This solves CORS issues and ensures files are permanently stored. ```typescript // Upload AI-generated image const asset = await asset.uploadFromUrl({ url: 'https://oaidalleapiprodscus.blob.core.windows.net/...', scope: { type: 'collection', collectionId: 'my-collection' }, metadata: { name: 'AI Generated Image', app: 'gallery' } }); // Upload stock photo const asset = await asset.uploadFromUrl({ url: 'https://images.unsplash.com/photo-...', scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' }, folder: 'images', metadata: { name: 'Product Photo' } }); ```
 
 **listForCollection**(collectionId: string) → `Promise<AssetResponse[]>`
-Upload an asset file
+Upload an asset from a URL The server will fetch the file from the provided URL and store it permanently in your CDN. This solves CORS issues and ensures files are permanently stored. ```typescript // Upload AI-generated image const asset = await asset.uploadFromUrl({ url: 'https://oaidalleapiprodscus.blob.core.windows.net/...', scope: { type: 'collection', collectionId: 'my-collection' }, metadata: { name: 'AI Generated Image', app: 'gallery' } }); // Upload stock photo const asset = await asset.uploadFromUrl({ url: 'https://images.unsplash.com/photo-...', scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' }, folder: 'images', metadata: { name: 'Product Photo' } }); ```
 
 **getForProduct**(collectionId: string,
     productId: string,
     assetId: string) → `Promise<AssetResponse>`
-Upload an asset file
+Upload an asset from a URL The server will fetch the file from the provided URL and store it permanently in your CDN. This solves CORS issues and ensures files are permanently stored. ```typescript // Upload AI-generated image const asset = await asset.uploadFromUrl({ url: 'https://oaidalleapiprodscus.blob.core.windows.net/...', scope: { type: 'collection', collectionId: 'my-collection' }, metadata: { name: 'AI Generated Image', app: 'gallery' } }); // Upload stock photo const asset = await asset.uploadFromUrl({ url: 'https://images.unsplash.com/photo-...', scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' }, folder: 'images', metadata: { name: 'Product Photo' } }); ```
 
 **listForProduct**(collectionId: string,
     productId: string) → `Promise<AssetResponse[]>`
-Upload an asset file
+Upload an asset from a URL The server will fetch the file from the provided URL and store it permanently in your CDN. This solves CORS issues and ensures files are permanently stored. ```typescript // Upload AI-generated image const asset = await asset.uploadFromUrl({ url: 'https://oaidalleapiprodscus.blob.core.windows.net/...', scope: { type: 'collection', collectionId: 'my-collection' }, metadata: { name: 'AI Generated Image', app: 'gallery' } }); // Upload stock photo const asset = await asset.uploadFromUrl({ url: 'https://images.unsplash.com/photo-...', scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' }, folder: 'images', metadata: { name: 'Product Photo' } }); ```
 
 **getForProof**(collectionId: string,
     productId: string,
     proofId: string,
     assetId: string) → `Promise<AssetResponse>`
-Upload an asset file
+Upload an asset from a URL The server will fetch the file from the provided URL and store it permanently in your CDN. This solves CORS issues and ensures files are permanently stored. ```typescript // Upload AI-generated image const asset = await asset.uploadFromUrl({ url: 'https://oaidalleapiprodscus.blob.core.windows.net/...', scope: { type: 'collection', collectionId: 'my-collection' }, metadata: { name: 'AI Generated Image', app: 'gallery' } }); // Upload stock photo const asset = await asset.uploadFromUrl({ url: 'https://images.unsplash.com/photo-...', scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' }, folder: 'images', metadata: { name: 'Product Photo' } }); ```
 
 **listForProof**(collectionId: string,
     productId: string,
     proofId: string,
     appId?: string) → `Promise<AssetResponse[]>`
-Upload an asset file
+Upload an asset from a URL The server will fetch the file from the provided URL and store it permanently in your CDN. This solves CORS issues and ensures files are permanently stored. ```typescript // Upload AI-generated image const asset = await asset.uploadFromUrl({ url: 'https://oaidalleapiprodscus.blob.core.windows.net/...', scope: { type: 'collection', collectionId: 'my-collection' }, metadata: { name: 'AI Generated Image', app: 'gallery' } }); // Upload stock photo const asset = await asset.uploadFromUrl({ url: 'https://images.unsplash.com/photo-...', scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' }, folder: 'images', metadata: { name: 'Product Photo' } }); ```
 
 **uploadAsset**(collectionId: string,
     productId: string,
@@ -4746,12 +4782,12 @@ List all Product Items for a Collection.
 
 **create**(collectionId: string,
     data: ProductCreateRequest) → `Promise<ProductResponse>`
-Create a new product for a collection (admin only). The `data` payload follows the same shape as ProductResponse minus `id` and `collectionId`.
+Create a new product for a collection (admin only). The `data` payload follows the same shape as ProductResponse minus `id` and `collectionId`. **Hero Image Auto-Fetch:** You can pass `heroImage` as either: - A full asset object: `{ url: '...', thumbnails: {...} }` - A string URL: The system automatically fetches and stores the image ```typescript // Using a URL - auto-fetched and stored const product = await product.create(collectionId, { name: 'Wine Bottle', description: 'Premium red wine', heroImage: 'https://example.com/wine.jpg', // Auto-fetched! tags: {}, data: {} }); ```
 
 **update**(collectionId: string,
     productId: string,
     data: ProductUpdateRequest) → `Promise<ProductResponse>`
-Update a product for a collection (admin only). The `data` payload is a partial of ProductResponse minus `id` and `collectionId`.
+Update a product for a collection (admin only). The `data` payload is a partial of ProductResponse minus `id` and `collectionId`. **Hero Image Auto-Fetch:** You can pass `heroImage` as either: - A full asset object: `{ url: '...', thumbnails: {...} }` - A string URL: The system automatically fetches and stores the image ```typescript // Update with new URL - auto-fetched and stored const product = await product.update(collectionId, productId, { heroImage: 'https://example.com/new-wine.jpg' // Auto-fetched! }); ```
 
 **remove**(collectionId: string,
     productId: string) → `Promise<void>`

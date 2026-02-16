@@ -1,5 +1,5 @@
 import { request, post, del, getApiHeaders, isProxyEnabled, proxyUploadFormData } from "../http"
-import { Asset, AssetResponse, UploadAssetOptions, ListAssetsOptions, GetAssetOptions, RemoveAssetOptions } from "../types/asset"
+import { Asset, AssetResponse, UploadAssetOptions, UploadFromUrlOptions, ListAssetsOptions, GetAssetOptions, RemoveAssetOptions } from "../types/asset"
 
 export namespace asset {
   /**
@@ -110,6 +110,61 @@ export namespace asset {
     } catch (e: any) {
       // Map generic Error to AssetUploadError
       const msg = e?.message || 'Upload failed'
+      throw new AssetUploadError(msg, 'UNKNOWN')
+    }
+  }
+
+  /**
+   * Upload an asset from a URL
+   * The server will fetch the file from the provided URL and store it permanently in your CDN.
+   * This solves CORS issues and ensures files are permanently stored.
+   * 
+   * @param options - Upload options including URL and scope
+   * @returns The uploaded asset with its CDN URL
+   * @throws AssetUploadError if upload fails
+   * 
+   * @example
+   * ```typescript
+   * // Upload AI-generated image
+   * const asset = await asset.uploadFromUrl({
+   *   url: 'https://oaidalleapiprodscus.blob.core.windows.net/...',
+   *   scope: { type: 'collection', collectionId: 'my-collection' },
+   *   metadata: { name: 'AI Generated Image', app: 'gallery' }
+   * });
+   * 
+   * // Upload stock photo
+   * const asset = await asset.uploadFromUrl({
+   *   url: 'https://images.unsplash.com/photo-...',
+   *   scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' },
+   *   folder: 'images',
+   *   metadata: { name: 'Product Photo' }
+   * });
+   * ```
+   */
+  export async function uploadFromUrl(options: UploadFromUrlOptions): Promise<Asset> {
+    const base = buildScopeBase(options.scope, !!options.admin)
+    let path = `${base}/asset`
+    if (options.appId) {
+      const qp = new URLSearchParams({ appId: options.appId })
+      path += `?${qp.toString()}`
+    }
+
+    const body: Record<string, any> = {
+      url: options.url
+    }
+    
+    if (options.folder) {
+      body.folder = options.folder
+    }
+    
+    if (options.metadata) {
+      body.extraData = options.metadata
+    }
+
+    try {
+      return await post<Asset>(path, body)
+    } catch (e: any) {
+      const msg = e?.message || 'URL upload failed'
       throw new AssetUploadError(msg, 'UNKNOWN')
     }
   }

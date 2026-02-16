@@ -1,4 +1,4 @@
-import { Asset, AssetResponse, UploadAssetOptions, ListAssetsOptions, GetAssetOptions, RemoveAssetOptions } from "../types/asset";
+import { Asset, AssetResponse, UploadAssetOptions, UploadFromUrlOptions, ListAssetsOptions, GetAssetOptions, RemoveAssetOptions } from "../types/asset";
 export declare namespace asset {
     /**
      * Error type for asset uploads
@@ -14,6 +14,34 @@ export declare namespace asset {
      * @throws AssetUploadError if upload fails
      */
     function upload(options: UploadAssetOptions): Promise<Asset>;
+    /**
+     * Upload an asset from a URL
+     * The server will fetch the file from the provided URL and store it permanently in your CDN.
+     * This solves CORS issues and ensures files are permanently stored.
+     *
+     * @param options - Upload options including URL and scope
+     * @returns The uploaded asset with its CDN URL
+     * @throws AssetUploadError if upload fails
+     *
+     * @example
+     * ```typescript
+     * // Upload AI-generated image
+     * const asset = await asset.uploadFromUrl({
+     *   url: 'https://oaidalleapiprodscus.blob.core.windows.net/...',
+     *   scope: { type: 'collection', collectionId: 'my-collection' },
+     *   metadata: { name: 'AI Generated Image', app: 'gallery' }
+     * });
+     *
+     * // Upload stock photo
+     * const asset = await asset.uploadFromUrl({
+     *   url: 'https://images.unsplash.com/photo-...',
+     *   scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' },
+     *   folder: 'images',
+     *   metadata: { name: 'Product Photo' }
+     * });
+     * ```
+     */
+    function uploadFromUrl(options: UploadFromUrlOptions): Promise<Asset>;
     function getForCollection(collectionId: string, assetId: string): Promise<AssetResponse>;
     function listForCollection(collectionId: string): Promise<AssetResponse[]>;
     function getForProduct(collectionId: string, productId: string, assetId: string): Promise<AssetResponse>;

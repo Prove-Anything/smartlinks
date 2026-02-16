@@ -88,6 +88,36 @@ export interface UploadAssetOptions {
     /** Optional: Upload via admin route instead of public */
     admin?: boolean;
 }
+/**
+ * Options for uploading an asset from a URL
+ * The server will fetch the file from the URL and store it in your CDN
+ */
+export interface UploadFromUrlOptions {
+    /** The URL of the file to fetch and upload */
+    url: string;
+    /** Where to attach the asset */
+    scope: {
+        type: 'collection';
+        collectionId: string;
+    } | {
+        type: 'product';
+        collectionId: string;
+        productId: string;
+    } | {
+        type: 'proof';
+        collectionId: string;
+        productId: string;
+        proofId: string;
+    };
+    /** Optional: Storage folder ('images', 'videos', 'documents') */
+    folder?: 'images' | 'videos' | 'documents';
+    /** Optional: Custom metadata to store with the asset */
+    metadata?: Record<string, any>;
+    /** Optional: App ID for scoping to a specific microapp */
+    appId?: string;
+    /** Optional: Upload via admin route instead of public */
+    admin?: boolean;
+}
 export interface ListAssetsOptions {
     scope: {
         type: 'collection';

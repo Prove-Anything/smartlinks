@@ -32,6 +32,24 @@ export var product;
     /**
      * Create a new product for a collection (admin only).
      * The `data` payload follows the same shape as ProductResponse minus `id` and `collectionId`.
+     *
+     * **Hero Image Auto-Fetch:**
+     * You can pass `heroImage` as either:
+     * - A full asset object: `{ url: '...', thumbnails: {...} }`
+     * - A string URL: The system automatically fetches and stores the image
+     *
+     * @example
+     * ```typescript
+     * // Using a URL - auto-fetched and stored
+     * const product = await product.create(collectionId, {
+     *   name: 'Wine Bottle',
+     *   description: 'Premium red wine',
+     *   heroImage: 'https://example.com/wine.jpg', // Auto-fetched!
+     *   tags: {},
+     *   data: {}
+     * });
+     * ```
+     *
      * @param collectionId – Identifier of the parent collection
      * @param data – Product creation data (see ProductCreateRequest)
      * @returns Promise resolving to a ProductResponse object
@@ -45,6 +63,20 @@ export var product;
     /**
      * Update a product for a collection (admin only).
      * The `data` payload is a partial of ProductResponse minus `id` and `collectionId`.
+     *
+     * **Hero Image Auto-Fetch:**
+     * You can pass `heroImage` as either:
+     * - A full asset object: `{ url: '...', thumbnails: {...} }`
+     * - A string URL: The system automatically fetches and stores the image
+     *
+     * @example
+     * ```typescript
+     * // Update with new URL - auto-fetched and stored
+     * const product = await product.update(collectionId, productId, {
+     *   heroImage: 'https://example.com/new-wine.jpg' // Auto-fetched!
+     * });
+     * ```
+     *
      * @param collectionId – Identifier of the parent collection
      * @param productId – Identifier of the product
      * @param data – Product update data (see ProductUpdateRequest)
