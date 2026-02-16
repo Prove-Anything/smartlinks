@@ -88,4 +88,48 @@ export var appConfiguration;
         return del(path);
     }
     appConfiguration.deleteDataItem = deleteDataItem;
+    /**
+     * Fetches ALL widget data (manifests + bundle files) for a collection in one call.
+     * Returns everything needed to render widgets with zero additional requests.
+     *
+     * This solves N+1 query problems by fetching manifests, JavaScript bundles,
+     * and CSS files in parallel on the server.
+     *
+     * @param collectionId - The collection ID
+     * @param options - Optional settings (force: bypass cache)
+     * @returns Promise resolving to collection widgets with manifests and bundle files
+     * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * // Fetch all widget data for a collection
+     * const { apps } = await Api.AppConfiguration.getWidgets(collectionId);
+     * // Returns: [{ appId, manifestUrl, manifest, bundleSource, bundleCss }, ...]
+     *
+     * // Convert bundle source to dynamic imports
+     * for (const app of apps) {
+     *   const blob = new Blob([app.bundleSource], { type: 'application/javascript' });
+     *   const blobUrl = URL.createObjectURL(blob);
+     *   const widgetModule = await import(blobUrl);
+     *
+     *   // Inject CSS if present
+     *   if (app.bundleCss) {
+     *     const styleTag = document.createElement('style');
+     *     styleTag.textContent = app.bundleCss;
+     *     document.head.appendChild(styleTag);
+     *   }
+     * }
+     *
+     * // Force refresh all widgets
+     * const { apps } = await Api.AppConfiguration.getWidgets(collectionId, { force: true });
+     * ```
+     */
+    async function getWidgets(collectionId, options) {
+        let path = `/public/collection/${encodeURIComponent(collectionId)}/app/widgets`;
+        if (options === null || options === void 0 ? void 0 : options.force) {
+            path += '?force=true';
+        }
+        return request(path);
+    }
+    appConfiguration.getWidgets = getWidgets;
 })(appConfiguration || (appConfiguration = {}));

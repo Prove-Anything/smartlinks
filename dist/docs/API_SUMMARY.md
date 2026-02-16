@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.3.28  |  Generated: 2026-02-14T12:11:55.083Z
+Version: 1.3.33  |  Generated: 2026-02-15T09:39:22.347Z
 
 This is a concise summary of all available API functions and types.
 
@@ -29,7 +29,6 @@ The Smartlinks SDK is organized into the following namespaces:
 - **batch** - Group products into batches; manage serial number ranges and lookups.
 - **crate** - Organize products in containers/crates for logistics and grouping.
 - **form** - Build and manage dynamic forms used by apps and workflows.
-- **appRecord** - Store and retrieve application-level records tied to a collection.
 - **appConfiguration** - Read/write app configuration and scoped data (collection/product/proof).
 
 — Identity & Access —
@@ -791,6 +790,113 @@ interface AppConfigurationResponse {
 }
 ```
 
+### appManifest
+
+**AppManifest** (interface)
+```typescript
+interface AppManifest {
+  $schema?: string;
+  meta?: {
+  name: string;
+  description?: string;
+  version: string;
+  platformRevision?: string;
+  appId: string;
+  };
+  widgets?: Array<{
+  name: string;
+  description?: string;
+  sizes?: string[];
+  props?: {
+  required?: string[];
+  optional?: string[];
+  };
+  }>;
+  setup?: {
+  description?: string;
+  questions?: Array<{
+  id: string;
+  prompt: string;
+  type: string;
+  default?: any;
+  required?: boolean;
+  }>;
+  configSchema?: Record<string, any>;
+  saveWith?: {
+  method: string;
+  scope: string;
+  admin?: boolean;
+  };
+  contentHints?: Record<string, {
+  aiGenerate?: boolean;
+  prompt?: string;
+  }>;
+  };
+  import?: {
+  description?: string;
+  scope?: string;
+  fields?: Array<{
+  name: string;
+  type: string;
+  required?: boolean;
+  default?: any;
+  description?: string;
+  }>;
+  csvExample?: string;
+  saveWith?: {
+  method: string;
+  scope: string;
+  admin?: boolean;
+  note?: string;
+  };
+  };
+  tunable?: {
+  description?: string;
+  fields?: Array<{
+  name: string;
+  description?: string;
+  type: string;
+  }>;
+  };
+  metrics?: {
+  interactions?: Array<{
+  id: string;
+  description?: string;
+  }>;
+  kpis?: Array<{
+  name: string;
+  compute?: string;
+  }>;
+  };
+  [key: string]: any; // Allow additional custom fields
+}
+```
+
+**CollectionWidget** (interface)
+```typescript
+interface CollectionWidget {
+  appId: string;
+  manifestUrl: string;
+  manifest: AppManifest;
+  bundleSource: string;
+  bundleCss?: string; // Optional CSS file
+}
+```
+
+**CollectionWidgetsResponse** (interface)
+```typescript
+interface CollectionWidgetsResponse {
+  apps: CollectionWidget[];
+}
+```
+
+**GetCollectionWidgetsOptions** (interface)
+```typescript
+interface GetCollectionWidgetsOptions {
+  force?: boolean; // Bypass cache and fetch fresh data
+}
+```
+
 ### asset
 
 **Asset** (interface)
@@ -1394,6 +1500,7 @@ interface AppConfig {
   ownersOnly?: boolean
   hidden?: boolean
   publicIframeUrl?: string
+  manifestUrl?: string
   supportsDeepLinks?: boolean;
   usage: {
   collection: boolean;  // use at the collecton level
@@ -3824,15 +3931,9 @@ Post a chat message to the AI (admin or public)
 
 **deleteDataItem**(opts: AppConfigOptions) → `Promise<void>`
 
-### appRecord
-
-**get**(collectionId: string, appId: string) → `Promise<any>`
-
-**create**(collectionId: string, appId: string, data: any) → `Promise<any>`
-
-**update**(collectionId: string, appId: string, data: any) → `Promise<any>`
-
-**remove**(collectionId: string, appId: string) → `Promise<void>`
+**getWidgets**(collectionId: string,
+    options?: GetCollectionWidgetsOptions) → `Promise<CollectionWidgetsResponse>`
+Fetches ALL widget data (manifests + bundle files) for a collection in one call. Returns everything needed to render widgets with zero additional requests. This solves N+1 query problems by fetching manifests, JavaScript bundles, and CSS files in parallel on the server. ```typescript // Fetch all widget data for a collection const { apps } = await Api.AppConfiguration.getWidgets(collectionId); // Returns: [{ appId, manifestUrl, manifest, bundleSource, bundleCss }, ...] // Convert bundle source to dynamic imports for (const app of apps) { const blob = new Blob([app.bundleSource], { type: 'application/javascript' }); const blobUrl = URL.createObjectURL(blob); const widgetModule = await import(blobUrl); // Inject CSS if present if (app.bundleCss) { const styleTag = document.createElement('style'); styleTag.textContent = app.bundleCss; document.head.appendChild(styleTag); } } // Force refresh all widgets const { apps } = await Api.AppConfiguration.getWidgets(collectionId, { force: true }); ```
 
 ### asset
 

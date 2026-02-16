@@ -27,3 +27,4 @@ export * from "./order";
 export * from "./crate";
 export * from "./iframeResponder";
 export * from "./ai";
+export * from "./appManifest";

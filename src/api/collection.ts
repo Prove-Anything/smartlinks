@@ -1,6 +1,11 @@
 // src/api/collection.ts
 import { request, post, put, del } from "../http"
-import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest, AppsConfigResponse } from "../types/collection"
+import { 
+  CollectionResponse, 
+  CollectionCreateRequest, 
+  CollectionUpdateRequest, 
+  AppsConfigResponse 
+} from "../types/collection"
 
 export namespace collection {
   /**
@@ -57,7 +62,7 @@ export namespace collection {
    * @throws ErrorResponse if the request fails
    */
   export async function getAppsConfig(collectionId: string): Promise<AppsConfigResponse> {
-    const path = `/public/collection/${encodeURIComponent(collectionId)}/apps-config`
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/app/config`
     return request<AppsConfigResponse>(path)
   }
 

@@ -56,7 +56,7 @@ export var collection;
      * @throws ErrorResponse if the request fails
      */
     async function getAppsConfig(collectionId) {
-        const path = `/public/collection/${encodeURIComponent(collectionId)}/apps-config`;
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/app/config`;
         return request(path);
     }
     collection.getAppsConfig = getAppsConfig;

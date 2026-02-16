@@ -103,6 +103,9 @@ export interface AppConfig {
   /** Universal iframe URL for external embedding */
   publicIframeUrl?: string
 
+  /** Where to get the app manifest for AI and widget definitions */
+  manifestUrl?: string
+
   /** supports multiple pages / deep links into the app */
   supportsDeepLinks?: boolean;
 
