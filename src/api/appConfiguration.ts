@@ -5,35 +5,36 @@ import {
   GetCollectionWidgetsOptions 
 } from "../types/appManifest"
 
+/**
+ * Options for collection/product-scoped app configuration.
+ * This data is set by admins and applies to all users within the scope.
+ */
 export type AppConfigOptions = {
+  /** The app ID */
   appId: string
+  
+  /** Collection ID (required for most operations) */
   collectionId?: string
+  /** Product ID (optional - for product-scoped config) */
   productId?: string
+  /** Variant ID (optional - for variant-scoped config) */
   variantId?: string
+  /** Batch ID (optional - for batch-scoped config) */
   batchId?: string
+  
+  /** Item ID - required for getDataItem/deleteDataItem */
   itemId?: string
-  user?: boolean
-  userData?: boolean
+  
+  /** Use admin endpoints instead of public */
   admin?: boolean
+  
+  /** Configuration object for setConfig */
   config?: any
+  /** Data object for setDataItem */
   data?: any
 }
 
 function buildAppPath(opts: AppConfigOptions, type: "config" | "data" | "dataItem"): string {
-  if (opts.user) {
-    // /public/auth/app/:appId
-    let path = `/public/auth/app/${encodeURIComponent(opts.appId)}`
-    if (type === "data") path += "/data"
-    if (type === "dataItem" && opts.itemId) path += `/data/${encodeURIComponent(opts.itemId)}`
-    return path
-  }
-  if (opts.userData) {
-    // /public/auth/app/:appId/data or /public/auth/app/:appId/data/:itemId
-    let path = `/public/auth/app/${encodeURIComponent(opts.appId)}/data`
-    if (type === "dataItem" && opts.itemId) path += `/${encodeURIComponent(opts.itemId)}`
-    return path
-  }
-
   const base = opts.admin ? "admin" : "public"
   let path = `/${base}`
 
@@ -61,45 +62,332 @@ function buildAppPath(opts: AppConfigOptions, type: "config" | "data" | "dataIte
   return path
 }
 
+/**
+ * User-specific app data storage.
+ * This data is global per user+app and shared across all collections.
+ * Perfect for personal preferences, settings, and user-generated content.
+ * 
+ * @example
+ * ```typescript
+ * // Store user's garden bed layout
+ * await userAppData.set('garden-planner', {
+ *   id: 'bed-1',
+ *   name: 'Vegetable Bed',
+ *   plants: ['tomatoes', 'peppers']
+ * });
+ * 
+ * // Get all user's data for this app
+ * const beds = await userAppData.list('garden-planner');
+ * 
+ * // Get specific item
+ * const bed = await userAppData.get('garden-planner', 'bed-1');
+ * 
+ * // Remove item
+ * await userAppData.remove('garden-planner', 'bed-1');
+ * ```
+ */
+export namespace userAppData {
+  /**
+   * Get user's config blob for an app.
+   * This is a single JSON object stored per user+app.
+   * 
+   * @param appId - The app ID
+   * @returns The user's config object
+   * 
+   * @example
+   * ```typescript
+   * const config = await userAppData.getConfig('allergy-tracker');
+   * // Returns: { allergies: ['peanuts'], notifications: true }
+   * ```
+   */
+  export async function getConfig(appId: string): Promise<any> {
+    const path = `/public/auth/app/${encodeURIComponent(appId)}`
+    return request<any>(path)
+  }
+
+  /**
+   * Set user's config blob for an app.
+   * 
+   * @param appId - The app ID
+   * @param config - The config object to store
+   * 
+   * @example
+   * ```typescript
+   * await userAppData.setConfig('allergy-tracker', {
+   *   allergies: ['peanuts', 'shellfish'],
+   *   notifications: true
+   * });
+   * ```
+   */
+  export async function setConfig(appId: string, config: any): Promise<any> {
+    const path = `/public/auth/app/${encodeURIComponent(appId)}`
+    return post<any>(path, config)
+  }
+
+  /**
+   * Delete user's config blob for an app.
+   * 
+   * @param appId - The app ID
+   * 
+   * @example
+   * ```typescript
+   * await userAppData.deleteConfig('allergy-tracker');
+   * ```
+   */
+  export async function deleteConfig(appId: string): Promise<void> {
+    const path = `/public/auth/app/${encodeURIComponent(appId)}`
+    return del<void>(path)
+  }
+
+  /**
+   * List all user's data items for an app.
+   * Returns an array of objects, each with an `id` field.
+   * 
+   * @param appId - The app ID
+   * @returns Array of data items
+   * 
+   * @example
+   * ```typescript
+   * const beds = await userAppData.list('garden-planner');
+   * // Returns: [{ id: 'bed-1', name: 'Vegetables', ... }, { id: 'bed-2', ... }]
+   * ```
+   */
+  export async function list(appId: string): Promise<any[]> {
+    const path = `/public/auth/app/${encodeURIComponent(appId)}/data`
+    return request<any[]>(path)
+  }
+
+  /**
+   * Get a specific user data item by ID.
+   * 
+   * @param appId - The app ID
+   * @param itemId - The item ID
+   * @returns The data item
+   * 
+   * @example
+   * ```typescript
+   * const bed = await userAppData.get('garden-planner', 'bed-1');
+   * // Returns: { id: 'bed-1', name: 'Vegetable Bed', plants: [...] }
+   * ```
+   */
+  export async function get(appId: string, itemId: string): Promise<any> {
+    const path = `/public/auth/app/${encodeURIComponent(appId)}/data/${encodeURIComponent(itemId)}`
+    return request<any>(path)
+  }
+
+  /**
+   * Create or update a user data item.
+   * The item object must include an `id` field.
+   * 
+   * @param appId - The app ID
+   * @param item - The data item (must include `id`)
+   * @returns The saved item
+   * 
+   * @example
+   * ```typescript
+   * await userAppData.set('garden-planner', {
+   *   id: 'bed-1',
+   *   name: 'Vegetable Bed',
+   *   plants: ['tomatoes', 'peppers'],
+   *   location: { x: 10, y: 20 }
+   * });
+   * ```
+   */
+  export async function set(appId: string, item: any): Promise<any> {
+    const path = `/public/auth/app/${encodeURIComponent(appId)}/data`
+    return post<any>(path, item)
+  }
+
+  /**
+   * Delete a user data item by ID.
+   * 
+   * @param appId - The app ID
+   * @param itemId - The item ID to delete
+   * 
+   * @example
+   * ```typescript
+   * await userAppData.remove('garden-planner', 'bed-1');
+   * ```
+   */
+  export async function remove(appId: string, itemId: string): Promise<void> {
+    const path = `/public/auth/app/${encodeURIComponent(appId)}/data/${encodeURIComponent(itemId)}`
+    return del<void>(path)
+  }
+}
+
+/**
+ * Collection/Product-scoped app configuration.
+ * This is admin-managed configuration that applies to all users within the scope.
+ * 
+ * @example
+ * ```typescript
+ * // Get collection-level app config
+ * const config = await appConfiguration.getConfig({
+ *   appId: 'warranty-portal',
+ *   collectionId: 'my-collection'
+ * });
+ * 
+ * // Set product-level config (admin only)
+ * await appConfiguration.setConfig({
+ *   appId: 'warranty-portal',
+ *   collectionId: 'my-collection',
+ *   productId: 'product-123',
+ *   admin: true,
+ *   config: { warrantyPeriod: 24 }
+ * });
+ * 
+ * // List product-level data items
+ * const items = await appConfiguration.getData({
+ *   appId: 'product-docs',
+ *   collectionId: 'my-collection',
+ *   productId: 'product-123'
+ * });
+ * ```
+ */
 export namespace appConfiguration {
-  // Get config (app, collection, product, variant, batch, user)
+  /**
+   * Get app configuration for a collection/product scope.
+   * 
+   * @param opts - Configuration options including appId and scope (collectionId, productId, etc.)
+   * @returns The configuration object
+   * 
+   * @example
+   * ```typescript
+   * const config = await appConfiguration.getConfig({
+   *   appId: 'warranty-portal',
+   *   collectionId: 'my-collection'
+   * });
+   * ```
+   */
   export async function getConfig(opts: AppConfigOptions): Promise<any> {
     const path = buildAppPath(opts, "config")
     return request<any>(path)
   }
 
-  // Set config (app, collection, product, variant, batch, user)
+  /**
+   * Set app configuration for a collection/product scope.
+   * Requires admin authentication.
+   * 
+   * @param opts - Configuration options including appId, scope, and config data
+   * @returns The saved configuration
+   * 
+   * @example
+   * ```typescript
+   * await appConfiguration.setConfig({
+   *   appId: 'warranty-portal',
+   *   collectionId: 'my-collection',
+   *   admin: true,
+   *   config: { warrantyPeriod: 24, supportEmail: 'support@example.com' }
+   * });
+   * ```
+   */
   export async function setConfig(opts: AppConfigOptions): Promise<any> {
     const path = buildAppPath(opts, "config")
     return post<any>(path, opts.config)
   }
 
-  // Delete config (user only)
+  /**
+   * Delete app configuration for a collection/product scope.
+   * Requires admin authentication.
+   * 
+   * @param opts - Configuration options including appId and scope
+   * 
+   * @example
+   * ```typescript
+   * await appConfiguration.deleteConfig({
+   *   appId: 'warranty-portal',
+   *   collectionId: 'my-collection',
+   *   admin: true
+   * });
+   * ```
+   */
   export async function deleteConfig(opts: AppConfigOptions): Promise<void> {
     const path = buildAppPath(opts, "config")
     return del<void>(path)
   }
 
-  // Get all data items (app, collection, product, variant, batch, userData)
+  /**
+   * Get all data items for an app within a scope.
+   * 
+   * @param opts - Options including appId and scope (collectionId, productId, etc.)
+   * @returns Array of data items
+   * 
+   * @example
+   * ```typescript
+   * const items = await appConfiguration.getData({
+   *   appId: 'product-docs',
+   *   collectionId: 'my-collection',
+   *   productId: 'product-123'
+   * });
+   * ```
+   */
   export async function getData(opts: AppConfigOptions): Promise<any[]> {
     const path = buildAppPath(opts, "data")
     return request<any[]>(path)
   }
 
-  // Get a single data item (app, collection, product, variant, batch, userData)
+  /**
+   * Get a single data item by ID within a scope.
+   * 
+   * @param opts - Options including appId, scope, and itemId
+   * @returns The data item
+   * 
+   * @example
+   * ```typescript
+   * const item = await appConfiguration.getDataItem({
+   *   appId: 'product-docs',
+   *   collectionId: 'my-collection',
+   *   productId: 'product-123',
+   *   itemId: 'manual-1'
+   * });
+   * ```
+   */
   export async function getDataItem(opts: AppConfigOptions): Promise<any> {
     if (!opts.itemId) throw new Error("itemId is required for getDataItem")
     const path = buildAppPath(opts, "dataItem")
     return request<any>(path)
   }
 
-  // Set a data item (app, collection, product, variant, batch, userData)
+  /**
+   * Set/create a data item within a scope.
+   * Requires admin authentication.
+   * 
+   * @param opts - Options including appId, scope, and data
+   * @returns The saved data item
+   * 
+   * @example
+   * ```typescript
+   * await appConfiguration.setDataItem({
+   *   appId: 'product-docs',
+   *   collectionId: 'my-collection',
+   *   productId: 'product-123',
+   *   admin: true,
+   *   data: { id: 'manual-1', title: 'User Manual', url: 'https://...' }
+   * });
+   * ```
+   */
   export async function setDataItem(opts: AppConfigOptions): Promise<any> {
     const path = buildAppPath(opts, "data")
     return post<any>(path, opts.data)
   }
 
-  // Delete a data item (app, collection, product, variant, batch, userData)
+  /**
+   * Delete a data item by ID within a scope.
+   * Requires admin authentication.
+   * 
+   * @param opts - Options including appId, scope, and itemId
+   * 
+   * @example
+   * ```typescript
+   * await appConfiguration.deleteDataItem({
+   *   appId: 'product-docs',
+   *   collectionId: 'my-collection',
+   *   productId: 'product-123',
+   *   admin: true,
+   *   itemId: 'manual-1'
+   * });
+   * ```
+   */
   export async function deleteDataItem(opts: AppConfigOptions): Promise<void> {
     if (!opts.itemId) throw new Error("itemId is required for deleteDataItem")
     const path = buildAppPath(opts, "dataItem")
