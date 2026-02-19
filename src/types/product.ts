@@ -40,6 +40,14 @@ export interface Product {
   data: {
     [key: string]: any
   } // Flexible key/value data map
+  /** Admin-only configuration */
+  admin?: {
+    /** Allow users to claim this product without providing a proof ID (overrides collection setting) */
+    allowAutoGenerateClaims?: boolean
+    /** Last generated serial ID for auto-claim functionality */
+    lastSerialId?: number
+    [key: string]: any
+  }
 }
 
 // Backwards compatibility alias

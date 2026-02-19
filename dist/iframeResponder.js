@@ -33,7 +33,6 @@ import { getBaseURL } from './http';
  */
 export class IframeResponder {
     constructor(options) {
-        var _a;
         this.iframe = null;
         this.uploads = new Map();
         this.isInitialLoad = true;
@@ -41,17 +40,6 @@ export class IframeResponder {
         this.resizeHandler = null;
         this.appUrl = null;
         this.resolveReady = null;
-        console.log('[IframeResponder] Constructor called', {
-            collectionId: options.collectionId,
-            appId: options.appId,
-            productId: options.productId,
-            hasCache: !!options.cache,
-            hasCachedApps: !!((_a = options.cache) === null || _a === void 0 ? void 0 : _a.apps),
-        });
-        console.log('[IframeResponder] SDK version check:', {
-            hasCache: typeof cache !== 'undefined',
-            hasCacheGetOrFetch: typeof (cache === null || cache === void 0 ? void 0 : cache.getOrFetch) === 'function',
-        });
         this.options = options;
         this.cache = options.cache || {};
         // Create ready promise
@@ -62,7 +50,6 @@ export class IframeResponder {
         this.resolveAppUrl()
             .then(() => {
             var _a;
-            console.log('[IframeResponder] App URL resolved successfully:', this.appUrl);
             (_a = this.resolveReady) === null || _a === void 0 ? void 0 : _a.call(this);
         })
             .catch((err) => {
@@ -78,9 +65,7 @@ export class IframeResponder {
      * Returns the src URL to set on the iframe.
      */
     async attach(iframe) {
-        console.log('[IframeResponder] attach() called, waiting for ready...');
         await this.ready;
-        console.log('[IframeResponder] Ready resolved, appUrl:', this.appUrl);
         this.iframe = iframe;
         // Set up message listener
         this.messageHandler = this.handleMessage.bind(this);
@@ -90,7 +75,6 @@ export class IframeResponder {
         window.addEventListener('resize', this.resizeHandler);
         window.addEventListener('orientationchange', this.resizeHandler);
         const src = this.buildIframeSrc();
-        console.log('[IframeResponder] Built iframe src:', src);
         return src;
     }
     /**
@@ -120,42 +104,30 @@ export class IframeResponder {
     // ===========================================================================
     async resolveAppUrl() {
         var _a, _b;
-        console.log('[IframeResponder] resolveAppUrl started');
         // Use explicit override if provided
         if (this.options.appUrl) {
             this.appUrl = this.options.appUrl;
-            console.log('[IframeResponder] Using override URL:', this.appUrl);
             return;
         }
         // Check pre-populated cache
         const cachedApps = this.cache.apps;
         if (cachedApps) {
-            console.log('[IframeResponder] Found cached apps:', cachedApps.length);
             const app = cachedApps.find(a => a.id === this.options.appId);
             if (app) {
                 this.appUrl = this.getVersionUrl(app);
-                console.log('[IframeResponder] Using cached app URL:', this.appUrl);
                 return;
             }
-            console.log('[IframeResponder] App not found in cache, fetching from API');
-        }
-        else {
-            console.log('[IframeResponder] No cached apps, fetching from API');
         }
         // Fetch from API with caching
         try {
-            console.log('[IframeResponder] Calling cache.getOrFetch for apps');
             const appsConfig = await cache.getOrFetch(`apps:${this.options.collectionId}`, () => collection.getAppsConfig(this.options.collectionId), { ttl: 5 * 60 * 1000, storage: 'session' });
-            console.log('[IframeResponder] Got appsConfig from API:', appsConfig);
             const apps = appsConfig.apps;
-            console.log('[IframeResponder] Extracted apps array:', apps === null || apps === void 0 ? void 0 : apps.length, apps);
             const app = apps.find(a => a.id === this.options.appId);
             if (!app) {
                 console.error('[IframeResponder] App not found:', this.options.appId, 'Available:', apps.map(a => a.id));
                 throw new Error(`App "${this.options.appId}" not found in collection "${this.options.collectionId}"`);
             }
             this.appUrl = this.getVersionUrl(app);
-            console.log('[IframeResponder] Resolved app URL:', this.appUrl);
         }
         catch (err) {
             console.error('[IframeResponder] resolveAppUrl error:', err);
@@ -175,9 +147,7 @@ export class IframeResponder {
     // ===========================================================================
     buildIframeSrc() {
         var _a, _b;
-        console.log('[IframeResponder] buildIframeSrc called, appUrl:', this.appUrl);
         if (!this.appUrl) {
-            console.error('[IframeResponder] Cannot build src - appUrl is null!');
             throw new Error('App URL not resolved');
         }
         const params = new URLSearchParams();
@@ -221,7 +191,6 @@ export class IframeResponder {
         let finalUrl = this.appUrl;
         // Check if this URL uses hash routing (has a # in it)
         const hasHash = finalUrl.includes('#');
-        console.log('[IframeResponder] URL has hash routing:', hasHash);
         if (hasHash) {
             // Hash-routed app - build params into the hash portion
             const [baseWithHash, existingQuery = ''] = finalUrl.split('?');
@@ -250,7 +219,6 @@ export class IframeResponder {
             params.forEach((value, key) => url.searchParams.set(key, value));
             finalUrl = url.toString();
         }
-        console.log('[IframeResponder] Final iframe URL:', finalUrl);
         return finalUrl;
     }
     // ===========================================================================
@@ -277,8 +245,9 @@ export class IframeResponder {
             return;
         }
         const data = event.data;
-        if (!data || typeof data !== 'object')
+        if (!data || typeof data !== 'object') {
             return;
+        }
         // Route changes (deep linking)
         if (data.type === 'smartlinks-route-change') {
             this.handleRouteChange(data);
@@ -295,7 +264,7 @@ export class IframeResponder {
             return;
         }
         // API proxy requests
-        if (data._smartlinksProxyRequest) {
+        if (data._smartlinksProxyRequest || data._smartlinksCustomProxyRequest) {
             await this.handleProxyRequest(data, event);
             return;
         }
@@ -437,6 +406,7 @@ export class IframeResponder {
             if (!baseUrl) {
                 throw new Error('SDK not initialized - call initializeApi() first');
             }
+            const fullUrl = `${baseUrl}/${path}`;
             const fetchOptions = {
                 method: proxyData.method,
                 headers: proxyData.headers,
@@ -445,34 +415,41 @@ export class IframeResponder {
                 fetchOptions.body = JSON.stringify(proxyData.body);
                 fetchOptions.headers = Object.assign(Object.assign({}, fetchOptions.headers), { 'Content-Type': 'application/json' });
             }
-            const fetchResponse = await fetch(`${baseUrl}/${path}`, fetchOptions);
-            response.data = await fetchResponse.json();
+            const fetchResponse = await fetch(fullUrl, fetchOptions);
+            const responseData = await fetchResponse.json();
+            response.data = responseData;
         }
         catch (err) {
+            console.error('[IframeResponder] Proxy request error:', err);
             response.error = (err === null || err === void 0 ? void 0 : err.message) || 'Unknown error';
             (_c = (_b = this.options).onError) === null || _c === void 0 ? void 0 : _c.call(_b, err);
         }
         this.sendResponse(event, response);
     }
     getCachedResponse(path) {
-        // Collection request
-        if (path.includes('/collection/') && this.cache.collection) {
-            const match = path.match(/collection\/([^/]+)/);
-            if (match && match[1] === this.options.collectionId) {
+        // App data endpoints should NOT be cached - they need fresh data from API
+        // These are the new separated app config endpoints
+        if (path.includes('/app/') && (path.includes('/data') || path.match(/\/app\/[^/]+$/))) {
+            return null;
+        }
+        // Collection request - ONLY match direct collection endpoint, not app config endpoints
+        if (this.cache.collection) {
+            const collectionMatch = path.match(/^public\/collection\/([^/]+)$/);
+            if (collectionMatch && collectionMatch[1] === this.options.collectionId) {
                 return JSON.parse(JSON.stringify(this.cache.collection));
             }
         }
-        // Product request
-        if (path.includes('/product/') && this.cache.product && this.options.productId) {
-            const match = path.match(/product\/([^/]+)/);
-            if (match && match[1] === this.options.productId) {
+        // Product request - ONLY match direct product endpoint, not app config endpoints
+        if (this.cache.product && this.options.productId) {
+            const productMatch = path.match(/^public\/collection\/[^/]+\/product\/([^/]+)$/);
+            if (productMatch && productMatch[1] === this.options.productId) {
                 return JSON.parse(JSON.stringify(this.cache.product));
             }
         }
         // Proof request
-        if (path.includes('/proof/') && this.cache.proof && this.options.proofId) {
-            const match = path.match(/proof\/([^/]+)/);
-            if (match && match[1] === this.options.proofId) {
+        if (this.cache.proof && this.options.proofId) {
+            const proofMatch = path.match(/^public\/proof\/([^/]+)$/);
+            if (proofMatch && proofMatch[1] === this.options.proofId) {
                 return JSON.parse(JSON.stringify(this.cache.proof));
             }
         }

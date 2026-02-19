@@ -1,26 +1,6 @@
 // src/api/appConfiguration.ts
 import { request, post, del } from "../http";
 function buildAppPath(opts, type) {
-    // User-specific data is NEVER scoped to collection/product - it's global per user+app
-    if (opts.user || opts.userData) {
-        if (opts.collectionId || opts.productId) {
-            throw new Error("User data endpoints do not accept collectionId or productId. User data is shared across all collections for a given app.");
-        }
-        if (opts.user) {
-            // Single config blob: /public/auth/app/:appId
-            let path = `/public/auth/app/${encodeURIComponent(opts.appId)}`;
-            if (type === "data")
-                path += "/data";
-            if (type === "dataItem" && opts.itemId)
-                path += `/data/${encodeURIComponent(opts.itemId)}`;
-            return path;
-        }
-        // Multiple keyed data items: /public/auth/app/:appId/data or /public/auth/app/:appId/data/:itemId
-        let path = `/public/auth/app/${encodeURIComponent(opts.appId)}/data`;
-        if (type === "dataItem" && opts.itemId)
-            path += `/${encodeURIComponent(opts.itemId)}`;
-        return path;
-    }
     const base = opts.admin ? "admin" : "public";
     let path = `/${base}`;
     if (opts.collectionId) {
@@ -44,28 +24,204 @@ function buildAppPath(opts, type) {
     }
     return path;
 }
+/**
+ * User-specific app data storage.
+ * This data is global per user+app and shared across all collections.
+ * Perfect for personal preferences, settings, and user-generated content.
+ *
+ * @example
+ * ```typescript
+ * // Store user's garden bed layout
+ * await userAppData.set('garden-planner', {
+ *   id: 'bed-1',
+ *   name: 'Vegetable Bed',
+ *   plants: ['tomatoes', 'peppers']
+ * });
+ *
+ * // Get all user's data for this app
+ * const beds = await userAppData.list('garden-planner');
+ *
+ * // Get specific item
+ * const bed = await userAppData.get('garden-planner', 'bed-1');
+ *
+ * // Remove item
+ * await userAppData.remove('garden-planner', 'bed-1');
+ * ```
+ */
+export var userAppData;
+(function (userAppData) {
+    /**
+     * Get user's config blob for an app.
+     * This is a single JSON object stored per user+app.
+     *
+     * @param appId - The app ID
+     * @returns The user's config object
+     *
+     * @example
+     * ```typescript
+     * const config = await userAppData.getConfig('allergy-tracker');
+     * // Returns: { allergies: ['peanuts'], notifications: true }
+     * ```
+     */
+    async function getConfig(appId) {
+        const path = `/public/auth/app/${encodeURIComponent(appId)}`;
+        return request(path);
+    }
+    userAppData.getConfig = getConfig;
+    /**
+     * Set user's config blob for an app.
+     *
+     * @param appId - The app ID
+     * @param config - The config object to store
+     *
+     * @example
+     * ```typescript
+     * await userAppData.setConfig('allergy-tracker', {
+     *   allergies: ['peanuts', 'shellfish'],
+     *   notifications: true
+     * });
+     * ```
+     */
+    async function setConfig(appId, config) {
+        const path = `/public/auth/app/${encodeURIComponent(appId)}`;
+        return post(path, config);
+    }
+    userAppData.setConfig = setConfig;
+    /**
+     * Delete user's config blob for an app.
+     *
+     * @param appId - The app ID
+     *
+     * @example
+     * ```typescript
+     * await userAppData.deleteConfig('allergy-tracker');
+     * ```
+     */
+    async function deleteConfig(appId) {
+        const path = `/public/auth/app/${encodeURIComponent(appId)}`;
+        return del(path);
+    }
+    userAppData.deleteConfig = deleteConfig;
+    /**
+     * List all user's data items for an app.
+     * Returns an array of objects, each with an `id` field.
+     *
+     * @param appId - The app ID
+     * @returns Array of data items
+     *
+     * @example
+     * ```typescript
+     * const beds = await userAppData.list('garden-planner');
+     * // Returns: [{ id: 'bed-1', name: 'Vegetables', ... }, { id: 'bed-2', ... }]
+     * ```
+     */
+    async function list(appId) {
+        const path = `/public/auth/app/${encodeURIComponent(appId)}/data`;
+        return request(path);
+    }
+    userAppData.list = list;
+    /**
+     * Get a specific user data item by ID.
+     *
+     * @param appId - The app ID
+     * @param itemId - The item ID
+     * @returns The data item
+     *
+     * @example
+     * ```typescript
+     * const bed = await userAppData.get('garden-planner', 'bed-1');
+     * // Returns: { id: 'bed-1', name: 'Vegetable Bed', plants: [...] }
+     * ```
+     */
+    async function get(appId, itemId) {
+        const path = `/public/auth/app/${encodeURIComponent(appId)}/data/${encodeURIComponent(itemId)}`;
+        return request(path);
+    }
+    userAppData.get = get;
+    /**
+     * Create or update a user data item.
+     * The item object must include an `id` field.
+     *
+     * @param appId - The app ID
+     * @param item - The data item (must include `id`)
+     * @returns The saved item
+     *
+     * @example
+     * ```typescript
+     * await userAppData.set('garden-planner', {
+     *   id: 'bed-1',
+     *   name: 'Vegetable Bed',
+     *   plants: ['tomatoes', 'peppers'],
+     *   location: { x: 10, y: 20 }
+     * });
+     * ```
+     */
+    async function set(appId, item) {
+        const path = `/public/auth/app/${encodeURIComponent(appId)}/data`;
+        return post(path, item);
+    }
+    userAppData.set = set;
+    /**
+     * Delete a user data item by ID.
+     *
+     * @param appId - The app ID
+     * @param itemId - The item ID to delete
+     *
+     * @example
+     * ```typescript
+     * await userAppData.remove('garden-planner', 'bed-1');
+     * ```
+     */
+    async function remove(appId, itemId) {
+        const path = `/public/auth/app/${encodeURIComponent(appId)}/data/${encodeURIComponent(itemId)}`;
+        return del(path);
+    }
+    userAppData.remove = remove;
+})(userAppData || (userAppData = {}));
+/**
+ * Collection/Product-scoped app configuration.
+ * This is admin-managed configuration that applies to all users within the scope.
+ *
+ * @example
+ * ```typescript
+ * // Get collection-level app config
+ * const config = await appConfiguration.getConfig({
+ *   appId: 'warranty-portal',
+ *   collectionId: 'my-collection'
+ * });
+ *
+ * // Set product-level config (admin only)
+ * await appConfiguration.setConfig({
+ *   appId: 'warranty-portal',
+ *   collectionId: 'my-collection',
+ *   productId: 'product-123',
+ *   admin: true,
+ *   config: { warrantyPeriod: 24 }
+ * });
+ *
+ * // List product-level data items
+ * const items = await appConfiguration.getData({
+ *   appId: 'product-docs',
+ *   collectionId: 'my-collection',
+ *   productId: 'product-123'
+ * });
+ * ```
+ */
 export var appConfiguration;
 (function (appConfiguration) {
     /**
-     * Get app configuration.
+     * Get app configuration for a collection/product scope.
      *
-     * Supports two types of configuration:
-     * 1. **Collection/Product-scoped config** (set by admins): Provide `collectionId` and optionally `productId`
-     * 2. **User-scoped config** (set by individual users): Set `user: true` - DO NOT provide collectionId
-     *
-     * @example
-     * // Get user's personal app config (shared across all collections)
-     * const userConfig = await appConfiguration.getConfig({
-     *   appId: 'garden-planner',
-     *   user: true
-     * });
+     * @param opts - Configuration options including appId and scope (collectionId, productId, etc.)
+     * @returns The configuration object
      *
      * @example
-     * // Get collection-level app config (set by admins)
-     * const collectionConfig = await appConfiguration.getConfig({
-     *   appId: 'garden-planner',
+     * ```typescript
+     * const config = await appConfiguration.getConfig({
+     *   appId: 'warranty-portal',
      *   collectionId: 'my-collection'
      * });
+     * ```
      */
     async function getConfig(opts) {
         const path = buildAppPath(opts, "config");
@@ -73,19 +229,21 @@ export var appConfiguration;
     }
     appConfiguration.getConfig = getConfig;
     /**
-     * Set app configuration.
+     * Set app configuration for a collection/product scope.
+     * Requires admin authentication.
      *
-     * Supports two types of configuration:
-     * 1. **Collection/Product-scoped config** (set by admins): Provide `collectionId` and optionally `productId`
-     * 2. **User-scoped config** (set by individual users): Set `user: true` - DO NOT provide collectionId
+     * @param opts - Configuration options including appId, scope, and config data
+     * @returns The saved configuration
      *
      * @example
-     * // Save user's personal app config (shared across all collections)
+     * ```typescript
      * await appConfiguration.setConfig({
-     *   appId: 'allergy-tracker',
-     *   user: true,
-     *   config: { allergies: ['peanuts', 'shellfish'] }
+     *   appId: 'warranty-portal',
+     *   collectionId: 'my-collection',
+     *   admin: true,
+     *   config: { warrantyPeriod: 24, supportEmail: 'support@example.com' }
      * });
+     * ```
      */
     async function setConfig(opts) {
         const path = buildAppPath(opts, "config");
@@ -93,15 +251,19 @@ export var appConfiguration;
     }
     appConfiguration.setConfig = setConfig;
     /**
-     * Delete app configuration.
-     * Only supports user-scoped config deletion.
+     * Delete app configuration for a collection/product scope.
+     * Requires admin authentication.
+     *
+     * @param opts - Configuration options including appId and scope
      *
      * @example
-     * // Delete user's personal app config
+     * ```typescript
      * await appConfiguration.deleteConfig({
-     *   appId: 'garden-planner',
-     *   user: true
+     *   appId: 'warranty-portal',
+     *   collectionId: 'my-collection',
+     *   admin: true
      * });
+     * ```
      */
     async function deleteConfig(opts) {
         const path = buildAppPath(opts, "config");
@@ -109,19 +271,19 @@ export var appConfiguration;
     }
     appConfiguration.deleteConfig = deleteConfig;
     /**
-     * Get all data items for an app.
+     * Get all data items for an app within a scope.
      *
-     * Supports two types of data storage:
-     * 1. **Collection/Product-scoped data** (managed by admins): Provide `collectionId` and optionally `productId`
-     * 2. **User-scoped data** (managed by individual users): Set `userData: true` - DO NOT provide collectionId
+     * @param opts - Options including appId and scope (collectionId, productId, etc.)
+     * @returns Array of data items
      *
      * @example
-     * // Get all user's personal data items (shared across all collections)
-     * const userItems = await appConfiguration.getData({
-     *   appId: 'garden-planner',
-     *   userData: true
+     * ```typescript
+     * const items = await appConfiguration.getData({
+     *   appId: 'product-docs',
+     *   collectionId: 'my-collection',
+     *   productId: 'product-123'
      * });
-     * // Returns: [{ id: 'bed-1', ... }, { id: 'bed-2', ... }]
+     * ```
      */
     async function getData(opts) {
         const path = buildAppPath(opts, "data");
@@ -129,19 +291,20 @@ export var appConfiguration;
     }
     appConfiguration.getData = getData;
     /**
-     * Get a single data item by ID.
+     * Get a single data item by ID within a scope.
      *
-     * Supports two types of data storage:
-     * 1. **Collection/Product-scoped data** (managed by admins): Provide `collectionId` and optionally `productId`
-     * 2. **User-scoped data** (managed by individual users): Set `userData: true` - DO NOT provide collectionId
+     * @param opts - Options including appId, scope, and itemId
+     * @returns The data item
      *
      * @example
-     * // Get user's personal data item (shared across all collections)
-     * const bed = await appConfiguration.getDataItem({
-     *   appId: 'garden-planner',
-     *   userData: true,
-     *   itemId: 'bed-1'
+     * ```typescript
+     * const item = await appConfiguration.getDataItem({
+     *   appId: 'product-docs',
+     *   collectionId: 'my-collection',
+     *   productId: 'product-123',
+     *   itemId: 'manual-1'
      * });
+     * ```
      */
     async function getDataItem(opts) {
         if (!opts.itemId)
@@ -151,23 +314,22 @@ export var appConfiguration;
     }
     appConfiguration.getDataItem = getDataItem;
     /**
-     * Set/create a data item.
+     * Set/create a data item within a scope.
+     * Requires admin authentication.
      *
-     * Supports two types of data storage:
-     * 1. **Collection/Product-scoped data** (managed by admins): Provide `collectionId` and optionally `productId`
-     * 2. **User-scoped data** (managed by individual users): Set `userData: true` - DO NOT provide collectionId
+     * @param opts - Options including appId, scope, and data
+     * @returns The saved data item
      *
      * @example
-     * // Save user's personal data item (shared across all collections)
+     * ```typescript
      * await appConfiguration.setDataItem({
-     *   appId: 'garden-planner',
-     *   userData: true,
-     *   data: {
-     *     id: 'bed-1',
-     *     name: 'Vegetable Bed',
-     *     plants: ['tomatoes', 'peppers']
-     *   }
+     *   appId: 'product-docs',
+     *   collectionId: 'my-collection',
+     *   productId: 'product-123',
+     *   admin: true,
+     *   data: { id: 'manual-1', title: 'User Manual', url: 'https://...' }
      * });
+     * ```
      */
     async function setDataItem(opts) {
         const path = buildAppPath(opts, "data");
@@ -175,19 +337,21 @@ export var appConfiguration;
     }
     appConfiguration.setDataItem = setDataItem;
     /**
-     * Delete a data item by ID.
+     * Delete a data item by ID within a scope.
+     * Requires admin authentication.
      *
-     * Supports two types of data storage:
-     * 1. **Collection/Product-scoped data** (managed by admins): Provide `collectionId` and optionally `productId`
-     * 2. **User-scoped data** (managed by individual users): Set `userData: true` - DO NOT provide collectionId
+     * @param opts - Options including appId, scope, and itemId
      *
      * @example
-     * // Delete user's personal data item
+     * ```typescript
      * await appConfiguration.deleteDataItem({
-     *   appId: 'garden-planner',
-     *   userData: true,
-     *   itemId: 'bed-1'
+     *   appId: 'product-docs',
+     *   collectionId: 'my-collection',
+     *   productId: 'product-123',
+     *   admin: true,
+     *   itemId: 'manual-1'
      * });
+     * ```
      */
     async function deleteDataItem(opts) {
         if (!opts.itemId)

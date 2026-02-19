@@ -4,6 +4,8 @@ The SmartLinks platform provides two distinct types of data storage for apps:
 
 ## 1. User-Specific Data (Global per User+App)
 
+**Use the `userAppData` namespace for all user-specific data.**
+
 User data is **shared across all collections** for a given user and app. This is perfect for storing user preferences, personal settings, and user-generated content that should persist regardless of which collection they're viewing.
 
 ### Use Cases
@@ -29,76 +31,53 @@ DELETE /public/auth/app/:appId/data/:itemId - Delete a user data item
 
 #### Single Config Blob (Simple Key-Value)
 ```typescript
-import { appConfiguration } from '@proveanything/smartlinks';
+import { userAppData } from '@proveanything/smartlinks';
 
 // Get user's config
-const config = await appConfiguration.getConfig({ 
-  appId: 'allergy-tracker', 
-  user: true 
-});
+const config = await userAppData.getConfig('allergy-tracker');
 
 // Save user's config
-await appConfiguration.setConfig({ 
-  appId: 'allergy-tracker', 
-  user: true,
-  config: { 
-    allergies: ['peanuts', 'shellfish'],
-    notifications: true 
-  }
+await userAppData.setConfig('allergy-tracker', { 
+  allergies: ['peanuts', 'shellfish'],
+  notifications: true 
 });
 
 // Delete user's config
-await appConfiguration.deleteConfig({ 
-  appId: 'allergy-tracker', 
-  user: true 
-});
+await userAppData.deleteConfig('allergy-tracker');
 ```
 
 #### Multiple Keyed Data Items (Recommended)
 ```typescript
 // Get all user's garden beds
-const beds = await appConfiguration.getData({ 
-  appId: 'garden-planner', 
-  userData: true 
-});
+const beds = await userAppData.list('garden-planner');
 // Returns: [{ id: 'bed-1', name: 'Vegetables', ... }, { id: 'bed-2', ... }]
 
 // Get specific bed
-const bed = await appConfiguration.getDataItem({ 
-  appId: 'garden-planner', 
-  userData: true,
-  itemId: 'bed-1'
-});
+const bed = await userAppData.get('garden-planner', 'bed-1');
 
 // Save/update a bed
-await appConfiguration.setDataItem({ 
-  appId: 'garden-planner', 
-  userData: true,
-  data: { 
-    id: 'bed-1', 
-    name: 'Vegetable Bed', 
-    plants: ['tomatoes', 'peppers'],
-    location: { x: 10, y: 20 }
-  }
+await userAppData.set('garden-planner', { 
+  id: 'bed-1', 
+  name: 'Vegetable Bed', 
+  plants: ['tomatoes', 'peppers'],
+  location: { x: 10, y: 20 }
 });
 
 // Delete a bed
-await appConfiguration.deleteDataItem({ 
-  appId: 'garden-planner', 
-  userData: true,
-  itemId: 'bed-1'
-});
+await userAppData.remove('garden-planner', 'bed-1');
 ```
 
 ### Important Notes
-- ⚠️ **DO NOT** provide `collectionId` or `productId` when using `user: true` or `userData: true`
-- User data requires authentication (Bearer token)
-- Data is automatically scoped to the authenticated user
-- The SDK will throw an error if you try to mix user data with collection/product scoping
+- ✅ **Clean, simple API** - Just pass the `appId` (no collection/product scoping)
+- ✅ User data requires authentication (Bearer token)
+- ✅ Data is automatically scoped to the authenticated user
+- ✅ Impossible to accidentally scope to collections
 
 ---
 
 ## 2. Collection/Product-Scoped Data (Admin Configuration)
+
+**Use the `appConfiguration` namespace for collection/product-scoped data.**
 
 This data is scoped to specific collections, products, variants, or batches. It's typically configured by collection admins/owners and applies to all users viewing that collection/product.
 
@@ -123,6 +102,8 @@ POST   /admin/collection/:collectionId/product/:productId/app/:appId/data
 ### SDK Usage
 
 ```typescript
+import { appConfiguration } from '@proveanything/smartlinks';
+
 // Get collection-level app config
 const collectionConfig = await appConfiguration.getConfig({ 
   appId: 'warranty-portal', 
@@ -167,18 +148,17 @@ await appConfiguration.setDataItem({
 
 | Feature | User Data | Collection/Product Data |
 |---------|-----------|------------------------|
+| **Namespace** | `userAppData` | `appConfiguration` |
 | **Scope** | User + App (global) | Collection/Product/Variant/Batch |
 | **Set by** | Individual users | Collection admins/owners |
 | **Shared across collections?** | ✅ Yes | ❌ No |
 | **Requires auth?** | ✅ Yes (user token) | ✅ Yes (admin token for write) |
-| **SDK flags** | `user: true` or `userData: true` | `collectionId` (and optionally `productId`, etc.) |
+| **Function signature** | Simple: `set(appId, data)` | Options object: `setDataItem({ appId, collectionId, data })` |
 | **Admin write required?** | ❌ No | ✅ Yes (for write operations) |
 
 ---
 
 ## Migration from Old SDK
-
-If you're migrating from the old SDK, here's the mapping:
 
 ### Old SDK → New SDK
 
@@ -186,68 +166,58 @@ If you're migrating from the old SDK, here's the mapping:
 // OLD: Get user config
 RemoteApi.get({ path: `public/auth/app/${appId}` })
 // NEW:
-appConfiguration.getConfig({ appId, user: true })
+userAppData.getConfig(appId)
 
 // OLD: Set user config
 RemoteApi.post({ path: `public/auth/app/${appId}`, data })
 // NEW:
-appConfiguration.setConfig({ appId, user: true, config: data })
+userAppData.setConfig(appId, data)
 
 // OLD: Get user data items
 RemoteApi.get({ path: `public/auth/app/${appId}/data` })
 // NEW:
-appConfiguration.getData({ appId, userData: true })
+userAppData.list(appId)
 
 // OLD: Get user data item
 RemoteApi.get({ path: `public/auth/app/${appId}/data/${itemId}` })
 // NEW:
-appConfiguration.getDataItem({ appId, userData: true, itemId })
+userAppData.get(appId, itemId)
 
 // OLD: Set user data item
 RemoteApi.post({ path: `public/auth/app/${appId}/data`, data: item })
 // NEW:
-appConfiguration.setDataItem({ appId, userData: true, data: item })
+userAppData.set(appId, item)
 
 // OLD: Delete user data item
 RemoteApi.delete({ path: `public/auth/app/${appId}/data/${itemId}` })
 // NEW:
-appConfiguration.deleteDataItem({ appId, userData: true, itemId })
+userAppData.remove(appId, itemId)
 ```
 
 ---
 
-## Common Mistakes to Avoid
+## Complete API Reference
 
-❌ **Wrong: Passing collectionId with user data**
-```typescript
-await appConfiguration.getData({ 
-  appId: 'garden-planner',
-  userData: true,
-  collectionId: 'my-collection' // ❌ ERROR!
-});
-```
+### `userAppData` (User-Specific Data)
 
-✅ **Correct: User data without collection scope**
-```typescript
-await appConfiguration.getData({ 
-  appId: 'garden-planner',
-  userData: true // ✅ Shared across all collections
-});
-```
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `getConfig` | `(appId: string) => Promise<any>` | Get user's config blob |
+| `setConfig` | `(appId: string, config: any) => Promise<any>` | Set user's config blob |
+| `deleteConfig` | `(appId: string) => Promise<void>` | Delete user's config blob |
+| `list` | `(appId: string) => Promise<any[]>` | List all user's data items |
+| `get` | `(appId: string, itemId: string) => Promise<any>` | Get specific data item |
+| `set` | `(appId: string, item: any) => Promise<any>` | Create/update data item |
+| `remove` | `(appId: string, itemId: string) => Promise<void>` | Delete data item |
 
-❌ **Wrong: Using user flag for collection config**
-```typescript
-await appConfiguration.getConfig({ 
-  appId: 'warranty-portal',
-  collectionId: 'my-collection',
-  user: true // ❌ Contradictory!
-});
-```
+### `appConfiguration` (Collection/Product-Scoped Data)
 
-✅ **Correct: Collection config without user flag**
-```typescript
-await appConfiguration.getConfig({ 
-  appId: 'warranty-portal',
-  collectionId: 'my-collection' // ✅ Collection-scoped
-});
-```
+| Function | Signature | Description |
+|----------|-----------|-------------|
+| `getConfig` | `(opts: AppConfigOptions) => Promise<any>` | Get config for scope |
+| `setConfig` | `(opts: AppConfigOptions) => Promise<any>` | Set config for scope |
+| `deleteConfig` | `(opts: AppConfigOptions) => Promise<void>` | Delete config for scope |
+| `getData` | `(opts: AppConfigOptions) => Promise<any[]>` | List data items in scope |
+| `getDataItem` | `(opts: AppConfigOptions) => Promise<any>` | Get specific data item |
+| `setDataItem` | `(opts: AppConfigOptions) => Promise<any>` | Create/update data item |
+| `deleteDataItem` | `(opts: AppConfigOptions) => Promise<void>` | Delete data item |

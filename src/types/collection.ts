@@ -64,7 +64,15 @@ export interface Collection {
   shortId: string, // The shortId of this collection
   /** if dark mode is enabled for this collection */
   dark?: boolean // if dark mode is enabled for this collection
+  /** Primary theme color */
+  primaryColor?: string
+  /** Secondary theme color */
+  secondaryColor?: string
   portalUrl?: string // URL for the collection's portal (if applicable)
+  /** Allow users to claim products without providing a proof ID (auto-generates serial on-demand) */
+  allowAutoGenerateClaims?: boolean
+
+  defaultAuthKitId: string // default auth kit for this collection, used for auth
 }
 
 // Backwards compatibility alias
@@ -117,6 +125,8 @@ export interface AppConfig {
     proof: boolean;  // use at the proof level
     widget: boolean; // has a widget component available
   }
+
+  directComponent: boolean; // Whether the app provides a direct React component for embedding (instead of using an iframe)
   
   // Additional app definition fields
   [key: string]: any

@@ -180,6 +180,7 @@ export function initializeApi(options: {
   apiKey = options.apiKey
   bearerToken = options.bearerToken
   proxyMode = !!options.proxyMode
+  
   // Auto-enable ngrok skip header if domain contains .ngrok.io and user did not explicitly set the flag.
   // Infer ngrok usage from common domains (.ngrok.io or .ngrok-free.dev)
   const inferredNgrok = /(\.ngrok\.io|\.ngrok-free\.dev)(\b|\/)/i.test(baseURL)
@@ -239,6 +240,7 @@ function ensureProxyListener() {
   if ((window as any)._smartlinksProxyListener) return
   window.addEventListener("message", (event) => {
     const msg = event.data
+    
     if (!msg || !msg._smartlinksProxyResponse || !msg.id) return
     logDebug('[smartlinks] proxy:response', { id: msg.id, ok: !msg.error, keys: Object.keys(msg) })
     const pending = proxyPending[msg.id]
@@ -285,9 +287,11 @@ async function proxyRequest<T>(
     headers,
     options,
   }
+  
   logDebug('[smartlinks] proxy:postMessage', { id, method, path, headers: headers ? redactHeaders(headers) : undefined, hasBody: !!body })
   return new Promise<T>((resolve, reject) => {
     proxyPending[id] = { resolve, reject }
+    
     window.parent.postMessage(msg, "*")
     // Optionally: add a timeout here to reject if no response
   })

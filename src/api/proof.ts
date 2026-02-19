@@ -63,8 +63,8 @@ export namespace proof {
 
 
   /**
-   * Claim a proof for a product.
-   * PUT /public/collection/:collectionId/product/:productId/proof/:proofId
+   * Claim a proof for a product using a proof ID (serial number, NFC tag, etc.).
+   * PUT /public/collection/:collectionId/product/:productId/proof/:proofId/claim
    */
   export async function claim(
     collectionId: string,
@@ -74,6 +74,31 @@ export namespace proof {
   ): Promise<ProofResponse> {
     const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/claim`
     return put<ProofResponse>(path, values)
+  }
+
+  /**
+   * Claim a product without providing a proof ID.
+   * System auto-generates a unique serial number on-demand.
+   * Requires allowAutoGenerateClaims to be enabled on the collection or product.
+   * PUT /public/collection/:collectionId/product/:productId/proof/claim
+   * 
+   * @example
+   * ```typescript
+   * const proof = await proof.claimProduct(
+   *   'beauty-brand',
+   *   'moisturizer-pro',
+   *   { purchaseDate: '2026-02-17', store: 'Target' }
+   * );
+   * console.log('Auto-generated ID:', proof.id);
+   * ```
+   */
+  export async function claimProduct(
+    collectionId: string,
+    productId: string,
+    values?: ProofClaimRequest
+  ): Promise<ProofResponse> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/claim`
+    return put<ProofResponse>(path, values || {})
   }  
 
   /**

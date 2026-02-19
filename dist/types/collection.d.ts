@@ -62,7 +62,14 @@ export interface Collection {
     shortId: string;
     /** if dark mode is enabled for this collection */
     dark?: boolean;
+    /** Primary theme color */
+    primaryColor?: string;
+    /** Secondary theme color */
+    secondaryColor?: string;
     portalUrl?: string;
+    /** Allow users to claim products without providing a proof ID (auto-generates serial on-demand) */
+    allowAutoGenerateClaims?: boolean;
+    defaultAuthKitId: string;
 }
 export type CollectionResponse = Collection;
 export type CollectionCreateRequest = Omit<Collection, 'id' | 'shortId'>;
@@ -102,6 +109,7 @@ export interface AppConfig {
         proof: boolean;
         widget: boolean;
     };
+    directComponent: boolean;
     [key: string]: any;
 }
 /**

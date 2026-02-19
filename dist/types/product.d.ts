@@ -38,6 +38,14 @@ export interface Product {
     data: {
         [key: string]: any;
     };
+    /** Admin-only configuration */
+    admin?: {
+        /** Allow users to claim this product without providing a proof ID (overrides collection setting) */
+        allowAutoGenerateClaims?: boolean;
+        /** Last generated serial ID for auto-claim functionality */
+        lastSerialId?: number;
+        [key: string]: any;
+    };
 }
 export type ProductResponse = Product;
 export type ProductCreateRequest = Omit<Product, 'id' | 'collectionId'> & {

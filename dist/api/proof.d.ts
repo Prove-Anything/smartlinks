@@ -20,10 +20,27 @@ export declare namespace proof {
      */
     function update(collectionId: string, productId: string, proofId: string, values: ProofUpdateRequest): Promise<ProofResponse>;
     /**
-     * Claim a proof for a product.
-     * PUT /public/collection/:collectionId/product/:productId/proof/:proofId
+     * Claim a proof for a product using a proof ID (serial number, NFC tag, etc.).
+     * PUT /public/collection/:collectionId/product/:productId/proof/:proofId/claim
      */
     function claim(collectionId: string, productId: string, proofId: string, values: ProofClaimRequest): Promise<ProofResponse>;
+    /**
+     * Claim a product without providing a proof ID.
+     * System auto-generates a unique serial number on-demand.
+     * Requires allowAutoGenerateClaims to be enabled on the collection or product.
+     * PUT /public/collection/:collectionId/product/:productId/proof/claim
+     *
+     * @example
+     * ```typescript
+     * const proof = await proof.claimProduct(
+     *   'beauty-brand',
+     *   'moisturizer-pro',
+     *   { purchaseDate: '2026-02-17', store: 'Target' }
+     * );
+     * console.log('Auto-generated ID:', proof.id);
+     * ```
+     */
+    function claimProduct(collectionId: string, productId: string, values?: ProofClaimRequest): Promise<ProofResponse>;
     /**
      * Delete a proof for a product (admin only).
      * DELETE /admin/collection/:collectionId/product/:productId/proof/:proofId

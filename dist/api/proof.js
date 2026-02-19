@@ -42,14 +42,35 @@ export var proof;
     }
     proof.update = update;
     /**
-     * Claim a proof for a product.
-     * PUT /public/collection/:collectionId/product/:productId/proof/:proofId
+     * Claim a proof for a product using a proof ID (serial number, NFC tag, etc.).
+     * PUT /public/collection/:collectionId/product/:productId/proof/:proofId/claim
      */
     async function claim(collectionId, productId, proofId, values) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/claim`;
         return put(path, values);
     }
     proof.claim = claim;
+    /**
+     * Claim a product without providing a proof ID.
+     * System auto-generates a unique serial number on-demand.
+     * Requires allowAutoGenerateClaims to be enabled on the collection or product.
+     * PUT /public/collection/:collectionId/product/:productId/proof/claim
+     *
+     * @example
+     * ```typescript
+     * const proof = await proof.claimProduct(
+     *   'beauty-brand',
+     *   'moisturizer-pro',
+     *   { purchaseDate: '2026-02-17', store: 'Target' }
+     * );
+     * console.log('Auto-generated ID:', proof.id);
+     * ```
+     */
+    async function claimProduct(collectionId, productId, values) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/claim`;
+        return put(path, values || {});
+    }
+    proof.claimProduct = claimProduct;
     /**
      * Delete a proof for a product (admin only).
      * DELETE /admin/collection/:collectionId/product/:productId/proof/:proofId

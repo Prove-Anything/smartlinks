@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.3.36  |  Generated: 2026-02-17T08:49:16.873Z
+Version: 1.3.45  |  Generated: 2026-02-19T14:43:39.335Z
 
 This is a concise summary of all available API functions and types.
 
@@ -16,6 +16,8 @@ For detailed guides on specific features:
 - **[Liquid Templates](liquid-templates.md)** - Dynamic templating for content generation
 - **[Theme System](theme.system.md)** - Theme configuration and customization
 - **[Theme Defaults](theme-defaults.md)** - Default theme values and presets
+- **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)
+- **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage
 
 ## API Namespaces
 
@@ -1502,7 +1504,11 @@ interface Collection {
   redirectUrl?: string // Whether the collection has a custom domain
   shortId: string, // The shortId of this collection
   dark?: boolean // if dark mode is enabled for this collection
+  primaryColor?: string
+  secondaryColor?: string
   portalUrl?: string // URL for the collection's portal (if applicable)
+  allowAutoGenerateClaims?: boolean
+  defaultAuthKitId: string // default auth kit for this collection, used for auth
 }
 ```
 
@@ -1527,6 +1533,7 @@ interface AppConfig {
   proof: boolean;  // use at the proof level
   widget: boolean; // has a widget component available
   }
+  directComponent: boolean; // Whether the app provides a direct React component for embedding (instead of using an iframe)
   [key: string]: any
 }
 ```
@@ -3381,6 +3388,11 @@ interface Product {
   data: {
   [key: string]: any
   } // Flexible key/value data map
+  admin?: {
+  allowAutoGenerateClaims?: boolean
+  lastSerialId?: number
+  [key: string]: any
+  }
 }
 ```
 
@@ -3779,31 +3791,21 @@ type AppConfigOptions = {
   /** The app ID */
   appId: string
   
-  // Collection/Product scope (for admin-configured data)
-  /** Collection ID - only for collection/product-scoped data, NOT for user data */
+  /** Collection ID (required for most operations) */
   collectionId?: string
-  /** Product ID - only for product-scoped data */
+  /** Product ID (optional - for product-scoped config) */
   productId?: string
-  /** Variant ID - only for variant-scoped data */
+  /** Variant ID (optional - for variant-scoped config) */
   variantId?: string
-  /** Batch ID - only for batch-scoped data */
+  /** Batch ID (optional - for batch-scoped config) */
   batchId?: string
   
-  // User scope flags (mutually exclusive with collection scope)
-  /** For user's single config blob at /public/auth/app/:appId */
-  user?: boolean
-  /** For user's multiple keyed data items at /public/auth/app/:appId/data */
-  userData?: boolean
-  
-  // Item identification
   /** Item ID - required for getDataItem/deleteDataItem */
   itemId?: string
   
-  // Request mode
   /** Use admin endpoints instead of public */
   admin?: boolean
   
-  // Payload data
   /** Configuration object for setConfig */
   config?: any
   /** Data object for setDataItem */
@@ -3962,25 +3964,25 @@ Post a chat message to the AI (admin or public)
 ### appConfiguration
 
 **getConfig**(opts: AppConfigOptions) → `Promise<any>`
-Get app configuration. Supports two types of configuration: 1. **Collection/Product-scoped config** (set by admins): Provide `collectionId` and optionally `productId` 2. **User-scoped config** (set by individual users): Set `user: true` - DO NOT provide collectionId // Get user's personal app config (shared across all collections) const userConfig = await appConfiguration.getConfig({ appId: 'garden-planner', user: true }); // Get collection-level app config (set by admins) const collectionConfig = await appConfiguration.getConfig({ appId: 'garden-planner', collectionId: 'my-collection' });
+Get app configuration for a collection/product scope. ```typescript const config = await appConfiguration.getConfig({ appId: 'warranty-portal', collectionId: 'my-collection' }); ```
 
 **setConfig**(opts: AppConfigOptions) → `Promise<any>`
-Set app configuration. Supports two types of configuration: 1. **Collection/Product-scoped config** (set by admins): Provide `collectionId` and optionally `productId` 2. **User-scoped config** (set by individual users): Set `user: true` - DO NOT provide collectionId // Save user's personal app config (shared across all collections) await appConfiguration.setConfig({ appId: 'allergy-tracker', user: true, config: { allergies: ['peanuts', 'shellfish'] } });
+Set app configuration for a collection/product scope. Requires admin authentication. ```typescript await appConfiguration.setConfig({ appId: 'warranty-portal', collectionId: 'my-collection', admin: true, config: { warrantyPeriod: 24, supportEmail: 'support@example.com' } }); ```
 
 **deleteConfig**(opts: AppConfigOptions) → `Promise<void>`
-Delete app configuration. Only supports user-scoped config deletion. // Delete user's personal app config await appConfiguration.deleteConfig({ appId: 'garden-planner', user: true });
+Delete app configuration for a collection/product scope. Requires admin authentication. ```typescript await appConfiguration.deleteConfig({ appId: 'warranty-portal', collectionId: 'my-collection', admin: true }); ```
 
 **getData**(opts: AppConfigOptions) → `Promise<any[]>`
-Get all data items for an app. Supports two types of data storage: 1. **Collection/Product-scoped data** (managed by admins): Provide `collectionId` and optionally `productId` 2. **User-scoped data** (managed by individual users): Set `userData: true` - DO NOT provide collectionId // Get all user's personal data items (shared across all collections) const userItems = await appConfiguration.getData({ appId: 'garden-planner', userData: true }); // Returns: [{ id: 'bed-1', ... }, { id: 'bed-2', ... }]
+Get all data items for an app within a scope. ```typescript const items = await appConfiguration.getData({ appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123' }); ```
 
 **getDataItem**(opts: AppConfigOptions) → `Promise<any>`
-Get a single data item by ID. Supports two types of data storage: 1. **Collection/Product-scoped data** (managed by admins): Provide `collectionId` and optionally `productId` 2. **User-scoped data** (managed by individual users): Set `userData: true` - DO NOT provide collectionId // Get user's personal data item (shared across all collections) const bed = await appConfiguration.getDataItem({ appId: 'garden-planner', userData: true, itemId: 'bed-1' });
+Get a single data item by ID within a scope. ```typescript const item = await appConfiguration.getDataItem({ appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123', itemId: 'manual-1' }); ```
 
 **setDataItem**(opts: AppConfigOptions) → `Promise<any>`
-Set/create a data item. Supports two types of data storage: 1. **Collection/Product-scoped data** (managed by admins): Provide `collectionId` and optionally `productId` 2. **User-scoped data** (managed by individual users): Set `userData: true` - DO NOT provide collectionId // Save user's personal data item (shared across all collections) await appConfiguration.setDataItem({ appId: 'garden-planner', userData: true, data: { id: 'bed-1', name: 'Vegetable Bed', plants: ['tomatoes', 'peppers'] } });
+Set/create a data item within a scope. Requires admin authentication. ```typescript await appConfiguration.setDataItem({ appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123', admin: true, data: { id: 'manual-1', title: 'User Manual', url: 'https://...' } }); ```
 
 **deleteDataItem**(opts: AppConfigOptions) → `Promise<void>`
-Delete a data item by ID. Supports two types of data storage: 1. **Collection/Product-scoped data** (managed by admins): Provide `collectionId` and optionally `productId` 2. **User-scoped data** (managed by individual users): Set `userData: true` - DO NOT provide collectionId // Delete user's personal data item await appConfiguration.deleteDataItem({ appId: 'garden-planner', userData: true, itemId: 'bed-1' });
+Delete a data item by ID within a scope. Requires admin authentication. ```typescript await appConfiguration.deleteDataItem({ appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123', admin: true, itemId: 'manual-1' }); ```
 
 **getWidgets**(collectionId: string,
     options?: GetCollectionWidgetsOptions) → `Promise<CollectionWidgetsResponse>`
@@ -4860,7 +4862,12 @@ Update a proof for a product (admin only). PUT /admin/collection/:collectionId/p
     productId: string,
     proofId: string,
     values: ProofClaimRequest) → `Promise<ProofResponse>`
-Claim a proof for a product. PUT /public/collection/:collectionId/product/:productId/proof/:proofId
+Claim a proof for a product using a proof ID (serial number, NFC tag, etc.). PUT /public/collection/:collectionId/product/:productId/proof/:proofId/claim
+
+**claimProduct**(collectionId: string,
+    productId: string,
+    values?: ProofClaimRequest) → `Promise<ProofResponse>`
+Claim a product without providing a proof ID. System auto-generates a unique serial number on-demand. Requires allowAutoGenerateClaims to be enabled on the collection or product. PUT /public/collection/:collectionId/product/:productId/proof/claim ```typescript const proof = await proof.claimProduct( 'beauty-brand', 'moisturizer-pro', { purchaseDate: '2026-02-17', store: 'Target' } ); console.log('Auto-generated ID:', proof.id); ```
 
 **remove**(collectionId: string,
     productId: string,
@@ -5005,6 +5012,29 @@ Backward-compat: Public batch lookup (GET) with collectionId parameter (ignored)
 
 **renderSource**(collectionId: string,
     body: TemplateRenderSourceRequest) → `Promise<TemplateRenderSourceResponse>`
+
+### userAppData
+
+**getConfig**(appId: string) → `Promise<any>`
+Get user's config blob for an app. This is a single JSON object stored per user+app. ```typescript const config = await userAppData.getConfig('allergy-tracker'); // Returns: { allergies: ['peanuts'], notifications: true } ```
+
+**setConfig**(appId: string, config: any) → `Promise<any>`
+Set user's config blob for an app. ```typescript await userAppData.setConfig('allergy-tracker', { allergies: ['peanuts', 'shellfish'], notifications: true }); ```
+
+**deleteConfig**(appId: string) → `Promise<void>`
+Delete user's config blob for an app. ```typescript await userAppData.deleteConfig('allergy-tracker'); ```
+
+**list**(appId: string) → `Promise<any[]>`
+List all user's data items for an app. Returns an array of objects, each with an `id` field. ```typescript const beds = await userAppData.list('garden-planner'); // Returns: [{ id: 'bed-1', name: 'Vegetables', ... }, { id: 'bed-2', ... }] ```
+
+**get**(appId: string, itemId: string) → `Promise<any>`
+Get a specific user data item by ID. ```typescript const bed = await userAppData.get('garden-planner', 'bed-1'); // Returns: { id: 'bed-1', name: 'Vegetable Bed', plants: [...] } ```
+
+**set**(appId: string, item: any) → `Promise<any>`
+Create or update a user data item. The item object must include an `id` field. ```typescript await userAppData.set('garden-planner', { id: 'bed-1', name: 'Vegetable Bed', plants: ['tomatoes', 'peppers'], location: { x: 10, y: 20 } }); ```
+
+**remove**(appId: string, itemId: string) → `Promise<void>`
+Delete a user data item by ID. ```typescript await userAppData.remove('garden-planner', 'bed-1'); ```
 
 ### variant
 

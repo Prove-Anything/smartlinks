@@ -39,25 +39,45 @@ A **Collection** represents a top-level business, brand, or organization. All pr
 | Field | Type | Description |
 |-------|------|-------------|
 | `collection.id` | string | Unique identifier |
-| `collection.name` | string | Display name of the collection |
+| `collection.title` | string | Display title of the collection |
 | `collection.description` | string | Description text |
-| `collection.slug` | string | URL-friendly identifier |
-| `collection.logoUrl` | string | URL to the collection's logo image |
-| `collection.websiteUrl` | string | Primary website URL |
-| `collection.metadata` | object | Custom key-value metadata |
-| `collection.createdAt` | datetime | When the collection was created |
-| `collection.updatedAt` | datetime | When the collection was last updated |
+| `collection.shortId` | string | Short identifier for the collection |
+| `collection.logoImage.url` | string | URL to the collection's logo image |
+| `collection.logoImage.thumbnails.x100` | string | 100px thumbnail |
+| `collection.logoImage.thumbnails.x200` | string | 200px thumbnail |
+| `collection.logoImage.thumbnails.x512` | string | 512px thumbnail |
+| `collection.headerImage.url` | string | URL to collection header/hero image |
+| `collection.headerImage.thumbnails.*` | string | Header image thumbnails (x100, x200, x512) |
+| `collection.loaderImage.url` | string | URL to collection loader image |
+| `collection.primaryColor` | string | Primary theme color (hex code) |
+| `collection.secondaryColor` | string | Secondary theme color (hex code) |
+| `collection.dark` | boolean | Whether dark mode is enabled |
+| `collection.portalUrl` | string | URL for the collection's portal |
+| `collection.redirectUrl` | string | Custom domain redirect URL |
+| `collection.roles` | object | User roles mapping (userId → role) |
+| `collection.groupTags` | array | Array of group tag names |
+| `collection.languages` | array | Array of supported language objects |
+| `collection.defaultAuthKitId` | string | Default auth kit ID |
+| `collection.allowAutoGenerateClaims` | boolean | Allow claiming without proof ID |
 
 #### Example Usage
 
 ```liquid
-Welcome to {{ collection.name }}!
+Welcome to {{ collection.title }}!
 
-{% if collection.websiteUrl %}
-Visit us at {{ collection.websiteUrl }}
+{% if collection.portalUrl %}
+Visit our portal at {{ collection.portalUrl }}
 {% endif %}
 
-<img src="{{ collection.logoUrl }}" alt="{{ collection.name }} logo" />
+{% if collection.logoImage %}
+<img src="{{ collection.logoImage.url }}" alt="{{ collection.title }} logo" />
+<!-- Or use a thumbnail: -->
+<img src="{{ collection.logoImage.thumbnails.x200 }}" alt="{{ collection.title }} logo" />
+{% endif %}
+
+{% if collection.dark %}
+<!-- Dark mode is enabled -->
+{% endif %}
 ```
 
 ---
@@ -70,31 +90,44 @@ A **Product** represents a type or definition of a physical or digital item. Pro
 |-------|------|-------------|
 | `product.id` | string | Unique identifier |
 | `product.name` | string | Product name |
+| `product.collectionId` | string | ID of the parent collection |
 | `product.description` | string | Product description |
-| `product.sku` | string | Stock keeping unit |
-| `product.slug` | string | URL-friendly identifier |
-| `product.imageUrl` | string | Primary product image URL |
-| `product.images` | array | Array of image URLs |
-| `product.category` | string | Product category |
-| `product.tags` | array | Array of tag strings |
-| `product.metadata` | object | Custom key-value metadata |
-| `product.createdAt` | datetime | When the product was created |
-| `product.updatedAt` | datetime | When the product was last updated |
+| `product.gtin` | string | Global Trade Item Number |
+| `product.type` | string | Product type from standard types |
+| `product.heroImage.url` | string | Primary product image URL |
+| `product.heroImage.thumbnails.x100` | string | 100px thumbnail |
+| `product.heroImage.thumbnails.x200` | string | 200px thumbnail |
+| `product.heroImage.thumbnails.x512` | string | 512px thumbnail |
+| `product.tags` | object | Tag map with boolean values |
+| `product.data` | object | Flexible key-value data map |
+| `product.admin` | object | Admin-only configuration |
+| `product.admin.allowAutoGenerateClaims` | boolean | Allow claiming without proof ID |
+| `product.admin.lastSerialId` | number | Last generated serial ID |
 
 #### Example Usage
 
 ```liquid
-Your {{ product.name }} (SKU: {{ product.sku }})
+Your {{ product.name }}
 
 {{ product.description }}
 
-{% if product.tags.size > 0 %}
-Tags: {{ product.tags | join: ", " }}
+{% if product.gtin %}
+GTIN: {{ product.gtin }}
 {% endif %}
 
-{% for image in product.images %}
-<img src="{{ image }}" alt="{{ product.name }}" />
-{% endfor %}
+{% if product.heroImage %}
+<img src="{{ product.heroImage.url }}" alt="{{ product.name }}" />
+<!-- Or use a thumbnail: -->
+<img src="{{ product.heroImage.thumbnails.x512 }}" alt="{{ product.name }}" />
+{% endif %}
+
+{% if product.tags.premium %}
+🌟 Premium Product
+{% endif %}
+
+{% if product.data.warranty_years %}
+Warranty: {{ product.data.warranty_years }} years
+{% endif %}
 ```
 
 ---
@@ -106,34 +139,50 @@ A **Proof** is a specific instance of a product—think of it as a unique digita
 | Field | Type | Description |
 |-------|------|-------------|
 | `proof.id` | string | Unique identifier |
-| `proof.serialNumber` | string | Human-readable serial number |
-| `proof.claimed` | boolean | Whether the proof has been claimed |
-| `proof.claimedAt` | datetime | When the proof was claimed |
-| `proof.claimedBy` | string | User ID of the claimer |
-| `proof.status` | string | Current status (e.g., "active", "transferred") |
-| `proof.nfcTagId` | string | Associated NFC tag ID (if applicable) |
-| `proof.qrCode` | string | QR code identifier |
-| `proof.shortCode` | string | Short code for easy lookup |
-| `proof.metadata` | object | Custom key-value metadata |
+| `proof.collectionId` | string | ID of the parent collection |
+| `proof.productId` | string | ID of the associated product |
+| `proof.tokenId` | string | Unique token identifier |
+| `proof.userId` | string | User ID of the owner |
+| `proof.claimable` | boolean | Whether the proof can be claimed |
+| `proof.virtual` | boolean | Whether this is a virtual proof |
+| `proof.values` | object | Arbitrary key-value pairs for proof data |
 | `proof.createdAt` | datetime | When the proof was created |
-| `proof.updatedAt` | datetime | When the proof was last updated |
+
+**Note**: Proof `values` object can contain any custom fields. Common examples:
+- `proof.values.serialNumber` - Serial number
+- `proof.values.claimedAt` - Claim timestamp
+- `proof.values.status` - Current status
+- `proof.values.warrantyExpiry` - Warranty expiration
 
 #### Example Usage
 
 ```liquid
 Proof of Authenticity
 
-Serial Number: {{ proof.serialNumber }}
-Status: {{ proof.status }}
-
-{% if proof.claimed %}
-Claimed on: {{ proof.claimedAt | date: "%B %d, %Y at %H:%M" }}
-{% else %}
-This item has not been claimed yet.
+{% if proof.values.serialNumber %}
+Serial Number: {{ proof.values.serialNumber }}
 {% endif %}
 
-{% if proof.metadata.warrantyExpiry %}
-Warranty expires: {{ proof.metadata.warrantyExpiry | date: "%B %d, %Y" }}
+{% if proof.values.status %}
+Status: {{ proof.values.status }}
+{% endif %}
+
+{% if proof.claimable %}
+This item is available to claim.
+{% else %}
+This item has been claimed.
+{% endif %}
+
+{% if proof.virtual %}
+🌐 Digital Product
+{% endif %}
+
+{% if proof.values.claimedAt %}
+Claimed on: {{ proof.values.claimedAt | date: "%B %d, %Y at %H:%M" }}
+{% endif %}
+
+{% if proof.values.warrantyExpiry %}
+Warranty expires: {{ proof.values.warrantyExpiry | date: "%B %d, %Y" }}
 {% endif %}
 ```
 
@@ -145,25 +194,32 @@ A **Contact** represents a customer or user in the system. Contacts are associat
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `contact.id` | string | Unique identifier |
-| `contact.email` | string | Email address |
-| `contact.name` | string | Full name |
+| `contact.contactId` | string | Unique identifier |
+| `contact.orgId` | string | Organization/collection ID |
+| `contact.userId` | string | Linked user ID (if authenticated) |
+| `contact.email` | string | Primary email address |
+| `contact.phone` | string | Primary phone number |
+| `contact.emails` | array | Array of all email addresses |
+| `contact.phones` | array | Array of all phone numbers |
 | `contact.firstName` | string | First name |
 | `contact.lastName` | string | Last name |
-| `contact.phone` | string | Phone number |
+| `contact.displayName` | string | Display name |
+| `contact.company` | string | Company name |
+| `contact.avatarUrl` | string | Profile picture URL |
 | `contact.locale` | string | Preferred language/locale (e.g., "en", "de") |
 | `contact.timezone` | string | Preferred timezone |
-| `contact.avatarUrl` | string | Profile picture URL |
-| `contact.metadata` | object | Custom key-value metadata |
 | `contact.tags` | array | Array of tag strings for segmentation |
+| `contact.source` | string | How the contact was created |
+| `contact.notes` | string | Admin notes |
+| `contact.externalIds` | object | External system IDs |
+| `contact.customFields` | object | Custom key-value data |
 | `contact.createdAt` | datetime | When the contact was created |
 | `contact.updatedAt` | datetime | When the contact was last updated |
-| `contact.lastSeenAt` | datetime | Last activity timestamp |
 
 #### Example Usage
 
 ```liquid
-Hi {{ contact.firstName | default: contact.name | default: "there" }},
+Hi {{ contact.firstName | default: contact.displayName | default: "there" }},
 
 {% if contact.locale == "de" %}
 Willkommen!
@@ -176,6 +232,14 @@ Welcome!
 {% if contact.phone %}
 We'll send updates to {{ contact.phone }}.
 {% endif %}
+
+{% if contact.company %}
+Company: {{ contact.company }}
+{% endif %}
+
+{% if contact.customFields.vip %}
+🌟 VIP Customer
+{% endif %}
 ```
 
 ---
@@ -186,20 +250,18 @@ A **User** represents an authenticated account in the system. This is typically 
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `user.id` | string | Unique identifier |
+| `user.uid` | string | Unique identifier |
 | `user.email` | string | Email address |
-| `user.name` | string | Display name |
-| `user.admin` | boolean | Whether user has admin privileges |
-| `user.avatarUrl` | string | Profile picture URL |
-| `user.createdAt` | datetime | Account creation date |
+| `user.displayName` | string | Display name |
+| `user.accountData` | object | Account-specific data and settings |
 
 #### Example Usage
 
 ```liquid
-Logged in as: {{ user.name }} ({{ user.email }})
+Logged in as: {{ user.displayName }} ({{ user.email }})
 
-{% if user.admin %}
-🔐 You have administrator access.
+{% if user.accountData.preferences.notifications %}
+Notifications are enabled.
 {% endif %}
 ```
 
@@ -212,26 +274,33 @@ An **Attestation** is flexible data attached to a specific proof. It's used to s
 | Field | Type | Description |
 |-------|------|-------------|
 | `attestation.id` | string | Unique identifier |
-| `attestation.type` | string | Attestation type (app-defined) |
-| `attestation.data` | object | The attestation payload (varies by type) |
-| `attestation.createdBy` | string | User ID who created it |
+| `attestation.public` | object | Public attestation data (varies by type) |
+| `attestation.private` | object | Private attestation data (varies by type) |
+| `attestation.proof` | object | Associated proof reference/data |
 | `attestation.createdAt` | datetime | When the attestation was created |
 | `attestation.updatedAt` | datetime | When the attestation was last updated |
+
+**Note**: The `public` and `private` objects contain custom fields based on your use case.
 
 #### Example Usage
 
 ```liquid
-{% if attestation.type == "warranty_registration" %}
+{% if attestation.public.type == "warranty_registration" %}
 Warranty Registration Details:
 - Registered: {{ attestation.createdAt | date: "%B %d, %Y" }}
-- Purchase Date: {{ attestation.data.purchaseDate }}
-- Store: {{ attestation.data.storeName }}
+- Purchase Date: {{ attestation.public.purchaseDate }}
+- Store: {{ attestation.public.storeName }}
 {% endif %}
 
-{% if attestation.type == "tasting_note" %}
-🍷 Tasting Note by {{ attestation.data.author }}:
-"{{ attestation.data.notes }}"
-Rating: {{ attestation.data.rating }}/5
+{% if attestation.public.type == "tasting_note" %}
+🍷 Tasting Note:
+"{{ attestation.public.notes }}"
+Rating: {{ attestation.public.rating }}/5
+{% endif %}
+
+{% if attestation.private.internalNotes %}
+<!-- Private data only visible to admins -->
+Notes: {{ attestation.private.internalNotes }}
 {% endif %}
 ```
 
@@ -357,37 +426,37 @@ Loop variables:
 ```liquid
 Subject: Your {{ product.name }} has been registered!
 
-Hi {{ contact.firstName | default: "there" }},
+Hi {{ contact.firstName | default: contact.displayName | default: "there" }},
 
-Great news! Your {{ product.name }} (Serial: {{ proof.serialNumber }}) 
+Great news! Your {{ product.name }}{% if proof.values.serialNumber %} (Serial: {{ proof.values.serialNumber }}){% endif %} 
 has been successfully registered to your account.
 
-{% if product.metadata.warrantyYears %}
-Your warranty is valid for {{ product.metadata.warrantyYears }} years 
+{% if product.data.warranty_years %}
+Your warranty is valid for {{ product.data.warranty_years }} years 
 from the date of purchase.
 {% endif %}
 
-If you have any questions, please contact {{ collection.name }} support.
+If you have any questions, please contact {{ collection.title }} support.
 
 Best regards,
-The {{ collection.name }} Team
+The {{ collection.title }} Team
 ```
 
 ### Notification Messages
 
 ```liquid
 🎉 {{ contact.firstName }}, your {{ product.name }} is now verified!
-Proof ID: {{ proof.shortCode }}
+{% if proof.values.shortCode %}Proof ID: {{ proof.values.shortCode }}{% endif %}
 ```
 
 ### Dynamic Content Blocks
 
 ```liquid
-{% if proof.metadata.tier == "gold" %}
+{% if proof.values.tier == "gold" %}
   <div class="gold-benefits">
     As a Gold member, you get exclusive access to...
   </div>
-{% elsif proof.metadata.tier == "silver" %}
+{% elsif proof.values.tier == "silver" %}
   <div class="silver-benefits">
     Your Silver membership includes...
   </div>
@@ -413,18 +482,19 @@ Proof ID: {{ proof.shortCode }}
 
 ## Accessing Nested Data
 
-Use dot notation to access nested fields in metadata or data objects:
+Use dot notation to access nested fields in data objects:
 
 ```liquid
-{{ product.metadata.manufacturer }}
-{{ attestation.data.warranty.expiryDate }}
-{{ collection.metadata.social.twitter }}
+{{ product.data.manufacturer }}
+{{ attestation.public.warranty.expiryDate }}
+{{ contact.customFields.vip_level }}
+{{ proof.values.serialNumber }}
 ```
 
 For dynamic keys, you may need to use bracket notation (if supported):
 
 ```liquid
-{{ product.metadata["custom-field"] }}
+{{ product.data["custom-field"] }}
 ```
 
 ---
@@ -433,29 +503,29 @@ For dynamic keys, you may need to use bracket notation (if supported):
 
 1. **Always use `default` filter** for optional fields to avoid blank output:
    ```liquid
-   {{ contact.name | default: "Valued Customer" }}
+   {{ contact.displayName | default: contact.firstName | default: "Valued Customer" }}
    ```
 
 2. **Escape user-generated content** when outputting as HTML:
    ```liquid
-   {{ attestation.data.userNotes | escape }}
+   {{ attestation.public.userNotes | escape }}
    ```
 
 3. **Check for existence** before accessing nested data:
    ```liquid
-   {% if proof.metadata.warranty %}
-     Warranty: {{ proof.metadata.warranty.type }}
+   {% if proof.values.warranty %}
+     Warranty: {{ proof.values.warranty.type }}
    {% endif %}
    ```
 
 4. **Use meaningful fallbacks** for a better user experience:
    ```liquid
-   Hi {{ contact.firstName | default: contact.name | default: "there" }},
+   Hi {{ contact.firstName | default: contact.displayName | default: "there" }},
    ```
 
 5. **Format dates appropriately** for the user's locale:
    ```liquid
-   {{ proof.claimedAt | date: "%d %B %Y" }}
+   {{ proof.createdAt | date: "%d %B %Y" }}
    ```
 
 ---

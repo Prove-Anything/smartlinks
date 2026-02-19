@@ -253,7 +253,9 @@ function generateAPISummary(): void {
   summary += '- **[i18n](i18n.md)** - Internationalization and localization\n';
   summary += '- **[Liquid Templates](liquid-templates.md)** - Dynamic templating for content generation\n';
   summary += '- **[Theme System](theme.system.md)** - Theme configuration and customization\n';
-  summary += '- **[Theme Defaults](theme-defaults.md)** - Default theme values and presets\n\n';
+  summary += '- **[Theme Defaults](theme-defaults.md)** - Default theme values and presets\n';
+  summary += '- **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)\n';
+  summary += '- **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage\n\n';
   
   // Generate namespace overview
   const apiFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
