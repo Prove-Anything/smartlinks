@@ -1,4 +1,5 @@
-import { post, request, setBearerToken, getApiHeaders } from "../http"
+import { post, request, setBearerToken, getApiHeaders, hasAuthCredentials } from "../http"
+import { SmartlinksApiError } from "../types/error"
 import type { UserAccountRegistrationRequest } from "../types/auth"
 
 export type LoginResponse = {
@@ -145,8 +146,21 @@ export namespace auth {
   /**
    * Gets current account information for the logged in user.
    * Returns user, owner, account, and location objects.
+   *
+   * Short-circuits immediately (no network request) when the SDK has no
+   * bearer token or API key set — the server would return 401 anyway.
+   * Throws a `SmartlinksApiError` with `statusCode 401` and
+   * `details.local = true` so callers can distinguish "never authenticated"
+   * from an actual server-side token rejection.
    */
   export async function getAccount(): Promise<AccountInfoResponse> {
+    if (!hasAuthCredentials()) {
+      throw new SmartlinksApiError(
+        'Not authenticated: no bearer token or API key is set.',
+        401,
+        { code: 401, errorCode: 'NOT_AUTHENTICATED', message: 'Not authenticated: no bearer token or API key is set.', details: { local: true } },
+      )
+    }
     return request<AccountInfoResponse>("/public/auth/account")
   }
 }

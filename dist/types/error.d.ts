@@ -73,3 +73,39 @@ export declare class SmartlinksApiError extends Error {
      */
     toJSON(): Record<string, any>;
 }
+/**
+ * Thrown when a GET request fails due to network unavailability AND the
+ * persistent cache (IndexedDB) has a previously stored response for that
+ * resource. The `staleData` property contains the cached payload so the
+ * application can render in a degraded/offline state.
+ *
+ * Only thrown when persistence is enabled:
+ * `configureSdkCache({ persistence: 'indexeddb' })`
+ *
+ * @example
+ * ```ts
+ * import { SmartlinksOfflineError } from '@proveanything/smartlinks'
+ *
+ * try {
+ *   const data = await collection.get('abc123')
+ * } catch (err) {
+ *   if (err instanceof SmartlinksOfflineError) {
+ *     showOfflineBanner()
+ *     renderWithData(err.staleData) // use the cached payload
+ *   }
+ * }
+ * ```
+ */
+export declare class SmartlinksOfflineError extends Error {
+    /** The stale cached payload available when the network request failed. */
+    readonly staleData: any;
+    /** Unix ms timestamp of when the stale data was originally fetched from the server. */
+    readonly cachedAt: number;
+    constructor(message: string, 
+    /** The stale cached payload available when the network request failed. */
+    staleData: any, 
+    /** Unix ms timestamp of when the stale data was originally fetched from the server. */
+    cachedAt: number);
+    /** Age of the stale data in milliseconds at the time this error was thrown. */
+    get staleAgeMs(): number;
+}

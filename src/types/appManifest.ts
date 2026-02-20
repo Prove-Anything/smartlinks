@@ -1,12 +1,63 @@
 // src/types/appManifest.ts
 
 /**
- * SmartLinks App Manifest structure
- * Defines the configuration, widgets, setup, import, and metrics for a microapp
+ * A bundle (widget or container) as returned by the collection widgets endpoint.
+ *
+ * The server currently returns URLs only. In future it may also inline the file
+ * contents when bundles are small or frequently accessed. Clients should check
+ * for inline content first and fall back to loading the URL.
+ *
+ *   if (bundle.source) {
+ *     // inline JS — create a Blob URL or inject directly
+ *   } else if (bundle.js) {
+ *     // load from URL
+ *   }
+ */
+export interface AppBundle {
+  /** URL to the JavaScript file — load if `source` is absent */
+  js: string | null;
+  /** URL to the CSS file — load if `styles` is absent */
+  css: string | null;
+  /** Inlined JavaScript source (present when server bundles it inline) */
+  source?: string;
+  /** Inlined CSS styles (present when server bundles it inline) */
+  styles?: string;
+}
+
+/**
+ * A single widget defined in the manifest.
+ * Presence of the `widgets` array means a widget bundle exists for this app.
+ */
+export interface AppWidgetDefinition {
+  name: string;
+  description?: string;
+  sizes?: Array<'compact' | 'standard' | 'large' | string>;
+  props?: {
+    required?: string[];
+    optional?: string[];
+  };
+}
+
+/**
+ * A single container defined in the manifest.
+ * Presence of the `containers` array means a container bundle exists for this app.
+ * Containers are full-page / embedded components (larger than widgets, no iframe needed).
+ */
+export interface AppContainerDefinition {
+  name: string;
+  description?: string;
+  props?: {
+    required?: string[];
+    optional?: string[];
+  };
+}
+
+/**
+ * SmartLinks App Manifest — the app.manifest.json structure.
  */
 export interface AppManifest {
   $schema?: string;
-  
+
   meta?: {
     name: string;
     description?: string;
@@ -14,17 +65,13 @@ export interface AppManifest {
     platformRevision?: string;
     appId: string;
   };
-  
-  widgets?: Array<{
-    name: string;
-    description?: string;
-    sizes?: string[];
-    props?: {
-      required?: string[];
-      optional?: string[];
-    };
-  }>;
-  
+
+  /** Presence means a widget bundle (widgets.umd.js / widgets.css) exists */
+  widgets?: AppWidgetDefinition[];
+
+  /** Presence means a container bundle (containers.umd.js / containers.css) exists */
+  containers?: AppContainerDefinition[];
+
   setup?: {
     description?: string;
     questions?: Array<{
@@ -33,19 +80,21 @@ export interface AppManifest {
       type: string;
       default?: any;
       required?: boolean;
+      options?: Array<{ value: string; label: string }>;
     }>;
     configSchema?: Record<string, any>;
     saveWith?: {
       method: string;
-      scope: string;
+      scope: 'collection' | 'product' | string;
       admin?: boolean;
+      note?: string;
     };
     contentHints?: Record<string, {
       aiGenerate?: boolean;
       prompt?: string;
     }>;
   };
-  
+
   import?: {
     description?: string;
     scope?: string;
@@ -64,51 +113,48 @@ export interface AppManifest {
       note?: string;
     };
   };
-  
+
   tunable?: {
     description?: string;
     fields?: Array<{
       name: string;
       description?: string;
       type: string;
+      options?: string[];
     }>;
   };
-  
+
   metrics?: {
-    interactions?: Array<{
-      id: string;
-      description?: string;
-    }>;
-    kpis?: Array<{
-      name: string;
-      compute?: string;
-    }>;
+    interactions?: Array<{ id: string; description?: string }>;
+    kpis?: Array<{ name: string; compute?: string }>;
   };
-  
-  [key: string]: any; // Allow additional custom fields
+
+  [key: string]: any;
 }
 
 /**
- * Single app widget data with manifest and bundle files
+ * One app entry in the collection widgets response.
  */
-export interface CollectionWidget {
+export interface CollectionAppWidget {
   appId: string;
-  manifestUrl: string;
   manifest: AppManifest;
-  bundleSource: string;
-  bundleCss?: string; // Optional CSS file
+  /** Widget bundle — always present (apps without widgets are excluded from the response) */
+  widget: AppBundle;
+  /** Container bundle — null when the app has no containers */
+  container: AppBundle | null;
 }
 
 /**
- * Response from collection widgets endpoint
+ * Response from GET /api/v1/public/collection/:collectionId/widgets
  */
 export interface CollectionWidgetsResponse {
-  apps: CollectionWidget[];
+  apps: CollectionAppWidget[];
 }
 
 /**
  * Options for fetching collection widgets
  */
 export interface GetCollectionWidgetsOptions {
-  force?: boolean; // Bypass cache and fetch fresh data
+  /** Bypass server cache and fetch fresh manifests */
+  force?: boolean;
 }

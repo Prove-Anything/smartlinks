@@ -1,4 +1,4 @@
-export { initializeApi, request, sendCustomProxyMessage } from "./http";
+export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, request, sendCustomProxyMessage } from "./http";
 export * from "./api";
 export * from "./types";
 export { iframe } from "./iframe";

@@ -178,6 +178,7 @@ function generateAPISummary() {
   summary += 'For detailed guides on specific features:\n\n';
   summary += '- **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation\n';
   summary += '- **[Widgets](widgets.md)** - Embeddable React components for parent applications\n';
+  summary += '- **[Containers](containers.md)** - Building full-app embeddable containers (lazy-loaded) \n';
   summary += '- **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections\n';
   summary += '- **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication\n';
   summary += '- **[i18n](i18n.md)** - Internationalization and localization\n';
@@ -185,7 +186,8 @@ function generateAPISummary() {
   summary += '- **[Theme System](theme.system.md)** - Theme configuration and customization\n';
   summary += '- **[Theme Defaults](theme-defaults.md)** - Default theme values and presets\n';
   summary += '- **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)\n';
-  summary += '- **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage\n\n';
+  summary += '- **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage\n';
+  summary += '- **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide\n\n';
   
   // Generate namespace overview (grouped + descriptive)
   const apiFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');

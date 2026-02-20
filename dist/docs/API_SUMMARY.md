@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.3.45  |  Generated: 2026-02-19T14:43:39.335Z
+Version: 1.4.4  |  Generated: 2026-02-20T22:46:39.365Z
 
 This is a concise summary of all available API functions and types.
 
@@ -10,6 +10,7 @@ For detailed guides on specific features:
 
 - **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation
 - **[Widgets](widgets.md)** - Embeddable React components for parent applications
+- **[Containers](containers.md)** - Building full-app embeddable containers (lazy-loaded) 
 - **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections
 - **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication
 - **[i18n](i18n.md)** - Internationalization and localization
@@ -18,6 +19,7 @@ For detailed guides on specific features:
 - **[Theme Defaults](theme-defaults.md)** - Default theme values and presets
 - **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)
 - **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage
+- **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide
 
 ## API Namespaces
 
@@ -87,7 +89,10 @@ Return whether proxy mode is currently enabled.
   extraHeaders?: Record<string, string>
   iframeAutoResize?: boolean // default true when in iframe
   logger?: Logger // optional console-like or function to enable verbose logging
-}) → `void`
+  /**
+   * When true, bypasses the idempotency guard and forces a full re-initialization.
+   * Use only when you intentionally need to reset all SDK state (e.g. in tests or
+   * when switching accounts) → `void`
 Call this once (e.g. at app startup) to configure baseURL/auth.
 
 **setNgrokSkipBrowserWarning**(flag: boolean) → `void`
@@ -102,13 +107,32 @@ Allows setting the bearerToken at runtime (e.g. after login/logout).
 **getBaseURL**() → `string | null`
 Get the currently configured API base URL. Returns null if initializeApi() has not been called yet.
 
+**isInitialized**() → `boolean`
+Returns true if initializeApi() has been called at least once. Useful for guards in widgets or shared modules that want to skip initialization when another module has already done it. ```ts if (!isInitialized()) { initializeApi({ baseURL: 'https://smartlinks.app/api/v1' }) } ```
+
+**hasAuthCredentials**() → `boolean`
+Returns true if the SDK currently has any auth credential set (bearer token or API key). Use this as a cheap pre-flight check before calling endpoints that require authentication, to avoid issuing a network request that you already know will return a 401. ```ts if (hasAuthCredentials()) { const account = await auth.getAccount() } ```
+
+**configureSdkCache**(options: {
+  enabled?: boolean
+  ttlMs?: number
+  maxEntries?: number
+  persistence?: 'none' | 'indexeddb'
+  persistenceTtlMs?: number
+  serveStaleOnOffline?: boolean
+}) → `void`
+Configure the SDK's built-in in-memory GET cache. The cache is transparent — it sits inside the HTTP layer and requires no changes to your existing API calls. All GET requests benefit automatically. Per-resource rules (collections/products → 1 h, proofs → 30 s, etc.) override this value. in-memory only (`'none'`, default). Ignored in Node.js. fallback, from the original fetch time (default: 7 days). `SmartlinksOfflineError` with stale data instead of propagating the network error. ```ts // Enable IndexedDB persistence for offline support configureSdkCache({ persistence: 'indexeddb' }) // Disable cache entirely in test environments configureSdkCache({ enabled: false }) ```
+
+**invalidateCache**(urlPattern?: string) → `void`
+Manually invalidate entries in the SDK's GET cache. *contains* this string is removed. Omit (or pass `undefined`) to wipe the entire cache. ```ts invalidateCache()                     // clear everything invalidateCache('/collection/abc123') // one specific collection invalidateCache('/product/')          // all product responses ```
+
 **proxyUploadFormData**(path: string,
   formData: FormData,
   onProgress?: (percent: number) → `void`
 Upload a FormData payload via proxy with progress events using chunked postMessage. Parent is expected to implement the counterpart protocol.
 
 **request**(path: string) → `Promise<T>`
-Internal helper that performs a GET request to \`\${baseURL}\${path}\`, injecting headers for apiKey or bearerToken if present. Returns the parsed JSON as T, or throws an Error.
+Internal helper that performs a GET request to `${baseURL}${path}`, injecting headers for apiKey or bearerToken if present. Cache pipeline (when caching is not skipped): L1 hit  → return from memory (no I/O) L2 hit  → return from IndexedDB, promote to L1 (no network) Miss    → fetch from network, store in L1 + L2 Offline → serve stale L2 entry via SmartlinksOfflineError (if persistence enabled) Concurrent identical GETs share one in-flight promise (deduplication). Node-safe: IndexedDB calls are no-ops when IDB is unavailable.
 
 **post**(path: string,
   body: any,
@@ -798,6 +822,41 @@ interface AppConfigurationResponse {
 
 ### appManifest
 
+**AppBundle** (interface)
+```typescript
+interface AppBundle {
+  js: string | null;
+  css: string | null;
+  source?: string;
+  styles?: string;
+}
+```
+
+**AppWidgetDefinition** (interface)
+```typescript
+interface AppWidgetDefinition {
+  name: string;
+  description?: string;
+  sizes?: Array<'compact' | 'standard' | 'large' | string>;
+  props?: {
+  required?: string[];
+  optional?: string[];
+  };
+}
+```
+
+**AppContainerDefinition** (interface)
+```typescript
+interface AppContainerDefinition {
+  name: string;
+  description?: string;
+  props?: {
+  required?: string[];
+  optional?: string[];
+  };
+}
+```
+
 **AppManifest** (interface)
 ```typescript
 interface AppManifest {
@@ -809,15 +868,8 @@ interface AppManifest {
   platformRevision?: string;
   appId: string;
   };
-  widgets?: Array<{
-  name: string;
-  description?: string;
-  sizes?: string[];
-  props?: {
-  required?: string[];
-  optional?: string[];
-  };
-  }>;
+  widgets?: AppWidgetDefinition[];
+  containers?: AppContainerDefinition[];
   setup?: {
   description?: string;
   questions?: Array<{
@@ -826,12 +878,14 @@ interface AppManifest {
   type: string;
   default?: any;
   required?: boolean;
+  options?: Array<{ value: string; label: string }>;
   }>;
   configSchema?: Record<string, any>;
   saveWith?: {
   method: string;
-  scope: string;
+  scope: 'collection' | 'product' | string;
   admin?: boolean;
+  note?: string;
   };
   contentHints?: Record<string, {
   aiGenerate?: boolean;
@@ -862,44 +916,38 @@ interface AppManifest {
   name: string;
   description?: string;
   type: string;
+  options?: string[];
   }>;
   };
   metrics?: {
-  interactions?: Array<{
-  id: string;
-  description?: string;
-  }>;
-  kpis?: Array<{
-  name: string;
-  compute?: string;
-  }>;
+  interactions?: Array<{ id: string; description?: string }>;
+  kpis?: Array<{ name: string; compute?: string }>;
   };
-  [key: string]: any; // Allow additional custom fields
+  [key: string]: any;
 }
 ```
 
-**CollectionWidget** (interface)
+**CollectionAppWidget** (interface)
 ```typescript
-interface CollectionWidget {
+interface CollectionAppWidget {
   appId: string;
-  manifestUrl: string;
   manifest: AppManifest;
-  bundleSource: string;
-  bundleCss?: string; // Optional CSS file
+  widget: AppBundle;
+  container: AppBundle | null;
 }
 ```
 
 **CollectionWidgetsResponse** (interface)
 ```typescript
 interface CollectionWidgetsResponse {
-  apps: CollectionWidget[];
+  apps: CollectionAppWidget[];
 }
 ```
 
 **GetCollectionWidgetsOptions** (interface)
 ```typescript
 interface GetCollectionWidgetsOptions {
-  force?: boolean; // Bypass cache and fetch fresh data
+  force?: boolean;
 }
 ```
 
@@ -4122,7 +4170,7 @@ Tries to register a new user account. Can return a bearer token, or a Firebase t
 Admin: Get a user bearer token (impersonation/automation). POST /admin/auth/userToken All fields are optional; at least one identifier should be provided.
 
 **getAccount**() → `Promise<AccountInfoResponse>`
-Gets current account information for the logged in user. Returns user, owner, account, and location objects.
+Gets current account information for the logged in user. Returns user, owner, account, and location objects. Short-circuits immediately (no network request) when the SDK has no bearer token or API key set — the server would return 401 anyway. Throws a `SmartlinksApiError` with `statusCode 401` and `details.local = true` so callers can distinguish "never authenticated" from an actual server-side token rejection.
 
 ### authKit
 

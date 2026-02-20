@@ -13,13 +13,135 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
-import { SmartlinksApiError } from "./types/error";
+import { SmartlinksApiError, SmartlinksOfflineError } from "./types/error";
+import { idbGet, idbSet, idbClear } from './persistentCache';
 let baseURL = null;
 let apiKey = undefined;
 let bearerToken = undefined;
 let proxyMode = false;
 let ngrokSkipBrowserWarning = false;
 let extraHeadersGlobal = {};
+/** Whether initializeApi has been successfully called at least once. */
+let initialized = false;
+const httpCache = new Map();
+let cacheEnabled = true;
+/** Default TTL used when no per-resource rule matches (milliseconds). */
+let cacheDefaultTtlMs = 60000; // 60 seconds
+/** Maximum number of entries before the oldest (LRU) entry is evicted. */
+let cacheMaxEntries = 200;
+/** Persistence backend for the L2 cache. 'none' (default) disables IndexedDB persistence. */
+let cachePersistence = 'none';
+/**
+ * How long L2 (IndexedDB) entries are considered valid as an offline stale fallback,
+ * measured from the original network fetch time (default: 7 days).
+ * This is independent of the in-memory TTL — it only governs whether a stale
+ * L2 entry is served when the network is unavailable.
+ */
+let cachePersistenceTtlMs = 7 * 24 * 60 * 60000;
+/** When true (default), serve stale L2 data via SmartlinksOfflineError on network failure. */
+let cacheServeStaleOnOffline = true;
+/**
+ * Per-resource TTL overrides — checked in order, first match wins.
+ *
+ * Rules are intentionally specific: they match the collection/product/variant
+ * *resource itself* (list or detail) but NOT sub-resources nested beneath them
+ * (assets, forms, jobs, app-data, etc.).  The regex requires that nothing except
+ * an optional query-string follows the matched segment, e.g.:
+ *   ✅  /public/collection/abc123
+ *   ✅  /public/collection          (list)
+ *   ❌  /public/collection/abc123/asset/xyz   → falls to default TTL
+ *   ❌  /public/collection/abc123/form/xyz    → falls to default TTL
+ *
+ * More-specific / shorter TTLs are listed first so they cannot be shadowed.
+ */
+const CACHE_TTL_RULES = [
+    // Sub-resources that change frequently — short TTLs, listed first
+    { pattern: /\/proof\/[^/]*(\?.*)?$/i, ttlMs: 30000 },
+    { pattern: /\/attestation\/[^/]*(\?.*)?$/i, ttlMs: 2 * 60000 },
+    // Slow-changing top-level resources — long TTLs, matched only when path ends at the ID
+    { pattern: /\/product\/[^/]*(\?.*)?$/i, ttlMs: 60 * 60000 },
+    { pattern: /\/variant\/[^/]*(\?.*)?$/i, ttlMs: 60 * 60000 },
+    { pattern: /\/collection\/[^/]*(\?.*)?$/i, ttlMs: 60 * 60000 }, // 1 hour
+];
+function getTtlForPath(path) {
+    for (const rule of CACHE_TTL_RULES) {
+        if (rule.pattern.test(path))
+            return rule.ttlMs;
+    }
+    return cacheDefaultTtlMs;
+}
+/** Returns true when this path must always bypass the cache. */
+function shouldSkipCache(path) {
+    if (!cacheEnabled)
+        return true;
+    // Never cache auth endpoints — they deal with tokens and session state.
+    if (/\/auth\//i.test(path))
+        return true;
+    return false;
+}
+/** Evict the oldest (LRU) entry when the cache is at capacity. */
+function evictLruIfNeeded() {
+    while (httpCache.size >= cacheMaxEntries) {
+        const firstKey = httpCache.keys().next().value;
+        if (firstKey !== undefined)
+            httpCache.delete(firstKey);
+        else
+            break;
+    }
+}
+/**
+ * Return cached data for a key if it exists and is within TTL.
+ * Promotes the hit to MRU position. Returns null when missing, expired, or in-flight.
+ */
+function getHttpCacheHit(cacheKey, ttlMs) {
+    const entry = httpCache.get(cacheKey);
+    if (!entry || entry.promise)
+        return null;
+    if (Date.now() - entry.timestamp > ttlMs) {
+        httpCache.delete(cacheKey);
+        return null;
+    }
+    // Promote to MRU (delete + re-insert at tail of Map)
+    httpCache.delete(cacheKey);
+    httpCache.set(cacheKey, entry);
+    return entry.data;
+}
+/** Store a resolved response in the cache at MRU position. */
+function setHttpCacheEntry(cacheKey, data) {
+    httpCache.delete(cacheKey); // ensure insertion at MRU tail
+    evictLruIfNeeded();
+    httpCache.set(cacheKey, { data, timestamp: Date.now() });
+}
+/**
+ * Auto-invalidate all cached GET entries whose key contains `path`.
+ * Called automatically after any mutating request (POST / PUT / PATCH / DELETE).
+ * Also sweeps the L2 (IndexedDB) cache when persistence is enabled.
+ */
+function invalidateCacheForPath(path) {
+    for (const key of httpCache.keys()) {
+        if (key.includes(path))
+            httpCache.delete(key);
+    }
+    if (cachePersistence !== 'none')
+        idbClear(path).catch(() => { });
+}
+/** Build the lookup key for a given request path. */
+function buildCacheKey(path) {
+    return proxyMode ? `proxy:${path}` : `${baseURL}${path}`;
+}
+/**
+ * Returns true when an error indicates a network-level failure (no connectivity,
+ * DNS failure, etc.) rather than an HTTP-level error response.
+ * Also returns true when navigator.onLine is explicitly false.
+ * Node-safe: navigator is guarded before access.
+ */
+function isNetworkError(err) {
+    // navigator is not available in Node.js — guard before access
+    if (typeof navigator !== 'undefined' && navigator.onLine === false)
+        return true;
+    // fetch() throws TypeError on network failure; SmartlinksApiError is not a TypeError
+    return err instanceof TypeError;
+}
 let logger;
 function logDebug(...args) {
     if (!logger)
@@ -169,9 +291,32 @@ function normalizeErrorResponse(responseBody, statusCode) {
 import { iframe } from './iframe';
 export function initializeApi(options) {
     // Normalize baseURL by removing trailing slashes.
-    baseURL = options.baseURL.replace(/\/+$/g, "");
+    const normalizedBaseURL = options.baseURL.replace(/\/+$/g, "");
+    // ------------------------------------------------------------------
+    // Firebase-style idempotency guard
+    // If we have already been initialized with the same baseURL and the
+    // caller is not forcing a reset, return immediately.  This prevents
+    // any module – widget, component, or re-rendered page – from
+    // accidentally wiping runtime state such as a bearerToken that was
+    // set by auth.login() after the first initialization.
+    // ------------------------------------------------------------------
+    if (initialized && !options.force && baseURL === normalizedBaseURL) {
+        logDebug('[smartlinks] initializeApi: already initialized with this baseURL – skipping.', { baseURL });
+        return;
+    }
+    baseURL = normalizedBaseURL;
     apiKey = options.apiKey;
-    bearerToken = options.bearerToken;
+    // Only overwrite bearerToken when the caller explicitly supplies one,
+    // OR when this is the very first initialization (start with a clean slate).
+    // Re-initialization calls that omit bearerToken must NOT clear a token that
+    // was acquired at runtime (e.g. from a successful auth.login()).
+    if (options.bearerToken !== undefined) {
+        bearerToken = options.bearerToken;
+    }
+    else if (!initialized) {
+        bearerToken = undefined;
+    }
+    // else: preserve the existing runtime bearerToken.
     proxyMode = !!options.proxyMode;
     // Auto-enable ngrok skip header if domain contains .ngrok.io and user did not explicitly set the flag.
     // Infer ngrok usage from common domains (.ngrok.io or .ngrok-free.dev)
@@ -184,7 +329,14 @@ export function initializeApi(options) {
     if (iframe.isIframe() && options.iframeAutoResize !== false) {
         iframe.enableAutoIframeResize();
     }
+    // Clear both cache tiers on forced re-initialization so stale data
+    // from the previous configuration cannot bleed through.
+    if (options.force) {
+        httpCache.clear();
+        idbClear().catch(() => { });
+    }
     logger = options.logger;
+    initialized = true;
     logDebug('[smartlinks] initializeApi', {
         baseURL,
         proxyMode,
@@ -214,6 +366,107 @@ export function setBearerToken(token) {
  */
 export function getBaseURL() {
     return baseURL;
+}
+/**
+ * Returns true if initializeApi() has been called at least once.
+ * Useful for guards in widgets or shared modules that want to skip
+ * initialization when another module has already done it.
+ *
+ * @example
+ * ```ts
+ * if (!isInitialized()) {
+ *   initializeApi({ baseURL: 'https://smartlinks.app/api/v1' })
+ * }
+ * ```
+ */
+export function isInitialized() {
+    return initialized;
+}
+/**
+ * Returns true if the SDK currently has any auth credential set (bearer token
+ * or API key). Use this as a cheap pre-flight check before calling endpoints
+ * that require authentication, to avoid issuing a network request that you
+ * already know will return a 401.
+ *
+ * @example
+ * ```ts
+ * if (hasAuthCredentials()) {
+ *   const account = await auth.getAccount()
+ * }
+ * ```
+ */
+export function hasAuthCredentials() {
+    return !!(bearerToken || apiKey);
+}
+/**
+ * Configure the SDK's built-in in-memory GET cache.
+ *
+ * The cache is transparent — it sits inside the HTTP layer and requires no
+ * changes to your existing API calls. All GET requests benefit automatically.
+ *
+ * @param options.enabled             - Turn caching on/off entirely (default: `true`)
+ * @param options.ttlMs               - Default time-to-live in milliseconds (default: `60_000`).
+ *                                      Per-resource rules (collections/products → 1 h,
+ *                                      proofs → 30 s, etc.) override this value.
+ * @param options.maxEntries          - L1 LRU eviction threshold (default: `200`)
+ * @param options.persistence         - Enable IndexedDB L2 cache (`'indexeddb'`) or keep
+ *                                      in-memory only (`'none'`, default). Ignored in Node.js.
+ * @param options.persistenceTtlMs    - How long L2 entries are eligible as an offline stale
+ *                                      fallback, from the original fetch time (default: 7 days).
+ * @param options.serveStaleOnOffline - When `true` (default) and persistence is on, throw
+ *                                      `SmartlinksOfflineError` with stale data instead of
+ *                                      propagating the network error.
+ *
+ * @example
+ * ```ts
+ * // Enable IndexedDB persistence for offline support
+ * configureSdkCache({ persistence: 'indexeddb' })
+ *
+ * // Disable cache entirely in test environments
+ * configureSdkCache({ enabled: false })
+ * ```
+ */
+export function configureSdkCache(options) {
+    if (options.enabled !== undefined)
+        cacheEnabled = options.enabled;
+    if (options.ttlMs !== undefined)
+        cacheDefaultTtlMs = options.ttlMs;
+    if (options.maxEntries !== undefined)
+        cacheMaxEntries = options.maxEntries;
+    if (options.persistence !== undefined)
+        cachePersistence = options.persistence;
+    if (options.persistenceTtlMs !== undefined)
+        cachePersistenceTtlMs = options.persistenceTtlMs;
+    if (options.serveStaleOnOffline !== undefined)
+        cacheServeStaleOnOffline = options.serveStaleOnOffline;
+}
+/**
+ * Manually invalidate entries in the SDK's GET cache.
+ *
+ * @param urlPattern - Optional substring match. Every cache entry whose key
+ *   *contains* this string is removed. Omit (or pass `undefined`) to wipe the
+ *   entire cache.
+ *
+ * @example
+ * ```ts
+ * invalidateCache()                     // clear everything
+ * invalidateCache('/collection/abc123') // one specific collection
+ * invalidateCache('/product/')          // all product responses
+ * ```
+ */
+export function invalidateCache(urlPattern) {
+    if (!urlPattern) {
+        httpCache.clear();
+        if (cachePersistence !== 'none')
+            idbClear().catch(() => { });
+        return;
+    }
+    for (const key of httpCache.keys()) {
+        if (key.includes(urlPattern))
+            httpCache.delete(key);
+    }
+    if (cachePersistence !== 'none')
+        idbClear(urlPattern).catch(() => { });
 }
 // Map of pending proxy requests: id -> {resolve, reject}
 const proxyPending = {};
@@ -408,49 +661,114 @@ export async function proxyUploadFormData(path, formData, onProgress) {
     return done;
 }
 /**
- * Internal helper that performs a GET request to \`\${baseURL}\${path}\`,
+ * Internal helper that performs a GET request to `${baseURL}${path}`,
  * injecting headers for apiKey or bearerToken if present.
- * Returns the parsed JSON as T, or throws an Error.
+ *
+ * Cache pipeline (when caching is not skipped):
+ *   L1 hit  → return from memory (no I/O)
+ *   L2 hit  → return from IndexedDB, promote to L1 (no network)
+ *   Miss    → fetch from network, store in L1 + L2
+ *   Offline → serve stale L2 entry via SmartlinksOfflineError (if persistence enabled)
+ *
+ * Concurrent identical GETs share one in-flight promise (deduplication).
+ * Node-safe: IndexedDB calls are no-ops when IDB is unavailable.
  */
 export async function request(path) {
-    if (proxyMode) {
-        logDebug('[smartlinks] GET via proxy', { path });
-        return proxyRequest("GET", path);
+    const skipCache = shouldSkipCache(path);
+    const cacheKey = buildCacheKey(path);
+    const ttl = skipCache ? 0 : getTtlForPath(path);
+    if (!skipCache) {
+        // 1. L1 hit — return from memory immediately
+        const l1 = getHttpCacheHit(cacheKey, ttl);
+        if (l1 !== null) {
+            logDebug('[smartlinks] GET cache hit (L1)', { path });
+            return l1;
+        }
+        // 2. In-flight deduplication — share an already-pending promise
+        const inflight = httpCache.get(cacheKey);
+        if (inflight === null || inflight === void 0 ? void 0 : inflight.promise) {
+            logDebug('[smartlinks] GET in-flight dedup', { path });
+            return inflight.promise;
+        }
     }
-    if (!baseURL) {
-        throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
-    }
-    const url = `${baseURL}${path}`;
-    const headers = { "Content-Type": "application/json" };
-    if (apiKey)
-        headers["X-API-Key"] = apiKey;
-    if (bearerToken)
-        headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
-    if (ngrokSkipBrowserWarning)
-        headers["ngrok-skip-browser-warning"] = "true";
-    for (const [k, v] of Object.entries(extraHeadersGlobal))
-        headers[k] = v;
-    logDebug('[smartlinks] GET fetch', { url, headers: redactHeaders(headers) });
-    const response = await fetch(url, {
-        method: "GET",
-        headers,
-    });
-    logDebug('[smartlinks] GET response', { url, status: response.status, ok: response.ok });
-    if (!response.ok) {
-        // Try to parse error response body and normalize it
-        let responseBody;
+    // 3. Build the fetch promise.
+    //    The IIFE starts synchronously until its first `await`, then the outer
+    //    code registers it as the in-flight entry before the await resolves.
+    const fetchPromise = (async () => {
+        // 3a. L2 (IndexedDB) check — warms L1 from persistent storage without a
+        //     network round-trip.  First await → in-flight registration runs before this resolves.
+        if (!skipCache && cachePersistence !== 'none') {
+            const l2 = await idbGet(cacheKey);
+            if (l2 && Date.now() - l2.timestamp <= ttl) {
+                logDebug('[smartlinks] GET cache hit (L2)', { path });
+                setHttpCacheEntry(cacheKey, l2.data);
+                return l2.data;
+            }
+        }
+        // 3b. Network fetch
         try {
-            responseBody = await response.json();
+            let data;
+            if (proxyMode) {
+                logDebug('[smartlinks] GET via proxy', { path });
+                data = await proxyRequest("GET", path);
+            }
+            else {
+                if (!baseURL) {
+                    throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
+                }
+                const url = `${baseURL}${path}`;
+                const headers = { "Content-Type": "application/json" };
+                if (apiKey)
+                    headers["X-API-Key"] = apiKey;
+                if (bearerToken)
+                    headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
+                if (ngrokSkipBrowserWarning)
+                    headers["ngrok-skip-browser-warning"] = "true";
+                for (const [k, v] of Object.entries(extraHeadersGlobal))
+                    headers[k] = v;
+                logDebug('[smartlinks] GET fetch', { url, headers: redactHeaders(headers) });
+                const response = await fetch(url, { method: "GET", headers });
+                logDebug('[smartlinks] GET response', { url, status: response.status, ok: response.ok });
+                if (!response.ok) {
+                    let responseBody;
+                    try {
+                        responseBody = await response.json();
+                    }
+                    catch (_a) {
+                        responseBody = null;
+                    }
+                    const errBody = normalizeErrorResponse(responseBody, response.status);
+                    throw new SmartlinksApiError(`Error ${errBody.code}: ${errBody.message}`, response.status, errBody, url);
+                }
+                data = (await response.json());
+            }
+            // Persist to L2 on success (fire-and-forget — never blocks the caller)
+            if (!skipCache && cachePersistence !== 'none') {
+                idbSet(cacheKey, { data, timestamp: Date.now(), persistedAt: Date.now() }).catch(() => { });
+            }
+            return data;
         }
-        catch (_a) {
-            // Failed to parse JSON, use status code only
-            responseBody = null;
+        catch (fetchErr) {
+            // 3c. Offline fallback: when the network fails, serve stale L2 data if
+            //     it's still within the persistence TTL window.
+            if (!skipCache && cachePersistence !== 'none' && cacheServeStaleOnOffline && isNetworkError(fetchErr)) {
+                const l2 = await idbGet(cacheKey);
+                if (l2 && Date.now() - l2.timestamp <= cachePersistenceTtlMs) {
+                    logDebug('[smartlinks] GET offline fallback (L2)', { path, cachedAt: l2.timestamp });
+                    throw new SmartlinksOfflineError('Network unavailable — serving cached data from persistent storage.', l2.data, l2.timestamp);
+                }
+            }
+            throw fetchErr;
         }
-        const errBody = normalizeErrorResponse(responseBody, response.status);
-        const message = `Error ${errBody.code}: ${errBody.message}`;
-        throw new SmartlinksApiError(message, response.status, errBody, url);
+    })();
+    // Register the in-flight promise so concurrent identical GETs share it.
+    // On resolve → promote to L1; on reject → remove so the next call retries.
+    if (!skipCache) {
+        evictLruIfNeeded();
+        httpCache.set(cacheKey, { data: null, timestamp: Date.now(), promise: fetchPromise });
+        fetchPromise.then((data) => setHttpCacheEntry(cacheKey, data), () => httpCache.delete(cacheKey));
     }
-    return (await response.json());
+    return fetchPromise;
 }
 /**
  * Internal helper that performs a POST request to `${baseURL}${path}`,
@@ -461,7 +779,9 @@ export async function request(path) {
 export async function post(path, body, extraHeaders) {
     if (proxyMode) {
         logDebug('[smartlinks] POST via proxy', { path, body: safeBodyPreview(body) });
-        return proxyRequest("POST", path, body, extraHeaders);
+        const result = await proxyRequest("POST", path, body, extraHeaders);
+        invalidateCacheForPath(path);
+        return result;
     }
     if (!baseURL) {
         throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
@@ -500,7 +820,9 @@ export async function post(path, body, extraHeaders) {
         const message = `Error ${errBody.code}: ${errBody.message}`;
         throw new SmartlinksApiError(message, response.status, errBody, url);
     }
-    return (await response.json());
+    const postResult = (await response.json());
+    invalidateCacheForPath(path);
+    return postResult;
 }
 /**
  * Internal helper that performs a PUT request to `${baseURL}${path}`,
@@ -511,7 +833,9 @@ export async function post(path, body, extraHeaders) {
 export async function put(path, body, extraHeaders) {
     if (proxyMode) {
         logDebug('[smartlinks] PUT via proxy', { path, body: safeBodyPreview(body) });
-        return proxyRequest("PUT", path, body, extraHeaders);
+        const result = await proxyRequest("PUT", path, body, extraHeaders);
+        invalidateCacheForPath(path);
+        return result;
     }
     if (!baseURL) {
         throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
@@ -550,7 +874,9 @@ export async function put(path, body, extraHeaders) {
         const message = `Error ${errBody.code}: ${errBody.message}`;
         throw new SmartlinksApiError(message, response.status, errBody, url);
     }
-    return (await response.json());
+    const putResult = (await response.json());
+    invalidateCacheForPath(path);
+    return putResult;
 }
 /**
  * Internal helper that performs a PATCH request to `${baseURL}${path}`,
@@ -561,7 +887,9 @@ export async function put(path, body, extraHeaders) {
 export async function patch(path, body, extraHeaders) {
     if (proxyMode) {
         logDebug('[smartlinks] PATCH via proxy', { path, body: safeBodyPreview(body) });
-        return proxyRequest("PATCH", path, body, extraHeaders);
+        const result = await proxyRequest("PATCH", path, body, extraHeaders);
+        invalidateCacheForPath(path);
+        return result;
     }
     if (!baseURL) {
         throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
@@ -600,7 +928,9 @@ export async function patch(path, body, extraHeaders) {
         const message = `Error ${errBody.code}: ${errBody.message}`;
         throw new SmartlinksApiError(message, response.status, errBody, url);
     }
-    return (await response.json());
+    const patchResult = (await response.json());
+    invalidateCacheForPath(path);
+    return patchResult;
 }
 /**
  * Internal helper that performs a request to `${baseURL}${path}` with custom options,
@@ -608,52 +938,115 @@ export async function patch(path, body, extraHeaders) {
  * Returns the parsed JSON as T, or throws an Error.
  */
 export async function requestWithOptions(path, options) {
-    if (proxyMode) {
-        logDebug('[smartlinks] requestWithOptions via proxy', { path, method: options.method || 'GET' });
-        return proxyRequest(options.method || "GET", path, options.body, options.headers, options);
-    }
-    if (!baseURL) {
-        throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
-    }
-    const url = `${baseURL}${path}`;
-    // Safely merge headers, converting Headers/init to Record<string, string>
-    let extraHeaders = {};
-    if (options.headers) {
-        if (options.headers instanceof Headers) {
-            options.headers.forEach((value, key) => {
-                extraHeaders[key] = value;
-            });
+    const method = (options.method || 'GET').toUpperCase();
+    const isGet = method === 'GET';
+    const skipCache = isGet ? shouldSkipCache(path) : true;
+    const cacheKey = buildCacheKey(path);
+    const ttl = !skipCache ? getTtlForPath(path) : 0;
+    if (!skipCache) {
+        // L1 hit
+        const cached = getHttpCacheHit(cacheKey, ttl);
+        if (cached !== null) {
+            logDebug('[smartlinks] GET cache hit (requestWithOptions/L1)', { path });
+            return cached;
         }
-        else if (Array.isArray(options.headers)) {
-            for (const [key, value] of options.headers) {
-                extraHeaders[key] = value;
+        // In-flight dedup
+        const inflight = httpCache.get(cacheKey);
+        if (inflight === null || inflight === void 0 ? void 0 : inflight.promise) {
+            logDebug('[smartlinks] GET in-flight dedup (requestWithOptions)', { path });
+            return inflight.promise;
+        }
+    }
+    const fetchPromise = (async () => {
+        // L2 (IndexedDB) check for GETs — first await, so in-flight registration runs before it resolves
+        if (!skipCache && cachePersistence !== 'none') {
+            const l2 = await idbGet(cacheKey);
+            if (l2 && Date.now() - l2.timestamp <= ttl) {
+                logDebug('[smartlinks] GET cache hit (requestWithOptions/L2)', { path });
+                setHttpCacheEntry(cacheKey, l2.data);
+                return l2.data;
             }
         }
-        else {
-            extraHeaders = Object.assign({}, options.headers);
-        }
-    }
-    const headers = Object.assign(Object.assign(Object.assign(Object.assign({ "Content-Type": "application/json" }, (apiKey ? { "X-API-Key": apiKey } : {})), (bearerToken ? { "AUTHORIZATION": `Bearer ${bearerToken}` } : {})), (ngrokSkipBrowserWarning ? { "ngrok-skip-browser-warning": "true" } : {})), extraHeaders);
-    // Merge global custom headers (do not override existing keys from options.headers)
-    for (const [k, v] of Object.entries(extraHeadersGlobal))
-        if (!(k in headers))
-            headers[k] = v;
-    logDebug('[smartlinks] requestWithOptions fetch', { url, method: options.method || 'GET', headers: redactHeaders(headers), body: safeBodyPreview(options.body) });
-    const response = await fetch(url, Object.assign(Object.assign({}, options), { headers }));
-    logDebug('[smartlinks] requestWithOptions response', { url, status: response.status, ok: response.ok });
-    if (!response.ok) {
-        let responseBody;
         try {
-            responseBody = await response.json();
+            if (proxyMode) {
+                logDebug('[smartlinks] requestWithOptions via proxy', { path, method: options.method || 'GET' });
+                const result = await proxyRequest(options.method || "GET", path, options.body, options.headers, options);
+                if (!isGet) {
+                    invalidateCacheForPath(path);
+                }
+                else if (!skipCache && cachePersistence !== 'none') {
+                    idbSet(cacheKey, { data: result, timestamp: Date.now(), persistedAt: Date.now() }).catch(() => { });
+                }
+                return result;
+            }
+            if (!baseURL) {
+                throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
+            }
+            const url = `${baseURL}${path}`;
+            // Safely merge headers, converting Headers/init to Record<string, string>
+            let extraHeaders = {};
+            if (options.headers) {
+                if (options.headers instanceof Headers) {
+                    options.headers.forEach((value, key) => {
+                        extraHeaders[key] = value;
+                    });
+                }
+                else if (Array.isArray(options.headers)) {
+                    for (const [key, value] of options.headers) {
+                        extraHeaders[key] = value;
+                    }
+                }
+                else {
+                    extraHeaders = Object.assign({}, options.headers);
+                }
+            }
+            const headers = Object.assign(Object.assign(Object.assign(Object.assign({ "Content-Type": "application/json" }, (apiKey ? { "X-API-Key": apiKey } : {})), (bearerToken ? { "AUTHORIZATION": `Bearer ${bearerToken}` } : {})), (ngrokSkipBrowserWarning ? { "ngrok-skip-browser-warning": "true" } : {})), extraHeaders);
+            // Merge global custom headers (do not override existing keys from options.headers)
+            for (const [k, v] of Object.entries(extraHeadersGlobal))
+                if (!(k in headers))
+                    headers[k] = v;
+            logDebug('[smartlinks] requestWithOptions fetch', { url, method: options.method || 'GET', headers: redactHeaders(headers), body: safeBodyPreview(options.body) });
+            const response = await fetch(url, Object.assign(Object.assign({}, options), { headers }));
+            logDebug('[smartlinks] requestWithOptions response', { url, status: response.status, ok: response.ok });
+            if (!response.ok) {
+                let responseBody;
+                try {
+                    responseBody = await response.json();
+                }
+                catch (_a) {
+                    responseBody = null;
+                }
+                const errBody = normalizeErrorResponse(responseBody, response.status);
+                throw new SmartlinksApiError(`Error ${errBody.code}: ${errBody.message}`, response.status, errBody, url);
+            }
+            const rwoResult = (await response.json());
+            if (!isGet) {
+                invalidateCacheForPath(path);
+            }
+            else if (!skipCache && cachePersistence !== 'none') {
+                idbSet(cacheKey, { data: rwoResult, timestamp: Date.now(), persistedAt: Date.now() }).catch(() => { });
+            }
+            return rwoResult;
         }
-        catch (_a) {
-            responseBody = null;
+        catch (fetchErr) {
+            // Offline fallback for GETs
+            if (isGet && !skipCache && cachePersistence !== 'none' && cacheServeStaleOnOffline && isNetworkError(fetchErr)) {
+                const l2 = await idbGet(cacheKey);
+                if (l2 && Date.now() - l2.timestamp <= cachePersistenceTtlMs) {
+                    logDebug('[smartlinks] GET offline fallback (requestWithOptions/L2)', { path, cachedAt: l2.timestamp });
+                    throw new SmartlinksOfflineError('Network unavailable — serving cached data from persistent storage.', l2.data, l2.timestamp);
+                }
+            }
+            throw fetchErr;
         }
-        const errBody = normalizeErrorResponse(responseBody, response.status);
-        const message = `Error ${errBody.code}: ${errBody.message}`;
-        throw new SmartlinksApiError(message, response.status, errBody, url);
+    })();
+    // Register in-flight for GET requests
+    if (!skipCache) {
+        evictLruIfNeeded();
+        httpCache.set(cacheKey, { data: null, timestamp: Date.now(), promise: fetchPromise });
+        fetchPromise.then((data) => setHttpCacheEntry(cacheKey, data), () => httpCache.delete(cacheKey));
     }
-    return (await response.json());
+    return fetchPromise;
 }
 /**
  * Internal helper that performs a DELETE request to `${baseURL}${path}`,
@@ -663,7 +1056,9 @@ export async function requestWithOptions(path, options) {
 export async function del(path, extraHeaders) {
     if (proxyMode) {
         logDebug('[smartlinks] DELETE via proxy', { path });
-        return proxyRequest("DELETE", path, undefined, extraHeaders);
+        const result = await proxyRequest("DELETE", path, undefined, extraHeaders);
+        invalidateCacheForPath(path);
+        return result;
     }
     if (!baseURL) {
         throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
@@ -698,9 +1093,9 @@ export async function del(path, extraHeaders) {
         throw new SmartlinksApiError(message, response.status, errBody, url);
     }
     // If the response is empty, just return undefined
-    if (response.status === 204)
-        return undefined;
-    return (await response.json());
+    const delResult = response.status === 204 ? undefined : (await response.json());
+    invalidateCacheForPath(path);
+    return delResult;
 }
 /**
  * Returns the common headers used for API requests, including apiKey and bearerToken if set.

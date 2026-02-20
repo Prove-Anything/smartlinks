@@ -92,6 +92,12 @@ export declare namespace auth {
     /**
      * Gets current account information for the logged in user.
      * Returns user, owner, account, and location objects.
+     *
+     * Short-circuits immediately (no network request) when the SDK has no
+     * bearer token or API key set — the server would return 401 anyway.
+     * Throws a `SmartlinksApiError` with `statusCode 401` and
+     * `details.local = true` so callers can distinguish "never authenticated"
+     * from an actual server-side token rejection.
      */
     function getAccount(): Promise<AccountInfoResponse>;
 }
