@@ -6,15 +6,15 @@
  * for inline content first and fall back to loading the URL.
  *
  *   if (bundle.source) {
- *     // inline JS — create a Blob URL or inject directly
+ *     // inline JS -- create a Blob URL or inject directly
  *   } else if (bundle.js) {
  *     // load from URL
  *   }
  */
 export interface AppBundle {
-    /** URL to the JavaScript file — load if `source` is absent */
+    /** URL to the JavaScript file -- load if `source` is absent */
     js: string | null;
-    /** URL to the CSS file — load if `styles` is absent */
+    /** URL to the CSS file -- load if `styles` is absent */
     css: string | null;
     /** Inlined JavaScript source (present when server bundles it inline) */
     source?: string;
@@ -22,10 +22,20 @@ export interface AppBundle {
     styles?: string;
 }
 /**
- * A single widget defined in the manifest.
- * Presence of the `widgets` array means a widget bundle exists for this app.
+ * The files section inside a widgets or containers block.
  */
-export interface AppWidgetDefinition {
+export interface AppManifestFiles {
+    js: {
+        /** UMD bundle -- used for script-tag / dynamic loading */
+        umd: string;
+        /** ESM bundle -- used for native ES module loading */
+        esm?: string;
+    };
+    /** CSS file -- absent if the bundle ships no styles */
+    css?: string;
+}
+/** A single widget component defined in the manifest */
+export interface AppWidgetComponent {
     name: string;
     description?: string;
     sizes?: Array<'compact' | 'standard' | 'large' | string>;
@@ -33,13 +43,11 @@ export interface AppWidgetDefinition {
         required?: string[];
         optional?: string[];
     };
+    /** JSON-Schema-style settings the widget accepts */
+    settings?: Record<string, any>;
 }
-/**
- * A single container defined in the manifest.
- * Presence of the `containers` array means a container bundle exists for this app.
- * Containers are full-page / embedded components (larger than widgets, no iframe needed).
- */
-export interface AppContainerDefinition {
+/** A single container component defined in the manifest */
+export interface AppContainerComponent {
     name: string;
     description?: string;
     props?: {
@@ -48,21 +56,22 @@ export interface AppContainerDefinition {
     };
 }
 /**
- * SmartLinks App Manifest — the app.manifest.json structure.
+ * Shape of `app.admin.json` -- the separate admin configuration file pointed to
+ * by `AppManifest.admin`. Fetch this file yourself when you need setup / import /
+ * tunable / metrics details; it is not inlined in the manifest.
+ *
+ * @example
+ *   const adminUrl = new URL(manifest.admin!, appBaseUrl);
+ *   const adminConfig: AppAdminConfig = await fetch(adminUrl).then(r => r.json());
  */
-export interface AppManifest {
+export interface AppAdminConfig {
     $schema?: string;
-    meta?: {
-        name: string;
-        description?: string;
-        version: string;
-        platformRevision?: string;
-        appId: string;
-    };
-    /** Presence means a widget bundle (widgets.umd.js / widgets.css) exists */
-    widgets?: AppWidgetDefinition[];
-    /** Presence means a container bundle (containers.umd.js / containers.css) exists */
-    containers?: AppContainerDefinition[];
+    /**
+     * Path (relative to the app's public root) to an AI guide markdown file.
+     * Provides natural-language context for AI-assisted configuration.
+     * @example "ai-guide.md"
+     */
+    aiGuide?: string;
     setup?: {
         description?: string;
         questions?: Array<{
@@ -125,6 +134,39 @@ export interface AppManifest {
             compute?: string;
         }>;
     };
+}
+/**
+ * SmartLinks App Manifest -- the app.manifest.json structure.
+ *
+ * Setup, import, tunable, and metrics configuration lives in a separate
+ * `app.admin.json` file. Use the `admin` field to locate and fetch it.
+ */
+export interface AppManifest {
+    $schema?: string;
+    meta?: {
+        name: string;
+        description?: string;
+        version: string;
+        platformRevision?: string;
+        appId: string;
+    };
+    /**
+     * Relative path to the admin configuration file (e.g. `"app.admin.json"`).
+     * When present, fetch this file to get the full {@link AppAdminConfig}
+     * (setup questions, import schema, tunable fields, metrics definitions).
+     * Absent when the app has no admin UI.
+     */
+    admin?: string;
+    /** Widget bundle definition. Presence means a widget bundle exists for this app. */
+    widgets?: {
+        files: AppManifestFiles;
+        components: AppWidgetComponent[];
+    };
+    /** Container bundle definition. Presence means a container bundle exists. */
+    containers?: {
+        files: AppManifestFiles;
+        components: AppContainerComponent[];
+    };
     [key: string]: any;
 }
 /**
@@ -133,10 +175,12 @@ export interface AppManifest {
 export interface CollectionAppWidget {
     appId: string;
     manifest: AppManifest;
-    /** Widget bundle — always present (apps without widgets are excluded from the response) */
+    /** Widget bundle -- always present (apps without widgets are excluded from the response) */
     widget: AppBundle;
-    /** Container bundle — null when the app has no containers */
+    /** Container bundle -- null when the app has no containers */
     container: AppBundle | null;
+    /** URL to the admin configuration JSON -- null when the app has no admin config */
+    admin: string | null;
 }
 /**
  * Response from GET /api/v1/public/collection/:collectionId/widgets

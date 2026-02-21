@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.4.4  |  Generated: 2026-02-20T22:46:39.365Z
+Version: 1.4.7  |  Generated: 2026-02-21T14:49:14.374Z
 
 This is a concise summary of all available API functions and types.
 
@@ -832,9 +832,20 @@ interface AppBundle {
 }
 ```
 
-**AppWidgetDefinition** (interface)
+**AppManifestFiles** (interface)
 ```typescript
-interface AppWidgetDefinition {
+interface AppManifestFiles {
+  js: {
+  umd: string;
+  esm?: string;
+  };
+  css?: string;
+}
+```
+
+**AppWidgetComponent** (interface)
+```typescript
+interface AppWidgetComponent {
   name: string;
   description?: string;
   sizes?: Array<'compact' | 'standard' | 'large' | string>;
@@ -842,12 +853,13 @@ interface AppWidgetDefinition {
   required?: string[];
   optional?: string[];
   };
+  settings?: Record<string, any>;
 }
 ```
 
-**AppContainerDefinition** (interface)
+**AppContainerComponent** (interface)
 ```typescript
-interface AppContainerDefinition {
+interface AppContainerComponent {
   name: string;
   description?: string;
   props?: {
@@ -857,19 +869,14 @@ interface AppContainerDefinition {
 }
 ```
 
-**AppManifest** (interface)
+**AppAdminConfig** (interface)
 ```typescript
-interface AppManifest {
+interface AppAdminConfig {
   $schema?: string;
-  meta?: {
-  name: string;
-  description?: string;
-  version: string;
-  platformRevision?: string;
-  appId: string;
-  };
-  widgets?: AppWidgetDefinition[];
-  containers?: AppContainerDefinition[];
+  * Path (relative to the app's public root) to an AI guide markdown file.
+  * Provides natural-language context for AI-assisted configuration.
+  * @example "ai-guide.md"
+  aiGuide?: string;
   setup?: {
   description?: string;
   questions?: Array<{
@@ -923,6 +930,33 @@ interface AppManifest {
   interactions?: Array<{ id: string; description?: string }>;
   kpis?: Array<{ name: string; compute?: string }>;
   };
+}
+```
+
+**AppManifest** (interface)
+```typescript
+interface AppManifest {
+  $schema?: string;
+  meta?: {
+  name: string;
+  description?: string;
+  version: string;
+  platformRevision?: string;
+  appId: string;
+  };
+  * Relative path to the admin configuration file (e.g. `"app.admin.json"`).
+  * When present, fetch this file to get the full {@link AppAdminConfig}
+  * (setup questions, import schema, tunable fields, metrics definitions).
+  * Absent when the app has no admin UI.
+  admin?: string;
+  widgets?: {
+  files: AppManifestFiles;
+  components: AppWidgetComponent[];
+  };
+  containers?: {
+  files: AppManifestFiles;
+  components: AppContainerComponent[];
+  };
   [key: string]: any;
 }
 ```
@@ -934,6 +968,7 @@ interface CollectionAppWidget {
   manifest: AppManifest;
   widget: AppBundle;
   container: AppBundle | null;
+  admin: string | null;
 }
 ```
 

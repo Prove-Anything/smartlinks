@@ -47,11 +47,72 @@ All standard widget props apply:
 | `productId`       | string         | ❌       | Product context                         |
 | `proofId`         | string         | ❌       | Proof context                           |
 | `user`            | object         | ❌       | Current user info                       |
-| `onNavigate`      | function       | ❌       | Navigation callback                     |
+| `onNavigate`      | function       | ❌       | Navigation callback (accepts `NavigationRequest` or legacy string) |
 | `size`            | string         | ❌       | `"compact"`, `"standard"`, or `"large"` |
 | `lang`            | string         | ❌       | Language code (e.g., `"en"`)            |
 | `translations`    | object         | ❌       | Translation overrides                   |
 | `className`       | string         | ❌       | CSS class for the wrapper element       |
+
+---
+
+## Cross-App Navigation
+
+Containers support the same **structured navigation requests** as widgets. When a container needs to navigate to another app within the portal, it emits a `NavigationRequest` via the `onNavigate` callback. The portal orchestrator interprets the request, preserves hierarchy context, and performs the navigation.
+
+### NavigationRequest
+
+```typescript
+interface NavigationRequest {
+  /** Target app ID to activate */
+  appId: string;
+  /** Deep link / page within the target app (forwarded as pageId) */
+  deepLink?: string;
+  /** Extra params forwarded to the target app */
+  params?: Record<string, string>;
+  /** Optionally switch to a specific product before showing the app */
+  productId?: string;
+  /** Optionally switch to a specific proof before showing the app */
+  proofId?: string;
+}
+```
+
+### Usage in Containers
+
+```typescript
+// Inside a container component
+const handleNavigateToWarranty = () => {
+  onNavigate?.({
+    appId: 'warranty-app',
+    deepLink: 'register',
+    params: { source: 'product-page' },
+  });
+};
+
+// Switch product context and open an app
+const handleViewRelatedProduct = (productId: string) => {
+  onNavigate?.({
+    appId: 'product-info',
+    productId,
+  });
+};
+```
+
+### How It Works
+
+```text
+Container button "Register Warranty"
+  → onNavigate({ appId: 'warranty', deepLink: 'register', params: { ref: 'container' } })
+  → Portal orchestrator receives NavigationRequest
+  → Calls actions.navigateToApp('warranty', 'register')
+  → Target app loads with extraParams: { pageId: 'register', ref: 'container' }
+  → collectionId, productId, proofId, theme all preserved automatically
+```
+
+### Backward Compatibility
+
+The `onNavigate` callback accepts both structured `NavigationRequest` objects and legacy strings. Existing containers that call `onNavigate('/some-path')` continue to work. **New containers should always use the structured `NavigationRequest` format.**
+
+See `widgets.md` for the full `NavigationRequest` documentation and additional examples.
 
 ---
 
@@ -83,7 +144,10 @@ const { PublicContainer } = await import('https://my-app.com/containers.es.js');
   appId="my-app"
   productId="prod-123"
   SL={SL}
-  onNavigate={handleNavigate}
+  onNavigate={(request) => {
+    // The portal orchestrator handles NavigationRequest objects
+    // automatically when using ContentOrchestrator / OrchestratedPortal
+  }}
   lang="en"
   className="max-w-4xl mx-auto"
 />
@@ -184,6 +248,7 @@ src/containers/
 | **Styling**       | Fully isolated CSS                | Inherits parent CSS variables      |
 | **Communication** | postMessage                       | Direct props / callbacks           |
 | **Auth**          | Via `SL.auth.getAccount()`        | Via `user` prop from parent        |
+| **Navigation**    | `window.parent.postMessage`       | `onNavigate` with `NavigationRequest` |
 
 ---
 
@@ -196,3 +261,4 @@ src/containers/
 | Routing doesn't work       | Using HashRouter instead of MemoryRouter | Containers must use MemoryRouter                     |
 | Query cache conflicts      | Sharing parent's QueryClient             | Each container needs its own `QueryClient` instance  |
 | `cva.cva` runtime error    | Global set to lowercase `cva`            | Use uppercase `CVA` for the global name              |
+| Navigation does nothing    | Using legacy string with `onNavigate`    | Use structured `NavigationRequest` object instead    |

@@ -10,7 +10,7 @@ Widgets are self-contained React components that:
 - Run inside the parent React application (not iframes)
 - Receive standardized context props
 - Inherit styling from the parent via CSS variables
-- Can trigger navigation to the full app
+- Can trigger structured cross-app navigation within the parent portal
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
@@ -18,8 +18,8 @@ Widgets are self-contained React components that:
 │                                                                 │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
 │  │ Competition  │  │ Music App    │  │ Warranty     │          │
-│  │ Widget       │  │ Widget       │  │ Widget       │          │
-│  │ (ESM import) │  │ (ESM import) │  │ (ESM import) │          │
+│  │ Widget       │  │ (ESM import) │  │ Widget       │          │
+│  │ (ESM import) │  │              │  │ (ESM import) │          │
 │  └──────────────┘  └──────────────┘  └──────────────┘          │
 │         ↑                 ↑                 ↑                   │
 │         │                 │                 │                   │
@@ -56,7 +56,7 @@ interface SmartLinksWidgetProps {
   SL: typeof import('@proveanything/smartlinks');
   
   // Callback to navigate within the parent application
-  onNavigate?: (path: string) => void;
+  onNavigate?: (request: NavigationRequest | string) => void;
   
   // Base URL to the full public portal for deep linking
   publicPortalUrl?: string;
@@ -80,22 +80,102 @@ interface SmartLinksWidgetProps {
 | `proofId` | `string?` | Optional proof context |
 | `user` | `object?` | Current user info if authenticated |
 | `SL` | `typeof SL` | Pre-initialized SmartLinks SDK |
-| `onNavigate` | `function?` | Callback to navigate within parent app |
+| `onNavigate` | `function?` | Callback to navigate within parent app (accepts `NavigationRequest` or legacy string) |
 | `publicPortalUrl` | `string?` | Base URL to full portal for deep links |
 | `size` | `string?` | Size hint: 'compact', 'standard', or 'large' |
 | `lang` | `string?` | Language code (e.g., 'en', 'de', 'fr') |
 | `translations` | `object?` | Translation overrides |
 
-### Navigation: onNavigate vs publicPortalUrl
+---
+
+## Cross-App Navigation
+
+Widgets can navigate to other apps within the portal using **structured navigation requests**. This allows a widget to say "open app X with these parameters" without knowing the portal's URL structure or hierarchy state. The portal orchestrator receives the request, preserves the current context (collection, product, proof, theme, auth), and performs the actual navigation.
+
+### NavigationRequest
+
+```typescript
+interface NavigationRequest {
+  /** Target app ID to activate */
+  appId: string;
+  /** Deep link / page within the target app (forwarded as pageId) */
+  deepLink?: string;
+  /** Extra params forwarded to the target app (e.g. { campaignId: '123' }) */
+  params?: Record<string, string>;
+  /** Optionally switch to a specific product before showing the app */
+  productId?: string;
+  /** Optionally switch to a specific proof before showing the app */
+  proofId?: string;
+}
+```
+
+### Usage Examples
+
+```typescript
+const MyWidget: React.FC<SmartLinksWidgetProps> = ({ onNavigate, ...props }) => {
+
+  // Navigate to another app, keeping current context
+  const handleEnterCompetition = () => {
+    onNavigate?.({
+      appId: 'competition-app',
+      deepLink: 'enter',
+      params: { campaignId: '123', ref: 'widget' },
+    });
+  };
+
+  // Navigate to a specific product's app
+  const handleViewProduct = (productId: string) => {
+    onNavigate?.({
+      appId: 'product-info',
+      productId,
+    });
+  };
+
+  // Navigate to a proof-level app
+  const handleViewWarranty = (proofId: string) => {
+    onNavigate?.({
+      appId: 'warranty-app',
+      proofId,
+      productId: 'prod-123', // required when jumping to proof level
+    });
+  };
+
+  return (
+    <Card>
+      <Button onClick={handleEnterCompetition}>Enter Competition</Button>
+      <Button onClick={() => handleViewProduct('prod-456')}>View Product</Button>
+    </Card>
+  );
+};
+```
+
+### How It Works End-to-End
+
+```text
+Widget clicks "Enter Competition"
+  → onNavigate({ appId: 'competition', deepLink: 'enter', params: { ref: 'widget' } })
+  → Portal orchestrator receives NavigationRequest
+  → Calls actions.navigateToApp('competition', 'enter')
+  → Orchestrator renders the target app with extraParams: { pageId: 'enter', ref: 'widget' }
+  → Current collectionId, productId, proofId, theme all preserved automatically
+```
+
+### Backward Compatibility
+
+The `onNavigate` callback accepts both structured `NavigationRequest` objects and legacy strings. Existing widgets that call `onNavigate('/some-path')` continue to work — the portal treats plain strings as legacy no-ops and logs them for debugging.
+
+**New widgets should always use the structured `NavigationRequest` format.**
+
+### onNavigate vs publicPortalUrl
 
 Widgets support two navigation patterns:
 
-**`onNavigate` (parent-controlled)**
-- Parent provides a callback to handle navigation
-- Widget passes a relative path (e.g., `/#/?collectionId=x&tab=details`)
-- Parent decides what to do (router push, open modal, etc.)
+**`onNavigate` (parent-controlled, recommended)**
+- Parent provides a callback that the orchestrator interprets
+- Widget emits a structured `NavigationRequest`
+- Portal handles hierarchy transitions, context preservation, and routing
 
-**`publicPortalUrl` (direct redirect)**
+**`publicPortalUrl` (direct redirect, escape hatch)**
 - Widget knows the full URL to the public portal
 - Uses `SL.iframe.redirectParent()` for navigation
 - Automatically handles iframe escape via postMessage
@@ -104,16 +184,17 @@ Widgets support two navigation patterns:
 **Priority:** If both are provided, `onNavigate` takes precedence.
 
 ```typescript
-// Parent provides callback
+// Recommended: structured navigation
 <MyWidget
-  onNavigate={(path) => router.push(path)}
-  // ...
+  onNavigate={(request) => {
+    // Portal orchestrator handles this automatically
+    // when using ContentOrchestrator / OrchestratedPortal
+  }}
 />
 
-// Widget uses direct redirect
+// Escape hatch: direct redirect
 <MyWidget
   publicPortalUrl="https://my-app.smartlinks.io"
-  // ...
 />
 ```
 
@@ -136,7 +217,6 @@ export const MyWidget: React.FC<SmartLinksWidgetProps> = ({
   user,
   SL,
   onNavigate,
-  publicPortalUrl,
   size = 'standard'
 }) => {
   // Use the SL SDK for API calls
@@ -148,19 +228,13 @@ export const MyWidget: React.FC<SmartLinksWidgetProps> = ({
     console.log('Config:', data);
   };
 
-  // Navigate to full app (supports both patterns)
-  const handleOpenApp = () => {
-    const params = new URLSearchParams({ collectionId, appId });
-    if (productId) params.set('productId', productId);
-    const relativePath = `/#/?${params.toString()}`;
-    
-    if (onNavigate) {
-      // Parent-controlled navigation
-      onNavigate(relativePath);
-    } else if (publicPortalUrl) {
-      // Direct redirect (handles iframe escape automatically)
-      SL.iframe.redirectParent(`${publicPortalUrl}${relativePath}`);
-    }
+  // Navigate to another app using structured request
+  const handleOpenFullApp = () => {
+    onNavigate?.({
+      appId,
+      deepLink: 'details',
+      params: { source: 'widget' },
+    });
   };
 
   return (
@@ -172,7 +246,7 @@ export const MyWidget: React.FC<SmartLinksWidgetProps> = ({
         <p className="text-muted-foreground mb-4">
           Widget content goes here
         </p>
-        <Button onClick={handleOpenApp}>Open App</Button>
+        <Button onClick={handleOpenFullApp}>Open App</Button>
       </CardContent>
     </Card>
   );
@@ -316,23 +390,15 @@ const CompetitionWidget = lazy(() =>
 function Portal() {
   return (
     <Suspense fallback={<WidgetSkeleton />}>
-      {/* Option 1: Parent controls navigation */}
       <CompetitionWidget
         collectionId="abc123"
         appId="competition"
         user={currentUser}
         SL={SL}
-        onNavigate={(path) => window.open(`https://competition-app.example.com${path}`)}
-        size="standard"
-      />
-      
-      {/* Option 2: Widget handles its own navigation */}
-      <CompetitionWidget
-        collectionId="abc123"
-        appId="competition"
-        user={currentUser}
-        SL={SL}
-        publicPortalUrl="https://competition-app.example.com"
+        onNavigate={(request) => {
+          // The portal orchestrator handles NavigationRequest objects
+          // automatically when using ContentOrchestrator / OrchestratedPortal
+        }}
         size="standard"
       />
     </Suspense>
@@ -411,7 +477,8 @@ Widgets use semantic class names that reference these variables:
 - ✅ Use semantic color classes for theming
 - ✅ Handle loading and error states gracefully
 - ✅ Use the provided `SL` SDK for API calls
-- ✅ Provide meaningful navigation via `onNavigate`
+- ✅ Use structured `NavigationRequest` for cross-app navigation
+- ✅ Include `params` for any extra context the target app needs
 
 ### Don'ts
 
@@ -420,6 +487,7 @@ Widgets use semantic class names that reference these variables:
 - ❌ Don't assume specific viewport sizes
 - ❌ Don't make widgets too complex (use full app for that)
 - ❌ Don't store state that should persist (use parent or SDK)
+- ❌ Don't construct portal URLs manually — use `NavigationRequest` instead
 
 ---
 
@@ -495,7 +563,7 @@ function WidgetTestPage() {
 ```
 src/widgets/
 ├── index.ts              # Main exports barrel
-├── types.ts              # SmartLinksWidgetProps and related types
+├── types.ts              # SmartLinksWidgetProps, NavigationRequest, and related types
 ├── WidgetWrapper.tsx     # Error boundary + Suspense wrapper
 └── ExampleWidget/
     ├── index.tsx         # Re-export
