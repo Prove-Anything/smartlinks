@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.4.7  |  Generated: 2026-02-21T14:49:14.374Z
+Version: 1.4.8  |  Generated: 2026-02-23T21:44:41.707Z
 
 This is a concise summary of all available API functions and types.
 
@@ -33,7 +33,6 @@ The Smartlinks SDK is organized into the following namespaces:
 - **batch** - Group products into batches; manage serial number ranges and lookups.
 - **crate** - Organize products in containers/crates for logistics and grouping.
 - **form** - Build and manage dynamic forms used by apps and workflows.
-- **appRecord** - Store and retrieve application-level records tied to a collection.
 - **appConfiguration** - Read/write app configuration and scoped data (collection/product/proof).
 
 — Identity & Access —
@@ -120,8 +119,9 @@ Returns true if the SDK currently has any auth credential set (bearer token or A
   persistence?: 'none' | 'indexeddb'
   persistenceTtlMs?: number
   serveStaleOnOffline?: boolean
+  clearOnPageLoad?: boolean
 }) → `void`
-Configure the SDK's built-in in-memory GET cache. The cache is transparent — it sits inside the HTTP layer and requires no changes to your existing API calls. All GET requests benefit automatically. Per-resource rules (collections/products → 1 h, proofs → 30 s, etc.) override this value. in-memory only (`'none'`, default). Ignored in Node.js. fallback, from the original fetch time (default: 7 days). `SmartlinksOfflineError` with stale data instead of propagating the network error. ```ts // Enable IndexedDB persistence for offline support configureSdkCache({ persistence: 'indexeddb' }) // Disable cache entirely in test environments configureSdkCache({ enabled: false }) ```
+Configure the SDK's built-in in-memory GET cache. The cache is transparent — it sits inside the HTTP layer and requires no changes to your existing API calls. All GET requests benefit automatically. Per-resource rules (collections/products → 1 h, proofs → 30 s, etc.) override this value. in-memory only (`'none'`, default). Ignored in Node.js. fallback, from the original fetch time (default: 7 days). `SmartlinksOfflineError` with stale data instead of propagating the network error. caches on page load/refresh. IndexedDB persists for offline. ```ts // Enable IndexedDB persistence for offline support configureSdkCache({ persistence: 'indexeddb' }) // Disable cache entirely in test environments configureSdkCache({ enabled: false }) // Keep caches across page refreshes (not recommended for production) configureSdkCache({ clearOnPageLoad: false }) ```
 
 **invalidateCache**(urlPattern?: string) → `void`
 Manually invalidate entries in the SDK's GET cache. *contains* this string is removed. Omit (or pass `undefined`) to wipe the entire cache. ```ts invalidateCache()                     // clear everything invalidateCache('/collection/abc123') // one specific collection invalidateCache('/product/')          // all product responses ```
@@ -4070,16 +4070,6 @@ Delete a data item by ID within a scope. Requires admin authentication. ```types
 **getWidgets**(collectionId: string,
     options?: GetCollectionWidgetsOptions) → `Promise<CollectionWidgetsResponse>`
 Fetches ALL widget data (manifests + bundle files) for a collection in one call. Returns everything needed to render widgets with zero additional requests. This solves N+1 query problems by fetching manifests, JavaScript bundles, and CSS files in parallel on the server. ```typescript // Fetch all widget data for a collection const { apps } = await Api.AppConfiguration.getWidgets(collectionId); // Returns: [{ appId, manifestUrl, manifest, bundleSource, bundleCss }, ...] // Convert bundle source to dynamic imports for (const app of apps) { const blob = new Blob([app.bundleSource], { type: 'application/javascript' }); const blobUrl = URL.createObjectURL(blob); const widgetModule = await import(blobUrl); // Inject CSS if present if (app.bundleCss) { const styleTag = document.createElement('style'); styleTag.textContent = app.bundleCss; document.head.appendChild(styleTag); } } // Force refresh all widgets const { apps } = await Api.AppConfiguration.getWidgets(collectionId, { force: true }); ```
-
-### appRecord
-
-**get**(collectionId: string, appId: string) → `Promise<any>`
-
-**create**(collectionId: string, appId: string, data: any) → `Promise<any>`
-
-**update**(collectionId: string, appId: string, data: any) → `Promise<any>`
-
-**remove**(collectionId: string, appId: string) → `Promise<void>`
 
 ### asset
 

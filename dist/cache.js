@@ -4,6 +4,27 @@
 // In-memory cache store
 const memoryCache = new Map();
 /**
+ * Clear session-scoped caches on page load.
+ * SessionStorage persists across normal refreshes, so we explicitly clear it
+ * on load to ensure fresh data after F5/Ctrl+F5. LocalStorage is preserved
+ * for true offline/persistent caching scenarios.
+ */
+function clearSessionCacheOnLoad() {
+    if (typeof sessionStorage === 'undefined')
+        return;
+    try {
+        const sessionKeys = Object.keys(sessionStorage).filter(k => k.startsWith('smartlinks:cache:'));
+        sessionKeys.forEach(k => sessionStorage.removeItem(k));
+    }
+    catch (_a) {
+        // Storage may not be available
+    }
+}
+// Auto-clear session caches on page load (browser only)
+if (typeof window !== 'undefined') {
+    clearSessionCacheOnLoad();
+}
+/**
  * Get cached value or fetch fresh.
  *
  * @param key - Cache key

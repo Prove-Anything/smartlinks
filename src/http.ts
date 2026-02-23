@@ -36,6 +36,8 @@ let cacheDefaultTtlMs: number = 60_000 // 60 seconds
 let cacheMaxEntries: number = 200
 /** Persistence backend for the L2 cache. 'none' (default) disables IndexedDB persistence. */
 let cachePersistence: 'none' | 'indexeddb' = 'none'
+/** When true (default), clear in-memory and sessionStorage caches on page load/refresh. */
+let cacheClearOnPageLoad: boolean = true
 /**
  * How long L2 (IndexedDB) entries are considered valid as an offline stale fallback,
  * measured from the original network fetch time (default: 7 days).
@@ -92,6 +94,33 @@ function evictLruIfNeeded(): void {
     if (firstKey !== undefined) httpCache.delete(firstKey)
     else break
   }
+}
+
+/**
+ * Clear session-scoped caches (in-memory + sessionStorage) on page load.
+ * This ensures that a page refresh always fetches fresh data, while
+ * IndexedDB persists for true offline support.
+ * 
+ * Automatically called once when this module loads in a browser environment.
+ */
+function clearSessionCachesOnPageLoad(): void {
+  if (typeof window === 'undefined') return // Node.js environment
+  
+  httpCache.clear()
+  
+  try {
+    if (typeof sessionStorage !== 'undefined') {
+      const sessionKeys = Object.keys(sessionStorage).filter(k => k.startsWith('smartlinks:cache:'))
+      sessionKeys.forEach(k => sessionStorage.removeItem(k))
+    }
+  } catch {
+    // Storage may not be available (private browsing, etc.)
+  }
+}
+
+// Auto-clear session caches on page load (browser only)
+if (typeof window !== 'undefined' && cacheClearOnPageLoad) {
+  clearSessionCachesOnPageLoad()
 }
 
 /**
@@ -458,6 +487,8 @@ export function hasAuthCredentials(): boolean {
  * @param options.serveStaleOnOffline - When `true` (default) and persistence is on, throw
  *                                      `SmartlinksOfflineError` with stale data instead of
  *                                      propagating the network error.
+ * @param options.clearOnPageLoad     - When `true` (default), clear in-memory and sessionStorage
+ *                                      caches on page load/refresh. IndexedDB persists for offline.
  *
  * @example
  * ```ts
@@ -466,6 +497,9 @@ export function hasAuthCredentials(): boolean {
  *
  * // Disable cache entirely in test environments
  * configureSdkCache({ enabled: false })
+ * 
+ * // Keep caches across page refreshes (not recommended for production)
+ * configureSdkCache({ clearOnPageLoad: false })
  * ```
  */
 export function configureSdkCache(options: {
@@ -475,6 +509,7 @@ export function configureSdkCache(options: {
   persistence?: 'none' | 'indexeddb'
   persistenceTtlMs?: number
   serveStaleOnOffline?: boolean
+  clearOnPageLoad?: boolean
 }): void {
   if (options.enabled !== undefined) cacheEnabled = options.enabled
   if (options.ttlMs !== undefined) cacheDefaultTtlMs = options.ttlMs
@@ -482,6 +517,7 @@ export function configureSdkCache(options: {
   if (options.persistence !== undefined) cachePersistence = options.persistence
   if (options.persistenceTtlMs !== undefined) cachePersistenceTtlMs = options.persistenceTtlMs
   if (options.serveStaleOnOffline !== undefined) cacheServeStaleOnOffline = options.serveStaleOnOffline
+  if (options.clearOnPageLoad !== undefined) cacheClearOnPageLoad = options.clearOnPageLoad
 }
 
 /**

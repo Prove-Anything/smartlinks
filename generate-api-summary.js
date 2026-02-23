@@ -205,7 +205,6 @@ function generateAPISummary() {
         { name: 'batch', desc: 'Group products into batches; manage serial number ranges and lookups.' },
         { name: 'crate', desc: 'Organize products in containers/crates for logistics and grouping.' },
         { name: 'form', desc: 'Build and manage dynamic forms used by apps and workflows.' },
-        { name: 'appRecord', desc: 'Store and retrieve application-level records tied to a collection.' },
         { name: 'appConfiguration', desc: 'Read/write app configuration and scoped data (collection/product/proof).' },
       ]
     },

@@ -82,6 +82,8 @@ export declare function hasAuthCredentials(): boolean;
  * @param options.serveStaleOnOffline - When `true` (default) and persistence is on, throw
  *                                      `SmartlinksOfflineError` with stale data instead of
  *                                      propagating the network error.
+ * @param options.clearOnPageLoad     - When `true` (default), clear in-memory and sessionStorage
+ *                                      caches on page load/refresh. IndexedDB persists for offline.
  *
  * @example
  * ```ts
@@ -90,6 +92,9 @@ export declare function hasAuthCredentials(): boolean;
  *
  * // Disable cache entirely in test environments
  * configureSdkCache({ enabled: false })
+ *
+ * // Keep caches across page refreshes (not recommended for production)
+ * configureSdkCache({ clearOnPageLoad: false })
  * ```
  */
 export declare function configureSdkCache(options: {
@@ -99,6 +104,7 @@ export declare function configureSdkCache(options: {
     persistence?: 'none' | 'indexeddb';
     persistenceTtlMs?: number;
     serveStaleOnOffline?: boolean;
+    clearOnPageLoad?: boolean;
 }): void;
 /**
  * Manually invalidate entries in the SDK's GET cache.
