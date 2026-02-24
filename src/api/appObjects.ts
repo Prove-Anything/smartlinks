@@ -23,6 +23,10 @@ import type {
   RelatedResponse
 } from '../types/appObjects'
 
+// ==================== APP NAMESPACE ====================
+
+export namespace app {
+
 // ==================== CASES ====================
 
 export namespace cases {
@@ -375,6 +379,8 @@ export namespace records {
     return post<AggregateResponse>(path, request)
   }
 }
+
+} // end namespace app
 
 // ==================== HELPERS ====================
 

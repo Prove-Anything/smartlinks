@@ -106,14 +106,14 @@ Each object has a `visibility` field that controls who can access it on **public
 
 ```typescript
 // Public discussion thread
-await threads.create(collectionId, appId, {
+await app.threads.create(collectionId, appId, {
   visibility: 'public',
   title: 'How do I clean this product?',
   body: { text: 'Looking for cleaning instructions...' }
 });
 
 // Private support case
-await cases.create(collectionId, appId, {
+await app.cases.create(collectionId, appId, {
   visibility: 'owner',  // Only this contact can see it
   category: 'warranty',
   data: { issue: 'Defective unit' },
@@ -121,7 +121,7 @@ await cases.create(collectionId, appId, {
 });
 
 // Admin-only internal record
-await records.create(collectionId, appId, {
+await app.records.create(collectionId, appId, {
   visibility: 'admin',  // Never appears on public endpoints
   recordType: 'audit_log',
   admin: { action: 'manual_refund', amount: 50.00 }
@@ -155,10 +155,10 @@ await records.create(collectionId, appId, {
 ### Example: Warranty Claims
 
 ```typescript
-import { cases } from '@proveanything/smartlinks';
+import { app } from '@proveanything/smartlinks';
 
 // Customer submits a warranty claim (public endpoint)
-const claim = await cases.create(collectionId, appId, {
+const claim = await app.cases.create(collectionId, appId, {
   visibility: 'owner',
   category: 'warranty',
   status: 'open',
@@ -178,7 +178,7 @@ const claim = await cases.create(collectionId, appId, {
 });
 
 // Admin reviews and assigns (admin endpoint)
-await cases.update(collectionId, appId, claim.id, {
+await app.cases.update(collectionId, appId, claim.id, {
   assignedTo: 'user_jane_support',
   priority: 3, // escalate
   admin: {
@@ -187,7 +187,7 @@ await cases.update(collectionId, appId, claim.id, {
 }, true); // admin = true
 
 // Admin appends to history
-await cases.appendHistory(collectionId, appId, claim.id, {
+await app.cases.appendHistory(collectionId, appId, claim.id, {
   entry: {
     action: 'approved_replacement',
     agent: 'Jane',
@@ -198,7 +198,7 @@ await cases.appendHistory(collectionId, appId, claim.id, {
 });
 
 // Get case summary stats (admin)
-const summary = await cases.summary(collectionId, appId, {
+const summary = await app.cases.summary(collectionId, appId, {
   period: { from: '2026-01-01', to: '2026-02-28' }
 });
 // Returns: { total: 142, byStatus: { open: 12, resolved: 130 }, ... }
@@ -209,21 +209,21 @@ const summary = await cases.summary(collectionId, appId, {
 Build a live support dashboard showing open cases by priority:
 
 ```typescript
-const openCases = await cases.list(collectionId, appId, {
+const openCases = await app.cases.list(collectionId, appId, {
   status: 'open',
   sort: 'priority:desc',
   limit: 50
 }, true);
 
 // Aggregate by category
-const stats = await cases.aggregate(collectionId, appId, {
+const stats = await app.cases.aggregate(collectionId, appId, {
   filters: { status: 'open' },
   groupBy: ['category', 'priority'],
   metrics: ['count']
 }, true);
 
 // Time series: cases created per week
-const trend = await cases.aggregate(collectionId, appId, {
+const trend = await app.cases.aggregate(collectionId, appId, {
   timeSeriesField: 'created_at',
   timeSeriesInterval: 'week',
   metrics: ['count']
@@ -257,10 +257,10 @@ const trend = await cases.aggregate(collectionId, appId, {
 ### Example: Product Q&A
 
 ```typescript
-import { threads } from '@proveanything/smartlinks';
+import { app } from '@proveanything/smartlinks';
 
 // Customer asks a question (public endpoint)
-const question = await threads.create(collectionId, appId, {
+const question = await app.threads.create(collectionId, appId, {
   visibility: 'public',
   slug: 'how-to-clean-leather',
   title: 'How do I clean leather without damaging it?',
@@ -275,14 +275,14 @@ const question = await threads.create(collectionId, appId, {
 });
 
 // Another customer replies
-await threads.reply(collectionId, appId, question.id, {
+await app.threads.reply(collectionId, appId, question.id, {
   authorId: otherUser.contactId,
   authorType: 'customer',
   text: 'I use a mild soap and water solution. Works great!'
 });
 
 // Admin (brand expert) replies
-await threads.reply(collectionId, appId, question.id, {
+await app.threads.reply(collectionId, appId, question.id, {
   authorId: 'user_expert_sarah',
   authorType: 'brand_expert',
   text: 'Our official leather care kit is perfect for this. Avoid harsh chemicals.',
@@ -290,7 +290,7 @@ await threads.reply(collectionId, appId, question.id, {
 }, true); // admin endpoint
 
 // Admin marks as resolved
-await threads.update(collectionId, appId, question.id, {
+await app.threads.update(collectionId, appId, question.id, {
   status: 'resolved'
 }, true);
 ```
@@ -301,19 +301,19 @@ List recent discussions with reply counts:
 
 ```typescript
 // Get active threads
-const activeThreads = await threads.list(collectionId, appId, {
+const activeThreads = await app.threads.list(collectionId, appId, {
   status: 'open',
   sort: 'lastReplyAt:desc',
   limit: 20
 });
 
 // Filter by tag
-const cleaningThreads = await threads.list(collectionId, appId, {
+const cleaningThreads = await app.threads.list(collectionId, appId, {
   tag: 'cleaning'
 });
 
 // Aggregate: most active discussion topics
-const topicStats = await threads.aggregate(collectionId, appId, {
+const topicStats = await app.threads.aggregate(collectionId, appId, {
   groupBy: ['status'],
   metrics: ['count', 'reply_count']
 });
@@ -325,7 +325,7 @@ Attach comments to a specific product:
 
 ```typescript
 // Create a comment thread for a product
-await threads.create(collectionId, appId, {
+await app.threads.create(collectionId, appId, {
   visibility: 'public',
   parentType: 'product',
   parentId: product.id,
@@ -335,7 +335,7 @@ await threads.create(collectionId, appId, {
 });
 
 // List all comments for a product
-const productComments = await threads.list(collectionId, appId, {
+const productComments = await app.threads.list(collectionId, appId, {
   parentType: 'product',
   parentId: product.id,
   sort: 'createdAt:desc'
@@ -371,10 +371,10 @@ const productComments = await threads.list(collectionId, appId, {
 ### Example: Product Registration
 
 ```typescript
-import { records } from '@proveanything/smartlinks';
+import { app } from '@proveanything/smartlinks';
 
 // Customer registers a product
-const registration = await records.create(collectionId, appId, {
+const registration = await app.records.create(collectionId, appId, {
   recordType: 'product_registration',
   visibility: 'owner',
   status: 'active',
@@ -398,14 +398,14 @@ const registration = await records.create(collectionId, appId, {
 });
 
 // List active registrations for a customer
-const activeRegistrations = await records.list(collectionId, appId, {
+const activeRegistrations = await app.records.list(collectionId, appId, {
   contactId: user.contactId,
   recordType: 'product_registration',
   status: 'active'
 });
 
 // Find expiring registrations (admin)
-const expiringSoon = await records.list(collectionId, appId, {
+const expiringSoon = await app.records.list(collectionId, appId, {
   recordType: 'product_registration',
   expiresAt: `lte:${new Date(Date.now() + 30*24*60*60*1000).toISOString()}` // next 30 days
 }, true);
@@ -415,7 +415,7 @@ const expiringSoon = await records.list(collectionId, appId, {
 
 ```typescript
 // Customer books a service appointment
-const booking = await records.create(collectionId, appId, {
+const booking = await app.records.create(collectionId, appId, {
   recordType: 'service_appointment',
   visibility: 'owner',
   contactId: user.contactId,
@@ -434,7 +434,7 @@ const booking = await records.create(collectionId, appId, {
 });
 
 // Admin assigns technician
-await records.update(collectionId, appId, booking.id, {
+await app.records.update(collectionId, appId, booking.id, {
   data: {
     serviceType: 'installation',
     location: 'Customer site',
@@ -448,7 +448,7 @@ await records.update(collectionId, appId, booking.id, {
 
 // List today's appointments
 const today = new Date().toISOString().split('T')[0];
-const todaysAppointments = await records.list(collectionId, appId, {
+const todaysAppointments = await app.records.list(collectionId, appId, {
   recordType: 'service_appointment',
   startsAt: `gte:${today}T00:00:00Z`,
   sort: 'startsAt:asc'
@@ -459,7 +459,7 @@ const todaysAppointments = await records.list(collectionId, appId, {
 
 ```typescript
 // Log product usage (could be triggered by IoT device)
-await records.create(collectionId, appId, {
+await app.records.create(collectionId, appId, {
   recordType: 'usage_log',
   visibility: 'admin',
   productId: product.id,
@@ -473,7 +473,7 @@ await records.create(collectionId, appId, {
 }, true);
 
 // Aggregate usage metrics
-const usageStats = await records.aggregate(collectionId, appId, {
+const usageStats = await app.records.aggregate(collectionId, appId, {
   filters: {
     record_type: 'usage_log',
     created_at: {
@@ -608,7 +608,7 @@ interface AggregateRequest {
 
 ```typescript
 // Average resolution time by category
-const metrics = await cases.aggregate(collectionId, appId, {
+const metrics = await app.cases.aggregate(collectionId, appId, {
   filters: {
     closed_at: '__notnull__'
   },
@@ -635,7 +635,7 @@ const metrics = await cases.aggregate(collectionId, appId, {
 
 ```typescript
 // Most active discussion authors
-const authorStats = await threads.aggregate(collectionId, appId, {
+const authorStats = await app.threads.aggregate(collectionId, appId, {
   groupBy: ['author_type'],
   metrics: ['count', 'reply_count']
 });
@@ -651,7 +651,7 @@ const authorStats = await threads.aggregate(collectionId, appId, {
 
 ```typescript
 // Bookings by status
-const bookingStats = await records.aggregate(collectionId, appId, {
+const bookingStats = await app.records.aggregate(collectionId, appId, {
   filters: {
     record_type: 'service_appointment'
   },
@@ -666,7 +666,7 @@ Generate time-based charts:
 
 ```typescript
 // Cases created per week
-const casesTrend = await cases.aggregate(collectionId, appId, {
+const casesTrend = await app.cases.aggregate(collectionId, appId, {
   timeSeriesField: 'created_at',
   timeSeriesInterval: 'week',
   metrics: ['count']
@@ -692,7 +692,7 @@ Cases have a built-in `related()` endpoint to fetch associated threads and recor
 
 ```typescript
 // Get all related content for a case
-const related = await cases.related(collectionId, appId, caseId);
+const related = await app.cases.related(collectionId, appId, caseId);
 // Returns: { threads: [...], records: [...] }
 ```
 
@@ -700,14 +700,14 @@ For threads and records, use parent linking:
 
 ```typescript
 // Create a thread about a case
-await threads.create(collectionId, appId, {
+await app.threads.create(collectionId, appId, {
   parentType: 'case',
   parentId: caseId,
   body: { text: 'Follow-up discussion about this case' }
 });
 
 // List all threads for a case
-const caseThreads = await threads.list(collectionId, appId, {
+const caseThreads = await app.threads.list(collectionId, appId, {
   parentType: 'case',
   parentId: caseId
 });
@@ -719,13 +719,13 @@ Use `parentType` and `parentId` to build hierarchies:
 
 ```typescript
 // Parent record: subscription
-const subscription = await records.create(collectionId, appId, {
+const subscription = await app.records.create(collectionId, appId, {
   recordType: 'subscription',
   data: { plan: 'premium', billingCycle: 'monthly' }
 });
 
 // Child records: invoices
-await records.create(collectionId, appId, {
+await app.records.create(collectionId, appId, {
   recordType: 'invoice',
   parentType: 'subscription',
   parentId: subscription.id,
@@ -733,7 +733,7 @@ await records.create(collectionId, appId, {
 });
 
 // List all invoices for a subscription
-const invoices = await records.list(collectionId, appId, {
+const invoices = await app.records.list(collectionId, appId, {
   recordType: 'invoice',
   parentType: 'subscription',
   parentId: subscription.id
@@ -746,7 +746,7 @@ Use admin-only records to log changes:
 
 ```typescript
 async function auditLog(action: string, details: any) {
-  await records.create(collectionId, appId, {
+  await app.records.create(collectionId, appId, {
     recordType: 'audit_log',
     visibility: 'admin',
     authorId: currentUser.id,
@@ -772,10 +772,10 @@ await auditLog('case_reassigned', {
 Combine with the realtime API to notify users of changes:
 
 ```typescript
-import { realtime } from '@proveanything/smartlinks';
+import { app, realtime } from '@proveanything/smartlinks';
 
 // When a case is updated
-await cases.update(collectionId, appId, caseId, { status: 'resolved' }, true);
+await app.cases.update(collectionId, appId, caseId, { status: 'resolved' }, true);
 
 // Notify the contact
 await realtime.publish(collectionId, `contact:${contactId}`, {
@@ -832,10 +832,10 @@ While statuses are free-form strings, consider standard conventions:
 Here's a full workflow combining all three object types:
 
 ```typescript
-import { cases, threads, records } from '@proveanything/smartlinks';
+import { app } from '@proveanything/smartlinks';
 
 // 1. Customer submits a warranty claim (case)
-const claim = await cases.create(collectionId, appId, {
+const claim = await app.cases.create(collectionId, appId, {
   visibility: 'owner',
   category: 'warranty',
   status: 'open',
@@ -848,7 +848,7 @@ const claim = await cases.create(collectionId, appId, {
 });
 
 // 2. Customer starts a discussion about the claim (thread)
-const discussion = await threads.create(collectionId, appId, {
+const discussion = await app.threads.create(collectionId, appId, {
   visibility: 'owner',
   parentType: 'case',
   parentId: claim.id,
@@ -857,14 +857,14 @@ const discussion = await threads.create(collectionId, appId, {
 });
 
 // 3. Admin replies to the discussion
-await threads.reply(collectionId, appId, discussion.id, {
+await app.threads.reply(collectionId, appId, discussion.id, {
   authorId: 'admin_sarah',
   authorType: 'support_agent',
   text: 'We'll ship a replacement within 2 business days'
 }, true);
 
 // 4. Admin approves and creates a shipping record
-const shipment = await records.create(collectionId, appId, {
+const shipment = await app.records.create(collectionId, appId, {
   recordType: 'shipment',
   parentType: 'case',
   parentId: claim.id,
@@ -883,7 +883,7 @@ const shipment = await records.create(collectionId, appId, {
 }, true);
 
 // 5. Admin updates case with history
-await cases.appendHistory(collectionId, appId, claim.id, {
+await app.cases.appendHistory(collectionId, appId, claim.id, {
   entry: {
     action: 'replacement_shipped',
     tracking: 'UPS-123456789'
@@ -893,13 +893,13 @@ await cases.appendHistory(collectionId, appId, claim.id, {
 });
 
 // 6. Customer receives item, admin closes case
-await cases.update(collectionId, appId, claim.id, {
+await app.cases.update(collectionId, appId, claim.id, {
   status: 'resolved',
   admin: { resolvedBy: 'admin_sarah', satisfactionScore: 5 }
 }, true);
 
 // 7. Generate analytics
-const monthlyReport = await cases.summary(collectionId, appId, {
+const monthlyReport = await app.cases.summary(collectionId, appId, {
   period: { from: '2026-02-01', to: '2026-02-28' }
 });
 ```
@@ -912,19 +912,19 @@ Import types and functions:
 
 ```typescript
 import {
-  cases, threads, records,
+  app,
   AppCase, AppThread, AppRecord,
   CreateCaseInput, CreateThreadInput, CreateRecordInput,
   PaginatedResponse, AggregateResponse
 } from '@proveanything/smartlinks';
 
 // Fully typed
-const newCase: AppCase = await cases.create(collectionId, appId, {
+const newCase: AppCase = await app.cases.create(collectionId, appId, {
   category: 'support',
   data: { issue: 'Login problem' }
 });
 
-const threadList: PaginatedResponse<AppThread> = await threads.list(
+const threadList: PaginatedResponse<AppThread> = await app.threads.list(
   collectionId,
   appId,
   { limit: 50, sort: 'createdAt:desc' }

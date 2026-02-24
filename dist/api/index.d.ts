@@ -28,4 +28,4 @@ export { location } from "./location";
 export * as realtime from "./realtime";
 export { tags } from "./tags";
 export { order } from "./order";
-export { cases, threads, records } from "./appObjects";
+export { app } from "./appObjects";

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.5.1  |  Generated: 2026-02-23T22:44:02.356Z
+Version: 1.5.2  |  Generated: 2026-02-23T22:58:57.327Z
 
 This is a concise summary of all available API functions and types.
 
@@ -4370,6 +4370,61 @@ Create or warm a cache for AI (admin)
 **postChat**(collectionId: string, params: any, admin: boolean = true) → `Promise<any>`
 Post a chat message to the AI (admin or public)
 
+### app
+
+**create**(collectionId: string,
+    appId: string,
+    input: CreateCaseInput,
+    admin: boolean = false) → `Promise<AppCase>`
+Create a new case POST /cases
+
+**list**(collectionId: string,
+    appId: string,
+    params?: CaseListQueryParams,
+    admin: boolean = false) → `Promise<PaginatedResponse<AppCase>>`
+List cases with optional query parameters GET /cases
+
+**get**(collectionId: string,
+    appId: string,
+    caseId: string,
+    admin: boolean = false) → `Promise<AppCase>`
+Get a single case by ID GET /cases/:caseId
+
+**update**(collectionId: string,
+    appId: string,
+    caseId: string,
+    input: UpdateCaseInput,
+    admin: boolean = false) → `Promise<AppCase>`
+Update a case PATCH /cases/:caseId Admin can update any field, public (owner) can only update data and owner zones
+
+**remove**(collectionId: string,
+    appId: string,
+    caseId: string,
+    admin: boolean = false) → `Promise<`
+Soft delete a case DELETE /cases/:caseId
+
+**aggregate**(collectionId: string,
+    appId: string,
+    request: AggregateRequest,
+    admin: boolean = false) → `Promise<AggregateResponse>`
+Get aggregate statistics for cases POST /cases/aggregate
+
+**summary**(collectionId: string,
+    appId: string,
+    request?: CaseSummaryRequest) → `Promise<CaseSummaryResponse>`
+Get case summary (admin only) POST /cases/summary
+
+**appendHistory**(collectionId: string,
+    appId: string,
+    caseId: string,
+    input: AppendHistoryInput) → `Promise<AppCase>`
+Append an entry to case history (admin only) POST /cases/:caseId/history
+
+**related**(collectionId: string,
+    appId: string,
+    caseId: string) → `Promise<RelatedResponse>`
+Get related threads and records for a case (admin only) GET /cases/:caseId/related
+
 ### appConfiguration
 
 **getConfig**(opts: AppConfigOptions) → `Promise<any>`
@@ -4704,61 +4759,6 @@ Get all tags/codes assigned to a specific batch. Shows which claim set codes hav
 
 **appendBulk**(collectionId: string,
     body: BroadcastAppendBulkBody) → `Promise<AppendBulkResult>`
-
-### cases
-
-**create**(collectionId: string,
-    appId: string,
-    input: CreateCaseInput,
-    admin: boolean = false) → `Promise<AppCase>`
-Create a new case POST /cases
-
-**list**(collectionId: string,
-    appId: string,
-    params?: CaseListQueryParams,
-    admin: boolean = false) → `Promise<PaginatedResponse<AppCase>>`
-List cases with optional query parameters GET /cases
-
-**get**(collectionId: string,
-    appId: string,
-    caseId: string,
-    admin: boolean = false) → `Promise<AppCase>`
-Get a single case by ID GET /cases/:caseId
-
-**update**(collectionId: string,
-    appId: string,
-    caseId: string,
-    input: UpdateCaseInput,
-    admin: boolean = false) → `Promise<AppCase>`
-Update a case PATCH /cases/:caseId Admin can update any field, public (owner) can only update data and owner zones
-
-**remove**(collectionId: string,
-    appId: string,
-    caseId: string,
-    admin: boolean = false) → `Promise<`
-Soft delete a case DELETE /cases/:caseId
-
-**aggregate**(collectionId: string,
-    appId: string,
-    request: AggregateRequest,
-    admin: boolean = false) → `Promise<AggregateResponse>`
-Get aggregate statistics for cases POST /cases/aggregate
-
-**summary**(collectionId: string,
-    appId: string,
-    request?: CaseSummaryRequest) → `Promise<CaseSummaryResponse>`
-Get case summary (admin only) POST /cases/summary
-
-**appendHistory**(collectionId: string,
-    appId: string,
-    caseId: string,
-    input: AppendHistoryInput) → `Promise<AppCase>`
-Append an entry to case history (admin only) POST /cases/:caseId/history
-
-**related**(collectionId: string,
-    appId: string,
-    caseId: string) → `Promise<RelatedResponse>`
-Get related threads and records for a case (admin only) GET /cases/:caseId/related
 
 ### claimSet
 
