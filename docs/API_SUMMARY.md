@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.4.8  |  Generated: 2026-02-23T21:44:41.707Z
+Version: 1.5.1  |  Generated: 2026-02-23T22:44:02.356Z
 
 This is a concise summary of all available API functions and types.
 
@@ -19,6 +19,7 @@ For detailed guides on specific features:
 - **[Theme Defaults](theme-defaults.md)** - Default theme values and presets
 - **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)
 - **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage
+- **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more
 - **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide
 
 ## API Namespaces
@@ -62,6 +63,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **serialNumber** - Assign, lookup, and manage serial numbers across scopes.
 
 — Other —
+- **appObjects** - Functions for appObjects operations
 - **async** - Functions for async operations
 - **attestation** - Functions for attestation operations
 - **jobs** - Functions for jobs operations
@@ -985,6 +987,330 @@ interface GetCollectionWidgetsOptions {
   force?: boolean;
 }
 ```
+
+### appObjects
+
+**AggregateRequest** (interface)
+```typescript
+interface AggregateRequest {
+  filters?: {
+  status?: string
+  category?: string // cases only
+  record_type?: string // records only
+  product_id?: string
+  created_at?: { gte?: string; lte?: string }
+  closed_at?: '__notnull__' | { gte?: string; lte?: string } // cases only
+  expires_at?: { lte?: string } // records only
+  }
+  groupBy?: string[] // see per-resource allowed values
+  metrics?: string[] // see per-resource allowed values below
+  timeSeriesField?: string // e.g. 'created_at'
+  timeSeriesInterval?: 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year'
+}
+```
+
+**AggregateResponse** (interface)
+```typescript
+interface AggregateResponse {
+  groups?: ({ count: number } & Record<string, unknown>)[]
+  timeSeries?: ({ bucket: string; count: number } & Record<string, unknown>)[]
+  count?: number
+  avg_close_time_seconds?: number
+  p50_close_time_seconds?: number
+  p95_close_time_seconds?: number
+  total_replies?: number
+  avg_replies?: number
+}
+```
+
+**ListQueryParams** (interface)
+```typescript
+interface ListQueryParams {
+  limit?: number // default 50, max 500
+  offset?: number // default 0
+  sort?: string // field:asc or field:desc
+  includeDeleted?: boolean // admin only
+  status?: string // exact or in:a,b,c
+  productId?: string
+  createdAt?: string // gte:2024-01-01, lte:2024-12-31, or ISO date string
+  updatedAt?: string // same format
+}
+```
+
+**AppCase** (interface)
+```typescript
+interface AppCase {
+  id: string
+  orgId: string
+  collectionId: string
+  appId: string
+  visibility: Visibility
+  ref: string | null
+  status: string // 'open' | 'resolved' | 'closed' | custom
+  priority: number | null
+  category: string | null
+  assignedTo: string | null // admin zone / admin callers only
+  productId: string | null
+  proofId: string | null
+  contactId: string | null
+  createdAt: string // ISO 8601
+  updatedAt: string
+  closedAt: string | null
+  deletedAt: string | null // admin callers only
+  data: Record<string, unknown> // visible to all roles
+  owner: Record<string, unknown> // visible to owner + admin
+  admin: Record<string, unknown> // visible to admin only
+}
+```
+
+**CreateCaseInput** (interface)
+```typescript
+interface CreateCaseInput {
+  visibility?: Visibility // default 'owner'
+  ref?: string
+  status?: string // default 'open'
+  priority?: number
+  category?: string
+  assignedTo?: string // admin only
+  productId?: string
+  proofId?: string
+  contactId?: string
+  data?: Record<string, unknown>
+  owner?: Record<string, unknown>
+  admin?: Record<string, unknown> // admin only
+}
+```
+
+**UpdateCaseInput** (interface)
+```typescript
+interface UpdateCaseInput {
+  data?: Record<string, unknown>
+  owner?: Record<string, unknown>
+  admin?: Record<string, unknown>
+  status?: string
+  priority?: number
+  category?: string
+  assignedTo?: string
+  ref?: string
+}
+```
+
+**AppendHistoryInput** (interface)
+```typescript
+interface AppendHistoryInput {
+  entry?: Record<string, unknown> // free-form entry object; 'at' is auto-set
+  historyTarget?: 'owner' | 'admin' // which zone receives the entry (default 'admin')
+  status?: string // optionally update status atomically
+  priority?: number
+  assignedTo?: string
+}
+```
+
+**CaseSummaryRequest** (interface)
+```typescript
+interface CaseSummaryRequest {
+  period?: { from: string; to: string } // ISO 8601 date range
+}
+```
+
+**CaseSummaryResponse** (interface)
+```typescript
+interface CaseSummaryResponse {
+  total: number
+  byStatus: Record<string, number>
+  byPriority: Record<string, number>
+  trend: { week: string; count: number }[]
+}
+```
+
+**ReplyEntry** (interface)
+```typescript
+interface ReplyEntry {
+  at: string // ISO 8601, auto-set
+  authorId?: string
+  authorType?: string
+  [key: string]: unknown
+}
+```
+
+**AppThread** (interface)
+```typescript
+interface AppThread {
+  id: string
+  orgId: string
+  collectionId: string
+  appId: string
+  visibility: Visibility
+  slug: string | null
+  title: string | null
+  status: string // 'open' | 'closed' | custom
+  authorId: string | null
+  authorType: string // default 'user'
+  productId: string | null
+  proofId: string | null
+  contactId: string | null
+  parentType: string | null
+  parentId: string | null
+  replyCount: number
+  lastReplyAt: string | null
+  createdAt: string
+  updatedAt: string
+  deletedAt: string | null // admin only
+  body: Record<string, unknown>
+  replies: ReplyEntry[]
+  tags: string[]
+  data: Record<string, unknown>
+  owner: Record<string, unknown>
+  admin: Record<string, unknown> // admin only
+}
+```
+
+**CreateThreadInput** (interface)
+```typescript
+interface CreateThreadInput {
+  visibility?: Visibility // default 'owner'
+  slug?: string
+  title?: string
+  status?: string // default 'open'
+  authorId?: string
+  authorType?: string
+  productId?: string
+  proofId?: string
+  contactId?: string
+  parentType?: string
+  parentId?: string
+  body?: Record<string, unknown>
+  tags?: string[]
+  data?: Record<string, unknown>
+  owner?: Record<string, unknown>
+  admin?: Record<string, unknown> // admin only
+}
+```
+
+**UpdateThreadInput** (interface)
+```typescript
+interface UpdateThreadInput {
+  body?: Record<string, unknown>
+  tags?: string[]
+  data?: Record<string, unknown>
+  owner?: Record<string, unknown>
+  admin?: Record<string, unknown>
+  title?: string
+  slug?: string
+  status?: string
+  visibility?: Visibility
+}
+```
+
+**ReplyInput** (interface)
+```typescript
+interface ReplyInput {
+  authorId?: string
+  authorType?: string
+  [key: string]: unknown // any extra fields stored on the reply object
+}
+```
+
+**AppRecord** (interface)
+```typescript
+interface AppRecord {
+  id: string
+  orgId: string
+  collectionId: string
+  appId: string
+  visibility: Visibility
+  recordType: string
+  ref: string | null
+  status: string // default 'active'
+  productId: string | null
+  proofId: string | null
+  contactId: string | null
+  authorId: string | null
+  authorType: string
+  parentType: string | null
+  parentId: string | null
+  createdAt: string
+  updatedAt: string
+  startsAt: string | null
+  expiresAt: string | null
+  deletedAt: string | null // admin only
+  data: Record<string, unknown>
+  owner: Record<string, unknown>
+  admin: Record<string, unknown> // admin only
+}
+```
+
+**CreateRecordInput** (interface)
+```typescript
+interface CreateRecordInput {
+  recordType: string
+  visibility?: Visibility // default 'owner'
+  ref?: string
+  status?: string // default 'active'
+  productId?: string
+  proofId?: string
+  contactId?: string
+  authorId?: string
+  authorType?: string
+  parentType?: string
+  parentId?: string
+  startsAt?: string // ISO 8601
+  expiresAt?: string
+  data?: Record<string, unknown>
+  owner?: Record<string, unknown>
+  admin?: Record<string, unknown> // admin only
+}
+```
+
+**UpdateRecordInput** (interface)
+```typescript
+interface UpdateRecordInput {
+  data?: Record<string, unknown>
+  owner?: Record<string, unknown>
+  admin?: Record<string, unknown>
+  status?: string
+  visibility?: Visibility
+  ref?: string
+  recordType?: string
+  startsAt?: string
+  expiresAt?: string
+}
+```
+
+**RelatedResponse** (interface)
+```typescript
+interface RelatedResponse {
+  threads: AppThread[]
+  records: AppRecord[]
+}
+```
+
+**PublicCreatePolicy** (interface)
+```typescript
+interface PublicCreatePolicy {
+  cases?: PublicCreateRule
+  threads?: PublicCreateRule
+  records?: PublicCreateRule
+}
+```
+
+**PublicCreateRule** (interface)
+```typescript
+interface PublicCreateRule {
+  allow: {
+  anonymous?: boolean
+  authenticated?: boolean
+  }
+  enforce?: {
+  anonymous?: Partial<CreateCaseInput | CreateThreadInput | CreateRecordInput>
+  authenticated?: Partial<CreateCaseInput | CreateThreadInput | CreateRecordInput>
+  }
+}
+```
+
+**Visibility** = `'public' | 'owner' | 'admin'`
+
+**CallerRole** = `'admin' | 'owner' | 'public'`
 
 ### asset
 
@@ -4379,6 +4705,61 @@ Get all tags/codes assigned to a specific batch. Shows which claim set codes hav
 **appendBulk**(collectionId: string,
     body: BroadcastAppendBulkBody) → `Promise<AppendBulkResult>`
 
+### cases
+
+**create**(collectionId: string,
+    appId: string,
+    input: CreateCaseInput,
+    admin: boolean = false) → `Promise<AppCase>`
+Create a new case POST /cases
+
+**list**(collectionId: string,
+    appId: string,
+    params?: CaseListQueryParams,
+    admin: boolean = false) → `Promise<PaginatedResponse<AppCase>>`
+List cases with optional query parameters GET /cases
+
+**get**(collectionId: string,
+    appId: string,
+    caseId: string,
+    admin: boolean = false) → `Promise<AppCase>`
+Get a single case by ID GET /cases/:caseId
+
+**update**(collectionId: string,
+    appId: string,
+    caseId: string,
+    input: UpdateCaseInput,
+    admin: boolean = false) → `Promise<AppCase>`
+Update a case PATCH /cases/:caseId Admin can update any field, public (owner) can only update data and owner zones
+
+**remove**(collectionId: string,
+    appId: string,
+    caseId: string,
+    admin: boolean = false) → `Promise<`
+Soft delete a case DELETE /cases/:caseId
+
+**aggregate**(collectionId: string,
+    appId: string,
+    request: AggregateRequest,
+    admin: boolean = false) → `Promise<AggregateResponse>`
+Get aggregate statistics for cases POST /cases/aggregate
+
+**summary**(collectionId: string,
+    appId: string,
+    request?: CaseSummaryRequest) → `Promise<CaseSummaryResponse>`
+Get case summary (admin only) POST /cases/summary
+
+**appendHistory**(collectionId: string,
+    appId: string,
+    caseId: string,
+    input: AppendHistoryInput) → `Promise<AppCase>`
+Append an entry to case history (admin only) POST /cases/:caseId/history
+
+**related**(collectionId: string,
+    appId: string,
+    caseId: string) → `Promise<RelatedResponse>`
+Get related threads and records for a case (admin only) GET /cases/:caseId/related
+
 ### claimSet
 
 **getAllForCollection**(collectionId: string) → `Promise<any[]>`
@@ -4978,6 +5359,45 @@ Get an Ably token for public (user-scoped) real-time communication. This endpoin
 **getAdminToken**() → `Promise<AblyTokenRequest>`
 Get an Ably token for admin real-time communication. This endpoint returns an Ably TokenRequest that can be used to initialize an Ably client with admin permissions to receive system notifications and alerts. Admin users get subscribe-only (read-only) access to the interaction:{userId} channel pattern. Requires admin authentication (Bearer token). ```ts const tokenRequest = await realtime.getAdminToken() // Use with Ably const ably = new Ably.Realtime.Promise({ authCallback: async (data, callback) => { callback(null, tokenRequest) } }) // Subscribe to admin interaction channel const userId = 'my-user-id' const channel = ably.channels.get(`interaction:${userId}`) await channel.subscribe((message) => { console.log('Admin notification:', message.data) }) ```
 
+### records
+
+**create**(collectionId: string,
+    appId: string,
+    input: CreateRecordInput,
+    admin: boolean = false) → `Promise<AppRecord>`
+Create a new record POST /records
+
+**list**(collectionId: string,
+    appId: string,
+    params?: RecordListQueryParams,
+    admin: boolean = false) → `Promise<PaginatedResponse<AppRecord>>`
+List records with optional query parameters GET /records
+
+**get**(collectionId: string,
+    appId: string,
+    recordId: string,
+    admin: boolean = false) → `Promise<AppRecord>`
+Get a single record by ID GET /records/:recordId
+
+**update**(collectionId: string,
+    appId: string,
+    recordId: string,
+    input: UpdateRecordInput,
+    admin: boolean = false) → `Promise<AppRecord>`
+Update a record PATCH /records/:recordId Admin can update any field, public (owner) can only update data and owner
+
+**remove**(collectionId: string,
+    appId: string,
+    recordId: string,
+    admin: boolean = false) → `Promise<`
+Soft delete a record DELETE /records/:recordId
+
+**aggregate**(collectionId: string,
+    appId: string,
+    request: AggregateRequest,
+    admin: boolean = false) → `Promise<AggregateResponse>`
+Get aggregate statistics for records POST /records/aggregate
+
 ### segments
 
 **create**(collectionId: string,
@@ -5085,6 +5505,52 @@ Backward-compat: Public batch lookup (GET) with collectionId parameter (ignored)
 
 **renderSource**(collectionId: string,
     body: TemplateRenderSourceRequest) → `Promise<TemplateRenderSourceResponse>`
+
+### threads
+
+**create**(collectionId: string,
+    appId: string,
+    input: CreateThreadInput,
+    admin: boolean = false) → `Promise<AppThread>`
+Create a new thread POST /threads
+
+**list**(collectionId: string,
+    appId: string,
+    params?: ThreadListQueryParams,
+    admin: boolean = false) → `Promise<PaginatedResponse<AppThread>>`
+List threads with optional query parameters GET /threads
+
+**get**(collectionId: string,
+    appId: string,
+    threadId: string,
+    admin: boolean = false) → `Promise<AppThread>`
+Get a single thread by ID GET /threads/:threadId
+
+**update**(collectionId: string,
+    appId: string,
+    threadId: string,
+    input: UpdateThreadInput,
+    admin: boolean = false) → `Promise<AppThread>`
+Update a thread PATCH /threads/:threadId Admin can update any field, public (owner) can only update body, tags, data, owner
+
+**remove**(collectionId: string,
+    appId: string,
+    threadId: string,
+    admin: boolean = false) → `Promise<`
+Soft delete a thread DELETE /threads/:threadId
+
+**reply**(collectionId: string,
+    appId: string,
+    threadId: string,
+    input: ReplyInput,
+    admin: boolean = false) → `Promise<AppThread>`
+Add a reply to a thread POST /threads/:threadId/reply Atomically appends to replies array, increments replyCount, updates lastReplyAt
+
+**aggregate**(collectionId: string,
+    appId: string,
+    request: AggregateRequest,
+    admin: boolean = false) → `Promise<AggregateResponse>`
+Get aggregate statistics for threads POST /threads/aggregate
 
 ### userAppData
 
