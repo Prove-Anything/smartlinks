@@ -72,16 +72,32 @@ export var contact;
     }
     contact.publicUpdateMine = publicUpdateMine;
     /**
-     * Public: Get contact update schema for a collection
+     * Public: Get the contact schema for a collection.
+     * GET /public/collection/:collectionId/contact/schema
      *
-     * Fetches the public contact schema including core fields, custom fields with
-     * conditional visibility rules, and visibility/editability settings.
+     * Returns a ContactSchemaResponse describing all publicly visible contact fields.
+     * Core fields and collection-defined custom fields are merged into a single flat schema.
      *
-     * Custom fields may include a `condition` property that specifies when the field
-     * should be displayed. Apps rendering these forms should:
-     * 1. Evaluate each field's `condition` against current form values
-     * 2. Hide fields whose conditions are not met
-     * 3. Skip validation for hidden fields (they shouldn't be required when not visible)
+     * Fields not in `publicVisibleFields` are stripped entirely from the response.
+     * Fields visible but not in `publicEditableFields` have `ui:disabled: true` in `uiSchema`.
+     *
+     * Use `fieldOrder` to render fields in the correct sequence, and `evaluateConditions`
+     * from the types package to handle conditional field visibility.
+     *
+     * @example
+     * ```typescript
+     * import { contact, evaluateConditions } from '@proveanything/smartlinks'
+     *
+     * const schema = await contact.publicGetSchema(collectionId)
+     *
+     * for (const fieldId of schema.fieldOrder) {
+     *   const property = schema.schema.properties[fieldId]
+     *   const ui       = schema.uiSchema[fieldId] || {}
+     *   const visible  = evaluateConditions(property.conditions, property.showWhen, formValues)
+     *   const disabled = ui['ui:disabled'] === true
+     *   if (visible) renderField({ fieldId, property, ui, disabled })
+     * }
+     * ```
      */
     async function publicGetSchema(collectionId) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/contact/schema`;

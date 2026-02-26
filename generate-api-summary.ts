@@ -258,6 +258,7 @@ function generateAPISummary(): void {
   summary += '- **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)\n';
   summary += '- **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage\n';
   summary += '- **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more\n';
+  summary += '- **[Communications](comms.md)** - Transactional sends, multi-channel broadcasts, consent management, push registration, and analytics\n';
   summary += '- **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide\n\n';
 
   // Generate namespace overview

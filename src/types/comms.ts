@@ -249,3 +249,73 @@ export interface SubscriptionsResolveResponse {
   anyMethods: boolean
   anyWalletForSubject: boolean
 }
+
+// Transactional send (single-contact, single-message)
+
+/**
+ * Send a single message to one contact using a template.
+ * No broadcast record is created; the send is logged directly to the
+ * contact's communication history with sourceType: 'transactional'.
+ *
+ * POST /admin/collection/:collectionId/comm/send
+ */
+export interface TransactionalSendRequest {
+  /** CRM contact UUID */
+  contactId: string
+  /** Firestore template ID */
+  templateId: string
+  /**
+   * Channel to send on. Defaults to 'preferred', which auto-selects the
+   * contact's best available channel respecting consent, suppression, and
+   * template availability (priority: email → push → sms → wallet).
+   */
+  channel?: 'email' | 'sms' | 'push' | 'wallet' | 'preferred'
+  /** Extra Liquid variables merged into the top-level render context */
+  props?: Record<string, unknown>
+  /** Context objects to hydrate into the Liquid template */
+  include?: {
+    /** Hydrate {{ collection }}. Default: true */
+    collection?: boolean
+    /** Hydrate {{ product }} from this product ID */
+    productId?: string
+    /** Hydrate {{ proof }} (requires productId) */
+    proofId?: string
+    /** Hydrate {{ user }} from contact.userId */
+    user?: boolean
+    /** Hydrate {{ appCase }} from this case UUID */
+    appCase?: string
+    /** Hydrate {{ appThread }} from this thread UUID */
+    appThread?: string
+    /** Hydrate {{ appRecord }} from this record UUID */
+    appRecord?: string
+  }
+  /** Arbitrary label stored on the comms-events row (e.g. 'warranty-step-2') */
+  ref?: string
+  /** App context stored on the comms-events row */
+  appId?: string
+}
+
+export interface TransactionalSendResponse {
+  ok: true
+  /** The channel the message was actually sent on */
+  channel: 'email' | 'sms' | 'push' | 'wallet'
+  /** Provider message ID (email/SMS); absent for push/wallet */
+  messageId?: string
+}
+
+export interface TransactionalSendError {
+  ok: false
+  /**
+   * Error code. Known values:
+   * - `transactional.contact_not_found`
+   * - `transactional.template_not_found`
+   * - `transactional.no_channel_available`
+   * - `transactional.email_missing`
+   * - `transactional.phone_missing`
+   * - `transactional.no_push_methods`
+   * - `transactional.no_wallet_methods`
+   */
+  error: string
+}
+
+export type TransactionalSendResult = TransactionalSendResponse | TransactionalSendError

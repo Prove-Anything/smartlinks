@@ -14,6 +14,8 @@ import type {
   LogBulkCommunicationEventsBody,
   AppendResult,
   AppendBulkResult,
+  TransactionalSendRequest,
+  TransactionalSendResult,
 } from "../types/comms"
 
 /**
@@ -256,6 +258,39 @@ export namespace comms {
   ): Promise<RecipientId[] | RecipientWithOutcome[]> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/query/recipients/with-action`
     return post<RecipientId[] | RecipientWithOutcome[]>(path, body)
+  }
+
+  /**
+   * Send a single transactional message to one contact using a template.
+   * No broadcast record is created. The send is logged to the contact's
+   * communication history with sourceType: 'transactional'.
+   *
+   * POST /admin/collection/:collectionId/comm/send
+   *
+   * @example
+   * ```typescript
+   * const result = await comms.sendTransactional(collectionId, {
+   *   contactId:  'e4f2a1b0-...',
+   *   templateId: 'warranty-update',
+   *   channel:    'preferred',
+   *   props:      { claimRef: 'CLM-0042', decision: 'approved' },
+   *   include:    { productId: 'prod-abc123', appCase: 'c9d1e2f3-...' },
+   *   ref:        'warranty-decision-notification',
+   *   appId:      'warrantyApp',
+   * })
+   * if (result.ok) {
+   *   console.log(`Sent via ${result.channel}`, result.messageId)
+   * } else {
+   *   console.error('Send failed:', result.error)
+   * }
+   * ```
+   */
+  export async function sendTransactional(
+    collectionId: string,
+    body: TransactionalSendRequest
+  ): Promise<TransactionalSendResult> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/send`
+    return post<TransactionalSendResult>(path, body)
   }
 
   /**

@@ -188,6 +188,7 @@ function generateAPISummary() {
   summary += '- **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)\n';
   summary += '- **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage\n';
   summary += '- **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more\n';
+  summary += '- **[Communications](comms.md)** - Transactional sends, multi-channel broadcasts, consent management, push registration, and analytics\n';
   summary += '- **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide\n\n';
   
   // Generate namespace overview (grouped + descriptive)
@@ -220,7 +221,7 @@ function generateAPISummary() {
     {
       title: '— Messaging & Audience —',
       items: [
-        { name: 'comms', desc: 'Send notifications (push, email, wallet); templating, severity, delivery status.' },
+        { name: 'comms', desc: 'Send notifications (push, email, wallet); templating, severity, delivery status.', docsLink: 'comms.md' },
         { name: 'broadcasts', desc: 'Define broadcast campaigns; append recipients/events; analytics and CRUD.' },
         { name: 'segments', desc: 'Define dynamic/static audience segments; estimate and list recipients; schedule calculations.' },
       ]
@@ -267,7 +268,8 @@ function generateAPISummary() {
     if (!available.length) return;
     summary += `${group.title}\n`;
     available.forEach(i => {
-      summary += `- **${i.name}** - ${i.desc}\n`;
+      const link = i.docsLink ? ` → [Guide](${i.docsLink})` : '';
+      summary += `- **${i.name}** - ${i.desc}${link}\n`;
     });
     summary += '\n';
   });

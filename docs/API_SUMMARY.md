@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.5.6  |  Generated: 2026-02-26T08:32:23.437Z
+Version: 1.6.3  |  Generated: 2026-02-26T11:49:31.908Z
 
 This is a concise summary of all available API functions and types.
 
@@ -20,6 +20,7 @@ For detailed guides on specific features:
 - **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)
 - **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage
 - **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more
+- **[Communications](comms.md)** - Transactional sends, multi-channel broadcasts, consent management, push registration, and analytics
 - **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide
 
 ## API Namespaces
@@ -42,7 +43,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **contact** - Manage customer contacts; CRUD, lookup, upsert, erase.
 
 — Messaging & Audience —
-- **comms** - Send notifications (push, email, wallet); templating, severity, delivery status.
+- **comms** - Send notifications (push, email, wallet); templating, severity, delivery status. → [Guide](comms.md)
 - **broadcasts** - Define broadcast campaigns; append recipients/events; analytics and CRUD.
 - **segments** - Define dynamic/static audience segments; estimate and list recipients; schedule calculations.
 
@@ -2333,6 +2334,55 @@ interface SubscriptionsResolveResponse {
 }
 ```
 
+**TransactionalSendRequest** (interface)
+```typescript
+interface TransactionalSendRequest {
+  contactId: string
+  templateId: string
+  * Channel to send on. Defaults to 'preferred', which auto-selects the
+  * contact's best available channel respecting consent, suppression, and
+  * template availability (priority: email → push → sms → wallet).
+  channel?: 'email' | 'sms' | 'push' | 'wallet' | 'preferred'
+  props?: Record<string, unknown>
+  include?: {
+  collection?: boolean
+  productId?: string
+  proofId?: string
+  user?: boolean
+  appCase?: string
+  appThread?: string
+  appRecord?: string
+  }
+  ref?: string
+  appId?: string
+}
+```
+
+**TransactionalSendResponse** (interface)
+```typescript
+interface TransactionalSendResponse {
+  ok: true
+  channel: 'email' | 'sms' | 'push' | 'wallet'
+  messageId?: string
+}
+```
+
+**TransactionalSendError** (interface)
+```typescript
+interface TransactionalSendError {
+  ok: false
+  * Error code. Known values:
+  * - `transactional.contact_not_found`
+  * - `transactional.template_not_found`
+  * - `transactional.no_channel_available`
+  * - `transactional.email_missing`
+  * - `transactional.phone_missing`
+  * - `transactional.no_push_methods`
+  * - `transactional.no_wallet_methods`
+  error: string
+}
+```
+
 **RecipientId** = `string`
 
 **Recipient** = `import('./contact').Contact`
@@ -2340,6 +2390,328 @@ interface SubscriptionsResolveResponse {
 **CommsSettingsPatchBody** = `Partial<CommsSettings>`
 
 **ConsentChannels** = `Partial<Record<BroadcastChannel, boolean>>`
+
+**TransactionalSendResult** = `// src/types/comms.ts
+// Communication and notification types for the Smartlinks API
+import type { IdField } from './common'
+import type { BroadcastChannel } from './broadcasts'
+
+/**
+ * Target subject for notifications (product, collection, etc.)
+ */
+export interface NotificationSubjectTarget {
+  /** Type of target entity */
+  type: 'product' | 'collection' | 'user' | 'batch' | 'proof'
+  /** ID of the target entity */
+  id: string
+}
+
+
+// Analytics & logging (communication events)
+
+export interface CommunicationEvent {
+  orgId: string
+  broadcastId?: string
+  journeyId?: string
+  userId?: string
+  contactId?: string
+  channel?: string
+  timestamp: string
+  eventType: string
+  outcome?: string | null
+  templateId?: string | null
+  [k: string]: any
+}
+
+export interface CommsQueryByUser {
+  userId?: string
+  contactId?: string
+  from?: string
+  to?: string
+  limit?: number
+}
+
+export type RecipientId = string
+export interface RecipientWithOutcome { id: string; outcome: string }
+
+export interface CommsRecipientIdsQuery {
+  broadcastId?: string
+  journeyId?: string
+  journeyStepId?: string
+  idField?: IdField
+  from?: string
+  to?: string
+  limit?: number
+}
+
+export interface CommsRecipientsWithoutActionQuery {
+  broadcastId?: string
+  journeyId?: string
+  actionId?: string
+  appId?: string
+  idField?: IdField
+  from?: string
+  to?: string
+  limit?: number
+}
+
+export interface CommsRecipientsWithActionQuery {
+  broadcastId?: string
+  journeyId?: string
+  actionId?: string
+  appId?: string
+  outcome?: string
+  idField?: IdField
+  includeOutcome?: boolean
+  from?: string
+  to?: string
+  limit?: number
+}
+
+export interface LogCommunicationEventBody {
+  broadcastId?: string
+  journeyId?: string
+  userId?: string
+  contactId?: string
+  channel?: string
+  eventType: string
+  outcome?: string
+  templateId?: string
+  timestamp?: string
+  [k: string]: any
+}
+
+export interface LogBulkCommunicationEventsBody {
+  params: { broadcastId?: string; journeyId?: string; [k: string]: any }
+  ids: string[]
+  idField?: IdField
+}
+
+export interface AppendResult { success: true }
+export interface AppendBulkResult { success: true; count: number }
+
+// Common recipient type used by segments and broadcasts
+export type Recipient = import('./contact').Contact
+
+// Shared page response shape for recipient listings
+export interface RecipientsPage {
+  items: Recipient[]
+  total: number
+  limit: number
+  offset: number
+  note?: string
+}
+
+// Web Push (public client registration)
+
+export interface PushSubscriptionJSON {
+  endpoint: string
+  keys?: {
+    p256dh?: string
+    auth?: string
+  }
+}
+
+export interface PushVapidResponse { publicKey: string }
+export interface PushSubscribeResponse { ok: true; id: string }
+
+// Public: register a push contact method
+export interface RegisterPushMethodRequest {
+  contactId: string
+  endpoint: string
+  keys: { p256dh: string; auth: string }
+  meta?: Record<string, any>
+}
+
+// Admin Comms Settings
+
+export interface CommsSettings {
+  unsub?: {
+    requireToken?: boolean
+    /** Secret for token generation; omitted unless includeSecret=true */
+    secret?: string
+    /** Convenience flag indicating a secret is set (masked responses) */
+    hasSecret?: boolean
+  }
+  /** Map of topic keys to topic config */
+  topics?: Record<string, TopicConfig>
+  [k: string]: any
+}
+
+export interface TopicConfig {
+  label?: string
+  description?: string
+  /** Optional UI-only grouping labels */
+  labels?: string[]
+  /** Classification for UI and default policy guidance */
+  classification?: 'transactional' | 'marketing'
+  defaults?: {
+    channels?: Partial<Record<BroadcastChannel, boolean>>
+    topics?: Record<string, boolean | undefined>
+    /** Default consent policy when explicit preferences are absent */
+    policy?: 'opt-in' | 'opt-out'
+    /** Per-channel default policy (overrides policy when present) */
+    byChannel?: Partial<Record<BroadcastChannel, 'opt-in' | 'opt-out'>>
+  }
+  rules?: {
+    allowChannels?: BroadcastChannel[]
+    allowUnsubscribe?: boolean
+    required?: boolean
+  }
+  [k: string]: any
+}
+
+export interface CommsSettingsGetResponse {
+  ok: true
+  settings: CommsSettings
+}
+
+export type CommsSettingsPatchBody = Partial<CommsSettings>
+
+// Public types listing (array form for public API)
+export interface CommsPublicTopicsResponse { ok: true; topics: Record<string, TopicConfig> }
+
+export interface UnsubscribeQuery {
+  contactId: string
+  topic?: string
+  channel?: BroadcastChannel
+  token?: string
+}
+
+export interface UnsubscribeResponse { ok: true; applied?: { channels?: Record<string, boolean>; topics?: Record<string, boolean> } }
+
+// Public consent/preferences/subscribe
+export type ConsentChannels = Partial<Record<BroadcastChannel, boolean>>
+type SubjectType = import('./contact').SubjectType
+
+export interface CommsConsentUpsertRequest {
+  contactId: string
+  channels?: ConsentChannels
+  topics?: Record<string, boolean>
+  topicsByChannel?: Partial<Record<BroadcastChannel, Record<string, boolean>>>
+}
+
+export interface CommsPreferencesUpsertRequest {
+  contactId: string
+  subject?: { type: SubjectType; id: string; productId?: string }
+  channels?: ConsentChannels
+  topics?: Record<string, boolean>
+  topicsByChannel?: Partial<Record<BroadcastChannel, Record<string, boolean>>>
+}
+
+export interface CommsSubscribeRequest {
+  contactId: string
+  subject: { type: SubjectType; id: string; productId?: string }
+  subscribe: boolean
+  source?: string
+}
+export interface CommsSubscribeResponse { ok: true; subscriptionId: string }
+
+export interface CommsSubscriptionCheckQuery {
+  contactId: string
+  subjectType: SubjectType
+  subjectId: string
+  productId?: string
+}
+export interface CommsSubscriptionCheckResponse { ok: true; subscribed: boolean }
+
+export interface CommsListMethodsQuery {
+  contactId: string
+  type?: BroadcastChannel
+}
+export interface CommsListMethodsResponse { ok: true; methods: import('./contact').CommMethod[] }
+
+export interface RegisterEmailMethodRequest { contactId?: string; email?: string; userId?: string }
+export interface RegisterSmsMethodRequest { contactId?: string; phone?: string; userId?: string }
+export interface RegisterMethodResponse { ok: true; contactId: string }
+
+export interface SubscriptionsResolveRequest {
+  subject: { type: SubjectType; id: string; productId?: string }
+  hints: { userId?: string; pushEndpoint?: string; email?: string; walletObjectId?: string }
+}
+export interface SubscriptionsResolveResponse {
+  ok: true
+  subject: { type: SubjectType; id: string; productId?: string }
+  contacts: Array<{
+    contactId: string
+    subscribed: boolean
+    channels?: Partial<Record<BroadcastChannel, boolean>>
+    walletForSubject?: boolean
+  }>
+  anySubscribed: boolean
+  anyMethods: boolean
+  anyWalletForSubject: boolean
+}
+
+// Transactional send (single-contact, single-message)
+
+/**
+ * Send a single message to one contact using a template.
+ * No broadcast record is created; the send is logged directly to the
+ * contact's communication history with sourceType: 'transactional'.
+ *
+ * POST /admin/collection/:collectionId/comm/send
+ */
+export interface TransactionalSendRequest {
+  /** CRM contact UUID */
+  contactId: string
+  /** Firestore template ID */
+  templateId: string
+  /**
+   * Channel to send on. Defaults to 'preferred', which auto-selects the
+   * contact's best available channel respecting consent, suppression, and
+   * template availability (priority: email → push → sms → wallet).
+   */
+  channel?: 'email' | 'sms' | 'push' | 'wallet' | 'preferred'
+  /** Extra Liquid variables merged into the top-level render context */
+  props?: Record<string, unknown>
+  /** Context objects to hydrate into the Liquid template */
+  include?: {
+    /** Hydrate {{ collection }}. Default: true */
+    collection?: boolean
+    /** Hydrate {{ product }} from this product ID */
+    productId?: string
+    /** Hydrate {{ proof }} (requires productId) */
+    proofId?: string
+    /** Hydrate {{ user }} from contact.userId */
+    user?: boolean
+    /** Hydrate {{ appCase }} from this case UUID */
+    appCase?: string
+    /** Hydrate {{ appThread }} from this thread UUID */
+    appThread?: string
+    /** Hydrate {{ appRecord }} from this record UUID */
+    appRecord?: string
+  }
+  /** Arbitrary label stored on the comms-events row (e.g. 'warranty-step-2') */
+  ref?: string
+  /** App context stored on the comms-events row */
+  appId?: string
+}
+
+export interface TransactionalSendResponse {
+  ok: true
+  /** The channel the message was actually sent on */
+  channel: 'email' | 'sms' | 'push' | 'wallet'
+  /** Provider message ID (email/SMS); absent for push/wallet */
+  messageId?: string
+}
+
+export interface TransactionalSendError {
+  ok: false
+  /**
+   * Error code. Known values:
+   * - `transactional.contact_not_found`
+   * - `transactional.template_not_found`
+   * - `transactional.no_channel_available`
+   * - `transactional.email_missing`
+   * - `transactional.phone_missing`
+   * - `transactional.no_push_methods`
+   * - `transactional.no_wallet_methods`
+   */
+  error: string
+}
+
+export type TransactionalSendResult =`
 
 ### contact
 
@@ -2502,36 +2874,64 @@ interface CommsState {
 **FieldCondition** (interface)
 ```typescript
 interface FieldCondition {
-  dependsOn: string          // key of the field to check (not path)
+  targetFieldId: string   // The field whose value is tested
   operator: ConditionOperator
-  value?: string | string[]  // required for equals/notEquals/contains/notContains
+  value?: unknown         // Required for equals / not_equals / contains / not_contains / greater_than / less_than
 }
 ```
 
-**BaseField** (interface)
+**ContactSchemaProperty** (interface)
 ```typescript
-interface BaseField {
-  key: string
-  label: string
-  type: FieldType
-  widget: FieldWidget
-  visible: boolean
-  editable: boolean
-  readOnly: boolean
+interface ContactSchemaProperty {
+  type: 'string' | 'number' | 'boolean' | 'array'
+  title?: string
+  description?: string
+  format?: string
+  enum?: string[]
+  * Display labels for `enum` values — parallel array.
+  * `enum[i]` is the stored value; `enumNames[i]` is the display label.
+  * When absent, `enum` values are used as labels.
+  enumNames?: string[]
+  default?: unknown
+  minLength?: number
+  maxLength?: number
+  pattern?: string
+  minimum?: number
+  maximum?: number
+  conditions?: FieldCondition[]
+  showWhen?: 'all' | 'any'
 }
 ```
 
-**ContactSchema** (interface)
+**ContactUiSchemaEntry** (interface)
 ```typescript
-interface ContactSchema {
-  version: number          // 1
-  fields: CoreField[]      // core fields
-  customFields: CustomField[]
-  settings: {
-  publicVisibleFields: string[]
-  publicEditableFields: string[]
-  customFieldsVersion: number
+interface ContactUiSchemaEntry {
+  'ui:disabled'?: true
+  'ui:placeholder'?: string
+  'ui:help'?: string
+  'ui:widget'?: string
+  'ui:options'?: {
+  rows?: number        // textarea: number of visible rows
+  accept?: string      // file: accepted MIME types
+  label?: boolean      // checkbox: show inline label
+  [key: string]: unknown
   }
+  [key: string]: unknown
+}
+```
+
+**ContactSchemaResponse** (interface)
+```typescript
+interface ContactSchemaResponse {
+  schema: {
+  type: 'object'
+  required?: string[]
+  properties: Record<string, ContactSchemaProperty>
+  }
+  uiSchema: Record<string, ContactUiSchemaEntry>
+  fieldOrder: string[]
+  settings: Record<string, unknown>
+  styling: Record<string, unknown>
 }
 ```
 
@@ -2553,9 +2953,7 @@ interface ContactSchema {
 
 **ConditionOperator** = ``
 
-**FieldWidget** = `'text' | 'email' | 'tel' | 'select' | 'multiselect' | 'checkbox' | 'number' | 'date' | 'url'`
-
-**FieldType** = ``
+**ContactSchema** = `ContactSchemaResponse`
 
 ### crate
 
@@ -4926,6 +5324,10 @@ Analytics: Recipients who did not perform an action. POST /admin/collection/:col
     body: CommsRecipientsWithActionQuery) → `Promise<RecipientId[] | RecipientWithOutcome[]>`
 Analytics: Recipients who performed an action, optionally with outcome. POST /admin/collection/:collectionId/comm/query/recipients/with-action
 
+**sendTransactional**(collectionId: string,
+    body: TransactionalSendRequest) → `Promise<TransactionalSendResult>`
+Send a single transactional message to one contact using a template. No broadcast record is created. The send is logged to the contact's communication history with sourceType: 'transactional'. POST /admin/collection/:collectionId/comm/send ```typescript const result = await comms.sendTransactional(collectionId, { contactId:  'e4f2a1b0-...', templateId: 'warranty-update', channel:    'preferred', props:      { claimRef: 'CLM-0042', decision: 'approved' }, include:    { productId: 'prod-abc123', appCase: 'c9d1e2f3-...' }, ref:        'warranty-decision-notification', appId:      'warrantyApp', }) if (result.ok) { console.log(`Sent via ${result.channel}`, result.messageId) } else { console.error('Send failed:', result.error) } ```
+
 **logCommunicationEvent**(collectionId: string,
     body: LogCommunicationEventBody) → `Promise<AppendResult>`
 Logging: Append a single communication event. POST /admin/collection/:collectionId/comm/log
@@ -4965,15 +5367,15 @@ Logging: Append many communication events for a list of IDs. POST /admin/collect
 **publicUpdateMine**(collectionId: string,
     data: ContactPatch) → `Promise<PublicUpdateMyContactResponse>`
 
-**publicGetSchema**(collectionId: string) → `Promise<ContactSchema>`
-Public: Get contact update schema for a collection Fetches the public contact schema including core fields, custom fields with conditional visibility rules, and visibility/editability settings. Custom fields may include a `condition` property that specifies when the field should be displayed. Apps rendering these forms should: 1. Evaluate each field's `condition` against current form values 2. Hide fields whose conditions are not met 3. Skip validation for hidden fields (they shouldn't be required when not visible)
+**publicGetSchema**(collectionId: string) → `Promise<ContactSchemaResponse>`
+Public: Get the contact schema for a collection. GET /public/collection/:collectionId/contact/schema Returns a ContactSchemaResponse describing all publicly visible contact fields. Core fields and collection-defined custom fields are merged into a single flat schema. Fields not in `publicVisibleFields` are stripped entirely from the response. Fields visible but not in `publicEditableFields` have `ui:disabled: true` in `uiSchema`. Use `fieldOrder` to render fields in the correct sequence, and `evaluateConditions` from the types package to handle conditional field visibility. ```typescript import { contact, evaluateConditions } from '@proveanything/smartlinks' const schema = await contact.publicGetSchema(collectionId) for (const fieldId of schema.fieldOrder) { const property = schema.schema.properties[fieldId] const ui       = schema.uiSchema[fieldId] || {} const visible  = evaluateConditions(property.conditions, property.showWhen, formValues) const disabled = ui['ui:disabled'] === true if (visible) renderField({ fieldId, property, ui, disabled }) } ```
 
 **erase**(collectionId: string, contactId: string, body?: any) → `Promise<ContactResponse>`
-Public: Get contact update schema for a collection Fetches the public contact schema including core fields, custom fields with conditional visibility rules, and visibility/editability settings. Custom fields may include a `condition` property that specifies when the field should be displayed. Apps rendering these forms should: 1. Evaluate each field's `condition` against current form values 2. Hide fields whose conditions are not met 3. Skip validation for hidden fields (they shouldn't be required when not visible)
+Public: Get the contact schema for a collection. GET /public/collection/:collectionId/contact/schema Returns a ContactSchemaResponse describing all publicly visible contact fields. Core fields and collection-defined custom fields are merged into a single flat schema. Fields not in `publicVisibleFields` are stripped entirely from the response. Fields visible but not in `publicEditableFields` have `ui:disabled: true` in `uiSchema`. Use `fieldOrder` to render fields in the correct sequence, and `evaluateConditions` from the types package to handle conditional field visibility. ```typescript import { contact, evaluateConditions } from '@proveanything/smartlinks' const schema = await contact.publicGetSchema(collectionId) for (const fieldId of schema.fieldOrder) { const property = schema.schema.properties[fieldId] const ui       = schema.uiSchema[fieldId] || {} const visible  = evaluateConditions(property.conditions, property.showWhen, formValues) const disabled = ui['ui:disabled'] === true if (visible) renderField({ fieldId, property, ui, disabled }) } ```
 
 **getUser**(collectionId: string,
     userId: string,) → `Promise<UserSearchResponse>`
-Public: Get contact update schema for a collection Fetches the public contact schema including core fields, custom fields with conditional visibility rules, and visibility/editability settings. Custom fields may include a `condition` property that specifies when the field should be displayed. Apps rendering these forms should: 1. Evaluate each field's `condition` against current form values 2. Hide fields whose conditions are not met 3. Skip validation for hidden fields (they shouldn't be required when not visible)
+Public: Get the contact schema for a collection. GET /public/collection/:collectionId/contact/schema Returns a ContactSchemaResponse describing all publicly visible contact fields. Core fields and collection-defined custom fields are merged into a single flat schema. Fields not in `publicVisibleFields` are stripped entirely from the response. Fields visible but not in `publicEditableFields` have `ui:disabled: true` in `uiSchema`. Use `fieldOrder` to render fields in the correct sequence, and `evaluateConditions` from the types package to handle conditional field visibility. ```typescript import { contact, evaluateConditions } from '@proveanything/smartlinks' const schema = await contact.publicGetSchema(collectionId) for (const fieldId of schema.fieldOrder) { const property = schema.schema.properties[fieldId] const ui       = schema.uiSchema[fieldId] || {} const visible  = evaluateConditions(property.conditions, property.showWhen, formValues) const disabled = ui['ui:disabled'] === true if (visible) renderField({ fieldId, property, ui, disabled }) } ```
 
 ### crate
 

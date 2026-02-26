@@ -201,113 +201,201 @@ export interface CommsState {
 
 /**
  * Operators for conditional field visibility.
- * Use these to control when a custom field is shown based on another field's value.
+ * Used in ContactSchemaProperty.conditions[].operator.
  */
-export type ConditionOperator = 
-  | 'equals'       // value === target
-  | 'notEquals'    // value !== target
-  | 'contains'     // for multiselect: array includes value
-  | 'notContains'  // for multiselect: array does not include value
-  | 'isEmpty'      // value is null/undefined/empty
-  | 'isNotEmpty'   // value has a value
-  | 'isTrue'       // for boolean fields
-  | 'isFalse'      // for boolean fields
+export type ConditionOperator =
+  | 'equals'
+  | 'not_equals'
+  | 'contains'
+  | 'not_contains'
+  | 'is_empty'
+  | 'is_not_empty'
+  | 'is_true'
+  | 'is_false'
+  | 'greater_than'
+  | 'less_than'
 
 /**
- * Condition that determines when a field should be visible.
- * When present, the field only renders if the condition evaluates to true.
+ * A single visibility condition on a field.
+ * The field renders only when its conditions are satisfied (see `showWhen`).
  */
 export interface FieldCondition {
-  dependsOn: string          // key of the field to check (not path)
+  targetFieldId: string   // The field whose value is tested
   operator: ConditionOperator
-  value?: string | string[]  // required for equals/notEquals/contains/notContains
-}
-
-export type FieldWidget = 'text' | 'email' | 'tel' | 'select' | 'multiselect' | 'checkbox' | 'number' | 'date' | 'url'
-export type FieldType =
-  | 'string'     // core text-like fields
-  | 'url'
-  | 'email'
-  | 'tel'
-  | 'text'       // custom text
-  | 'select'
-  | 'checkbox'
-  | 'boolean'    // alias for checkbox
-
-export interface BaseField {
-  key: string
-  label: string
-  type: FieldType
-  widget: FieldWidget
-  visible: boolean
-  editable: boolean
-  readOnly: boolean
-}
-
-export interface CoreField extends BaseField {
-  // keys like: contactId, firstName, lastName, displayName, company, avatarUrl, locale, timezone, email, phone
+  value?: unknown         // Required for equals / not_equals / contains / not_contains / greater_than / less_than
 }
 
 /**
- * Custom field definition returned by the schema endpoint.
+ * A single field property as returned by the contact schema endpoint.
+ * Follows JSON Schema conventions with rendering hints via `format`.
+ *
+ * Format values:
+ *   (none)        → plain text input
+ *   email         → email input
+ *   uri           → URL input
+ *   tel           → phone input
+ *   date          → date picker
+ *   textarea      → multi-line text
+ *   select        → single-select dropdown (requires `enum`)
+ *   multiselect   → multi-select (type will be 'array', requires `enum`)
+ *   radio         → radio button group (requires `enum`)
  */
-export interface CustomField extends BaseField {
-  path: string                // e.g. "customFields.City"
-  required: boolean
-  order?: number
-  options?: string[]          // for select/multiselect widgets
-  placeholder?: string
+export interface ContactSchemaProperty {
+  type: 'string' | 'number' | 'boolean' | 'array'
+  title?: string
   description?: string
-  condition?: FieldCondition  // if set, field only shows when condition is met
-}
-
-export interface ContactSchema {
-  version: number          // 1
-  fields: CoreField[]      // core fields
-  customFields: CustomField[]
-  settings: {
-    publicVisibleFields: string[]
-    publicEditableFields: string[]
-    customFieldsVersion: number
-  }
+  format?: string
+  /** Stored values for select / radio / multiselect fields */
+  enum?: string[]
+  /**
+   * Display labels for `enum` values — parallel array.
+   * `enum[i]` is the stored value; `enumNames[i]` is the display label.
+   * When absent, `enum` values are used as labels.
+   */
+  enumNames?: string[]
+  /** Default value pre-populated into the field */
+  default?: unknown
+  // JSON Schema validation constraints
+  /** Minimum string length (type: 'string') */
+  minLength?: number
+  /** Maximum string length (type: 'string') */
+  maxLength?: number
+  /** Regex pattern the value must match (type: 'string') */
+  pattern?: string
+  /** Minimum value (type: 'number') */
+  minimum?: number
+  /** Maximum value (type: 'number') */
+  maximum?: number
+  conditions?: FieldCondition[]
+  showWhen?: 'all' | 'any'
 }
 
 /**
- * Evaluate whether a field's condition is satisfied.
- * Returns true if the field should be visible.
- * 
+ * UI rendering hints for a single field, keyed by field ID in `uiSchema`.
+ */
+export interface ContactUiSchemaEntry {
+  /** Field is visible but not editable */
+  'ui:disabled'?: true
+  /** Placeholder text shown inside the input */
+  'ui:placeholder'?: string
+  /** Help text shown below the field (longer than description) */
+  'ui:help'?: string
+  /** Override the auto-detected widget (e.g. 'textarea', 'radio', 'checkboxes') */
+  'ui:widget'?: string
+  /** Widget-specific options */
+  'ui:options'?: {
+    rows?: number        // textarea: number of visible rows
+    accept?: string      // file: accepted MIME types
+    label?: boolean      // checkbox: show inline label
+    [key: string]: unknown
+  }
+  [key: string]: unknown
+}
+
+/**
+ * Response from GET /public/collection/:collectionId/contact/schema
+ *
+ * Core fields and collection-defined custom fields are merged into a single
+ * flat schema. Fields not in `publicVisibleFields` are stripped entirely.
+ * Fields visible but not in `publicEditableFields` have `ui:disabled: true`
+ * in `uiSchema`.
+ */
+export interface ContactSchemaResponse {
+  schema: {
+    type: 'object'
+    required?: string[]
+    properties: Record<string, ContactSchemaProperty>
+  }
+  uiSchema: Record<string, ContactUiSchemaEntry>
+  /** Ordered list of field IDs — core fields first, then custom fields */
+  fieldOrder: string[]
+  /** Pass-through of the collection's SchemaFormConfig settings block */
+  settings: Record<string, unknown>
+  /** Pass-through of the collection's SchemaFormConfig styling block */
+  styling: Record<string, unknown>
+}
+
+// Keep ContactSchema as a deprecated alias so existing consumers don't hard-break
+/** @deprecated Use ContactSchemaResponse instead */
+export type ContactSchema = ContactSchemaResponse
+
+/**
+ * Evaluate whether a field's conditions are satisfied given the current form values.
+ * Returns `true` if the field should be visible.
+ *
+ * @param conditions  The `conditions` array from a ContactSchemaProperty (may be undefined)
+ * @param showWhen    'all' requires every condition to pass; 'any' requires at least one
+ * @param fieldValues Current form values keyed by field ID
+ *
  * @example
  * ```typescript
- * const field = schema.customFields.find(f => f.key === 'city')
- * const isVisible = evaluateCondition(field.condition, formValues)
+ * const property = schema.schema.properties[fieldId]
+ * const visible = evaluateConditions(property.conditions, property.showWhen, formValues)
  * ```
  */
-export function evaluateCondition(
-  condition: FieldCondition | undefined,
-  fieldValues: Record<string, any>
+export function evaluateConditions(
+  conditions: FieldCondition[] | undefined,
+  showWhen: 'all' | 'any' | undefined,
+  fieldValues: Record<string, unknown>
 ): boolean {
-  if (!condition) return true // No condition = always visible
-  
-  const value = fieldValues[condition.dependsOn]
-  
-  switch (condition.operator) {
-    case 'isEmpty':
-      return value == null || value === '' || (Array.isArray(value) && !value.length)
-    case 'isNotEmpty':
-      return value != null && value !== '' && !(Array.isArray(value) && !value.length)
-    case 'isTrue':
-      return value === true
-    case 'isFalse':
-      return value === false
-    case 'equals':
-      return value === condition.value
-    case 'notEquals':
-      return value !== condition.value
-    case 'contains':
-      return Array.isArray(value) && value.includes(condition.value)
-    case 'notContains':
-      return !Array.isArray(value) || !value.includes(condition.value)
-    default:
-      return true
-  }
+  if (!conditions || conditions.length === 0) return true
+
+  const results = conditions.map(condition => {
+    const value = fieldValues[condition.targetFieldId]
+
+    switch (condition.operator) {
+      case 'is_empty':
+        return value == null || value === '' || (Array.isArray(value) && value.length === 0)
+      case 'is_not_empty':
+        return value != null && value !== '' && !(Array.isArray(value) && value.length === 0)
+      case 'is_true':
+        return value === true
+      case 'is_false':
+        return value === false
+      case 'equals':
+        return value === condition.value
+      case 'not_equals':
+        return value !== condition.value
+      case 'contains':
+        return Array.isArray(value)
+          ? value.includes(condition.value)
+          : typeof value === 'string' && value.includes(String(condition.value))
+      case 'not_contains':
+        return Array.isArray(value)
+          ? !value.includes(condition.value)
+          : typeof value === 'string' && !value.includes(String(condition.value))
+      case 'greater_than':
+        return typeof value === 'number' && typeof condition.value === 'number'
+          ? value > condition.value
+          : String(value) > String(condition.value)
+      case 'less_than':
+        return typeof value === 'number' && typeof condition.value === 'number'
+          ? value < condition.value
+          : String(value) < String(condition.value)
+      default:
+        return true
+    }
+  })
+
+  return (showWhen ?? 'all') === 'any'
+    ? results.some(Boolean)
+    : results.every(Boolean)
+}
+
+/**
+ * @deprecated Use evaluateConditions (plural) instead.
+ * Shim for code using the old single-condition API.
+ */
+export function evaluateCondition(
+  condition: { dependsOn?: string; targetFieldId?: string; operator: string; value?: unknown } | undefined,
+  fieldValues: Record<string, unknown>
+): boolean {
+  if (!condition) return true
+  const targetFieldId = (condition as any).dependsOn ?? (condition as any).targetFieldId
+  if (!targetFieldId) return true
+  return evaluateConditions(
+    [{ targetFieldId, operator: condition.operator as ConditionOperator, value: condition.value }],
+    'all',
+    fieldValues
+  )
 }

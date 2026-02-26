@@ -1,4 +1,4 @@
-import type { CommunicationEvent, CommsQueryByUser, CommsRecipientIdsQuery, CommsRecipientsWithoutActionQuery, CommsRecipientsWithActionQuery, RecipientId, RecipientWithOutcome, LogCommunicationEventBody, LogBulkCommunicationEventsBody, AppendResult, AppendBulkResult } from "../types/comms";
+import type { CommunicationEvent, CommsQueryByUser, CommsRecipientIdsQuery, CommsRecipientsWithoutActionQuery, CommsRecipientsWithActionQuery, RecipientId, RecipientWithOutcome, LogCommunicationEventBody, LogBulkCommunicationEventsBody, AppendResult, AppendBulkResult, TransactionalSendRequest, TransactionalSendResult } from "../types/comms";
 /**
  * Communications namespace for sending notifications and managing user communications
  */
@@ -101,6 +101,32 @@ export declare namespace comms {
      * POST /admin/collection/:collectionId/comm/query/recipients/with-action
      */
     function queryRecipientsWithAction(collectionId: string, body: CommsRecipientsWithActionQuery): Promise<RecipientId[] | RecipientWithOutcome[]>;
+    /**
+     * Send a single transactional message to one contact using a template.
+     * No broadcast record is created. The send is logged to the contact's
+     * communication history with sourceType: 'transactional'.
+     *
+     * POST /admin/collection/:collectionId/comm/send
+     *
+     * @example
+     * ```typescript
+     * const result = await comms.sendTransactional(collectionId, {
+     *   contactId:  'e4f2a1b0-...',
+     *   templateId: 'warranty-update',
+     *   channel:    'preferred',
+     *   props:      { claimRef: 'CLM-0042', decision: 'approved' },
+     *   include:    { productId: 'prod-abc123', appCase: 'c9d1e2f3-...' },
+     *   ref:        'warranty-decision-notification',
+     *   appId:      'warrantyApp',
+     * })
+     * if (result.ok) {
+     *   console.log(`Sent via ${result.channel}`, result.messageId)
+     * } else {
+     *   console.error('Send failed:', result.error)
+     * }
+     * ```
+     */
+    function sendTransactional(collectionId: string, body: TransactionalSendRequest): Promise<TransactionalSendResult>;
     /**
      * Logging: Append a single communication event.
      * POST /admin/collection/:collectionId/comm/log

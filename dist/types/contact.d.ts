@@ -131,61 +131,128 @@ export interface CommsState {
 }
 /**
  * Operators for conditional field visibility.
- * Use these to control when a custom field is shown based on another field's value.
+ * Used in ContactSchemaProperty.conditions[].operator.
  */
-export type ConditionOperator = 'equals' | 'notEquals' | 'contains' | 'notContains' | 'isEmpty' | 'isNotEmpty' | 'isTrue' | 'isFalse';
+export type ConditionOperator = 'equals' | 'not_equals' | 'contains' | 'not_contains' | 'is_empty' | 'is_not_empty' | 'is_true' | 'is_false' | 'greater_than' | 'less_than';
 /**
- * Condition that determines when a field should be visible.
- * When present, the field only renders if the condition evaluates to true.
+ * A single visibility condition on a field.
+ * The field renders only when its conditions are satisfied (see `showWhen`).
  */
 export interface FieldCondition {
-    dependsOn: string;
+    targetFieldId: string;
     operator: ConditionOperator;
-    value?: string | string[];
-}
-export type FieldWidget = 'text' | 'email' | 'tel' | 'select' | 'multiselect' | 'checkbox' | 'number' | 'date' | 'url';
-export type FieldType = 'string' | 'url' | 'email' | 'tel' | 'text' | 'select' | 'checkbox' | 'boolean';
-export interface BaseField {
-    key: string;
-    label: string;
-    type: FieldType;
-    widget: FieldWidget;
-    visible: boolean;
-    editable: boolean;
-    readOnly: boolean;
-}
-export interface CoreField extends BaseField {
+    value?: unknown;
 }
 /**
- * Custom field definition returned by the schema endpoint.
+ * A single field property as returned by the contact schema endpoint.
+ * Follows JSON Schema conventions with rendering hints via `format`.
+ *
+ * Format values:
+ *   (none)        → plain text input
+ *   email         → email input
+ *   uri           → URL input
+ *   tel           → phone input
+ *   date          → date picker
+ *   textarea      → multi-line text
+ *   select        → single-select dropdown (requires `enum`)
+ *   multiselect   → multi-select (type will be 'array', requires `enum`)
+ *   radio         → radio button group (requires `enum`)
  */
-export interface CustomField extends BaseField {
-    path: string;
-    required: boolean;
-    order?: number;
-    options?: string[];
-    placeholder?: string;
+export interface ContactSchemaProperty {
+    type: 'string' | 'number' | 'boolean' | 'array';
+    title?: string;
     description?: string;
-    condition?: FieldCondition;
-}
-export interface ContactSchema {
-    version: number;
-    fields: CoreField[];
-    customFields: CustomField[];
-    settings: {
-        publicVisibleFields: string[];
-        publicEditableFields: string[];
-        customFieldsVersion: number;
-    };
+    format?: string;
+    /** Stored values for select / radio / multiselect fields */
+    enum?: string[];
+    /**
+     * Display labels for `enum` values — parallel array.
+     * `enum[i]` is the stored value; `enumNames[i]` is the display label.
+     * When absent, `enum` values are used as labels.
+     */
+    enumNames?: string[];
+    /** Default value pre-populated into the field */
+    default?: unknown;
+    /** Minimum string length (type: 'string') */
+    minLength?: number;
+    /** Maximum string length (type: 'string') */
+    maxLength?: number;
+    /** Regex pattern the value must match (type: 'string') */
+    pattern?: string;
+    /** Minimum value (type: 'number') */
+    minimum?: number;
+    /** Maximum value (type: 'number') */
+    maximum?: number;
+    conditions?: FieldCondition[];
+    showWhen?: 'all' | 'any';
 }
 /**
- * Evaluate whether a field's condition is satisfied.
- * Returns true if the field should be visible.
+ * UI rendering hints for a single field, keyed by field ID in `uiSchema`.
+ */
+export interface ContactUiSchemaEntry {
+    /** Field is visible but not editable */
+    'ui:disabled'?: true;
+    /** Placeholder text shown inside the input */
+    'ui:placeholder'?: string;
+    /** Help text shown below the field (longer than description) */
+    'ui:help'?: string;
+    /** Override the auto-detected widget (e.g. 'textarea', 'radio', 'checkboxes') */
+    'ui:widget'?: string;
+    /** Widget-specific options */
+    'ui:options'?: {
+        rows?: number;
+        accept?: string;
+        label?: boolean;
+        [key: string]: unknown;
+    };
+    [key: string]: unknown;
+}
+/**
+ * Response from GET /public/collection/:collectionId/contact/schema
+ *
+ * Core fields and collection-defined custom fields are merged into a single
+ * flat schema. Fields not in `publicVisibleFields` are stripped entirely.
+ * Fields visible but not in `publicEditableFields` have `ui:disabled: true`
+ * in `uiSchema`.
+ */
+export interface ContactSchemaResponse {
+    schema: {
+        type: 'object';
+        required?: string[];
+        properties: Record<string, ContactSchemaProperty>;
+    };
+    uiSchema: Record<string, ContactUiSchemaEntry>;
+    /** Ordered list of field IDs — core fields first, then custom fields */
+    fieldOrder: string[];
+    /** Pass-through of the collection's SchemaFormConfig settings block */
+    settings: Record<string, unknown>;
+    /** Pass-through of the collection's SchemaFormConfig styling block */
+    styling: Record<string, unknown>;
+}
+/** @deprecated Use ContactSchemaResponse instead */
+export type ContactSchema = ContactSchemaResponse;
+/**
+ * Evaluate whether a field's conditions are satisfied given the current form values.
+ * Returns `true` if the field should be visible.
+ *
+ * @param conditions  The `conditions` array from a ContactSchemaProperty (may be undefined)
+ * @param showWhen    'all' requires every condition to pass; 'any' requires at least one
+ * @param fieldValues Current form values keyed by field ID
  *
  * @example
  * ```typescript
- * const field = schema.customFields.find(f => f.key === 'city')
- * const isVisible = evaluateCondition(field.condition, formValues)
+ * const property = schema.schema.properties[fieldId]
+ * const visible = evaluateConditions(property.conditions, property.showWhen, formValues)
  * ```
  */
-export declare function evaluateCondition(condition: FieldCondition | undefined, fieldValues: Record<string, any>): boolean;
+export declare function evaluateConditions(conditions: FieldCondition[] | undefined, showWhen: 'all' | 'any' | undefined, fieldValues: Record<string, unknown>): boolean;
+/**
+ * @deprecated Use evaluateConditions (plural) instead.
+ * Shim for code using the old single-condition API.
+ */
+export declare function evaluateCondition(condition: {
+    dependsOn?: string;
+    targetFieldId?: string;
+    operator: string;
+    value?: unknown;
+} | undefined, fieldValues: Record<string, unknown>): boolean;
