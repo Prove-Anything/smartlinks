@@ -31,12 +31,12 @@ function extractTypesFromFile(filePath: string): TypeDefinition[] {
   const content = fs.readFileSync(filePath, 'utf8');
   const types: TypeDefinition[] = [];
   
-  // Extract interfaces with proper bracket matching
-  const interfaceRegex = /export interface (\w+)\s*{/g;
+  // Extract interfaces with proper bracket matching (including generics like <T>)
+  const interfaceRegex = /export interface (\w+)(<[^>]+>)?\s*{/g;
   let match;
   
   while ((match = interfaceRegex.exec(content)) !== null) {
-    const name = match[1];
+    const name = match[1] + (match[2] || '');
     const startPos = match.index + match[0].length - 1; // Position of opening {
     
     // Find matching closing brace

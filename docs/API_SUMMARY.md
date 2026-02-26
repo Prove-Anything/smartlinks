@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.5.2  |  Generated: 2026-02-23T22:58:57.327Z
+Version: 1.5.6  |  Generated: 2026-02-26T08:32:23.437Z
 
 This is a concise summary of all available API functions and types.
 
@@ -989,6 +989,19 @@ interface GetCollectionWidgetsOptions {
 ```
 
 ### appObjects
+
+**PaginatedResponse<T>** (interface)
+```typescript
+interface PaginatedResponse<T> {
+  data: T[]
+  pagination: {
+  total: number
+  limit: number
+  offset: number
+  hasMore: boolean
+  }
+}
+```
 
 **AggregateRequest** (interface)
 ```typescript

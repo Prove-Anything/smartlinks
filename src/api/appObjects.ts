@@ -35,7 +35,7 @@ export namespace cases {
    */
   function basePath(collectionId: string, appId: string, admin: boolean = false): string {
     const zone = admin ? 'admin' : 'public'
-    return `/api/v1/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/cases`
+    return `/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/cases`
   }
 
   /**
@@ -174,7 +174,7 @@ export namespace threads {
    */
   function basePath(collectionId: string, appId: string, admin: boolean = false): string {
     const zone = admin ? 'admin' : 'public'
-    return `/api/v1/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/threads`
+    return `/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/threads`
   }
 
   /**
@@ -289,7 +289,7 @@ export namespace records {
    */
   function basePath(collectionId: string, appId: string, admin: boolean = false): string {
     const zone = admin ? 'admin' : 'public'
-    return `/api/v1/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/records`
+    return `/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/records`
   }
 
   /**

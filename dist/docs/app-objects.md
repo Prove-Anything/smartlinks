@@ -130,6 +130,92 @@ await app.records.create(collectionId, appId, {
 
 ---
 
+## Paginated List Responses
+
+Every `.list()` call returns a **`PaginatedResponse<T>`** object. The items are in the `data` array and all page-level metadata lives in a nested `pagination` object:
+
+```json
+{
+  "data": [
+    {
+      "id": "7ac44316-c227-4c39-bf99-a287bc08c6f5",
+      "collectionId": "veho-demo",
+      "appId": "knowledgeBase",
+      "visibility": "public",
+      "recordType": "article",
+      "status": "published",
+      "createdAt": "2026-02-25T22:13:14.310Z",
+      "updatedAt": "2026-02-25T22:47:36.712Z",
+      "data": {
+        "title": "Getting Started",
+        "slug": "getting-started",
+        "body": "..."
+      }
+    }
+  ],
+  "pagination": {
+    "total": 42,
+    "limit": 10,
+    "offset": 0,
+    "hasMore": true
+  }
+}
+```
+
+### Pagination fields
+
+| Field | Type | Description |
+|---|---|---|
+| `data` | `T[]` | The page of items returned |
+| `pagination.total` | `number` | Total number of matching records across **all** pages |
+| `pagination.limit` | `number` | The `limit` that was applied to this request (default `50`, max `500`) |
+| `pagination.offset` | `number` | The `offset` that was applied to this request |
+| `pagination.hasMore` | `boolean` | `true` when more pages exist — use this instead of computing `offset + limit < total` yourself |
+
+> **Note:** The items are always in `response.data`, **not** at the top level. A common mistake is reading `response.total` — the correct path is `response.pagination.total`.
+
+### Fetching all pages
+
+```typescript
+import { app, PaginatedResponse, AppRecord } from '@proveanything/smartlinks';
+
+async function fetchAllRecords(collectionId: string, appId: string) {
+  const results: AppRecord[] = [];
+  let offset = 0;
+  const limit = 100;
+
+  while (true) {
+    const page: PaginatedResponse<AppRecord> = await app.records.list(
+      collectionId,
+      appId,
+      { limit, offset, sort: 'createdAt:desc' }
+    );
+
+    results.push(...page.data);
+
+    if (!page.pagination.hasMore) break;  // no more pages
+    offset += limit;
+  }
+
+  console.log(`Fetched ${results.length} of ${/* saved from first page */ 0} total`);
+  return results;
+}
+```
+
+### Reading the count and checking for more
+
+```typescript
+const page = await app.cases.list(collectionId, appId, { status: 'open', limit: 10 });
+
+console.log(page.data);                   // array of AppCase objects
+console.log(page.pagination.total);       // e.g. 142  — total open cases
+console.log(page.pagination.hasMore);     // true / false
+console.log(page.pagination.offset);      // current page start
+console.log(page.pagination.limit);       // items per page
+```
+
+---
+
 ## Cases
 
 **Cases** represent trackable issues, requests, or tasks that move through states and require resolution.

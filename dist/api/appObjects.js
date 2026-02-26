@@ -11,7 +11,7 @@ export var app;
          */
         function basePath(collectionId, appId, admin = false) {
             const zone = admin ? 'admin' : 'public';
-            return `/api/v1/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/cases`;
+            return `/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/cases`;
         }
         /**
          * Create a new case
@@ -105,7 +105,7 @@ export var app;
          */
         function basePath(collectionId, appId, admin = false) {
             const zone = admin ? 'admin' : 'public';
-            return `/api/v1/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/threads`;
+            return `/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/threads`;
         }
         /**
          * Create a new thread
@@ -182,7 +182,7 @@ export var app;
          */
         function basePath(collectionId, appId, admin = false) {
             const zone = admin ? 'admin' : 'public';
-            return `/api/v1/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/records`;
+            return `/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/records`;
         }
         /**
          * Create a new record

@@ -7,13 +7,33 @@ export type Visibility = 'public' | 'owner' | 'admin';
  */
 export type CallerRole = 'admin' | 'owner' | 'public';
 /**
- * Paginated response wrapper for list endpoints
+ * Paginated response wrapper for list endpoints.
+ *
+ * All list endpoints return this shape:
+ * ```json
+ * {
+ *   "data": [ ...items ],
+ *   "pagination": {
+ *     "total":   142,
+ *     "limit":   10,
+ *     "offset":  0,
+ *     "hasMore": true
+ *   }
+ * }
+ * ```
  */
 export interface PaginatedResponse<T> {
     data: T[];
-    total: number;
-    limit: number;
-    offset: number;
+    pagination: {
+        /** Total number of matching records in the collection */
+        total: number;
+        /** Maximum number of items returned in this page */
+        limit: number;
+        /** Number of items skipped before this page */
+        offset: number;
+        /** `true` when more pages are available (offset + limit < total) */
+        hasMore: boolean;
+    };
 }
 /**
  * Request body for aggregate endpoints
