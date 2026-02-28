@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.6.3  |  Generated: 2026-02-26T11:49:31.908Z
+Version: 1.6.4  |  Generated: 2026-02-26T12:33:27.813Z
 
 This is a concise summary of all available API functions and types.
 
@@ -4987,7 +4987,7 @@ Tries to register a new user account. Can return a bearer token, or a Firebase t
 Admin: Get a user bearer token (impersonation/automation). POST /admin/auth/userToken All fields are optional; at least one identifier should be provided.
 
 **getAccount**() → `Promise<AccountInfoResponse>`
-Gets current account information for the logged in user. Returns user, owner, account, and location objects. Short-circuits immediately (no network request) when the SDK has no bearer token or API key set — the server would return 401 anyway. Throws a `SmartlinksApiError` with `statusCode 401` and `details.local = true` so callers can distinguish "never authenticated" from an actual server-side token rejection.
+Gets current account information for the logged in user. Returns user, owner, account, and location objects. Short-circuits immediately (no network request) when the SDK has no bearer token or API key set — the server would return 401 anyway. Throws a `SmartlinksApiError` with `statusCode 401` and `details.local = true` so callers can distinguish "never authenticated" from an actual server-side token rejection. This short-circuit is skipped when proxy mode is enabled, because in that case credentials are held by the parent frame and the local SDK may have no token set yet — the request must be forwarded to the parent to determine whether the user is authenticated.
 
 ### authKit
 

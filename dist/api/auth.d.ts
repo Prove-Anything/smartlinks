@@ -98,6 +98,11 @@ export declare namespace auth {
      * Throws a `SmartlinksApiError` with `statusCode 401` and
      * `details.local = true` so callers can distinguish "never authenticated"
      * from an actual server-side token rejection.
+     *
+     * This short-circuit is skipped when proxy mode is enabled, because in that
+     * case credentials are held by the parent frame and the local SDK may have
+     * no token set yet — the request must be forwarded to the parent to determine
+     * whether the user is authenticated.
      */
     function getAccount(): Promise<AccountInfoResponse>;
 }

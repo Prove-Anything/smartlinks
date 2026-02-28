@@ -1,4 +1,4 @@
-import { post, request, setBearerToken, getApiHeaders, hasAuthCredentials } from "../http";
+import { post, request, setBearerToken, getApiHeaders, hasAuthCredentials, isProxyEnabled } from "../http";
 import { SmartlinksApiError } from "../types/error";
 /*
   user: Record<string, any>
@@ -91,9 +91,14 @@ export var auth;
      * Throws a `SmartlinksApiError` with `statusCode 401` and
      * `details.local = true` so callers can distinguish "never authenticated"
      * from an actual server-side token rejection.
+     *
+     * This short-circuit is skipped when proxy mode is enabled, because in that
+     * case credentials are held by the parent frame and the local SDK may have
+     * no token set yet — the request must be forwarded to the parent to determine
+     * whether the user is authenticated.
      */
     async function getAccount() {
-        if (!hasAuthCredentials()) {
+        if (!hasAuthCredentials() && !isProxyEnabled()) {
             throw new SmartlinksApiError('Not authenticated: no bearer token or API key is set.', 401, { code: 401, errorCode: 'NOT_AUTHENTICATED', message: 'Not authenticated: no bearer token or API key is set.', details: { local: true } });
         }
         return request("/public/auth/account");
