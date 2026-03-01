@@ -34,4 +34,14 @@ if (fs.existsSync(docsSource)) {
   console.log('⚠ No docs folder found');
 }
 
+// Copy openapi.yaml to dist/
+const openapiSrc  = path.join(__dirname, '..', 'openapi.yaml');
+const openapiDest = path.join(__dirname, '..', 'dist', 'openapi.yaml');
+if (fs.existsSync(openapiSrc)) {
+  fs.copyFileSync(openapiSrc, openapiDest);
+  console.log('  ✓ Copied openapi.yaml to dist/');
+} else {
+  console.log('⚠ openapi.yaml not found — run npm run docs:openapi first');
+}
+
 console.log('✓ Documentation ready for publishing');

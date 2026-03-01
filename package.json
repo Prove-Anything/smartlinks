@@ -7,12 +7,14 @@
   "files": [
     "dist/",
     "docs/",
+    "openapi.yaml",
     "README.md"
   ],
   "scripts": {
-    "build": "tsc && node generate-api-summary.js && node scripts/copy-docs-to-dist.js",
+    "build": "tsc && node generate-api-summary.js && node generate-openapi.js && node scripts/copy-docs-to-dist.js",
     "docs": "typedoc",
     "docs:summary": "node generate-api-summary.js",
+    "docs:openapi": "node generate-openapi.js",
     "build:docs": "tsc build-docs.ts --outDir dist && node dist/build-docs.js",
     "prepublishOnly": "npm run build"
   },
