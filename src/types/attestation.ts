@@ -1,3 +1,7 @@
+/**
+ * @deprecated Legacy Firestore-backed attestation response.
+ * Use {@link Attestation} from `attestations.ts` for new integrations.
+ */
 export interface AttestationResponse {
   /** Attestation id */
   id: string
@@ -13,6 +17,10 @@ export interface AttestationResponse {
   proof: Record<string, any>
 }
 
+/**
+ * @deprecated Legacy Firestore attestation create request.
+ * Use {@link CreateAttestationInput} from `attestations.ts` for new integrations.
+ */
 export interface AttestationCreateRequest {
   /** Public attestation payload */
   public: Record<string, any>
@@ -22,6 +30,10 @@ export interface AttestationCreateRequest {
   proof: Record<string, any>
 }
 
+/**
+ * @deprecated The new attestation system is append-only; updates are not supported.
+ * Append a corrective record via {@link CreateAttestationInput} instead.
+ */
 export interface AttestationUpdateRequest {
   /** Update operation/type */
   type?: string

@@ -31,8 +31,13 @@ export interface AppManifestFiles {
         /** ESM bundle -- used for native ES module loading */
         esm?: string;
     };
-    /** CSS file -- absent if the bundle ships no styles */
-    css?: string;
+    /**
+     * CSS file path — set to `null` (or omit) when the bundle ships no CSS.
+     * Most widgets and containers use Tailwind/shadcn classes from the parent and produce no CSS file.
+     * Only set to a non-null string if an actual CSS file exists in dist/;
+     * a non-null value pointing to a missing file will cause a 404 in the parent portal.
+     */
+    css?: string | null;
 }
 /** A single widget component defined in the manifest */
 export interface AppWidgetComponent {
@@ -53,6 +58,129 @@ export interface AppContainerComponent {
     props?: {
         required?: string[];
         optional?: string[];
+    };
+}
+/**
+ * A single navigable state exposed by a SmartLinks app.
+ * Used in both `app.manifest.json` (static routes) and `appConfig.linkable` (dynamic content entries).
+ *
+ * @example
+ *   // In app.manifest.json — static routes, declared at build time
+ *   { "title": "Gallery", "path": "/gallery" }
+ *   { "title": "Advanced Settings", "path": "/settings", "params": { "tab": "advanced" } }
+ *
+ *   // In appConfig.linkable — dynamic content, synced at runtime
+ *   { "title": "About Us", "params": { "pageId": "about-us" } }
+ */
+export interface DeepLinkEntry {
+    /** Human-readable label shown in menus and offered to AI agents */
+    title: string;
+    /**
+     * Hash route path within the app (optional).
+     * Defaults to "/" if omitted.
+     * @example "/gallery"
+     */
+    path?: string;
+    /**
+     * App-specific query params appended to the hash route URL.
+     * Do NOT include platform context params (collectionId, appId, productId, etc.) —
+     * those are injected by the platform automatically.
+     */
+    params?: Record<string, string>;
+}
+/**
+ * Context object passed to every executor factory function.
+ */
+export interface ExecutorContext {
+    collectionId: string;
+    appId: string;
+    /** Pre-initialised SmartLinks SDK — passed in to avoid duplicate instances */
+    SL: any;
+}
+/**
+ * Input passed to an executor's `getSEO()` function.
+ * The server pre-fetches collection/product/proof and passes them in;
+ * avoid making extra SL calls inside getSEO() to stay within the 200ms budget.
+ */
+export interface SEOInput {
+    collectionId: string;
+    appId: string;
+    productId?: string;
+    proofId?: string;
+    SL: any;
+    /** Pre-fetched collection object */
+    collection?: Record<string, any>;
+    /** Pre-fetched product object */
+    product?: Record<string, any>;
+    /** Pre-fetched proof object */
+    proof?: Record<string, any>;
+}
+/**
+ * Return value from an executor's `getSEO()` function.
+ * Singular fields (title, description, ogImage) use highest-priority-wins merging across apps.
+ * Additive fields (jsonLd, contentSummary, topics) are merged from all apps on the page.
+ */
+export interface SEOResult {
+    /** Page title — singular, highest `meta.seo.priority` wins */
+    title?: string;
+    /** Meta description — singular */
+    description?: string;
+    /** Open Graph image URL — singular */
+    ogImage?: string;
+    /** JSON-LD structured data — additive, concatenated from all apps */
+    jsonLd?: Record<string, any> | Record<string, any>[];
+    /** Plain text summary for AI crawlers — additive, concatenated */
+    contentSummary?: string;
+    /** Topic tags — additive, merged and deduplicated */
+    topics?: string[];
+}
+/** A single section returned by an executor's `getLLMContent()` function */
+export interface LLMContentSection {
+    /** Section heading displayed in the rendered HTML and read by AI crawlers */
+    heading: string;
+    /** Markdown content */
+    content: string;
+    /** Sort order — lower numbers appear first (default: 100) */
+    order?: number;
+}
+/**
+ * Input passed to an executor's `getLLMContent()` function.
+ * Similar to SEOInput but includes `pageSlug` for page-aware content.
+ * Timeout is 500ms (longer than SEO — LLM content may fetch app config).
+ */
+export interface LLMContentInput {
+    collectionId: string;
+    appId: string;
+    productId?: string;
+    proofId?: string;
+    SL: any;
+    collection?: Record<string, any>;
+    product?: Record<string, any>;
+    proof?: Record<string, any>;
+    /** Which page slug is being rendered */
+    pageSlug?: string;
+}
+/** Return value from an executor's `getLLMContent()` function */
+export interface LLMContentResult {
+    sections: LLMContentSection[];
+}
+/**
+ * The `executor` block in `app.manifest.json`.
+ * Declares the executor bundle and its exported capabilities.
+ */
+export interface AppManifestExecutor {
+    files: AppManifestFiles;
+    /** Name of the factory function that creates a configured executor instance */
+    factory?: string;
+    /** All named exports from the bundle */
+    exports?: string[];
+    /** Human-readable description for AI orchestrators and admin UIs */
+    description?: string;
+    /** LLM content contract — declares the getLLMContent function and its timeout */
+    llmContent?: {
+        function: string;
+        timeout?: number;
+        responseShape?: Record<string, any>;
     };
 }
 /**
@@ -149,6 +277,21 @@ export interface AppManifest {
         version: string;
         platformRevision?: string;
         appId: string;
+        /**
+         * SEO configuration for this app.
+         * `priority` controls which app's singular fields (title, description, ogImage) win
+         * when multiple apps appear on the same page. Default is 0; higher wins.
+         */
+        seo?: {
+            strategy?: 'executor' | string;
+            priority?: number;
+            contract?: {
+                function: string;
+                input?: string[];
+                timeout?: number;
+                responseShape?: Record<string, string>;
+            };
+        };
     };
     /**
      * Relative path to the admin configuration file (e.g. `"app.admin.json"`).
@@ -167,6 +310,20 @@ export interface AppManifest {
         files: AppManifestFiles;
         components: AppContainerComponent[];
     };
+    /**
+     * Static deep-linkable states built into this app.
+     * These are fixed routes that exist regardless of content — declared once at build time.
+     * Dynamic content entries (e.g. CMS pages) are stored separately in `appConfig.linkable`.
+     * Consumers should merge both sources to get the full set of navigable states.
+     * @see DeepLinkEntry
+     */
+    linkable?: DeepLinkEntry[];
+    /**
+     * Executor bundle declaration. Present when the app ships a programmatic executor
+     * for AI-driven configuration, server-side SEO, and LLM content generation.
+     * @see AppManifestExecutor
+     */
+    executor?: AppManifestExecutor;
     [key: string]: any;
 }
 /**

@@ -29,3 +29,5 @@ export * as realtime from "./realtime";
 export { tags } from "./tags";
 export { order } from "./order";
 export { app } from "./appObjects";
+export { attestations } from "./attestations";
+export { containers } from "./containers";

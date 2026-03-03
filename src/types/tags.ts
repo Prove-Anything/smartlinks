@@ -13,10 +13,18 @@ export interface Tag {
   orgId: string                     // Organization ID
   tagId: string                     // Unique tag identifier (globally unique)
   collectionId: string              // Collection ID
-  productId: string                 // Product ID
+  productId?: string                // Product ID (optional — may be a ref-only tag)
   variantId?: string | null         // Optional: Variant ID
   batchId?: string | null           // Optional: Batch ID
-  proofId: string                   // Proof ID (serial number or explicit)
+  proofId?: string                  // Proof ID (serial number or explicit)
+  /**
+   * Polymorphic reference type linking the tag to any app object, e.g.
+   * `'app_record'`, `'app_case'`, `'container'`, etc.
+   * Must always be paired with `refId`.
+   */
+  refType?: string
+  /** UUID of the referenced object.  Must always be paired with `refType`. */
+  refId?: string
   metadata: Record<string, any>     // Additional metadata (e.g., serialIndex)
   createdAt: string                 // ISO 8601 timestamp
   updatedAt: string                 // ISO 8601 timestamp
@@ -28,11 +36,18 @@ export interface Tag {
  */
 export interface CreateTagRequest {
   tagId: string                     // Required: Unique tag identifier
-  productId: string                 // Required: Product ID
+  productId?: string                // Optional: Product ID (required when proofId is set without useSerialNumber)
   variantId?: string                // Optional: Variant ID
   batchId?: string                  // Optional: Batch ID
-  proofId?: string                  // Optional: Explicit proof ID (if omitted, auto-generates serial)
+  proofId?: string                  // Optional: Explicit proof ID (if omitted with productId, auto-generates serial)
   useSerialNumber?: boolean         // Optional: Explicitly request serial number generation
+  /**
+   * Polymorphic ref type linking this tag to any app object (e.g. `'app_record'`, `'container'`).
+   * Must be paired with `refId`.  A tag can simultaneously have a product/proof AND a ref.
+   */
+  refType?: string
+  /** UUID of the referenced object.  Must be paired with `refType`. */
+  refId?: string
   metadata?: Record<string, any>    // Optional: Additional metadata
   force?: boolean                   // Optional: Overwrite if tag exists in same collection (default: false)
 }
@@ -97,6 +112,13 @@ export interface UpdateTagRequest {
   variantId?: string | null         // Optional: Update variant ID (null to clear)
   batchId?: string | null           // Optional: Update batch ID (null to clear)
   proofId?: string                  // Optional: Update proof ID
+  /**
+   * Polymorphic ref type.  Must be paired with `refId`.
+   * Set both to `null` / omit to leave unchanged.
+   */
+  refType?: string
+  /** UUID of the referenced object.  Must be paired with `refType`. */
+  refId?: string
   metadata?: Record<string, any>    // Optional: Merge with existing metadata
 }
 
@@ -126,6 +148,10 @@ export interface ListTagsRequest {
   productId?: string                // Optional: Filter by product ID
   variantId?: string                // Optional: Filter by variant ID
   batchId?: string                  // Optional: Filter by batch ID
+  /** Optional: Filter by polymorphic ref type (e.g. `'container'`, `'app_record'`) */
+  refType?: string
+  /** Optional: Filter by polymorphic ref UUID */
+  refId?: string
 }
 
 /**
@@ -184,3 +210,23 @@ export interface PublicBatchLookupQueryRequest {
  * Response from public batch lookup (GET).
  */
 export interface PublicBatchLookupQueryResponse extends PublicBatchLookupResponse {}
+
+/**
+ * Query parameters for the reverse-lookup endpoint.
+ * Finds all tags linked to a given app object across any collection.
+ */
+export interface ReverseTagLookupParams {
+  /** Required — polymorphic ref type, e.g. `'app_record'`, `'container'` */
+  refType: string
+  /** Required — UUID of the referenced object */
+  refId: string
+}
+
+/**
+ * Response from the reverse-lookup endpoint.
+ * Uses a global cross-shard index so it is safe to call without knowing
+ * which collection the object belongs to.
+ */
+export interface ReverseTagLookupResponse {
+  tags: Tag[]
+}

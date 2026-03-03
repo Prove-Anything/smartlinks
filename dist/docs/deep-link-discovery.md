@@ -32,7 +32,7 @@ Deep-linkable states come from **two sources** depending on their nature:
 
 | Source | What goes here | When it changes |
 |--------|---------------|-----------------|
-| **App manifest** (`app.admin.json`) | Fixed routes built into the app | Only when the app itself is updated |
+| **App manifest** (`app.manifest.json`) | Fixed routes built into the app | Only when the app itself is updated |
 | **App config** (`appConfig.linkable`) | Content-driven entries that vary by collection | When admins create, remove, or rename content |
 
 Consumers merge both sources to get the full set of navigable states for an app.
@@ -40,7 +40,7 @@ Consumers merge both sources to get the full set of navigable states for an app.
 ```text
 ┌─────────────────────────────────────────────────────────────────────────┐
 │ App Definition (build time)                                              │
-│  app.admin.json → "linkable": [                                          │
+│  app.manifest.json → "linkable": [                                       │
 │    { "title": "Gallery",  "path": "/gallery" },                          │
 │    { "title": "Settings", "path": "/settings" }                          │
 │  ]                                                                       │
@@ -74,7 +74,7 @@ Consumers merge both sources to get the full set of navigable states for an app.
 
 ### Static Links — App Manifest
 
-Static links are routes that are **built into the app itself** — they exist regardless of what content admins have created. They belong in `app.admin.json` as a top-level `linkable` array:
+Static links are routes that are **built into the app itself** — they exist regardless of what content admins have created. They belong in `app.manifest.json` as a top-level `linkable` array, as a peer to `widgets` and `containers`:
 
 ```json
 {
@@ -172,7 +172,7 @@ interface DeepLinkEntry {
 
 **An app with both static routes and dynamic content pages:**
 
-`app.admin.json` — declare static routes once, at build time:
+`app.manifest.json` — declare static routes once, at build time:
 ```json
 {
   "linkable": [
@@ -441,7 +441,7 @@ if (entry) {
 ```typescript
 /**
  * A single navigable state exposed by a SmartLinks app.
- * Used in both app.admin.json `linkable` (static) and appConfig `linkable` (dynamic).
+ * Used in both app.manifest.json `linkable` (static) and appConfig `linkable` (dynamic).
  */
 export interface DeepLinkEntry {
   /** Human-readable label shown in menus and offered to AI agents */
@@ -469,7 +469,7 @@ export type DeepLinkRegistry = DeepLinkEntry[];
 
 ### Rules
 
-1. **Static routes belong in the manifest** — if a route exists regardless of content, declare it in `app.admin.json`. Do not write it to `appConfig` on first run.
+1. **Static routes belong in the manifest** — if a route exists regardless of content, declare it in `app.manifest.json`. Do not write it to `appConfig` on first run.
 2. **`appConfig.linkable` is for dynamic content only** — it should contain entries generated from, and varying with, the app's data.
 3. **`linkable` is reserved** — do not use this key for other purposes in either the manifest or `appConfig`.
 4. **No platform context params in entries** — `collectionId`, `appId`, `productId`, `proofId`, `lang`, `theme` are injected by the platform automatically.

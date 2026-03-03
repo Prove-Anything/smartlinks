@@ -163,11 +163,41 @@ export var tags;
             queryParams.append('variantId', params.variantId);
         if (params === null || params === void 0 ? void 0 : params.batchId)
             queryParams.append('batchId', params.batchId);
+        if (params === null || params === void 0 ? void 0 : params.refType)
+            queryParams.append('refType', params.refType);
+        if (params === null || params === void 0 ? void 0 : params.refId)
+            queryParams.append('refId', params.refId);
         const query = queryParams.toString();
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags${query ? `?${query}` : ''}`;
         return request(path);
     }
     tags.list = list;
+    /**
+     * Reverse lookup — find all tags linked to a given app object (admin).
+     *
+     * Uses a global cross-shard index keyed on `(orgId, refType, refId)`, so it
+     * is safe to call without knowing which collection the object belongs to.
+     *
+     * @param collectionId - Collection context (used for auth scope)
+     * @param params - `refType` and `refId` are required
+     * @returns `{ tags: Tag[] }`
+     *
+     * @example
+     * ```typescript
+     * const { tags: linked } = await tags.byRef('coll_123', {
+     *   refType: 'container',
+     *   refId:   'container-uuid',
+     * })
+     * ```
+     */
+    async function byRef(collectionId, params) {
+        const queryParams = new URLSearchParams();
+        queryParams.append('refType', params.refType);
+        queryParams.append('refId', params.refId);
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags/by-ref?${queryParams.toString()}`;
+        return request(path);
+    }
+    tags.byRef = byRef;
     // ============================================================================
     // Public Endpoints
     // ============================================================================

@@ -77,6 +77,53 @@ export type {
   AttestationUpdateRequest,
 } from "./types/attestation"
 export type {
+  Attestation,
+  LatestAttestation,
+  AttestationSummaryBucket,
+  ChainVerifyResult,
+  CreateAttestationInput,
+  AttestationSubjectType,
+  AttestationVisibility,
+  AttestationAudience,
+  AttestationGroupBy,
+  ListAttestationsParams,
+  AttestationSummaryParams,
+  AttestationLatestParams,
+  AttestationVerifyParams,
+  AttestationTreeSummaryParams,
+  AttestationTreeLatestParams,
+  ListAttestationsResponse,
+  PublicListAttestationsResponse,
+  AttestationSummaryResponse,
+  PublicAttestationSummaryResponse,
+  AttestationLatestResponse,
+  PublicAttestationLatestResponse,
+  AttestationTreeSummaryResponse,
+  PublicAttestationTreeSummaryResponse,
+  AttestationTreeLatestResponse,
+  PublicAttestationTreeLatestResponse,
+} from "./types/attestations"
+export type {
+  Container,
+  ContainerItem,
+  ContainerStatus,
+  ContainerItemType,
+  CreateContainerInput,
+  UpdateContainerInput,
+  AddContainerItemsInput,
+  RemoveContainerItemsInput,
+  ListContainersParams,
+  GetContainerParams,
+  ListContainerItemsParams,
+  FindContainersForItemParams,
+  ListContainersResponse,
+  PublicListContainersResponse,
+  FindContainersForItemResponse,
+  ContainerItemsResponse,
+  AddContainerItemsResponse,
+  RemoveContainerItemsResponse,
+} from "./types/containers"
+export type {
   BatchResponse,
   BatchCreateRequest,
   BatchUpdateRequest,
@@ -113,3 +160,9 @@ export type {
 export type {
   QrShortCodeLookupResponse,
 } from "./types/qr"
+
+// Tags — polymorphic ref additions
+export type {
+  ReverseTagLookupParams,
+  ReverseTagLookupResponse,
+} from "./types/tags"

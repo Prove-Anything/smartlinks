@@ -176,10 +176,13 @@ function generateAPISummary() {
   // Add documentation links
   summary += '## Documentation\n\n';
   summary += 'For detailed guides on specific features:\n\n';
+  summary += '- **[SmartLinks Microapp Overview](overview.md)** - Platform architecture, data model, auth patterns, storage, anti-patterns, and quick-reference for all SDK docs\n';
   summary += '- **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation\n';
   summary += '- **[Widgets](widgets.md)** - Embeddable React components for parent applications\n';
   summary += '- **[Containers](containers.md)** - Building full-app embeddable containers (lazy-loaded) \n';
+  summary += '- **[Multi-Page App Architecture](mpa.md)** - Vite MPA build pipeline: public/admin entry points, widget/container/executor bundles, content-hashed CDN assets\n';
   summary += '- **[App Configuration Files](app-manifest.md)** - `app.manifest.json` and `app.admin.json` reference — bundles, components, setup questions, import schemas, tunable fields, and metrics\n';
+  summary += '- **[Executor Model](executor.md)** - Programmatic JS bundles for AI-driven setup, server-side SEO metadata generation, and LLM content for AI crawlers\n';
   summary += '- **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections\n';
   summary += '- **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication\n';
   summary += '- **[i18n](i18n.md)** - Internationalization and localization\n';
@@ -190,7 +193,9 @@ function generateAPISummary() {
   summary += '- **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage\n';
   summary += '- **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more\n';
   summary += '- **[Communications](comms.md)** - Transactional sends, multi-channel broadcasts, consent management, push registration, and analytics\n';
+  summary += '- **[Interactions & Event Tracking](interactions.md)** - Log user events, count outcomes, query history, and define interaction types with permissions\n';
   summary += '- **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration\n';
+  summary += '- **[AI-Native App Manifests](manifests.md)** - How AI workflows discover, configure, and import apps via structured manifests and prose guides\n';
   summary += '- **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide\n\n';
   
   // Generate namespace overview (grouped + descriptive)
@@ -231,7 +236,7 @@ function generateAPISummary() {
     {
       title: '— Analytics & Events —',
       items: [
-        { name: 'interactions', desc: 'Log and analyze interactions/outcomes; aggregates and actor lists; interaction definition CRUD.' },
+        { name: 'interactions', desc: 'Log and analyze interactions/outcomes; aggregates and actor lists; interaction definition CRUD.', docsLink: 'interactions.md' },
       ]
     },
     {

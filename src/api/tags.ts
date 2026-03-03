@@ -17,7 +17,9 @@ import {
   PublicBatchLookupRequest,
   PublicBatchLookupResponse,
   PublicBatchLookupQueryRequest,
-  PublicBatchLookupQueryResponse
+  PublicBatchLookupQueryResponse,
+  ReverseTagLookupParams,
+  ReverseTagLookupResponse,
 } from "../types/tags"
 
 /**
@@ -198,10 +200,41 @@ export namespace tags {
     if (params?.productId) queryParams.append('productId', params.productId)
     if (params?.variantId) queryParams.append('variantId', params.variantId)
     if (params?.batchId) queryParams.append('batchId', params.batchId)
+    if (params?.refType) queryParams.append('refType', params.refType)
+    if (params?.refId) queryParams.append('refId', params.refId)
     
     const query = queryParams.toString()
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags${query ? `?${query}` : ''}`
     return request<ListTagsResponse>(path)
+  }
+
+  /**
+   * Reverse lookup — find all tags linked to a given app object (admin).
+   *
+   * Uses a global cross-shard index keyed on `(orgId, refType, refId)`, so it
+   * is safe to call without knowing which collection the object belongs to.
+   *
+   * @param collectionId - Collection context (used for auth scope)
+   * @param params - `refType` and `refId` are required
+   * @returns `{ tags: Tag[] }`
+   *
+   * @example
+   * ```typescript
+   * const { tags: linked } = await tags.byRef('coll_123', {
+   *   refType: 'container',
+   *   refId:   'container-uuid',
+   * })
+   * ```
+   */
+  export async function byRef(
+    collectionId: string,
+    params: ReverseTagLookupParams
+  ): Promise<ReverseTagLookupResponse> {
+    const queryParams = new URLSearchParams()
+    queryParams.append('refType', params.refType)
+    queryParams.append('refId', params.refId)
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags/by-ref?${queryParams.toString()}`
+    return request<ReverseTagLookupResponse>(path)
   }
 
   // ============================================================================

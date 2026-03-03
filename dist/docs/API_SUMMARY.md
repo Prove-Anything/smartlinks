@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.6.7  |  Generated: 2026-03-03T14:18:48.483Z
+Version: 1.7.1  |  Generated: 2026-03-03T15:26:20.065Z
 
 This is a concise summary of all available API functions and types.
 
@@ -8,9 +8,13 @@ This is a concise summary of all available API functions and types.
 
 For detailed guides on specific features:
 
+- **[SmartLinks Microapp Overview](overview.md)** - Platform architecture, data model, auth patterns, storage, anti-patterns, and quick-reference for all SDK docs
 - **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation
 - **[Widgets](widgets.md)** - Embeddable React components for parent applications
 - **[Containers](containers.md)** - Building full-app embeddable containers (lazy-loaded) 
+- **[Multi-Page App Architecture](mpa.md)** - Vite MPA build pipeline: public/admin entry points, widget/container/executor bundles, content-hashed CDN assets
+- **[App Configuration Files](app-manifest.md)** - `app.manifest.json` and `app.admin.json` reference — bundles, components, setup questions, import schemas, tunable fields, and metrics
+- **[Executor Model](executor.md)** - Programmatic JS bundles for AI-driven setup, server-side SEO metadata generation, and LLM content for AI crawlers
 - **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections
 - **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication
 - **[i18n](i18n.md)** - Internationalization and localization
@@ -21,7 +25,9 @@ For detailed guides on specific features:
 - **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage
 - **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more
 - **[Communications](comms.md)** - Transactional sends, multi-channel broadcasts, consent management, push registration, and analytics
+- **[Interactions & Event Tracking](interactions.md)** - Log user events, count outcomes, query history, and define interaction types with permissions
 - **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration
+- **[AI-Native App Manifests](manifests.md)** - How AI workflows discover, configure, and import apps via structured manifests and prose guides
 - **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide
 
 ## API Namespaces
@@ -49,7 +55,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **segments** - Define dynamic/static audience segments; estimate and list recipients; schedule calculations.
 
 — Analytics & Events —
-- **interactions** - Log and analyze interactions/outcomes; aggregates and actor lists; interaction definition CRUD.
+- **interactions** - Log and analyze interactions/outcomes; aggregates and actor lists; interaction definition CRUD. → [Guide](interactions.md)
 
 — Automation —
 - **journeys** - Configure automated flows triggered by events or schedules; steps, rules; full CRUD.
@@ -68,6 +74,8 @@ The Smartlinks SDK is organized into the following namespaces:
 - **appObjects** - Functions for appObjects operations
 - **async** - Functions for async operations
 - **attestation** - Functions for attestation operations
+- **attestations** - Functions for attestations operations
+- **containers** - Functions for containers operations
 - **jobs** - Functions for jobs operations
 - **journeysAnalytics** - Functions for journeysAnalytics operations
 - **location** - Functions for location operations
@@ -843,7 +851,11 @@ interface AppManifestFiles {
   umd: string;
   esm?: string;
   };
-  css?: string;
+  * CSS file path — set to `null` (or omit) when the bundle ships no CSS.
+  * Most widgets and containers use Tailwind/shadcn classes from the parent and produce no CSS file.
+  * Only set to a non-null string if an actual CSS file exists in dist/;
+  * a non-null value pointing to a missing file will cause a 404 in the parent portal.
+  css?: string | null;
 }
 ```
 
@@ -869,6 +881,102 @@ interface AppContainerComponent {
   props?: {
   required?: string[];
   optional?: string[];
+  };
+}
+```
+
+**DeepLinkEntry** (interface)
+```typescript
+interface DeepLinkEntry {
+  title: string;
+  * Hash route path within the app (optional).
+  * Defaults to "/" if omitted.
+  * @example "/gallery"
+  path?: string;
+  * App-specific query params appended to the hash route URL.
+  * Do NOT include platform context params (collectionId, appId, productId, etc.) —
+  * those are injected by the platform automatically.
+  params?: Record<string, string>;
+}
+```
+
+**ExecutorContext** (interface)
+```typescript
+interface ExecutorContext {
+  collectionId: string;
+  appId: string;
+  SL: any;
+}
+```
+
+**SEOInput** (interface)
+```typescript
+interface SEOInput {
+  collectionId: string;
+  appId: string;
+  productId?: string;
+  proofId?: string;
+  SL: any;
+  collection?: Record<string, any>;
+  product?: Record<string, any>;
+  proof?: Record<string, any>;
+}
+```
+
+**SEOResult** (interface)
+```typescript
+interface SEOResult {
+  title?: string;
+  description?: string;
+  ogImage?: string;
+  jsonLd?: Record<string, any> | Record<string, any>[];
+  contentSummary?: string;
+  topics?: string[];
+}
+```
+
+**LLMContentSection** (interface)
+```typescript
+interface LLMContentSection {
+  heading: string;
+  content: string;
+  order?: number;
+}
+```
+
+**LLMContentInput** (interface)
+```typescript
+interface LLMContentInput {
+  collectionId: string;
+  appId: string;
+  productId?: string;
+  proofId?: string;
+  SL: any;
+  collection?: Record<string, any>;
+  product?: Record<string, any>;
+  proof?: Record<string, any>;
+  pageSlug?: string;
+}
+```
+
+**LLMContentResult** (interface)
+```typescript
+interface LLMContentResult {
+  sections: LLMContentSection[];
+}
+```
+
+**AppManifestExecutor** (interface)
+```typescript
+interface AppManifestExecutor {
+  files: AppManifestFiles;
+  factory?: string;
+  exports?: string[];
+  description?: string;
+  llmContent?: {
+  function: string;
+  timeout?: number;
+  responseShape?: Record<string, any>;
   };
 }
 ```
@@ -947,6 +1055,19 @@ interface AppManifest {
   version: string;
   platformRevision?: string;
   appId: string;
+  * SEO configuration for this app.
+  * `priority` controls which app's singular fields (title, description, ogImage) win
+  * when multiple apps appear on the same page. Default is 0; higher wins.
+  seo?: {
+  strategy?: 'executor' | string;
+  priority?: number;
+  contract?: {
+  function: string;
+  input?: string[];
+  timeout?: number;
+  responseShape?: Record<string, string>;
+  };
+  };
   };
   * Relative path to the admin configuration file (e.g. `"app.admin.json"`).
   * When present, fetch this file to get the full {@link AppAdminConfig}
@@ -961,6 +1082,16 @@ interface AppManifest {
   files: AppManifestFiles;
   components: AppContainerComponent[];
   };
+  * Static deep-linkable states built into this app.
+  * These are fixed routes that exist regardless of content — declared once at build time.
+  * Dynamic content entries (e.g. CMS pages) are stored separately in `appConfig.linkable`.
+  * Consumers should merge both sources to get the full set of navigable states.
+  * @see DeepLinkEntry
+  linkable?: DeepLinkEntry[];
+  * Executor bundle declaration. Present when the app ships a programmatic executor
+  * for AI-driven configuration, server-side SEO, and LLM content generation.
+  * @see AppManifestExecutor
+  executor?: AppManifestExecutor;
   [key: string]: any;
 }
 ```
@@ -1453,6 +1584,230 @@ interface AttestationUpdateRequest {
   data?: Record<string, any>
 }
 ```
+
+### attestations
+
+**Attestation** (interface)
+```typescript
+interface Attestation {
+  id: string
+  orgId: string
+  collectionId: string
+  subjectType: AttestationSubjectType
+  subjectId: string
+  attestationType: string
+  recordedAt: string
+  visibility: AttestationVisibility
+  value?: Record<string, any>
+  ownerData?: Record<string, any>
+  adminData?: Record<string, any>
+  unit?: string
+  source?: string
+  authorId?: string
+  metadata?: Record<string, any>
+  contentHash: string
+  prevHash?: string
+  createdAt: string
+}
+```
+
+**LatestAttestation** (interface)
+```typescript
+interface LatestAttestation {
+  attestationType: string
+  latest: Attestation
+}
+```
+
+**AttestationSummaryBucket** (interface)
+```typescript
+interface AttestationSummaryBucket {
+  period: string
+  count: number
+  values?: Record<string, any>
+}
+```
+
+**ChainVerifyResult** (interface)
+```typescript
+interface ChainVerifyResult {
+  valid: boolean
+  checkedCount: number
+  failedAt?: string
+  message: string
+}
+```
+
+**CreateAttestationInput** (interface)
+```typescript
+interface CreateAttestationInput {
+  subjectType: AttestationSubjectType
+  subjectId: string
+  attestationType: string
+  recordedAt?: string
+  visibility?: AttestationVisibility
+  value?: Record<string, any>
+  ownerData?: Record<string, any>
+  adminData?: Record<string, any>
+  unit?: string
+  source?: string
+  authorId?: string
+  metadata?: Record<string, any>
+}
+```
+
+**ListAttestationsResponse** (interface)
+```typescript
+interface ListAttestationsResponse {
+  attestations: Attestation[]
+}
+```
+
+**PublicListAttestationsResponse** (interface)
+```typescript
+interface PublicListAttestationsResponse {
+  attestations: Attestation[]
+  audience: AttestationAudience
+}
+```
+
+**AttestationSummaryResponse** (interface)
+```typescript
+interface AttestationSummaryResponse {
+  summary: AttestationSummaryBucket[]
+}
+```
+
+**PublicAttestationSummaryResponse** (interface)
+```typescript
+interface PublicAttestationSummaryResponse {
+  summary: AttestationSummaryBucket[]
+  audience: 'public'
+}
+```
+
+**AttestationLatestResponse** (interface)
+```typescript
+interface AttestationLatestResponse {
+  latest: LatestAttestation[]
+}
+```
+
+**PublicAttestationLatestResponse** (interface)
+```typescript
+interface PublicAttestationLatestResponse {
+  latest: LatestAttestation[]
+  audience: AttestationAudience
+}
+```
+
+**AttestationTreeSummaryResponse** (interface)
+```typescript
+interface AttestationTreeSummaryResponse {
+  summary: AttestationSummaryBucket[]
+  subjectCount: number
+}
+```
+
+**PublicAttestationTreeSummaryResponse** (interface)
+```typescript
+interface PublicAttestationTreeSummaryResponse {
+  summary: AttestationSummaryBucket[]
+  audience: 'public'
+  subjectCount: number
+}
+```
+
+**AttestationTreeLatestResponse** (interface)
+```typescript
+interface AttestationTreeLatestResponse {
+  latest: LatestAttestation[]
+  subjectCount: number
+}
+```
+
+**PublicAttestationTreeLatestResponse** (interface)
+```typescript
+interface PublicAttestationTreeLatestResponse {
+  latest: LatestAttestation[]
+  audience: 'public'
+  subjectCount: number
+}
+```
+
+**ListAttestationsParams** (interface)
+```typescript
+interface ListAttestationsParams {
+  subjectType: AttestationSubjectType
+  subjectId: string
+  attestationType?: string
+  recordedAfter?: string
+  recordedBefore?: string
+  limit?: number
+  offset?: number
+}
+```
+
+**AttestationSummaryParams** (interface)
+```typescript
+interface AttestationSummaryParams {
+  subjectType: AttestationSubjectType
+  subjectId: string
+  attestationType: string
+  valueField?: string
+  groupBy?: AttestationGroupBy
+  recordedAfter?: string
+  recordedBefore?: string
+  limit?: number
+}
+```
+
+**AttestationLatestParams** (interface)
+```typescript
+interface AttestationLatestParams {
+  subjectType: AttestationSubjectType
+  subjectId: string
+}
+```
+
+**AttestationVerifyParams** (interface)
+```typescript
+interface AttestationVerifyParams {
+  subjectType: AttestationSubjectType
+  subjectId: string
+  attestationType: string
+}
+```
+
+**AttestationTreeSummaryParams** (interface)
+```typescript
+interface AttestationTreeSummaryParams {
+  subjectId: string
+  attestationType: string
+  valueField?: string
+  groupBy?: AttestationGroupBy
+  recordedAfter?: string
+  recordedBefore?: string
+  limit?: number
+  includeItems?: boolean
+}
+```
+
+**AttestationTreeLatestParams** (interface)
+```typescript
+interface AttestationTreeLatestParams {
+  subjectId: string
+  includeItems?: boolean
+}
+```
+
+**AttestationSubjectType** = ``
+
+**AttestationVisibility** = `'public' | 'owner' | 'admin'`
+
+**AttestationAudience** = `'public' | 'owner' | 'admin'`
+
+**AttestationGroupBy** = `'hour' | 'day' | 'week' | 'month'`
 
 ### auth
 
@@ -2956,6 +3311,184 @@ interface ContactSchemaResponse {
 
 **ContactSchema** = `ContactSchemaResponse`
 
+### containers
+
+**Container** (interface)
+```typescript
+interface Container {
+  id: string
+  orgId: string
+  collectionId: string
+  * Domain label describing what kind of container this is.
+  * Examples: `'pallet'`, `'fridge'`, `'cask'`, `'warehouse'`, `'shipping_container'`
+  containerType: string
+  ref?: string
+  name?: string
+  description?: string
+  status: ContainerStatus
+  metadata?: Record<string, any>
+  parentContainerId?: string
+  children?: Container[]
+  items?: ContainerItem[]
+  createdAt: string
+  updatedAt: string
+  deletedAt?: string
+}
+```
+
+**ContainerItem** (interface)
+```typescript
+interface ContainerItem {
+  id: string
+  orgId: string
+  containerId: string
+  collectionId?: string
+  itemType: ContainerItemType
+  itemId: string
+  productId?: string
+  proofId?: string
+  addedAt: string
+  removedAt?: string
+  metadata?: Record<string, any>
+}
+```
+
+**CreateContainerInput** (interface)
+```typescript
+interface CreateContainerInput {
+  containerType: string
+  ref?: string
+  name?: string
+  description?: string
+  status?: ContainerStatus
+  metadata?: Record<string, any>
+  parentContainerId?: string
+}
+```
+
+**UpdateContainerInput** (interface)
+```typescript
+interface UpdateContainerInput {
+  containerType?: string
+  ref?: string
+  name?: string
+  description?: string
+  status?: ContainerStatus
+  metadata?: Record<string, any>
+  parentContainerId?: string | null
+}
+```
+
+**AddContainerItemsInput** (interface)
+```typescript
+interface AddContainerItemsInput {
+  items: Array<{
+  itemType: ContainerItemType
+  itemId: string
+  productId?: string
+  proofId?: string
+  metadata?: Record<string, any>
+  }>
+}
+```
+
+**RemoveContainerItemsInput** (interface)
+```typescript
+interface RemoveContainerItemsInput {
+  ids: string[]
+}
+```
+
+**ListContainersResponse** (interface)
+```typescript
+interface ListContainersResponse {
+  containers: Container[]
+  limit: number
+  offset: number
+}
+```
+
+**PublicListContainersResponse** (interface)
+```typescript
+interface PublicListContainersResponse {
+  containers: Container[]
+}
+```
+
+**FindContainersForItemResponse** (interface)
+```typescript
+interface FindContainersForItemResponse {
+  containers: Container[]
+}
+```
+
+**ContainerItemsResponse** (interface)
+```typescript
+interface ContainerItemsResponse {
+  items: ContainerItem[]
+  limit: number
+  offset: number
+}
+```
+
+**AddContainerItemsResponse** (interface)
+```typescript
+interface AddContainerItemsResponse {
+  items: ContainerItem[]
+}
+```
+
+**RemoveContainerItemsResponse** (interface)
+```typescript
+interface RemoveContainerItemsResponse {
+  success: true
+  removedCount: number
+}
+```
+
+**ListContainersParams** (interface)
+```typescript
+interface ListContainersParams {
+  containerType?: string
+  status?: ContainerStatus
+  ref?: string
+  parentContainerId?: string
+  topLevel?: boolean
+  limit?: number
+  offset?: number
+}
+```
+
+**GetContainerParams** (interface)
+```typescript
+interface GetContainerParams {
+  tree?: boolean
+  treeDepth?: number
+  includeContents?: boolean
+}
+```
+
+**ListContainerItemsParams** (interface)
+```typescript
+interface ListContainerItemsParams {
+  history?: boolean
+  limit?: number
+  offset?: number
+}
+```
+
+**FindContainersForItemParams** (interface)
+```typescript
+interface FindContainersForItemParams {
+  itemType: ContainerItemType
+  itemId: string
+}
+```
+
+**ContainerStatus** = `'active' | 'archived' | string`
+
+**ContainerItemType** = `'tag' | 'proof' | 'serial' | 'order_item' | 'container'`
+
 ### crate
 
 **CrateItem** (interface)
@@ -4376,10 +4909,15 @@ interface Tag {
   orgId: string                     // Organization ID
   tagId: string                     // Unique tag identifier (globally unique)
   collectionId: string              // Collection ID
-  productId: string                 // Product ID
+  productId?: string                // Product ID (optional — may be a ref-only tag)
   variantId?: string | null         // Optional: Variant ID
   batchId?: string | null           // Optional: Batch ID
-  proofId: string                   // Proof ID (serial number or explicit)
+  proofId?: string                  // Proof ID (serial number or explicit)
+  * Polymorphic reference type linking the tag to any app object, e.g.
+  * `'app_record'`, `'app_case'`, `'container'`, etc.
+  * Must always be paired with `refId`.
+  refType?: string
+  refId?: string
   metadata: Record<string, any>     // Additional metadata (e.g., serialIndex)
   createdAt: string                 // ISO 8601 timestamp
   updatedAt: string                 // ISO 8601 timestamp
@@ -4390,11 +4928,15 @@ interface Tag {
 ```typescript
 interface CreateTagRequest {
   tagId: string                     // Required: Unique tag identifier
-  productId: string                 // Required: Product ID
+  productId?: string                // Optional: Product ID (required when proofId is set without useSerialNumber)
   variantId?: string                // Optional: Variant ID
   batchId?: string                  // Optional: Batch ID
-  proofId?: string                  // Optional: Explicit proof ID (if omitted, auto-generates serial)
+  proofId?: string                  // Optional: Explicit proof ID (if omitted with productId, auto-generates serial)
   useSerialNumber?: boolean         // Optional: Explicitly request serial number generation
+  * Polymorphic ref type linking this tag to any app object (e.g. `'app_record'`, `'container'`).
+  * Must be paired with `refId`.  A tag can simultaneously have a product/proof AND a ref.
+  refType?: string
+  refId?: string
   metadata?: Record<string, any>    // Optional: Additional metadata
   force?: boolean                   // Optional: Overwrite if tag exists in same collection (default: false)
 }
@@ -4451,6 +4993,10 @@ interface UpdateTagRequest {
   variantId?: string | null         // Optional: Update variant ID (null to clear)
   batchId?: string | null           // Optional: Update batch ID (null to clear)
   proofId?: string                  // Optional: Update proof ID
+  * Polymorphic ref type.  Must be paired with `refId`.
+  * Set both to `null` / omit to leave unchanged.
+  refType?: string
+  refId?: string
   metadata?: Record<string, any>    // Optional: Merge with existing metadata
 }
 ```
@@ -4470,6 +5016,8 @@ interface ListTagsRequest {
   productId?: string                // Optional: Filter by product ID
   variantId?: string                // Optional: Filter by variant ID
   batchId?: string                  // Optional: Filter by batch ID
+  refType?: string
+  refId?: string
 }
 ```
 
@@ -4522,6 +5070,21 @@ interface PublicBatchLookupResponse {
 interface PublicBatchLookupQueryRequest {
   tagIds: string                    // Comma-separated tag IDs
   embed?: string                    // Optional: Comma-separated: "collection", "product", "proof"
+}
+```
+
+**ReverseTagLookupParams** (interface)
+```typescript
+interface ReverseTagLookupParams {
+  refType: string
+  refId: string
+}
+```
+
+**ReverseTagLookupResponse** (interface)
+```typescript
+interface ReverseTagLookupResponse {
+  tags: Tag[]
 }
 ```
 
@@ -4951,13 +5514,91 @@ Create a new attestation for a proof.
     proofId: string,
     attestationId: string,
     data: AttestationUpdateRequest) → `Promise<AttestationResponse>`
-Update an attestation.
+Update an attestation. via `attestations.create()` with a note in `metadata` instead.
 
 **remove**(collectionId: string,
     productId: string,
     proofId: string,
     attestationId: string) → `Promise<void>`
-Delete an attestation.
+Delete an attestation. Use `attestations.create()` to append a corrective/superseding record instead.
+
+### attestations
+
+**create**(collectionId: string,
+    data: CreateAttestationInput) → `Promise<Attestation>`
+Create a single attestation (admin). `attestationType` are required ```typescript const a = await attestations.create('coll_123', { subjectType:     'container', subjectId:       'uuid-of-cask', attestationType: 'temperature', recordedAt:      '2025-04-15T14:30:00Z', value:           { celsius: 12.4 }, ownerData:       { sensorId: 'TEMP-7' }, unit:            '°C', visibility:      'public', }) ```
+
+**createBatch**(collectionId: string,
+    items: CreateAttestationInput[]) → `Promise<Attestation[]>`
+Batch-create attestations (admin). Sends an array of `CreateAttestationInput` objects in a single request. The server processes them atomically and returns the created records. ```typescript const records = await attestations.createBatch('coll_123', [ { subjectType: 'container', subjectId: 'uuid1', attestationType: 'temperature', value: { celsius: 12.4 } }, { subjectType: 'container', subjectId: 'uuid1', attestationType: 'humidity',    value: { rh: 68 } }, ]) ```
+
+**list**(collectionId: string,
+    params: ListAttestationsParams) → `Promise<ListAttestationsResponse>`
+List attestations for a subject (admin). Returns all three data zones. Supports filtering by type and date range. ```typescript const { attestations: records } = await attestations.list('coll_123', { subjectType: 'container', subjectId:   'uuid-of-cask', attestationType: 'temperature', recordedAfter:   '2025-01-01T00:00:00Z', limit: 50, }) ```
+
+**summary**(collectionId: string,
+    params: AttestationSummaryParams) → `Promise<AttestationSummaryResponse>`
+Time-series summary of attestations (admin). Aggregates attestation counts (and optionally a numeric `value` field) into time buckets.  Useful for charting trends. `attestationType` are required ```typescript const { summary } = await attestations.summary('coll_123', { subjectType:     'container', subjectId:       'uuid-of-cask', attestationType: 'temperature', valueField:      'celsius', groupBy:         'day', recordedAfter:   '2025-01-01T00:00:00Z', }) ```
+
+**latest**(collectionId: string,
+    params: AttestationLatestParams) → `Promise<AttestationLatestResponse>`
+Latest snapshot — one record per `attestationType` (admin). Returns the most-recent attestation for each type recorded against this subject.  Ideal for dashboards that show the current state of a container. ```typescript const { latest } = await attestations.latest('coll_123', { subjectType: 'container', subjectId:   'uuid-of-fridge', }) // latest[0].attestationType === 'temperature' // latest[0].latest.value === { celsius: 4.1 } ```
+
+**verify**(collectionId: string,
+    params: AttestationVerifyParams) → `Promise<ChainVerifyResult>`
+Verify the hash chain for a `(subjectType, subjectId, attestationType)` tuple (admin). Re-computes each `contentHash` and confirms it matches the stored value and correctly references the previous record's hash.  A `valid: false` result with `failedAt` indicates the first broken link. ```typescript const result = await attestations.verify('coll_123', { subjectType:     'container', subjectId:       'uuid-of-cask', attestationType: 'temperature', }) if (!result.valid) { console.warn('Chain broken at', result.failedAt) } ```
+
+**treeSummary**(collectionId: string,
+    params: AttestationTreeSummaryParams) → `Promise<AttestationTreeSummaryResponse>`
+Tree time-series summary — aggregates across an entire container subtree (admin). Performs a BFS traversal of the container hierarchy rooted at `subjectId`, collects all descendant container IDs (and optionally their items), then aggregates attestations across all of them. `subjectType` is implicitly `'container'` ```typescript const { summary, subjectCount } = await attestations.treeSummary('coll_123', { subjectId:       'root-warehouse-uuid', attestationType: 'temperature', valueField:      'celsius', groupBy:         'hour', includeItems:    true, }) console.log(`Aggregated over ${subjectCount} subjects`) ```
+
+**treeLatest**(collectionId: string,
+    params: AttestationTreeLatestParams) → `Promise<AttestationTreeLatestResponse>`
+Tree latest snapshot — most-recent record per type across a container subtree (admin). Same BFS traversal as `treeSummary`, but returns the most-recent record per `attestationType` aggregated across the entire subtree.
+
+**publicList**(collectionId: string,
+    params: ListAttestationsParams) → `Promise<PublicListAttestationsResponse>`
+List attestations for a subject (public). Records with `visibility='admin'` are always excluded. Records with `visibility='owner'` are included only when the caller provides a valid Firebase ID token that resolves to the subject owner. The `audience` field in the response indicates the tier that was served. ```typescript const { attestations: records, audience } = await attestations.publicList('coll_123', { subjectType: 'proof', subjectId:   'proof-uuid', }) ```
+
+**publicSummary**(collectionId: string,
+    params: AttestationSummaryParams) → `Promise<PublicAttestationSummaryResponse>`
+Time-series summary (public). Always served at `audience='public'`.  Same parameters as the admin version. `attestationType` are required
+
+**publicLatest**(collectionId: string,
+    params: AttestationLatestParams) → `Promise<PublicAttestationLatestResponse>`
+Latest snapshot per `attestationType` (public). Owner elevation applies — provide a Firebase ID token for owner-tier data.
+
+**publicTreeSummary**(collectionId: string,
+    params: AttestationTreeSummaryParams) → `Promise<PublicAttestationTreeSummaryResponse>`
+Tree time-series summary (public). Always served at `audience='public'`.  Performs the same BFS traversal as the admin version but only includes publicly visible attestations.
+
+**publicTreeLatest**(collectionId: string,
+    params: AttestationTreeLatestParams) → `Promise<PublicAttestationTreeLatestResponse>`
+Tree latest snapshot (public).
+
+**publicContainerList**(collectionId: string,
+    containerId: string,
+    params?: Omit<ListAttestationsParams, 'subjectType' | 'subjectId'>) → `Promise<PublicListAttestationsResponse>`
+List attestations for a specific container (public shortcut). Equivalent to `publicList` with `subjectType='container'` and `subjectId=containerId` pre-filled.
+
+**publicContainerSummary**(collectionId: string,
+    containerId: string,
+    params: Omit<AttestationSummaryParams, 'subjectType' | 'subjectId'>) → `Promise<PublicAttestationSummaryResponse>`
+Time-series summary for a specific container (public shortcut).
+
+**publicContainerLatest**(collectionId: string,
+    containerId: string) → `Promise<PublicAttestationLatestResponse>`
+Latest snapshot for a specific container (public shortcut).
+
+**publicContainerTreeSummary**(collectionId: string,
+    containerId: string,
+    params: Omit<AttestationTreeSummaryParams, 'subjectId'>) → `Promise<PublicAttestationTreeSummaryResponse>`
+Tree time-series summary rooted at a specific container (public shortcut).
+
+**publicContainerTreeLatest**(collectionId: string,
+    containerId: string,
+    params?: Pick<AttestationTreeLatestParams, 'includeItems'>) → `Promise<PublicAttestationTreeLatestResponse>`
+Tree latest snapshot rooted at a specific container (public shortcut).
 
 ### auth
 
@@ -5377,6 +6018,63 @@ Public: Get the contact schema for a collection. GET /public/collection/:collect
 **getUser**(collectionId: string,
     userId: string,) → `Promise<UserSearchResponse>`
 Public: Get the contact schema for a collection. GET /public/collection/:collectionId/contact/schema Returns a ContactSchemaResponse describing all publicly visible contact fields. Core fields and collection-defined custom fields are merged into a single flat schema. Fields not in `publicVisibleFields` are stripped entirely from the response. Fields visible but not in `publicEditableFields` have `ui:disabled: true` in `uiSchema`. Use `fieldOrder` to render fields in the correct sequence, and `evaluateConditions` from the types package to handle conditional field visibility. ```typescript import { contact, evaluateConditions } from '@proveanything/smartlinks' const schema = await contact.publicGetSchema(collectionId) for (const fieldId of schema.fieldOrder) { const property = schema.schema.properties[fieldId] const ui       = schema.uiSchema[fieldId] || {} const visible  = evaluateConditions(property.conditions, property.showWhen, formValues) const disabled = ui['ui:disabled'] === true if (visible) renderField({ fieldId, property, ui, disabled }) } ```
+
+### containers
+
+**create**(collectionId: string,
+    data: CreateContainerInput) → `Promise<Container>`
+Create a new container (admin). ```typescript const cask = await containers.create('coll_123', { containerType: 'cask', ref:           'CASK-0042', name:          'Cask 42 — Single Malt', metadata:      { distilleryYear: 2019, capacity: 200 }, }) ```
+
+**list**(collectionId: string,
+    params?: ListContainersParams) → `Promise<ListContainersResponse>`
+List containers (admin). Supports filtering by type, status, ref, parent, and top-level flag. ```typescript // All active pallets const { containers: pallets } = await containers.list('coll_123', { containerType: 'pallet', status:        'active', limit:         50, }) // Top-level containers only const { containers: roots } = await containers.list('coll_123', { topLevel: true }) ```
+
+**findForItem**(collectionId: string,
+    params: FindContainersForItemParams) → `Promise<FindContainersForItemResponse>`
+Reverse lookup — find all containers currently holding a specific item (admin). ```typescript const { containers: holding } = await containers.findForItem('coll_123', { itemType: 'proof', itemId:   'proof-uuid', }) ```
+
+**get**(collectionId: string,
+    containerId: string,
+    params?: GetContainerParams) → `Promise<Container>`
+Get a single container by ID (admin). Pass `?tree=true` to recursively embed children, and/or `?includeContents=true` to embed the current item list. ```typescript // Flat const cask = await containers.get('coll_123', 'cask-uuid') // Full tree with contents const tree = await containers.get('coll_123', 'warehouse-uuid', { tree:            true, treeDepth:       3, includeContents: true, }) ```
+
+**update**(collectionId: string,
+    containerId: string,
+    data: UpdateContainerInput) → `Promise<Container>`
+Partially update a container (admin). Only fields present in the request body are modified. Pass `parentContainerId: null` to promote a container to top-level. ```typescript const updated = await containers.update('coll_123', 'cask-uuid', { status:   'archived', metadata: { bottledAt: '2025-04-01' }, }) ```
+
+**remove**(collectionId: string,
+    containerId: string) → `Promise<`
+Soft-delete a container (admin). Sets `deletedAt`; the record and its full item history remain queryable by admins.  Public API responses automatically exclude deleted containers.
+
+**listItems**(collectionId: string,
+    containerId: string,
+    params?: ListContainerItemsParams) → `Promise<ContainerItemsResponse>`
+List items currently (or historically) inside a container (admin). Pass `history: true` to include removed items and see the full membership log. ```typescript // Current contents const { items } = await containers.listItems('coll_123', 'cask-uuid') // Full history including removed items const { items: history } = await containers.listItems('coll_123', 'cask-uuid', { history: true }) ```
+
+**addItems**(collectionId: string,
+    containerId: string,
+    data: AddContainerItemsInput) → `Promise<AddContainerItemsResponse>`
+Add one or more items to a container (admin). Each item requires `itemType` and `itemId`.  Pass `productId` / `proofId` for denormalisation convenience. ```typescript const { items } = await containers.addItems('coll_123', 'pallet-uuid', { items: [ { itemType: 'tag',   itemId: 'NFC-00AABBCC' }, { itemType: 'proof', itemId: 'proof-uuid', productId: 'product-id' }, ], }) ```
+
+**removeItems**(collectionId: string,
+    containerId: string,
+    data: RemoveContainerItemsInput) → `Promise<RemoveContainerItemsResponse>`
+Soft-remove items from a container (admin). Sets `removedAt` on the specified `ContainerItem` records.  The records are retained in the history log and can be queried with `history: true`. ```typescript const result = await containers.removeItems('coll_123', 'pallet-uuid', { ids: ['container-item-uuid-1', 'container-item-uuid-2'], }) console.log(`Removed ${result.removedCount} items`) ```
+
+**publicList**(collectionId: string,
+    params?: ListContainersParams) → `Promise<PublicListContainersResponse>`
+List containers (public). Soft-deleted containers and containers with `metadata.publicListing === false` are excluded from results.
+
+**publicGet**(collectionId: string,
+    containerId: string,
+    params?: GetContainerParams) → `Promise<Container>`
+Get a single container (public). Soft-deleted containers return a 404.  Same `?tree` and `?includeContents` options as the admin version.
+
+**publicListItems**(collectionId: string,
+    containerId: string,
+    params?: Pick<ListContainerItemsParams, 'limit' | 'offset'>) → `Promise<ContainerItemsResponse>`
+List current contents of a container (public). Returns only items where `removedAt` is null.  No `?history` option on the public side.
 
 ### crate
 
@@ -5865,6 +6563,10 @@ Get a single tag mapping by tagId. ```typescript const tag = await tags.get('col
 **list**(collectionId: string,
     params?: ListTagsRequest) → `Promise<ListTagsResponse>`
 List all tags for a collection with optional filters and pagination. ```typescript // List all tags const all = await tags.list('coll_123') // List with filters const filtered = await tags.list('coll_123', { productId: 'prod_456', variantId: 'var_789', limit: 50, offset: 0 }) ```
+
+**byRef**(collectionId: string,
+    params: ReverseTagLookupParams) → `Promise<ReverseTagLookupResponse>`
+Reverse lookup — find all tags linked to a given app object (admin). Uses a global cross-shard index keyed on `(orgId, refType, refId)`, so it is safe to call without knowing which collection the object belongs to. ```typescript const { tags: linked } = await tags.byRef('coll_123', { refType: 'container', refId:   'container-uuid', }) ```
 
 **getTag**(tagId: string,
     params?: PublicGetTagRequest) → `Promise<PublicGetTagResponse>`

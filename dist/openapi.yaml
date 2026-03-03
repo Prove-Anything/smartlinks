@@ -23,6 +23,7 @@ tags:
   - name: asset
   - name: async
   - name: attestation
+  - name: attestations
   - name: auth
   - name: authKit
   - name: batch
@@ -31,6 +32,7 @@ tags:
   - name: collection
   - name: comms
   - name: contact
+  - name: containers
   - name: crate
   - name: form
   - name: interactions
@@ -961,6 +963,231 @@ paths:
           content:
             application/json:
               schema: {}
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/attestations:
+    post:
+      tags:
+        - attestations
+      summary: Create a single attestation (admin).
+      operationId: attestations_create
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Attestation"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAttestationInput"
+  /admin/collection/{collectionId}/attestations/latest{qs}:
+    get:
+      tags:
+        - attestations
+      summary: "Latest snapshot — one record per `attestationType` (admin)."
+      operationId: attestations_latest
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttestationLatestResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/attestations/summary{qs}:
+    get:
+      tags:
+        - attestations
+      summary: Time-series summary of attestations (admin).
+      operationId: attestations_summary
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttestationSummaryResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/attestations/tree-latest{qs}:
+    get:
+      tags:
+        - attestations
+      summary: Tree latest snapshot — most-recent record per type across a container subtree (admin).
+      operationId: attestations_treeLatest
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttestationTreeLatestResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/attestations/tree-summary{qs}:
+    get:
+      tags:
+        - attestations
+      summary: Tree time-series summary — aggregates across an entire container subtree (admin).
+      operationId: attestations_treeSummary
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AttestationTreeSummaryResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/attestations/verify{qs}:
+    get:
+      tags:
+        - attestations
+      summary: "Verify the hash chain for a `(subjectType, subjectId, attestationType)` tuple (admin)."
+      operationId: attestations_verify
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChainVerifyResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/attestations{qs}:
+    get:
+      tags:
+        - attestations
+      summary: List attestations for a subject (admin).
+      operationId: attestations_list
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListAttestationsResponse"
         400:
           description: Bad request
         401:
@@ -2503,6 +2730,284 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ContactResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/containers:
+    post:
+      tags:
+        - containers
+      summary: Create a new container (admin).
+      operationId: containers_create
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Container"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateContainerInput"
+  /admin/collection/{collectionId}/containers/find-for-item{qs}:
+    get:
+      tags:
+        - containers
+      summary: Reverse lookup — find all containers currently holding a specific item (admin).
+      operationId: containers_findForItem
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FindContainersForItemResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/containers/{containerId}:
+    patch:
+      tags:
+        - containers
+      summary: Partially update a container (admin).
+      operationId: containers_update
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Container"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateContainerInput"
+  /admin/collection/{collectionId}/containers/{containerId}/items:
+    get:
+      tags:
+        - containers
+      summary: Soft-remove items from a container (admin).
+      operationId: containers_removeItems
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RemoveContainerItemsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    post:
+      tags:
+        - containers
+      summary: Add one or more items to a container (admin).
+      operationId: containers_addItems
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddContainerItemsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddContainerItemsInput"
+  /admin/collection/{collectionId}/containers/{containerId}/items{qs}:
+    get:
+      tags:
+        - containers
+      summary: List items currently (or historically) inside a container (admin).
+      operationId: containers_listItems
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContainerItemsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/containers/{containerId}{qs}:
+    get:
+      tags:
+        - containers
+      summary: Get a single container by ID (admin).
+      operationId: containers_get
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Container"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/containers{qs}:
+    get:
+      tags:
+        - containers
+      summary: List containers (admin).
+      operationId: containers_list
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListContainersResponse"
         400:
           description: Bad request
         401:
@@ -5083,6 +5588,33 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateTagsBatchRequest"
+  /admin/collection/{collectionId}/tags/by-ref:
+    get:
+      tags:
+        - tags
+      summary: Reverse lookup — find all tags linked to a given app object (admin).
+      operationId: tags_byRef
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReverseTagLookupResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/tags/{tagId}:
     get:
       tags:
@@ -6631,6 +7163,161 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/collection/{collectionId}/attestations/latest{qs}:
+    get:
+      tags:
+        - attestations
+      summary: "Latest snapshot per `attestationType` (public)."
+      operationId: attestations_publicLatest
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicAttestationLatestResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/attestations/summary{qs}:
+    get:
+      tags:
+        - attestations
+      summary: Time-series summary (public).
+      operationId: attestations_publicSummary
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicAttestationSummaryResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/attestations/tree-latest{qs}:
+    get:
+      tags:
+        - attestations
+      summary: Tree latest snapshot (public).
+      operationId: attestations_publicTreeLatest
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicAttestationTreeLatestResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/attestations/tree-summary{qs}:
+    get:
+      tags:
+        - attestations
+      summary: Tree time-series summary (public).
+      operationId: attestations_publicTreeSummary
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicAttestationTreeSummaryResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/attestations{qs}:
+    get:
+      tags:
+        - attestations
+      summary: List attestations for a subject (public).
+      operationId: attestations_publicList
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicListAttestationsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/collection/{collectionId}/comm/email/register:
     post:
       tags:
@@ -7116,6 +7803,284 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/collection/{collectionId}/containers/{containerId}/attestations/latest:
+    get:
+      tags:
+        - attestations
+      summary: Time-series summary for a specific container (public shortcut).
+      operationId: attestations_publicContainerLatest
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicAttestationLatestResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/containers/{containerId}/attestations/summary{qs}:
+    get:
+      tags:
+        - attestations
+      summary: Time-series summary for a specific container (public shortcut).
+      operationId: attestations_publicContainerSummary
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicAttestationSummaryResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/containers/{containerId}/attestations/tree-latest{qs}:
+    get:
+      tags:
+        - attestations
+      summary: Tree time-series summary rooted at a specific container (public shortcut).
+      operationId: attestations_publicContainerTreeLatest
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicAttestationTreeLatestResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/containers/{containerId}/attestations/tree-summary{qs}:
+    get:
+      tags:
+        - attestations
+      summary: Latest snapshot for a specific container (public shortcut).
+      operationId: attestations_publicContainerTreeSummary
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicAttestationTreeSummaryResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/containers/{containerId}/attestations{qs}:
+    get:
+      tags:
+        - attestations
+      summary: List attestations for a specific container (public shortcut).
+      operationId: attestations_publicContainerList
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicListAttestationsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/containers/{containerId}/items{qs}:
+    get:
+      tags:
+        - containers
+      summary: List current contents of a container (public).
+      operationId: containers_publicListItems
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContainerItemsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/containers/{containerId}{qs}:
+    get:
+      tags:
+        - containers
+      summary: Get a single container (public).
+      operationId: containers_publicGet
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Container"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/containers{qs}:
+    get:
+      tags:
+        - containers
+      summary: List containers (public).
+      operationId: containers_publicList
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: qs
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicListContainersResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/collection/{collectionId}/interactions/by-user:
     post:
       tags:
@@ -7428,7 +8393,7 @@ paths:
     get:
       tags:
         - attestation
-      summary: List all attestations for a proof.
+      summary: "These endpoints store attestation data against a specific proof in Firestore (`/product/:productId/proof/:proofId/attestations`)."
       operationId: attestation_list
       security: []
       parameters:
@@ -7465,7 +8430,7 @@ paths:
     post:
       tags:
         - attestation
-      summary: List all attestations for a proof.
+      summary: Get a single attestation by ID.
       operationId: attestation_create
       security: []
       parameters:
@@ -7547,7 +8512,7 @@ paths:
     put:
       tags:
         - attestation
-      summary: Get a single attestation by ID.
+      summary: Create a new attestation for a proof.
       operationId: attestation_update
       security: []
       parameters:
@@ -9598,6 +10563,152 @@ components:
             type: string
       required:
         - name
+    DeepLinkEntry:
+      type: object
+      properties:
+        title:
+          type: string
+        path:
+          type: string
+        params:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+        - title
+    ExecutorContext:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        appId:
+          type: string
+        SL: {}
+      required:
+        - collectionId
+        - appId
+        - SL
+    SEOInput:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        appId:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        SL: {}
+        collection:
+          type: object
+          additionalProperties: true
+        product:
+          type: object
+          additionalProperties: true
+        proof:
+          type: object
+          additionalProperties: true
+      required:
+        - collectionId
+        - appId
+        - SL
+    SEOResult:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        ogImage:
+          type: string
+        jsonLd:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: object
+              additionalProperties: true
+        contentSummary:
+          type: string
+        topics:
+          type: array
+          items:
+            type: string
+    LLMContentSection:
+      type: object
+      properties:
+        heading:
+          type: string
+        content:
+          type: string
+        order:
+          type: number
+      required:
+        - heading
+        - content
+    LLMContentInput:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        appId:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        SL: {}
+        collection:
+          type: object
+          additionalProperties: true
+        product:
+          type: object
+          additionalProperties: true
+        proof:
+          type: object
+          additionalProperties: true
+        pageSlug:
+          type: string
+      required:
+        - collectionId
+        - appId
+        - SL
+    LLMContentResult:
+      type: object
+      properties:
+        sections:
+          type: array
+          items:
+            $ref: "#/components/schemas/LLMContentSection"
+      required:
+        - sections
+    AppManifestExecutor:
+      type: object
+      properties:
+        files:
+          $ref: "#/components/schemas/AppManifestFiles"
+        factory:
+          type: string
+        exports:
+          type: array
+          items:
+            type: string
+        description:
+          type: string
+        llmContent:
+          type: object
+          additionalProperties: true
+        function:
+          type: string
+        timeout:
+          type: number
+        responseShape:
+          type: object
+          additionalProperties: true
+      required:
+        - files
+        - function
     AppAdminConfig:
       type: object
       properties:
@@ -9697,6 +10808,30 @@ components:
           type: string
         appId:
           type: string
+        seo:
+          type: object
+          additionalProperties: true
+        strategy:
+          type: string
+          enum:
+            - executor
+        priority:
+          type: number
+        contract:
+          type: object
+          additionalProperties: true
+        function:
+          type: string
+        input:
+          type: array
+          items:
+            type: string
+        timeout:
+          type: number
+        responseShape:
+          type: object
+          additionalProperties:
+            type: string
         admin:
           type: string
         widgets:
@@ -9711,10 +10846,17 @@ components:
         containers:
           type: object
           additionalProperties: true
+        linkable:
+          type: array
+          items:
+            $ref: "#/components/schemas/DeepLinkEntry"
+        executor:
+          $ref: "#/components/schemas/AppManifestExecutor"
       required:
         - name
         - version
         - appId
+        - function
         - files
         - components
         - files
@@ -10589,6 +11731,359 @@ components:
         data:
           type: object
           additionalProperties: true
+    Attestation:
+      type: object
+      properties:
+        id:
+          type: string
+        orgId:
+          type: string
+        collectionId:
+          type: string
+        subjectType:
+          $ref: "#/components/schemas/AttestationSubjectType"
+        subjectId:
+          type: string
+        attestationType:
+          type: string
+        recordedAt:
+          type: string
+        visibility:
+          $ref: "#/components/schemas/AttestationVisibility"
+        value:
+          type: object
+          additionalProperties: true
+        ownerData:
+          type: object
+          additionalProperties: true
+        adminData:
+          type: object
+          additionalProperties: true
+        unit:
+          type: string
+        source:
+          type: string
+        authorId:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        contentHash:
+          type: string
+        prevHash:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - orgId
+        - collectionId
+        - subjectType
+        - subjectId
+        - attestationType
+        - recordedAt
+        - visibility
+        - contentHash
+        - createdAt
+    LatestAttestation:
+      type: object
+      properties:
+        attestationType:
+          type: string
+        latest:
+          $ref: "#/components/schemas/Attestation"
+      required:
+        - attestationType
+        - latest
+    AttestationSummaryBucket:
+      type: object
+      properties:
+        period:
+          type: string
+        count:
+          type: number
+        values:
+          type: object
+          additionalProperties: true
+      required:
+        - period
+        - count
+    ChainVerifyResult:
+      type: object
+      properties:
+        valid:
+          type: boolean
+        checkedCount:
+          type: number
+        failedAt:
+          type: string
+        message:
+          type: string
+      required:
+        - valid
+        - checkedCount
+        - message
+    CreateAttestationInput:
+      type: object
+      properties:
+        subjectType:
+          $ref: "#/components/schemas/AttestationSubjectType"
+        subjectId:
+          type: string
+        attestationType:
+          type: string
+        recordedAt:
+          type: string
+        visibility:
+          $ref: "#/components/schemas/AttestationVisibility"
+        value:
+          type: object
+          additionalProperties: true
+        ownerData:
+          type: object
+          additionalProperties: true
+        adminData:
+          type: object
+          additionalProperties: true
+        unit:
+          type: string
+        source:
+          type: string
+        authorId:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - subjectType
+        - subjectId
+        - attestationType
+    ListAttestationsResponse:
+      type: object
+      properties:
+        attestations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attestation"
+      required:
+        - attestations
+    PublicListAttestationsResponse:
+      type: object
+      properties:
+        attestations:
+          type: array
+          items:
+            $ref: "#/components/schemas/Attestation"
+        audience:
+          $ref: "#/components/schemas/AttestationAudience"
+      required:
+        - attestations
+        - audience
+    AttestationSummaryResponse:
+      type: object
+      properties:
+        summary:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttestationSummaryBucket"
+      required:
+        - summary
+    PublicAttestationSummaryResponse:
+      type: object
+      properties:
+        summary:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttestationSummaryBucket"
+        audience:
+          type: object
+          additionalProperties: true
+      required:
+        - summary
+        - audience
+    AttestationLatestResponse:
+      type: object
+      properties:
+        latest:
+          type: array
+          items:
+            $ref: "#/components/schemas/LatestAttestation"
+      required:
+        - latest
+    PublicAttestationLatestResponse:
+      type: object
+      properties:
+        latest:
+          type: array
+          items:
+            $ref: "#/components/schemas/LatestAttestation"
+        audience:
+          $ref: "#/components/schemas/AttestationAudience"
+      required:
+        - latest
+        - audience
+    AttestationTreeSummaryResponse:
+      type: object
+      properties:
+        summary:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttestationSummaryBucket"
+        subjectCount:
+          type: number
+      required:
+        - summary
+        - subjectCount
+    PublicAttestationTreeSummaryResponse:
+      type: object
+      properties:
+        summary:
+          type: array
+          items:
+            $ref: "#/components/schemas/AttestationSummaryBucket"
+        audience:
+          type: object
+          additionalProperties: true
+        subjectCount:
+          type: number
+      required:
+        - summary
+        - audience
+        - subjectCount
+    AttestationTreeLatestResponse:
+      type: object
+      properties:
+        latest:
+          type: array
+          items:
+            $ref: "#/components/schemas/LatestAttestation"
+        subjectCount:
+          type: number
+      required:
+        - latest
+        - subjectCount
+    PublicAttestationTreeLatestResponse:
+      type: object
+      properties:
+        latest:
+          type: array
+          items:
+            $ref: "#/components/schemas/LatestAttestation"
+        audience:
+          type: object
+          additionalProperties: true
+        subjectCount:
+          type: number
+      required:
+        - latest
+        - audience
+        - subjectCount
+    ListAttestationsParams:
+      type: object
+      properties:
+        subjectType:
+          $ref: "#/components/schemas/AttestationSubjectType"
+        subjectId:
+          type: string
+        attestationType:
+          type: string
+        recordedAfter:
+          type: string
+        recordedBefore:
+          type: string
+        limit:
+          type: number
+        offset:
+          type: number
+      required:
+        - subjectType
+        - subjectId
+    AttestationSummaryParams:
+      type: object
+      properties:
+        subjectType:
+          $ref: "#/components/schemas/AttestationSubjectType"
+        subjectId:
+          type: string
+        attestationType:
+          type: string
+        valueField:
+          type: string
+        groupBy:
+          $ref: "#/components/schemas/AttestationGroupBy"
+        recordedAfter:
+          type: string
+        recordedBefore:
+          type: string
+        limit:
+          type: number
+      required:
+        - subjectType
+        - subjectId
+        - attestationType
+    AttestationLatestParams:
+      type: object
+      properties:
+        subjectType:
+          $ref: "#/components/schemas/AttestationSubjectType"
+        subjectId:
+          type: string
+      required:
+        - subjectType
+        - subjectId
+    AttestationVerifyParams:
+      type: object
+      properties:
+        subjectType:
+          $ref: "#/components/schemas/AttestationSubjectType"
+        subjectId:
+          type: string
+        attestationType:
+          type: string
+      required:
+        - subjectType
+        - subjectId
+        - attestationType
+    AttestationTreeSummaryParams:
+      type: object
+      properties:
+        subjectId:
+          type: string
+        attestationType:
+          type: string
+        valueField:
+          type: string
+        groupBy:
+          $ref: "#/components/schemas/AttestationGroupBy"
+        recordedAfter:
+          type: string
+        recordedBefore:
+          type: string
+        limit:
+          type: number
+        includeItems:
+          type: boolean
+      required:
+        - subjectId
+        - attestationType
+    AttestationTreeLatestParams:
+      type: object
+      properties:
+        subjectId:
+          type: string
+        includeItems:
+          type: boolean
+      required:
+        - subjectId
+    AttestationSubjectType:
+      type: string
+      enum:
+        - container
+        - proof
+        - product
+        - tag
+        - serial
+        - order_item
     UserAccountRegistrationRequest:
       type: object
       properties:
@@ -12348,6 +13843,266 @@ components:
     ContactSchema:
       type: object
       additionalProperties: true
+    Container:
+      type: object
+      properties:
+        id:
+          type: string
+        orgId:
+          type: string
+        collectionId:
+          type: string
+        containerType:
+          type: string
+        ref:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: "#/components/schemas/ContainerStatus"
+        metadata:
+          type: object
+          additionalProperties: true
+        parentContainerId:
+          type: string
+        children:
+          type: array
+          items:
+            $ref: "#/components/schemas/Container"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContainerItem"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+      required:
+        - id
+        - orgId
+        - collectionId
+        - containerType
+        - status
+        - createdAt
+        - updatedAt
+    ContainerItem:
+      type: object
+      properties:
+        id:
+          type: string
+        orgId:
+          type: string
+        containerId:
+          type: string
+        collectionId:
+          type: string
+        itemType:
+          $ref: "#/components/schemas/ContainerItemType"
+        itemId:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        addedAt:
+          type: string
+        removedAt:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - orgId
+        - containerId
+        - itemType
+        - itemId
+        - addedAt
+    CreateContainerInput:
+      type: object
+      properties:
+        containerType:
+          type: string
+        ref:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: "#/components/schemas/ContainerStatus"
+        metadata:
+          type: object
+          additionalProperties: true
+        parentContainerId:
+          type: string
+      required:
+        - containerType
+    UpdateContainerInput:
+      type: object
+      properties:
+        containerType:
+          type: string
+        ref:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          $ref: "#/components/schemas/ContainerStatus"
+        metadata:
+          type: object
+          additionalProperties: true
+        parentContainerId:
+          type: string
+    AddContainerItemsInput:
+      type: object
+      properties:
+        items:
+          type: object
+          additionalProperties: true
+        itemType:
+          $ref: "#/components/schemas/ContainerItemType"
+        itemId:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - items
+        - itemType
+        - itemId
+    RemoveContainerItemsInput:
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: string
+      required:
+        - ids
+    ListContainersResponse:
+      type: object
+      properties:
+        containers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Container"
+        limit:
+          type: number
+        offset:
+          type: number
+      required:
+        - containers
+        - limit
+        - offset
+    PublicListContainersResponse:
+      type: object
+      properties:
+        containers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Container"
+      required:
+        - containers
+    FindContainersForItemResponse:
+      type: object
+      properties:
+        containers:
+          type: array
+          items:
+            $ref: "#/components/schemas/Container"
+      required:
+        - containers
+    ContainerItemsResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContainerItem"
+        limit:
+          type: number
+        offset:
+          type: number
+      required:
+        - items
+        - limit
+        - offset
+    AddContainerItemsResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContainerItem"
+      required:
+        - items
+    RemoveContainerItemsResponse:
+      type: object
+      properties:
+        success:
+          type: object
+          additionalProperties: true
+        removedCount:
+          type: number
+      required:
+        - success
+        - removedCount
+    ListContainersParams:
+      type: object
+      properties:
+        containerType:
+          type: string
+        status:
+          $ref: "#/components/schemas/ContainerStatus"
+        ref:
+          type: string
+        parentContainerId:
+          type: string
+        topLevel:
+          type: boolean
+        limit:
+          type: number
+        offset:
+          type: number
+    GetContainerParams:
+      type: object
+      properties:
+        tree:
+          type: boolean
+        treeDepth:
+          type: number
+        includeContents:
+          type: boolean
+    ListContainerItemsParams:
+      type: object
+      properties:
+        history:
+          type: boolean
+        limit:
+          type: number
+        offset:
+          type: number
+    FindContainersForItemParams:
+      type: object
+      properties:
+        itemType:
+          $ref: "#/components/schemas/ContainerItemType"
+        itemId:
+          type: string
+      required:
+        - itemType
+        - itemId
     CrateItem:
       type: object
       properties:
@@ -14680,6 +16435,10 @@ components:
           type: string
         proofId:
           type: string
+        refType:
+          type: string
+        refId:
+          type: string
         metadata:
           type: object
           additionalProperties: true
@@ -14692,8 +16451,6 @@ components:
         - orgId
         - tagId
         - collectionId
-        - productId
-        - proofId
         - metadata
         - createdAt
         - updatedAt
@@ -14712,6 +16469,10 @@ components:
           type: string
         useSerialNumber:
           type: boolean
+        refType:
+          type: string
+        refId:
+          type: string
         metadata:
           type: object
           additionalProperties: true
@@ -14719,7 +16480,6 @@ components:
           type: boolean
       required:
         - tagId
-        - productId
     CreateTagResponse:
       type: object
       properties:
@@ -14813,6 +16573,10 @@ components:
           type: string
         proofId:
           type: string
+        refType:
+          type: string
+        refId:
+          type: string
         metadata:
           type: object
           additionalProperties: true
@@ -14841,6 +16605,10 @@ components:
         variantId:
           type: string
         batchId:
+          type: string
+        refType:
+          type: string
+        refId:
           type: string
     ListTagsResponse:
       type: object
@@ -14913,6 +16681,25 @@ components:
     PublicBatchLookupQueryResponse:
       type: object
       properties: {}
+    ReverseTagLookupParams:
+      type: object
+      properties:
+        refType:
+          type: string
+        refId:
+          type: string
+      required:
+        - refType
+        - refId
+    ReverseTagLookupResponse:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+      required:
+        - tags
     TemplateBase:
       type: object
       properties:

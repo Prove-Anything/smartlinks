@@ -1,4 +1,4 @@
-import { CreateTagRequest, CreateTagResponse, CreateTagsBatchRequest, CreateTagsBatchResponse, UpdateTagRequest, UpdateTagResponse, DeleteTagResponse, GetTagResponse, ListTagsRequest, ListTagsResponse, PublicGetTagRequest, PublicGetTagResponse, PublicBatchLookupRequest, PublicBatchLookupResponse, PublicBatchLookupQueryRequest, PublicBatchLookupQueryResponse } from "../types/tags";
+import { CreateTagRequest, CreateTagResponse, CreateTagsBatchRequest, CreateTagsBatchResponse, UpdateTagRequest, UpdateTagResponse, DeleteTagResponse, GetTagResponse, ListTagsRequest, ListTagsResponse, PublicGetTagRequest, PublicGetTagResponse, PublicBatchLookupRequest, PublicBatchLookupResponse, PublicBatchLookupQueryRequest, PublicBatchLookupQueryResponse, ReverseTagLookupParams, ReverseTagLookupResponse } from "../types/tags";
 /**
  * Tag Management API
  *
@@ -127,6 +127,25 @@ export declare namespace tags {
      * ```
      */
     function list(collectionId: string, params?: ListTagsRequest): Promise<ListTagsResponse>;
+    /**
+     * Reverse lookup — find all tags linked to a given app object (admin).
+     *
+     * Uses a global cross-shard index keyed on `(orgId, refType, refId)`, so it
+     * is safe to call without knowing which collection the object belongs to.
+     *
+     * @param collectionId - Collection context (used for auth scope)
+     * @param params - `refType` and `refId` are required
+     * @returns `{ tags: Tag[] }`
+     *
+     * @example
+     * ```typescript
+     * const { tags: linked } = await tags.byRef('coll_123', {
+     *   refType: 'container',
+     *   refId:   'container-uuid',
+     * })
+     * ```
+     */
+    function byRef(collectionId: string, params: ReverseTagLookupParams): Promise<ReverseTagLookupResponse>;
     /**
      * Public lookup of a single tag by tagId (global).
      * Optionally embed related collection, product, or proof data.

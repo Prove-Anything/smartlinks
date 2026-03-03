@@ -12,10 +12,18 @@ export interface Tag {
     orgId: string;
     tagId: string;
     collectionId: string;
-    productId: string;
+    productId?: string;
     variantId?: string | null;
     batchId?: string | null;
-    proofId: string;
+    proofId?: string;
+    /**
+     * Polymorphic reference type linking the tag to any app object, e.g.
+     * `'app_record'`, `'app_case'`, `'container'`, etc.
+     * Must always be paired with `refId`.
+     */
+    refType?: string;
+    /** UUID of the referenced object.  Must always be paired with `refType`. */
+    refId?: string;
     metadata: Record<string, any>;
     createdAt: string;
     updatedAt: string;
@@ -26,11 +34,18 @@ export interface Tag {
  */
 export interface CreateTagRequest {
     tagId: string;
-    productId: string;
+    productId?: string;
     variantId?: string;
     batchId?: string;
     proofId?: string;
     useSerialNumber?: boolean;
+    /**
+     * Polymorphic ref type linking this tag to any app object (e.g. `'app_record'`, `'container'`).
+     * Must be paired with `refId`.  A tag can simultaneously have a product/proof AND a ref.
+     */
+    refType?: string;
+    /** UUID of the referenced object.  Must be paired with `refType`. */
+    refId?: string;
     metadata?: Record<string, any>;
     force?: boolean;
 }
@@ -91,6 +106,13 @@ export interface UpdateTagRequest {
     variantId?: string | null;
     batchId?: string | null;
     proofId?: string;
+    /**
+     * Polymorphic ref type.  Must be paired with `refId`.
+     * Set both to `null` / omit to leave unchanged.
+     */
+    refType?: string;
+    /** UUID of the referenced object.  Must be paired with `refType`. */
+    refId?: string;
     metadata?: Record<string, any>;
 }
 /**
@@ -118,6 +140,10 @@ export interface ListTagsRequest {
     productId?: string;
     variantId?: string;
     batchId?: string;
+    /** Optional: Filter by polymorphic ref type (e.g. `'container'`, `'app_record'`) */
+    refType?: string;
+    /** Optional: Filter by polymorphic ref UUID */
+    refId?: string;
 }
 /**
  * Response from listing tags.
@@ -169,4 +195,22 @@ export interface PublicBatchLookupQueryRequest {
  * Response from public batch lookup (GET).
  */
 export interface PublicBatchLookupQueryResponse extends PublicBatchLookupResponse {
+}
+/**
+ * Query parameters for the reverse-lookup endpoint.
+ * Finds all tags linked to a given app object across any collection.
+ */
+export interface ReverseTagLookupParams {
+    /** Required — polymorphic ref type, e.g. `'app_record'`, `'container'` */
+    refType: string;
+    /** Required — UUID of the referenced object */
+    refId: string;
+}
+/**
+ * Response from the reverse-lookup endpoint.
+ * Uses a global cross-shard index so it is safe to call without knowing
+ * which collection the object belongs to.
+ */
+export interface ReverseTagLookupResponse {
+    tags: Tag[];
 }
