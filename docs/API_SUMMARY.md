@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.6.4  |  Generated: 2026-02-26T12:33:27.813Z
+Version: 1.6.7  |  Generated: 2026-03-03T14:18:48.483Z
 
 This is a concise summary of all available API functions and types.
 
@@ -11,6 +11,7 @@ For detailed guides on specific features:
 - **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation
 - **[Widgets](widgets.md)** - Embeddable React components for parent applications
 - **[Containers](containers.md)** - Building full-app embeddable containers (lazy-loaded) 
+- **[App Configuration Files](app-manifest.md)** - `app.manifest.json` and `app.admin.json` reference — bundles, components, setup questions, import schemas, tunable fields, and metrics
 - **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections
 - **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication
 - **[i18n](i18n.md)** - Internationalization and localization

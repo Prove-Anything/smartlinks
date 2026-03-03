@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.6.4  |  Generated: 2026-02-26T12:33:27.813Z
+Version: 1.6.7  |  Generated: 2026-03-03T14:18:48.483Z
 
 This is a concise summary of all available API functions and types.
 
@@ -21,6 +21,7 @@ For detailed guides on specific features:
 - **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage
 - **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more
 - **[Communications](comms.md)** - Transactional sends, multi-channel broadcasts, consent management, push registration, and analytics
+- **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration
 - **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide
 
 ## API Namespaces
@@ -35,7 +36,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **batch** - Group products into batches; manage serial number ranges and lookups.
 - **crate** - Organize products in containers/crates for logistics and grouping.
 - **form** - Build and manage dynamic forms used by apps and workflows.
-- **appConfiguration** - Read/write app configuration and scoped data (collection/product/proof).
+- **appConfiguration** - Read/write app configuration and scoped data (collection/product/proof); hosts the deep-link registry. → [Guide](deep-link-discovery.md)
 
 — Identity & Access —
 - **auth** - Admin authentication and account ops: login/logout, tokens, account info.

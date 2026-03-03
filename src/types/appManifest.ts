@@ -62,6 +62,35 @@ export interface AppContainerComponent {
 }
 
 /**
+ * A single navigable state exposed by a SmartLinks app.
+ * Used in both `app.manifest.json` (static routes) and `appConfig.linkable` (dynamic content entries).
+ *
+ * @example
+ *   // In app.manifest.json — static routes, declared at build time
+ *   { "title": "Gallery", "path": "/gallery" }
+ *   { "title": "Advanced Settings", "path": "/settings", "params": { "tab": "advanced" } }
+ *
+ *   // In appConfig.linkable — dynamic content, synced at runtime
+ *   { "title": "About Us", "params": { "pageId": "about-us" } }
+ */
+export interface DeepLinkEntry {
+  /** Human-readable label shown in menus and offered to AI agents */
+  title: string;
+  /**
+   * Hash route path within the app (optional).
+   * Defaults to "/" if omitted.
+   * @example "/gallery"
+   */
+  path?: string;
+  /**
+   * App-specific query params appended to the hash route URL.
+   * Do NOT include platform context params (collectionId, appId, productId, etc.) —
+   * those are injected by the platform automatically.
+   */
+  params?: Record<string, string>;
+}
+
+/**
  * Shape of `app.admin.json` -- the separate admin configuration file pointed to
  * by `AppManifest.admin`. Fetch this file yourself when you need setup / import /
  * tunable / metrics details; it is not inlined in the manifest.
@@ -174,6 +203,15 @@ export interface AppManifest {
     files: AppManifestFiles;
     components: AppContainerComponent[];
   };
+
+  /**
+   * Static deep-linkable states built into this app.
+   * These are fixed routes that exist regardless of content — declared once at build time.
+   * Dynamic content entries (e.g. CMS pages) are stored separately in `appConfig.linkable`.
+   * Consumers should merge both sources to get the full set of navigable states.
+   * @see DeepLinkEntry
+   */
+  linkable?: DeepLinkEntry[];
 
   [key: string]: any;
 }

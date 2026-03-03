@@ -248,6 +248,7 @@ function generateAPISummary(): void {
   summary += '- **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation\n';
   summary += '- **[Widgets](widgets.md)** - Embeddable React components for parent applications\n';
   summary += '- **[Containers](containers.md)** - Building full-app embeddable containers (lazy-loaded) \n';
+  summary += '- **[App Configuration Files](app-manifest.md)** - `app.manifest.json` and `app.admin.json` reference — bundles, components, setup questions, import schemas, tunable fields, and metrics\n';
   summary += '- **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections\n';
   summary += '- **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication\n';
   summary += '- **[Utilities](utils.md)** - Helper functions for building portal paths, URLs, and common tasks\n';
