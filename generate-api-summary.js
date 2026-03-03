@@ -189,6 +189,7 @@ function generateAPISummary() {
   summary += '- **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage\n';
   summary += '- **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more\n';
   summary += '- **[Communications](comms.md)** - Transactional sends, multi-channel broadcasts, consent management, push registration, and analytics\n';
+  summary += '- **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration\n';
   summary += '- **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide\n\n';
   
   // Generate namespace overview (grouped + descriptive)
@@ -207,7 +208,7 @@ function generateAPISummary() {
         { name: 'batch', desc: 'Group products into batches; manage serial number ranges and lookups.' },
         { name: 'crate', desc: 'Organize products in containers/crates for logistics and grouping.' },
         { name: 'form', desc: 'Build and manage dynamic forms used by apps and workflows.' },
-        { name: 'appConfiguration', desc: 'Read/write app configuration and scoped data (collection/product/proof).' },
+        { name: 'appConfiguration', desc: 'Read/write app configuration and scoped data (collection/product/proof); hosts the deep-link registry.', docsLink: 'deep-link-discovery.md' },
       ]
     },
     {
