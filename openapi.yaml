@@ -5500,7 +5500,7 @@ paths:
     get:
       tags:
         - tags
-      summary: List all tags for a collection with optional filters and pagination.
+      summary: List tags with optional filters and pagination (admin).
       operationId: tags_list
       security:
         - bearerAuth: []
@@ -5526,7 +5526,7 @@ paths:
     post:
       tags:
         - tags
-      summary: Create a single tag mapping.
+      summary: Create a single tag mapping (admin).
       operationId: tags_create
       security:
         - bearerAuth: []
@@ -5559,7 +5559,7 @@ paths:
     post:
       tags:
         - tags
-      summary: tags.createBatch
+      summary: Batch-create tags (admin).
       operationId: tags_createBatch
       security:
         - bearerAuth: []
@@ -5575,7 +5575,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/CreateTagsBatchResponse"
+                $ref: "#/components/schemas/BatchCreateResult"
         400:
           description: Bad request
         401:
@@ -5587,12 +5587,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CreateTagsBatchRequest"
+              $ref: "#/components/schemas/BatchCreateTagRequest"
   /admin/collection/{collectionId}/tags/by-ref:
     get:
       tags:
         - tags
-      summary: Reverse lookup — find all tags linked to a given app object (admin).
+      summary: Reverse lookup â€” find all tags linked to a given object (admin).
       operationId: tags_byRef
       security:
         - bearerAuth: []
@@ -5619,7 +5619,7 @@ paths:
     get:
       tags:
         - tags
-      summary: Get a single tag mapping by tagId.
+      summary: "Get a single tag by `tagId` (admin)."
       operationId: tags_get
       security:
         - bearerAuth: []
@@ -5650,7 +5650,7 @@ paths:
     put:
       tags:
         - tags
-      summary: Update an existing tag mapping.
+      summary: Update a tag (admin).
       operationId: tags_update
       security:
         - bearerAuth: []
@@ -5687,7 +5687,7 @@ paths:
     delete:
       tags:
         - tags
-      summary: Delete a tag mapping.
+      summary: Delete a tag (admin).
       operationId: tags_remove
       security:
         - bearerAuth: []
@@ -8671,6 +8671,151 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/collection/{collectionId}/tags/by-ref:
+    get:
+      tags:
+        - tags
+      summary: Reverse lookup by ref via GET (public).
+      operationId: tags_publicByRef
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ByRefResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    post:
+      tags:
+        - tags
+      summary: Reverse lookup by ref via POST (public).
+      operationId: tags_publicByRefPost
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ByRefResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ByRefRequest"
+  /public/collection/{collectionId}/tags/lookup:
+    get:
+      tags:
+        - tags
+      summary: Batch tag lookup via GET (public).
+      operationId: tags_lookupTagsQuery
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagLookupResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    post:
+      tags:
+        - tags
+      summary: Batch tag lookup via POST (public).
+      operationId: tags_lookupTags
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TagLookupResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LookupTagsRequest"
+  /public/collection/{collectionId}/tags/{tagId}:
+    get:
+      tags:
+        - tags
+      summary: Single tag lookup with optional embedded data (public).
+      operationId: tags_publicGetByCollection
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tagId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicGetTagResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/collection/{collectionId}/template/getAllowed:
     get:
       tags:
@@ -8867,57 +9012,12 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/tags/lookup:
-    get:
-      tags:
-        - tags
-      summary: Public batch lookup of multiple tags using query parameters (GET).
-      operationId: tags_lookupTagsQuery
-      security: []
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PublicBatchLookupQueryResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-    post:
-      tags:
-        - tags
-      summary: Public batch lookup of multiple tags in a single request (POST).
-      operationId: tags_lookupTags
-      security: []
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PublicBatchLookupResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PublicBatchLookupRequest"
   /public/tags/{tagId}:
     get:
       tags:
         - tags
-      summary: Public lookup of a single tag by tagId (global).
-      operationId: tags_getTag
+      summary: "Global tag resolve â€” returns `{ tagId, collectionId }` only."
+      operationId: tags_resolveTag
       security: []
       parameters:
         - name: tagId
@@ -8931,7 +9031,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PublicGetTagResponse"
+                $ref: "#/components/schemas/TagIndexEntry"
         400:
           description: Bad request
         401:
@@ -16451,9 +16551,40 @@ components:
         - orgId
         - tagId
         - collectionId
+        - productId
+        - variantId
+        - batchId
+        - proofId
+        - refType
+        - refId
         - metadata
         - createdAt
         - updatedAt
+    TagIndexEntry:
+      type: object
+      properties:
+        tagId:
+          type: string
+        collectionId:
+          type: string
+      required:
+        - tagId
+        - collectionId
+    TagEmbedded:
+      type: object
+      properties:
+        products:
+          type: object
+          additionalProperties: true
+        proofs:
+          type: object
+          additionalProperties: true
+        containers:
+          type: object
+          additionalProperties: true
+        refs:
+          type: object
+          additionalProperties: true
     CreateTagRequest:
       type: object
       properties:
@@ -16480,88 +16611,17 @@ components:
           type: boolean
       required:
         - tagId
-    CreateTagResponse:
-      type: object
-      properties:
-        wasUpdated:
-          type: boolean
-    CreateTagsBatchRequest:
+    BatchCreateTagRequest:
       type: object
       properties:
         tags:
-          type: object
-          additionalProperties: true
-        tagId:
-          type: string
-        productId:
-          type: string
-        variantId:
-          type: string
-        batchId:
-          type: string
-        proofId:
-          type: string
-        metadata:
-          type: object
-          additionalProperties: true
+          type: array
+          items:
+            $ref: "#/components/schemas/CreateTagRequest"
         force:
           type: boolean
       required:
         - tags
-        - tagId
-        - productId
-    CreateTagsBatchResponse:
-      type: object
-      properties:
-        summary:
-          type: object
-          additionalProperties: true
-        total:
-          type: number
-        created:
-          type: array
-          items:
-            $ref: "#/components/schemas/Tag"
-        updated:
-          type: array
-          items:
-            $ref: "#/components/schemas/Tag"
-        failed:
-          type: object
-          additionalProperties: true
-        conflicts:
-          type: object
-          additionalProperties: true
-        results:
-          type: object
-          additionalProperties: true
-        tagId:
-          type: string
-        reason:
-          type: string
-        message:
-          type: string
-        existingTag:
-          $ref: "#/components/schemas/Tag"
-      required:
-        - summary
-        - total
-        - created
-        - updated
-        - failed
-        - conflicts
-        - results
-        - created
-        - updated
-        - failed
-        - tagId
-        - reason
-        - message
-        - conflicts
-        - tagId
-        - reason
-        - message
-        - existingTag
     UpdateTagRequest:
       type: object
       properties:
@@ -16580,6 +16640,52 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    CreateTagResponse:
+      type: object
+      properties:
+        wasUpdated:
+          type: boolean
+    BatchCreateResult:
+      type: object
+      properties:
+        summary:
+          type: object
+          additionalProperties: true
+        total:
+          type: number
+        created:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+        updated:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+        failed:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        conflicts:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        results:
+          type: object
+          additionalProperties: true
+      required:
+        - summary
+        - total
+        - created
+        - updated
+        - failed
+        - conflicts
+        - results
+        - created
+        - updated
+        - failed
+        - conflicts
     UpdateTagResponse:
       type: object
       properties: {}
@@ -16625,22 +16731,7 @@ components:
         - tags
         - limit
         - offset
-    PublicGetTagRequest:
-      type: object
-      properties:
-        embed:
-          type: string
-    PublicGetTagResponse:
-      type: object
-      properties:
-        tag:
-          $ref: "#/components/schemas/Tag"
-        collection: {}
-        product: {}
-        proof: {}
-      required:
-        - tag
-    PublicBatchLookupRequest:
+    LookupTagsRequest:
       type: object
       properties:
         tagIds:
@@ -16651,25 +16742,7 @@ components:
           type: string
       required:
         - tagIds
-    PublicBatchLookupResponse:
-      type: object
-      properties:
-        tags:
-          type: object
-          additionalProperties:
-            $ref: "#/components/schemas/Tag"
-        collections:
-          type: object
-          additionalProperties: true
-        products:
-          type: object
-          additionalProperties: true
-        proofs:
-          type: object
-          additionalProperties: true
-      required:
-        - tags
-    PublicBatchLookupQueryRequest:
+    LookupTagsQueryRequest:
       type: object
       properties:
         tagIds:
@@ -16678,9 +16751,18 @@ components:
           type: string
       required:
         - tagIds
-    PublicBatchLookupQueryResponse:
+    ByRefRequest:
       type: object
-      properties: {}
+      properties:
+        refType:
+          type: string
+        refId:
+          type: string
+        embed:
+          type: string
+      required:
+        - refType
+        - refId
     ReverseTagLookupParams:
       type: object
       properties:
@@ -16688,9 +16770,36 @@ components:
           type: string
         refId:
           type: string
+        embed:
+          type: string
       required:
         - refType
         - refId
+    PublicGetTagResponse:
+      type: object
+      properties:
+        tag:
+          $ref: "#/components/schemas/Tag"
+        embedded:
+          $ref: "#/components/schemas/TagEmbedded"
+      required:
+        - tag
+        - embedded
+    TagLookupResponse:
+      type: object
+      properties:
+        count:
+          type: number
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+        embedded:
+          $ref: "#/components/schemas/TagEmbedded"
+      required:
+        - count
+        - tags
+        - embedded
     ReverseTagLookupResponse:
       type: object
       properties:
@@ -16700,6 +16809,18 @@ components:
             $ref: "#/components/schemas/Tag"
       required:
         - tags
+    ByRefResponse:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+        embedded:
+          $ref: "#/components/schemas/TagEmbedded"
+      required:
+        - tags
+        - embedded
     TemplateBase:
       type: object
       properties:

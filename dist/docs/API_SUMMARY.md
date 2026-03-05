@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.7.1  |  Generated: 2026-03-03T15:26:20.065Z
+Version: 1.7.3  |  Generated: 2026-03-04T13:56:12.543Z
 
 This is a concise summary of all available API functions and types.
 
@@ -4905,99 +4905,101 @@ interface SegmentRecipientsResponse {
 **Tag** (interface)
 ```typescript
 interface Tag {
-  id: string                        // UUID
-  orgId: string                     // Organization ID
-  tagId: string                     // Unique tag identifier (globally unique)
-  collectionId: string              // Collection ID
-  productId?: string                // Product ID (optional — may be a ref-only tag)
-  variantId?: string | null         // Optional: Variant ID
-  batchId?: string | null           // Optional: Batch ID
-  proofId?: string                  // Proof ID (serial number or explicit)
-  * Polymorphic reference type linking the tag to any app object, e.g.
-  * `'app_record'`, `'app_case'`, `'container'`, etc.
-  * Must always be paired with `refId`.
-  refType?: string
-  refId?: string
-  metadata: Record<string, any>     // Additional metadata (e.g., serialIndex)
-  createdAt: string                 // ISO 8601 timestamp
-  updatedAt: string                 // ISO 8601 timestamp
+  id:           string                // Internal UUID
+  orgId:        string                // Organisation ID
+  tagId:        string                // Physical tag identifier (NFC UID, QR code, etc.)
+  collectionId: string                // Owning collection
+  productId:    string | null         // Linked product
+  variantId:    string | null         // Product variant
+  batchId:      string | null         // Production batch
+  proofId:      string | null         // Proof / serial number
+  * Polymorphic ref type: `'app_record'`, `'app_case'`, `'app_thread'`, `'container'`, etc.
+  * Always paired with `refId`.
+  refType:      string | null
+  refId:        string | null
+  metadata:     Record<string, any>
+  createdAt:    string                // ISO 8601
+  updatedAt:    string                // ISO 8601
+}
+```
+
+**TagIndexEntry** (interface)
+```typescript
+interface TagIndexEntry {
+  tagId:        string
+  collectionId: string
+}
+```
+
+**TagEmbedded** (interface)
+```typescript
+interface TagEmbedded {
+  products?:   Record<string, any>
+  * `proofId → proof record or virtual serial-number proof`
+  * (when `embed` includes `'proof'`)
+  proofs?:     Record<string, any>
+  * `containerId → Container row`
+  * (for tags where `refType === 'container'`, when `embed` includes `'container'`)
+  containers?: Record<string, any>
+  * `refId → app_record | app_case | app_thread | container`
+  * (when `embed` includes `'ref'`)
+  refs?:       Record<string, any>
 }
 ```
 
 **CreateTagRequest** (interface)
 ```typescript
 interface CreateTagRequest {
-  tagId: string                     // Required: Unique tag identifier
-  productId?: string                // Optional: Product ID (required when proofId is set without useSerialNumber)
-  variantId?: string                // Optional: Variant ID
-  batchId?: string                  // Optional: Batch ID
-  proofId?: string                  // Optional: Explicit proof ID (if omitted with productId, auto-generates serial)
-  useSerialNumber?: boolean         // Optional: Explicitly request serial number generation
-  * Polymorphic ref type linking this tag to any app object (e.g. `'app_record'`, `'container'`).
-  * Must be paired with `refId`.  A tag can simultaneously have a product/proof AND a ref.
-  refType?: string
-  refId?: string
-  metadata?: Record<string, any>    // Optional: Additional metadata
-  force?: boolean                   // Optional: Overwrite if tag exists in same collection (default: false)
+  tagId:            string           // Required
+  productId?:       string
+  variantId?:       string
+  batchId?:         string
+  proofId?:         string           // Required if productId set, unless useSerialNumber=true
+  useSerialNumber?: boolean          // Auto-generate a serial number as proofId
+  refType?:         string           // Must be paired with refId
+  refId?:           string           // Must be paired with refType
+  metadata?:        Record<string, any>
+  force?:           boolean          // Overwrite if tag already exists in this collection
 }
 ```
 
-**CreateTagsBatchRequest** (interface)
+**BatchCreateTagRequest** (interface)
 ```typescript
-interface CreateTagsBatchRequest {
-  tags: Array<{
-  tagId: string                   // Required: Unique tag identifier
-  productId: string               // Required: Product ID
-  variantId?: string              // Optional: Variant ID
-  batchId?: string                // Optional: Batch ID
-  proofId?: string                // Optional: If omitted, auto-generates serial number
-  metadata?: Record<string, any>  // Optional: Additional metadata
-  }>
-  force?: boolean                   // Optional: Overwrite existing tags in same collection (default: false)
-}
-```
-
-**CreateTagsBatchResponse** (interface)
-```typescript
-interface CreateTagsBatchResponse {
-  summary: {
-  total: number                   // Total tags in request
-  created: number                 // Successfully created
-  updated: number                 // Successfully updated (with force=true)
-  failed: number                  // Failed to create/update
-  conflicts: number               // Already exist (without force=true)
-  }
-  results: {
-  created: Tag[]                  // Array of successfully created tags
-  updated: Tag[]                  // Array of successfully updated tags
-  failed: Array<{
-  tagId: string
-  reason: string                // Error code (e.g., "TAG_ASSIGNED_ELSEWHERE", "CREATE_FAILED")
-  message: string               // Human-readable error message
-  existingTag?: Tag             // Existing tag if applicable
-  }>
-  conflicts: Array<{
-  tagId: string
-  reason: string                // "TAG_ALREADY_ASSIGNED"
-  message: string
-  existingTag: Tag              // The existing tag
-  }>
-  }
+interface BatchCreateTagRequest {
+  tags:  Omit<CreateTagRequest, 'force'>[]
+  force?: boolean
 }
 ```
 
 **UpdateTagRequest** (interface)
 ```typescript
 interface UpdateTagRequest {
-  productId?: string                // Optional: Update product ID
-  variantId?: string | null         // Optional: Update variant ID (null to clear)
-  batchId?: string | null           // Optional: Update batch ID (null to clear)
-  proofId?: string                  // Optional: Update proof ID
-  * Polymorphic ref type.  Must be paired with `refId`.
-  * Set both to `null` / omit to leave unchanged.
-  refType?: string
-  refId?: string
-  metadata?: Record<string, any>    // Optional: Merge with existing metadata
+  productId?:  string
+  variantId?:  string
+  batchId?:    string
+  proofId?:    string
+  refType?:    string | null
+  refId?:      string | null
+  metadata?:   Record<string, any>   // Merged with existing metadata
+}
+```
+
+**BatchCreateResult** (interface)
+```typescript
+interface BatchCreateResult {
+  summary: {
+  total:     number
+  created:   number
+  updated:   number
+  failed:    number
+  conflicts: number
+  }
+  results: {
+  created:   Tag[]
+  updated:   Tag[]
+  failed:    Array<{ tagId: string; reason: string; message: string }>
+  conflicts: Array<{ tagId: string; reason: string; message: string; existingTag: Tag }>
+  }
 }
 ```
 
@@ -5011,65 +5013,47 @@ interface DeleteTagResponse {
 **ListTagsRequest** (interface)
 ```typescript
 interface ListTagsRequest {
-  limit?: number                    // Optional: Max results (default: 100)
-  offset?: number                   // Optional: Pagination offset (default: 0)
-  productId?: string                // Optional: Filter by product ID
-  variantId?: string                // Optional: Filter by variant ID
-  batchId?: string                  // Optional: Filter by batch ID
-  refType?: string
-  refId?: string
+  limit?:     number
+  offset?:    number
+  productId?: string
+  variantId?: string
+  batchId?:   string
+  refType?:   string
+  refId?:     string
 }
 ```
 
 **ListTagsResponse** (interface)
 ```typescript
 interface ListTagsResponse {
-  tags: Tag[]
-  limit: number
+  tags:   Tag[]
+  limit:  number
   offset: number
 }
 ```
 
-**PublicGetTagRequest** (interface)
+**LookupTagsRequest** (interface)
 ```typescript
-interface PublicGetTagRequest {
-  embed?: string                    // Optional: Comma-separated values: "collection", "product", "proof"
+interface LookupTagsRequest {
+  tagIds: string[]
+  embed?: string
 }
 ```
 
-**PublicGetTagResponse** (interface)
+**LookupTagsQueryRequest** (interface)
 ```typescript
-interface PublicGetTagResponse {
-  tag: Tag
-  collection?: any                  // Included if embed contains "collection"
-  product?: any                     // Included if embed contains "product"
-  proof?: any                       // Included if embed contains "proof"
+interface LookupTagsQueryRequest {
+  tagIds: string
+  embed?: string
 }
 ```
 
-**PublicBatchLookupRequest** (interface)
+**ByRefRequest** (interface)
 ```typescript
-interface PublicBatchLookupRequest {
-  tagIds: string[]                  // Array of tag IDs to lookup
-  embed?: string                    // Optional: Comma-separated: "collection", "product", "proof"
-}
-```
-
-**PublicBatchLookupResponse** (interface)
-```typescript
-interface PublicBatchLookupResponse {
-  tags: Record<string, Tag>         // Map: tagId → Tag object
-  collections?: Record<string, any> // Map: collectionId → Collection (if embed=collection)
-  products?: Record<string, any>    // Map: productId → Product (if embed=product)
-  proofs?: Record<string, any>      // Map: proofId → Proof (if embed=proof)
-}
-```
-
-**PublicBatchLookupQueryRequest** (interface)
-```typescript
-interface PublicBatchLookupQueryRequest {
-  tagIds: string                    // Comma-separated tag IDs
-  embed?: string                    // Optional: Comma-separated: "collection", "product", "proof"
+interface ByRefRequest {
+  refType: string
+  refId:   string
+  embed?:  string
 }
 ```
 
@@ -5077,7 +5061,25 @@ interface PublicBatchLookupQueryRequest {
 ```typescript
 interface ReverseTagLookupParams {
   refType: string
-  refId: string
+  refId:   string
+  embed?:  string
+}
+```
+
+**PublicGetTagResponse** (interface)
+```typescript
+interface PublicGetTagResponse {
+  tag:      Tag
+  embedded: TagEmbedded
+}
+```
+
+**TagLookupResponse** (interface)
+```typescript
+interface TagLookupResponse {
+  count:    number
+  tags:     Tag[]
+  embedded: TagEmbedded
 }
 ```
 
@@ -5085,6 +5087,14 @@ interface ReverseTagLookupParams {
 ```typescript
 interface ReverseTagLookupResponse {
   tags: Tag[]
+}
+```
+
+**ByRefResponse** (interface)
+```typescript
+interface ByRefResponse {
+  tags:     Tag[]
+  embedded: TagEmbedded
 }
 ```
 
@@ -6541,55 +6551,56 @@ Get aggregate statistics for records POST /records/aggregate
 
 **create**(collectionId: string,
     data: CreateTagRequest) → `Promise<CreateTagResponse>`
-Create a single tag mapping. If proofId is not provided, automatically generates a serial number. ```typescript // Auto-generate serial number const tag = await tags.create('coll_123', { tagId: 'TAG001', productId: 'prod_456', variantId: 'var_789' }) // Use explicit proof ID const tag2 = await tags.create('coll_123', { tagId: 'TAG002', productId: 'prod_456', proofId: 'proof_explicit_123' }) ```
+Create a single tag mapping (admin). If `productId` is set without `proofId`, a serial number is auto-generated unless `useSerialNumber: true` is explicitly passed. `refType` and `refId` can be set independently of or alongside product/proof. ```typescript // Auto-generate serial number const tag = await tags.create('coll_123', { tagId:     'NFC-001', productId: 'prod_456', batchId:   'batch_2026_01', }) // Explicit proof + polymorphic ref const tag2 = await tags.create('coll_123', { tagId:   'NFC-002', refType: 'container', refId:   'container-uuid', }) ```
 
 **createBatch**(collectionId: string,
-    data: CreateTagsBatchRequest) → `Promise<CreateTagsBatchResponse>`
-Create multiple tag mappings efficiently in a batch operation. By default, auto-generates serial numbers for all tags without explicit proofId. Tags are grouped by product/variant/batch and serial numbers are generated in a single transaction per group for optimal performance. ```typescript const result = await tags.createBatch('coll_123', { tags: [ { tagId: 'TAG001', productId: 'prod_456', variantId: 'var_789' }, { tagId: 'TAG002', productId: 'prod_456', variantId: 'var_789' }, { tagId: 'TAG003', productId: 'prod_456', batchId: 'batch_100' } ] }) console.log(`Created: ${result.summary.created}, Failed: ${result.summary.failed}`) ```
+    data: BatchCreateTagRequest) → `Promise<BatchCreateResult>`
+Batch-create tags (admin). Tags with `productId` but no `proofId` automatically get serial numbers. Serial number generation is grouped by `(productId, variantId, batchId)` for efficiency.  Partial success is possible â€” check `results` for individual outcomes. ```typescript const result = await tags.createBatch('coll_123', { tags: [ { tagId: 'NFC-001', productId: 'prod_456', batchId: 'batch_2026_01' }, { tagId: 'NFC-002', productId: 'prod_456', batchId: 'batch_2026_01' }, ], }) console.log(`Created: ${result.summary.created}, Conflicts: ${result.summary.conflicts}`) ```
+
+**get**(collectionId: string,
+    tagId: string) → `Promise<GetTagResponse>`
+Get a single tag by `tagId` (admin).
 
 **update**(collectionId: string,
     tagId: string,
     data: UpdateTagRequest) → `Promise<UpdateTagResponse>`
-Update an existing tag mapping. ```typescript const updated = await tags.update('coll_123', 'TAG001', { variantId: 'var_999', metadata: { notes: 'Updated variant' } }) ```
+Update a tag (admin). Partial update â€” only provided fields are changed.  `metadata` is deep-merged with the existing value.  Pass `refType: null, refId: null` to clear the polymorphic ref. ```typescript const updated = await tags.update('coll_123', 'NFC-001', { variantId: 'var_premium', metadata:  { notes: 'Updated to premium variant' }, }) // Clear polymorphic ref await tags.update('coll_123', 'NFC-001', { refType: null, refId: null }) ```
 
 **remove**(collectionId: string,
     tagId: string) → `Promise<DeleteTagResponse>`
-Delete a tag mapping. ```typescript await tags.remove('coll_123', 'TAG001') ```
-
-**get**(collectionId: string,
-    tagId: string) → `Promise<GetTagResponse>`
-Get a single tag mapping by tagId. ```typescript const tag = await tags.get('coll_123', 'TAG001') ```
+Delete a tag (admin). Permanently removes the tag from the per-org shard and the shared index.
 
 **list**(collectionId: string,
     params?: ListTagsRequest) → `Promise<ListTagsResponse>`
-List all tags for a collection with optional filters and pagination. ```typescript // List all tags const all = await tags.list('coll_123') // List with filters const filtered = await tags.list('coll_123', { productId: 'prod_456', variantId: 'var_789', limit: 50, offset: 0 }) ```
+List tags with optional filters and pagination (admin). ```typescript // All tags for a product const { tags: list } = await tags.list('coll_123', { productId: 'prod_456' }) // All tags linked to a container const { tags: linked } = await tags.list('coll_123', { refType: 'container', refId:   'container-uuid', }) ```
 
 **byRef**(collectionId: string,
     params: ReverseTagLookupParams) → `Promise<ReverseTagLookupResponse>`
-Reverse lookup — find all tags linked to a given app object (admin). Uses a global cross-shard index keyed on `(orgId, refType, refId)`, so it is safe to call without knowing which collection the object belongs to. ```typescript const { tags: linked } = await tags.byRef('coll_123', { refType: 'container', refId:   'container-uuid', }) ```
+Reverse lookup â€” find all tags linked to a given object (admin). Uses a compound index on `(orgId, refType, refId)` on the per-org shard. No embed support on the admin side. ```typescript const { tags: linked } = await tags.byRef('coll_123', { refType: 'container', refId:   'container-uuid', }) ```
 
-**getTag**(tagId: string,
-    params?: PublicGetTagRequest) → `Promise<PublicGetTagResponse>`
-Public lookup of a single tag by tagId (global). Optionally embed related collection, product, or proof data. No authentication required. ```typescript // Simple lookup const result = await tags.getTag('TAG001') // With embedded data const withData = await tags.getTag('TAG001', { embed: 'collection,product,proof' }) console.log(withData.tag, withData.collection, withData.product, withData.proof) ```
+**resolveTag**(tagId: string) → `Promise<TagIndexEntry>`
+Global tag resolve â€” returns `{ tagId, collectionId }` only. Use this **only** when you have a raw `tagId` and do not yet know which collection it belongs to.  Queries the shared `tag_index` shard. Once `collectionId` is resolved, call `publicGetByCollection` for full data. > The global `/public/tags/by-ref` endpoint has been removed. > Use the collection-scoped `publicByRef` instead. ```typescript // Step 1: resolve collection const { collectionId } = await tags.resolveTag('NFC-001') // Step 2: full lookup with embedded data const { tag, embedded } = await tags.publicGetByCollection( collectionId, 'NFC-001', 'product,proof' ) ```
 
-**publicGet**(_collectionId: string,
+**publicGetByCollection**(collectionId: string,
     tagId: string,
-    params?: PublicGetTagRequest) → `Promise<PublicGetTagResponse>`
-Backward-compat: Public lookup with collectionId parameter (ignored). Calls global route under /public/tags/:tagId.
+    embed?: string) → `Promise<PublicGetTagResponse>`
+Single tag lookup with optional embedded data (public). `GET /public/collection/:collectionId/tags/:tagId?embed=product,proof,container,ref` Supported `embed` values: `'product'`, `'proof'`, `'container'`, `'ref'` (`'collection'` is not supported â€” the collection is already known from the URL). ```typescript const { tag, embedded } = await tags.publicGetByCollection( 'coll_123', 'NFC-001', 'product,proof' ) const product = embedded.products?.[tag.productId!] const proof   = embedded.proofs?.[tag.proofId!] ```
 
-**lookupTags**(data: PublicBatchLookupRequest) → `Promise<PublicBatchLookupResponse>`
-Public batch lookup of multiple tags in a single request (POST). Only returns tags from the specified collection. Optionally embed related data. Related data is deduplicated and batch-fetched. No authentication required. ```typescript const result = await tags.publicBatchLookup('coll_123', { tagIds: ['TAG001', 'TAG002', 'TAG003'], embed: 'collection,product' }) // Access tags and deduplicated collections/products console.log(result.tags['TAG001']) console.log(result.collections) console.log(result.products) ```
+**lookupTags**(collectionId: string,
+    data: LookupTagsRequest) → `Promise<TagLookupResponse>`
+Batch tag lookup via POST (public). `POST /public/collection/:collectionId/tags/lookup` Tags not belonging to this collection are filtered out silently. Returns deduplicated embedded objects alongside the tag array. ```typescript const { count, tags: list, embedded } = await tags.lookupTags('coll_123', { tagIds: ['NFC-001', 'NFC-002', 'NFC-003'], embed:  'product,proof', }) ```
 
-**publicBatchLookup**(_collectionId: string,
-    data: PublicBatchLookupRequest) → `Promise<PublicBatchLookupResponse>`
-Backward-compat: Public batch lookup with collectionId parameter (ignored). Calls global route under /public/tags/lookup.
+**lookupTagsQuery**(collectionId: string,
+    params: LookupTagsQueryRequest) → `Promise<TagLookupResponse>`
+Batch tag lookup via GET (public). `GET /public/collection/:collectionId/tags/lookup?tagIds=NFC-001,NFC-002&embed=product`
 
-**lookupTagsQuery**(params: PublicBatchLookupQueryRequest) → `Promise<PublicBatchLookupQueryResponse>`
-Public batch lookup of multiple tags using query parameters (GET). Only returns tags from the specified collection. Alternative to publicBatchLookup for simple GET requests. No authentication required. ```typescript const result = await tags.publicBatchLookupQuery('coll_123', { tagIds: 'TAG001,TAG002,TAG003', embed: 'collection' }) ```
+**publicByRef**(collectionId: string,
+    params: ReverseTagLookupParams) → `Promise<ByRefResponse>`
+Reverse lookup by ref via GET (public). `GET /public/collection/:collectionId/tags/by-ref?refType=container&refId=<uuid>&embed=ref` ```typescript const { tags: linked, embedded } = await tags.publicByRef('coll_123', { refType: 'container', refId:   'container-uuid', embed:   'container', }) const container = embedded.containers?.[containerId] ```
 
-**publicBatchLookupQuery**(_collectionId: string,
-    params: PublicBatchLookupQueryRequest) → `Promise<PublicBatchLookupQueryResponse>`
-Backward-compat: Public batch lookup (GET) with collectionId parameter (ignored). Calls global route under /public/tags/lookup.
+**publicByRefPost**(collectionId: string,
+    data: ByRefRequest) → `Promise<ByRefResponse>`
+Reverse lookup by ref via POST (public). `POST /public/collection/:collectionId/tags/by-ref`
 
 ### template
 

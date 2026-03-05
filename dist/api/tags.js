@@ -3,8 +3,17 @@ import { request, post, put, del } from "../http";
 /**
  * Tag Management API
  *
- * Create mappings between physical tags (NFC tags, QR codes, etc.) and digital proofs.
- * Supports automatic serial number generation, batch operations, and public lookups.
+ * Manages mappings between physical tag identifiers (NFC UIDs, QR codes, barcodes,
+ * etc.) and products, proofs, or any polymorphic object in the platform.
+ *
+ * ### Two-tier architecture
+ * - **Per-org shard** (`tags` table) â€” full tag data; used for all collection-scoped
+ *   queries.
+ * - **Shared shard** (`tag_index` table) â€” `tagId â†’ collectionId` routing only; used
+ *   when the collection is not yet known.
+ *
+ * 99% of callers will know the collection and should use collection-scoped endpoints
+ * directly.  Use `resolveTag` only when you have a raw `tagId` and no collection context.
  */
 export var tags;
 (function (tags) {
@@ -12,28 +21,30 @@ export var tags;
     // Admin Endpoints
     // ============================================================================
     /**
-     * Create a single tag mapping.
-     * If proofId is not provided, automatically generates a serial number.
+     * Create a single tag mapping (admin).
      *
-     * @param collectionId - Identifier of the parent collection
-     * @param data - Tag creation data
-     * @returns Promise resolving to a CreateTagResponse object
-     * @throws ErrorResponse if the request fails
+     * If `productId` is set without `proofId`, a serial number is auto-generated
+     * unless `useSerialNumber: true` is explicitly passed.
+     * `refType` and `refId` can be set independently of or alongside product/proof.
+     *
+     * @param collectionId - Collection context
+     * @param data - Tag creation payload; `tagId` is required
+     * @returns The created tag (`wasUpdated: true` when `force=true` triggered an update)
      *
      * @example
      * ```typescript
      * // Auto-generate serial number
      * const tag = await tags.create('coll_123', {
-     *   tagId: 'TAG001',
+     *   tagId:     'NFC-001',
      *   productId: 'prod_456',
-     *   variantId: 'var_789'
+     *   batchId:   'batch_2026_01',
      * })
      *
-     * // Use explicit proof ID
+     * // Explicit proof + polymorphic ref
      * const tag2 = await tags.create('coll_123', {
-     *   tagId: 'TAG002',
-     *   productId: 'prod_456',
-     *   proofId: 'proof_explicit_123'
+     *   tagId:   'NFC-002',
+     *   refType: 'container',
+     *   refId:   'container-uuid',
      * })
      * ```
      */
@@ -43,27 +54,25 @@ export var tags;
     }
     tags.create = create;
     /**
-     * Create multiple tag mappings efficiently in a batch operation.
-     * By default, auto-generates serial numbers for all tags without explicit proofId.
-     * Tags are grouped by product/variant/batch and serial numbers are generated in
-     * a single transaction per group for optimal performance.
+     * Batch-create tags (admin).
      *
-     * @param collectionId - Identifier of the parent collection
-     * @param data - Batch creation data
-     * @returns Promise resolving to a CreateTagsBatchResponse with summary and results
-     * @throws ErrorResponse if the request fails
+     * Tags with `productId` but no `proofId` automatically get serial numbers.
+     * Serial number generation is grouped by `(productId, variantId, batchId)` for
+     * efficiency.  Partial success is possible â€” check `results` for individual outcomes.
+     *
+     * @param collectionId - Collection context
+     * @param data - Batch payload; `force` applies to all tags in the batch
+     * @returns `BatchCreateResult` with summary and per-tag outcomes
      *
      * @example
      * ```typescript
      * const result = await tags.createBatch('coll_123', {
      *   tags: [
-     *     { tagId: 'TAG001', productId: 'prod_456', variantId: 'var_789' },
-     *     { tagId: 'TAG002', productId: 'prod_456', variantId: 'var_789' },
-     *     { tagId: 'TAG003', productId: 'prod_456', batchId: 'batch_100' }
-     *   ]
+     *     { tagId: 'NFC-001', productId: 'prod_456', batchId: 'batch_2026_01' },
+     *     { tagId: 'NFC-002', productId: 'prod_456', batchId: 'batch_2026_01' },
+     *   ],
      * })
-     *
-     * console.log(`Created: ${result.summary.created}, Failed: ${result.summary.failed}`)
+     * console.log(`Created: ${result.summary.created}, Conflicts: ${result.summary.conflicts}`)
      * ```
      */
     async function createBatch(collectionId, data) {
@@ -72,20 +81,38 @@ export var tags;
     }
     tags.createBatch = createBatch;
     /**
-     * Update an existing tag mapping.
+     * Get a single tag by `tagId` (admin).
      *
-     * @param collectionId - Identifier of the parent collection
-     * @param tagId - Unique tag identifier
-     * @param data - Update data (only include fields to update)
-     * @returns Promise resolving to an UpdateTagResponse object
-     * @throws ErrorResponse if the request fails
+     * @param collectionId - Collection context
+     * @param tagId - Physical tag identifier
+     * @returns Full `Tag` record
+     */
+    async function get(collectionId, tagId) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags/${encodeURIComponent(tagId)}`;
+        return request(path);
+    }
+    tags.get = get;
+    /**
+     * Update a tag (admin).
+     *
+     * Partial update â€” only provided fields are changed.  `metadata` is
+     * deep-merged with the existing value.  Pass `refType: null, refId: null`
+     * to clear the polymorphic ref.
+     *
+     * @param collectionId - Collection context
+     * @param tagId - Physical tag identifier
+     * @param data - Fields to update
+     * @returns Updated `Tag`
      *
      * @example
      * ```typescript
-     * const updated = await tags.update('coll_123', 'TAG001', {
-     *   variantId: 'var_999',
-     *   metadata: { notes: 'Updated variant' }
+     * const updated = await tags.update('coll_123', 'NFC-001', {
+     *   variantId: 'var_premium',
+     *   metadata:  { notes: 'Updated to premium variant' },
      * })
+     *
+     * // Clear polymorphic ref
+     * await tags.update('coll_123', 'NFC-001', { refType: null, refId: null })
      * ```
      */
     async function update(collectionId, tagId, data) {
@@ -94,17 +121,13 @@ export var tags;
     }
     tags.update = update;
     /**
-     * Delete a tag mapping.
+     * Delete a tag (admin).
      *
-     * @param collectionId - Identifier of the parent collection
-     * @param tagId - Unique tag identifier
-     * @returns Promise resolving to a DeleteTagResponse object
-     * @throws ErrorResponse if the request fails
+     * Permanently removes the tag from the per-org shard and the shared index.
      *
-     * @example
-     * ```typescript
-     * await tags.remove('coll_123', 'TAG001')
-     * ```
+     * @param collectionId - Collection context
+     * @param tagId - Physical tag identifier
+     * @returns `{ success: true }`
      */
     async function remove(collectionId, tagId) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags/${encodeURIComponent(tagId)}`;
@@ -112,73 +135,52 @@ export var tags;
     }
     tags.remove = remove;
     /**
-     * Get a single tag mapping by tagId.
+     * List tags with optional filters and pagination (admin).
      *
-     * @param collectionId - Identifier of the parent collection
-     * @param tagId - Unique tag identifier
-     * @returns Promise resolving to a GetTagResponse object
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * const tag = await tags.get('coll_123', 'TAG001')
-     * ```
-     */
-    async function get(collectionId, tagId) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags/${encodeURIComponent(tagId)}`;
-        return request(path);
-    }
-    tags.get = get;
-    /**
-     * List all tags for a collection with optional filters and pagination.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param params - Optional query parameters for filtering and pagination
-     * @returns Promise resolving to a ListTagsResponse object
-     * @throws ErrorResponse if the request fails
+     * @param collectionId - Collection context
+     * @param params - Optional filter and pagination params
+     * @returns `{ tags: Tag[], limit: number, offset: number }`
      *
      * @example
      * ```typescript
-     * // List all tags
-     * const all = await tags.list('coll_123')
+     * // All tags for a product
+     * const { tags: list } = await tags.list('coll_123', { productId: 'prod_456' })
      *
-     * // List with filters
-     * const filtered = await tags.list('coll_123', {
-     *   productId: 'prod_456',
-     *   variantId: 'var_789',
-     *   limit: 50,
-     *   offset: 0
+     * // All tags linked to a container
+     * const { tags: linked } = await tags.list('coll_123', {
+     *   refType: 'container',
+     *   refId:   'container-uuid',
      * })
      * ```
      */
     async function list(collectionId, params) {
-        const queryParams = new URLSearchParams();
+        const q = new URLSearchParams();
         if (params === null || params === void 0 ? void 0 : params.limit)
-            queryParams.append('limit', params.limit.toString());
+            q.append('limit', params.limit.toString());
         if (params === null || params === void 0 ? void 0 : params.offset)
-            queryParams.append('offset', params.offset.toString());
+            q.append('offset', params.offset.toString());
         if (params === null || params === void 0 ? void 0 : params.productId)
-            queryParams.append('productId', params.productId);
+            q.append('productId', params.productId);
         if (params === null || params === void 0 ? void 0 : params.variantId)
-            queryParams.append('variantId', params.variantId);
+            q.append('variantId', params.variantId);
         if (params === null || params === void 0 ? void 0 : params.batchId)
-            queryParams.append('batchId', params.batchId);
+            q.append('batchId', params.batchId);
         if (params === null || params === void 0 ? void 0 : params.refType)
-            queryParams.append('refType', params.refType);
+            q.append('refType', params.refType);
         if (params === null || params === void 0 ? void 0 : params.refId)
-            queryParams.append('refId', params.refId);
-        const query = queryParams.toString();
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags${query ? `?${query}` : ''}`;
+            q.append('refId', params.refId);
+        const qs = q.toString();
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags${qs ? `?${qs}` : ''}`;
         return request(path);
     }
     tags.list = list;
     /**
-     * Reverse lookup — find all tags linked to a given app object (admin).
+     * Reverse lookup â€” find all tags linked to a given object (admin).
      *
-     * Uses a global cross-shard index keyed on `(orgId, refType, refId)`, so it
-     * is safe to call without knowing which collection the object belongs to.
+     * Uses a compound index on `(orgId, refType, refId)` on the per-org shard.
+     * No embed support on the admin side.
      *
-     * @param collectionId - Collection context (used for auth scope)
+     * @param collectionId - Collection context
      * @param params - `refType` and `refId` are required
      * @returns `{ tags: Tag[] }`
      *
@@ -191,126 +193,163 @@ export var tags;
      * ```
      */
     async function byRef(collectionId, params) {
-        const queryParams = new URLSearchParams();
-        queryParams.append('refType', params.refType);
-        queryParams.append('refId', params.refId);
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags/by-ref?${queryParams.toString()}`;
+        const q = new URLSearchParams();
+        q.append('refType', params.refType);
+        q.append('refId', params.refId);
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags/by-ref?${q.toString()}`;
         return request(path);
     }
     tags.byRef = byRef;
     // ============================================================================
-    // Public Endpoints
+    // Public Endpoints â€” global resolve (collection unknown)
     // ============================================================================
     /**
-     * Public lookup of a single tag by tagId (global).
-     * Optionally embed related collection, product, or proof data.
-     * No authentication required.
+     * Global tag resolve â€” returns `{ tagId, collectionId }` only.
      *
-     * @param tagId - Unique tag identifier (globally unique)
-     * @param params - Optional parameters (embed)
-     * @returns Promise resolving to a PublicGetTagResponse with optional embedded data
-     * @throws ErrorResponse if the request fails
+     * Use this **only** when you have a raw `tagId` and do not yet know which
+     * collection it belongs to.  Queries the shared `tag_index` shard.
+     * Once `collectionId` is resolved, call `publicGetByCollection` for full data.
+     *
+     * > The global `/public/tags/by-ref` endpoint has been removed.
+     * > Use the collection-scoped `publicByRef` instead.
+     *
+     * @param tagId - Physical tag identifier
+     * @returns `{ tagId, collectionId }` â€” routing info only, no full tag data
      *
      * @example
      * ```typescript
-     * // Simple lookup
-     * const result = await tags.getTag('TAG001')
+     * // Step 1: resolve collection
+     * const { collectionId } = await tags.resolveTag('NFC-001')
      *
-     * // With embedded data
-     * const withData = await tags.getTag('TAG001', {
-     *   embed: 'collection,product,proof'
-     * })
-     * console.log(withData.tag, withData.collection, withData.product, withData.proof)
+     * // Step 2: full lookup with embedded data
+     * const { tag, embedded } = await tags.publicGetByCollection(
+     *   collectionId, 'NFC-001', 'product,proof'
+     * )
      * ```
      */
-    async function getTag(tagId, params) {
-        const queryParams = new URLSearchParams();
-        if (params === null || params === void 0 ? void 0 : params.embed)
-            queryParams.append('embed', params.embed);
-        const query = queryParams.toString();
-        const path = `/public/tags/${encodeURIComponent(tagId)}${query ? `?${query}` : ''}`;
+    async function resolveTag(tagId) {
+        const path = `/public/tags/${encodeURIComponent(tagId)}`;
         return request(path);
     }
-    tags.getTag = getTag;
+    tags.resolveTag = resolveTag;
+    // ============================================================================
+    // Public Endpoints â€” collection-scoped
+    // ============================================================================
     /**
-     * Backward-compat: Public lookup with collectionId parameter (ignored).
-     * Calls global route under /public/tags/:tagId.
-     */
-    async function publicGet(_collectionId, tagId, params) {
-        return getTag(tagId, params);
-    }
-    tags.publicGet = publicGet;
-    /**
-     * Public batch lookup of multiple tags in a single request (POST).
-     * Only returns tags from the specified collection.
-     * Optionally embed related data. Related data is deduplicated and batch-fetched.
-     * No authentication required.
+     * Single tag lookup with optional embedded data (public).
      *
-     * @param collectionId - Identifier of the collection to search within
-     * @param data - Request containing array of tagIds and optional embed parameter
-     * @returns Promise resolving to PublicBatchLookupResponse with deduplicated related data
-     * @throws ErrorResponse if the request fails
+     * `GET /public/collection/:collectionId/tags/:tagId?embed=product,proof,container,ref`
+     *
+     * Supported `embed` values: `'product'`, `'proof'`, `'container'`, `'ref'`
+     * (`'collection'` is not supported â€” the collection is already known from the URL).
+     *
+     * @param collectionId - Collection context
+     * @param tagId - Physical tag identifier
+     * @param embed - Optional comma-separated embed string
+     * @returns `{ tag: Tag, embedded: TagEmbedded }`
      *
      * @example
      * ```typescript
-     * const result = await tags.publicBatchLookup('coll_123', {
-     *   tagIds: ['TAG001', 'TAG002', 'TAG003'],
-     *   embed: 'collection,product'
-     * })
-     *
-     * // Access tags and deduplicated collections/products
-     * console.log(result.tags['TAG001'])
-     * console.log(result.collections)
-     * console.log(result.products)
+     * const { tag, embedded } = await tags.publicGetByCollection(
+     *   'coll_123', 'NFC-001', 'product,proof'
+     * )
+     * const product = embedded.products?.[tag.productId!]
+     * const proof   = embedded.proofs?.[tag.proofId!]
      * ```
      */
-    async function lookupTags(data) {
-        const path = `/public/tags/lookup`;
+    async function publicGetByCollection(collectionId, tagId, embed) {
+        const q = new URLSearchParams();
+        if (embed)
+            q.append('embed', embed);
+        const qs = q.toString();
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/tags/${encodeURIComponent(tagId)}${qs ? `?${qs}` : ''}`;
+        return request(path);
+    }
+    tags.publicGetByCollection = publicGetByCollection;
+    /**
+     * Batch tag lookup via POST (public).
+     *
+     * `POST /public/collection/:collectionId/tags/lookup`
+     *
+     * Tags not belonging to this collection are filtered out silently.
+     * Returns deduplicated embedded objects alongside the tag array.
+     *
+     * @param collectionId - Collection context
+     * @param data - `{ tagIds: string[], embed?: string }`
+     * @returns `{ count: number, tags: Tag[], embedded: TagEmbedded }`
+     *
+     * @example
+     * ```typescript
+     * const { count, tags: list, embedded } = await tags.lookupTags('coll_123', {
+     *   tagIds: ['NFC-001', 'NFC-002', 'NFC-003'],
+     *   embed:  'product,proof',
+     * })
+     * ```
+     */
+    async function lookupTags(collectionId, data) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/tags/lookup`;
         return post(path, data);
     }
     tags.lookupTags = lookupTags;
     /**
-     * Backward-compat: Public batch lookup with collectionId parameter (ignored).
-     * Calls global route under /public/tags/lookup.
-     */
-    async function publicBatchLookup(_collectionId, data) {
-        return lookupTags(data);
-    }
-    tags.publicBatchLookup = publicBatchLookup;
-    /**
-     * Public batch lookup of multiple tags using query parameters (GET).
-     * Only returns tags from the specified collection.
-     * Alternative to publicBatchLookup for simple GET requests.
-     * No authentication required.
+     * Batch tag lookup via GET (public).
      *
-     * @param collectionId - Identifier of the collection to search within
-     * @param params - Query parameters with comma-separated tagIds and optional embed
-     * @returns Promise resolving to PublicBatchLookupQueryResponse
-     * @throws ErrorResponse if the request fails
+     * `GET /public/collection/:collectionId/tags/lookup?tagIds=NFC-001,NFC-002&embed=product`
      *
-     * @example
-     * ```typescript
-     * const result = await tags.publicBatchLookupQuery('coll_123', {
-     *   tagIds: 'TAG001,TAG002,TAG003',
-     *   embed: 'collection'
-     * })
-     * ```
+     * @param collectionId - Collection context
+     * @param params - `tagIds` is comma-separated; `embed` is optional
+     * @returns `{ count: number, tags: Tag[], embedded: TagEmbedded }`
      */
-    async function lookupTagsQuery(params) {
-        const queryParams = new URLSearchParams();
-        queryParams.append('tagIds', params.tagIds);
+    async function lookupTagsQuery(collectionId, params) {
+        const q = new URLSearchParams();
+        q.append('tagIds', params.tagIds);
         if (params.embed)
-            queryParams.append('embed', params.embed);
-        const path = `/public/tags/lookup?${queryParams.toString()}`;
+            q.append('embed', params.embed);
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/tags/lookup?${q.toString()}`;
         return request(path);
     }
     tags.lookupTagsQuery = lookupTagsQuery;
     /**
-     * Backward-compat: Public batch lookup (GET) with collectionId parameter (ignored).
-     * Calls global route under /public/tags/lookup.
+     * Reverse lookup by ref via GET (public).
+     *
+     * `GET /public/collection/:collectionId/tags/by-ref?refType=container&refId=<uuid>&embed=ref`
+     *
+     * @param collectionId - Collection context
+     * @param params - `refType` and `refId` are required; `embed` is optional
+     * @returns `{ tags: Tag[], embedded: TagEmbedded }`
+     *
+     * @example
+     * ```typescript
+     * const { tags: linked, embedded } = await tags.publicByRef('coll_123', {
+     *   refType: 'container',
+     *   refId:   'container-uuid',
+     *   embed:   'container',
+     * })
+     * const container = embedded.containers?.[containerId]
+     * ```
      */
-    async function publicBatchLookupQuery(_collectionId, params) {
-        return lookupTagsQuery(params);
+    async function publicByRef(collectionId, params) {
+        const q = new URLSearchParams();
+        q.append('refType', params.refType);
+        q.append('refId', params.refId);
+        if (params.embed)
+            q.append('embed', params.embed);
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/tags/by-ref?${q.toString()}`;
+        return request(path);
     }
-    tags.publicBatchLookupQuery = publicBatchLookupQuery;
+    tags.publicByRef = publicByRef;
+    /**
+     * Reverse lookup by ref via POST (public).
+     *
+     * `POST /public/collection/:collectionId/tags/by-ref`
+     *
+     * @param collectionId - Collection context
+     * @param data - `{ refType, refId, embed? }`
+     * @returns `{ tags: Tag[], embedded: TagEmbedded }`
+     */
+    async function publicByRefPost(collectionId, data) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/tags/by-ref`;
+        return post(path, data);
+    }
+    tags.publicByRefPost = publicByRefPost;
 })(tags || (tags = {}));

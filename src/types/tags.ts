@@ -1,232 +1,239 @@
 /**
  * Tag Management Types
- * 
- * Types for creating mappings between physical tags (NFC tags, QR codes, etc.) 
- * and digital proofs.
+ *
+ * Types for the two-tier tag system:
+ *  - Per-org shard (`tags` table) — full tag data, all collection-scoped queries
+ *  - Shared shard (`tag_index` table) — tagId → collectionId routing only
  */
 
+// ─── Core entity ──────────────────────────────────────────────────────────────
+
 /**
- * Represents a tag mapping in the system.
+ * Full tag record, stored on the per-org shard.
+ * Returned by all collection-scoped endpoints.
  */
 export interface Tag {
-  id: string                        // UUID
-  orgId: string                     // Organization ID
-  tagId: string                     // Unique tag identifier (globally unique)
-  collectionId: string              // Collection ID
-  productId?: string                // Product ID (optional — may be a ref-only tag)
-  variantId?: string | null         // Optional: Variant ID
-  batchId?: string | null           // Optional: Batch ID
-  proofId?: string                  // Proof ID (serial number or explicit)
+  id:           string                // Internal UUID
+  orgId:        string                // Organisation ID
+  tagId:        string                // Physical tag identifier (NFC UID, QR code, etc.)
+  collectionId: string                // Owning collection
+  productId:    string | null         // Linked product
+  variantId:    string | null         // Product variant
+  batchId:      string | null         // Production batch
+  proofId:      string | null         // Proof / serial number
   /**
-   * Polymorphic reference type linking the tag to any app object, e.g.
-   * `'app_record'`, `'app_case'`, `'container'`, etc.
-   * Must always be paired with `refId`.
+   * Polymorphic ref type: `'app_record'`, `'app_case'`, `'app_thread'`, `'container'`, etc.
+   * Always paired with `refId`.
    */
-  refType?: string
-  /** UUID of the referenced object.  Must always be paired with `refType`. */
-  refId?: string
-  metadata: Record<string, any>     // Additional metadata (e.g., serialIndex)
-  createdAt: string                 // ISO 8601 timestamp
-  updatedAt: string                 // ISO 8601 timestamp
+  refType:      string | null
+  /** UUID of the referenced object.  Always paired with `refType`. */
+  refId:        string | null
+  metadata:     Record<string, any>
+  createdAt:    string                // ISO 8601
+  updatedAt:    string                // ISO 8601
 }
 
 /**
- * Request to create a single tag mapping.
- * If proofId is not provided, automatically generates a serial number.
+ * Lightweight index entry returned by the global resolve endpoint only
+ * (`GET /public/tags/:tagId`).
+ *
+ * Use this when the collection is not yet known — it contains routing info
+ * only.  Once `collectionId` is resolved, use the collection-scoped endpoints
+ * for full tag data.
  */
+export interface TagIndexEntry {
+  tagId:        string
+  collectionId: string
+}
+
+// ─── Embedded objects ─────────────────────────────────────────────────────────
+
+/**
+ * Deduplicated embedded objects attached to collection-scoped tag lookup
+ * responses.  Which fields are populated depends on the `embed` parameter.
+ *
+ * Supported `embed` values: `'product'`, `'proof'`, `'container'`, `'ref'`
+ * (`embed=collection` is not supported on collection-scoped endpoints).
+ */
+export interface TagEmbedded {
+  /** `productId → Firestore product record` (when `embed` includes `'product'`) */
+  products?:   Record<string, any>
+  /**
+   * `proofId → proof record or virtual serial-number proof`
+   * (when `embed` includes `'proof'`)
+   */
+  proofs?:     Record<string, any>
+  /**
+   * `containerId → Container row`
+   * (for tags where `refType === 'container'`, when `embed` includes `'container'`)
+   */
+  containers?: Record<string, any>
+  /**
+   * `refId → app_record | app_case | app_thread | container`
+   * (when `embed` includes `'ref'`)
+   */
+  refs?:       Record<string, any>
+}
+
+// ─── Admin request bodies ─────────────────────────────────────────────────────
+
+/** Request body to create a single tag mapping. */
 export interface CreateTagRequest {
-  tagId: string                     // Required: Unique tag identifier
-  productId?: string                // Optional: Product ID (required when proofId is set without useSerialNumber)
-  variantId?: string                // Optional: Variant ID
-  batchId?: string                  // Optional: Batch ID
-  proofId?: string                  // Optional: Explicit proof ID (if omitted with productId, auto-generates serial)
-  useSerialNumber?: boolean         // Optional: Explicitly request serial number generation
-  /**
-   * Polymorphic ref type linking this tag to any app object (e.g. `'app_record'`, `'container'`).
-   * Must be paired with `refId`.  A tag can simultaneously have a product/proof AND a ref.
-   */
-  refType?: string
-  /** UUID of the referenced object.  Must be paired with `refType`. */
-  refId?: string
-  metadata?: Record<string, any>    // Optional: Additional metadata
-  force?: boolean                   // Optional: Overwrite if tag exists in same collection (default: false)
+  tagId:            string           // Required
+  productId?:       string
+  variantId?:       string
+  batchId?:         string
+  proofId?:         string           // Required if productId set, unless useSerialNumber=true
+  useSerialNumber?: boolean          // Auto-generate a serial number as proofId
+  refType?:         string           // Must be paired with refId
+  refId?:           string           // Must be paired with refType
+  metadata?:        Record<string, any>
+  force?:           boolean          // Overwrite if tag already exists in this collection
 }
 
-/**
- * Response from creating a single tag.
- */
+/** Request body to batch-create tags. `force` applies to all entries in the batch. */
+export interface BatchCreateTagRequest {
+  tags:  Omit<CreateTagRequest, 'force'>[]
+  force?: boolean
+}
+
+/** Partial update request — `metadata` is deep-merged with existing values. */
+export interface UpdateTagRequest {
+  productId?:  string
+  variantId?:  string
+  batchId?:    string
+  proofId?:    string
+  /** Pass `null` to clear the polymorphic ref.  Must be paired with `refId`. */
+  refType?:    string | null
+  /** Pass `null` to clear the polymorphic ref.  Must be paired with `refType`. */
+  refId?:      string | null
+  metadata?:   Record<string, any>   // Merged with existing metadata
+}
+
+// ─── Admin response types ─────────────────────────────────────────────────────
+
+/** Returned when creating a single tag (`wasUpdated: true` when force triggered an update). */
 export interface CreateTagResponse extends Tag {
-  wasUpdated?: boolean              // True if force=true caused an update instead of create
+  wasUpdated?: boolean
 }
 
-/**
- * Request to create multiple tag mappings efficiently.
- * By default, auto-generates serial numbers for all tags without explicit proofId.
- */
-export interface CreateTagsBatchRequest {
-  tags: Array<{
-    tagId: string                   // Required: Unique tag identifier
-    productId: string               // Required: Product ID
-    variantId?: string              // Optional: Variant ID
-    batchId?: string                // Optional: Batch ID
-    proofId?: string                // Optional: If omitted, auto-generates serial number
-    metadata?: Record<string, any>  // Optional: Additional metadata
-  }>
-  force?: boolean                   // Optional: Overwrite existing tags in same collection (default: false)
-}
-
-/**
- * Response from batch creating tags.
- */
-export interface CreateTagsBatchResponse {
+/** Result of a batch tag creation. Partial success is possible. */
+export interface BatchCreateResult {
   summary: {
-    total: number                   // Total tags in request
-    created: number                 // Successfully created
-    updated: number                 // Successfully updated (with force=true)
-    failed: number                  // Failed to create/update
-    conflicts: number               // Already exist (without force=true)
+    total:     number
+    created:   number
+    updated:   number
+    failed:    number
+    conflicts: number
   }
   results: {
-    created: Tag[]                  // Array of successfully created tags
-    updated: Tag[]                  // Array of successfully updated tags
-    failed: Array<{
-      tagId: string
-      reason: string                // Error code (e.g., "TAG_ASSIGNED_ELSEWHERE", "CREATE_FAILED")
-      message: string               // Human-readable error message
-      existingTag?: Tag             // Existing tag if applicable
-    }>
-    conflicts: Array<{
-      tagId: string
-      reason: string                // "TAG_ALREADY_ASSIGNED"
-      message: string
-      existingTag: Tag              // The existing tag
-    }>
+    created:   Tag[]
+    updated:   Tag[]
+    failed:    Array<{ tagId: string; reason: string; message: string }>
+    conflicts: Array<{ tagId: string; reason: string; message: string; existingTag: Tag }>
   }
 }
 
-/**
- * Request to update an existing tag mapping.
- */
-export interface UpdateTagRequest {
-  productId?: string                // Optional: Update product ID
-  variantId?: string | null         // Optional: Update variant ID (null to clear)
-  batchId?: string | null           // Optional: Update batch ID (null to clear)
-  proofId?: string                  // Optional: Update proof ID
-  /**
-   * Polymorphic ref type.  Must be paired with `refId`.
-   * Set both to `null` / omit to leave unchanged.
-   */
-  refType?: string
-  /** UUID of the referenced object.  Must be paired with `refType`. */
-  refId?: string
-  metadata?: Record<string, any>    // Optional: Merge with existing metadata
-}
-
-/**
- * Response from updating a tag.
- */
 export interface UpdateTagResponse extends Tag {}
-
-/**
- * Response from deleting a tag.
- */
-export interface DeleteTagResponse {
-  success: boolean
-}
-
-/**
- * Response from getting a single tag.
- */
+export interface DeleteTagResponse { success: boolean }
 export interface GetTagResponse extends Tag {}
 
-/**
- * Request parameters for listing tags.
- */
+// ─── List / filter ────────────────────────────────────────────────────────────
+
 export interface ListTagsRequest {
-  limit?: number                    // Optional: Max results (default: 100)
-  offset?: number                   // Optional: Pagination offset (default: 0)
-  productId?: string                // Optional: Filter by product ID
-  variantId?: string                // Optional: Filter by variant ID
-  batchId?: string                  // Optional: Filter by batch ID
-  /** Optional: Filter by polymorphic ref type (e.g. `'container'`, `'app_record'`) */
-  refType?: string
-  /** Optional: Filter by polymorphic ref UUID */
-  refId?: string
+  limit?:     number
+  offset?:    number
+  productId?: string
+  variantId?: string
+  batchId?:   string
+  /** Filter by polymorphic ref type (e.g. `'container'`, `'app_record'`) */
+  refType?:   string
+  /** Filter by polymorphic ref UUID */
+  refId?:     string
 }
 
-/**
- * Response from listing tags.
- */
 export interface ListTagsResponse {
-  tags: Tag[]
-  limit: number
+  tags:   Tag[]
+  limit:  number
   offset: number
 }
 
+// ─── Public request bodies ────────────────────────────────────────────────────
+
 /**
- * Request parameters for public tag lookup.
+ * Request body / params for the collection-scoped batch lookup.
+ *
+ * `embed` — comma-separated: `'product'`, `'proof'`, `'container'`, `'ref'`
  */
-export interface PublicGetTagRequest {
-  embed?: string                    // Optional: Comma-separated values: "collection", "product", "proof"
+export interface LookupTagsRequest {
+  tagIds: string[]
+  embed?: string
 }
 
 /**
- * Response from public tag lookup with optional embedded data.
+ * Query-string variant of {@link LookupTagsRequest} for GET requests.
+ * `tagIds` is a comma-separated string.
  */
-export interface PublicGetTagResponse {
-  tag: Tag
-  collection?: any                  // Included if embed contains "collection"
-  product?: any                     // Included if embed contains "product"
-  proof?: any                       // Included if embed contains "proof"
+export interface LookupTagsQueryRequest {
+  tagIds: string
+  embed?: string
 }
 
 /**
- * Request to lookup multiple tags in a single request.
+ * POST body for the collection-scoped public by-ref lookup.
+ * `embed` — comma-separated: `'product'`, `'proof'`, `'container'`, `'ref'`
  */
-export interface PublicBatchLookupRequest {
-  tagIds: string[]                  // Array of tag IDs to lookup
-  embed?: string                    // Optional: Comma-separated: "collection", "product", "proof"
+export interface ByRefRequest {
+  refType: string
+  refId:   string
+  embed?:  string
 }
 
 /**
- * Response from batch lookup with deduplicated related data.
- */
-export interface PublicBatchLookupResponse {
-  tags: Record<string, Tag>         // Map: tagId → Tag object
-  collections?: Record<string, any> // Map: collectionId → Collection (if embed=collection)
-  products?: Record<string, any>    // Map: productId → Product (if embed=product)
-  proofs?: Record<string, any>      // Map: proofId → Proof (if embed=proof)
-}
-
-/**
- * Query parameters for public batch lookup (GET).
- */
-export interface PublicBatchLookupQueryRequest {
-  tagIds: string                    // Comma-separated tag IDs
-  embed?: string                    // Optional: Comma-separated: "collection", "product", "proof"
-}
-
-/**
- * Response from public batch lookup (GET).
- */
-export interface PublicBatchLookupQueryResponse extends PublicBatchLookupResponse {}
-
-/**
- * Query parameters for the reverse-lookup endpoint.
- * Finds all tags linked to a given app object across any collection.
+ * Query parameters for admin and public GET by-ref requests.
  */
 export interface ReverseTagLookupParams {
-  /** Required — polymorphic ref type, e.g. `'app_record'`, `'container'` */
+  /** Required — polymorphic ref type */
   refType: string
   /** Required — UUID of the referenced object */
-  refId: string
+  refId:   string
+  /** Optional embed string (public endpoint only) */
+  embed?:  string
+}
+
+// ─── Public response types ────────────────────────────────────────────────────
+
+/**
+ * Response from the collection-scoped single-tag public endpoint.
+ * `GET /public/collection/:collectionId/tags/:tagId?embed=product,proof,ref`
+ */
+export interface PublicGetTagResponse {
+  tag:      Tag
+  embedded: TagEmbedded
 }
 
 /**
- * Response from the reverse-lookup endpoint.
- * Uses a global cross-shard index so it is safe to call without knowing
- * which collection the object belongs to.
+ * Response from the collection-scoped batch lookup endpoints.
+ * `POST /public/collection/:collectionId/tags/lookup`
+ * `GET  /public/collection/:collectionId/tags/lookup?tagIds=...`
  */
+export interface TagLookupResponse {
+  count:    number
+  tags:     Tag[]
+  embedded: TagEmbedded
+}
+
+/** Response from the admin by-ref endpoint (no embed support on admin side). */
 export interface ReverseTagLookupResponse {
   tags: Tag[]
+}
+
+/**
+ * Response from the public by-ref endpoints (supports `embed`).
+ * `GET  /public/collection/:collectionId/tags/by-ref?refType=&refId=&embed=`
+ * `POST /public/collection/:collectionId/tags/by-ref`
+ */
+export interface ByRefResponse {
+  tags:     Tag[]
+  embedded: TagEmbedded
 }

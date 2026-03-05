@@ -249,6 +249,7 @@ function generateAPISummary(): void {
   summary += '- **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation\n';
   summary += '- **[Widgets](widgets.md)** - Embeddable React components for parent applications\n';
   summary += '- **[Containers](containers.md)** - Building full-app embeddable containers (lazy-loaded) \n';
+  summary += '- **[Scanner Containers](scanner-container.md)** - Building scanner microapps for the SmartLinks Scanner Android host (RFID, NFC, QR, key events)\n';
   summary += '- **[Multi-Page App Architecture](mpa.md)** - Vite MPA build pipeline: public/admin entry points, widget/container/executor bundles, content-hashed CDN assets\n';
   summary += '- **[App Configuration Files](app-manifest.md)** - `app.manifest.json` and `app.admin.json` reference — bundles, components, setup questions, import schemas, tunable fields, and metrics\n';
   summary += '- **[Executor Model](executor.md)** - Programmatic JS bundles for AI-driven setup, server-side SEO metadata generation, and LLM content for AI crawlers\n';
