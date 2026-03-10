@@ -19,6 +19,7 @@ Complete guide to using AI capabilities in the SmartLinks SDK, including chat co
 - [Error Handling](#error-handling)
 - [Rate Limiting](#rate-limiting)
 - [Best Practices](#best-practices)
+- [Providing Content to the AI Assistant](#providing-content-to-the-ai-assistant)
 
 ---
 
@@ -1544,6 +1545,294 @@ const cost =
   (response.usage.completion_tokens * model.pricing.output / 1_000_000);
 console.log('Estimated cost: $', cost.toFixed(4));
 ```
+
+---
+
+## Providing Content to the AI Assistant
+
+The portal's built-in AI assistant can discuss the content currently visible to the user. To make this work, your app must supply contextual content when the assistant requests it. There are three extraction methods, tried in priority order:
+
+| Priority | Method | When Used |
+|----------|--------|-----------|
+| 1 | **Direct prop callback** | Container/widget rendered in the parent React context |
+| 2 | **PostMessage protocol** | App rendered in an iframe |
+| 3 | **DOM text fallback** | Neither of the above responded |
+
+This section covers **methods 1 and 2** — the ones you implement in your app.
+
+### Method 1: Direct Prop (`onRequestAIContent`)
+
+When your app is rendered as a **container** (a direct component in the parent's React tree), the framework passes an `onRequestAIContent` prop to your exported component. You do **not** call this prop yourself — the framework calls it when the AI assistant needs context.
+
+Structure your component to make current state accessible when the callback fires:
+
+```tsx
+import { useEffect, useRef } from 'react';
+
+export function PublicContainer(props) {
+  const { onRequestAIContent, appId, ...rest } = props;
+
+  // Keep a ref to the latest content so the callback always returns fresh data
+  const currentContentRef = useRef(null);
+
+  useEffect(() => {
+    currentContentRef.current = buildCurrentContent();
+  }, [relevantState]);
+
+  return <div data-app-container={appId}>{/* your UI */}</div>;
+}
+```
+
+The framework registers the content provider internally via `useAIContentExtraction.registerContentProvider()`. Your component just needs to respond when the callback is invoked.
+
+### Method 2: PostMessage Protocol (Iframes)
+
+For iframe-embedded apps the framework sends a `postMessage` request and expects a response within **500 ms**. If your app doesn't reply in time the framework falls back to DOM text extraction.
+
+**Request sent by the framework to your iframe:**
+
+```typescript
+{
+  type: 'smartlinks:request-ai-content',
+  requestId: 'ai-content-1709834567890-abc123'  // unique per request
+}
+```
+
+**Response your app must send back:**
+
+```typescript
+{
+  type: 'smartlinks:ai-content-response',
+  requestId: 'ai-content-1709834567890-abc123',  // echo back the requestId
+  content: AIContentResponse
+}
+```
+
+**Minimal implementation:**
+
+```typescript
+window.addEventListener('message', async (event) => {
+  if (event.data?.type === 'smartlinks:request-ai-content') {
+    const content = await gatherAIContent();
+
+    window.parent.postMessage({
+      type: 'smartlinks:ai-content-response',
+      requestId: event.data.requestId,
+      content,
+    }, '*');
+  }
+});
+
+async function gatherAIContent(): Promise<AIContentResponse> {
+  return {
+    text: 'The user is viewing the warranty registration form...',
+    contentLabel: 'Warranty Registration',
+  };
+}
+```
+
+### The `AIContentResponse` Interface
+
+```typescript
+interface AIContentResponse {
+  /**
+   * Plain text or markdown for the AI to use as context.
+   * Injected into the system prompt. Max recommended: ~4000 characters.
+   */
+  text: string;
+
+  /**
+   * Optional structured metadata (key-value pairs).
+   * Not used directly in prompts but available for custom providers.
+   */
+  metadata?: Record<string, unknown>;
+
+  /**
+   * Pre-built RAG configuration. When provided, the assistant can use
+   * SL.ai.public.chat() to ground answers in indexed product documents.
+   */
+  ragHint?: {
+    /** The product ID whose indexed documents should be queried */
+    productId: string;
+    /** Optional session ID for multi-turn RAG conversations */
+    sessionId?: string;
+    /** Optional context hint to help scope the RAG query */
+    context?: string;
+  };
+
+  /**
+   * Human-readable label shown in context-update messages
+   * (e.g. "Product Manual", "FAQ").
+   */
+  contentLabel?: string;
+
+  /**
+   * How the assistant should use this content:
+   * - 'context' (default): inject text into the system prompt
+   * - 'rag': use ragHint to query indexed docs via SL.ai.public.chat()
+   * - 'hybrid': inject text as context AND ground answers via RAG
+   */
+  strategy?: 'context' | 'rag' | 'hybrid';
+}
+```
+
+### Response Strategies
+
+#### `context` (Default)
+
+Return readable text. The assistant injects it into the system prompt as background knowledge. Good for descriptions, summaries, structured data, and FAQs.
+
+```typescript
+return {
+  text: `
+## Wine Details
+- **Name**: 2023 Château Margaux
+- **Region**: Bordeaux, France
+- **Tasting Notes**: Dark fruit, cedar, tobacco
+- **Food Pairing**: Lamb, aged cheese
+  `,
+  contentLabel: 'Wine Information',
+  strategy: 'context',
+};
+```
+
+#### `rag`
+
+Tell the assistant to query pre-indexed documents via SmartLinks RAG. The `text` field is minimal — the real knowledge comes from the indexed docs. Good for product manuals, large document sets, and technical specs.
+
+```typescript
+return {
+  text: 'The user is viewing the espresso machine product page.',
+  contentLabel: 'Product Assistant',
+  strategy: 'rag',
+  ragHint: {
+    productId: 'espresso-machine-pro',
+    sessionId: `rag-session-${userId}`,
+    context: 'User is on the troubleshooting section',
+  },
+};
+```
+
+When the assistant receives a `rag` strategy it routes the question through `SL.ai.public.chat()`:
+
+```typescript
+const response = await SL.ai.public.chat(collectionId, {
+  productId: ragHint.productId,
+  userId: currentUserId,
+  message: userQuestion,
+  sessionId: ragHint.sessionId,
+});
+```
+
+#### `hybrid`
+
+Combines both — the `text` is injected as additional context **and** the user's questions are also grounded via RAG. Good for museum exhibits, guided experiences, or any scenario with rich metadata alongside large document sets.
+
+```typescript
+return {
+  text: `
+## Exhibit: The Starry Night
+- **Artist**: Vincent van Gogh
+- **Year**: 1889
+- **Current Location**: Gallery 3, East Wing
+- **Audio Guide**: Available in 12 languages
+  `,
+  contentLabel: 'Museum Exhibit',
+  strategy: 'hybrid',
+  ragHint: {
+    productId: 'starry-night-exhibit',
+    context: 'Art history and technique questions',
+  },
+};
+```
+
+### Content Extraction Examples
+
+#### Museum Guide App
+
+```typescript
+async function gatherAIContent(): Promise<AIContentResponse> {
+  const exhibit = getCurrentExhibit();
+
+  return {
+    text: `
+Exhibit: "${exhibit.title}" by ${exhibit.artist}
+Period: ${exhibit.period}
+Medium: ${exhibit.medium}
+Description: ${exhibit.curatorNotes}
+Related works in this gallery: ${exhibit.relatedWorks.join(', ')}
+    `.trim(),
+    contentLabel: `Exhibit: ${exhibit.title}`,
+    strategy: 'hybrid',
+    ragHint: {
+      productId: exhibit.smartlinksProductId,
+      context: `Art history, technique, and visitor information for ${exhibit.title}`,
+    },
+    metadata: {
+      exhibitId: exhibit.id,
+      gallery: exhibit.gallery,
+      audioGuideAvailable: exhibit.hasAudioGuide,
+    },
+  };
+}
+```
+
+#### Wine Product App
+
+```typescript
+async function gatherAIContent(): Promise<AIContentResponse> {
+  const wine = getCurrentWine();
+  const reviews = await fetchRecentReviews(wine.id, 5);
+
+  return {
+    text: `
+Wine: ${wine.name} (${wine.vintage})
+Winery: ${wine.winery}
+Region: ${wine.region}, ${wine.country}
+Grape: ${wine.grape}
+ABV: ${wine.abv}%
+Price: ${wine.price}
+Tasting Notes: ${wine.tastingNotes}
+
+Recent Reviews:
+${reviews.map(r => `- "${r.text}" (${r.rating}/5)`).join('\n')}
+    `.trim(),
+    contentLabel: 'Wine Details',
+    strategy: 'context',
+  };
+}
+```
+
+#### Equipment Manual App (RAG-only)
+
+```typescript
+async function gatherAIContent(): Promise<AIContentResponse> {
+  const equipment = getCurrentEquipment();
+
+  return {
+    text: `User is viewing: ${equipment.name} (Model: ${equipment.modelNumber})`,
+    contentLabel: `${equipment.name} Assistant`,
+    strategy: 'rag',
+    ragHint: {
+      productId: equipment.smartlinksProductId,
+      sessionId: `manual-${equipment.id}-${Date.now()}`,
+      context: 'Technical manual, troubleshooting, and maintenance',
+    },
+  };
+}
+```
+
+### Timing & Lifecycle
+
+- **On navigation**: When the user navigates to a new product/proof/app, the assistant automatically requests fresh content and injects a context-update system message.
+- **On first message**: If no content has been gathered yet, the assistant requests it before the first AI call.
+- **On manual refresh**: The assistant can re-request content at any time (e.g. if the user's view within the app has changed).
+
+Content is requested **lazily** — your handler is only called when the AI assistant is active and needs context. If the user never opens the assistant, your handler is never called.
+
+### Method 3: DOM Fallback (Automatic)
+
+If your app doesn't implement either of the above, the framework extracts `innerText` from the DOM element with `data-app-container="{appId}"`, truncated to ~4000 characters. This is a **last resort** — content quality is much lower than a structured response. Implementing Method 1 or 2 is strongly recommended.
 
 ---
 

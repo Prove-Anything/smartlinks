@@ -15,6 +15,15 @@ let extraHeadersGlobal: Record<string, string> = {}
 /** Whether initializeApi has been successfully called at least once. */
 let initialized: boolean = false
 
+/** Safely returns the current browser hostname, or an empty string in non-browser / Node environments. */
+function getSourceDomain(): string {
+  try {
+    return (typeof window !== 'undefined' && window.location?.hostname) || ''
+  } catch {
+    return ''
+  }
+}
+
 // =============================================================================
 // HTTP-level in-memory GET cache — LRU eviction + in-flight deduplication
 // =============================================================================
@@ -819,6 +828,7 @@ export async function request<T>(path: string): Promise<T> {
         if (apiKey) headers["X-API-Key"] = apiKey
         if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
         if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
+        const _getDomain = getSourceDomain(); if (_getDomain) headers["X-Source-Domain"] = _getDomain
         for (const [k, v] of Object.entries(extraHeadersGlobal)) headers[k] = v
 
         logDebug('[smartlinks] GET fetch', { url, headers: redactHeaders(headers) })
@@ -899,6 +909,7 @@ export async function post<T>(
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
+  const _postDomain = getSourceDomain(); if (_postDomain) headers["X-Source-Domain"] = _postDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
 
   // Only set Content-Type for non-FormData bodies
@@ -958,6 +969,7 @@ export async function put<T>(
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
+  const _putDomain = getSourceDomain(); if (_putDomain) headers["X-Source-Domain"] = _putDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
 
   // Only set Content-Type for non-FormData bodies
@@ -1017,6 +1029,7 @@ export async function patch<T>(
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
+  const _patchDomain = getSourceDomain(); if (_patchDomain) headers["X-Source-Domain"] = _patchDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
 
   // Only set Content-Type for non-FormData bodies
@@ -1123,11 +1136,13 @@ export async function requestWithOptions<T>(
         }
       }
 
+      const _rwoDomain = getSourceDomain()
       const headers: Record<string, string> = {
         "Content-Type": "application/json",
         ...(apiKey ? { "X-API-Key": apiKey } : {}),
         ...(bearerToken ? { "AUTHORIZATION": `Bearer ${bearerToken}` } : {}),
         ...(ngrokSkipBrowserWarning ? { "ngrok-skip-browser-warning": "true" } : {}),
+        ...(_rwoDomain ? { "X-Source-Domain": _rwoDomain } : {}),
         ...extraHeaders,
       }
       // Merge global custom headers (do not override existing keys from options.headers)
@@ -1207,6 +1222,7 @@ export async function del<T>(
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
+  const _delDomain = getSourceDomain(); if (_delDomain) headers["X-Source-Domain"] = _delDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
 
   logDebug('[smartlinks] DELETE fetch', { url, headers: redactHeaders(headers) })
@@ -1242,6 +1258,7 @@ export function getApiHeaders(): Record<string, string> {
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
+  const sourceDomain = getSourceDomain(); if (sourceDomain) headers["X-Source-Domain"] = sourceDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
   return headers
 }

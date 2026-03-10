@@ -23,6 +23,16 @@ let ngrokSkipBrowserWarning = false;
 let extraHeadersGlobal = {};
 /** Whether initializeApi has been successfully called at least once. */
 let initialized = false;
+/** Safely returns the current browser hostname, or an empty string in non-browser / Node environments. */
+function getSourceDomain() {
+    var _a;
+    try {
+        return (typeof window !== 'undefined' && ((_a = window.location) === null || _a === void 0 ? void 0 : _a.hostname)) || '';
+    }
+    catch (_b) {
+        return '';
+    }
+}
 const httpCache = new Map();
 let cacheEnabled = true;
 /** Default TTL used when no per-resource rule matches (milliseconds). */
@@ -758,6 +768,9 @@ export async function request(path) {
                     headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
                 if (ngrokSkipBrowserWarning)
                     headers["ngrok-skip-browser-warning"] = "true";
+                const _getDomain = getSourceDomain();
+                if (_getDomain)
+                    headers["X-Source-Domain"] = _getDomain;
                 for (const [k, v] of Object.entries(extraHeadersGlobal))
                     headers[k] = v;
                 logDebug('[smartlinks] GET fetch', { url, headers: redactHeaders(headers) });
@@ -828,6 +841,9 @@ export async function post(path, body, extraHeaders) {
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
     if (ngrokSkipBrowserWarning)
         headers["ngrok-skip-browser-warning"] = "true";
+    const _postDomain = getSourceDomain();
+    if (_postDomain)
+        headers["X-Source-Domain"] = _postDomain;
     for (const [k, v] of Object.entries(extraHeadersGlobal))
         if (!(k in headers))
             headers[k] = v;
@@ -882,6 +898,9 @@ export async function put(path, body, extraHeaders) {
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
     if (ngrokSkipBrowserWarning)
         headers["ngrok-skip-browser-warning"] = "true";
+    const _putDomain = getSourceDomain();
+    if (_putDomain)
+        headers["X-Source-Domain"] = _putDomain;
     for (const [k, v] of Object.entries(extraHeadersGlobal))
         if (!(k in headers))
             headers[k] = v;
@@ -936,6 +955,9 @@ export async function patch(path, body, extraHeaders) {
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
     if (ngrokSkipBrowserWarning)
         headers["ngrok-skip-browser-warning"] = "true";
+    const _patchDomain = getSourceDomain();
+    if (_patchDomain)
+        headers["X-Source-Domain"] = _patchDomain;
     for (const [k, v] of Object.entries(extraHeadersGlobal))
         if (!(k in headers))
             headers[k] = v;
@@ -1034,7 +1056,8 @@ export async function requestWithOptions(path, options) {
                     extraHeaders = Object.assign({}, options.headers);
                 }
             }
-            const headers = Object.assign(Object.assign(Object.assign(Object.assign({ "Content-Type": "application/json" }, (apiKey ? { "X-API-Key": apiKey } : {})), (bearerToken ? { "AUTHORIZATION": `Bearer ${bearerToken}` } : {})), (ngrokSkipBrowserWarning ? { "ngrok-skip-browser-warning": "true" } : {})), extraHeaders);
+            const _rwoDomain = getSourceDomain();
+            const headers = Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({ "Content-Type": "application/json" }, (apiKey ? { "X-API-Key": apiKey } : {})), (bearerToken ? { "AUTHORIZATION": `Bearer ${bearerToken}` } : {})), (ngrokSkipBrowserWarning ? { "ngrok-skip-browser-warning": "true" } : {})), (_rwoDomain ? { "X-Source-Domain": _rwoDomain } : {})), extraHeaders);
             // Merge global custom headers (do not override existing keys from options.headers)
             for (const [k, v] of Object.entries(extraHeadersGlobal))
                 if (!(k in headers))
@@ -1105,6 +1128,9 @@ export async function del(path, extraHeaders) {
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
     if (ngrokSkipBrowserWarning)
         headers["ngrok-skip-browser-warning"] = "true";
+    const _delDomain = getSourceDomain();
+    if (_delDomain)
+        headers["X-Source-Domain"] = _delDomain;
     for (const [k, v] of Object.entries(extraHeadersGlobal))
         if (!(k in headers))
             headers[k] = v;
@@ -1142,6 +1168,9 @@ export function getApiHeaders() {
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
     if (ngrokSkipBrowserWarning)
         headers["ngrok-skip-browser-warning"] = "true";
+    const sourceDomain = getSourceDomain();
+    if (sourceDomain)
+        headers["X-Source-Domain"] = sourceDomain;
     for (const [k, v] of Object.entries(extraHeadersGlobal))
         if (!(k in headers))
             headers[k] = v;

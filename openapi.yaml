@@ -2138,6 +2138,39 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/comm.send:
+    post:
+      tags:
+        - comms
+      summary: Send a single transactional message to one contact using a template.
+      operationId: comms_sendTransactional
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionalSendResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionalSendRequest"
   /admin/collection/{collectionId}/comm.settings:
     patch:
       tags:
@@ -2421,39 +2454,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CommsRecipientsWithoutActionQuery"
-  /admin/collection/{collectionId}/comm/send:
-    post:
-      tags:
-        - comms
-      summary: Send a single transactional message to one contact using a template.
-      operationId: comms_sendTransactional
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TransactionalSendResult"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TransactionalSendRequest"
   /admin/collection/{collectionId}/contacts:
     get:
       tags:
@@ -5203,6 +5203,50 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/products/{productId}/proofs/{proofId}/migrate:
+    post:
+      tags:
+        - proof
+      summary: proof.migrate
+      operationId: proof_migrate
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: proofId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProofResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
   /admin/collection/{collectionId}/proof/findByUser/{userId}:
     get:
       tags:

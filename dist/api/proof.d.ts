@@ -66,4 +66,42 @@ export declare namespace proof {
      * GET /admin/collection/:collectionId/product/:productId/batch/:batchId/proof
      */
     function getByBatch(collectionId: string, productId: string, batchId: string): Promise<ProofResponse[]>;
+    /**
+     * Migrate a proof to a different product within the same collection (admin only).
+     *
+     * Because the Firestore ledger document ID is `{productId}-{proofId}`, a proof
+     * cannot simply be re-assigned to another product by updating a field — the
+     * document must be re-keyed. This endpoint handles that atomically:
+     *
+     *   1. Reads the source ledger document (`{sourceProductId}-{proofId}`).
+     *   2. Writes a new document (`{targetProductId}-{proofId}`) with `productId`
+     *      and `proofGroup` updated. The short `proofId` (nanoid) is unchanged.
+     *   3. Writes a migration history entry to the new document's `history`
+     *      subcollection (snapshot of the original proof + migration metadata).
+     *   4. Copies all subcollections — `assets`, `attestations`, `history` — from
+     *      the old document to the new one.
+     *   5. Deletes the old subcollections and then the old document.
+     *
+     * Repeated migrations are safe — each one appends a history record; no
+     * migration metadata is stored on the proof document itself.
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param productId - Current (source) product ID that owns the proof
+     * @param proofId - Identifier of the proof to migrate
+     * @param data - `{ targetProductId }` — the destination product
+     * @returns The migrated proof object (now owned by `targetProductId`)
+     *
+     * @example
+     * ```typescript
+     * const migrated = await proof.migrate('coll_123', 'prod_old', 'proof_abc', {
+     *   targetProductId: 'prod_new',
+     * })
+     * console.log(migrated.productId) // 'prod_new'
+     * ```
+     */
+    function migrate(collectionId: string, productId: string, proofId: string, 
+    /** The destination product ID */
+    data: {
+        targetProductId: string;
+    }): Promise<ProofResponse>;
 }

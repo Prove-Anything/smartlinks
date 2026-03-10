@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.7.3  |  Generated: 2026-03-04T13:56:12.543Z
+Version: 1.7.5  |  Generated: 2026-03-10T14:22:42.762Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3006,7 +3006,7 @@ export interface SubscriptionsResolveResponse {
  * No broadcast record is created; the send is logged directly to the
  * contact's communication history with sourceType: 'transactional'.
  *
- * POST /admin/collection/:collectionId/comm/send
+ * POST /admin/collection/:collectionId/comm.send
  */
 export interface TransactionalSendRequest {
   /** CRM contact UUID */
@@ -5978,7 +5978,7 @@ Analytics: Recipients who performed an action, optionally with outcome. POST /ad
 
 **sendTransactional**(collectionId: string,
     body: TransactionalSendRequest) → `Promise<TransactionalSendResult>`
-Send a single transactional message to one contact using a template. No broadcast record is created. The send is logged to the contact's communication history with sourceType: 'transactional'. POST /admin/collection/:collectionId/comm/send ```typescript const result = await comms.sendTransactional(collectionId, { contactId:  'e4f2a1b0-...', templateId: 'warranty-update', channel:    'preferred', props:      { claimRef: 'CLM-0042', decision: 'approved' }, include:    { productId: 'prod-abc123', appCase: 'c9d1e2f3-...' }, ref:        'warranty-decision-notification', appId:      'warrantyApp', }) if (result.ok) { console.log(`Sent via ${result.channel}`, result.messageId) } else { console.error('Send failed:', result.error) } ```
+Send a single transactional message to one contact using a template. No broadcast record is created. The send is logged to the contact's communication history with sourceType: 'transactional'. POST /admin/collection/:collectionId/comm.send ```typescript const result = await comms.sendTransactional(collectionId, { contactId:  'e4f2a1b0-...', templateId: 'warranty-update', channel:    'preferred', props:      { claimRef: 'CLM-0042', decision: 'approved' }, include:    { productId: 'prod-abc123', appCase: 'c9d1e2f3-...' }, ref:        'warranty-decision-notification', appId:      'warrantyApp', }) if (result.ok) { console.log(`Sent via ${result.channel}`, result.messageId) } else { console.error('Send failed:', result.error) } ```
 
 **logCommunicationEvent**(collectionId: string,
     body: LogCommunicationEventBody) → `Promise<AppendResult>`
@@ -6469,6 +6469,13 @@ Find proofs for a product (admin only). POST /admin/collection/:collectionId/pro
     productId: string,
     batchId: string) → `Promise<ProofResponse[]>`
 Get proofs for a batch (admin only). GET /admin/collection/:collectionId/product/:productId/batch/:batchId/proof
+
+**migrate**(collectionId: string,
+    productId: string,
+    proofId: string,
+    /** The destination product ID */
+    data: { targetProductId: string }) → `Promise<ProofResponse>`
+Migrate a proof to a different product within the same collection (admin only). Because the Firestore ledger document ID is `{productId}-{proofId}`, a proof cannot simply be re-assigned to another product by updating a field — the document must be re-keyed. This endpoint handles that atomically: 1. Reads the source ledger document (`{sourceProductId}-{proofId}`). 2. Writes a new document (`{targetProductId}-{proofId}`) with `productId` and `proofGroup` updated. The short `proofId` (nanoid) is unchanged. 3. Writes a migration history entry to the new document's `history` subcollection (snapshot of the original proof + migration metadata). 4. Copies all subcollections — `assets`, `attestations`, `history` — from the old document to the new one. 5. Deletes the old subcollections and then the old document. Repeated migrations are safe — each one appends a history record; no migration metadata is stored on the proof document itself. ```typescript const migrated = await proof.migrate('coll_123', 'prod_old', 'proof_abc', { targetProductId: 'prod_new', }) console.log(migrated.productId) // 'prod_new' ```
 
 ### qr
 

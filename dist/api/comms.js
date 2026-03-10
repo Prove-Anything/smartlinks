@@ -201,7 +201,7 @@ export var comms;
      * No broadcast record is created. The send is logged to the contact's
      * communication history with sourceType: 'transactional'.
      *
-     * POST /admin/collection/:collectionId/comm/send
+      * POST /admin/collection/:collectionId/comm.send
      *
      * @example
      * ```typescript
@@ -222,7 +222,7 @@ export var comms;
      * ```
      */
     async function sendTransactional(collectionId, body) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/send`;
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm.send`;
         return post(path, body);
     }
     comms.sendTransactional = sendTransactional;

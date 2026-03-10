@@ -265,7 +265,7 @@ export namespace comms {
    * No broadcast record is created. The send is logged to the contact's
    * communication history with sourceType: 'transactional'.
    *
-   * POST /admin/collection/:collectionId/comm/send
+    * POST /admin/collection/:collectionId/comm.send
    *
    * @example
    * ```typescript
@@ -289,7 +289,7 @@ export namespace comms {
     collectionId: string,
     body: TransactionalSendRequest
   ): Promise<TransactionalSendResult> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/send`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm.send`
     return post<TransactionalSendResult>(path, body)
   }
 

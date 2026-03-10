@@ -280,7 +280,7 @@ export interface SubscriptionsResolveResponse {
  * No broadcast record is created; the send is logged directly to the
  * contact's communication history with sourceType: 'transactional'.
  *
- * POST /admin/collection/:collectionId/comm/send
+ * POST /admin/collection/:collectionId/comm.send
  */
 export interface TransactionalSendRequest {
     /** CRM contact UUID */

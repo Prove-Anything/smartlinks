@@ -19,7 +19,7 @@ This guide covers the full communications surface of the SDK: transactional send
 
 Sends a single message to one contact using a template. No broadcast record is created. The send is logged to the contact's communication history with `sourceType: 'transactional'`.
 
-**Endpoint:** `POST /admin/collection/:collectionId/comm/send`
+**Endpoint:** `POST /admin/collection/:collectionId/comm.send`
 
 ```typescript
 import { comms } from '@proveanything/smartlinks'
