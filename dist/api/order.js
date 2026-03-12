@@ -287,9 +287,11 @@ export var order;
     }
     order.lookup = lookup;
     function validateOrderQuery(data) {
-        var _a;
-        if (((_a = data.query) === null || _a === void 0 ? void 0 : _a.item) && !data.query.item.productId) {
-            throw new Error('query.item.productId is required when using item-level order filters');
+        const query = data.query;
+        if (!query)
+            return;
+        if ((query.batchId || query.variantId) && !query.productId) {
+            throw new Error('query.productId is required when using query.batchId or query.variantId');
         }
     }
     /**
@@ -325,13 +327,22 @@ export var order;
      *   includeItems: true
      * })
      *
-     * // Find orders containing a specific product batch
+    * // Find orders containing a specific product batch
      * const batchOrders = await order.query('coll_123', {
      *   query: {
-     *     item: {
-     *       productId: 'prod_789',
-     *       batchId: 'BATCH-2024-001'
-     *     }
+    *     productId: 'prod_789',
+    *     batchId: 'BATCH-2024-001'
+    *   },
+    *   includeItems: true
+    * })
+    *
+    * // Find an order containing one of several specific items
+    * const matched = await order.query('coll_123', {
+    *   query: {
+    *     items: [
+    *       { itemType: 'tag', itemId: 'TAG001' },
+    *       { itemType: 'serial', itemId: 'SN12345' }
+    *     ]
      *   },
      *   includeItems: true
      * })

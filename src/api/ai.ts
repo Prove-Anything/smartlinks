@@ -1,6 +1,7 @@
 // src/api/ai.ts
 // AI endpoints: public and admin helpers
-import { post, request, del } from "../http"
+import { post, request, del, getBaseURL, getApiHeaders } from "../http"
+import { SmartlinksApiError } from "../types/error"
 import type {
   // Chat Completions types
   ContentPart,
@@ -8,12 +9,19 @@ import type {
   ToolCall,
   ChatMessage,
   ToolDefinition,
+  ResponseTool,
+  ResponseInputItem,
+  ResponsesRequest,
+  ResponsesResult,
+  ResponsesStreamEvent,
   ChatCompletionRequest,
   ChatCompletionChoice,
   ChatCompletionResponse,
   ChatCompletionChunk,
   // Model types
   AIModel,
+  AIModelListParams,
+  AIModelListResponse,
   // RAG types
   DocumentChunk,
   IndexDocumentRequest,
@@ -51,11 +59,18 @@ export type {
   ToolCall,
   ChatMessage,
   ToolDefinition,
+  ResponseTool,
+  ResponseInputItem,
+  ResponsesRequest,
+  ResponsesResult,
+  ResponsesStreamEvent,
   ChatCompletionRequest,
   ChatCompletionChoice,
   ChatCompletionResponse,
   ChatCompletionChunk,
   AIModel,
+  AIModelListParams,
+  AIModelListResponse,
   DocumentChunk,
   IndexDocumentRequest,
   IndexDocumentResponse,
@@ -82,12 +97,137 @@ export type {
   AISearchPhotosPhoto,
 }
 
-export namespace ai {
+function encodeQueryParams(params?: { [key: string]: string | undefined }): string {
+  if (!params) return ''
+  const query = new URLSearchParams()
+  Object.entries(params).forEach(([key, value]) => {
+    if (value) query.append(key, value)
+  })
+  const search = query.toString()
+  return search ? `?${search}` : ''
+}
+
+async function createSseStream<T>(path: string, body: any): Promise<AsyncIterable<T>> {
+  const baseURL = getBaseURL()
+  if (!baseURL) {
+    throw new Error('HTTP client is not initialized. Call initializeApi(...) first.')
+  }
+
+  const url = `${baseURL}${path}`
+  const headers: Record<string, string> = {
+    Accept: 'text/event-stream',
+    'Content-Type': 'application/json',
+    ...getApiHeaders(),
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    let responseBody: any
+    try {
+      responseBody = await response.json()
+    } catch {
+      responseBody = null
+    }
+
+    const code = response.status
+    const message = responseBody?.message || responseBody?.error?.message || `Request failed with status ${code}`
+    throw new SmartlinksApiError(`Error ${code}: ${message}`, code, {
+      code,
+      errorCode: responseBody?.error?.code || responseBody?.errorCode,
+      message,
+      details: responseBody?.error?.details || responseBody?.details,
+    }, url)
+  }
+
+  if (!response.body) {
+    throw new Error('Streaming response body is unavailable in this environment')
+  }
+
+  return parseSseStream<T>(response.body)
+}
+
+async function* parseSseStream<T>(stream: ReadableStream<Uint8Array>): AsyncIterable<T> {
+  const reader = stream.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let dataLines: string[] = []
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split(/\r?\n/)
+    buffer = lines.pop() || ''
+
+    for (const rawLine of lines) {
+      const line = rawLine.trimEnd()
+
+      if (!line) {
+        if (!dataLines.length) continue
+        const payload = dataLines.join('\n')
+        dataLines = []
+
+        if (payload === '[DONE]') return
+
+        try {
+          yield JSON.parse(payload) as T
+        } catch {
+          continue
+        }
+        continue
+      }
+
+      if (line.startsWith('data:')) {
+        dataLines.push(line.slice(5).trimStart())
+      }
+    }
+  }
+
+  if (dataLines.length) {
+    const payload = dataLines.join('\n')
+    if (payload !== '[DONE]') {
+      try {
+        yield JSON.parse(payload) as T
+      } catch {
+        return
+      }
+    }
+  }
+}
+
+namespace aiInternal {
   // ============================================================================
-  // Chat Completions API (OpenAI-compatible)
+  // Chat APIs
   // ============================================================================
 
   export namespace chat {
+    export namespace responses {
+      /**
+       * Create a Responses API request (streaming or non-streaming)
+       * @param collectionId - Collection identifier
+       * @param request - Responses API request
+       * @returns Responses API result or async iterable for streaming events
+       */
+      export async function create(
+        collectionId: string,
+        request: ResponsesRequest
+      ): Promise<ResponsesResult | AsyncIterable<ResponsesStreamEvent>> {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/v1/responses`
+
+        if (request.stream) {
+          return createSseStream<ResponsesStreamEvent>(path, request)
+        }
+
+        return post<ResponsesResult>(path, request)
+      }
+    }
+
     export namespace completions {
       /**
        * Create a chat completion (streaming or non-streaming)
@@ -102,8 +242,7 @@ export namespace ai {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/v1/chat/completions`
         
         if (request.stream) {
-          // TODO: Implement streaming via SSE
-          throw new Error('Streaming not yet implemented')
+          return createSseStream<ChatCompletionChunk>(path, request)
         }
         
         return post<ChatCompletionResponse>(path, request)
@@ -119,9 +258,12 @@ export namespace ai {
     /**
      * List available AI models
      */
-    export async function list(collectionId: string): Promise<{ object: 'list'; data: AIModel[] }> {
-      const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/models`
-      return request<{ object: 'list'; data: AIModel[] }>(path)
+    export async function list(collectionId: string, params?: AIModelListParams): Promise<AIModelListResponse> {
+      const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/models${encodeQueryParams({
+        provider: params?.provider,
+        capability: params?.capability,
+      })}`
+      return request<AIModelListResponse>(path)
     }
 
     /**
@@ -236,7 +378,7 @@ export namespace ai {
   // Public API (no authentication required)
   // ============================================================================
 
-  export namespace publicApi {
+  export namespace publicClient {
     /**
      * Chat with product assistant (RAG)
      */
@@ -413,4 +555,54 @@ export namespace ai {
     const path = `${base}/collection/${encodeURIComponent(collectionId)}/ai/postChat`
     return post<any>(path, params)
   }
+}
+
+export const ai = {
+  chat: {
+    responses: {
+      create: aiInternal.chat.responses.create,
+    },
+    completions: {
+      create: aiInternal.chat.completions.create,
+    },
+  },
+  models: {
+    list: aiInternal.models.list,
+    get: aiInternal.models.get,
+  },
+  rag: {
+    indexDocument: aiInternal.rag.indexDocument,
+    configureAssistant: aiInternal.rag.configureAssistant,
+  },
+  sessions: {
+    stats: aiInternal.sessions.stats,
+  },
+  rateLimit: {
+    reset: aiInternal.rateLimit.reset,
+  },
+  podcast: {
+    generate: aiInternal.podcast.generate,
+    getStatus: aiInternal.podcast.getStatus,
+  },
+  tts: {
+    generate: aiInternal.tts.generate,
+  },
+  public: {
+    chat: aiInternal.publicClient.chat,
+    getSession: aiInternal.publicClient.getSession,
+    clearSession: aiInternal.publicClient.clearSession,
+    getRateLimit: aiInternal.publicClient.getRateLimit,
+    getToken: aiInternal.publicClient.getToken,
+  },
+  voice: {
+    isSupported: aiInternal.voice.isSupported,
+    listen: aiInternal.voice.listen,
+    speak: aiInternal.voice.speak,
+  },
+  generateContent: aiInternal.generateContent,
+  generateImage: aiInternal.generateImage,
+  searchPhotos: aiInternal.searchPhotos,
+  uploadFile: aiInternal.uploadFile,
+  createCache: aiInternal.createCache,
+  postChat: aiInternal.postChat,
 }

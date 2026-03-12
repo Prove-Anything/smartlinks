@@ -1,6 +1,6 @@
 # SmartLinks AI
 
-Complete guide to using AI capabilities in the SmartLinks SDK, including chat completions, RAG (Retrieval-Augmented Generation), and voice integration.
+Build AI-powered SmartLinks experiences with a practical SDK guide for responses, chat, product assistants, streaming, voice, and real-world integration patterns.
 
 ---
 
@@ -9,6 +9,7 @@ Complete guide to using AI capabilities in the SmartLinks SDK, including chat co
 - [Overview](#overview)
 - [Quick Start](#quick-start)
 - [Authentication](#authentication)
+- [Responses API](#responses-api)
 - [Chat Completions](#chat-completions)
 - [RAG: Product Assistants](#rag-product-assistants)
 - [Voice Integration](#voice-integration)
@@ -25,12 +26,32 @@ Complete guide to using AI capabilities in the SmartLinks SDK, including chat co
 
 ## Overview
 
-SmartLinks AI provides four main capabilities:
+This guide is written for SDK users building real products, not backend operators. It focuses on the public SDK surface, recommended starting points, and examples you can adapt directly.
 
-1. **Chat Completions** - OpenAI-compatible text generation with streaming and tool calling
-2. **RAG (Retrieval-Augmented Generation)** - Document-grounded Q&A for product assistants
-3. **Voice Integration** - Voice-to-text and text-to-voice for hands-free interaction
-4. **Podcast Generation** - NotebookLM-style multi-voice conversational podcasts from documents
+### Start with the path that matches your job
+
+| If you want to... | Start here |
+|---|---|
+| Build a new AI workflow | Use [Responses API](#responses-api) |
+| Add compatibility with existing chat clients | Use [Chat Completions](#chat-completions) |
+| Build a product/manual assistant | Use [RAG: Product Assistants](#rag-product-assistants) |
+| Add spoken input/output | Use [Voice Integration](#voice-integration) |
+| Add progressive rendering | Use [Streaming Responses](#streaming-responses) or [Streaming Chat](#streaming-chat) |
+
+### Recommended starting points
+
+- New AI features: start with `ai.chat.responses.create(...)`
+- Product/manual assistants: start with `ai.public.chat(...)`
+- Existing OpenAI-style clients: use `ai.chat.completions.create(...)`
+- Real-time voice: use `ai.public.getToken(...)` and your provider's live client
+
+SmartLinks AI provides five main capabilities:
+
+1. **Responses API** - Preferred API for agentic workflows, multimodal inputs, and tool-driven responses
+2. **Chat Completions** - OpenAI-compatible text generation with streaming and tool calling
+3. **RAG (Retrieval-Augmented Generation)** - Document-grounded Q&A for product assistants
+4. **Voice Integration** - Voice-to-text and text-to-voice for hands-free interaction
+5. **Podcast Generation** - NotebookLM-style multi-voice conversational podcasts from documents
 
 ### Key Features
 
@@ -40,12 +61,17 @@ SmartLinks AI provides four main capabilities:
 - ✅ Session management for conversations
 - ✅ Voice input/output helpers
 - ✅ Tool/function calling support
+- ✅ OpenAI-style Responses API support
 - ✅ Document indexing and retrieval
 - ✅ Customizable assistant behavior
 
 ---
 
 ## Quick Start
+
+If you're only reading one section, start here. The three snippets below cover the most common public SDK use cases.
+
+### 1. Generate a response
 
 ```typescript
 import { initializeApi, ai } from '@proveanything/smartlinks';
@@ -56,15 +82,44 @@ initializeApi({
   apiKey: process.env.SMARTLINKS_API_KEY // Required for admin endpoints
 });
 
-// Simple chat completion
-const response = await ai.chat.completions.create('my-collection', {
+// Preferred: create a response
+const response = await ai.chat.responses.create('my-collection', {
   model: 'google/gemini-2.5-flash',
-  messages: [
-    { role: 'user', content: 'Hello!' }
-  ]
+  input: 'Summarize the key safety steps for descaling a coffee maker.'
 });
 
-console.log(response.choices[0].message.content);
+console.log(response.output_text);
+```
+
+### 2. Build a product assistant
+
+```typescript
+import { initializeApi, ai } from '@proveanything/smartlinks';
+
+initializeApi({ baseURL: 'https://smartlinks.app/api/v1' });
+
+const answer = await ai.public.chat('my-collection', {
+  productId: 'coffee-maker-deluxe',
+  userId: 'user-123',
+  message: 'How do I descale this machine?'
+});
+
+console.log(answer.message);
+```
+
+### 3. Stream output into your UI
+
+```typescript
+const stream = await ai.chat.responses.create('my-collection', {
+  input: 'Write a launch checklist for a new product page.',
+  stream: true
+});
+
+for await (const event of stream) {
+  if (event.type === 'response.output_text.delta') {
+    updateUi(event.delta);
+  }
+}
 ```
 
 ---
@@ -90,7 +145,7 @@ Public endpoints don't require an API key but are rate-limited by `userId`:
 
 ```typescript
 // No API key needed
-const response = await ai.publicApi.chat({
+const response = await ai.public.chat('my-collection', {
   productId: 'coffee-maker',
   userId: 'user-123',
   message: 'How do I clean this?'
@@ -99,9 +154,108 @@ const response = await ai.publicApi.chat({
 
 ---
 
+## Responses API
+
+The Responses API is the recommended starting point for new integrations. Use it when you want a single endpoint for structured input, tool use, and streaming output.
+
+### Basic Response
+
+```typescript
+const response = await ai.chat.responses.create('my-collection', {
+  model: 'google/gemini-2.5-flash',
+  input: 'Write a friendly two-sentence welcome for a product assistant.'
+});
+
+console.log(response.output_text);
+```
+
+### Multimessage Input
+
+```typescript
+const response = await ai.chat.responses.create('my-collection', {
+  model: 'google/gemini-2.5-flash',
+  input: [
+    {
+      role: 'system',
+      content: [
+        { type: 'input_text', text: 'You are a concise support assistant.' }
+      ]
+    },
+    {
+      role: 'user',
+      content: [
+        { type: 'input_text', text: 'Give me three troubleshooting steps for a grinder that will not start.' }
+      ]
+    }
+  ]
+});
+
+console.log(response.output_text);
+```
+
+### Streaming Responses
+
+When you pass `stream: true`, the SDK returns an `AsyncIterable` of SSE events instead of a final JSON object. You do not need to parse raw SSE frames yourself — just iterate with `for await...of`.
+
+```typescript
+const result = await ai.chat.responses.create('my-collection', {
+  input: 'Summarize the manual',
+  stream: true
+});
+
+for await (const event of result) {
+  if (event.type === 'response.output_text.delta') {
+    process.stdout.write(event.delta);
+  }
+}
+```
+
+If you omit `stream: true`, the same method returns the final `ResponsesResult` object instead.
+
+```typescript
+const stream = await ai.chat.responses.create('my-collection', {
+  model: 'google/gemini-2.5-flash',
+  input: 'Explain how to descale an espresso machine step by step.',
+  stream: true
+});
+
+for await (const event of stream) {
+  if (event.type === 'response.output_text.delta') {
+    process.stdout.write(event.delta);
+  }
+}
+```
+
+### Tool Calling
+
+```typescript
+const response = await ai.chat.responses.create('my-collection', {
+  model: 'google/gemini-2.5-flash',
+  input: 'What is the weather in Paris?',
+  tools: [
+    {
+      type: 'function',
+      name: 'get_weather',
+      description: 'Get the current weather for a city',
+      parameters: {
+        type: 'object',
+        properties: {
+          location: { type: 'string' }
+        },
+        required: ['location']
+      }
+    }
+  ]
+});
+
+console.log(response.output);
+```
+
+---
+
 ## Chat Completions
 
-OpenAI-compatible chat completions with streaming and tool calling support.
+OpenAI-compatible chat completions with streaming and tool calling support. Use this for compatibility with existing Chat Completions integrations; prefer the Responses API for new agentic features.
 
 ### Basic Chat
 
@@ -121,6 +275,12 @@ console.log(response.choices[0].message.content);
 ### Streaming Chat
 
 Stream responses in real-time for better UX:
+
+- Set `stream: true`
+- The SDK returns an `AsyncIterable<ChatCompletionChunk>`
+- Iterate over chunks with `for await...of`
+- Read incremental text from `chunk.choices[0]?.delta?.content`
+- If `stream` is omitted or `false`, the method returns the normal `ChatCompletionResponse`
 
 ```typescript
 const stream = await ai.chat.completions.create('my-collection', {
@@ -188,6 +348,15 @@ if (toolCall) {
 // List all available models
 const models = await ai.models.list('my-collection');
 
+// Or filter by provider / capability
+const openAiModels = await ai.models.list('my-collection', {
+  provider: 'openai'
+});
+
+const visionModels = await ai.models.list('my-collection', {
+  capability: 'vision'
+});
+
 models.data.forEach(model => {
   console.log(`${model.name}`);
   console.log(`  Provider: ${model.provider}`);
@@ -200,13 +369,18 @@ const model = await ai.models.get('my-collection', 'google/gemini-2.5-flash');
 console.log(model.capabilities); // ['text', 'vision', 'audio', 'code']
 ```
 
+Use `ai.models.list(collectionId)` as the source of truth for what your collection can use at runtime. The public docs provide recommendations, but actual availability depends on the SmartLinks model catalog exposed to that collection.
+
 **Recommended Models:**
 
 | Model | Use Case | Speed | Cost |
 |-------|----------|-------|------|
-| `google/gemini-2.5-flash-lite` | Simple Q&A | Fastest | Lowest |
-| `google/gemini-2.5-flash` | General purpose | Fast | Low |
-| `google/gemini-2.5-pro` | Complex reasoning | Slower | Higher |
+| `openai/gpt-5.4` | Default for new agentic and structured-output workflows | Balanced | Medium |
+| `openai/gpt-5-mini` | Lower-cost general purpose and JSON tasks | Fast | Low |
+| `google/gemini-2.5-flash` | Fast multimodal and cost-sensitive general use | Fast | Low |
+| `google/gemini-2.5-pro` | Complex reasoning and heavier multimodal tasks | Slower | Higher |
+
+If you want a safe default for most new work, start with `openai/gpt-5.4`. If you want a lower-cost fallback, use `openai/gpt-5-mini` or `google/gemini-2.5-flash` depending on your latency and pricing goals.
 
 ---
 
@@ -268,7 +442,7 @@ Users can chat with the product assistant without authentication:
 
 ```typescript
 // First question
-const response = await ai.publicApiApi.chat('my-collection', {
+const response = await ai.public.chat('my-collection', {
   productId: 'coffee-maker-deluxe',
   userId: 'user-123',
   message: 'How do I descale my coffee maker?'
@@ -328,7 +502,30 @@ console.log('Rate-limited users:', stats.rateLimitedUsers);
 
 Enable voice input and output for hands-free interaction.
 
+### Voice Patterns
+
+The SDK supports three practical voice patterns:
+
+| Pattern | Best For | SDK Building Blocks |
+|---------|----------|---------------------|
+| Voice → Text → AI → Text | Manual helper Q&A, troubleshooting steps | `ai.voice.listen()` + `ai.public.chat()` |
+| Voice → Text → AI → Voice | Hands-free assistants, accessibility | `ai.voice.listen()` + `ai.public.chat()` + `ai.voice.speak()` or `ai.tts.generate()` |
+| Real-time Voice | Low-latency spoken conversation | `ai.public.getToken()` + Gemini Live client |
+
+### Current SDK Support
+
+- `ai.voice.listen()` and `ai.voice.speak()` are browser helpers built on the Web Speech APIs.
+- `ai.public.getToken()` generates ephemeral tokens for Gemini Live sessions.
+- `ai.tts.generate()` supports server-side text-to-speech generation.
+- The SDK does not currently expose a first-class transcription endpoint like Whisper; if you need that flow, implement it as your own backend endpoint and feed the transcribed text into `ai.public.chat()` or `ai.chat.responses.create()`.
+
+### Recommended Approach
+
+For product assistants and RAG-backed support, start with Voice → Text → AI → Text/Voice. It gives you the best control over retrieval, session history, and cost. Use Gemini Live when low-latency spoken conversation matters more than deep document grounding.
+
 ### Browser Voice Helpers
+
+These helpers are browser-only and rely on native speech recognition / speech synthesis support.
 
 ```typescript
 // Check if voice is supported
@@ -396,7 +593,7 @@ class ProductVoiceAssistant {
   }
 
   async getRemainingQuestions(): Promise<number> {
-    const status = await ai.publicApiApi.getRateLimit(this.collectionId, this.userId);
+    const status = await ai.public.getRateLimit(this.collectionId, this.userId);
     return status.remaining;
   }
 }
@@ -417,9 +614,11 @@ console.log(`${remaining} questions remaining`);
 
 Generate ephemeral tokens for Gemini Live (multimodal voice):
 
+Use this path for real-time voice sessions. The SDK only issues the short-lived token; the actual live connection is made with the provider client.
+
 ```typescript
 // Generate token for voice session
-const token = await ai.publicApi.getToken('my-collection', {
+const token = await ai.public.getToken('my-collection', {
   settings: {
     ttl: 3600,        // 1 hour
     voice: 'alloy',
@@ -433,6 +632,17 @@ console.log('Expires at:', new Date(token.expiresAt));
 // Use token with Gemini Live API
 // (See Google's Gemini documentation)
 ```
+
+### Voice + RAG Guidance
+
+For document-grounded assistants, prefer this pattern:
+
+1. Capture voice with `ai.voice.listen()` or your own transcription flow.
+2. Send the transcribed text to `ai.public.chat()`.
+3. Render the text response for readability.
+4. Optionally speak the answer with `ai.voice.speak()` or `ai.tts.generate()`.
+
+This is usually a better fit for manuals and procedural guidance than trying to use a live voice session as the primary retrieval layer.
 
 ---
 
@@ -917,7 +1127,7 @@ const audioBlob = await ai.tts.generate('my-collection', {
 
 ### Public Endpoints
 
-#### `ai.publicApi.chat(collectionId, request)`
+#### `ai.public.chat(collectionId, request)`
 
 Chat with product assistant (no auth required).
 
@@ -930,7 +1140,7 @@ Chat with product assistant (no auth required).
 
 ---
 
-#### `ai.publicApi.getSession(collectionId, sessionId)`
+#### `ai.public.getSession(collectionId, sessionId)`
 
 Get conversation history.
 
@@ -938,7 +1148,7 @@ Get conversation history.
 
 ---
 
-#### `ai.publicApi.clearSession(collectionId, sessionId)`
+#### `ai.public.clearSession(collectionId, sessionId)`
 
 Clear conversation history.
 
@@ -946,7 +1156,7 @@ Clear conversation history.
 
 ---
 
-#### `ai.publicApi.getRateLimit(collectionId, userId)`
+#### `ai.public.getRateLimit(collectionId, userId)`
 
 Check rate limit status.
 
@@ -954,7 +1164,7 @@ Check rate limit status.
 
 ---
 
-#### `ai.publicApi.getToken(collectionId, request)`
+#### `ai.public.getToken(collectionId, request)`
 
 Generate ephemeral token for Gemini Live.
 
@@ -985,7 +1195,7 @@ async function createProductFAQ() {
   });
 
   // 3. Answer user questions
-  const answer = await ai.publicApi.chat(collectionId, {
+  const answer = await ai.public.chat(collectionId, {
     productId,
     userId: 'user-123',
     message: 'How do I make espresso?'
@@ -1032,7 +1242,7 @@ async function chatConversation() {
   const productId = 'coffee-maker-deluxe';
 
   // Question 1
-  const a1 = await ai.publicApi.chat(collectionId, {
+  const a1 = await ai.public.chat(collectionId, {
     productId,
     userId,
     message: 'How do I clean the machine?',
@@ -1041,7 +1251,7 @@ async function chatConversation() {
   console.log('A1:', a1.message);
 
   // Question 2 (references previous context)
-  const a2 = await ai.publicApi.chat(collectionId, {
+  const a2 = await ai.public.chat(collectionId, {
     productId,
     userId,
     message: 'How often should I do that?',
@@ -1050,7 +1260,7 @@ async function chatConversation() {
   console.log('A2:', a2.message);
 
   // Get full history
-  const session = await ai.publicApi.getSession(collectionId, sessionId);
+  const session = await ai.public.getSession(collectionId, sessionId);
   console.log('Full conversation:', session.messages);
 }
 ```
@@ -1075,7 +1285,7 @@ export function useProductAssistant(
     setError(null);
 
     try {
-      const response = await ai.publicApi.chat(collectionId, {
+      const response = await ai.public.chat(collectionId, {
         productId,
         userId,
         message
@@ -1251,7 +1461,7 @@ import { SmartLinksAIError } from '@proveanything/smartlinks';
 
 async function robustChat() {
   try {
-    const response = await ai.publicApi.chat('my-collection', {
+    const response = await ai.public.chat('my-collection', {
       productId: 'coffee-maker',
       userId: 'user-123',
       message: 'Help!'
@@ -1295,7 +1505,7 @@ async function chatWithRetry(
 
   while (retries < maxRetries) {
     try {
-      return await ai.publicApi.chat('my-collection', request);
+      return await ai.public.chat('my-collection', request);
     } catch (error) {
       if (error instanceof SmartLinksAIError && error.isRateLimitError()) {
         if (retries === maxRetries - 1) throw error;
@@ -1345,7 +1555,7 @@ X-RateLimit-Reset: 1707300000000
 
 ```typescript
 // Check rate limit status before making requests
-const status = await ai.publicApi.getRateLimit('my-collection', 'user-123');
+const status = await ai.public.getRateLimit('my-collection', 'user-123');
 
 console.log('Used:', status.used);
 console.log('Remaining:', status.remaining);
@@ -1353,7 +1563,7 @@ console.log('Resets at:', new Date(status.resetAt));
 
 if (status.remaining > 0) {
   // Safe to make request
-  await ai.publicApi.chat(/* ... */);
+  await ai.public.chat(/* ... */);
 } else {
   // Show user when they can ask again
   console.log('Rate limit reached. Try again at:', status.resetAt);
@@ -1375,23 +1585,27 @@ console.log('Rate limit reset for user-123');
 ### 1. Choose the Right Model
 
 ```typescript
-// For simple Q&A (fast, cheap)
-await ai.chat.completions.create('my-collection', {
-  model: 'google/gemini-2.5-flash-lite',
-  messages: [...]
+// For most new workflows (recommended default)
+await ai.chat.responses.create('my-collection', {
+  model: 'openai/gpt-5.4',
+  input: 'Create a concise onboarding checklist.'
 });
 
-// For general use (balanced)
+// For lower-cost structured or JSON-oriented work
+await ai.chat.responses.create('my-collection', {
+  model: 'openai/gpt-5-mini',
+  input: 'Return a color palette as JSON.'
+});
+
+// For fast multimodal or cost-sensitive general use
 await ai.chat.completions.create('my-collection', {
   model: 'google/gemini-2.5-flash',
   messages: [...]
 });
 
-// For complex reasoning (powerful)
-await ai.chat.completions.create('my-collection', {
-  model: 'google/gemini-2.5-pro',
-  messages: [...]
-});
+// When you need the actual available catalog for this collection
+const available = await ai.models.list('my-collection');
+console.log(available.data.map(model => model.id));
 ```
 
 ### 2. Use Streaming for Long Responses
@@ -1443,7 +1657,7 @@ Show clear feedback to users:
 
 ```typescript
 try {
-  await ai.publicApi.chat('my-collection', {...});
+  await ai.public.chat('my-collection', {...});
 } catch (error) {
   if (error instanceof SmartLinksAIError && error.isRateLimitError()) {
     const resetTime = new Date(error.resetAt!);
@@ -1649,7 +1863,7 @@ interface AIContentResponse {
 
   /**
    * Pre-built RAG configuration. When provided, the assistant can use
-   * SL.ai.public.chat() to ground answers in indexed product documents.
+  * SL.ai.public.chat() to ground answers in indexed product documents.
    */
   ragHint?: {
     /** The product ID whose indexed documents should be queried */
@@ -1669,7 +1883,7 @@ interface AIContentResponse {
   /**
    * How the assistant should use this content:
    * - 'context' (default): inject text into the system prompt
-   * - 'rag': use ragHint to query indexed docs via SL.ai.public.chat()
+  * - 'rag': use ragHint to query indexed docs via SL.ai.public.chat()
    * - 'hybrid': inject text as context AND ground answers via RAG
    */
   strategy?: 'context' | 'rag' | 'hybrid';

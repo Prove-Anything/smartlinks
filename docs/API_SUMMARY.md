@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.7.7  |  Generated: 2026-03-12T15:08:09.181Z
+Version: 1.7.10  |  Generated: 2026-03-12T18:05:02.102Z
 
 This is a concise summary of all available API functions and types.
 
@@ -431,6 +431,93 @@ interface ToolDefinition {
 }
 ```
 
+**ResponseTool** (interface)
+```typescript
+interface ResponseTool {
+  type: string
+  name?: string
+  description?: string
+  parameters?: Record<string, any>
+  [key: string]: any
+}
+```
+
+**ResponseInputItem** (interface)
+```typescript
+interface ResponseInputItem {
+  role?: 'system' | 'user' | 'assistant' | 'function' | 'tool'
+  type?: string
+  content?: string | ContentPart[]
+  name?: string
+  function_call?: FunctionCall
+  tool_calls?: ToolCall[]
+  tool_call_id?: string
+  [key: string]: any
+}
+```
+
+**ResponsesRequest** (interface)
+```typescript
+interface ResponsesRequest {
+  model?: string
+  input?: string | ResponseInputItem[]
+  messages?: ResponseInputItem[]
+  previous_response_id?: string
+  conversation?: string | Record<string, any>
+  tools?: Array<ToolDefinition | ResponseTool>
+  tool_choice?:
+  | 'none'
+  | 'auto'
+  | 'required'
+  | { type: 'function'; function: { name: string } }
+  | { type: 'function'; name: string }
+  stream?: boolean
+  temperature?: number
+  max_output_tokens?: number
+  store?: boolean
+  instructions?: string
+  include?: string[]
+  reasoning?: Record<string, any>
+  parallel_tool_calls?: boolean
+  truncation?: 'auto' | 'disabled'
+  text?: Record<string, any>
+  metadata?: Record<string, string>
+  prompt_cache_key?: string
+}
+```
+
+**ResponsesResult** (interface)
+```typescript
+interface ResponsesResult {
+  id: string
+  object: 'response'
+  created: number
+  model: string
+  status?: 'completed' | 'failed' | 'in_progress' | 'queued' | 'cancelled' | 'incomplete'
+  output: any[]
+  output_text: string
+  usage: {
+  input_tokens: number
+  output_tokens: number
+  total_tokens: number
+  }
+  error?: any
+  incomplete_details?: { reason?: 'max_output_tokens' | 'content_filter' } | null
+  previous_response_id?: string | null
+  conversation?: unknown
+  provider: 'openai'
+  responseTime: number
+}
+```
+
+**ResponsesStreamEvent** (interface)
+```typescript
+interface ResponsesStreamEvent {
+  type: string
+  [key: string]: any
+}
+```
+
 **ChatCompletionRequest** (interface)
 ```typescript
 interface ChatCompletionRequest {
@@ -506,6 +593,22 @@ interface AIModel {
   }
   features: string[]
   recommended?: string
+}
+```
+
+**AIModelListParams** (interface)
+```typescript
+interface AIModelListParams {
+  provider?: 'gemini' | 'openai'
+  capability?: 'text' | 'vision' | 'audio' | 'code'
+}
+```
+
+**AIModelListResponse** (interface)
+```typescript
+interface AIModelListResponse {
+  object: 'list'
+  data: AIModel[]
 }
 ```
 
@@ -4400,38 +4503,34 @@ interface GetOrderItemsResponse {
 }
 ```
 
-**QueryOrderItemFilter** (interface)
-```typescript
-interface QueryOrderItemFilter {
-  productId: string
-  batchId?: string
-  variantId?: string
-}
-```
-
-**QueryOrdersFilter** (interface)
-```typescript
-interface QueryOrdersFilter {
-  status?: string
-  orderRef?: string
-  customerId?: string
-  createdAfter?: string             // ISO 8601 date
-  createdBefore?: string            // ISO 8601 date
-  updatedAfter?: string             // ISO 8601 date
-  updatedBefore?: string            // ISO 8601 date
-  minItemCount?: number
-  maxItemCount?: number
-  metadata?: Record<string, any>
-  item?: QueryOrderItemFilter
-  sortBy?: string
-  sortOrder?: 'asc' | 'desc'
-}
-```
-
 **QueryOrdersRequest** (interface)
 ```typescript
 interface QueryOrdersRequest {
-  query?: QueryOrdersFilter
+  query?: {
+  status?: string
+  orderRef?: string
+  customerId?: string
+  createdAfter?: string           // ISO 8601 date
+  createdBefore?: string          // ISO 8601 date
+  updatedAfter?: string           // ISO 8601 date
+  updatedBefore?: string          // ISO 8601 date
+  minItemCount?: number
+  maxItemCount?: number
+  productId?: string
+  batchId?: string
+  variantId?: string
+  itemType?: 'tag' | 'proof' | 'serial'
+  itemId?: string
+  itemCollectionId?: string
+  itemMetadata?: Record<string, any>
+  items?: Array<{
+  itemType: 'tag' | 'proof' | 'serial'
+  itemId: string
+  }>
+  metadata?: Record<string, any>
+  sortBy?: string
+  sortOrder?: 'asc' | 'desc'
+  }
   limit?: number                    // Optional: Max results (default: 100)
   offset?: number                   // Optional: Pagination offset (default: 0)
   includeItems?: boolean            // Optional: Include items array (default: false)
@@ -5286,90 +5385,6 @@ type AccountInfoResponse = {
 
 ## API Functions
 
-### ai
-
-**create**(collectionId: string,
-        request: ChatCompletionRequest) → `Promise<ChatCompletionResponse | AsyncIterable<ChatCompletionChunk>>`
-Create a chat completion (streaming or non-streaming)
-
-**list**(collectionId: string) → `Promise<`
-List available AI models
-
-**get**(collectionId: string, modelId: string) → `Promise<AIModel>`
-Get specific model information
-
-**indexDocument**(collectionId: string,
-      request: IndexDocumentRequest) → `Promise<IndexDocumentResponse>`
-Index a document for RAG
-
-**configureAssistant**(collectionId: string,
-      request: ConfigureAssistantRequest) → `Promise<ConfigureAssistantResponse>`
-Configure AI assistant behavior
-
-**stats**(collectionId: string) → `Promise<SessionStatistics>`
-Get session statistics
-
-**reset**(collectionId: string, userId: string) → `Promise<`
-Reset rate limit for a user
-
-**generate**(collectionId: string,
-      request: GeneratePodcastRequest) → `Promise<GeneratePodcastResponse>`
-Generate a NotebookLM-style conversational podcast from product documents
-
-**getStatus**(collectionId: string, podcastId: string) → `Promise<PodcastStatus>`
-Get podcast generation status
-
-**generate**(collectionId: string,
-      request: TTSRequest) → `Promise<Blob>`
-Generate text-to-speech audio
-
-**chat**(collectionId: string,
-      request: PublicChatRequest) → `Promise<PublicChatResponse>`
-Chat with product assistant (RAG)
-
-**getSession**(collectionId: string, sessionId: string) → `Promise<Session>`
-Get session history
-
-**clearSession**(collectionId: string, sessionId: string) → `Promise<`
-Clear session history
-
-**getRateLimit**(collectionId: string, userId: string) → `Promise<RateLimitStatus>`
-Check rate limit status
-
-**getToken**(collectionId: string,
-      request: EphemeralTokenRequest) → `Promise<EphemeralTokenResponse>`
-Generate ephemeral token for Gemini Live
-
-**isSupported**() → `boolean`
-Check if voice is supported in browser
-
-**listen**(language = 'en-US') → `Promise<string>`
-Listen for voice input
-
-**speak**(text: string, options?: { voice?: string; rate?: number }) → `Promise<void>`
-Speak text
-
-**generateContent**(collectionId: string,
-    params: AIGenerateContentRequest,
-    admin: boolean = true) → `Promise<any>`
-Generate text/content via AI (admin)
-
-**generateImage**(collectionId: string, params: AIGenerateImageRequest) → `Promise<any>`
-Generate an image via AI (admin)
-
-**searchPhotos**(collectionId: string,
-    params: AISearchPhotosRequest) → `Promise<AISearchPhotosPhoto[]>`
-Search stock photos or similar via AI (admin)
-
-**uploadFile**(collectionId: string, params: any) → `Promise<any>`
-Upload a file for AI usage (admin). Pass FormData for binary uploads.
-
-**createCache**(collectionId: string, params: any) → `Promise<any>`
-Create or warm a cache for AI (admin)
-
-**postChat**(collectionId: string, params: any, admin: boolean = true) → `Promise<any>`
-Post a chat message to the AI (admin or public)
-
 ### app
 
 **create**(collectionId: string,
@@ -5837,6 +5852,94 @@ Get all tags/codes assigned to a specific batch. Shows which claim set codes hav
 
 **appendBulk**(collectionId: string,
     body: BroadcastAppendBulkBody) → `Promise<AppendBulkResult>`
+
+### chat
+
+**create**(collectionId: string,
+        request: ResponsesRequest) → `Promise<ResponsesResult | AsyncIterable<ResponsesStreamEvent>>`
+Create a Responses API request (streaming or non-streaming)
+
+**create**(collectionId: string,
+        request: ChatCompletionRequest) → `Promise<ChatCompletionResponse | AsyncIterable<ChatCompletionChunk>>`
+Create a chat completion (streaming or non-streaming)
+
+**list**(collectionId: string, params?: AIModelListParams) → `Promise<AIModelListResponse>`
+List available AI models
+
+**get**(collectionId: string, modelId: string) → `Promise<AIModel>`
+Get specific model information
+
+**indexDocument**(collectionId: string,
+      request: IndexDocumentRequest) → `Promise<IndexDocumentResponse>`
+Index a document for RAG
+
+**configureAssistant**(collectionId: string,
+      request: ConfigureAssistantRequest) → `Promise<ConfigureAssistantResponse>`
+Configure AI assistant behavior
+
+**stats**(collectionId: string) → `Promise<SessionStatistics>`
+Get session statistics
+
+**reset**(collectionId: string, userId: string) → `Promise<`
+Reset rate limit for a user
+
+**generate**(collectionId: string,
+      request: GeneratePodcastRequest) → `Promise<GeneratePodcastResponse>`
+Generate a NotebookLM-style conversational podcast from product documents
+
+**getStatus**(collectionId: string, podcastId: string) → `Promise<PodcastStatus>`
+Get podcast generation status
+
+**generate**(collectionId: string,
+      request: TTSRequest) → `Promise<Blob>`
+Generate text-to-speech audio
+
+**chat**(collectionId: string,
+      request: PublicChatRequest) → `Promise<PublicChatResponse>`
+Chat with product assistant (RAG)
+
+**getSession**(collectionId: string, sessionId: string) → `Promise<Session>`
+Get session history
+
+**clearSession**(collectionId: string, sessionId: string) → `Promise<`
+Clear session history
+
+**getRateLimit**(collectionId: string, userId: string) → `Promise<RateLimitStatus>`
+Check rate limit status
+
+**getToken**(collectionId: string,
+      request: EphemeralTokenRequest) → `Promise<EphemeralTokenResponse>`
+Generate ephemeral token for Gemini Live
+
+**isSupported**() → `boolean`
+Check if voice is supported in browser
+
+**listen**(language = 'en-US') → `Promise<string>`
+Listen for voice input
+
+**speak**(text: string, options?: { voice?: string; rate?: number }) → `Promise<void>`
+Speak text
+
+**generateContent**(collectionId: string,
+    params: AIGenerateContentRequest,
+    admin: boolean = true) → `Promise<any>`
+Generate text/content via AI (admin)
+
+**generateImage**(collectionId: string, params: AIGenerateImageRequest) → `Promise<any>`
+Generate an image via AI (admin)
+
+**searchPhotos**(collectionId: string,
+    params: AISearchPhotosRequest) → `Promise<AISearchPhotosPhoto[]>`
+Search stock photos or similar via AI (admin)
+
+**uploadFile**(collectionId: string, params: any) → `Promise<any>`
+Upload a file for AI usage (admin). Pass FormData for binary uploads.
+
+**createCache**(collectionId: string, params: any) → `Promise<any>`
+Create or warm a cache for AI (admin)
+
+**postChat**(collectionId: string, params: any, admin: boolean = true) → `Promise<any>`
+Post a chat message to the AI (admin or public)
 
 ### claimSet
 
@@ -6323,7 +6426,7 @@ Find all orders containing specific items (tags, proofs, or serial numbers). Use
 
 **query**(collectionId: string,
     data: QueryOrdersRequest) → `Promise<QueryOrdersResponse>`
-Advanced query for orders with order-level and item-level filtering. More powerful than the basic list() function. ```typescript // Find pending orders created in January 2026 const result = await order.query('coll_123', { query: { status: 'pending', createdAfter: '2026-01-01T00:00:00Z', createdBefore: '2026-02-01T00:00:00Z', sortBy: 'createdAt', sortOrder: 'desc' }, limit: 50 }) // Find orders with specific metadata and item count const highPriority = await order.query('coll_123', { query: { metadata: { priority: 'high' }, minItemCount: 10, maxItemCount: 100 }, includeItems: true }) // Find orders containing a specific product batch const batchOrders = await order.query('coll_123', { query: { item: { productId: 'prod_789', batchId: 'BATCH-2024-001' } }, includeItems: true }) ```
+Advanced query for orders with order-level and item-level filtering. More powerful than the basic list() function. ```typescript // Find pending orders created in January 2026 const result = await order.query('coll_123', { query: { status: 'pending', createdAfter: '2026-01-01T00:00:00Z', createdBefore: '2026-02-01T00:00:00Z', sortBy: 'createdAt', sortOrder: 'desc' }, limit: 50 }) // Find orders with specific metadata and item count const highPriority = await order.query('coll_123', { query: { metadata: { priority: 'high' }, minItemCount: 10, maxItemCount: 100 }, includeItems: true }) // Find orders containing a specific product batch const batchOrders = await order.query('coll_123', { query: { productId: 'prod_789', batchId: 'BATCH-2024-001' }, includeItems: true }) // Find an order containing one of several specific items const matched = await order.query('coll_123', { query: { items: [ { itemType: 'tag', itemId: 'TAG001' }, { itemType: 'serial', itemId: 'SN12345' } ] }, includeItems: true }) ```
 
 **reports**(collectionId: string,
     params?: ReportsParams) → `Promise<ReportsResponse>`

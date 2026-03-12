@@ -50,6 +50,83 @@ export interface ToolDefinition {
         };
     };
 }
+/** Additional/native tool definition accepted by the Responses API. */
+export interface ResponseTool {
+    type: string;
+    name?: string;
+    description?: string;
+    parameters?: Record<string, any>;
+    [key: string]: any;
+}
+/** Structured input item accepted by the Responses API. */
+export interface ResponseInputItem {
+    role?: 'system' | 'user' | 'assistant' | 'function' | 'tool';
+    type?: string;
+    content?: string | ContentPart[];
+    name?: string;
+    function_call?: FunctionCall;
+    tool_calls?: ToolCall[];
+    tool_call_id?: string;
+    [key: string]: any;
+}
+/** Request for the Responses API. */
+export interface ResponsesRequest {
+    model?: string;
+    input?: string | ResponseInputItem[];
+    messages?: ResponseInputItem[];
+    previous_response_id?: string;
+    conversation?: string | Record<string, any>;
+    tools?: Array<ToolDefinition | ResponseTool>;
+    tool_choice?: 'none' | 'auto' | 'required' | {
+        type: 'function';
+        function: {
+            name: string;
+        };
+    } | {
+        type: 'function';
+        name: string;
+    };
+    stream?: boolean;
+    temperature?: number;
+    max_output_tokens?: number;
+    store?: boolean;
+    instructions?: string;
+    include?: string[];
+    reasoning?: Record<string, any>;
+    parallel_tool_calls?: boolean;
+    truncation?: 'auto' | 'disabled';
+    text?: Record<string, any>;
+    metadata?: Record<string, string>;
+    prompt_cache_key?: string;
+}
+/** Response from the Responses API. */
+export interface ResponsesResult {
+    id: string;
+    object: 'response';
+    created: number;
+    model: string;
+    status?: 'completed' | 'failed' | 'in_progress' | 'queued' | 'cancelled' | 'incomplete';
+    output: any[];
+    output_text: string;
+    usage: {
+        input_tokens: number;
+        output_tokens: number;
+        total_tokens: number;
+    };
+    error?: any;
+    incomplete_details?: {
+        reason?: 'max_output_tokens' | 'content_filter';
+    } | null;
+    previous_response_id?: string | null;
+    conversation?: unknown;
+    provider: 'openai';
+    responseTime: number;
+}
+/** Generic SSE event emitted by the Responses API. */
+export interface ResponsesStreamEvent {
+    type: string;
+    [key: string]: any;
+}
 /** Chat completion request */
 export interface ChatCompletionRequest {
     messages: ChatMessage[];
@@ -119,6 +196,16 @@ export interface AIModel {
     };
     features: string[];
     recommended?: string;
+}
+/** Filter parameters when listing models. */
+export interface AIModelListParams {
+    provider?: 'gemini' | 'openai';
+    capability?: 'text' | 'vision' | 'audio' | 'code';
+}
+/** Model list response. */
+export interface AIModelListResponse {
+    object: 'list';
+    data: AIModel[];
 }
 /** Document chunk with embedding */
 export interface DocumentChunk {

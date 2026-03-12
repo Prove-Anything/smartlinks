@@ -252,13 +252,22 @@ export declare namespace order {
      *   includeItems: true
      * })
      *
-     * // Find orders containing a specific product batch
+    * // Find orders containing a specific product batch
      * const batchOrders = await order.query('coll_123', {
      *   query: {
-     *     item: {
-     *       productId: 'prod_789',
-     *       batchId: 'BATCH-2024-001'
-     *     }
+    *     productId: 'prod_789',
+    *     batchId: 'BATCH-2024-001'
+    *   },
+    *   includeItems: true
+    * })
+    *
+    * // Find an order containing one of several specific items
+    * const matched = await order.query('coll_123', {
+    *   query: {
+    *     items: [
+    *       { itemType: 'tag', itemId: 'TAG001' },
+    *       { itemType: 'serial', itemId: 'SN12345' }
+    *     ]
      *   },
      *   includeItems: true
      * })

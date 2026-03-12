@@ -1,7 +1,16 @@
-import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto } from "../types/ai";
-export type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto, };
-export declare namespace ai {
+import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto } from "../types/ai";
+export type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto, };
+declare namespace aiInternal {
     namespace chat {
+        namespace responses {
+            /**
+             * Create a Responses API request (streaming or non-streaming)
+             * @param collectionId - Collection identifier
+             * @param request - Responses API request
+             * @returns Responses API result or async iterable for streaming events
+             */
+            function create(collectionId: string, request: ResponsesRequest): Promise<ResponsesResult | AsyncIterable<ResponsesStreamEvent>>;
+        }
         namespace completions {
             /**
              * Create a chat completion (streaming or non-streaming)
@@ -16,10 +25,7 @@ export declare namespace ai {
         /**
          * List available AI models
          */
-        function list(collectionId: string): Promise<{
-            object: 'list';
-            data: AIModel[];
-        }>;
+        function list(collectionId: string, params?: AIModelListParams): Promise<AIModelListResponse>;
         /**
          * Get specific model information
          */
@@ -66,7 +72,7 @@ export declare namespace ai {
          */
         function generate(collectionId: string, request: TTSRequest): Promise<Blob>;
     }
-    namespace publicApi {
+    namespace publicClient {
         /**
          * Chat with product assistant (RAG)
          */
@@ -133,3 +139,52 @@ export declare namespace ai {
      */
     function postChat(collectionId: string, params: any, admin?: boolean): Promise<any>;
 }
+export declare const ai: {
+    chat: {
+        responses: {
+            create: typeof aiInternal.chat.responses.create;
+        };
+        completions: {
+            create: typeof aiInternal.chat.completions.create;
+        };
+    };
+    models: {
+        list: typeof aiInternal.models.list;
+        get: typeof aiInternal.models.get;
+    };
+    rag: {
+        indexDocument: typeof aiInternal.rag.indexDocument;
+        configureAssistant: typeof aiInternal.rag.configureAssistant;
+    };
+    sessions: {
+        stats: typeof aiInternal.sessions.stats;
+    };
+    rateLimit: {
+        reset: typeof aiInternal.rateLimit.reset;
+    };
+    podcast: {
+        generate: typeof aiInternal.podcast.generate;
+        getStatus: typeof aiInternal.podcast.getStatus;
+    };
+    tts: {
+        generate: typeof aiInternal.tts.generate;
+    };
+    public: {
+        chat: typeof aiInternal.publicClient.chat;
+        getSession: typeof aiInternal.publicClient.getSession;
+        clearSession: typeof aiInternal.publicClient.clearSession;
+        getRateLimit: typeof aiInternal.publicClient.getRateLimit;
+        getToken: typeof aiInternal.publicClient.getToken;
+    };
+    voice: {
+        isSupported: typeof aiInternal.voice.isSupported;
+        listen: typeof aiInternal.voice.listen;
+        speak: typeof aiInternal.voice.speak;
+    };
+    generateContent: typeof aiInternal.generateContent;
+    generateImage: typeof aiInternal.generateImage;
+    searchPhotos: typeof aiInternal.searchPhotos;
+    uploadFile: typeof aiInternal.uploadFile;
+    createCache: typeof aiInternal.createCache;
+    postChat: typeof aiInternal.postChat;
+};

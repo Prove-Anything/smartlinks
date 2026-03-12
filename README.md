@@ -10,6 +10,30 @@ Build Smartlinks-powered apps in Node.js or the browser: list collections and pr
 • Rich resources: collections, products, proofs, assets, attestations, batches, variants, AI, and more
 • Optional iframe proxy mode for embedded apps
 
+## Start here
+
+If you're new to the SDK, this is the easiest path:
+
+1. Initialize the SDK with your SmartLinks API base URL.
+2. Pick the guide that matches what you're building.
+3. Copy one of the working examples and adapt it to your collection/product IDs.
+
+### Pick a guide
+
+- [docs/ai.md](docs/ai.md) — AI responses, chat, RAG, voice, streaming, and product assistants
+- [docs/widgets.md](docs/widgets.md) — embeddable React components
+- [docs/realtime.md](docs/realtime.md) — subscriptions and live updates
+- [docs/iframe-responder.md](docs/iframe-responder.md) — iframe integration and parent/child messaging
+- [docs/utils.md](docs/utils.md) — helper utilities and portal path generation
+
+### Most common use cases
+
+- **Build an AI assistant** → start with [docs/ai.md](docs/ai.md)
+- **Fetch collections/products** → see [Quick start](README.md#quick-start)
+- **Authenticate admins or end users** → see [Authentication](README.md#authentication)
+- **Upload and manage files** → see [Assets](README.md#assets)
+- **Browse the full surface area** → use [API_SUMMARY.md](API_SUMMARY.md) as reference
+
 For the full list of functions and types, see the API summary:
 → [API Summary](API_SUMMARY.md)
 
@@ -53,6 +77,50 @@ if (first) {
   const products = await product.list(first.id, false) // public endpoint
   console.log('First product:', products[0])
 }
+```
+
+### Quick start by scenario
+
+**Public storefront or portal experience**
+
+```ts
+import { initializeApi, collection, product } from '@proveanything/smartlinks'
+
+initializeApi({ baseURL: 'https://smartlinks.app/api/v1' })
+
+const collections = await collection.list(false)
+const products = await product.list('collectionId', false)
+```
+
+**Server-side admin scripts or back office tools**
+
+```ts
+import { initializeApi, product } from '@proveanything/smartlinks'
+
+initializeApi({
+  baseURL: 'https://smartlinks.app/api/v1',
+  apiKey: process.env.SMARTLINKS_API_KEY,
+})
+
+const created = await product.create('collectionId', { name: 'New product' })
+console.log(created.id)
+```
+
+**AI-powered assistant or setup flow**
+
+```ts
+import { initializeApi, ai } from '@proveanything/smartlinks'
+
+initializeApi({
+  baseURL: 'https://smartlinks.app/api/v1',
+  apiKey: process.env.SMARTLINKS_API_KEY,
+})
+
+const response = await ai.chat.responses.create('collectionId', {
+  input: 'Write a concise onboarding checklist for a new product launch.'
+})
+
+console.log(response.output_text)
 ```
 
 ## Authentication

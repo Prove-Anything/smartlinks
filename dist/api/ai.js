@@ -1,13 +1,137 @@
+var __await = (this && this.__await) || function (v) { return this instanceof __await ? (this.v = v, this) : new __await(v); }
+var __asyncGenerator = (this && this.__asyncGenerator) || function (thisArg, _arguments, generator) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var g = generator.apply(thisArg, _arguments || []), i, q = [];
+    return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
+    function fulfill(value) { resume("next", value); }
+    function reject(value) { resume("throw", value); }
+    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+};
 // src/api/ai.ts
 // AI endpoints: public and admin helpers
-import { post, request, del } from "../http";
-export var ai;
-(function (ai) {
+import { post, request, del, getBaseURL, getApiHeaders } from "../http";
+import { SmartlinksApiError } from "../types/error";
+function encodeQueryParams(params) {
+    if (!params)
+        return '';
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+        if (value)
+            query.append(key, value);
+    });
+    const search = query.toString();
+    return search ? `?${search}` : '';
+}
+async function createSseStream(path, body) {
+    var _a, _b, _c;
+    const baseURL = getBaseURL();
+    if (!baseURL) {
+        throw new Error('HTTP client is not initialized. Call initializeApi(...) first.');
+    }
+    const url = `${baseURL}${path}`;
+    const headers = Object.assign({ Accept: 'text/event-stream', 'Content-Type': 'application/json' }, getApiHeaders());
+    const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+    });
+    if (!response.ok) {
+        let responseBody;
+        try {
+            responseBody = await response.json();
+        }
+        catch (_d) {
+            responseBody = null;
+        }
+        const code = response.status;
+        const message = (responseBody === null || responseBody === void 0 ? void 0 : responseBody.message) || ((_a = responseBody === null || responseBody === void 0 ? void 0 : responseBody.error) === null || _a === void 0 ? void 0 : _a.message) || `Request failed with status ${code}`;
+        throw new SmartlinksApiError(`Error ${code}: ${message}`, code, {
+            code,
+            errorCode: ((_b = responseBody === null || responseBody === void 0 ? void 0 : responseBody.error) === null || _b === void 0 ? void 0 : _b.code) || (responseBody === null || responseBody === void 0 ? void 0 : responseBody.errorCode),
+            message,
+            details: ((_c = responseBody === null || responseBody === void 0 ? void 0 : responseBody.error) === null || _c === void 0 ? void 0 : _c.details) || (responseBody === null || responseBody === void 0 ? void 0 : responseBody.details),
+        }, url);
+    }
+    if (!response.body) {
+        throw new Error('Streaming response body is unavailable in this environment');
+    }
+    return parseSseStream(response.body);
+}
+function parseSseStream(stream) {
+    return __asyncGenerator(this, arguments, function* parseSseStream_1() {
+        const reader = stream.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let dataLines = [];
+        while (true) {
+            const { done, value } = yield __await(reader.read());
+            if (done)
+                break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split(/\r?\n/);
+            buffer = lines.pop() || '';
+            for (const rawLine of lines) {
+                const line = rawLine.trimEnd();
+                if (!line) {
+                    if (!dataLines.length)
+                        continue;
+                    const payload = dataLines.join('\n');
+                    dataLines = [];
+                    if (payload === '[DONE]')
+                        return yield __await(void 0);
+                    try {
+                        yield yield __await(JSON.parse(payload));
+                    }
+                    catch (_a) {
+                        continue;
+                    }
+                    continue;
+                }
+                if (line.startsWith('data:')) {
+                    dataLines.push(line.slice(5).trimStart());
+                }
+            }
+        }
+        if (dataLines.length) {
+            const payload = dataLines.join('\n');
+            if (payload !== '[DONE]') {
+                try {
+                    yield yield __await(JSON.parse(payload));
+                }
+                catch (_b) {
+                    return yield __await(void 0);
+                }
+            }
+        }
+    });
+}
+var aiInternal;
+(function (aiInternal) {
     // ============================================================================
-    // Chat Completions API (OpenAI-compatible)
+    // Chat APIs
     // ============================================================================
     let chat;
     (function (chat) {
+        let responses;
+        (function (responses) {
+            /**
+             * Create a Responses API request (streaming or non-streaming)
+             * @param collectionId - Collection identifier
+             * @param request - Responses API request
+             * @returns Responses API result or async iterable for streaming events
+             */
+            async function create(collectionId, request) {
+                const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/v1/responses`;
+                if (request.stream) {
+                    return createSseStream(path, request);
+                }
+                return post(path, request);
+            }
+            responses.create = create;
+        })(responses = chat.responses || (chat.responses = {}));
         let completions;
         (function (completions) {
             /**
@@ -19,14 +143,13 @@ export var ai;
             async function create(collectionId, request) {
                 const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/v1/chat/completions`;
                 if (request.stream) {
-                    // TODO: Implement streaming via SSE
-                    throw new Error('Streaming not yet implemented');
+                    return createSseStream(path, request);
                 }
                 return post(path, request);
             }
             completions.create = create;
         })(completions = chat.completions || (chat.completions = {}));
-    })(chat = ai.chat || (ai.chat = {}));
+    })(chat = aiInternal.chat || (aiInternal.chat = {}));
     // ============================================================================
     // Models API
     // ============================================================================
@@ -35,8 +158,11 @@ export var ai;
         /**
          * List available AI models
          */
-        async function list(collectionId) {
-            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/models`;
+        async function list(collectionId, params) {
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/models${encodeQueryParams({
+                provider: params === null || params === void 0 ? void 0 : params.provider,
+                capability: params === null || params === void 0 ? void 0 : params.capability,
+            })}`;
             return request(path);
         }
         models.list = list;
@@ -48,7 +174,7 @@ export var ai;
             return request(path);
         }
         models.get = get;
-    })(models = ai.models || (ai.models = {}));
+    })(models = aiInternal.models || (aiInternal.models = {}));
     // ============================================================================
     // RAG API
     // ============================================================================
@@ -70,7 +196,7 @@ export var ai;
             return post(path, request);
         }
         rag.configureAssistant = configureAssistant;
-    })(rag = ai.rag || (ai.rag = {}));
+    })(rag = aiInternal.rag || (aiInternal.rag = {}));
     // ============================================================================
     // Sessions API
     // ============================================================================
@@ -84,7 +210,7 @@ export var ai;
             return request(path);
         }
         sessions.stats = stats;
-    })(sessions = ai.sessions || (ai.sessions = {}));
+    })(sessions = aiInternal.sessions || (aiInternal.sessions = {}));
     // ============================================================================
     // Rate Limiting API
     // ============================================================================
@@ -98,7 +224,7 @@ export var ai;
             return post(path, {});
         }
         rateLimit.reset = reset;
-    })(rateLimit = ai.rateLimit || (ai.rateLimit = {}));
+    })(rateLimit = aiInternal.rateLimit || (aiInternal.rateLimit = {}));
     // ============================================================================
     // Podcast API
     // ============================================================================
@@ -120,7 +246,7 @@ export var ai;
             return request(path);
         }
         podcast.getStatus = getStatus;
-    })(podcast = ai.podcast || (ai.podcast = {}));
+    })(podcast = aiInternal.podcast || (aiInternal.podcast = {}));
     // ============================================================================
     // TTS API
     // ============================================================================
@@ -135,12 +261,12 @@ export var ai;
             return post(path, request);
         }
         tts.generate = generate;
-    })(tts = ai.tts || (ai.tts = {}));
+    })(tts = aiInternal.tts || (aiInternal.tts = {}));
     // ============================================================================
     // Public API (no authentication required)
     // ============================================================================
-    let publicApi;
-    (function (publicApi) {
+    let publicClient;
+    (function (publicClient) {
         /**
          * Chat with product assistant (RAG)
          */
@@ -148,7 +274,7 @@ export var ai;
             const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/chat`;
             return post(path, request);
         }
-        publicApi.chat = chat;
+        publicClient.chat = chat;
         /**
          * Get session history
          */
@@ -156,7 +282,7 @@ export var ai;
             const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/session/${encodeURIComponent(sessionId)}`;
             return request(path);
         }
-        publicApi.getSession = getSession;
+        publicClient.getSession = getSession;
         /**
          * Clear session history
          */
@@ -164,7 +290,7 @@ export var ai;
             const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/session/${encodeURIComponent(sessionId)}`;
             return del(path);
         }
-        publicApi.clearSession = clearSession;
+        publicClient.clearSession = clearSession;
         /**
          * Check rate limit status
          */
@@ -172,7 +298,7 @@ export var ai;
             const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/rate-limit/${encodeURIComponent(userId)}`;
             return request(path);
         }
-        publicApi.getRateLimit = getRateLimit;
+        publicClient.getRateLimit = getRateLimit;
         /**
          * Generate ephemeral token for Gemini Live
          */
@@ -180,8 +306,8 @@ export var ai;
             const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/token`;
             return post(path, request);
         }
-        publicApi.getToken = getToken;
-    })(publicApi = ai.publicApi || (ai.publicApi = {}));
+        publicClient.getToken = getToken;
+    })(publicClient = aiInternal.publicClient || (aiInternal.publicClient = {}));
     // ============================================================================
     // Voice Helpers (Browser-only)
     // ============================================================================
@@ -245,7 +371,7 @@ export var ai;
             });
         }
         voice_1.speak = speak;
-    })(voice = ai.voice || (ai.voice = {}));
+    })(voice = aiInternal.voice || (aiInternal.voice = {}));
     // ============================================================================
     // Legacy Methods (backwards compatibility)
     // ============================================================================
@@ -258,7 +384,7 @@ export var ai;
         const path = `${base}/collection/${encodeURIComponent(collectionId)}/ai/generateContent`;
         return post(path, params);
     }
-    ai.generateContent = generateContent;
+    aiInternal.generateContent = generateContent;
     /**
      * Generate an image via AI (admin)
      */
@@ -266,7 +392,7 @@ export var ai;
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/generateImage`;
         return post(path, params);
     }
-    ai.generateImage = generateImage;
+    aiInternal.generateImage = generateImage;
     /**
      * Search stock photos or similar via AI (admin)
      */
@@ -274,7 +400,7 @@ export var ai;
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/searchPhotos`;
         return post(path, params);
     }
-    ai.searchPhotos = searchPhotos;
+    aiInternal.searchPhotos = searchPhotos;
     /**
      * Upload a file for AI usage (admin). Pass FormData for binary uploads.
      */
@@ -282,7 +408,7 @@ export var ai;
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/uploadFile`;
         return post(path, params);
     }
-    ai.uploadFile = uploadFile;
+    aiInternal.uploadFile = uploadFile;
     /**
      * Create or warm a cache for AI (admin)
      */
@@ -290,7 +416,7 @@ export var ai;
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/createCache`;
         return post(path, params);
     }
-    ai.createCache = createCache;
+    aiInternal.createCache = createCache;
     /**
      * Post a chat message to the AI (admin or public)
      */
@@ -299,5 +425,54 @@ export var ai;
         const path = `${base}/collection/${encodeURIComponent(collectionId)}/ai/postChat`;
         return post(path, params);
     }
-    ai.postChat = postChat;
-})(ai || (ai = {}));
+    aiInternal.postChat = postChat;
+})(aiInternal || (aiInternal = {}));
+export const ai = {
+    chat: {
+        responses: {
+            create: aiInternal.chat.responses.create,
+        },
+        completions: {
+            create: aiInternal.chat.completions.create,
+        },
+    },
+    models: {
+        list: aiInternal.models.list,
+        get: aiInternal.models.get,
+    },
+    rag: {
+        indexDocument: aiInternal.rag.indexDocument,
+        configureAssistant: aiInternal.rag.configureAssistant,
+    },
+    sessions: {
+        stats: aiInternal.sessions.stats,
+    },
+    rateLimit: {
+        reset: aiInternal.rateLimit.reset,
+    },
+    podcast: {
+        generate: aiInternal.podcast.generate,
+        getStatus: aiInternal.podcast.getStatus,
+    },
+    tts: {
+        generate: aiInternal.tts.generate,
+    },
+    public: {
+        chat: aiInternal.publicClient.chat,
+        getSession: aiInternal.publicClient.getSession,
+        clearSession: aiInternal.publicClient.clearSession,
+        getRateLimit: aiInternal.publicClient.getRateLimit,
+        getToken: aiInternal.publicClient.getToken,
+    },
+    voice: {
+        isSupported: aiInternal.voice.isSupported,
+        listen: aiInternal.voice.listen,
+        speak: aiInternal.voice.speak,
+    },
+    generateContent: aiInternal.generateContent,
+    generateImage: aiInternal.generateImage,
+    searchPhotos: aiInternal.searchPhotos,
+    uploadFile: aiInternal.uploadFile,
+    createCache: aiInternal.createCache,
+    postChat: aiInternal.postChat,
+};
