@@ -6761,6 +6761,27 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/auth/location:
+    get:
+      tags:
+        - auth
+      summary: Gets a best-effort coarse location for the current anonymous caller.
+      operationId: auth_getLocation
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthLocation"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/auth/login:
     post:
       tags:
@@ -10750,6 +10771,655 @@ components:
           type: string
       required:
         - url
+    AnalyticsLocation:
+      type: object
+      properties:
+        country:
+          type: string
+        latitude:
+          type: number
+        longitude:
+          type: number
+        area:
+          type: number
+    AnalyticsStandardMetadataFields:
+      type: object
+      properties:
+        visitorId:
+          type: string
+        referrer:
+          type: string
+        referrerHost:
+          type: string
+        utmSource:
+          type: string
+        utmMedium:
+          type: string
+        utmCampaign:
+          type: string
+        utmContent:
+          type: string
+        utmTerm:
+          type: string
+        entryType:
+          type: string
+        group:
+          type: string
+        tag:
+          type: string
+        campaign:
+          type: string
+        placement:
+          type: string
+        linkGroup:
+          type: string
+        linkPlacement:
+          type: string
+        linkPosition:
+          type: object
+          additionalProperties: true
+        linkTitle:
+          type: string
+        destinationDomain:
+          type: string
+        pagePath:
+          type: string
+        pageId:
+          type: string
+        qrCodeId:
+          type: string
+        scanMethod:
+          type: string
+    CollectionAnalyticsEvent:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        eventType:
+          $ref: "#/components/schemas/AnalyticsEventType"
+        collectionId:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        batchId:
+          type: string
+        variantId:
+          type: string
+        appId:
+          type: string
+        destinationAppId:
+          type: string
+        linkId:
+          type: string
+        deviceType:
+          type: string
+        href:
+          type: string
+        path:
+          type: string
+        isExternal:
+          type: boolean
+        location:
+          $ref: "#/components/schemas/AnalyticsLocation"
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - eventType
+        - collectionId
+    TagAnalyticsEvent:
+      type: object
+      properties:
+        sessionId:
+          type: string
+        eventType:
+          $ref: "#/components/schemas/AnalyticsEventType"
+        collectionId:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        batchId:
+          type: string
+        variantId:
+          type: string
+        codeId:
+          type: string
+        claimId:
+          type: string
+        deviceType:
+          type: string
+        path:
+          type: string
+        location:
+          $ref: "#/components/schemas/AnalyticsLocation"
+        isAdmin:
+          type: boolean
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - eventType
+        - collectionId
+    AnalyticsTrackOptions:
+      type: object
+      properties:
+        preferBeacon:
+          type: boolean
+    AnalyticsBrowserConfig:
+      type: object
+      properties:
+        sessionStorageKey:
+          type: string
+        visitorId:
+          type: string
+        visitorStorage:
+          $ref: "#/components/schemas/AnalyticsStorageMode"
+        visitorStorageKey:
+          type: string
+        autoCaptureCampaignParams:
+          type: boolean
+        campaignParamMap:
+          type: object
+          additionalProperties: true
+        defaultCollectionEvent:
+          $ref: "#/components/schemas/CollectionAnalyticsEvent"
+        defaultTagEvent:
+          $ref: "#/components/schemas/TagAnalyticsEvent"
+    AnalyticsGeolocationCaptureOptions:
+      type: object
+      properties:
+        includeCoordinates:
+          type: boolean
+        includeAccuracyArea:
+          type: boolean
+    AnalyticsLinkClickInput:
+      type: object
+      properties:
+        href:
+          type: string
+        linkId:
+          type: string
+        destinationAppId:
+          type: string
+        path:
+          type: string
+        isExternal:
+          type: boolean
+        linkTitle:
+          type: string
+      required:
+        - href
+    AnalyticsVisitorIdOptions:
+      type: object
+      properties:
+        persist:
+          type: boolean
+        storage:
+          $ref: "#/components/schemas/AnalyticsStorageMode"
+        storageKey:
+          type: string
+    AnalyticsPageViewBindingOptions:
+      type: object
+      properties:
+        trackInitialPageView:
+          type: boolean
+        includeHashChanges:
+          type: boolean
+        event:
+          $ref: "#/components/schemas/CollectionAnalyticsEvent"
+        trackOptions:
+          $ref: "#/components/schemas/AnalyticsTrackOptions"
+    AnalyticsLinkBindingOptions:
+      type: object
+      properties:
+        root:
+          type: object
+          additionalProperties: true
+        selector:
+          type: string
+        trackInternal:
+          type: boolean
+        event:
+          $ref: "#/components/schemas/CollectionAnalyticsEvent"
+        trackOptions:
+          $ref: "#/components/schemas/AnalyticsTrackOptions"
+    AnalyticsClassicReportRequest:
+      type: object
+      properties:
+        metric:
+          $ref: "#/components/schemas/AnalyticsMetric"
+        limit:
+          type: number
+    AnalyticsTrackResult:
+      type: object
+      properties:
+        queued:
+          type: boolean
+        transport:
+          type: string
+          enum:
+            - beacon
+            - fetch
+            - unavailable
+      required:
+        - queued
+        - transport
+    AnalyticsFilterRequest:
+      type: object
+      properties:
+        source:
+          $ref: "#/components/schemas/AnalyticsSource"
+        from:
+          type: string
+        to:
+          type: string
+        eventType:
+          type: string
+        eventTypes:
+          type: array
+          items:
+            type: string
+        productId:
+          type: string
+        productIds:
+          type: array
+          items:
+            type: string
+        proofId:
+          type: string
+        proofIds:
+          type: array
+          items:
+            type: string
+        batchId:
+          type: string
+        batchIds:
+          type: array
+          items:
+            type: string
+        variantId:
+          type: string
+        variantIds:
+          type: array
+          items:
+            type: string
+        sessionId:
+          type: string
+        sessionIds:
+          type: array
+          items:
+            type: string
+        country:
+          type: string
+        countries:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        appId:
+          type: string
+        appIds:
+          type: array
+          items:
+            type: string
+        destinationAppId:
+          type: string
+        destinationAppIds:
+          type: array
+          items:
+            type: string
+        linkId:
+          type: string
+        linkIds:
+          type: array
+          items:
+            type: string
+        href:
+          type: string
+        path:
+          type: string
+        hrefContains:
+          type: string
+        pathContains:
+          type: string
+        isExternal:
+          type: boolean
+        codeId:
+          type: string
+        codeIds:
+          type: array
+          items:
+            type: string
+        claimId:
+          type: string
+        claimIds:
+          type: array
+          items:
+            type: string
+        isAdmin:
+          type: boolean
+        hasLocation:
+          type: boolean
+    AnalyticsSummaryRequest:
+      type: object
+      properties:
+        source:
+          $ref: "#/components/schemas/AnalyticsSource"
+      required:
+        - source
+    AnalyticsSummaryData:
+      type: object
+      properties:
+        totalEvents:
+          type: number
+        uniqueSessions:
+          type: number
+        uniqueVisitors:
+          type: number
+        uniqueCountries:
+          type: number
+        uniqueLinks:
+          type: number
+        externalEvents:
+          type: number
+        internalEvents:
+          type: number
+        firstEventAt:
+          type: string
+        lastEventAt:
+          type: string
+        uniqueCodes:
+          type: number
+        uniqueClaims:
+          type: number
+        adminEvents:
+          type: number
+        customerEvents:
+          type: number
+        locationEvents:
+          type: number
+    AnalyticsSummaryResponse:
+      type: object
+      properties:
+        source:
+          $ref: "#/components/schemas/AnalyticsSource"
+        summary:
+          $ref: "#/components/schemas/AnalyticsSummaryData"
+      required:
+        - source
+        - summary
+    AnalyticsTimeseriesRequest:
+      type: object
+      properties:
+        source:
+          $ref: "#/components/schemas/AnalyticsSource"
+        granularity:
+          $ref: "#/components/schemas/AnalyticsGranularity"
+        metric:
+          $ref: "#/components/schemas/AnalyticsMetric"
+      required:
+        - source
+        - granularity
+        - metric
+    AnalyticsTimeseriesRow:
+      type: object
+      properties:
+        period:
+          type: string
+        count:
+          type: number
+        uniqueSessions:
+          type: number
+        uniqueVisitors:
+          type: number
+        value:
+          type: number
+      required:
+        - period
+        - count
+        - value
+    AnalyticsTimeseriesResponse:
+      type: object
+      properties:
+        source:
+          $ref: "#/components/schemas/AnalyticsSource"
+        granularity:
+          $ref: "#/components/schemas/AnalyticsGranularity"
+        metric:
+          $ref: "#/components/schemas/AnalyticsMetric"
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalyticsTimeseriesRow"
+      required:
+        - source
+        - granularity
+        - metric
+        - rows
+    AnalyticsBreakdownRequest:
+      type: object
+      properties:
+        source:
+          $ref: "#/components/schemas/AnalyticsSource"
+        dimension:
+          oneOf:
+            - $ref: "#/components/schemas/EventAnalyticsDimension"
+            - $ref: "#/components/schemas/TagAnalyticsDimension"
+        metric:
+          $ref: "#/components/schemas/AnalyticsMetric"
+        metadataKey:
+          type: string
+        limit:
+          type: number
+      required:
+        - source
+        - dimension
+    AnalyticsBreakdownRow:
+      type: object
+      properties:
+        dimensionValue:
+          type: object
+          additionalProperties: true
+        count:
+          type: number
+        uniqueSessions:
+          type: number
+        uniqueVisitors:
+          type: number
+        value:
+          type: number
+      required:
+        - dimensionValue
+        - count
+        - value
+    AnalyticsBreakdownResponse:
+      type: object
+      properties:
+        source:
+          $ref: "#/components/schemas/AnalyticsSource"
+        dimension:
+          type: string
+        metric:
+          $ref: "#/components/schemas/AnalyticsMetric"
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalyticsBreakdownRow"
+      required:
+        - source
+        - dimension
+        - metric
+        - rows
+    AnalyticsEventsRequest:
+      type: object
+      properties:
+        source:
+          $ref: "#/components/schemas/AnalyticsSource"
+        limit:
+          type: number
+        offset:
+          type: number
+        sort:
+          $ref: "#/components/schemas/AnalyticsSortOrder"
+      required:
+        - source
+    AnalyticsEventsResponse:
+      type: object
+      properties:
+        source:
+          $ref: "#/components/schemas/AnalyticsSource"
+        limit:
+          type: number
+        offset:
+          type: number
+        sort:
+          type: string
+          enum:
+            - ASC
+            - DESC
+        count:
+          type: number
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - source
+        - limit
+        - offset
+        - sort
+        - count
+        - rows
+    LegacyAnalyticsRequest:
+      type: object
+      properties:
+        collection:
+          type: string
+        collectionId:
+          type: string
+        productId:
+          type: string
+        appId:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+        location:
+          type: string
+        tagId:
+          type: string
+        qrCodeUrl:
+          type: string
+    AnalyticsDashboardMetrics:
+      type: object
+      properties: {}
+    AnalyticsDashboardCharts:
+      type: object
+      properties: {}
+    AnalyticsDashboardResponse:
+      type: object
+      properties:
+        metrics:
+          $ref: "#/components/schemas/AnalyticsDashboardMetrics"
+        charts:
+          $ref: "#/components/schemas/AnalyticsDashboardCharts"
+        locationData:
+          type: array
+          items: {}
+      required:
+        - metrics
+        - charts
+        - locationData
+    AnalyticsProductsRow:
+      type: object
+      properties:
+        productId:
+          type: string
+        totalEvents:
+          type: number
+      required:
+        - productId
+        - totalEvents
+    AnalyticsProductsResponse:
+      type: object
+      properties:
+        products:
+          type: array
+          items:
+            type: string
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalyticsProductsRow"
+      required:
+        - products
+        - rows
+    AnalyticsQrCodeRow:
+      type: object
+      properties:
+        href:
+          type: string
+        visits:
+          type: number
+        displayName:
+          type: string
+        code:
+          type: string
+      required:
+        - href
+        - visits
+        - displayName
+        - code
+    AnalyticsTagRow:
+      type: object
+      properties:
+        tagId:
+          type: string
+        claimId:
+          type: string
+        codeId:
+          type: string
+        displayName:
+          type: string
+        scans:
+          type: number
+        activeDays:
+          type: number
+      required:
+        - tagId
+        - claimId
+        - codeId
+        - displayName
+        - scans
+        - activeDays
+    AnalyticsTagsResponse:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/AnalyticsTagRow"
+      required:
+        - tags
+    AnalyticsWeeklyRequest:
+      type: object
+      properties:
+        group:
+          type: string
+          enum:
+            - count
+            - unique
+    AnalyticsCountryRequest:
+      type: object
+      properties: {}
     AppConfigurationResponse:
       type: object
       properties:
@@ -12389,6 +13059,149 @@ components:
             - firebase
       required:
         - name
+    AuthLocation:
+      type: object
+      properties:
+        latitude:
+          type: number
+        longitude:
+          type: number
+        area:
+          type: number
+        country:
+          type: string
+    AuthLocationCacheOptions:
+      type: object
+      properties:
+        cache:
+          type: string
+          enum:
+            - session
+        ttlMs:
+          type: number
+        storageKey:
+          type: string
+        forceRefresh:
+          type: boolean
+    AccountFirebaseInfo:
+      type: object
+      properties:
+        identities:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        sign_in_provider:
+          type: string
+    AccountClientInfo:
+      type: object
+      properties:
+        createdAt:
+          type: string
+        createdVia:
+          type: string
+    AccountFeatureFlags:
+      type: object
+      properties:
+        actionLogger:
+          type: boolean
+        apiKeys:
+          type: boolean
+        analytics:
+          type: boolean
+        webhooks:
+          type: boolean
+        creating:
+          type: boolean
+        helpDocs:
+          type: boolean
+        certificateTemplates:
+          type: boolean
+        contentLibrary:
+          type: boolean
+        devScanner:
+          type: boolean
+        appScanner:
+          type: boolean
+    AccountInfoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        uid:
+          type: string
+        userId:
+          type: string
+        user_id:
+          type: string
+        sub:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        email_verified:
+          type: boolean
+        picture:
+          type: string
+        iss:
+          type: string
+        aud:
+          type: string
+        auth_time:
+          type: number
+        iat:
+          type: number
+        exp:
+          type: number
+        firebase:
+          $ref: "#/components/schemas/AccountFirebaseInfo"
+        accessType:
+          type: string
+        clientType:
+          type: string
+        analyticsCode:
+          type: string
+        analyticsId:
+          type: string
+        baseCollectionId:
+          type: string
+        collectionGroup:
+          type: string
+        contactId:
+          type: string
+        features:
+          $ref: "#/components/schemas/AccountFeatureFlags"
+        adminCollections:
+          type: array
+          items:
+            type: string
+        clients:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/AccountClientInfo"
+        sites:
+          type: object
+          additionalProperties:
+            type: boolean
+        whitelabel:
+          type: object
+          additionalProperties: true
+        location:
+          $ref: "#/components/schemas/AuthLocation"
+      required:
+        - id
+        - uid
+        - userId
+        - sub
+        - name
+        - email
+        - email_verified
+        - iss
+        - auth_time
+        - iat
+        - features
     AuthKitUser:
       type: object
       properties:
@@ -17218,88 +18031,3 @@ components:
           additionalProperties: true
       required:
         - valid
-    AccountInfoResponse:
-      type: object
-      properties:
-        accessType:
-          type: string
-        analyticsCode:
-          type: string
-        analyticsId:
-          type: string
-        auth_time:
-          type: number
-        baseCollectionId:
-          type: string
-        clientType:
-          type: string
-        email:
-          type: string
-        email_verified:
-          type: boolean
-        features:
-          type: object
-          additionalProperties: true
-        actionLogger:
-          type: boolean
-        adminCollections:
-          type: boolean
-        adminApps:
-          type: boolean
-        apiKeys:
-          type: boolean
-        adminUsers:
-          type: boolean
-        iat:
-          type: number
-        id:
-          type: string
-        iss:
-          type: string
-        location:
-          type: string
-        name:
-          type: string
-        picture:
-          type: string
-        sites:
-          type: object
-          additionalProperties: true
-        sub:
-          type: string
-        uid:
-          type: string
-        userId:
-          type: string
-        contactId:
-          type: string
-        whitelabel:
-          type: object
-          additionalProperties: true
-      required:
-        - accessType
-        - analyticsCode
-        - analyticsId
-        - auth_time
-        - baseCollectionId
-        - clientType
-        - email
-        - email_verified
-        - features
-        - actionLogger
-        - adminCollections
-        - adminApps
-        - apiKeys
-        - adminUsers
-        - iat
-        - id
-        - iss
-        - location
-        - name
-        - picture
-        - sites
-        - sub
-        - uid
-        - userId
-        - contactId
-        - whitelabel

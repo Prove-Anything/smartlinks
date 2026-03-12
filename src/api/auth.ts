@@ -1,6 +1,8 @@
 import { post, request, setBearerToken, getApiHeaders, hasAuthCredentials, isProxyEnabled } from "../http"
 import { SmartlinksApiError } from "../types/error"
-import type { UserAccountRegistrationRequest } from "../types/auth"
+import type { UserAccountRegistrationRequest, AccountInfoResponse, AuthLocation, AuthLocationCacheOptions } from "../types/auth"
+
+export type { AccountInfoResponse, AuthLocation, AuthLocationCacheOptions } from "../types/auth"
 
 export type LoginResponse = {
   id: string
@@ -18,41 +20,82 @@ export type VerifyTokenResponse = {
   account?: Record<string, any>
 }
 
-export type AccountInfoResponse = {
-  accessType: string;
-  analyticsCode: string;
-  analyticsId: string;
-  auth_time: number;
-  baseCollectionId: string;
-  clientType: string;
-  email: string;
-  email_verified: boolean;
-  features: {
-    actionLogger: boolean;
-    adminCollections: boolean;
-    adminApps: boolean;
-    apiKeys: boolean;
-    adminUsers: boolean;
-    [key: string]: boolean;
-  };
-  iat: number;
-  id: string;
-  iss: string;
-  location: string | null;
-  name: string;
-  picture: string;
-  sites: {
-    [siteName: string]: boolean;
-  };
-  sub: string;
-  uid: string;
-  userId: string;
-  contactId: string
-  whitelabel: {
-    [key: string]: any;
+const DEFAULT_AUTH_LOCATION_CACHE_KEY = 'smartlinks.auth.location'
+const DEFAULT_AUTH_LOCATION_TTL_MS = 30 * 60 * 1000
+
+type CachedAuthLocation = {
+  value: AuthLocation
+  expiresAt: number
+}
+
+let inMemoryAuthLocationCache: CachedAuthLocation | null = null
+
+function getSessionStorage(): Storage | undefined {
+  try {
+    if (typeof sessionStorage !== 'undefined') return sessionStorage
+  } catch {
+  }
+
+  return undefined
+}
+
+function readCachedLocation(storageKey: string): AuthLocation | null {
+  const now = Date.now()
+
+  if (inMemoryAuthLocationCache && inMemoryAuthLocationCache.expiresAt > now) {
+    return inMemoryAuthLocationCache.value
+  }
+
+  const storage = getSessionStorage()
+  if (!storage) return null
+
+  try {
+    const raw = storage.getItem(storageKey)
+    if (!raw) return null
+
+    const cached = JSON.parse(raw) as CachedAuthLocation
+    if (!cached?.value || typeof cached.expiresAt !== 'number') {
+      storage.removeItem(storageKey)
+      return null
+    }
+
+    if (cached.expiresAt <= now) {
+      storage.removeItem(storageKey)
+      return null
+    }
+
+    inMemoryAuthLocationCache = cached
+    return cached.value
+  } catch {
+    return null
   }
 }
 
+function writeCachedLocation(storageKey: string, value: AuthLocation, ttlMs: number): void {
+  const cached: CachedAuthLocation = {
+    value,
+    expiresAt: Date.now() + ttlMs,
+  }
+
+  inMemoryAuthLocationCache = cached
+
+  const storage = getSessionStorage()
+  if (!storage) return
+
+  try {
+    storage.setItem(storageKey, JSON.stringify(cached))
+  } catch {
+  }
+}
+
+function clearCachedLocationInternal(storageKey: string): void {
+  inMemoryAuthLocationCache = null
+  const storage = getSessionStorage()
+  try {
+    storage?.removeItem(storageKey)
+  } catch {
+  }
+}
 
 /*
   user: Record<string, any>
@@ -144,8 +187,50 @@ export namespace auth {
   }
 
   /**
+   * Gets a best-effort coarse location for the current anonymous caller.
+   *
+   * This endpoint is typically IP-derived and is useful when the user is not
+   * logged in but you still want country/location context for content rules,
+   * analytics enrichment, or regional defaults.
+   *
+   * Returns fields such as `country`, `latitude`, `longitude`, and `area`
+   * when available.
+   *
+   * By default the result is cached in session storage for 30 minutes so apps
+   * can reuse coarse location context without repeatedly hitting the endpoint.
+   */
+  export async function getLocation(options: AuthLocationCacheOptions = {}): Promise<AuthLocation> {
+    const cache = options.cache ?? 'session'
+    const ttlMs = options.ttlMs ?? DEFAULT_AUTH_LOCATION_TTL_MS
+    const storageKey = options.storageKey ?? DEFAULT_AUTH_LOCATION_CACHE_KEY
+
+    if (cache === 'session' && !options.forceRefresh) {
+      const cached = readCachedLocation(storageKey)
+      if (cached) return cached
+    }
+
+    const location = await request<AuthLocation>("/public/auth/location")
+
+    if (cache === 'session') {
+      writeCachedLocation(storageKey, location, ttlMs)
+    }
+
+    return location
+  }
+
+  /**
+   * Clears the cached anonymous auth location, if present.
+   */
+  export function clearCachedLocation(storageKey: string = DEFAULT_AUTH_LOCATION_CACHE_KEY): void {
+    clearCachedLocationInternal(storageKey)
+  }
+
+  /**
    * Gets current account information for the logged in user.
    * Returns user, owner, account, and location objects.
+   *
+   * When the caller is authenticated, prefer `account.location` from this
+   * response. For anonymous callers, use `auth.getLocation()` instead.
    *
    * Short-circuits immediately (no network request) when the SDK has no
    * bearer token or API key set — the server would return 401 anyway.

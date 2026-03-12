@@ -1,4 +1,5 @@
-import type { UserAccountRegistrationRequest } from "../types/auth";
+import type { UserAccountRegistrationRequest, AccountInfoResponse, AuthLocation, AuthLocationCacheOptions } from "../types/auth";
+export type { AccountInfoResponse, AuthLocation, AuthLocationCacheOptions } from "../types/auth";
 export type LoginResponse = {
     id: string;
     name: string;
@@ -12,40 +13,6 @@ export type VerifyTokenResponse = {
     name?: string;
     email?: string;
     account?: Record<string, any>;
-};
-export type AccountInfoResponse = {
-    accessType: string;
-    analyticsCode: string;
-    analyticsId: string;
-    auth_time: number;
-    baseCollectionId: string;
-    clientType: string;
-    email: string;
-    email_verified: boolean;
-    features: {
-        actionLogger: boolean;
-        adminCollections: boolean;
-        adminApps: boolean;
-        apiKeys: boolean;
-        adminUsers: boolean;
-        [key: string]: boolean;
-    };
-    iat: number;
-    id: string;
-    iss: string;
-    location: string | null;
-    name: string;
-    picture: string;
-    sites: {
-        [siteName: string]: boolean;
-    };
-    sub: string;
-    uid: string;
-    userId: string;
-    contactId: string;
-    whitelabel: {
-        [key: string]: any;
-    };
 };
 export declare namespace auth {
     /**
@@ -90,8 +57,29 @@ export declare namespace auth {
         bearerToken: string;
     }>;
     /**
+     * Gets a best-effort coarse location for the current anonymous caller.
+     *
+     * This endpoint is typically IP-derived and is useful when the user is not
+     * logged in but you still want country/location context for content rules,
+     * analytics enrichment, or regional defaults.
+     *
+     * Returns fields such as `country`, `latitude`, `longitude`, and `area`
+     * when available.
+     *
+     * By default the result is cached in session storage for 30 minutes so apps
+     * can reuse coarse location context without repeatedly hitting the endpoint.
+     */
+    function getLocation(options?: AuthLocationCacheOptions): Promise<AuthLocation>;
+    /**
+     * Clears the cached anonymous auth location, if present.
+     */
+    function clearCachedLocation(storageKey?: string): void;
+    /**
      * Gets current account information for the logged in user.
      * Returns user, owner, account, and location objects.
+     *
+     * When the caller is authenticated, prefer `account.location` from this
+     * response. For anonymous callers, use `auth.getLocation()` instead.
      *
      * Short-circuits immediately (no network request) when the SDK has no
      * bearer token or API key set — the server would return 401 anyway.

@@ -21,6 +21,7 @@ If you're new to the SDK, this is the easiest path:
 ### Pick a guide
 
 - [docs/ai.md](docs/ai.md) — AI responses, chat, RAG, voice, streaming, and product assistants
+- [docs/analytics.md](docs/analytics.md) — fire-and-forget web analytics, tag scan telemetry, and dashboard queries
 - [docs/widgets.md](docs/widgets.md) — embeddable React components
 - [docs/realtime.md](docs/realtime.md) — subscriptions and live updates
 - [docs/iframe-responder.md](docs/iframe-responder.md) — iframe integration and parent/child messaging
@@ -29,6 +30,7 @@ If you're new to the SDK, this is the easiest path:
 ### Most common use cases
 
 - **Build an AI assistant** → start with [docs/ai.md](docs/ai.md)
+- **Track page views, clicks, or tag scans** → start with [docs/analytics.md](docs/analytics.md)
 - **Fetch collections/products** → see [Quick start](README.md#quick-start)
 - **Authenticate admins or end users** → see [Authentication](README.md#authentication)
 - **Upload and manage files** → see [Assets](README.md#assets)
@@ -39,6 +41,7 @@ For the full list of functions and types, see the API summary:
 
 **Documentation:**
 - [AI & Chat Completions](docs/ai.md) - Chat completions, RAG, voice integration
+- [Analytics](docs/analytics.md) - Fire-and-forget analytics tracking, tag scans, and dashboard queries
 - [Widgets](docs/widgets.md) - Embeddable React components
 - [Realtime](docs/realtime.md) - Realtime data updates
 - [iframe Responder](docs/iframe-responder.md) - iframe integration

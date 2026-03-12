@@ -24,6 +24,7 @@ export { journeysAnalytics } from "./journeysAnalytics";
 export { qr } from "./qr";
 export { template } from "./template";
 export { interactions } from "./interactions";
+export { analytics } from "./analytics";
 export { location } from "./location";
 export * as realtime from "./realtime";
 export { tags } from "./tags";

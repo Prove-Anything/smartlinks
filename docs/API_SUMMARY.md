@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.7.10  |  Generated: 2026-03-12T18:05:02.102Z
+Version: 1.8.0  |  Generated: 2026-03-12T19:37:47.506Z
 
 This is a concise summary of all available API functions and types.
 
@@ -71,6 +71,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **serialNumber** - Assign, lookup, and manage serial numbers across scopes.
 
 — Other —
+- **analytics** - Functions for analytics operations
 - **appObjects** - Functions for appObjects operations
 - **async** - Functions for async operations
 - **attestation** - Functions for attestation operations
@@ -923,6 +924,343 @@ interface AISearchPhotosPhoto {
   [key: string]: any
 }
 ```
+
+### analytics
+
+**AnalyticsLocation** (interface)
+```typescript
+interface AnalyticsLocation {
+  country?: string
+  latitude?: number
+  longitude?: number
+  area?: number
+  [key: string]: any
+}
+```
+
+**AnalyticsStandardMetadataFields** (interface)
+```typescript
+interface AnalyticsStandardMetadataFields {
+  visitorId?: string
+  referrer?: string
+  referrerHost?: string
+  utmSource?: string
+  utmMedium?: string
+  utmCampaign?: string
+  utmContent?: string
+  utmTerm?: string
+  entryType?: string
+  group?: string
+  tag?: string
+  campaign?: string
+  placement?: string
+  linkGroup?: string
+  linkPlacement?: string
+  linkPosition?: string | number
+  linkTitle?: string
+  destinationDomain?: string
+  pagePath?: string
+  pageId?: string
+  qrCodeId?: string
+  scanMethod?: string
+}
+```
+
+**AnalyticsTrackOptions** (interface)
+```typescript
+interface AnalyticsTrackOptions {
+  preferBeacon?: boolean
+}
+```
+
+**AnalyticsBrowserConfig** (interface)
+```typescript
+interface AnalyticsBrowserConfig {
+  sessionStorageKey?: string
+  sessionIdFactory?: () => string
+  visitorId?: string
+  visitorStorage?: AnalyticsStorageMode
+  visitorStorageKey?: string
+  visitorIdFactory?: () => string
+  autoCaptureCampaignParams?: boolean
+  campaignParamMap?: Partial<Record<keyof AnalyticsStandardMetadataFields, string | string[]>>
+  defaultCollectionEvent?: Partial<CollectionAnalyticsEvent>
+  defaultTagEvent?: Partial<TagAnalyticsEvent>
+  getCollectionDefaults?: () => Partial<CollectionAnalyticsEvent> | undefined
+  getTagDefaults?: () => Partial<TagAnalyticsEvent> | undefined
+  getLocation?: () => AnalyticsLocation | null | undefined
+}
+```
+
+**AnalyticsVisitorIdOptions** (interface)
+```typescript
+interface AnalyticsVisitorIdOptions {
+  persist?: boolean
+  storage?: AnalyticsStorageMode
+  storageKey?: string
+}
+```
+
+**AnalyticsPageViewBindingOptions** (interface)
+```typescript
+interface AnalyticsPageViewBindingOptions {
+  trackInitialPageView?: boolean
+  includeHashChanges?: boolean
+  event?: Partial<CollectionAnalyticsEvent>
+  trackOptions?: AnalyticsTrackOptions
+  getEvent?: (path: string) => Partial<CollectionAnalyticsEvent> | null | undefined
+}
+```
+
+**AnalyticsLinkBindingOptions** (interface)
+```typescript
+interface AnalyticsLinkBindingOptions {
+  root?: Document | HTMLElement
+  selector?: string
+  trackInternal?: boolean
+  event?: Partial<CollectionAnalyticsEvent>
+  trackOptions?: AnalyticsTrackOptions
+  getEvent?: (anchor: HTMLAnchorElement, event: MouseEvent) => Partial<CollectionAnalyticsEvent> | null | undefined
+}
+```
+
+**AnalyticsTrackResult** (interface)
+```typescript
+interface AnalyticsTrackResult {
+  queued: boolean
+  transport: 'beacon' | 'fetch' | 'unavailable'
+}
+```
+
+**AnalyticsFilterRequest** (interface)
+```typescript
+interface AnalyticsFilterRequest {
+  source?: AnalyticsSource
+  from?: string
+  to?: string
+  eventType?: string
+  eventTypes?: string[]
+  productId?: string
+  productIds?: string[]
+  proofId?: string
+  proofIds?: string[]
+  batchId?: string
+  batchIds?: string[]
+  variantId?: string
+  variantIds?: string[]
+  sessionId?: string
+  sessionIds?: string[]
+  country?: string
+  countries?: string[]
+  metadata?: Record<string, any>
+  appId?: string
+  appIds?: string[]
+  destinationAppId?: string
+  destinationAppIds?: string[]
+  linkId?: string
+  linkIds?: string[]
+  href?: string
+  path?: string
+  hrefContains?: string
+  pathContains?: string
+  isExternal?: boolean
+  codeId?: string
+  codeIds?: string[]
+  claimId?: string
+  claimIds?: string[]
+  isAdmin?: boolean
+  hasLocation?: boolean
+}
+```
+
+**AnalyticsSummaryData** (interface)
+```typescript
+interface AnalyticsSummaryData {
+  totalEvents?: number
+  uniqueSessions?: number
+  uniqueVisitors?: number
+  uniqueCountries?: number
+  uniqueLinks?: number
+  externalEvents?: number
+  internalEvents?: number
+  firstEventAt?: string | null
+  lastEventAt?: string | null
+  uniqueCodes?: number
+  uniqueClaims?: number
+  adminEvents?: number
+  customerEvents?: number
+  locationEvents?: number
+  [key: string]: any
+}
+```
+
+**AnalyticsSummaryResponse** (interface)
+```typescript
+interface AnalyticsSummaryResponse {
+  source: AnalyticsSource
+  summary: AnalyticsSummaryData
+}
+```
+
+**AnalyticsTimeseriesRow** (interface)
+```typescript
+interface AnalyticsTimeseriesRow {
+  period: string
+  count: number
+  uniqueSessions?: number
+  uniqueVisitors?: number
+  value: number
+  [key: string]: any
+}
+```
+
+**AnalyticsTimeseriesResponse** (interface)
+```typescript
+interface AnalyticsTimeseriesResponse {
+  source: AnalyticsSource
+  granularity: AnalyticsGranularity
+  metric: AnalyticsMetric
+  rows: AnalyticsTimeseriesRow[]
+}
+```
+
+**AnalyticsBreakdownRow** (interface)
+```typescript
+interface AnalyticsBreakdownRow {
+  dimensionValue: string | number | boolean | null
+  count: number
+  uniqueSessions?: number
+  uniqueVisitors?: number
+  value: number
+  [key: string]: any
+}
+```
+
+**AnalyticsBreakdownResponse** (interface)
+```typescript
+interface AnalyticsBreakdownResponse {
+  source: AnalyticsSource
+  dimension: string
+  metric: AnalyticsMetric
+  rows: AnalyticsBreakdownRow[]
+}
+```
+
+**AnalyticsEventsResponse** (interface)
+```typescript
+interface AnalyticsEventsResponse {
+  source: AnalyticsSource
+  limit: number
+  offset: number
+  sort: 'ASC' | 'DESC'
+  count: number
+  rows: Array<Record<string, any>>
+}
+```
+
+**LegacyAnalyticsRequest** (interface)
+```typescript
+interface LegacyAnalyticsRequest {
+  collection?: string
+  collectionId?: string
+  productId?: string
+  appId?: string
+  startDate?: string
+  endDate?: string
+  location?: string
+  tagId?: string
+  qrCodeUrl?: string
+  [key: string]: any
+}
+```
+
+**AnalyticsDashboardMetrics** (interface)
+```typescript
+interface AnalyticsDashboardMetrics {
+  [key: string]: string | number | null
+}
+```
+
+**AnalyticsDashboardCharts** (interface)
+```typescript
+interface AnalyticsDashboardCharts {
+  [key: string]: any[]
+}
+```
+
+**AnalyticsDashboardResponse** (interface)
+```typescript
+interface AnalyticsDashboardResponse {
+  metrics: AnalyticsDashboardMetrics
+  charts: AnalyticsDashboardCharts
+  locationData: any[]
+}
+```
+
+**AnalyticsProductsRow** (interface)
+```typescript
+interface AnalyticsProductsRow {
+  productId: string
+  totalEvents: number
+}
+```
+
+**AnalyticsProductsResponse** (interface)
+```typescript
+interface AnalyticsProductsResponse {
+  products: string[]
+  rows: AnalyticsProductsRow[]
+}
+```
+
+**AnalyticsQrCodeRow** (interface)
+```typescript
+interface AnalyticsQrCodeRow {
+  href: string
+  visits: number
+  displayName: string
+  code: string
+}
+```
+
+**AnalyticsTagRow** (interface)
+```typescript
+interface AnalyticsTagRow {
+  tagId: string
+  claimId: string
+  codeId: string
+  displayName: string
+  scans: number
+  activeDays: number
+}
+```
+
+**AnalyticsTagsResponse** (interface)
+```typescript
+interface AnalyticsTagsResponse {
+  tags: AnalyticsTagRow[]
+}
+```
+
+**AnalyticsSource** = `'events' | 'tag'`
+
+**AnalyticsEventType** = `string`
+
+**AnalyticsGranularity** = `'hour' | 'day' | 'week' | 'month'`
+
+**AnalyticsMetric** = `'count' | 'uniqueSessions' | 'uniqueVisitors'`
+
+**AnalyticsSortOrder** = `'asc' | 'desc'`
+
+**AnalyticsDeviceType** = `'mobile' | 'tablet' | 'desktop' | 'unknown'`
+
+**AnalyticsStorageMode** = `'local' | 'session' | false`
+
+**EventAnalyticsDimension** = ``
+
+**TagAnalyticsDimension** = ``
+
+**AnalyticsQrCodesResponse** = `AnalyticsQrCodeRow[]`
 
 ### appConfiguration
 
@@ -1924,6 +2262,97 @@ interface UserAccountRegistrationRequest {
   sendAccountConfirmation?: boolean
   collectionId?: string,
   tokenType?: 'bearer' | 'firebase'
+}
+```
+
+**AuthLocation** (interface)
+```typescript
+interface AuthLocation {
+  latitude?: number
+  longitude?: number
+  area?: number
+  country?: string
+  [key: string]: any
+}
+```
+
+**AuthLocationCacheOptions** (interface)
+```typescript
+interface AuthLocationCacheOptions {
+  cache?: 'session' | false
+  ttlMs?: number
+  storageKey?: string
+  forceRefresh?: boolean
+}
+```
+
+**AccountFirebaseInfo** (interface)
+```typescript
+interface AccountFirebaseInfo {
+  identities?: Record<string, string[]>
+  sign_in_provider?: string
+  [key: string]: any
+}
+```
+
+**AccountClientInfo** (interface)
+```typescript
+interface AccountClientInfo {
+  createdAt?: string
+  createdVia?: string
+  [key: string]: any
+}
+```
+
+**AccountFeatureFlags** (interface)
+```typescript
+interface AccountFeatureFlags {
+  actionLogger?: boolean
+  apiKeys?: boolean
+  analytics?: boolean
+  webhooks?: boolean
+  creating?: boolean
+  helpDocs?: boolean
+  certificateTemplates?: boolean
+  contentLibrary?: boolean
+  devScanner?: boolean
+  appScanner?: boolean
+  [key: string]: boolean | undefined
+}
+```
+
+**AccountInfoResponse** (interface)
+```typescript
+interface AccountInfoResponse {
+  id: string
+  uid: string
+  userId: string
+  user_id?: string
+  sub: string
+  name: string
+  email: string
+  email_verified: boolean
+  picture?: string | null
+  iss: string
+  aud?: string
+  auth_time: number
+  iat: number
+  exp?: number
+  firebase?: AccountFirebaseInfo
+  accessType?: string
+  clientType?: string
+  analyticsCode?: string
+  analyticsId?: string
+  baseCollectionId?: string
+  collectionGroup?: string
+  contactId?: string
+  features: AccountFeatureFlags
+  adminCollections?: string[]
+  clients?: Record<string, AccountClientInfo>
+  sites?: Record<string, boolean>
+  whitelabel?: Record<string, any>
+  location?: AuthLocation | null
+  [key: string]: any
 }
 ```
 
@@ -5345,45 +5774,145 @@ type VerifyTokenResponse = {
 }
 ```
 
-**AccountInfoResponse** (type)
-```typescript
-type AccountInfoResponse = {
-  accessType: string;
-  analyticsCode: string;
-  analyticsId: string;
-  auth_time: number;
-  baseCollectionId: string;
-  clientType: string;
-  email: string;
-  email_verified: boolean;
-  features: {
-    actionLogger: boolean;
-    adminCollections: boolean;
-    adminApps: boolean;
-    apiKeys: boolean;
-    adminUsers: boolean;
-    [key: string]: boolean;
-  };
-  iat: number;
-  id: string;
-  iss: string;
-  location: string | null;
-  name: string;
-  picture: string;
-  sites: {
-    [siteName: string]: boolean;
-  };
-  sub: string;
-  uid: string;
-  userId: string;
-  contactId: string
-  whitelabel: {
-    [key: string]: any;
-  }
-}
-```
-
 ## API Functions
+
+### analytics
+
+**track**(event: CollectionAnalyticsEvent,
+      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
+Fire-and-forget collection analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**track**(event: TagAnalyticsEvent,
+      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**configure**(config: AnalyticsBrowserConfig) → `void`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**getSessionId**() → `string | undefined`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**getVisitorId**() → `string | undefined`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**setVisitorId**(visitorId: string,
+      options?: AnalyticsVisitorIdOptions) → `string`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**clearVisitorId**(options?: Pick<AnalyticsVisitorIdOptions, 'storage' | 'storageKey'>) → `void`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**captureCampaignParams**(search?: string) → `Partial<CollectionAnalyticsEvent>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**setLocation**(location: TagAnalyticsEvent['location'] | null) → `void`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**clearLocation**() → `void`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**getLocation**() → `TagAnalyticsEvent['location'] | undefined`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**detectDevice**() → `CollectionAnalyticsEvent['deviceType']`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**captureLocation**(options: AnalyticsGeolocationCaptureOptions = {}) → `Promise<TagAnalyticsEvent['location'] | null>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**trackCollection**(event: Partial<CollectionAnalyticsEvent>,
+      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**trackTag**(event: Partial<TagAnalyticsEvent>,
+      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**trackPageView**(event: Partial<CollectionAnalyticsEvent>,
+      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**trackLinkClick**(event: AnalyticsLinkClickInput,
+      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**trackTagScan**(event: Partial<TagAnalyticsEvent>,
+      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**bindPageViews**(binding: AnalyticsPageViewBindingOptions = {}) → `() => void`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**bindLinkTracking**(binding: AnalyticsLinkBindingOptions = {}) → `() => void`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**summary**(collectionId: string,
+      body: AnalyticsSummaryRequest) → `Promise<AnalyticsSummaryResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**timeseries**(collectionId: string,
+      body: AnalyticsTimeseriesRequest) → `Promise<AnalyticsTimeseriesResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**breakdown**(collectionId: string,
+      body: AnalyticsBreakdownRequest) → `Promise<AnalyticsBreakdownResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**events**(collectionId: string,
+      body: AnalyticsEventsRequest) → `Promise<AnalyticsEventsResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**web**(collectionId: string,
+      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsDashboardResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**clicks**(collectionId: string,
+      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsDashboardResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**tagScans**(collectionId: string,
+      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsDashboardResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**products**(collectionId: string,
+      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsProductsResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**qrCodes**(collectionId: string,
+      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsQrCodesResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**tags**(collectionId: string,
+      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsTagsResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**weekly**(collectionId: string,
+      body: AnalyticsWeeklyRequest = {}) → `Promise<AnalyticsTimeseriesResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**country**(collectionId: string,
+      body: AnalyticsCountryRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**topPages**(collectionId: string,
+      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**topReferrers**(collectionId: string,
+      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**topCampaigns**(collectionId: string,
+      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**topSources**(collectionId: string,
+      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+
+**topDestinations**(collectionId: string,
+      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
+Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
 
 ### app
 
@@ -5668,8 +6197,14 @@ Tries to register a new user account. Can return a bearer token, or a Firebase t
   }) → `Promise<`
 Admin: Get a user bearer token (impersonation/automation). POST /admin/auth/userToken All fields are optional; at least one identifier should be provided.
 
+**getLocation**(options: AuthLocationCacheOptions = {}) → `Promise<AuthLocation>`
+Gets a best-effort coarse location for the current anonymous caller. This endpoint is typically IP-derived and is useful when the user is not logged in but you still want country/location context for content rules, analytics enrichment, or regional defaults. Returns fields such as `country`, `latitude`, `longitude`, and `area` when available. By default the result is cached in session storage for 30 minutes so apps can reuse coarse location context without repeatedly hitting the endpoint.
+
+**clearCachedLocation**(storageKey: string = DEFAULT_AUTH_LOCATION_CACHE_KEY) → `void`
+Clears the cached anonymous auth location, if present.
+
 **getAccount**() → `Promise<AccountInfoResponse>`
-Gets current account information for the logged in user. Returns user, owner, account, and location objects. Short-circuits immediately (no network request) when the SDK has no bearer token or API key set — the server would return 401 anyway. Throws a `SmartlinksApiError` with `statusCode 401` and `details.local = true` so callers can distinguish "never authenticated" from an actual server-side token rejection. This short-circuit is skipped when proxy mode is enabled, because in that case credentials are held by the parent frame and the local SDK may have no token set yet — the request must be forwarded to the parent to determine whether the user is authenticated.
+Gets current account information for the logged in user. Returns user, owner, account, and location objects. When the caller is authenticated, prefer `account.location` from this response. For anonymous callers, use `auth.getLocation()` instead. Short-circuits immediately (no network request) when the SDK has no bearer token or API key set — the server would return 401 anyway. Throws a `SmartlinksApiError` with `statusCode 401` and `details.local = true` so callers can distinguish "never authenticated" from an actual server-side token rejection. This short-circuit is skipped when proxy mode is enabled, because in that case credentials are held by the parent frame and the local SDK may have no token set yet — the request must be forwarded to the parent to determine whether the user is authenticated.
 
 ### authKit
 

@@ -47,6 +47,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **API Reference** | `docs/API_SUMMARY.md` | Complete SDK function reference, types, error handling |
 | **Multi-Page Architecture** | `docs/mpa.md` | Build pipeline, entry points, multi-page setup, content hashing |
 | **AI & Chat** | `docs/ai.md` | Chat completions, RAG, streaming, tool calling, voice, podcasts, TTS |
+| **Analytics** | `docs/analytics.md` | Fire-and-forget page/click/tag analytics plus admin dashboard queries |
 | **Theming** | `docs/theme.system.md` | Implementing dynamic themes via URL params or postMessage |
 | **Theme Defaults** | `docs/theme-defaults.md` | Default colour values for light/dark modes |
 | **Internationalization** | `docs/i18n.md` | Adding multi-language support, translation patterns |
@@ -54,7 +55,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Containers** | `docs/containers.md` | Building full-app embeddable containers (lazy-loaded) |
 | **Executors** | `docs/executor.md` | Building executor bundles for SEO, LLM content, programmatic config |
 | **Deep Linking** | `docs/deep-link-discovery.md` | URL state management, navigable states, portal menus, AI nav |
-| **Interactions** | `docs/interactions.md` | Event tracking, analytics, voting, competitions, journey triggers |
+| **Interactions** | `docs/interactions.md` | Business events, outcomes, voting, competitions, and journey triggers |
 | **AI-Native Manifests** | `docs/manifests.md` | `app.manifest.json`, `app.admin.json`, `ai-guide.md` structure |
 | **App Config Files** | `docs/app-manifest.md` | Full field-by-field reference for both JSON config files |
 | **Real-time Messaging** | `docs/realtime.md` | Adding Ably real-time features (chat, live updates) |

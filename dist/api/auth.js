@@ -1,5 +1,69 @@
 import { post, request, setBearerToken, getApiHeaders, hasAuthCredentials, isProxyEnabled } from "../http";
 import { SmartlinksApiError } from "../types/error";
+const DEFAULT_AUTH_LOCATION_CACHE_KEY = 'smartlinks.auth.location';
+const DEFAULT_AUTH_LOCATION_TTL_MS = 30 * 60 * 1000;
+let inMemoryAuthLocationCache = null;
+function getSessionStorage() {
+    try {
+        if (typeof sessionStorage !== 'undefined')
+            return sessionStorage;
+    }
+    catch (_a) {
+    }
+    return undefined;
+}
+function readCachedLocation(storageKey) {
+    const now = Date.now();
+    if (inMemoryAuthLocationCache && inMemoryAuthLocationCache.expiresAt > now) {
+        return inMemoryAuthLocationCache.value;
+    }
+    const storage = getSessionStorage();
+    if (!storage)
+        return null;
+    try {
+        const raw = storage.getItem(storageKey);
+        if (!raw)
+            return null;
+        const cached = JSON.parse(raw);
+        if (!(cached === null || cached === void 0 ? void 0 : cached.value) || typeof cached.expiresAt !== 'number') {
+            storage.removeItem(storageKey);
+            return null;
+        }
+        if (cached.expiresAt <= now) {
+            storage.removeItem(storageKey);
+            return null;
+        }
+        inMemoryAuthLocationCache = cached;
+        return cached.value;
+    }
+    catch (_a) {
+        return null;
+    }
+}
+function writeCachedLocation(storageKey, value, ttlMs) {
+    const cached = {
+        value,
+        expiresAt: Date.now() + ttlMs,
+    };
+    inMemoryAuthLocationCache = cached;
+    const storage = getSessionStorage();
+    if (!storage)
+        return;
+    try {
+        storage.setItem(storageKey, JSON.stringify(cached));
+    }
+    catch (_a) {
+    }
+}
+function clearCachedLocationInternal(storageKey) {
+    inMemoryAuthLocationCache = null;
+    const storage = getSessionStorage();
+    try {
+        storage === null || storage === void 0 ? void 0 : storage.removeItem(storageKey);
+    }
+    catch (_a) {
+    }
+}
 /*
   user: Record<string, any>
   owner: Record<string, any>
@@ -83,8 +147,48 @@ export var auth;
     }
     auth.getUserToken = getUserToken;
     /**
+     * Gets a best-effort coarse location for the current anonymous caller.
+     *
+     * This endpoint is typically IP-derived and is useful when the user is not
+     * logged in but you still want country/location context for content rules,
+     * analytics enrichment, or regional defaults.
+     *
+     * Returns fields such as `country`, `latitude`, `longitude`, and `area`
+     * when available.
+     *
+     * By default the result is cached in session storage for 30 minutes so apps
+     * can reuse coarse location context without repeatedly hitting the endpoint.
+     */
+    async function getLocation(options = {}) {
+        var _a, _b, _c;
+        const cache = (_a = options.cache) !== null && _a !== void 0 ? _a : 'session';
+        const ttlMs = (_b = options.ttlMs) !== null && _b !== void 0 ? _b : DEFAULT_AUTH_LOCATION_TTL_MS;
+        const storageKey = (_c = options.storageKey) !== null && _c !== void 0 ? _c : DEFAULT_AUTH_LOCATION_CACHE_KEY;
+        if (cache === 'session' && !options.forceRefresh) {
+            const cached = readCachedLocation(storageKey);
+            if (cached)
+                return cached;
+        }
+        const location = await request("/public/auth/location");
+        if (cache === 'session') {
+            writeCachedLocation(storageKey, location, ttlMs);
+        }
+        return location;
+    }
+    auth.getLocation = getLocation;
+    /**
+     * Clears the cached anonymous auth location, if present.
+     */
+    function clearCachedLocation(storageKey = DEFAULT_AUTH_LOCATION_CACHE_KEY) {
+        clearCachedLocationInternal(storageKey);
+    }
+    auth.clearCachedLocation = clearCachedLocation;
+    /**
      * Gets current account information for the logged in user.
      * Returns user, owner, account, and location objects.
+     *
+     * When the caller is authenticated, prefer `account.location` from this
+     * response. For anonymous callers, use `auth.getLocation()` instead.
      *
      * Short-circuits immediately (no network request) when the SDK has no
      * bearer token or API key set — the server would return 401 anyway.

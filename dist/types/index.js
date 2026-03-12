@@ -21,6 +21,7 @@ export * from "./journeysAnalytics";
 export * from "./qr";
 export * from "./template";
 export * from "./interaction";
+export * from "./analytics";
 export * from "./location";
 export * from "./jobs";
 export * from "./realtime";

@@ -2,6 +2,8 @@
 
 The `interactions` namespace is a **critical pattern** for tracking user engagement. Many apps rely heavily on it for logging events that can trigger journeys, feed analytics dashboards, and drive aggregated results such as vote counts.
 
+If you want generic page analytics, outbound click tracking, QR landing telemetry, or tag scan dashboards, use [analytics.md](analytics.md) instead. `interactions` is for structured business events and outcomes, not general web analytics.
+
 ---
 
 ## Overview

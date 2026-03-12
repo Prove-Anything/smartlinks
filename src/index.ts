@@ -33,6 +33,7 @@ export type {
   LoginResponse,
   VerifyTokenResponse,
   AccountInfoResponse,
+  AuthLocation,
 } from "./api/auth"
 
 export type {

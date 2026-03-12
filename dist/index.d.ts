@@ -6,7 +6,7 @@ export * as cache from './cache';
 export { IframeResponder, isAdminFromRoles, buildIframeSrc, } from './iframeResponder';
 export * as utils from './utils';
 export type { PortalPathParams, ConditionParams, ConditionSet, Condition, UserInfo, ProductInfo, ProofInfo, CollectionInfo, } from './utils';
-export type { LoginResponse, VerifyTokenResponse, AccountInfoResponse, } from "./api/auth";
+export type { LoginResponse, VerifyTokenResponse, AccountInfoResponse, AuthLocation, } from "./api/auth";
 export type { UserAccountRegistrationRequest, } from "./types/auth";
 export type { CommunicationEvent, CommsQueryByUser, CommsRecipientIdsQuery, CommsRecipientsWithoutActionQuery, CommsRecipientsWithActionQuery, RecipientId, RecipientWithOutcome, LogCommunicationEventBody, LogBulkCommunicationEventsBody, AppendResult, AppendBulkResult, CommsSettings, TopicConfig, CommsSettingsGetResponse, CommsSettingsPatchBody, CommsPublicTopicsResponse, UnsubscribeQuery, UnsubscribeResponse, CommsConsentUpsertRequest, CommsPreferencesUpsertRequest, CommsSubscribeRequest, CommsSubscribeResponse, CommsSubscriptionCheckQuery, CommsSubscriptionCheckResponse, CommsListMethodsQuery, CommsListMethodsResponse, RegisterEmailMethodRequest, RegisterSmsMethodRequest, RegisterMethodResponse, SubscriptionsResolveRequest, SubscriptionsResolveResponse, } from "./types/comms";
 export type { AttestationResponse, AttestationCreateRequest, AttestationUpdateRequest, } from "./types/attestation";
