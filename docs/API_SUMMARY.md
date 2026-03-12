@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.7.5  |  Generated: 2026-03-10T14:22:42.762Z
+Version: 1.7.7  |  Generated: 2026-03-12T15:08:09.181Z
 
 This is a concise summary of all available API functions and types.
 
@@ -4400,23 +4400,38 @@ interface GetOrderItemsResponse {
 }
 ```
 
-**QueryOrdersRequest** (interface)
+**QueryOrderItemFilter** (interface)
 ```typescript
-interface QueryOrdersRequest {
-  query?: {
+interface QueryOrderItemFilter {
+  productId: string
+  batchId?: string
+  variantId?: string
+}
+```
+
+**QueryOrdersFilter** (interface)
+```typescript
+interface QueryOrdersFilter {
   status?: string
   orderRef?: string
   customerId?: string
-  createdAfter?: string           // ISO 8601 date
-  createdBefore?: string          // ISO 8601 date
-  updatedAfter?: string           // ISO 8601 date
-  updatedBefore?: string          // ISO 8601 date
+  createdAfter?: string             // ISO 8601 date
+  createdBefore?: string            // ISO 8601 date
+  updatedAfter?: string             // ISO 8601 date
+  updatedBefore?: string            // ISO 8601 date
   minItemCount?: number
   maxItemCount?: number
   metadata?: Record<string, any>
+  item?: QueryOrderItemFilter
   sortBy?: string
   sortOrder?: 'asc' | 'desc'
-  }
+}
+```
+
+**QueryOrdersRequest** (interface)
+```typescript
+interface QueryOrdersRequest {
+  query?: QueryOrdersFilter
   limit?: number                    // Optional: Max results (default: 100)
   offset?: number                   // Optional: Pagination offset (default: 0)
   includeItems?: boolean            // Optional: Include items array (default: false)
@@ -4537,7 +4552,7 @@ interface GetOrderIdsParams {
 interface GetOrderIdsResponse {
   orderIds: string[]
   count: number
-  attribute: 'batchId' | 'productId' | 'variantId'
+  attribute: 'productId'
   value: string
 }
 ```
@@ -6308,7 +6323,7 @@ Find all orders containing specific items (tags, proofs, or serial numbers). Use
 
 **query**(collectionId: string,
     data: QueryOrdersRequest) → `Promise<QueryOrdersResponse>`
-Advanced query for orders with date filtering, metadata search, and sorting. More powerful than the basic list() function. ```typescript // Find pending orders created in January 2026 const result = await order.query('coll_123', { query: { status: 'pending', createdAfter: '2026-01-01T00:00:00Z', createdBefore: '2026-02-01T00:00:00Z', sortBy: 'createdAt', sortOrder: 'desc' }, limit: 50 }) // Find orders with specific metadata and item count const highPriority = await order.query('coll_123', { query: { metadata: { priority: 'high' }, minItemCount: 10, maxItemCount: 100 }, includeItems: true }) ```
+Advanced query for orders with order-level and item-level filtering. More powerful than the basic list() function. ```typescript // Find pending orders created in January 2026 const result = await order.query('coll_123', { query: { status: 'pending', createdAfter: '2026-01-01T00:00:00Z', createdBefore: '2026-02-01T00:00:00Z', sortBy: 'createdAt', sortOrder: 'desc' }, limit: 50 }) // Find orders with specific metadata and item count const highPriority = await order.query('coll_123', { query: { metadata: { priority: 'high' }, minItemCount: 10, maxItemCount: 100 }, includeItems: true }) // Find orders containing a specific product batch const batchOrders = await order.query('coll_123', { query: { item: { productId: 'prod_789', batchId: 'BATCH-2024-001' } }, includeItems: true }) ```
 
 **reports**(collectionId: string,
     params?: ReportsParams) → `Promise<ReportsResponse>`
@@ -6341,41 +6356,21 @@ Get analytics summary for multiple orders at once. Efficient way to retrieve sca
     params?: SummaryRequest) → `Promise<CollectionSummaryResponse>`
 Get collection-wide analytics summary across all orders. Returns daily scan counts and admin activity overview. ```typescript // Get all-time collection summary const summary = await order.getCollectionSummary('coll_123') console.log(`Admin activity count: ${summary.adminActivity.count}`) console.log('Scans by day:') summary.scansByDay.forEach(day => { console.log(`  ${day.date}: ${day.scanCount} scans`) }) // Get summary for last 30 days const recentSummary = await order.getCollectionSummary('coll_123', { from: '2026-01-08T00:00:00Z', to: '2026-02-08T00:00:00Z' }) ```
 
-**findByBatch**(collectionId: string,
-    batchId: string,
-    params?: FindOrdersByAttributeParams) → `Promise<FindOrdersByAttributeResponse>`
-Find all orders containing items from a specific batch. Uses indexed queries for fast lookups across order items. ```typescript // Find orders with items from a specific batch const { orders } = await order.findByBatch('coll_123', 'BATCH-2024-001', { includeItems: true, limit: 50 }) // Get unique customers who received this batch const customers = [...new Set(orders.map(o => o.customerId).filter(Boolean))] console.log(`Batch delivered to ${customers.length} customers`) ```
-
 **findOrdersByProduct**(collectionId: string,
     productId: string,
     params?: FindOrdersByAttributeParams) → `Promise<FindOrdersByAttributeResponse>`
 Find all orders containing items from a specific product. Uses indexed queries for fast lookups across order items. ```typescript // Find all orders containing a product const { orders, limit, offset } = await order.findOrdersByProduct('coll_123', 'prod_789', { limit: 100 }) console.log(`Product appears in ${orders.length} orders`) ```
-
-**findByVariant**(collectionId: string,
-    variantId: string,
-    params?: FindOrdersByAttributeParams) → `Promise<FindOrdersByAttributeResponse>`
-Find all orders containing items from a specific variant. Uses indexed queries for fast lookups across order items. ```typescript // Find orders with a specific variant const { orders } = await order.findByVariant('coll_123', 'var_456', { includeItems: true }) console.log(`Variant ${variantId} in ${orders.length} orders`) ```
-
-**findItemsByBatch**(collectionId: string,
-    batchId: string,
-    params?: FindItemsByAttributeParams) → `Promise<FindItemsByAttributeResponse>`
-Get individual order items (not full orders) for a specific batch. Returns all matching items with optional order summary. ```typescript // Get items from a batch with order info const { items, count } = await order.findItemsByBatch('coll_123', 'BATCH-2024-001', { includeOrder: true, limit: 100 }) // Group by order status const byStatus = items.reduce((acc, item) => { const status = item.order?.status || 'unknown' acc[status] = (acc[status] || 0) + 1 return acc }, {}) ```
 
 **findItemsByProduct**(collectionId: string,
     productId: string,
     params?: FindItemsByAttributeParams) → `Promise<FindItemsByAttributeResponse>`
 Get individual order items for a specific product. Returns all matching items with optional order summary. ```typescript // Get all items for a product const { items } = await order.findItemsByProduct('coll_123', 'prod_789', { includeOrder: true }) console.log(`Product delivered in ${items.length} order items`) ```
 
-**findItemsByVariant**(collectionId: string,
-    variantId: string,
-    params?: FindItemsByAttributeParams) → `Promise<FindItemsByAttributeResponse>`
-Get individual order items for a specific variant. Returns all matching items with optional order summary. ```typescript // Get variant items with order details const { items, count } = await order.findItemsByVariant('coll_123', 'var_456', { includeOrder: true, limit: 50 }) ```
-
 **getOrderIdsByAttribute**(collectionId: string,
-    attribute: 'batchId' | 'productId' | 'variantId',
+    attribute: 'productId',
     value: string,
     params?: GetOrderIdsParams) → `Promise<GetOrderIdsResponse>`
-Get unique order IDs containing items matching the specified attribute. Lightweight query that only returns order IDs, not full order objects. ```typescript // Get order IDs for a batch (fast count) const { orderIds, count } = await order.getOrderIdsByAttribute( 'coll_123', 'batchId', 'BATCH-2024-001' ) console.log(`Batch appears in ${count} orders`) // Get order IDs for a product const productOrders = await order.getOrderIdsByAttribute( 'coll_123', 'productId', 'prod_789', { limit: 500 } ) ```
+Get unique order IDs containing items for a specific product. Lightweight query that only returns order IDs, not full order objects. ```typescript // Get order IDs for a product const productOrders = await order.getOrderIdsByAttribute( 'coll_123', 'productId', 'prod_789', { limit: 500 } ) ```
 
 ### product
 

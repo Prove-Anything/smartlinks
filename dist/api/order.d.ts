@@ -220,7 +220,7 @@ export declare namespace order {
      */
     function lookup(collectionId: string, data: LookupOrdersRequest): Promise<LookupOrdersResponse>;
     /**
-     * Advanced query for orders with date filtering, metadata search, and sorting.
+     * Advanced query for orders with order-level and item-level filtering.
      * More powerful than the basic list() function.
      *
      * @param collectionId - Identifier of the parent collection
@@ -248,6 +248,17 @@ export declare namespace order {
      *     metadata: { priority: 'high' },
      *     minItemCount: 10,
      *     maxItemCount: 100
+     *   },
+     *   includeItems: true
+     * })
+     *
+     * // Find orders containing a specific product batch
+     * const batchOrders = await order.query('coll_123', {
+     *   query: {
+     *     item: {
+     *       productId: 'prod_789',
+     *       batchId: 'BATCH-2024-001'
+     *     }
      *   },
      *   includeItems: true
      * })
@@ -444,30 +455,6 @@ export declare namespace order {
      */
     function getCollectionSummary(collectionId: string, params?: SummaryRequest): Promise<CollectionSummaryResponse>;
     /**
-     * Find all orders containing items from a specific batch.
-     * Uses indexed queries for fast lookups across order items.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param batchId - Batch ID to search for
-     * @param params - Optional pagination and includeItems parameters
-     * @returns Promise resolving to a FindOrdersByAttributeResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Find orders with items from a specific batch
-     * const { orders } = await order.findByBatch('coll_123', 'BATCH-2024-001', {
-     *   includeItems: true,
-     *   limit: 50
-     * })
-     *
-     * // Get unique customers who received this batch
-     * const customers = [...new Set(orders.map(o => o.customerId).filter(Boolean))]
-     * console.log(`Batch delivered to ${customers.length} customers`)
-     * ```
-     */
-    function findByBatch(collectionId: string, batchId: string, params?: FindOrdersByAttributeParams): Promise<FindOrdersByAttributeResponse>;
-    /**
      * Find all orders containing items from a specific product.
      * Uses indexed queries for fast lookups across order items.
      *
@@ -488,54 +475,6 @@ export declare namespace order {
      * ```
      */
     function findOrdersByProduct(collectionId: string, productId: string, params?: FindOrdersByAttributeParams): Promise<FindOrdersByAttributeResponse>;
-    /**
-     * Find all orders containing items from a specific variant.
-     * Uses indexed queries for fast lookups across order items.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param variantId - Variant ID to search for
-     * @param params - Optional pagination and includeItems parameters
-     * @returns Promise resolving to a FindOrdersByAttributeResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Find orders with a specific variant
-     * const { orders } = await order.findByVariant('coll_123', 'var_456', {
-     *   includeItems: true
-     * })
-     *
-     * console.log(`Variant ${variantId} in ${orders.length} orders`)
-     * ```
-     */
-    function findByVariant(collectionId: string, variantId: string, params?: FindOrdersByAttributeParams): Promise<FindOrdersByAttributeResponse>;
-    /**
-     * Get individual order items (not full orders) for a specific batch.
-     * Returns all matching items with optional order summary.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param batchId - Batch ID to search for
-     * @param params - Optional pagination and includeOrder parameters
-     * @returns Promise resolving to a FindItemsByAttributeResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Get items from a batch with order info
-     * const { items, count } = await order.findItemsByBatch('coll_123', 'BATCH-2024-001', {
-     *   includeOrder: true,
-     *   limit: 100
-     * })
-     *
-     * // Group by order status
-     * const byStatus = items.reduce((acc, item) => {
-     *   const status = item.order?.status || 'unknown'
-     *   acc[status] = (acc[status] || 0) + 1
-     *   return acc
-     * }, {})
-     * ```
-     */
-    function findItemsByBatch(collectionId: string, batchId: string, params?: FindItemsByAttributeParams): Promise<FindItemsByAttributeResponse>;
     /**
      * Get individual order items for a specific product.
      * Returns all matching items with optional order summary.
@@ -558,46 +497,18 @@ export declare namespace order {
      */
     function findItemsByProduct(collectionId: string, productId: string, params?: FindItemsByAttributeParams): Promise<FindItemsByAttributeResponse>;
     /**
-     * Get individual order items for a specific variant.
-     * Returns all matching items with optional order summary.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param variantId - Variant ID to search for
-     * @param params - Optional pagination and includeOrder parameters
-     * @returns Promise resolving to a FindItemsByAttributeResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Get variant items with order details
-     * const { items, count } = await order.findItemsByVariant('coll_123', 'var_456', {
-     *   includeOrder: true,
-     *   limit: 50
-     * })
-     * ```
-     */
-    function findItemsByVariant(collectionId: string, variantId: string, params?: FindItemsByAttributeParams): Promise<FindItemsByAttributeResponse>;
-    /**
-     * Get unique order IDs containing items matching the specified attribute.
+     * Get unique order IDs containing items for a specific product.
      * Lightweight query that only returns order IDs, not full order objects.
      *
      * @param collectionId - Identifier of the parent collection
-     * @param attribute - Attribute to search by ('batchId', 'productId', or 'variantId')
-     * @param value - Value to search for
+     * @param attribute - Attribute to search by ('productId')
+     * @param value - Product ID to search for
      * @param params - Optional pagination parameters
      * @returns Promise resolving to a GetOrderIdsResponse
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
-     * // Get order IDs for a batch (fast count)
-     * const { orderIds, count } = await order.getOrderIdsByAttribute(
-     *   'coll_123',
-     *   'batchId',
-     *   'BATCH-2024-001'
-     * )
-     * console.log(`Batch appears in ${count} orders`)
-     *
      * // Get order IDs for a product
      * const productOrders = await order.getOrderIdsByAttribute(
      *   'coll_123',
@@ -607,5 +518,5 @@ export declare namespace order {
      * )
      * ```
      */
-    function getOrderIdsByAttribute(collectionId: string, attribute: 'batchId' | 'productId' | 'variantId', value: string, params?: GetOrderIdsParams): Promise<GetOrderIdsResponse>;
+    function getOrderIdsByAttribute(collectionId: string, attribute: 'productId', value: string, params?: GetOrderIdsParams): Promise<GetOrderIdsResponse>;
 }

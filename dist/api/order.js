@@ -286,8 +286,14 @@ export var order;
         return post(path, data);
     }
     order.lookup = lookup;
+    function validateOrderQuery(data) {
+        var _a;
+        if (((_a = data.query) === null || _a === void 0 ? void 0 : _a.item) && !data.query.item.productId) {
+            throw new Error('query.item.productId is required when using item-level order filters');
+        }
+    }
     /**
-     * Advanced query for orders with date filtering, metadata search, and sorting.
+     * Advanced query for orders with order-level and item-level filtering.
      * More powerful than the basic list() function.
      *
      * @param collectionId - Identifier of the parent collection
@@ -318,9 +324,21 @@ export var order;
      *   },
      *   includeItems: true
      * })
+     *
+     * // Find orders containing a specific product batch
+     * const batchOrders = await order.query('coll_123', {
+     *   query: {
+     *     item: {
+     *       productId: 'prod_789',
+     *       batchId: 'BATCH-2024-001'
+     *     }
+     *   },
+     *   includeItems: true
+     * })
      * ```
      */
     async function query(collectionId, data) {
+        validateOrderQuery(data);
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/orders/query`;
         return post(path, data);
     }
@@ -577,42 +595,6 @@ export var order;
     }
     order.getCollectionSummary = getCollectionSummary;
     /**
-     * Find all orders containing items from a specific batch.
-     * Uses indexed queries for fast lookups across order items.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param batchId - Batch ID to search for
-     * @param params - Optional pagination and includeItems parameters
-     * @returns Promise resolving to a FindOrdersByAttributeResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Find orders with items from a specific batch
-     * const { orders } = await order.findByBatch('coll_123', 'BATCH-2024-001', {
-     *   includeItems: true,
-     *   limit: 50
-     * })
-     *
-     * // Get unique customers who received this batch
-     * const customers = [...new Set(orders.map(o => o.customerId).filter(Boolean))]
-     * console.log(`Batch delivered to ${customers.length} customers`)
-     * ```
-     */
-    async function findByBatch(collectionId, batchId, params) {
-        const queryParams = new URLSearchParams();
-        if (params === null || params === void 0 ? void 0 : params.limit)
-            queryParams.append('limit', params.limit.toString());
-        if (params === null || params === void 0 ? void 0 : params.offset)
-            queryParams.append('offset', params.offset.toString());
-        if (params === null || params === void 0 ? void 0 : params.includeItems)
-            queryParams.append('includeItems', 'true');
-        const query = queryParams.toString();
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/orders/batch/${encodeURIComponent(batchId)}${query ? `?${query}` : ''}`;
-        return request(path);
-    }
-    order.findByBatch = findByBatch;
-    /**
      * Find all orders containing items from a specific product.
      * Uses indexed queries for fast lookups across order items.
      *
@@ -645,78 +627,6 @@ export var order;
         return request(path);
     }
     order.findOrdersByProduct = findOrdersByProduct;
-    /**
-     * Find all orders containing items from a specific variant.
-     * Uses indexed queries for fast lookups across order items.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param variantId - Variant ID to search for
-     * @param params - Optional pagination and includeItems parameters
-     * @returns Promise resolving to a FindOrdersByAttributeResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Find orders with a specific variant
-     * const { orders } = await order.findByVariant('coll_123', 'var_456', {
-     *   includeItems: true
-     * })
-     *
-     * console.log(`Variant ${variantId} in ${orders.length} orders`)
-     * ```
-     */
-    async function findByVariant(collectionId, variantId, params) {
-        const queryParams = new URLSearchParams();
-        if (params === null || params === void 0 ? void 0 : params.limit)
-            queryParams.append('limit', params.limit.toString());
-        if (params === null || params === void 0 ? void 0 : params.offset)
-            queryParams.append('offset', params.offset.toString());
-        if (params === null || params === void 0 ? void 0 : params.includeItems)
-            queryParams.append('includeItems', 'true');
-        const query = queryParams.toString();
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/orders/variant/${encodeURIComponent(variantId)}${query ? `?${query}` : ''}`;
-        return request(path);
-    }
-    order.findByVariant = findByVariant;
-    /**
-     * Get individual order items (not full orders) for a specific batch.
-     * Returns all matching items with optional order summary.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param batchId - Batch ID to search for
-     * @param params - Optional pagination and includeOrder parameters
-     * @returns Promise resolving to a FindItemsByAttributeResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Get items from a batch with order info
-     * const { items, count } = await order.findItemsByBatch('coll_123', 'BATCH-2024-001', {
-     *   includeOrder: true,
-     *   limit: 100
-     * })
-     *
-     * // Group by order status
-     * const byStatus = items.reduce((acc, item) => {
-     *   const status = item.order?.status || 'unknown'
-     *   acc[status] = (acc[status] || 0) + 1
-     *   return acc
-     * }, {})
-     * ```
-     */
-    async function findItemsByBatch(collectionId, batchId, params) {
-        const queryParams = new URLSearchParams();
-        if (params === null || params === void 0 ? void 0 : params.limit)
-            queryParams.append('limit', params.limit.toString());
-        if (params === null || params === void 0 ? void 0 : params.offset)
-            queryParams.append('offset', params.offset.toString());
-        if (params === null || params === void 0 ? void 0 : params.includeOrder)
-            queryParams.append('includeOrder', 'true');
-        const query = queryParams.toString();
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/orders/batch/${encodeURIComponent(batchId)}/items${query ? `?${query}` : ''}`;
-        return request(path);
-    }
-    order.findItemsByBatch = findItemsByBatch;
     /**
      * Get individual order items for a specific product.
      * Returns all matching items with optional order summary.
@@ -751,58 +661,18 @@ export var order;
     }
     order.findItemsByProduct = findItemsByProduct;
     /**
-     * Get individual order items for a specific variant.
-     * Returns all matching items with optional order summary.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param variantId - Variant ID to search for
-     * @param params - Optional pagination and includeOrder parameters
-     * @returns Promise resolving to a FindItemsByAttributeResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Get variant items with order details
-     * const { items, count } = await order.findItemsByVariant('coll_123', 'var_456', {
-     *   includeOrder: true,
-     *   limit: 50
-     * })
-     * ```
-     */
-    async function findItemsByVariant(collectionId, variantId, params) {
-        const queryParams = new URLSearchParams();
-        if (params === null || params === void 0 ? void 0 : params.limit)
-            queryParams.append('limit', params.limit.toString());
-        if (params === null || params === void 0 ? void 0 : params.offset)
-            queryParams.append('offset', params.offset.toString());
-        if (params === null || params === void 0 ? void 0 : params.includeOrder)
-            queryParams.append('includeOrder', 'true');
-        const query = queryParams.toString();
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/orders/variant/${encodeURIComponent(variantId)}/items${query ? `?${query}` : ''}`;
-        return request(path);
-    }
-    order.findItemsByVariant = findItemsByVariant;
-    /**
-     * Get unique order IDs containing items matching the specified attribute.
+     * Get unique order IDs containing items for a specific product.
      * Lightweight query that only returns order IDs, not full order objects.
      *
      * @param collectionId - Identifier of the parent collection
-     * @param attribute - Attribute to search by ('batchId', 'productId', or 'variantId')
-     * @param value - Value to search for
+     * @param attribute - Attribute to search by ('productId')
+     * @param value - Product ID to search for
      * @param params - Optional pagination parameters
      * @returns Promise resolving to a GetOrderIdsResponse
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
-     * // Get order IDs for a batch (fast count)
-     * const { orderIds, count } = await order.getOrderIdsByAttribute(
-     *   'coll_123',
-     *   'batchId',
-     *   'BATCH-2024-001'
-     * )
-     * console.log(`Batch appears in ${count} orders`)
-     *
      * // Get order IDs for a product
      * const productOrders = await order.getOrderIdsByAttribute(
      *   'coll_123',

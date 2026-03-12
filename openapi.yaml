@@ -4132,75 +4132,11 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TimelineRequest"
-  /admin/collection/{collectionId}/orders/batch/{batchId}:
-    get:
-      tags:
-        - order
-      summary: Find all orders containing items from a specific batch.
-      operationId: order_findByBatch
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: batchId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FindOrdersByAttributeResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/orders/batch/{batchId}/items:
-    get:
-      tags:
-        - order
-      summary: Get individual order items (not full orders) for a specific batch.
-      operationId: order_findItemsByBatch
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: batchId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FindItemsByAttributeResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /admin/collection/{collectionId}/orders/ids/{attribute}/{value}:
     get:
       tags:
         - order
-      summary: order.getOrderIdsByAttribute
+      summary: Get unique order IDs containing items for a specific product.
       operationId: order_getOrderIdsByAttribute
       security:
         - bearerAuth: []
@@ -4384,70 +4320,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ReportsResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/orders/variant/{variantId}:
-    get:
-      tags:
-        - order
-      summary: Find all orders containing items from a specific variant.
-      operationId: order_findByVariant
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: variantId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FindOrdersByAttributeResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/orders/variant/{variantId}/items:
-    get:
-      tags:
-        - order
-      summary: Get individual order items for a specific variant.
-      operationId: order_findItemsByVariant
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: variantId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FindItemsByAttributeResponse"
         400:
           description: Bad request
         401:
@@ -9828,8 +9700,9 @@ components:
         id:
           type: string
         type:
-          type: object
-          additionalProperties: true
+          type: string
+          enum:
+            - function
         function:
           type: object
           additionalProperties: true
@@ -9973,8 +9846,9 @@ components:
         id:
           type: string
         object:
-          type: object
-          additionalProperties: true
+          type: string
+          enum:
+            - chat.completion
         created:
           type: number
         model:
@@ -10008,8 +9882,9 @@ components:
         id:
           type: string
         object:
-          type: object
-          additionalProperties: true
+          type: string
+          enum:
+            - chat.completion.chunk
         created:
           type: number
         model:
@@ -12040,8 +11915,9 @@ components:
           items:
             $ref: "#/components/schemas/AttestationSummaryBucket"
         audience:
-          type: object
-          additionalProperties: true
+          type: string
+          enum:
+            - public
       required:
         - summary
         - audience
@@ -12086,8 +11962,9 @@ components:
           items:
             $ref: "#/components/schemas/AttestationSummaryBucket"
         audience:
-          type: object
-          additionalProperties: true
+          type: string
+          enum:
+            - public
         subjectCount:
           type: number
       required:
@@ -12114,8 +11991,9 @@ components:
           items:
             $ref: "#/components/schemas/LatestAttestation"
         audience:
-          type: object
-          additionalProperties: true
+          type: string
+          enum:
+            - public
         subjectCount:
           type: number
       required:
@@ -13952,8 +13830,9 @@ components:
           type: object
           additionalProperties: true
         type:
-          type: object
-          additionalProperties: true
+          type: string
+          enum:
+            - object
         required:
           type: array
           items:
@@ -14425,8 +14304,9 @@ components:
       type: object
       properties:
         type:
-          type: object
-          additionalProperties: true
+          type: string
+          enum:
+            - smartlinks-route-change
         path:
           type: string
         context:
@@ -14531,8 +14411,9 @@ components:
           type: object
           additionalProperties: true
         phase:
-          type: object
-          additionalProperties: true
+          type: string
+          enum:
+            - start
         id:
           type: string
         fields:
@@ -14563,8 +14444,9 @@ components:
           type: object
           additionalProperties: true
         phase:
-          type: object
-          additionalProperties: true
+          type: string
+          enum:
+            - chunk
         id:
           type: string
         seq:
@@ -14584,8 +14466,9 @@ components:
           type: object
           additionalProperties: true
         phase:
-          type: object
-          additionalProperties: true
+          type: string
+          enum:
+            - end
         id:
           type: string
       required:
@@ -14599,8 +14482,9 @@ components:
           type: object
           additionalProperties: true
         phase:
-          type: object
-          additionalProperties: true
+          type: string
+          enum:
+            - ack
         id:
           type: string
         seq:
@@ -14617,8 +14501,9 @@ components:
           type: object
           additionalProperties: true
         phase:
-          type: object
-          additionalProperties: true
+          type: string
+          enum:
+            - done
         id:
           type: string
         ok:
@@ -14673,8 +14558,9 @@ components:
         include:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            type: string
+            enum:
+              - interaction
     AdminInteractionsCountsByOutcomeRequest:
       type: object
       properties:
@@ -15734,12 +15620,20 @@ components:
         - items
         - limit
         - offset
-    QueryOrdersRequest:
+    QueryOrderItemFilter:
       type: object
       properties:
-        query:
-          type: object
-          additionalProperties: true
+        productId:
+          type: string
+        batchId:
+          type: string
+        variantId:
+          type: string
+      required:
+        - productId
+    QueryOrdersFilter:
+      type: object
+      properties:
         status:
           type: string
         orderRef:
@@ -15761,6 +15655,8 @@ components:
         metadata:
           type: object
           additionalProperties: true
+        item:
+          $ref: "#/components/schemas/QueryOrderItemFilter"
         sortBy:
           type: string
         sortOrder:
@@ -15768,6 +15664,11 @@ components:
           enum:
             - asc
             - desc
+    QueryOrdersRequest:
+      type: object
+      properties:
+        query:
+          $ref: "#/components/schemas/QueryOrdersFilter"
         limit:
           type: number
         offset:
@@ -15955,9 +15856,7 @@ components:
         attribute:
           type: string
           enum:
-            - batchId
             - productId
-            - variantId
         value:
           type: string
       required:
@@ -16970,8 +16869,9 @@ components:
       type: object
       properties:
         engine:
-          type: object
-          additionalProperties: true
+          type: string
+          enum:
+            - liquid
         source:
           type: string
         props:

@@ -153,6 +153,12 @@ function tsToSchema(t, known) {
     if (vals.length) return { type: 'string', enum: vals };
   }
 
+  // Single string literal: 'a'
+  const singleLiteral = t.match(/^'([^']+)'$/);
+  if (singleLiteral) {
+    return { type: 'string', enum: [singleLiteral[1]] };
+  }
+
   // Non-literal union: T1 | T2
   if (t.includes(' | ')) {
     const parts = t.split(' | ').map(p => p.trim()).filter(p => p !== 'null' && p !== 'undefined' && p !== 'void');

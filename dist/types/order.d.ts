@@ -176,23 +176,37 @@ export interface GetOrderItemsResponse {
     offset: number;
 }
 /**
+ * Item-level filters for advanced order querying.
+ * Batch and variant identifiers are only meaningful within a product.
+ */
+export interface QueryOrderItemFilter {
+    productId: string;
+    batchId?: string;
+    variantId?: string;
+}
+/**
+ * Order-level and item-level filters for advanced order querying.
+ */
+export interface QueryOrdersFilter {
+    status?: string;
+    orderRef?: string;
+    customerId?: string;
+    createdAfter?: string;
+    createdBefore?: string;
+    updatedAfter?: string;
+    updatedBefore?: string;
+    minItemCount?: number;
+    maxItemCount?: number;
+    metadata?: Record<string, any>;
+    item?: QueryOrderItemFilter;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+}
+/**
  * Request for advanced order querying.
  */
 export interface QueryOrdersRequest {
-    query?: {
-        status?: string;
-        orderRef?: string;
-        customerId?: string;
-        createdAfter?: string;
-        createdBefore?: string;
-        updatedAfter?: string;
-        updatedBefore?: string;
-        minItemCount?: number;
-        maxItemCount?: number;
-        metadata?: Record<string, any>;
-        sortBy?: string;
-        sortOrder?: 'asc' | 'desc';
-    };
+    query?: QueryOrdersFilter;
     limit?: number;
     offset?: number;
     includeItems?: boolean;
@@ -302,7 +316,7 @@ export interface GetOrderIdsParams {
 export interface GetOrderIdsResponse {
     orderIds: string[];
     count: number;
-    attribute: 'batchId' | 'productId' | 'variantId';
+    attribute: 'productId';
     value: string;
 }
 /**
