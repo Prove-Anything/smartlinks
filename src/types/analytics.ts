@@ -14,6 +14,7 @@ export type AnalyticsMetric = 'count' | 'uniqueSessions' | 'uniqueVisitors'
 export type AnalyticsSortOrder = 'asc' | 'desc'
 export type AnalyticsDeviceType = 'mobile' | 'tablet' | 'desktop' | 'unknown'
 export type AnalyticsStorageMode = 'local' | 'session' | false
+export type AnalyticsSessionId = number
 
 export interface AnalyticsLocation {
 	country?: string
@@ -23,7 +24,7 @@ export interface AnalyticsLocation {
 	[key: string]: any
 }
 
-export interface AnalyticsStandardMetadataFields {
+export interface AnalyticsStandardEventFields {
 	visitorId?: string
 	referrer?: string
 	referrerHost?: string
@@ -48,8 +49,8 @@ export interface AnalyticsStandardMetadataFields {
 	scanMethod?: string
 }
 
-export interface CollectionAnalyticsEvent extends AnalyticsStandardMetadataFields {
-	sessionId?: string
+export interface CollectionAnalyticsEvent extends AnalyticsStandardEventFields {
+	sessionId?: AnalyticsSessionId
 	eventType: AnalyticsEventType
 	collectionId: string
 	productId?: string
@@ -67,8 +68,8 @@ export interface CollectionAnalyticsEvent extends AnalyticsStandardMetadataField
 	metadata?: Record<string, any>
 }
 
-export interface TagAnalyticsEvent extends AnalyticsStandardMetadataFields {
-	sessionId?: string
+export interface TagAnalyticsEvent extends AnalyticsStandardEventFields {
+	sessionId?: AnalyticsSessionId
 	eventType: AnalyticsEventType
 	collectionId: string
 	productId?: string
@@ -90,13 +91,13 @@ export interface AnalyticsTrackOptions {
 
 export interface AnalyticsBrowserConfig {
 	sessionStorageKey?: string
-	sessionIdFactory?: () => string
+	sessionIdFactory?: () => AnalyticsSessionId
 	visitorId?: string
 	visitorStorage?: AnalyticsStorageMode
 	visitorStorageKey?: string
 	visitorIdFactory?: () => string
 	autoCaptureCampaignParams?: boolean
-	campaignParamMap?: Partial<Record<keyof AnalyticsStandardMetadataFields, string | string[]>>
+	campaignParamMap?: Partial<Record<keyof AnalyticsStandardEventFields, string | string[]>>
 	defaultCollectionEvent?: Partial<CollectionAnalyticsEvent>
 	defaultTagEvent?: Partial<TagAnalyticsEvent>
 	getCollectionDefaults?: () => Partial<CollectionAnalyticsEvent> | undefined
@@ -165,8 +166,8 @@ export interface AnalyticsFilterRequest {
 	batchIds?: string[]
 	variantId?: string
 	variantIds?: string[]
-	sessionId?: string
-	sessionIds?: string[]
+	sessionId?: AnalyticsSessionId
+	sessionIds?: AnalyticsSessionId[]
 	country?: string
 	countries?: string[]
 	metadata?: Record<string, any>

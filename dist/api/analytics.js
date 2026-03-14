@@ -39,8 +39,15 @@ const defaultCampaignParamMap = {
     qrCodeId: 'qrCodeId',
     scanMethod: ['scanMethod', 'scan_method'],
 };
+const promotedAnalyticsKeys = new Set([
+    'visitorId',
+    'referrerHost',
+    'pageId',
+    'entryType',
+    'scanMethod',
+]);
 function createSessionId() {
-    return `${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
+    return Date.now() * 1000 + Math.floor(Math.random() * 1000);
 }
 function createVisitorId() {
     return `visitor_${Date.now()}_${Math.floor(Math.random() * 1000000)}`;
@@ -56,6 +63,33 @@ function getStorage(mode) {
     }
     return undefined;
 }
+function parseStoredSessionId(value) {
+    if (/^\d+$/.test(value)) {
+        const parsed = Number(value);
+        if (Number.isSafeInteger(parsed))
+            return parsed;
+    }
+    return undefined;
+}
+function assertValidSessionId(sessionId) {
+    if (sessionId === undefined || sessionId === null)
+        return undefined;
+    if (typeof sessionId !== 'number' || !Number.isSafeInteger(sessionId)) {
+        throw new Error('analytics sessionId must be a safe integer number.');
+    }
+    return sessionId;
+}
+function prunePromotedMetadataKeys(metadata) {
+    if (!metadata)
+        return undefined;
+    const entries = Object.entries(metadata).filter(([key]) => !promotedAnalyticsKeys.has(key));
+    if (entries.length === 0)
+        return undefined;
+    return Object.fromEntries(entries);
+}
+function normalizeAnalyticsEvent(event) {
+    return Object.assign(Object.assign({}, event), { sessionId: assertValidSessionId(event.sessionId), metadata: prunePromotedMetadataKeys(event.metadata) });
+}
 function getOrCreateSessionId() {
     var _a, _b, _c, _d;
     if (analyticsBrowserState.sessionId)
@@ -64,14 +98,17 @@ function getOrCreateSessionId() {
     const storage = getStorage('session');
     const existing = key ? storage === null || storage === void 0 ? void 0 : storage.getItem(key) : undefined;
     if (existing) {
-        analyticsBrowserState.sessionId = existing;
-        return existing;
+        const parsed = parseStoredSessionId(existing);
+        if (parsed !== undefined) {
+            analyticsBrowserState.sessionId = parsed;
+            return parsed;
+        }
     }
-    const generated = (_d = (_c = (_b = analyticsBrowserState.config).sessionIdFactory) === null || _c === void 0 ? void 0 : _c.call(_b)) !== null && _d !== void 0 ? _d : createSessionId();
+    const generated = assertValidSessionId((_d = (_c = (_b = analyticsBrowserState.config).sessionIdFactory) === null || _c === void 0 ? void 0 : _c.call(_b)) !== null && _d !== void 0 ? _d : createSessionId());
     analyticsBrowserState.sessionId = generated;
     if (key) {
         try {
-            storage === null || storage === void 0 ? void 0 : storage.setItem(key, generated);
+            storage === null || storage === void 0 ? void 0 : storage.setItem(key, String(generated));
         }
         catch (_e) {
         }
@@ -201,21 +238,21 @@ function getResolvedLocation() {
     return undefined;
 }
 function mergeCollectionEventDefaults(event) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o, _p, _q;
     const configuredDefaults = (_a = analyticsBrowserState.config.defaultCollectionEvent) !== null && _a !== void 0 ? _a : {};
     const dynamicDefaults = (_d = (_c = (_b = analyticsBrowserState.config).getCollectionDefaults) === null || _c === void 0 ? void 0 : _c.call(_b)) !== null && _d !== void 0 ? _d : {};
     const campaignFields = analyticsBrowserState.config.autoCaptureCampaignParams === false ? {} : getCampaignFields();
     const path = (_e = event.path) !== null && _e !== void 0 ? _e : getCurrentPath();
     const visitorId = (_f = event.visitorId) !== null && _f !== void 0 ? _f : getOrCreateVisitorId();
     const href = (_h = (_g = event.href) !== null && _g !== void 0 ? _g : dynamicDefaults.href) !== null && _h !== void 0 ? _h : configuredDefaults.href;
-    return Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, configuredDefaults), dynamicDefaults), campaignFields), getCurrentReferrerFields()), { visitorId, sessionId: getOrCreateSessionId(), deviceType: detectDeviceType(), path, pagePath: (_k = (_j = event.pagePath) !== null && _j !== void 0 ? _j : campaignFields.pagePath) !== null && _k !== void 0 ? _k : path, destinationDomain: (_l = event.destinationDomain) !== null && _l !== void 0 ? _l : getDestinationDomain(href), location: getResolvedLocation(), eventType: 'page_view' }), event), { metadata: Object.assign(Object.assign(Object.assign(Object.assign({}, ((_m = configuredDefaults.metadata) !== null && _m !== void 0 ? _m : {})), ((_o = dynamicDefaults.metadata) !== null && _o !== void 0 ? _o : {})), (visitorId ? { visitorId } : {})), ((_p = event.metadata) !== null && _p !== void 0 ? _p : {})) });
+    return Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, configuredDefaults), dynamicDefaults), campaignFields), getCurrentReferrerFields()), { visitorId, sessionId: assertValidSessionId((_j = event.sessionId) !== null && _j !== void 0 ? _j : getOrCreateSessionId()), deviceType: detectDeviceType(), path, pagePath: (_l = (_k = event.pagePath) !== null && _k !== void 0 ? _k : campaignFields.pagePath) !== null && _l !== void 0 ? _l : path, destinationDomain: (_m = event.destinationDomain) !== null && _m !== void 0 ? _m : getDestinationDomain(href), location: getResolvedLocation(), eventType: 'page_view' }), event), { metadata: prunePromotedMetadataKeys(Object.assign(Object.assign(Object.assign({}, ((_o = configuredDefaults.metadata) !== null && _o !== void 0 ? _o : {})), ((_p = dynamicDefaults.metadata) !== null && _p !== void 0 ? _p : {})), ((_q = event.metadata) !== null && _q !== void 0 ? _q : {}))) });
 }
 function mergeTagEventDefaults(event) {
-    var _a, _b, _c, _d, _e, _f, _g, _h;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     const configuredDefaults = (_a = analyticsBrowserState.config.defaultTagEvent) !== null && _a !== void 0 ? _a : {};
     const dynamicDefaults = (_d = (_c = (_b = analyticsBrowserState.config).getTagDefaults) === null || _c === void 0 ? void 0 : _c.call(_b)) !== null && _d !== void 0 ? _d : {};
     const visitorId = (_e = event.visitorId) !== null && _e !== void 0 ? _e : getOrCreateVisitorId();
-    return Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, configuredDefaults), dynamicDefaults), { visitorId, sessionId: getOrCreateSessionId(), deviceType: detectDeviceType(), location: getResolvedLocation(), eventType: 'scan_tag' }), event), { metadata: Object.assign(Object.assign(Object.assign(Object.assign({}, ((_f = configuredDefaults.metadata) !== null && _f !== void 0 ? _f : {})), ((_g = dynamicDefaults.metadata) !== null && _g !== void 0 ? _g : {})), (visitorId ? { visitorId } : {})), ((_h = event.metadata) !== null && _h !== void 0 ? _h : {})) });
+    return Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({}, configuredDefaults), dynamicDefaults), { visitorId, sessionId: assertValidSessionId((_f = event.sessionId) !== null && _f !== void 0 ? _f : getOrCreateSessionId()), deviceType: detectDeviceType(), location: getResolvedLocation(), eventType: 'scan_tag' }), event), { metadata: prunePromotedMetadataKeys(Object.assign(Object.assign(Object.assign({}, ((_g = configuredDefaults.metadata) !== null && _g !== void 0 ? _g : {})), ((_h = dynamicDefaults.metadata) !== null && _h !== void 0 ? _h : {})), ((_j = event.metadata) !== null && _j !== void 0 ? _j : {}))) });
 }
 function isExternalHref(href) {
     if (typeof window === 'undefined')
@@ -267,7 +304,7 @@ export var analytics;
          * Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
          */
         function track(event, options) {
-            return queueAnalytics('/public/analytics/collection', event, options);
+            return queueAnalytics('/public/analytics/collection', normalizeAnalyticsEvent(event), options);
         }
         collection.track = track;
     })(collection = analytics.collection || (analytics.collection = {}));
@@ -278,7 +315,7 @@ export var analytics;
          * Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
          */
         function track(event, options) {
-            return queueAnalytics('/public/analytics/tag', event, options);
+            return queueAnalytics('/public/analytics/tag', normalizeAnalyticsEvent(event), options);
         }
         tag.track = track;
     })(tag = analytics.tag || (analytics.tag = {}));

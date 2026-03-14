@@ -31,6 +31,7 @@ export declare class IframeResponder {
     private options;
     private cache;
     private uploads;
+    private activeStreams;
     private isInitialLoad;
     private messageHandler;
     private resizeHandler;
@@ -59,6 +60,9 @@ export declare class IframeResponder {
     private handleRouteChange;
     private handleStandardMessage;
     private handleProxyRequest;
+    private handleProxyStreamAbort;
+    private handleProxyStreamRequest;
+    private forwardProxyStream;
     private getCachedResponse;
     private handleUpload;
     private sendResponse;

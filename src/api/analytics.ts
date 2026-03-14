@@ -9,6 +9,7 @@ import type {
   AnalyticsPageViewBindingOptions,
   AnalyticsClassicReportRequest,
   AnalyticsVisitorIdOptions,
+  AnalyticsSessionId,
   CollectionAnalyticsEvent,
   TagAnalyticsEvent,
   AnalyticsSummaryRequest,
@@ -38,6 +39,7 @@ export type {
   AnalyticsPageViewBindingOptions,
   AnalyticsClassicReportRequest,
   AnalyticsVisitorIdOptions,
+  AnalyticsSessionId,
   CollectionAnalyticsEvent,
   TagAnalyticsEvent,
   AnalyticsSummaryRequest,
@@ -60,7 +62,7 @@ export type {
 const analyticsBrowserState: {
   config: AnalyticsBrowserConfig
   location?: TagAnalyticsEvent['location'] | null
-  sessionId?: string
+  sessionId?: AnalyticsSessionId
   visitorId?: string
 } = {
   config: {
@@ -93,8 +95,16 @@ const defaultCampaignParamMap: NonNullable<AnalyticsBrowserConfig['campaignParam
   scanMethod: ['scanMethod', 'scan_method'],
 }
 
-function createSessionId(): string {
-  return `${Date.now()}_${Math.floor(Math.random() * 1_000_000)}`
+const promotedAnalyticsKeys = new Set([
+  'visitorId',
+  'referrerHost',
+  'pageId',
+  'entryType',
+  'scanMethod',
+])
+
+function createSessionId(): AnalyticsSessionId {
+  return Date.now() * 1000 + Math.floor(Math.random() * 1000)
 }
 
 function createVisitorId(): string {
@@ -111,23 +121,64 @@ function getStorage(mode: 'session' | 'local' | false | undefined): Storage | un
   return undefined
 }
 
-function getOrCreateSessionId(): string | undefined {
+function parseStoredSessionId(value: string): AnalyticsSessionId | undefined {
+  if (/^\d+$/.test(value)) {
+    const parsed = Number(value)
+    if (Number.isSafeInteger(parsed)) return parsed
+  }
+
+  return undefined
+}
+
+function assertValidSessionId(sessionId: unknown): AnalyticsSessionId | undefined {
+  if (sessionId === undefined || sessionId === null) return undefined
+
+  if (typeof sessionId !== 'number' || !Number.isSafeInteger(sessionId)) {
+    throw new Error('analytics sessionId must be a safe integer number.')
+  }
+
+  return sessionId
+}
+
+function prunePromotedMetadataKeys(metadata?: Record<string, any>): Record<string, any> | undefined {
+  if (!metadata) return undefined
+
+  const entries = Object.entries(metadata).filter(([key]) => !promotedAnalyticsKeys.has(key))
+  if (entries.length === 0) return undefined
+
+  return Object.fromEntries(entries)
+}
+
+function normalizeAnalyticsEvent<T extends { sessionId?: AnalyticsSessionId; metadata?: Record<string, any> }>(
+  event: T
+): T {
+  return {
+    ...event,
+    sessionId: assertValidSessionId(event.sessionId),
+    metadata: prunePromotedMetadataKeys(event.metadata),
+  }
+}
+
+function getOrCreateSessionId(): AnalyticsSessionId | undefined {
   if (analyticsBrowserState.sessionId) return analyticsBrowserState.sessionId
 
   const key = analyticsBrowserState.config.sessionStorageKey ?? 'smartlinks.analytics.sessionId'
   const storage = getStorage('session')
   const existing = key ? storage?.getItem(key) : undefined
   if (existing) {
-    analyticsBrowserState.sessionId = existing
-    return existing
+    const parsed = parseStoredSessionId(existing)
+    if (parsed !== undefined) {
+      analyticsBrowserState.sessionId = parsed
+      return parsed
+    }
   }
 
-  const generated = analyticsBrowserState.config.sessionIdFactory?.() ?? createSessionId()
+  const generated = assertValidSessionId(analyticsBrowserState.config.sessionIdFactory?.() ?? createSessionId())
   analyticsBrowserState.sessionId = generated
 
   if (key) {
     try {
-      storage?.setItem(key, generated)
+      storage?.setItem(key, String(generated))
     } catch {
     }
   }
@@ -279,7 +330,7 @@ function mergeCollectionEventDefaults(event: Partial<CollectionAnalyticsEvent>):
     ...campaignFields,
     ...getCurrentReferrerFields(),
     visitorId,
-    sessionId: getOrCreateSessionId(),
+    sessionId: assertValidSessionId(event.sessionId ?? getOrCreateSessionId()),
     deviceType: detectDeviceType(),
     path,
     pagePath: event.pagePath ?? (campaignFields.pagePath as string | undefined) ?? path,
@@ -287,12 +338,11 @@ function mergeCollectionEventDefaults(event: Partial<CollectionAnalyticsEvent>):
     location: getResolvedLocation(),
     eventType: 'page_view',
     ...event,
-    metadata: {
+    metadata: prunePromotedMetadataKeys({
       ...(configuredDefaults.metadata ?? {}),
       ...(dynamicDefaults.metadata ?? {}),
-      ...(visitorId ? { visitorId } : {}),
       ...(event.metadata ?? {}),
-    },
+    }),
   } as CollectionAnalyticsEvent
 }
 
@@ -305,17 +355,16 @@ function mergeTagEventDefaults(event: Partial<TagAnalyticsEvent>): TagAnalyticsE
     ...configuredDefaults,
     ...dynamicDefaults,
     visitorId,
-    sessionId: getOrCreateSessionId(),
+    sessionId: assertValidSessionId(event.sessionId ?? getOrCreateSessionId()),
     deviceType: detectDeviceType(),
     location: getResolvedLocation(),
     eventType: 'scan_tag',
     ...event,
-    metadata: {
+    metadata: prunePromotedMetadataKeys({
       ...(configuredDefaults.metadata ?? {}),
       ...(dynamicDefaults.metadata ?? {}),
-      ...(visitorId ? { visitorId } : {}),
       ...(event.metadata ?? {}),
-    },
+    }),
   } as TagAnalyticsEvent
 }
 
@@ -377,7 +426,7 @@ export namespace analytics {
       event: CollectionAnalyticsEvent,
       options?: AnalyticsTrackOptions
     ): AnalyticsTrackResult {
-      return queueAnalytics('/public/analytics/collection', event, options)
+      return queueAnalytics('/public/analytics/collection', normalizeAnalyticsEvent(event), options)
     }
   }
 
@@ -390,7 +439,7 @@ export namespace analytics {
       event: TagAnalyticsEvent,
       options?: AnalyticsTrackOptions
     ): AnalyticsTrackResult {
-      return queueAnalytics('/public/analytics/tag', event, options)
+      return queueAnalytics('/public/analytics/tag', normalizeAnalyticsEvent(event), options)
     }
   }
 
@@ -408,7 +457,7 @@ export namespace analytics {
       }
     }
 
-    export function getSessionId(): string | undefined {
+    export function getSessionId(): AnalyticsSessionId | undefined {
       return getOrCreateSessionId()
     }
 

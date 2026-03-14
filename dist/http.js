@@ -13,6 +13,18 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
+var __await = (this && this.__await) || function (v) { return this instanceof __await ? (this.v = v, this) : new __await(v); }
+var __asyncGenerator = (this && this.__asyncGenerator) || function (thisArg, _arguments, generator) {
+    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
+    var g = generator.apply(thisArg, _arguments || []), i, q = [];
+    return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
+    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
+    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
+    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
+    function fulfill(value) { resume("next", value); }
+    function reject(value) { resume("throw", value); }
+    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
+};
 import { SmartlinksApiError, SmartlinksOfflineError } from "./types/error";
 import { idbGet, idbSet, idbClear } from './persistentCache';
 let baseURL = null;
@@ -514,8 +526,153 @@ export function invalidateCache(urlPattern) {
 }
 // Map of pending proxy requests: id -> {resolve, reject}
 const proxyPending = {};
+const proxyStreamPending = new Map();
 function generateProxyId() {
     return "proxy_" + Math.random().toString(36).slice(2) + Date.now();
+}
+async function createFetchError(response, url) {
+    let responseBody;
+    try {
+        responseBody = await response.json();
+    }
+    catch (_a) {
+        responseBody = null;
+    }
+    const errBody = normalizeErrorResponse(responseBody, response.status);
+    return new SmartlinksApiError(`Error ${errBody.code}: ${errBody.message}`, response.status, errBody, url);
+}
+function createProxyStreamIterable(id) {
+    const queue = [];
+    const waiters = [];
+    let done = false;
+    let failure = null;
+    const flushDone = () => {
+        while (waiters.length) {
+            const waiter = waiters.shift();
+            waiter === null || waiter === void 0 ? void 0 : waiter.resolve({ value: undefined, done: true });
+        }
+    };
+    const flushError = (error) => {
+        while (waiters.length) {
+            const waiter = waiters.shift();
+            waiter === null || waiter === void 0 ? void 0 : waiter.reject(error);
+        }
+    };
+    const iterator = {
+        next() {
+            if (queue.length) {
+                return Promise.resolve({ value: queue.shift(), done: false });
+            }
+            if (failure) {
+                return Promise.reject(failure);
+            }
+            if (done) {
+                return Promise.resolve({ value: undefined, done: true });
+            }
+            return new Promise((resolve, reject) => {
+                waiters.push({ resolve, reject });
+            });
+        },
+        async return() {
+            if (!done && !failure) {
+                done = true;
+                proxyStreamPending.delete(id);
+                try {
+                    window.parent.postMessage({ _smartlinksProxyStreamAbort: true, id }, '*');
+                }
+                catch (_a) { }
+            }
+            flushDone();
+            return { value: undefined, done: true };
+        },
+        async throw(error) {
+            failure = error || new Error('Proxy stream failed');
+            done = true;
+            proxyStreamPending.delete(id);
+            flushError(failure);
+            throw failure;
+        },
+    };
+    return {
+        push(value) {
+            if (done || failure)
+                return;
+            const waiter = waiters.shift();
+            if (waiter) {
+                waiter.resolve({ value, done: false });
+                return;
+            }
+            queue.push(value);
+        },
+        finish() {
+            if (done || failure)
+                return;
+            done = true;
+            proxyStreamPending.delete(id);
+            flushDone();
+        },
+        fail(error) {
+            if (done || failure)
+                return;
+            failure = error;
+            done = true;
+            proxyStreamPending.delete(id);
+            flushError(error);
+        },
+        iterable: {
+            [Symbol.asyncIterator]() {
+                return iterator;
+            },
+        },
+    };
+}
+function parseSsePayload(payload) {
+    if (!payload || payload === '[DONE]')
+        return undefined;
+    try {
+        return JSON.parse(payload);
+    }
+    catch (_a) {
+        return undefined;
+    }
+}
+function parseSseStream(stream) {
+    return __asyncGenerator(this, arguments, function* parseSseStream_1() {
+        const reader = stream.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let dataLines = [];
+        while (true) {
+            const { done, value } = yield __await(reader.read());
+            if (done)
+                break;
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split(/\r?\n/);
+            buffer = lines.pop() || '';
+            for (const rawLine of lines) {
+                const line = rawLine.trimEnd();
+                if (!line) {
+                    if (!dataLines.length)
+                        continue;
+                    const parsed = parseSsePayload(dataLines.join('\n'));
+                    dataLines = [];
+                    if (parsed !== undefined) {
+                        yield yield __await(parsed);
+                    }
+                    continue;
+                }
+                if (line.startsWith('data:')) {
+                    dataLines.push(line.slice(5).trimStart());
+                }
+            }
+        }
+        if (dataLines.length) {
+            const parsed = parseSsePayload(dataLines.join('\n'));
+            if (parsed !== undefined) {
+                yield yield __await(parsed);
+            }
+        }
+    });
 }
 // Shared listener for proxy responses
 function ensureProxyListener() {
@@ -523,6 +680,24 @@ function ensureProxyListener() {
         return;
     window.addEventListener("message", (event) => {
         const msg = event.data;
+        if ((msg === null || msg === void 0 ? void 0 : msg._smartlinksProxyStream) && msg.id) {
+            const pendingStream = proxyStreamPending.get(msg.id);
+            if (!pendingStream)
+                return;
+            if (msg.phase === 'event') {
+                pendingStream.push(msg.data);
+                return;
+            }
+            if (msg.phase === 'end') {
+                pendingStream.finish();
+                return;
+            }
+            if (msg.phase === 'error') {
+                pendingStream.fail(new Error(msg.error || 'Proxy stream failed'));
+                return;
+            }
+            return;
+        }
         if (!msg || !msg._smartlinksProxyResponse || !msg.id)
             return;
         logDebug('[smartlinks] proxy:response', { id: msg.id, ok: !msg.error, keys: Object.keys(msg) });
@@ -539,6 +714,32 @@ function ensureProxyListener() {
     });
     window._smartlinksProxyListener = true;
 }
+async function proxyStreamRequest(method, path, body, headers) {
+    ensureProxyListener();
+    const payloadBody = (typeof FormData !== 'undefined' && body instanceof FormData)
+        ? serializeFormDataForProxy(body)
+        : sanitizeForPostMessage(body);
+    const id = generateProxyId();
+    const streamController = createProxyStreamIterable(id);
+    proxyStreamPending.set(id, streamController);
+    const msg = {
+        _smartlinksProxyStreamRequest: true,
+        id,
+        method,
+        path,
+        body: payloadBody,
+        headers,
+    };
+    logDebug('[smartlinks] proxy:stream postMessage', {
+        id,
+        method,
+        path,
+        headers: headers ? redactHeaders(headers) : undefined,
+        hasBody: !!body,
+    });
+    window.parent.postMessage(msg, '*');
+    return streamController.iterable;
+}
 // Proxy request implementation
 function serializeFormDataForProxy(fd) {
     const entries = [];
@@ -548,11 +749,71 @@ function serializeFormDataForProxy(fd) {
     });
     return { _isFormData: true, entries };
 }
+function isAbortSignalLike(value) {
+    return !!value
+        && typeof value === 'object'
+        && 'aborted' in value
+        && 'addEventListener' in value
+        && 'removeEventListener' in value;
+}
+function sanitizeForPostMessage(value, seen = new WeakSet()) {
+    if (value == null)
+        return value;
+    const valueType = typeof value;
+    if (valueType === 'function' || valueType === 'symbol') {
+        return undefined;
+    }
+    if (valueType !== 'object') {
+        return value;
+    }
+    if (typeof Blob !== 'undefined' && value instanceof Blob) {
+        return value;
+    }
+    if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
+        return value;
+    }
+    if (ArrayBuffer.isView(value)) {
+        return value;
+    }
+    if (isAbortSignalLike(value)) {
+        return undefined;
+    }
+    if (seen.has(value)) {
+        return undefined;
+    }
+    seen.add(value);
+    if (Array.isArray(value)) {
+        return value
+            .map(item => sanitizeForPostMessage(item, seen))
+            .filter(item => item !== undefined);
+    }
+    const proto = Object.getPrototypeOf(value);
+    if (proto !== Object.prototype && proto !== null) {
+        return value;
+    }
+    const sanitizedEntries = Object.entries(value)
+        .map(([key, entryValue]) => [key, sanitizeForPostMessage(entryValue, seen)])
+        .filter(([, entryValue]) => entryValue !== undefined);
+    return Object.fromEntries(sanitizedEntries);
+}
+function sanitizeProxyRequestOptions(options) {
+    if (!options)
+        return undefined;
+    const _a = options, { signal, body, headers, method, window, duplex } = _a, rest = __rest(_a, ["signal", "body", "headers", "method", "window", "duplex"]);
+    void signal;
+    void body;
+    void headers;
+    void method;
+    void window;
+    void duplex;
+    const sanitized = Object.fromEntries(Object.entries(rest).filter(([, value]) => value !== undefined));
+    return Object.keys(sanitized).length ? sanitized : undefined;
+}
 async function proxyRequest(method, path, body, headers, options) {
     ensureProxyListener();
     const payloadBody = (typeof FormData !== 'undefined' && body instanceof FormData)
         ? serializeFormDataForProxy(body)
-        : body;
+        : sanitizeForPostMessage(body);
     const id = generateProxyId();
     const msg = {
         _smartlinksProxyRequest: true,
@@ -561,7 +822,7 @@ async function proxyRequest(method, path, body, headers, options) {
         path,
         body: payloadBody,
         headers,
-        options,
+        options: sanitizeProxyRequestOptions(options),
     };
     logDebug('[smartlinks] proxy:postMessage', { id, method, path, headers: headers ? redactHeaders(headers) : undefined, hasBody: !!body });
     return new Promise((resolve, reject) => {
@@ -1106,6 +1367,41 @@ export async function requestWithOptions(path, options) {
     return fetchPromise;
 }
 /**
+ * Internal helper that performs a streaming request using the shared auth and proxy transport.
+ * The response is expected to be `text/event-stream` with JSON payloads in `data:` frames.
+ */
+export async function requestStream(path, options) {
+    const method = (options === null || options === void 0 ? void 0 : options.method) || 'POST';
+    const body = options === null || options === void 0 ? void 0 : options.body;
+    const extraHeaders = (options === null || options === void 0 ? void 0 : options.headers) || {};
+    const headers = Object.assign(Object.assign(Object.assign({}, extraHeaders), getApiHeaders()), { Accept: 'text/event-stream' });
+    if (!(typeof FormData !== 'undefined' && body instanceof FormData) && body !== undefined && !Object.keys(headers).some(k => k.toLowerCase() === 'content-type')) {
+        headers['Content-Type'] = 'application/json';
+    }
+    if (proxyMode) {
+        logDebug('[smartlinks] stream via proxy', { path, method });
+        return proxyStreamRequest(method, path, body, headers);
+    }
+    if (!baseURL) {
+        throw new Error("HTTP client is not initialized. Call initializeApi(...) first.");
+    }
+    const url = `${baseURL}${path}`;
+    logDebug('[smartlinks] stream fetch', { url, method, headers: redactHeaders(headers), body: safeBodyPreview(body) });
+    const response = await fetch(url, {
+        method,
+        headers,
+        body: body === undefined ? undefined : (body instanceof FormData ? body : JSON.stringify(body)),
+    });
+    logDebug('[smartlinks] stream response', { url, status: response.status, ok: response.ok });
+    if (!response.ok) {
+        throw await createFetchError(response, url);
+    }
+    if (!response.body) {
+        throw new Error('Streaming response body is unavailable in this environment');
+    }
+    return parseSseStream(response.body);
+}
+/**
  * Internal helper that performs a DELETE request to `${baseURL}${path}`,
  * injecting headers for apiKey or bearerToken if present.
  * Returns the parsed JSON as T, or throws an Error.
@@ -1194,7 +1490,7 @@ export async function sendCustomProxyMessage(request, params) {
         _smartlinksCustomProxyRequest: true,
         id,
         request,
-        params,
+        params: sanitizeForPostMessage(params),
     };
     logDebug('[smartlinks] proxy:custom postMessage', { id, request, params: safeBodyPreview(params) });
     return new Promise((resolve, reject) => {

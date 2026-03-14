@@ -10782,7 +10782,7 @@ components:
           type: number
         area:
           type: number
-    AnalyticsStandardMetadataFields:
+    AnalyticsStandardEventFields:
       type: object
       properties:
         visitorId:
@@ -10834,7 +10834,7 @@ components:
       type: object
       properties:
         sessionId:
-          type: string
+          $ref: "#/components/schemas/AnalyticsSessionId"
         eventType:
           $ref: "#/components/schemas/AnalyticsEventType"
         collectionId:
@@ -10873,7 +10873,7 @@ components:
       type: object
       properties:
         sessionId:
-          type: string
+          $ref: "#/components/schemas/AnalyticsSessionId"
         eventType:
           $ref: "#/components/schemas/AnalyticsEventType"
         collectionId:
@@ -11048,11 +11048,11 @@ components:
           items:
             type: string
         sessionId:
-          type: string
+          $ref: "#/components/schemas/AnalyticsSessionId"
         sessionIds:
           type: array
           items:
-            type: string
+            $ref: "#/components/schemas/AnalyticsSessionId"
         country:
           type: string
         countries:
@@ -15478,6 +15478,69 @@ components:
       required:
         - _smartlinksProxyResponse
         - id
+    ProxyStreamRequest:
+      type: object
+      properties:
+        _smartlinksProxyStreamRequest:
+          type: object
+          additionalProperties: true
+        id:
+          type: string
+        method:
+          type: string
+          enum:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+        path:
+          type: string
+        body: {}
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+        - _smartlinksProxyStreamRequest
+        - id
+        - method
+        - path
+    ProxyStreamAbortMessage:
+      type: object
+      properties:
+        _smartlinksProxyStreamAbort:
+          type: object
+          additionalProperties: true
+        id:
+          type: string
+      required:
+        - _smartlinksProxyStreamAbort
+        - id
+    ProxyStreamMessage:
+      type: object
+      properties:
+        _smartlinksProxyStream:
+          type: object
+          additionalProperties: true
+        id:
+          type: string
+        phase:
+          type: string
+          enum:
+            - open
+            - event
+            - end
+            - error
+        data: {}
+        error:
+          type: string
+        status:
+          type: number
+      required:
+        - _smartlinksProxyStream
+        - id
+        - phase
     UploadStartMessage:
       type: object
       properties:

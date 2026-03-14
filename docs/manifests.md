@@ -19,7 +19,7 @@ app.admin.json      ←  loaded on-demand (setup wizards, import, AI config flow
 |---------|---------|-------------|
 | `meta` | App identity, version, appId, SEO priority | All workflows |
 | `admin` | Pointer to `app.admin.json` | Admin orchestrators |
-| `widgets` | Bundle files + component definitions + settings schemas | Widget Builder |
+| `widgets` | Bundle files + component definitions + settings schemas; can also declare widget-instance resolution via `widgetId` | Widget Builder |
 | `containers` | Bundle files + component definitions | Container Loader |
 | `executor` | Bundle files, factory name, exports list | Server / AI |
 | `linkable` | Static deep-link routes | Portal menus / AI nav |
@@ -29,6 +29,8 @@ app.admin.json      ←  loaded on-demand (setup wizards, import, AI config flow
   "meta": { "name": "My App", "appId": "my-app", "version": "1.0.0" },
   "admin": "app.admin.json",
   "widgets": {
+    "instanceResolution": true,
+    "instanceParam": "widgetId",
     "files": {
       "js": { "umd": "dist/widgets.umd.js", "esm": "dist/widgets.es.js" },
       "css": null
@@ -61,6 +63,8 @@ app.admin.json      ←  loaded on-demand (setup wizards, import, AI config flow
   ]
 }
 ```
+
+When `instanceResolution` is enabled, the app is declaring that consumers can pass a widget instance identifier such as `?appId=widget-toolkit&widgetId=launch-countdown`, and the widget bundle will resolve its stored configuration from app config.
 
 > ⚠️ **`css` is `null` by default.** Most widgets and containers use Tailwind/shadcn classes inherited from the parent and produce **no CSS output file**. Set `"css": null` in the manifest. Only set it to a filename if your widget/container ships a custom CSS file that actually exists in `dist/`. The parent portal checks this value before injecting a `<link>` tag — a non-null value pointing to a missing file will cause a 404.
 

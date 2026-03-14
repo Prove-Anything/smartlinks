@@ -35,6 +35,7 @@ export class IframeResponder {
     constructor(options) {
         this.iframe = null;
         this.uploads = new Map();
+        this.activeStreams = new Map();
         this.isInitialLoad = true;
         this.messageHandler = null;
         this.resizeHandler = null;
@@ -97,6 +98,8 @@ export class IframeResponder {
             this.resizeHandler = null;
         }
         this.uploads.clear();
+        this.activeStreams.forEach(controller => controller.abort());
+        this.activeStreams.clear();
         this.iframe = null;
     }
     // ===========================================================================
@@ -263,6 +266,16 @@ export class IframeResponder {
             await this.handleUpload(data, event);
             return;
         }
+        // Stream proxy aborts
+        if (data._smartlinksProxyStreamAbort) {
+            this.handleProxyStreamAbort(data);
+            return;
+        }
+        // Stream proxy requests
+        if (data._smartlinksProxyStreamRequest) {
+            await this.handleProxyStreamRequest(data, event);
+            return;
+        }
         // API proxy requests
         if (data._smartlinksProxyRequest || data._smartlinksCustomProxyRequest) {
             await this.handleProxyRequest(data, event);
@@ -425,6 +438,145 @@ export class IframeResponder {
             (_c = (_b = this.options).onError) === null || _c === void 0 ? void 0 : _c.call(_b, err);
         }
         this.sendResponse(event, response);
+    }
+    handleProxyStreamAbort(data) {
+        const controller = this.activeStreams.get(data.id);
+        if (!controller) {
+            return;
+        }
+        controller.abort();
+        this.activeStreams.delete(data.id);
+    }
+    async handleProxyStreamRequest(data, event) {
+        var _a, _b, _c;
+        const controller = new AbortController();
+        this.activeStreams.set(data.id, controller);
+        try {
+            const path = data.path.startsWith('/') ? data.path.slice(1) : data.path;
+            const baseUrl = getBaseURL();
+            if (!baseUrl) {
+                throw new Error('SDK not initialized - call initializeApi() first');
+            }
+            const fetchOptions = {
+                method: data.method,
+                headers: data.headers,
+                signal: controller.signal,
+            };
+            if (data.body && data.method !== 'GET') {
+                fetchOptions.body = JSON.stringify(data.body);
+                fetchOptions.headers = Object.assign(Object.assign({}, fetchOptions.headers), { 'Content-Type': 'application/json' });
+            }
+            const response = await fetch(`${baseUrl}/${path}`, fetchOptions);
+            if (!response.ok) {
+                let responseBody = null;
+                try {
+                    responseBody = await response.json();
+                }
+                catch (_d) {
+                    responseBody = null;
+                }
+                const message = (responseBody === null || responseBody === void 0 ? void 0 : responseBody.message) || ((_a = responseBody === null || responseBody === void 0 ? void 0 : responseBody.error) === null || _a === void 0 ? void 0 : _a.message) || `Request failed with status ${response.status}`;
+                this.sendResponse(event, {
+                    _smartlinksProxyStream: true,
+                    id: data.id,
+                    phase: 'error',
+                    status: response.status,
+                    error: message,
+                });
+                return;
+            }
+            if (!response.body) {
+                throw new Error('Streaming response body is unavailable in this environment');
+            }
+            this.sendResponse(event, {
+                _smartlinksProxyStream: true,
+                id: data.id,
+                phase: 'open',
+            });
+            await this.forwardProxyStream(data.id, response.body, event);
+            this.sendResponse(event, {
+                _smartlinksProxyStream: true,
+                id: data.id,
+                phase: 'end',
+            });
+        }
+        catch (err) {
+            if ((err === null || err === void 0 ? void 0 : err.name) === 'AbortError') {
+                return;
+            }
+            console.error('[IframeResponder] Proxy stream error:', err);
+            this.sendResponse(event, {
+                _smartlinksProxyStream: true,
+                id: data.id,
+                phase: 'error',
+                error: (err === null || err === void 0 ? void 0 : err.message) || 'Unknown streaming error',
+            });
+            (_c = (_b = this.options).onError) === null || _c === void 0 ? void 0 : _c.call(_b, err);
+        }
+        finally {
+            this.activeStreams.delete(data.id);
+        }
+    }
+    async forwardProxyStream(id, stream, event) {
+        const reader = stream.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let dataLines = [];
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+                break;
+            }
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split(/\r?\n/);
+            buffer = lines.pop() || '';
+            for (const rawLine of lines) {
+                const line = rawLine.trimEnd();
+                if (!line) {
+                    if (!dataLines.length) {
+                        continue;
+                    }
+                    const payload = dataLines.join('\n');
+                    dataLines = [];
+                    if (payload === '[DONE]') {
+                        return;
+                    }
+                    try {
+                        const parsed = JSON.parse(payload);
+                        this.sendResponse(event, {
+                            _smartlinksProxyStream: true,
+                            id,
+                            phase: 'event',
+                            data: parsed,
+                        });
+                    }
+                    catch (_a) {
+                        // Ignore malformed event chunks
+                    }
+                    continue;
+                }
+                if (line.startsWith('data:')) {
+                    dataLines.push(line.slice(5).trimStart());
+                }
+            }
+        }
+        if (dataLines.length) {
+            const payload = dataLines.join('\n');
+            if (payload !== '[DONE]') {
+                try {
+                    const parsed = JSON.parse(payload);
+                    this.sendResponse(event, {
+                        _smartlinksProxyStream: true,
+                        id,
+                        phase: 'event',
+                        data: parsed,
+                    });
+                }
+                catch (_b) {
+                    // Ignore malformed trailing event chunk
+                }
+            }
+        }
     }
     getCachedResponse(path) {
         // App data endpoints should NOT be cached - they need fresh data from API

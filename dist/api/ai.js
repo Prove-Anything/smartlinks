@@ -1,19 +1,6 @@
-var __await = (this && this.__await) || function (v) { return this instanceof __await ? (this.v = v, this) : new __await(v); }
-var __asyncGenerator = (this && this.__asyncGenerator) || function (thisArg, _arguments, generator) {
-    if (!Symbol.asyncIterator) throw new TypeError("Symbol.asyncIterator is not defined.");
-    var g = generator.apply(thisArg, _arguments || []), i, q = [];
-    return i = {}, verb("next"), verb("throw"), verb("return"), i[Symbol.asyncIterator] = function () { return this; }, i;
-    function verb(n) { if (g[n]) i[n] = function (v) { return new Promise(function (a, b) { q.push([n, v, a, b]) > 1 || resume(n, v); }); }; }
-    function resume(n, v) { try { step(g[n](v)); } catch (e) { settle(q[0][3], e); } }
-    function step(r) { r.value instanceof __await ? Promise.resolve(r.value.v).then(fulfill, reject) : settle(q[0][2], r); }
-    function fulfill(value) { resume("next", value); }
-    function reject(value) { resume("throw", value); }
-    function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
-};
 // src/api/ai.ts
 // AI endpoints: public and admin helpers
-import { post, request, del, getBaseURL, getApiHeaders } from "../http";
-import { SmartlinksApiError } from "../types/error";
+import { post, request, del, requestStream } from "../http";
 function encodeQueryParams(params) {
     if (!params)
         return '';
@@ -24,89 +11,6 @@ function encodeQueryParams(params) {
     });
     const search = query.toString();
     return search ? `?${search}` : '';
-}
-async function createSseStream(path, body) {
-    var _a, _b, _c;
-    const baseURL = getBaseURL();
-    if (!baseURL) {
-        throw new Error('HTTP client is not initialized. Call initializeApi(...) first.');
-    }
-    const url = `${baseURL}${path}`;
-    const headers = Object.assign({ Accept: 'text/event-stream', 'Content-Type': 'application/json' }, getApiHeaders());
-    const response = await fetch(url, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(body),
-    });
-    if (!response.ok) {
-        let responseBody;
-        try {
-            responseBody = await response.json();
-        }
-        catch (_d) {
-            responseBody = null;
-        }
-        const code = response.status;
-        const message = (responseBody === null || responseBody === void 0 ? void 0 : responseBody.message) || ((_a = responseBody === null || responseBody === void 0 ? void 0 : responseBody.error) === null || _a === void 0 ? void 0 : _a.message) || `Request failed with status ${code}`;
-        throw new SmartlinksApiError(`Error ${code}: ${message}`, code, {
-            code,
-            errorCode: ((_b = responseBody === null || responseBody === void 0 ? void 0 : responseBody.error) === null || _b === void 0 ? void 0 : _b.code) || (responseBody === null || responseBody === void 0 ? void 0 : responseBody.errorCode),
-            message,
-            details: ((_c = responseBody === null || responseBody === void 0 ? void 0 : responseBody.error) === null || _c === void 0 ? void 0 : _c.details) || (responseBody === null || responseBody === void 0 ? void 0 : responseBody.details),
-        }, url);
-    }
-    if (!response.body) {
-        throw new Error('Streaming response body is unavailable in this environment');
-    }
-    return parseSseStream(response.body);
-}
-function parseSseStream(stream) {
-    return __asyncGenerator(this, arguments, function* parseSseStream_1() {
-        const reader = stream.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        let dataLines = [];
-        while (true) {
-            const { done, value } = yield __await(reader.read());
-            if (done)
-                break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split(/\r?\n/);
-            buffer = lines.pop() || '';
-            for (const rawLine of lines) {
-                const line = rawLine.trimEnd();
-                if (!line) {
-                    if (!dataLines.length)
-                        continue;
-                    const payload = dataLines.join('\n');
-                    dataLines = [];
-                    if (payload === '[DONE]')
-                        return yield __await(void 0);
-                    try {
-                        yield yield __await(JSON.parse(payload));
-                    }
-                    catch (_a) {
-                        continue;
-                    }
-                    continue;
-                }
-                if (line.startsWith('data:')) {
-                    dataLines.push(line.slice(5).trimStart());
-                }
-            }
-        }
-        if (dataLines.length) {
-            const payload = dataLines.join('\n');
-            if (payload !== '[DONE]') {
-                try {
-                    yield yield __await(JSON.parse(payload));
-                }
-                catch (_b) {
-                    return yield __await(void 0);
-                }
-            }
-        }
-    });
 }
 var aiInternal;
 (function (aiInternal) {
@@ -126,7 +30,7 @@ var aiInternal;
             async function create(collectionId, request) {
                 const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/v1/responses`;
                 if (request.stream) {
-                    return createSseStream(path, request);
+                    return requestStream(path, { method: 'POST', body: request });
                 }
                 return post(path, request);
             }
@@ -143,7 +47,7 @@ var aiInternal;
             async function create(collectionId, request) {
                 const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/v1/chat/completions`;
                 if (request.stream) {
-                    return createSseStream(path, request);
+                    return requestStream(path, { method: 'POST', body: request });
                 }
                 return post(path, request);
             }

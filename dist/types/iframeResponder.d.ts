@@ -68,6 +68,26 @@ export interface ProxyResponse {
     data?: any;
     error?: string;
 }
+export interface ProxyStreamRequest {
+    _smartlinksProxyStreamRequest: true;
+    id: string;
+    method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+    path: string;
+    body?: any;
+    headers?: Record<string, string>;
+}
+export interface ProxyStreamAbortMessage {
+    _smartlinksProxyStreamAbort: true;
+    id: string;
+}
+export interface ProxyStreamMessage {
+    _smartlinksProxyStream: true;
+    id: string;
+    phase: 'open' | 'event' | 'end' | 'error';
+    data?: any;
+    error?: string;
+    status?: number;
+}
 export interface UploadStartMessage {
     _smartlinksProxyUpload: true;
     phase: 'start';

@@ -202,6 +202,141 @@ Widgets support two navigation patterns:
 
 ## Building a Widget
 
+---
+
+## Widget Instance Resolution
+
+Some apps expose a **widget resolver** instead of a single hard-coded widget. The resolver receives a `widgetId`, looks up a stored instance in app config, and renders the correct widget with its saved settings.
+
+This pattern is useful for widget toolkits, promo blocks, countdown libraries, CTA collections, and any app where admins create multiple reusable widget instances.
+
+### URL and embed convention
+
+Use `widgetId` the same way page-oriented apps use `pageId`:
+
+```text
+?appId=widget-toolkit&widgetId=launch-countdown
+```
+
+This works naturally in:
+
+- direct container or iframe links
+- widget-to-widget references
+- content slots that need to embed a preconfigured widget instance
+- platform deep-link routing when the manifest declares widget instance resolution
+
+### Manifest declaration
+
+Declare support in `app.manifest.json`:
+
+```json
+{
+  "widgets": {
+    "instanceResolution": true,
+    "instanceParam": "widgetId",
+    "files": {
+      "js": {
+        "umd": "dist/widgets.umd.js",
+        "esm": "dist/widgets.es.js"
+      },
+      "css": null
+    },
+    "components": [
+      {
+        "name": "WidgetToolkitResolver",
+        "description": "Resolves and renders widget instances by ID."
+      }
+    ]
+  }
+}
+```
+
+### SDK helpers
+
+The SDK now includes two thin helpers on `SL.appConfiguration`:
+
+```typescript
+const widget = await SL.appConfiguration.getWidgetInstance({
+  collectionId,
+  appId: 'widget-toolkit',
+  widgetId: 'launch-countdown',
+})
+
+const widgets = await SL.appConfiguration.listWidgetInstances({
+  collectionId,
+  appId: 'widget-toolkit',
+})
+```
+
+`getWidgetInstance()` is intentionally just a wrapper over `getConfig()` that reads `config.widgets[widgetId]`. That keeps the integration simple today while giving the platform freedom to optimize the lookup later.
+
+### Stored config shape
+
+The recommended storage shape is:
+
+```json
+{
+  "widgets": {
+    "launch-countdown": {
+      "id": "launch-countdown",
+      "name": "Launch Countdown",
+      "widget": {
+        "type": "countdown",
+        "targetDate": "2026-06-01T00:00:00Z",
+        "label": "Launching in..."
+      }
+    }
+  }
+}
+```
+
+### Resolver pattern
+
+```typescript
+const WidgetToolkitResolver: React.FC<SmartLinksWidgetProps & { widgetId?: string }> = ({
+  collectionId,
+  appId,
+  widgetId,
+  SL,
+  ...props
+}) => {
+  const [instance, setInstance] = React.useState<any | null>(null)
+
+  React.useEffect(() => {
+    if (!widgetId) return
+    SL.appConfiguration.getWidgetInstance({ collectionId, appId, widgetId })
+      .then(setInstance)
+      .catch(console.error)
+  }, [collectionId, appId, widgetId, SL])
+
+  if (!widgetId || !instance) return null
+
+  switch (instance.widget?.type) {
+    case 'countdown':
+      return <CountdownWidget {...props} {...instance.widget} />
+    case 'cta-button':
+      return <CtaButtonWidget {...props} {...instance.widget} />
+    default:
+      return null
+  }
+}
+```
+
+### Listing widget instances
+
+`listWidgetInstances()` is useful for picker UIs and cross-app references:
+
+```typescript
+const options = await SL.appConfiguration.listWidgetInstances({
+  collectionId,
+  appId: 'widget-toolkit',
+})
+
+// [{ id: 'launch-countdown', name: 'Launch Countdown', type: 'countdown' }]
+```
+
+This is a good foundation for future admin question types or dynamic selects, but the SDK does not currently define a built-in `dynamic-select` schema field.
+
 ### 1. Create the Widget Component
 
 ```typescript

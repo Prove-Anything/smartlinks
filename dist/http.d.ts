@@ -168,6 +168,15 @@ export declare function patch<T>(path: string, body: any, extraHeaders?: Record<
  */
 export declare function requestWithOptions<T>(path: string, options: RequestInit): Promise<T>;
 /**
+ * Internal helper that performs a streaming request using the shared auth and proxy transport.
+ * The response is expected to be `text/event-stream` with JSON payloads in `data:` frames.
+ */
+export declare function requestStream<T>(path: string, options?: {
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+    body?: any;
+    headers?: Record<string, string>;
+}): Promise<AsyncIterable<T>>;
+/**
  * Internal helper that performs a DELETE request to `${baseURL}${path}`,
  * injecting headers for apiKey or bearerToken if present.
  * Returns the parsed JSON as T, or throws an Error.

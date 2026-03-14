@@ -35,6 +35,8 @@ Deep-linkable states come from **two sources** depending on their nature:
 | **App manifest** (`app.manifest.json`) | Fixed routes built into the app | Only when the app itself is updated |
 | **App config** (`appConfig.linkable`) | Content-driven entries that vary by collection | When admins create, remove, or rename content |
 
+Widget-oriented apps can also use the same deep-link model with `widgetId` rather than `pageId`: the app config stores reusable widget instances, and the URL or embed context selects a specific instance to render.
+
 Consumers merge both sources to get the full set of navigable states for an app.
 
 ```text
@@ -232,6 +234,7 @@ The parent platform constructs the final navigation URL from an entry by combini
 | Entry | Resolved URL |
 |-------|--------------|
 | `{ title: "About Us", params: { pageId: "about-us" } }` | `https://app.example.com/#/?collectionId=abc&appId=my-app&pageId=about-us` |
+| `{ title: "Launch Countdown", params: { widgetId: "launch-countdown" } }` | `https://app.example.com/#/?collectionId=abc&appId=widget-toolkit&widgetId=launch-countdown` |
 | `{ title: "Advanced Settings", path: "/settings", params: { tab: "advanced" } }` | `https://app.example.com/admin.html#/settings?collectionId=abc&appId=my-app&tab=advanced` |
 | `{ title: "Gallery", path: "/gallery" }` | `https://app.example.com/#/gallery?collectionId=abc&appId=my-app` |
 | `{ title: "Home" }` | `https://app.example.com/#/?collectionId=abc&appId=my-app` |
@@ -258,6 +261,31 @@ This section only applies to **dynamic links stored in `appConfig.linkable`**. S
 ### When to Sync
 
 Apps **MUST** update `appConfig.linkable` whenever the set of dynamic navigable states changes:
+
+For widget toolkits, that usually means syncing entries from your stored widget instance map:
+
+```typescript
+const widgets = await SL.appConfiguration.listWidgetInstances({
+  collectionId,
+  appId: 'widget-toolkit',
+  admin: true,
+})
+
+const linkable = widgets.map(widget => ({
+  title: widget.name,
+  params: { widgetId: widget.id },
+}))
+
+const current = await SL.appConfiguration.getConfig({ collectionId, appId: 'widget-toolkit', admin: true }) ?? {}
+await SL.appConfiguration.setConfig({
+  collectionId,
+  appId: 'widget-toolkit',
+  admin: true,
+  config: { ...current, linkable },
+})
+```
+
+This gives the portal and AI orchestrators the same discoverability for widget instances that page-driven apps already get for `pageId` content.
 
 - A page is created, deleted, published, or unpublished
 - A page's `deepLinkable` flag is toggled

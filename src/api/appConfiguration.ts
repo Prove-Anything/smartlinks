@@ -4,6 +4,11 @@ import {
   CollectionWidgetsResponse, 
   GetCollectionWidgetsOptions 
 } from "../types/appManifest"
+import type {
+  GetWidgetInstanceOptions,
+  WidgetInstance,
+  WidgetInstanceSummary,
+} from "../types/appConfiguration"
 
 /**
  * Options for collection/product-scoped app configuration.
@@ -32,6 +37,13 @@ export type AppConfigOptions = {
   config?: any
   /** Data object for setDataItem */
   data?: any
+}
+
+function getWidgetsMap(config: any): Record<string, any> {
+  if (!config || typeof config !== 'object' || Array.isArray(config)) return {}
+  const widgets = config.widgets
+  if (!widgets || typeof widgets !== 'object' || Array.isArray(widgets)) return {}
+  return widgets as Record<string, any>
 }
 
 function buildAppPath(opts: AppConfigOptions, type: "config" | "data" | "dataItem"): string {
@@ -262,6 +274,79 @@ export namespace appConfiguration {
   export async function getConfig(opts: AppConfigOptions): Promise<any> {
     const path = buildAppPath(opts, "config")
     return request<any>(path)
+  }
+
+  /**
+   * Resolve a configured widget instance by ID from an app's stored config.
+   * This is a thin convenience wrapper over `getConfig()` that reads `config.widgets[widgetId]`.
+   *
+   * @param opts - Scope options plus the widget instance ID
+   * @returns The configured widget instance
+   *
+   * @example
+   * ```typescript
+   * const widget = await appConfiguration.getWidgetInstance({
+   *   collectionId: 'my-collection',
+   *   appId: 'widget-toolkit',
+   *   widgetId: 'launch-countdown'
+   * })
+   * ```
+   */
+  export async function getWidgetInstance<TWidget = any>(
+    opts: GetWidgetInstanceOptions
+  ): Promise<WidgetInstance<TWidget>> {
+    const { widgetId, ...configOpts } = opts
+    const config = await getConfig(configOpts)
+    const widgets = getWidgetsMap(config)
+    const instance = widgets[widgetId]
+
+    if (!instance || typeof instance !== 'object' || Array.isArray(instance)) {
+      throw new Error(`Widget instance \"${widgetId}\" not found for app \"${opts.appId}\"`)
+    }
+
+    return instance as WidgetInstance<TWidget>
+  }
+
+  /**
+   * List configured widget instances for an app.
+   * Useful for picker UIs, setup schemas, and widget-to-widget references.
+   *
+   * @param opts - App config scope options
+   * @returns Array of widget instance summaries
+   *
+   * @example
+   * ```typescript
+   * const widgets = await appConfiguration.listWidgetInstances({
+   *   collectionId: 'my-collection',
+   *   appId: 'widget-toolkit'
+   * })
+   * ```
+   */
+  export async function listWidgetInstances(
+    opts: Omit<GetWidgetInstanceOptions, 'widgetId'>
+  ): Promise<WidgetInstanceSummary[]> {
+    const config = await getConfig(opts)
+    const widgets = getWidgetsMap(config)
+
+    return Object.entries(widgets).map(([id, instance]) => {
+      const widgetInstance = instance && typeof instance === 'object' && !Array.isArray(instance)
+        ? instance as Record<string, any>
+        : {}
+
+      return {
+        ...widgetInstance,
+        id,
+        name: typeof widgetInstance.name === 'string' && widgetInstance.name.trim()
+          ? widgetInstance.name
+          : id,
+        type: typeof widgetInstance.widget?.type === 'string'
+          ? widgetInstance.widget.type
+          : undefined,
+        id: typeof widgetInstance.id === 'string' && widgetInstance.id.trim()
+          ? widgetInstance.id
+          : id,
+      }
+    })
   }
 
   /**

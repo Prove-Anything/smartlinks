@@ -44,7 +44,7 @@ There are two analytics domains:
 | Collection events | `/public/analytics/collection` | Page views, clicks, app navigation, landing pages |
 | Tag events | `/public/analytics/tag` | NFC / QR scans, claim/code activity, suspicious scan monitoring |
 
-The backend stores custom analytics dimensions in `metadata`. For the most common attribution and placement keys, the public ingestion endpoints also accept standard top-level convenience fields and mirror them into `metadata` automatically.
+The backend stores custom analytics dimensions in `metadata`, but promoted analytics fields now belong at top level and are queried from real columns.
 
 See [docs/analytics-metadata-conventions.md](analytics-metadata-conventions.md) for the recommended key set.
 
@@ -60,7 +60,7 @@ import { initializeApi, analytics } from '@proveanything/smartlinks'
 initializeApi({ baseURL: 'https://smartlinks.app/api/v1' })
 
 analytics.collection.track({
-  sessionId: 'sess_123',
+  sessionId: 1234567890,
   eventType: 'page_view',
   collectionId: 'demo-collection',
   productId: 'product_1',
@@ -74,7 +74,7 @@ analytics.collection.track({
 
 ```typescript
 analytics.collection.track({
-  sessionId: 'sess_123',
+  sessionId: 1234567890,
   eventType: 'click_link',
   collectionId: 'demo-collection',
   productId: 'product_1',
@@ -91,7 +91,7 @@ analytics.collection.track({
 
 ```typescript
 analytics.tag.track({
-  sessionId: 'sess_123',
+  sessionId: 1234567890,
   eventType: 'scan_tag',
   collectionId: 'demo-collection',
   productId: 'product_1',
@@ -298,15 +298,13 @@ Tracks generic collection analytics events such as:
 - internal navigation
 - outbound link activity
 
-Supported top-level fields include the core event fields plus standard convenience metadata fields such as `referrer`, `utmSource`, `group`, `placement`, `linkTitle`, `pagePath`, and `qrCodeId`.
-
-`visitorId` is also supported as a standard top-level field and is mirrored into `metadata` by the backend for backward compatibility.
+Supported top-level fields include the core event fields plus promoted analytics columns such as `visitorId`, `referrerHost`, `pageId`, and `entryType`, along with custom metadata dimensions like `group`, `placement`, `pagePath`, and `qrCodeId`.
 
 Example:
 
 ```typescript
 analytics.collection.track({
-  sessionId: 'sess_123',
+  sessionId: 1234567890,
   eventType: 'page_view',
   collectionId: 'demo-collection',
   productId: 'product_1',
@@ -322,6 +320,7 @@ analytics.collection.track({
   utmCampaign: 'summer-launch',
   group: 'summer-launch',
   placement: 'hero',
+  pageId: 'QR123',
   metadata: { pagePath: '/c/demo-collection?pageId=QR123' },
 })
 ```
@@ -335,15 +334,13 @@ Tracks physical scan analytics such as:
 - claim/code activity
 - admin vs customer scan behavior
 
-Supported top-level fields include the core scan fields plus the same standard convenience metadata fields, especially `entryType`, `scanMethod`, `group`, `tag`, and campaign or attribution keys when relevant.
-
-Like collection events, tag events also accept `visitorId` as a standard top-level field.
+Supported top-level fields include the core scan fields plus promoted analytics columns such as `visitorId`, `entryType`, and `scanMethod`, along with custom metadata dimensions like `group`, `tag`, and campaign extras.
 
 Example:
 
 ```typescript
 analytics.tag.track({
-  sessionId: 'sess_123',
+  sessionId: 1234567890,
   eventType: 'scan_tag',
   collectionId: 'demo-collection',
   productId: 'product_1',
@@ -373,6 +370,8 @@ Notes:
 ### Queryable metadata
 
 Top-level scalar metadata values are the most query-friendly today. You can filter them with `metadata` and break them down with `dimension: 'metadata'` plus `metadataKey`.
+
+Promoted fields such as `visitorId`, `referrerHost`, `pageId`, `entryType`, and `scanMethod` should be sent and queried as top-level fields, not inside `metadata`.
 
 ```typescript
 const grouped = await analytics.admin.breakdown('demo-collection', {
@@ -528,7 +527,7 @@ const traffic = await analytics.admin.timeseries('demo-collection', {
 })
 ```
 
-`uniqueVisitors` now works in generic analytics queries. The backend uses `visitorId` when present and falls back to `sessionId` for older events that do not include it yet.
+`uniqueVisitors` now works in generic analytics queries. The backend uses the top-level `visitorId` column when present and falls back to numeric `sessionId` for older events that do not include it yet.
 
 ### Breakdown
 
@@ -579,7 +578,7 @@ Most admin analytics queries support combinations of:
 - `proofId` or `proofIds[]`
 - `batchId` or `batchIds[]`
 - `variantId` or `variantIds[]`
-- `sessionId` or `sessionIds[]`
+- `sessionId` or `sessionIds[]` as numbers
 - `country` or `countries[]`
 - `metadata` for top-level JSON equality matching
 
@@ -626,11 +625,9 @@ Analytics metadata filtering currently works best with top-level scalar keys suc
 - `campaign`
 - `group`
 - `tag`
-- `referrerHost`
 - `utmSource`
 - `utmCampaign`
 - `pagePath`
-- `scanMethod`
 
 See [docs/analytics-metadata-conventions.md](analytics-metadata-conventions.md) for the recommended shared vocabulary.
 
@@ -645,7 +642,7 @@ Use `/summary`, `/timeseries`, `/breakdown`, and `/events` when you are building
 ```typescript
 function trackAndNavigate(href: string) {
   analytics.collection.track({
-    sessionId: 'sess_123',
+    sessionId: 1234567890,
     eventType: 'click_link',
     collectionId: 'demo-collection',
     linkId: 'buy-now',

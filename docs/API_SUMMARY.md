@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.8.0  |  Generated: 2026-03-12T19:37:47.506Z
+Version: 1.8.4  |  Generated: 2026-03-14T10:47:38.203Z
 
 This is a concise summary of all available API functions and types.
 
@@ -165,6 +165,14 @@ Internal helper that performs a PATCH request to `${baseURL}${path}`, injecting 
 **requestWithOptions**(path: string,
   options: RequestInit) → `Promise<T>`
 Internal helper that performs a request to `${baseURL}${path}` with custom options, injecting headers for apiKey or bearerToken if present. Returns the parsed JSON as T, or throws an Error.
+
+**requestStream**(path: string,
+  options?: {
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+    body?: any
+    headers?: Record<string, string>
+  }) → `Promise<AsyncIterable<T>>`
+Internal helper that performs a streaming request using the shared auth and proxy transport. The response is expected to be `text/event-stream` with JSON payloads in `data:` frames.
 
 **del**(path: string,
   extraHeaders?: Record<string, string>) → `Promise<T>`
@@ -938,9 +946,9 @@ interface AnalyticsLocation {
 }
 ```
 
-**AnalyticsStandardMetadataFields** (interface)
+**AnalyticsStandardEventFields** (interface)
 ```typescript
-interface AnalyticsStandardMetadataFields {
+interface AnalyticsStandardEventFields {
   visitorId?: string
   referrer?: string
   referrerHost?: string
@@ -977,13 +985,13 @@ interface AnalyticsTrackOptions {
 ```typescript
 interface AnalyticsBrowserConfig {
   sessionStorageKey?: string
-  sessionIdFactory?: () => string
+  sessionIdFactory?: () => AnalyticsSessionId
   visitorId?: string
   visitorStorage?: AnalyticsStorageMode
   visitorStorageKey?: string
   visitorIdFactory?: () => string
   autoCaptureCampaignParams?: boolean
-  campaignParamMap?: Partial<Record<keyof AnalyticsStandardMetadataFields, string | string[]>>
+  campaignParamMap?: Partial<Record<keyof AnalyticsStandardEventFields, string | string[]>>
   defaultCollectionEvent?: Partial<CollectionAnalyticsEvent>
   defaultTagEvent?: Partial<TagAnalyticsEvent>
   getCollectionDefaults?: () => Partial<CollectionAnalyticsEvent> | undefined
@@ -1048,8 +1056,8 @@ interface AnalyticsFilterRequest {
   batchIds?: string[]
   variantId?: string
   variantIds?: string[]
-  sessionId?: string
-  sessionIds?: string[]
+  sessionId?: AnalyticsSessionId
+  sessionIds?: AnalyticsSessionId[]
   country?: string
   countries?: string[]
   metadata?: Record<string, any>
@@ -1255,6 +1263,8 @@ interface AnalyticsTagsResponse {
 **AnalyticsDeviceType** = `'mobile' | 'tablet' | 'desktop' | 'unknown'`
 
 **AnalyticsStorageMode** = `'local' | 'session' | false`
+
+**AnalyticsSessionId** = `number`
 
 **EventAnalyticsDimension** = ``
 
@@ -4203,6 +4213,38 @@ interface ProxyResponse {
 }
 ```
 
+**ProxyStreamRequest** (interface)
+```typescript
+interface ProxyStreamRequest {
+  _smartlinksProxyStreamRequest: true;
+  id: string;
+  method: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  path: string;
+  body?: any;
+  headers?: Record<string, string>;
+}
+```
+
+**ProxyStreamAbortMessage** (interface)
+```typescript
+interface ProxyStreamAbortMessage {
+  _smartlinksProxyStreamAbort: true;
+  id: string;
+}
+```
+
+**ProxyStreamMessage** (interface)
+```typescript
+interface ProxyStreamMessage {
+  _smartlinksProxyStream: true;
+  id: string;
+  phase: 'open' | 'event' | 'end' | 'error';
+  data?: any;
+  error?: string;
+  status?: number;
+}
+```
+
 **UploadStartMessage** (interface)
 ```typescript
 interface UploadStartMessage {
@@ -5789,7 +5831,7 @@ Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when availabl
 **configure**(config: AnalyticsBrowserConfig) → `void`
 Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
 
-**getSessionId**() → `string | undefined`
+**getSessionId**() → `AnalyticsSessionId | undefined`
 Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
 
 **getVisitorId**() → `string | undefined`

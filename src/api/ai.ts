@@ -1,7 +1,6 @@
 // src/api/ai.ts
 // AI endpoints: public and admin helpers
-import { post, request, del, getBaseURL, getApiHeaders } from "../http"
-import { SmartlinksApiError } from "../types/error"
+import { post, request, del, requestStream } from "../http"
 import type {
   // Chat Completions types
   ContentPart,
@@ -107,100 +106,6 @@ function encodeQueryParams(params?: { [key: string]: string | undefined }): stri
   return search ? `?${search}` : ''
 }
 
-async function createSseStream<T>(path: string, body: any): Promise<AsyncIterable<T>> {
-  const baseURL = getBaseURL()
-  if (!baseURL) {
-    throw new Error('HTTP client is not initialized. Call initializeApi(...) first.')
-  }
-
-  const url = `${baseURL}${path}`
-  const headers: Record<string, string> = {
-    Accept: 'text/event-stream',
-    'Content-Type': 'application/json',
-    ...getApiHeaders(),
-  }
-
-  const response = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(body),
-  })
-
-  if (!response.ok) {
-    let responseBody: any
-    try {
-      responseBody = await response.json()
-    } catch {
-      responseBody = null
-    }
-
-    const code = response.status
-    const message = responseBody?.message || responseBody?.error?.message || `Request failed with status ${code}`
-    throw new SmartlinksApiError(`Error ${code}: ${message}`, code, {
-      code,
-      errorCode: responseBody?.error?.code || responseBody?.errorCode,
-      message,
-      details: responseBody?.error?.details || responseBody?.details,
-    }, url)
-  }
-
-  if (!response.body) {
-    throw new Error('Streaming response body is unavailable in this environment')
-  }
-
-  return parseSseStream<T>(response.body)
-}
-
-async function* parseSseStream<T>(stream: ReadableStream<Uint8Array>): AsyncIterable<T> {
-  const reader = stream.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ''
-  let dataLines: string[] = []
-
-  while (true) {
-    const { done, value } = await reader.read()
-    if (done) break
-
-    buffer += decoder.decode(value, { stream: true })
-    const lines = buffer.split(/\r?\n/)
-    buffer = lines.pop() || ''
-
-    for (const rawLine of lines) {
-      const line = rawLine.trimEnd()
-
-      if (!line) {
-        if (!dataLines.length) continue
-        const payload = dataLines.join('\n')
-        dataLines = []
-
-        if (payload === '[DONE]') return
-
-        try {
-          yield JSON.parse(payload) as T
-        } catch {
-          continue
-        }
-        continue
-      }
-
-      if (line.startsWith('data:')) {
-        dataLines.push(line.slice(5).trimStart())
-      }
-    }
-  }
-
-  if (dataLines.length) {
-    const payload = dataLines.join('\n')
-    if (payload !== '[DONE]') {
-      try {
-        yield JSON.parse(payload) as T
-      } catch {
-        return
-      }
-    }
-  }
-}
-
 namespace aiInternal {
   // ============================================================================
   // Chat APIs
@@ -221,7 +126,7 @@ namespace aiInternal {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/v1/responses`
 
         if (request.stream) {
-          return createSseStream<ResponsesStreamEvent>(path, request)
+          return requestStream<ResponsesStreamEvent>(path, { method: 'POST', body: request })
         }
 
         return post<ResponsesResult>(path, request)
@@ -242,7 +147,7 @@ namespace aiInternal {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/v1/chat/completions`
         
         if (request.stream) {
-          return createSseStream<ChatCompletionChunk>(path, request)
+          return requestStream<ChatCompletionChunk>(path, { method: 'POST', body: request })
         }
         
         return post<ChatCompletionResponse>(path, request)

@@ -557,9 +557,163 @@ export function invalidateCache(urlPattern?: string): void {
 
 // Map of pending proxy requests: id -> {resolve, reject}
 const proxyPending: Record<string, { resolve: (data: any) => void, reject: (err: any) => void }> = {}
+type ProxyStreamWaiter<T> = { resolve: (value: IteratorResult<T>) => void; reject: (reason?: any) => void }
+type ProxyStreamController<T> = {
+  push: (value: T) => void
+  finish: () => void
+  fail: (error: any) => void
+  iterable: AsyncIterable<T>
+}
+const proxyStreamPending = new Map<string, ProxyStreamController<any>>()
 
 function generateProxyId(): string {
   return "proxy_" + Math.random().toString(36).slice(2) + Date.now()
+}
+
+async function createFetchError(response: Response, url: string): Promise<SmartlinksApiError> {
+  let responseBody: any
+  try {
+    responseBody = await response.json()
+  } catch {
+    responseBody = null
+  }
+  const errBody = normalizeErrorResponse(responseBody, response.status)
+  return new SmartlinksApiError(`Error ${errBody.code}: ${errBody.message}`, response.status, errBody, url)
+}
+
+function createProxyStreamIterable<T>(id: string): ProxyStreamController<T> {
+  const queue: T[] = []
+  const waiters: ProxyStreamWaiter<T>[] = []
+  let done = false
+  let failure: any = null
+
+  const flushDone = () => {
+    while (waiters.length) {
+      const waiter = waiters.shift()
+      waiter?.resolve({ value: undefined as T, done: true })
+    }
+  }
+
+  const flushError = (error: any) => {
+    while (waiters.length) {
+      const waiter = waiters.shift()
+      waiter?.reject(error)
+    }
+  }
+
+  const iterator: AsyncIterator<T> = {
+    next(): Promise<IteratorResult<T>> {
+      if (queue.length) {
+        return Promise.resolve({ value: queue.shift() as T, done: false })
+      }
+      if (failure) {
+        return Promise.reject(failure)
+      }
+      if (done) {
+        return Promise.resolve({ value: undefined as T, done: true })
+      }
+      return new Promise<IteratorResult<T>>((resolve, reject) => {
+        waiters.push({ resolve, reject })
+      })
+    },
+    async return(): Promise<IteratorResult<T>> {
+      if (!done && !failure) {
+        done = true
+        proxyStreamPending.delete(id)
+        try {
+          window.parent.postMessage({ _smartlinksProxyStreamAbort: true, id }, '*')
+        } catch {}
+      }
+      flushDone()
+      return { value: undefined as T, done: true }
+    },
+    async throw(error?: any): Promise<IteratorResult<T>> {
+      failure = error || new Error('Proxy stream failed')
+      done = true
+      proxyStreamPending.delete(id)
+      flushError(failure)
+      throw failure
+    },
+  }
+
+  return {
+    push(value: T) {
+      if (done || failure) return
+      const waiter = waiters.shift()
+      if (waiter) {
+        waiter.resolve({ value, done: false })
+        return
+      }
+      queue.push(value)
+    },
+    finish() {
+      if (done || failure) return
+      done = true
+      proxyStreamPending.delete(id)
+      flushDone()
+    },
+    fail(error: any) {
+      if (done || failure) return
+      failure = error
+      done = true
+      proxyStreamPending.delete(id)
+      flushError(error)
+    },
+    iterable: {
+      [Symbol.asyncIterator]() {
+        return iterator
+      },
+    },
+  }
+}
+
+function parseSsePayload<T>(payload: string): T | undefined {
+  if (!payload || payload === '[DONE]') return undefined
+  try {
+    return JSON.parse(payload) as T
+  } catch {
+    return undefined
+  }
+}
+
+async function* parseSseStream<T>(stream: ReadableStream<Uint8Array>): AsyncIterable<T> {
+  const reader = stream.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+  let dataLines: string[] = []
+
+  while (true) {
+    const { done, value } = await reader.read()
+    if (done) break
+
+    buffer += decoder.decode(value, { stream: true })
+    const lines = buffer.split(/\r?\n/)
+    buffer = lines.pop() || ''
+
+    for (const rawLine of lines) {
+      const line = rawLine.trimEnd()
+      if (!line) {
+        if (!dataLines.length) continue
+        const parsed = parseSsePayload<T>(dataLines.join('\n'))
+        dataLines = []
+        if (parsed !== undefined) {
+          yield parsed
+        }
+        continue
+      }
+
+      if (line.startsWith('data:')) {
+        dataLines.push(line.slice(5).trimStart())
+      }
+    }
+  }
+
+  if (dataLines.length) {
+    const parsed = parseSsePayload<T>(dataLines.join('\n'))
+    if (parsed !== undefined) {
+      yield parsed
+    }
+  }
 }
 
 // Shared listener for proxy responses
@@ -567,6 +721,24 @@ function ensureProxyListener() {
   if ((window as any)._smartlinksProxyListener) return
   window.addEventListener("message", (event) => {
     const msg = event.data
+
+    if (msg?._smartlinksProxyStream && msg.id) {
+      const pendingStream = proxyStreamPending.get(msg.id)
+      if (!pendingStream) return
+      if (msg.phase === 'event') {
+        pendingStream.push(msg.data)
+        return
+      }
+      if (msg.phase === 'end') {
+        pendingStream.finish()
+        return
+      }
+      if (msg.phase === 'error') {
+        pendingStream.fail(new Error(msg.error || 'Proxy stream failed'))
+        return
+      }
+      return
+    }
     
     if (!msg || !msg._smartlinksProxyResponse || !msg.id) return
     logDebug('[smartlinks] proxy:response', { id: msg.id, ok: !msg.error, keys: Object.keys(msg) })
@@ -583,6 +755,41 @@ function ensureProxyListener() {
   ;(window as any)._smartlinksProxyListener = true
 }
 
+async function proxyStreamRequest<T>(
+  method: string,
+  path: string,
+  body?: any,
+  headers?: Record<string, string>,
+): Promise<AsyncIterable<T>> {
+  ensureProxyListener()
+  const payloadBody = (typeof FormData !== 'undefined' && body instanceof FormData)
+    ? serializeFormDataForProxy(body)
+    : sanitizeForPostMessage(body)
+  const id = generateProxyId()
+  const streamController = createProxyStreamIterable<T>(id)
+  proxyStreamPending.set(id, streamController)
+
+  const msg = {
+    _smartlinksProxyStreamRequest: true,
+    id,
+    method,
+    path,
+    body: payloadBody,
+    headers,
+  }
+
+  logDebug('[smartlinks] proxy:stream postMessage', {
+    id,
+    method,
+    path,
+    headers: headers ? redactHeaders(headers) : undefined,
+    hasBody: !!body,
+  })
+
+  window.parent.postMessage(msg, '*')
+  return streamController.iterable
+}
+
 // Proxy request implementation
 function serializeFormDataForProxy(fd: FormData): { _isFormData: true, entries: Array<[string, any]> } {
   const entries: Array<[string, any]> = []
@@ -591,6 +798,93 @@ function serializeFormDataForProxy(fd: FormData): { _isFormData: true, entries: 
     entries.push([key, value])
   })
   return { _isFormData: true as const, entries }
+}
+
+function isAbortSignalLike(value: unknown): boolean {
+  return !!value
+    && typeof value === 'object'
+    && 'aborted' in (value as Record<string, unknown>)
+    && 'addEventListener' in (value as Record<string, unknown>)
+    && 'removeEventListener' in (value as Record<string, unknown>)
+}
+
+function sanitizeForPostMessage<T>(value: T, seen = new WeakSet<object>()): T {
+  if (value == null) return value
+
+  const valueType = typeof value
+  if (valueType === 'function' || valueType === 'symbol') {
+    return undefined as unknown as T
+  }
+
+  if (valueType !== 'object') {
+    return value
+  }
+
+  if (typeof Blob !== 'undefined' && value instanceof Blob) {
+    return value
+  }
+
+  if (typeof ArrayBuffer !== 'undefined' && value instanceof ArrayBuffer) {
+    return value
+  }
+
+  if (ArrayBuffer.isView(value)) {
+    return value
+  }
+
+  if (isAbortSignalLike(value)) {
+    return undefined as unknown as T
+  }
+
+  if (seen.has(value as object)) {
+    return undefined as unknown as T
+  }
+
+  seen.add(value as object)
+
+  if (Array.isArray(value)) {
+    return value
+      .map(item => sanitizeForPostMessage(item, seen))
+      .filter(item => item !== undefined) as unknown as T
+  }
+
+  const proto = Object.getPrototypeOf(value)
+  if (proto !== Object.prototype && proto !== null) {
+    return value
+  }
+
+  const sanitizedEntries = Object.entries(value as Record<string, unknown>)
+    .map(([key, entryValue]) => [key, sanitizeForPostMessage(entryValue, seen)] as const)
+    .filter(([, entryValue]) => entryValue !== undefined)
+
+  return Object.fromEntries(sanitizedEntries) as T
+}
+
+function sanitizeProxyRequestOptions(options?: RequestInit): Record<string, any> | undefined {
+  if (!options) return undefined
+
+  const {
+    signal,
+    body,
+    headers,
+    method,
+    window,
+    duplex,
+    ...rest
+  } = options as RequestInit & { duplex?: string }
+
+  void signal
+  void body
+  void headers
+  void method
+  void window
+  void duplex
+
+  const sanitized = Object.fromEntries(
+    Object.entries(rest).filter(([, value]) => value !== undefined)
+  )
+
+  return Object.keys(sanitized).length ? sanitized : undefined
 }
 
 async function proxyRequest<T>(
@@ -603,7 +897,7 @@ async function proxyRequest<T>(
   ensureProxyListener()
   const payloadBody = (typeof FormData !== 'undefined' && body instanceof FormData)
     ? serializeFormDataForProxy(body)
-    : body
+    : sanitizeForPostMessage(body)
   const id = generateProxyId()
   const msg = {
     _smartlinksProxyRequest: true,
@@ -612,7 +906,7 @@ async function proxyRequest<T>(
     path,
     body: payloadBody,
     headers,
-    options,
+    options: sanitizeProxyRequestOptions(options),
   }
   
   logDebug('[smartlinks] proxy:postMessage', { id, method, path, headers: headers ? redactHeaders(headers) : undefined, hasBody: !!body })
@@ -1198,6 +1492,60 @@ export async function requestWithOptions<T>(
 }
 
 /**
+ * Internal helper that performs a streaming request using the shared auth and proxy transport.
+ * The response is expected to be `text/event-stream` with JSON payloads in `data:` frames.
+ */
+export async function requestStream<T>(
+  path: string,
+  options?: {
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+    body?: any
+    headers?: Record<string, string>
+  }
+): Promise<AsyncIterable<T>> {
+  const method = options?.method || 'POST'
+  const body = options?.body
+  const extraHeaders = options?.headers || {}
+  const headers: Record<string, string> = {
+    ...extraHeaders,
+    ...getApiHeaders(),
+    Accept: 'text/event-stream',
+  }
+
+  if (!(typeof FormData !== 'undefined' && body instanceof FormData) && body !== undefined && !Object.keys(headers).some(k => k.toLowerCase() === 'content-type')) {
+    headers['Content-Type'] = 'application/json'
+  }
+
+  if (proxyMode) {
+    logDebug('[smartlinks] stream via proxy', { path, method })
+    return proxyStreamRequest<T>(method, path, body, headers)
+  }
+
+  if (!baseURL) {
+    throw new Error("HTTP client is not initialized. Call initializeApi(...) first.")
+  }
+
+  const url = `${baseURL}${path}`
+  logDebug('[smartlinks] stream fetch', { url, method, headers: redactHeaders(headers), body: safeBodyPreview(body) })
+  const response = await fetch(url, {
+    method,
+    headers,
+    body: body === undefined ? undefined : (body instanceof FormData ? body : JSON.stringify(body)),
+  })
+  logDebug('[smartlinks] stream response', { url, status: response.status, ok: response.ok })
+
+  if (!response.ok) {
+    throw await createFetchError(response, url)
+  }
+
+  if (!response.body) {
+    throw new Error('Streaming response body is unavailable in this environment')
+  }
+
+  return parseSseStream<T>(response.body)
+}
+
+/**
  * Internal helper that performs a DELETE request to `${baseURL}${path}`,
  * injecting headers for apiKey or bearerToken if present.
  * Returns the parsed JSON as T, or throws an Error.
@@ -1281,7 +1629,7 @@ export async function sendCustomProxyMessage<T = any>(request: string, params: a
     _smartlinksCustomProxyRequest: true,
     id,
     request,
-    params,
+    params: sanitizeForPostMessage(params),
   };
   logDebug('[smartlinks] proxy:custom postMessage', { id, request, params: safeBodyPreview(params) })
   return new Promise<T>((resolve, reject) => {
