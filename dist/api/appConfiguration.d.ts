@@ -1,4 +1,5 @@
 import { CollectionWidgetsResponse, GetCollectionWidgetsOptions } from "../types/appManifest";
+import type { GetWidgetInstanceOptions, WidgetInstance, WidgetInstanceSummary } from "../types/appConfiguration";
 /**
  * Options for collection/product-scoped app configuration.
  * This data is set by admins and applies to all users within the scope.
@@ -193,6 +194,39 @@ export declare namespace appConfiguration {
      * ```
      */
     function getConfig(opts: AppConfigOptions): Promise<any>;
+    /**
+     * Resolve a configured widget instance by ID from an app's stored config.
+     * This is a thin convenience wrapper over `getConfig()` that reads `config.widgets[widgetId]`.
+     *
+     * @param opts - Scope options plus the widget instance ID
+     * @returns The configured widget instance
+     *
+     * @example
+     * ```typescript
+     * const widget = await appConfiguration.getWidgetInstance({
+     *   collectionId: 'my-collection',
+     *   appId: 'widget-toolkit',
+     *   widgetId: 'launch-countdown'
+     * })
+     * ```
+     */
+    function getWidgetInstance<TWidget = any>(opts: GetWidgetInstanceOptions): Promise<WidgetInstance<TWidget>>;
+    /**
+     * List configured widget instances for an app.
+     * Useful for picker UIs, setup schemas, and widget-to-widget references.
+     *
+     * @param opts - App config scope options
+     * @returns Array of widget instance summaries
+     *
+     * @example
+     * ```typescript
+     * const widgets = await appConfiguration.listWidgetInstances({
+     *   collectionId: 'my-collection',
+     *   appId: 'widget-toolkit'
+     * })
+     * ```
+     */
+    function listWidgetInstances(opts: Omit<GetWidgetInstanceOptions, 'widgetId'>): Promise<WidgetInstanceSummary[]>;
     /**
      * Set app configuration for a collection/product scope.
      * Requires admin authentication.

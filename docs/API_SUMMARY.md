@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.8.4  |  Generated: 2026-03-14T10:47:38.203Z
+Version: 1.8.5  |  Generated: 2026-03-14T14:43:55.897Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1283,6 +1283,39 @@ interface AppConfigurationResponse {
 }
 ```
 
+**GetWidgetInstanceOptions** (interface)
+```typescript
+interface GetWidgetInstanceOptions {
+  appId: string
+  collectionId?: string
+  productId?: string
+  variantId?: string
+  batchId?: string
+  admin?: boolean
+  widgetId: string
+}
+```
+
+**WidgetInstance<TWidget = any>** (interface)
+```typescript
+interface WidgetInstance<TWidget = any> {
+  id: string
+  name?: string
+  widget?: TWidget
+  [key: string]: any
+}
+```
+
+**WidgetInstanceSummary** (interface)
+```typescript
+interface WidgetInstanceSummary {
+  id: string
+  name: string
+  type?: string
+  [key: string]: any
+}
+```
+
 ### appManifest
 
 **AppBundle** (interface)
@@ -1321,6 +1354,16 @@ interface AppWidgetComponent {
   optional?: string[];
   };
   settings?: Record<string, any>;
+}
+```
+
+**AppManifestWidgets** (interface)
+```typescript
+interface AppManifestWidgets {
+  files: AppManifestFiles;
+  components: AppWidgetComponent[];
+  instanceResolution?: boolean;
+  instanceParam?: string;
 }
 ```
 
@@ -1525,10 +1568,7 @@ interface AppManifest {
   * (setup questions, import schema, tunable fields, metrics definitions).
   * Absent when the app has no admin UI.
   admin?: string;
-  widgets?: {
-  files: AppManifestFiles;
-  components: AppWidgetComponent[];
-  };
+  widgets?: AppManifestWidgets;
   containers?: {
   files: AppManifestFiles;
   components: AppContainerComponent[];
@@ -6015,6 +6055,9 @@ Get related threads and records for a case (admin only) GET /cases/:caseId/relat
 
 **getConfig**(opts: AppConfigOptions) → `Promise<any>`
 Get app configuration for a collection/product scope. ```typescript const config = await appConfiguration.getConfig({ appId: 'warranty-portal', collectionId: 'my-collection' }); ```
+
+**listWidgetInstances**(opts: Omit<GetWidgetInstanceOptions, 'widgetId'>) → `Promise<WidgetInstanceSummary[]>`
+List configured widget instances for an app. Useful for picker UIs, setup schemas, and widget-to-widget references. ```typescript const widgets = await appConfiguration.listWidgetInstances({ collectionId: 'my-collection', appId: 'widget-toolkit' }) ```
 
 **setConfig**(opts: AppConfigOptions) → `Promise<any>`
 Set app configuration for a collection/product scope. Requires admin authentication. ```typescript await appConfiguration.setConfig({ appId: 'warranty-portal', collectionId: 'my-collection', admin: true, config: { warrantyPeriod: 24, supportEmail: 'support@example.com' } }); ```

@@ -46,6 +46,8 @@ The manifest is loaded automatically by the platform for every collection page. 
   "admin": "app.admin.json",
 
   "widgets": {
+    "instanceResolution": true,
+    "instanceParam": "widgetId",
     "files": {
       "js": {
         "umd": "dist/widgets.umd.js",
@@ -127,7 +129,35 @@ Declares the widget bundle. Omit if the app has no widget component.
 | `files.js.umd` | UMD bundle path — used for dynamic `<script>` loading |
 | `files.js.esm` | ESM bundle path — used for `import()` / native ES modules (optional but recommended) |
 | `files.css` | CSS bundle path — omit if the widget ships no styles |
+| `instanceResolution` | Optional boolean. When `true`, this app supports resolving configured widget instances by ID from app config |
+| `instanceParam` | Optional string. Query/hash param used for instance lookup. Defaults to `"widgetId"` |
 | `components[]` | One entry per exported widget component (see below) |
+
+**Widget instance resolution**
+
+Apps such as widget toolkits often store reusable widget instances in collection-scoped app config, for example under `config.widgets.launch-countdown`. When your widget bundle can self-configure from one of those stored instances, declare that capability in the manifest:
+
+```json
+"widgets": {
+  "instanceResolution": true,
+  "instanceParam": "widgetId",
+  "files": {
+    "js": {
+      "umd": "dist/widgets.umd.js",
+      "esm": "dist/widgets.es.js"
+    },
+    "css": null
+  },
+  "components": [
+    {
+      "name": "WidgetToolkitResolver",
+      "description": "Resolves and renders a configured widget instance by ID."
+    }
+  ]
+}
+```
+
+This tells the platform and other apps that they can deep-link into a stored widget instance using a URL or embed context such as `?appId=widget-toolkit&widgetId=launch-countdown`.
 
 **Component fields:**
 
@@ -280,6 +310,8 @@ Fetched only by the admin UI and AI-assisted setup flows — never loaded on the
   }
 }
 ```
+
+> `dynamic-select` widget pickers are a reasonable future extension for admin schemas, but they are not a built-in question type in the SDK today. For now, treat widget-instance selection as an app-level UI convention powered by `appConfiguration.listWidgetInstances()`.
 
 ### Field Reference
 

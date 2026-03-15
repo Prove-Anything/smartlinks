@@ -332,19 +332,19 @@ export namespace appConfiguration {
       const widgetInstance = instance && typeof instance === 'object' && !Array.isArray(instance)
         ? instance as Record<string, any>
         : {}
+      const resolvedId = typeof widgetInstance.id === 'string' && widgetInstance.id.trim()
+        ? widgetInstance.id
+        : id
 
       return {
         ...widgetInstance,
-        id,
+        id: resolvedId,
         name: typeof widgetInstance.name === 'string' && widgetInstance.name.trim()
           ? widgetInstance.name
-          : id,
+          : resolvedId,
         type: typeof widgetInstance.widget?.type === 'string'
           ? widgetInstance.widget.type
           : undefined,
-        id: typeof widgetInstance.id === 'string' && widgetInstance.id.trim()
-          ? widgetInstance.id
-          : id,
       }
     })
   }

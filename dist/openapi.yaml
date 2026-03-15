@@ -11433,6 +11433,49 @@ components:
       required:
         - id
         - name
+    GetWidgetInstanceOptions:
+      type: object
+      properties:
+        appId:
+          type: string
+        collectionId:
+          type: string
+        productId:
+          type: string
+        variantId:
+          type: string
+        batchId:
+          type: string
+        admin:
+          type: boolean
+        widgetId:
+          type: string
+      required:
+        - appId
+        - widgetId
+    WidgetInstance:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        widget:
+          $ref: "#/components/schemas/TWidget"
+      required:
+        - id
+    WidgetInstanceSummary:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+      required:
+        - id
+        - name
     AppBundle:
       type: object
       properties:
@@ -11493,6 +11536,22 @@ components:
           additionalProperties: true
       required:
         - name
+    AppManifestWidgets:
+      type: object
+      properties:
+        files:
+          $ref: "#/components/schemas/AppManifestFiles"
+        components:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppWidgetComponent"
+        instanceResolution:
+          type: boolean
+        instanceParam:
+          type: string
+      required:
+        - files
+        - components
     AppContainerComponent:
       type: object
       properties:
@@ -11785,6 +11844,8 @@ components:
         admin:
           type: string
         widgets:
+          $ref: "#/components/schemas/AppManifestWidgets"
+        containers:
           type: object
           additionalProperties: true
         files:
@@ -11793,9 +11854,6 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AppContainerComponent"
-        containers:
-          type: object
-          additionalProperties: true
         linkable:
           type: array
           items:
@@ -11807,8 +11865,6 @@ components:
         - version
         - appId
         - function
-        - files
-        - components
         - files
         - components
     CollectionAppWidget:

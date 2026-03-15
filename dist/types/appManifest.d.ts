@@ -51,6 +51,15 @@ export interface AppWidgetComponent {
     /** JSON-Schema-style settings the widget accepts */
     settings?: Record<string, any>;
 }
+/** Widget bundle declaration in `app.manifest.json`. */
+export interface AppManifestWidgets {
+    files: AppManifestFiles;
+    components: AppWidgetComponent[];
+    /** Whether this app supports resolving configured widget instances by ID. */
+    instanceResolution?: boolean;
+    /** Query/hash parameter name used for instance resolution. Defaults to `widgetId`. */
+    instanceParam?: string;
+}
 /** A single container component defined in the manifest */
 export interface AppContainerComponent {
     name: string;
@@ -301,10 +310,7 @@ export interface AppManifest {
      */
     admin?: string;
     /** Widget bundle definition. Presence means a widget bundle exists for this app. */
-    widgets?: {
-        files: AppManifestFiles;
-        components: AppWidgetComponent[];
-    };
+    widgets?: AppManifestWidgets;
     /** Container bundle definition. Presence means a container bundle exists. */
     containers?: {
         files: AppManifestFiles;

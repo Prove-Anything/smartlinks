@@ -1,5 +1,24 @@
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 // src/api/appConfiguration.ts
 import { request, post, del } from "../http";
+function getWidgetsMap(config) {
+    if (!config || typeof config !== 'object' || Array.isArray(config))
+        return {};
+    const widgets = config.widgets;
+    if (!widgets || typeof widgets !== 'object' || Array.isArray(widgets))
+        return {};
+    return widgets;
+}
 function buildAppPath(opts, type) {
     const base = opts.admin ? "admin" : "public";
     let path = `/${base}`;
@@ -228,6 +247,67 @@ export var appConfiguration;
         return request(path);
     }
     appConfiguration.getConfig = getConfig;
+    /**
+     * Resolve a configured widget instance by ID from an app's stored config.
+     * This is a thin convenience wrapper over `getConfig()` that reads `config.widgets[widgetId]`.
+     *
+     * @param opts - Scope options plus the widget instance ID
+     * @returns The configured widget instance
+     *
+     * @example
+     * ```typescript
+     * const widget = await appConfiguration.getWidgetInstance({
+     *   collectionId: 'my-collection',
+     *   appId: 'widget-toolkit',
+     *   widgetId: 'launch-countdown'
+     * })
+     * ```
+     */
+    async function getWidgetInstance(opts) {
+        const { widgetId } = opts, configOpts = __rest(opts, ["widgetId"]);
+        const config = await getConfig(configOpts);
+        const widgets = getWidgetsMap(config);
+        const instance = widgets[widgetId];
+        if (!instance || typeof instance !== 'object' || Array.isArray(instance)) {
+            throw new Error(`Widget instance \"${widgetId}\" not found for app \"${opts.appId}\"`);
+        }
+        return instance;
+    }
+    appConfiguration.getWidgetInstance = getWidgetInstance;
+    /**
+     * List configured widget instances for an app.
+     * Useful for picker UIs, setup schemas, and widget-to-widget references.
+     *
+     * @param opts - App config scope options
+     * @returns Array of widget instance summaries
+     *
+     * @example
+     * ```typescript
+     * const widgets = await appConfiguration.listWidgetInstances({
+     *   collectionId: 'my-collection',
+     *   appId: 'widget-toolkit'
+     * })
+     * ```
+     */
+    async function listWidgetInstances(opts) {
+        const config = await getConfig(opts);
+        const widgets = getWidgetsMap(config);
+        return Object.entries(widgets).map(([id, instance]) => {
+            var _a;
+            const widgetInstance = instance && typeof instance === 'object' && !Array.isArray(instance)
+                ? instance
+                : {};
+            const resolvedId = typeof widgetInstance.id === 'string' && widgetInstance.id.trim()
+                ? widgetInstance.id
+                : id;
+            return Object.assign(Object.assign({}, widgetInstance), { id: resolvedId, name: typeof widgetInstance.name === 'string' && widgetInstance.name.trim()
+                    ? widgetInstance.name
+                    : resolvedId, type: typeof ((_a = widgetInstance.widget) === null || _a === void 0 ? void 0 : _a.type) === 'string'
+                    ? widgetInstance.widget.type
+                    : undefined });
+        });
+    }
+    appConfiguration.listWidgetInstances = listWidgetInstances;
     /**
      * Set app configuration for a collection/product scope.
      * Requires admin authentication.
