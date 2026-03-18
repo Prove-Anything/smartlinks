@@ -146,8 +146,11 @@ This applies to all write operations: `setConfig`, `setDataItem`, `updateDataIte
 |-------------|---------|---------|
 | **Config** (`getConfig`/`setConfig`) | Single JSON document | App settings, feature flags, global options |
 | **Data** (`getData`/`setDataItem`) | Array of documents with IDs | Lists of items, records, entries |
+| **App Objects** (`app.records` / `app.cases` / `app.threads`) | Queryable domain objects | Real app entities, workflows, conversations, richer access control |
 
 Both can be scoped to **collection level** or **product level** by including `productId`.
+
+Prefer `app.records` over `setDataItem` when the data is becoming a real entity that needs lifecycle, ownership, visibility, relationships, or filtering. Keep `setDataItem` for simple keyed scoped documents and config-adjacent content.
 
 ### Attestations (Proof-level data)
 

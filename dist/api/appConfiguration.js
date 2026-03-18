@@ -351,7 +351,13 @@ export var appConfiguration;
     }
     appConfiguration.deleteConfig = deleteConfig;
     /**
-     * Get all data items for an app within a scope.
+      * Get all keyed data items for an app within a scope.
+      * Best for a small set of standalone documents such as FAQs, menus, lookup tables,
+      * or content fragments where the caller typically knows the item IDs.
+      *
+      * If you are modelling richer app entities that need filtering, lifecycle fields,
+      * visibility, ownership, or relationships, prefer `app.records`, `app.cases`,
+      * or `app.threads` instead.
      *
      * @param opts - Options including appId and scope (collectionId, productId, etc.)
      * @returns Array of data items
@@ -371,7 +377,11 @@ export var appConfiguration;
     }
     appConfiguration.getData = getData;
     /**
-     * Get a single data item by ID within a scope.
+      * Get a single keyed data item by ID within a scope.
+      * This is ideal when you already know the exact ID of a simple scoped document.
+      *
+      * For richer domain objects that users browse or query, prefer `app.records`,
+      * `app.cases`, or `app.threads`.
      *
      * @param opts - Options including appId, scope, and itemId
      * @returns The data item
@@ -394,8 +404,15 @@ export var appConfiguration;
     }
     appConfiguration.getDataItem = getDataItem;
     /**
-     * Set/create a data item within a scope.
+      * Set/create a keyed data item within a scope.
      * Requires admin authentication.
+      *
+      * Use this for simple scoped documents attached to a collection/product/variant/batch,
+      * especially when you want a small number of items with stable IDs.
+      *
+      * Do not treat this as the default write path for every app-owned entity. If the data
+      * starts behaving like a real object with lifecycle, filtering, visibility, ownership,
+      * history, or relationships, prefer `app.records`, `app.cases`, or `app.threads`.
      *
      * @param opts - Options including appId, scope, and data
      * @returns The saved data item
@@ -417,7 +434,7 @@ export var appConfiguration;
     }
     appConfiguration.setDataItem = setDataItem;
     /**
-     * Delete a data item by ID within a scope.
+      * Delete a keyed data item by ID within a scope.
      * Requires admin authentication.
      *
      * @param opts - Options including appId, scope, and itemId

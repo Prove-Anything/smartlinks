@@ -2,6 +2,27 @@
 
 The SmartLinks platform provides two distinct types of data storage for apps:
 
+## Choose the Right Model First
+
+There are now two different families of flexible app data in SmartLinks, and they solve different problems:
+
+| Need | Best Fit | Why |
+|------|----------|-----|
+| One settings blob per scope | `appConfiguration.getConfig` / `setConfig` | Simple app setup and feature flags |
+| A few keyed scoped documents by ID | `appConfiguration.getData` / `setDataItem` | Lightweight, direct, minimal overhead |
+| Rich app-owned entities with filtering, visibility, ownership, or lifecycle | `app.records` | Better default for real domain objects |
+| Workflow items that move through resolution | `app.cases` | Status, priority, assignment, history |
+| Discussions, comments, reply chains | `app.threads` | Built around replies and conversation flow |
+
+### Rule of Thumb
+
+- Use `appConfiguration` when the thing you are storing is basically config or a small keyed document.
+- Use `app.records` when the thing you are storing is a real object in your app.
+- Use `app.cases` when the object represents work to resolve.
+- Use `app.threads` when the object is conversational.
+
+This matters for AI-generated apps too: if the documentation only mentions `setDataItem`, builders will overuse it. In most non-trivial app flows, `app.records` is usually the stronger default.
+
 ## 1. User-Specific Data (Global per User+App)
 
 **Use the `userAppData` namespace for all user-specific data.**
@@ -77,9 +98,11 @@ await userAppData.remove('garden-planner', 'bed-1');
 
 ## 2. Collection/Product-Scoped Data (Admin Configuration)
 
-**Use the `appConfiguration` namespace for collection/product-scoped data.**
+**Use the `appConfiguration` namespace for collection/product-scoped config and simple keyed documents.**
 
 This data is scoped to specific collections, products, variants, or batches. It's typically configured by collection admins/owners and applies to all users viewing that collection/product.
+
+If you need richer app-owned entities with querying, lifecycle, access zones, parent-child relationships, or workflow semantics, use [app-objects.md](app-objects.md) instead of forcing everything through `setDataItem`.
 
 ### Use Cases
 - App-specific settings for a collection
@@ -87,6 +110,7 @@ This data is scoped to specific collections, products, variants, or batches. It'
 - Feature flags and toggles
 - Theme and branding settings
 - Public content that all users see
+- Small keyed content entries such as FAQs, menu items, or quick lookup documents
 
 ### API Endpoints
 ```
@@ -146,15 +170,37 @@ await appConfiguration.setDataItem({
 
 ## Comparison Table
 
-| Feature | User Data | Collection/Product Data |
-|---------|-----------|------------------------|
-| **Namespace** | `userAppData` | `appConfiguration` |
-| **Scope** | User + App (global) | Collection/Product/Variant/Batch |
-| **Set by** | Individual users | Collection admins/owners |
-| **Shared across collections?** | ✅ Yes | ❌ No |
-| **Requires auth?** | ✅ Yes (user token) | ✅ Yes (admin token for write) |
-| **Function signature** | Simple: `set(appId, data)` | Options object: `setDataItem({ appId, collectionId, data })` |
-| **Admin write required?** | ❌ No | ✅ Yes (for write operations) |
+| Feature | User Data | Scoped Config/Data | App Objects |
+|---------|-----------|--------------------|-------------|
+| **Namespace** | `userAppData` | `appConfiguration` | `app.records` / `app.cases` / `app.threads` |
+| **Scope** | User + App (global) | Collection/Product/Variant/Batch | Collection + App |
+| **Best for** | Personal preferences and user-owned items | Config blobs and small keyed documents | Rich entities and workflows |
+| **Shared across collections?** | ✅ Yes | ❌ No | ❌ No |
+| **Requires auth?** | ✅ Yes (user token) | ✅ Yes (admin token for write) | Depends on public/admin endpoint and visibility |
+| **Querying / filtering** | Minimal | Minimal | Strong |
+| **Access control zones** | User-scoped only | Scope only | `data` / `owner` / `admin` zones |
+| **Admin write required?** | ❌ No | ✅ Yes (for write operations) | Only for admin endpoints / admin fields |
+
+---
+
+## When `setDataItem` Is Still the Right Answer
+
+`setDataItem` is still valuable and should not be treated as deprecated. It is the right fit when:
+
+- You need a handful of documents attached to a collection or product
+- Each item has a stable known ID
+- You mostly fetch by exact ID or list all items
+- You do not need rich lifecycle fields, reply chains, assignment, or advanced querying
+
+Examples:
+
+- Product FAQs
+- Menu definitions
+- Marketing content blocks
+- Widget registry entries
+- Static lookup tables for an app
+
+If the object starts needing richer semantics, migrate that use case to `app.records`, `app.cases`, or `app.threads` rather than stretching scoped data items too far.
 
 ---
 

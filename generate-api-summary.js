@@ -119,42 +119,89 @@ function extractFunctionsFromFile(filePath) {
       description
     });
   }
-  
-  // Extract namespace functions
-  const namespaceRegex = /export namespace (\w+)\s*{([\s\S]*?)^}/gm;
-  while ((match = namespaceRegex.exec(content)) !== null) {
-    const namespaceName = match[1];
-    const namespaceBody = match[2];
-    
-    const namespaceFunctions = extractNamespaceFunctions(namespaceBody, namespaceName);
-    functions.push(...namespaceFunctions);
-  }
+
+  functions.push(...extractNestedNamespaceFunctions(content));
   
   return functions;
 }
 
-function extractNamespaceFunctions(namespaceBody, namespaceName) {
+function findMatchingBrace(content, openBraceIndex) {
+  let braceCount = 1;
+  let i = openBraceIndex + 1;
+
+  while (braceCount > 0 && i < content.length) {
+    if (content[i] === '{') braceCount++;
+    else if (content[i] === '}') braceCount--;
+    i++;
+  }
+
+  return braceCount === 0 ? i - 1 : -1;
+}
+
+function extractNestedNamespaceFunctions(content) {
   const functions = [];
-  const functionRegex = /export\s+(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)(?:\s*:\s*([^{]+))?/g;
+  const namespaceRegex = /export namespace (\w+)\s*{/g;
   let match;
+
+  while ((match = namespaceRegex.exec(content)) !== null) {
+    const namespaceName = match[1];
+    const openBraceIndex = content.indexOf('{', match.index);
+    const closeBraceIndex = findMatchingBrace(content, openBraceIndex);
+    if (closeBraceIndex === -1) continue;
+
+    const namespaceBody = content.substring(openBraceIndex + 1, closeBraceIndex);
+    functions.push(...extractNamespaceFunctions(namespaceBody, [namespaceName]));
+    namespaceRegex.lastIndex = closeBraceIndex + 1;
+  }
+
+  return functions;
+}
+
+function extractNamespaceFunctions(namespaceBody, namespacePath) {
+  const functions = [];
+  const tokenRegex = /export namespace (\w+)\s*{|export\s+(?:async\s+)?function\s+(\w+)(?:<[^>]*>)?\s*\(([^)]*)\)(?:\s*:\s*([^{]+))?/g;
+  let match;
+  let depth = 0;
+  let lastIndex = 0;
   
-  while ((match = functionRegex.exec(namespaceBody)) !== null) {
-    const name = match[1];
-    const params = match[2].trim();
-    const returnType = match[3] ? match[3].trim() : 'void';
-    
-    // Extract JSDoc comment
+  while ((match = tokenRegex.exec(namespaceBody)) !== null) {
+    const skipped = namespaceBody.substring(lastIndex, match.index);
+    for (const ch of skipped) {
+      if (ch === '{') depth++;
+      else if (ch === '}') depth--;
+    }
+    lastIndex = match.index + match[0].length;
+
+    if (depth !== 0) continue;
+
+    if (match[1]) {
+      const childNamespace = match[1];
+      const openBraceIndex = namespaceBody.indexOf('{', match.index);
+      const closeBraceIndex = findMatchingBrace(namespaceBody, openBraceIndex);
+      if (closeBraceIndex === -1) continue;
+
+      const childBody = namespaceBody.substring(openBraceIndex + 1, closeBraceIndex);
+      functions.push(...extractNamespaceFunctions(childBody, [...namespacePath, childNamespace]));
+      tokenRegex.lastIndex = closeBraceIndex + 1;
+      lastIndex = closeBraceIndex + 1;
+      continue;
+    }
+
+    const name = match[2];
+    const params = match[3].trim();
+    const returnType = match[4] ? match[4].trim() : 'void';
+
     const beforeFunction = namespaceBody.substring(0, match.index);
     const lastComment = beforeFunction.match(/\/\*\*([^*]|\*(?!\/))*\*\//g);
     const comment = lastComment ? lastComment[lastComment.length - 1] : '';
     const description = extractDescription(comment);
-    
+
     functions.push({
       name,
       params,
       returnType,
       description,
-      namespace: namespaceName
+      namespace: namespacePath.join('.')
     });
   }
   
@@ -197,10 +244,19 @@ function generateAPISummary() {
   summary += '- **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration\n';
   summary += '- **[AI-Native App Manifests](manifests.md)** - How AI workflows discover, configure, and import apps via structured manifests and prose guides\n';
   summary += '- **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide\n\n';
+
+  summary += '## Choosing App Storage\n\n';
+  summary += 'When you need flexible app-specific data, choose the storage model based on shape and lifecycle, not just on what can hold JSON.\n\n';
+  summary += '- **`appConfiguration.getConfig` / `setConfig`** - One config blob per scope. Best for settings, feature flags, and app setup.\n';
+  summary += '- **`appConfiguration.getData` / `getDataItem` / `setDataItem`** - Small keyed documents attached to a scope. Best for lookup tables, content fragments, menus, FAQs, or a handful of standalone items where you already know the ID.\n';
+  summary += '- **`app.records`** - Default choice for richer app-owned entities that need status, visibility, ownership zones, querying, filtering, parent-child links, or lifecycle fields.\n';
+  summary += '- **`app.cases`** - Use when the entity is a workflow item that moves toward resolution and may need assignment, priority, and history.\n';
+  summary += '- **`app.threads`** - Use for conversations, comments, Q&A, or any object centered on replies.\n\n';
+  summary += 'Rule of thumb: if you are modelling a real domain object that users will browse, filter, secure, or evolve over time, start with app objects. If you just need a simple keyed payload hanging off a collection or product, scoped data items are still a good fit.\n\n';
   
   // Generate namespace overview (grouped + descriptive)
   const apiFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
-  const namespaces = apiFiles.map(file => path.basename(file, '.ts')).sort();
+  const namespaces = apiFiles.map(file => path.basename(file, '.ts') === 'appObjects' ? 'app' : path.basename(file, '.ts')).sort();
   const present = new Set(namespaces);
 
   const groups = [
@@ -215,6 +271,7 @@ function generateAPISummary() {
         { name: 'crate', desc: 'Organize products in containers/crates for logistics and grouping.' },
         { name: 'form', desc: 'Build and manage dynamic forms used by apps and workflows.' },
         { name: 'appConfiguration', desc: 'Read/write app configuration and scoped data (collection/product/proof); hosts the deep-link registry.', docsLink: 'deep-link-discovery.md' },
+        { name: 'app', desc: 'Flexible app-scoped objects: use records for structured entities, cases for workflows, and threads for discussions.', docsLink: 'app-objects.md' },
       ]
     },
     {
@@ -541,8 +598,19 @@ function generateAPISummary() {
   });
   
   // Output functions by namespace
+  const namespaceDescriptions = {
+    'app.cases': 'Workflow-oriented app objects for issues, requests, claims, and tasks that move through statuses and often need assignment or history.',
+    'app.threads': 'Conversation-oriented app objects for comments, discussions, Q&A, and reply-driven experiences.',
+    'app.records': 'General-purpose structured app objects. Use these when a simple scoped data item grows into something queryable, lifecycle-aware, or access-controlled.',
+    'appConfiguration': 'Scoped config and keyed data items for collections, products, variants, or batches. Best for settings and small standalone documents, not as the default answer for every app-owned entity.',
+    'userAppData': 'User-owned app data stored per user and app, shared across collections.'
+  };
+
   Object.keys(functionsByNamespace).sort().forEach(namespace => {
     summary += `### ${namespace}\n\n`;
+    if (namespaceDescriptions[namespace]) {
+      summary += `${namespaceDescriptions[namespace]}\n\n`;
+    }
     
     functionsByNamespace[namespace].forEach(func => {
       summary += `**${func.name}**(${func.params}) → \`${func.returnType}\`\n`;

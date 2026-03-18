@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.8.5  |  Generated: 2026-03-14T14:43:55.897Z
+Version: 1.8.6  |  Generated: 2026-03-17T21:25:13.155Z
 
 This is a concise summary of all available API functions and types.
 
@@ -30,6 +30,18 @@ For detailed guides on specific features:
 - **[AI-Native App Manifests](manifests.md)** - How AI workflows discover, configure, and import apps via structured manifests and prose guides
 - **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide
 
+## Choosing App Storage
+
+When you need flexible app-specific data, choose the storage model based on shape and lifecycle, not just on what can hold JSON.
+
+- **`appConfiguration.getConfig` / `setConfig`** - One config blob per scope. Best for settings, feature flags, and app setup.
+- **`appConfiguration.getData` / `getDataItem` / `setDataItem`** - Small keyed documents attached to a scope. Best for lookup tables, content fragments, menus, FAQs, or a handful of standalone items where you already know the ID.
+- **`app.records`** - Default choice for richer app-owned entities that need status, visibility, ownership zones, querying, filtering, parent-child links, or lifecycle fields.
+- **`app.cases`** - Use when the entity is a workflow item that moves toward resolution and may need assignment, priority, and history.
+- **`app.threads`** - Use for conversations, comments, Q&A, or any object centered on replies.
+
+Rule of thumb: if you are modelling a real domain object that users will browse, filter, secure, or evolve over time, start with app objects. If you just need a simple keyed payload hanging off a collection or product, scoped data items are still a good fit.
+
 ## API Namespaces
 
 The Smartlinks SDK is organized into the following namespaces:
@@ -43,6 +55,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **crate** - Organize products in containers/crates for logistics and grouping.
 - **form** - Build and manage dynamic forms used by apps and workflows.
 - **appConfiguration** - Read/write app configuration and scoped data (collection/product/proof); hosts the deep-link registry. → [Guide](deep-link-discovery.md)
+- **app** - Flexible app-scoped objects: use records for structured entities, cases for workflows, and threads for discussions. → [Guide](app-objects.md)
 
 — Identity & Access —
 - **auth** - Admin authentication and account ops: login/logout, tokens, account info.
@@ -72,7 +85,6 @@ The Smartlinks SDK is organized into the following namespaces:
 
 — Other —
 - **analytics** - Functions for analytics operations
-- **appObjects** - Functions for appObjects operations
 - **async** - Functions for async operations
 - **attestation** - Functions for attestation operations
 - **attestations** - Functions for attestations operations
@@ -5827,7 +5839,7 @@ type AppConfigOptions = {
   
   /** Configuration object for setConfig */
   config?: any
-  /** Data object for setDataItem */
+  /** Data object for setDataItem. Best for small keyed scoped documents rather than richer app domain objects. */
   data?: any
 }
 ```
@@ -5858,145 +5870,118 @@ type VerifyTokenResponse = {
 
 ## API Functions
 
-### analytics
+### analytics.admin
+
+**summary**(collectionId: string,
+      body: AnalyticsSummaryRequest) → `Promise<AnalyticsSummaryResponse>`
+
+**timeseries**(collectionId: string,
+      body: AnalyticsTimeseriesRequest) → `Promise<AnalyticsTimeseriesResponse>`
+
+**breakdown**(collectionId: string,
+      body: AnalyticsBreakdownRequest) → `Promise<AnalyticsBreakdownResponse>`
+
+**events**(collectionId: string,
+      body: AnalyticsEventsRequest) → `Promise<AnalyticsEventsResponse>`
+
+**web**(collectionId: string,
+      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsDashboardResponse>`
+
+**clicks**(collectionId: string,
+      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsDashboardResponse>`
+
+**tagScans**(collectionId: string,
+      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsDashboardResponse>`
+
+**products**(collectionId: string,
+      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsProductsResponse>`
+
+**qrCodes**(collectionId: string,
+      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsQrCodesResponse>`
+
+**tags**(collectionId: string,
+      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsTagsResponse>`
+
+**weekly**(collectionId: string,
+      body: AnalyticsWeeklyRequest = {}) → `Promise<AnalyticsTimeseriesResponse>`
+
+**country**(collectionId: string,
+      body: AnalyticsCountryRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
+
+**topPages**(collectionId: string,
+      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
+
+**topReferrers**(collectionId: string,
+      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
+
+**topCampaigns**(collectionId: string,
+      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
+
+**topSources**(collectionId: string,
+      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
+
+**topDestinations**(collectionId: string,
+      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
+
+### analytics.browser
+
+**configure**(config: AnalyticsBrowserConfig) → `void`
+
+**getSessionId**() → `AnalyticsSessionId | undefined`
+
+**getVisitorId**() → `string | undefined`
+
+**setVisitorId**(visitorId: string,
+      options?: AnalyticsVisitorIdOptions) → `string`
+
+**clearVisitorId**(options?: Pick<AnalyticsVisitorIdOptions, 'storage' | 'storageKey'>) → `void`
+
+**captureCampaignParams**(search?: string) → `Partial<CollectionAnalyticsEvent>`
+
+**setLocation**(location: TagAnalyticsEvent['location'] | null) → `void`
+
+**clearLocation**() → `void`
+
+**getLocation**() → `TagAnalyticsEvent['location'] | undefined`
+
+**detectDevice**() → `CollectionAnalyticsEvent['deviceType']`
+
+**captureLocation**(options: AnalyticsGeolocationCaptureOptions = {}) → `Promise<TagAnalyticsEvent['location'] | null>`
+
+**trackCollection**(event: Partial<CollectionAnalyticsEvent>,
+      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
+
+**trackTag**(event: Partial<TagAnalyticsEvent>,
+      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
+
+**trackPageView**(event: Partial<CollectionAnalyticsEvent>,
+      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
+
+**trackLinkClick**(event: AnalyticsLinkClickInput,
+      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
+
+**trackTagScan**(event: Partial<TagAnalyticsEvent>,
+      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
+
+**bindPageViews**(binding: AnalyticsPageViewBindingOptions = {}) → `() => void`
+
+**bindLinkTracking**(binding: AnalyticsLinkBindingOptions = {}) → `() => void`
+
+### analytics.collection
 
 **track**(event: CollectionAnalyticsEvent,
       options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
 Fire-and-forget collection analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
 
+### analytics.tag
+
 **track**(event: TagAnalyticsEvent,
       options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
 Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
 
-**configure**(config: AnalyticsBrowserConfig) → `void`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
+### app.cases
 
-**getSessionId**() → `AnalyticsSessionId | undefined`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**getVisitorId**() → `string | undefined`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**setVisitorId**(visitorId: string,
-      options?: AnalyticsVisitorIdOptions) → `string`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**clearVisitorId**(options?: Pick<AnalyticsVisitorIdOptions, 'storage' | 'storageKey'>) → `void`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**captureCampaignParams**(search?: string) → `Partial<CollectionAnalyticsEvent>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**setLocation**(location: TagAnalyticsEvent['location'] | null) → `void`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**clearLocation**() → `void`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**getLocation**() → `TagAnalyticsEvent['location'] | undefined`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**detectDevice**() → `CollectionAnalyticsEvent['deviceType']`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**captureLocation**(options: AnalyticsGeolocationCaptureOptions = {}) → `Promise<TagAnalyticsEvent['location'] | null>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**trackCollection**(event: Partial<CollectionAnalyticsEvent>,
-      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**trackTag**(event: Partial<TagAnalyticsEvent>,
-      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**trackPageView**(event: Partial<CollectionAnalyticsEvent>,
-      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**trackLinkClick**(event: AnalyticsLinkClickInput,
-      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**trackTagScan**(event: Partial<TagAnalyticsEvent>,
-      options?: AnalyticsTrackOptions) → `AnalyticsTrackResult`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**bindPageViews**(binding: AnalyticsPageViewBindingOptions = {}) → `() => void`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**bindLinkTracking**(binding: AnalyticsLinkBindingOptions = {}) → `() => void`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**summary**(collectionId: string,
-      body: AnalyticsSummaryRequest) → `Promise<AnalyticsSummaryResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**timeseries**(collectionId: string,
-      body: AnalyticsTimeseriesRequest) → `Promise<AnalyticsTimeseriesResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**breakdown**(collectionId: string,
-      body: AnalyticsBreakdownRequest) → `Promise<AnalyticsBreakdownResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**events**(collectionId: string,
-      body: AnalyticsEventsRequest) → `Promise<AnalyticsEventsResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**web**(collectionId: string,
-      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsDashboardResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**clicks**(collectionId: string,
-      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsDashboardResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**tagScans**(collectionId: string,
-      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsDashboardResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**products**(collectionId: string,
-      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsProductsResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**qrCodes**(collectionId: string,
-      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsQrCodesResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**tags**(collectionId: string,
-      body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsTagsResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**weekly**(collectionId: string,
-      body: AnalyticsWeeklyRequest = {}) → `Promise<AnalyticsTimeseriesResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**country**(collectionId: string,
-      body: AnalyticsCountryRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**topPages**(collectionId: string,
-      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**topReferrers**(collectionId: string,
-      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**topCampaigns**(collectionId: string,
-      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**topSources**(collectionId: string,
-      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-**topDestinations**(collectionId: string,
-      body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
-Fire-and-forget tag analytics event. Uses `navigator.sendBeacon()` when available, falling back to `fetch(..., { keepalive: true })`.
-
-### app
+Workflow-oriented app objects for issues, requests, claims, and tasks that move through statuses and often need assignment or history.
 
 **create**(collectionId: string,
     appId: string,
@@ -6051,10 +6036,104 @@ Append an entry to case history (admin only) POST /cases/:caseId/history
     caseId: string) → `Promise<RelatedResponse>`
 Get related threads and records for a case (admin only) GET /cases/:caseId/related
 
+### app.records
+
+General-purpose structured app objects. Use these when a simple scoped data item grows into something queryable, lifecycle-aware, or access-controlled.
+
+**create**(collectionId: string,
+    appId: string,
+    input: CreateRecordInput,
+    admin: boolean = false) → `Promise<AppRecord>`
+Create a new record POST /records
+
+**list**(collectionId: string,
+    appId: string,
+    params?: RecordListQueryParams,
+    admin: boolean = false) → `Promise<PaginatedResponse<AppRecord>>`
+List records with optional query parameters GET /records
+
+**get**(collectionId: string,
+    appId: string,
+    recordId: string,
+    admin: boolean = false) → `Promise<AppRecord>`
+Get a single record by ID GET /records/:recordId
+
+**update**(collectionId: string,
+    appId: string,
+    recordId: string,
+    input: UpdateRecordInput,
+    admin: boolean = false) → `Promise<AppRecord>`
+Update a record PATCH /records/:recordId Admin can update any field, public (owner) can only update data and owner
+
+**remove**(collectionId: string,
+    appId: string,
+    recordId: string,
+    admin: boolean = false) → `Promise<`
+Soft delete a record DELETE /records/:recordId
+
+**aggregate**(collectionId: string,
+    appId: string,
+    request: AggregateRequest,
+    admin: boolean = false) → `Promise<AggregateResponse>`
+Get aggregate statistics for records POST /records/aggregate
+
+### app.threads
+
+Conversation-oriented app objects for comments, discussions, Q&A, and reply-driven experiences.
+
+**create**(collectionId: string,
+    appId: string,
+    input: CreateThreadInput,
+    admin: boolean = false) → `Promise<AppThread>`
+Create a new thread POST /threads
+
+**list**(collectionId: string,
+    appId: string,
+    params?: ThreadListQueryParams,
+    admin: boolean = false) → `Promise<PaginatedResponse<AppThread>>`
+List threads with optional query parameters GET /threads
+
+**get**(collectionId: string,
+    appId: string,
+    threadId: string,
+    admin: boolean = false) → `Promise<AppThread>`
+Get a single thread by ID GET /threads/:threadId
+
+**update**(collectionId: string,
+    appId: string,
+    threadId: string,
+    input: UpdateThreadInput,
+    admin: boolean = false) → `Promise<AppThread>`
+Update a thread PATCH /threads/:threadId Admin can update any field, public (owner) can only update body, tags, data, owner
+
+**remove**(collectionId: string,
+    appId: string,
+    threadId: string,
+    admin: boolean = false) → `Promise<`
+Soft delete a thread DELETE /threads/:threadId
+
+**reply**(collectionId: string,
+    appId: string,
+    threadId: string,
+    input: ReplyInput,
+    admin: boolean = false) → `Promise<AppThread>`
+Add a reply to a thread POST /threads/:threadId/reply Atomically appends to replies array, increments replyCount, updates lastReplyAt
+
+**aggregate**(collectionId: string,
+    appId: string,
+    request: AggregateRequest,
+    admin: boolean = false) → `Promise<AggregateResponse>`
+Get aggregate statistics for threads POST /threads/aggregate
+
 ### appConfiguration
+
+Scoped config and keyed data items for collections, products, variants, or batches. Best for settings and small standalone documents, not as the default answer for every app-owned entity.
 
 **getConfig**(opts: AppConfigOptions) → `Promise<any>`
 Get app configuration for a collection/product scope. ```typescript const config = await appConfiguration.getConfig({ appId: 'warranty-portal', collectionId: 'my-collection' }); ```
+
+**getWidgetInstance**(opts: GetWidgetInstanceOptions) → `Promise<WidgetInstance<TWidget>>`
+Resolve a configured widget instance by ID from an app's stored config. This is a thin convenience wrapper over `getConfig()` that reads `config.widgets[widgetId]`. ```typescript const widget = await appConfiguration.getWidgetInstance({ collectionId: 'my-collection', appId: 'widget-toolkit', widgetId: 'launch-countdown' }) ```
 
 **listWidgetInstances**(opts: Omit<GetWidgetInstanceOptions, 'widgetId'>) → `Promise<WidgetInstanceSummary[]>`
 List configured widget instances for an app. Useful for picker UIs, setup schemas, and widget-to-widget references. ```typescript const widgets = await appConfiguration.listWidgetInstances({ collectionId: 'my-collection', appId: 'widget-toolkit' }) ```
@@ -6066,16 +6145,16 @@ Set app configuration for a collection/product scope. Requires admin authenticat
 Delete app configuration for a collection/product scope. Requires admin authentication. ```typescript await appConfiguration.deleteConfig({ appId: 'warranty-portal', collectionId: 'my-collection', admin: true }); ```
 
 **getData**(opts: AppConfigOptions) → `Promise<any[]>`
-Get all data items for an app within a scope. ```typescript const items = await appConfiguration.getData({ appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123' }); ```
+Get all keyed data items for an app within a scope. Best for a small set of standalone documents such as FAQs, menus, lookup tables, or content fragments where the caller typically knows the item IDs. If you are modelling richer app entities that need filtering, lifecycle fields, visibility, ownership, or relationships, prefer `app.records`, `app.cases`, or `app.threads` instead. ```typescript const items = await appConfiguration.getData({ appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123' }); ```
 
 **getDataItem**(opts: AppConfigOptions) → `Promise<any>`
-Get a single data item by ID within a scope. ```typescript const item = await appConfiguration.getDataItem({ appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123', itemId: 'manual-1' }); ```
+Get a single keyed data item by ID within a scope. This is ideal when you already know the exact ID of a simple scoped document. For richer domain objects that users browse or query, prefer `app.records`, `app.cases`, or `app.threads`. ```typescript const item = await appConfiguration.getDataItem({ appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123', itemId: 'manual-1' }); ```
 
 **setDataItem**(opts: AppConfigOptions) → `Promise<any>`
-Set/create a data item within a scope. Requires admin authentication. ```typescript await appConfiguration.setDataItem({ appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123', admin: true, data: { id: 'manual-1', title: 'User Manual', url: 'https://...' } }); ```
+Set/create a keyed data item within a scope. Requires admin authentication. Use this for simple scoped documents attached to a collection/product/variant/batch, especially when you want a small number of items with stable IDs. Do not treat this as the default write path for every app-owned entity. If the data starts behaving like a real object with lifecycle, filtering, visibility, ownership, history, or relationships, prefer `app.records`, `app.cases`, or `app.threads`. ```typescript await appConfiguration.setDataItem({ appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123', admin: true, data: { id: 'manual-1', title: 'User Manual', url: 'https://...' } }); ```
 
 **deleteDataItem**(opts: AppConfigOptions) → `Promise<void>`
-Delete a data item by ID within a scope. Requires admin authentication. ```typescript await appConfiguration.deleteDataItem({ appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123', admin: true, itemId: 'manual-1' }); ```
+Delete a keyed data item by ID within a scope. Requires admin authentication. ```typescript await appConfiguration.deleteDataItem({ appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123', admin: true, itemId: 'manual-1' }); ```
 
 **getWidgets**(collectionId: string,
     options?: GetCollectionWidgetsOptions) → `Promise<CollectionWidgetsResponse>`
@@ -6473,93 +6552,17 @@ Get all tags/codes assigned to a specific batch. Shows which claim set codes hav
 **appendBulk**(collectionId: string,
     body: BroadcastAppendBulkBody) → `Promise<AppendBulkResult>`
 
-### chat
-
-**create**(collectionId: string,
-        request: ResponsesRequest) → `Promise<ResponsesResult | AsyncIterable<ResponsesStreamEvent>>`
-Create a Responses API request (streaming or non-streaming)
+### chat.completions
 
 **create**(collectionId: string,
         request: ChatCompletionRequest) → `Promise<ChatCompletionResponse | AsyncIterable<ChatCompletionChunk>>`
 Create a chat completion (streaming or non-streaming)
 
-**list**(collectionId: string, params?: AIModelListParams) → `Promise<AIModelListResponse>`
-List available AI models
+### chat.responses
 
-**get**(collectionId: string, modelId: string) → `Promise<AIModel>`
-Get specific model information
-
-**indexDocument**(collectionId: string,
-      request: IndexDocumentRequest) → `Promise<IndexDocumentResponse>`
-Index a document for RAG
-
-**configureAssistant**(collectionId: string,
-      request: ConfigureAssistantRequest) → `Promise<ConfigureAssistantResponse>`
-Configure AI assistant behavior
-
-**stats**(collectionId: string) → `Promise<SessionStatistics>`
-Get session statistics
-
-**reset**(collectionId: string, userId: string) → `Promise<`
-Reset rate limit for a user
-
-**generate**(collectionId: string,
-      request: GeneratePodcastRequest) → `Promise<GeneratePodcastResponse>`
-Generate a NotebookLM-style conversational podcast from product documents
-
-**getStatus**(collectionId: string, podcastId: string) → `Promise<PodcastStatus>`
-Get podcast generation status
-
-**generate**(collectionId: string,
-      request: TTSRequest) → `Promise<Blob>`
-Generate text-to-speech audio
-
-**chat**(collectionId: string,
-      request: PublicChatRequest) → `Promise<PublicChatResponse>`
-Chat with product assistant (RAG)
-
-**getSession**(collectionId: string, sessionId: string) → `Promise<Session>`
-Get session history
-
-**clearSession**(collectionId: string, sessionId: string) → `Promise<`
-Clear session history
-
-**getRateLimit**(collectionId: string, userId: string) → `Promise<RateLimitStatus>`
-Check rate limit status
-
-**getToken**(collectionId: string,
-      request: EphemeralTokenRequest) → `Promise<EphemeralTokenResponse>`
-Generate ephemeral token for Gemini Live
-
-**isSupported**() → `boolean`
-Check if voice is supported in browser
-
-**listen**(language = 'en-US') → `Promise<string>`
-Listen for voice input
-
-**speak**(text: string, options?: { voice?: string; rate?: number }) → `Promise<void>`
-Speak text
-
-**generateContent**(collectionId: string,
-    params: AIGenerateContentRequest,
-    admin: boolean = true) → `Promise<any>`
-Generate text/content via AI (admin)
-
-**generateImage**(collectionId: string, params: AIGenerateImageRequest) → `Promise<any>`
-Generate an image via AI (admin)
-
-**searchPhotos**(collectionId: string,
-    params: AISearchPhotosRequest) → `Promise<AISearchPhotosPhoto[]>`
-Search stock photos or similar via AI (admin)
-
-**uploadFile**(collectionId: string, params: any) → `Promise<any>`
-Upload a file for AI usage (admin). Pass FormData for binary uploads.
-
-**createCache**(collectionId: string, params: any) → `Promise<any>`
-Create or warm a cache for AI (admin)
-
-**postChat**(collectionId: string, params: any, admin: boolean = true) → `Promise<any>`
-Post a chat message to the AI (admin or public)
+**create**(collectionId: string,
+        request: ResponsesRequest) → `Promise<ResponsesResult | AsyncIterable<ResponsesStreamEvent>>`
+Create a Responses API request (streaming or non-streaming)
 
 ### claimSet
 
@@ -6990,6 +6993,14 @@ Public: Fetch a global location by ID GET /public/location/:locationId
     locationId: string) → `Promise<Location>`
 Public: Fetch a location for a collection; returns either a collection-owned or global fallback GET /public/collection/:collectionId/location/:locationId
 
+### models
+
+**list**(collectionId: string, params?: AIModelListParams) → `Promise<AIModelListResponse>`
+List available AI models
+
+**get**(collectionId: string, modelId: string) → `Promise<AIModel>`
+Get specific model information
+
 ### nfc
 
 **claimTag**(data: NfcClaimTagRequest) → `Promise<NfcTagInfo>`
@@ -7095,6 +7106,15 @@ Get individual order items for a specific product. Returns all matching items wi
     params?: GetOrderIdsParams) → `Promise<GetOrderIdsResponse>`
 Get unique order IDs containing items for a specific product. Lightweight query that only returns order IDs, not full order objects. ```typescript // Get order IDs for a product const productOrders = await order.getOrderIdsByAttribute( 'coll_123', 'productId', 'prod_789', { limit: 500 } ) ```
 
+### podcast
+
+**generate**(collectionId: string,
+      request: GeneratePodcastRequest) → `Promise<GeneratePodcastResponse>`
+Generate a NotebookLM-style conversational podcast from product documents
+
+**getStatus**(collectionId: string, podcastId: string) → `Promise<PodcastStatus>`
+Get podcast generation status
+
 ### product
 
 **get**(collectionId: string,
@@ -7195,10 +7215,44 @@ Get proofs for a batch (admin only). GET /admin/collection/:collectionId/product
     data: { targetProductId: string }) → `Promise<ProofResponse>`
 Migrate a proof to a different product within the same collection (admin only). Because the Firestore ledger document ID is `{productId}-{proofId}`, a proof cannot simply be re-assigned to another product by updating a field — the document must be re-keyed. This endpoint handles that atomically: 1. Reads the source ledger document (`{sourceProductId}-{proofId}`). 2. Writes a new document (`{targetProductId}-{proofId}`) with `productId` and `proofGroup` updated. The short `proofId` (nanoid) is unchanged. 3. Writes a migration history entry to the new document's `history` subcollection (snapshot of the original proof + migration metadata). 4. Copies all subcollections — `assets`, `attestations`, `history` — from the old document to the new one. 5. Deletes the old subcollections and then the old document. Repeated migrations are safe — each one appends a history record; no migration metadata is stored on the proof document itself. ```typescript const migrated = await proof.migrate('coll_123', 'prod_old', 'proof_abc', { targetProductId: 'prod_new', }) console.log(migrated.productId) // 'prod_new' ```
 
+### publicClient
+
+**chat**(collectionId: string,
+      request: PublicChatRequest) → `Promise<PublicChatResponse>`
+Chat with product assistant (RAG)
+
+**getSession**(collectionId: string, sessionId: string) → `Promise<Session>`
+Get session history
+
+**clearSession**(collectionId: string, sessionId: string) → `Promise<`
+Clear session history
+
+**getRateLimit**(collectionId: string, userId: string) → `Promise<RateLimitStatus>`
+Check rate limit status
+
+**getToken**(collectionId: string,
+      request: EphemeralTokenRequest) → `Promise<EphemeralTokenResponse>`
+Generate ephemeral token for Gemini Live
+
 ### qr
 
 **lookupShortCode**(shortId: string, code: string) → `Promise<QrShortCodeLookupResponse>`
 Resolve a short code to related resource identifiers.
+
+### rag
+
+**indexDocument**(collectionId: string,
+      request: IndexDocumentRequest) → `Promise<IndexDocumentResponse>`
+Index a document for RAG
+
+**configureAssistant**(collectionId: string,
+      request: ConfigureAssistantRequest) → `Promise<ConfigureAssistantResponse>`
+Configure AI assistant behavior
+
+### rateLimit
+
+**reset**(collectionId: string, userId: string) → `Promise<`
+Reset rate limit for a user
 
 ### realtime
 
@@ -7207,45 +7261,6 @@ Get an Ably token for public (user-scoped) real-time communication. This endpoin
 
 **getAdminToken**() → `Promise<AblyTokenRequest>`
 Get an Ably token for admin real-time communication. This endpoint returns an Ably TokenRequest that can be used to initialize an Ably client with admin permissions to receive system notifications and alerts. Admin users get subscribe-only (read-only) access to the interaction:{userId} channel pattern. Requires admin authentication (Bearer token). ```ts const tokenRequest = await realtime.getAdminToken() // Use with Ably const ably = new Ably.Realtime.Promise({ authCallback: async (data, callback) => { callback(null, tokenRequest) } }) // Subscribe to admin interaction channel const userId = 'my-user-id' const channel = ably.channels.get(`interaction:${userId}`) await channel.subscribe((message) => { console.log('Admin notification:', message.data) }) ```
-
-### records
-
-**create**(collectionId: string,
-    appId: string,
-    input: CreateRecordInput,
-    admin: boolean = false) → `Promise<AppRecord>`
-Create a new record POST /records
-
-**list**(collectionId: string,
-    appId: string,
-    params?: RecordListQueryParams,
-    admin: boolean = false) → `Promise<PaginatedResponse<AppRecord>>`
-List records with optional query parameters GET /records
-
-**get**(collectionId: string,
-    appId: string,
-    recordId: string,
-    admin: boolean = false) → `Promise<AppRecord>`
-Get a single record by ID GET /records/:recordId
-
-**update**(collectionId: string,
-    appId: string,
-    recordId: string,
-    input: UpdateRecordInput,
-    admin: boolean = false) → `Promise<AppRecord>`
-Update a record PATCH /records/:recordId Admin can update any field, public (owner) can only update data and owner
-
-**remove**(collectionId: string,
-    appId: string,
-    recordId: string,
-    admin: boolean = false) → `Promise<`
-Soft delete a record DELETE /records/:recordId
-
-**aggregate**(collectionId: string,
-    appId: string,
-    request: AggregateRequest,
-    admin: boolean = false) → `Promise<AggregateResponse>`
-Get aggregate statistics for records POST /records/aggregate
 
 ### segments
 
@@ -7271,6 +7286,11 @@ Get aggregate statistics for records POST /records/aggregate
 **recipients**(collectionId: string,
     id: string,
     query: { limit?: number; offset?: number } = {}) → `Promise<SegmentRecipientsResponse>`
+
+### sessions
+
+**stats**(collectionId: string) → `Promise<SessionStatistics>`
+Get session statistics
 
 ### tags
 
@@ -7360,53 +7380,15 @@ Reverse lookup by ref via POST (public). `POST /public/collection/:collectionId/
 **renderSource**(collectionId: string,
     body: TemplateRenderSourceRequest) → `Promise<TemplateRenderSourceResponse>`
 
-### threads
+### tts
 
-**create**(collectionId: string,
-    appId: string,
-    input: CreateThreadInput,
-    admin: boolean = false) → `Promise<AppThread>`
-Create a new thread POST /threads
-
-**list**(collectionId: string,
-    appId: string,
-    params?: ThreadListQueryParams,
-    admin: boolean = false) → `Promise<PaginatedResponse<AppThread>>`
-List threads with optional query parameters GET /threads
-
-**get**(collectionId: string,
-    appId: string,
-    threadId: string,
-    admin: boolean = false) → `Promise<AppThread>`
-Get a single thread by ID GET /threads/:threadId
-
-**update**(collectionId: string,
-    appId: string,
-    threadId: string,
-    input: UpdateThreadInput,
-    admin: boolean = false) → `Promise<AppThread>`
-Update a thread PATCH /threads/:threadId Admin can update any field, public (owner) can only update body, tags, data, owner
-
-**remove**(collectionId: string,
-    appId: string,
-    threadId: string,
-    admin: boolean = false) → `Promise<`
-Soft delete a thread DELETE /threads/:threadId
-
-**reply**(collectionId: string,
-    appId: string,
-    threadId: string,
-    input: ReplyInput,
-    admin: boolean = false) → `Promise<AppThread>`
-Add a reply to a thread POST /threads/:threadId/reply Atomically appends to replies array, increments replyCount, updates lastReplyAt
-
-**aggregate**(collectionId: string,
-    appId: string,
-    request: AggregateRequest,
-    admin: boolean = false) → `Promise<AggregateResponse>`
-Get aggregate statistics for threads POST /threads/aggregate
+**generate**(collectionId: string,
+      request: TTSRequest) → `Promise<Blob>`
+Generate text-to-speech audio
 
 ### userAppData
+
+User-owned app data stored per user and app, shared across collections.
 
 **getConfig**(appId: string) → `Promise<any>`
 Get user's config blob for an app. This is a single JSON object stored per user+app. ```typescript const config = await userAppData.getConfig('allergy-tracker'); // Returns: { allergies: ['peanuts'], notifications: true } ```
@@ -7473,4 +7455,15 @@ Get serial numbers for a variant (admin only).
     variantId: string,
     codeId: string) → `Promise<any>`
 Look up a serial number by code for a variant (admin only).
+
+### voice
+
+**isSupported**() → `boolean`
+Check if voice is supported in browser
+
+**listen**(language = 'en-US') → `Promise<string>`
+Listen for voice input
+
+**speak**(text: string, options?: { voice?: string; rate?: number }) → `Promise<void>`
+Speak text
 
