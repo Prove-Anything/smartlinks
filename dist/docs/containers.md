@@ -26,6 +26,190 @@ Imagine a homepage displaying 10 app widgets. If containers were bundled with wi
 
 ---
 
+## Dual-Mode Rendering
+
+Containers can run in **two modes**, and the same container code must work in both:
+
+| Mode | How It Works | Who Provides the Router? |
+|------|-------------|--------------------------|
+| **Direct Component** | Container runs directly in the parent's React context | **The framework** — wraps your component in `MemoryRouter` |
+| **Iframe** | Container runs inside an iframe with its own URL | **Your app** — you manage your own `HashRouter` |
+
+### The Critical Rule: No Router Wrappers in Your Export
+
+> **❌ Your exported `PublicContainer` must NOT be wrapped in a `<Router>`, `<MemoryRouter>`, `<HashRouter>`, or `<BrowserRouter>`.**
+
+**Why?** In direct-component mode, the framework already wraps your container in a `MemoryRouter`. If your component includes its own Router, React Router will throw: _"You cannot render a `<Router>` inside another `<Router>`"_.
+
+**The routing architecture:**
+
+```
+Direct Component Mode:
+  Portal Shell (HashRouter)
+    └─ ContentOrchestrator
+         └─ MemoryRouter ← framework provides this
+              └─ <YourContainer /> ← only contains <Routes>, no <Router>
+                   └─ <Route path="/" element={<Home />} />
+                   └─ <Route path="/detail/:id" element={<Detail />} />
+
+Iframe Mode:
+  <iframe src="your-app-url">
+    └─ <HashRouter> ← your App.tsx provides this
+         └─ <Routes>
+              └─ <Route path="/" element={<Home />} />
+```
+
+**Where routing goes:**
+- ✅ Your **iframe entry point** (`App.tsx` / `main.tsx`) should use `HashRouter` 
+- ✅ Your **exported container** (`PublicContainer.tsx`) should include `<Routes>` and `<Route>` elements
+- ❌ Your **exported container** should NOT include any `<Router>` wrapper
+
+### The Router Contract
+
+In direct-component mode, the framework's `MemoryRouter` gives you full React Router capabilities:
+
+- ✅ `useNavigate()` works — navigates within your container's routes
+- ✅ `useLocation()` works — returns current location in the MemoryRouter
+- ✅ `useParams()` works — reads params from your route definitions
+- ✅ `<Routes>` / `<Route>` work — define your internal navigation
+- ✅ `useSearchParams()` works — manages search params within the MemoryRouter
+- ⚠️ `window.location` does **NOT** reflect your container's route — it reflects the portal's URL
+
+**Example: Correct Container Structure**
+
+```tsx
+// ❌ WRONG — has Router wrapper
+export const PublicContainer = (props: Record<string, any>) => {
+  return (
+    <MemoryRouter>  {/* ❌ Don't do this! */}
+      <Routes>
+        <Route path="/" element={<Home />} />
+      </Routes>
+    </MemoryRouter>
+  );
+};
+
+// ✅ CORRECT — no Router wrapper
+export const PublicContainer = (props: Record<string, any>) => {
+  return (
+    <AppContext.Provider value={props}>
+      <Routes>  {/* ✅ Routes are fine, just no Router */}
+        <Route path="/" element={<Home />} />
+        <Route path="/detail/:id" element={<Detail />} />
+      </Routes>
+    </AppContext.Provider>
+  );
+};
+```
+
+### The `useAppContext()` Pattern
+
+To write containers that work identically in both modes, use this abstraction pattern:
+
+```tsx
+// src/hooks/useAppContext.ts
+import { useContext, createContext, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+export interface AppContextValue {
+  collectionId: string;
+  appId: string;
+  productId?: string;
+  proofId?: string;
+  pageId?: string;
+  initialPath?: string;
+  lang?: string;
+  user?: { id: string; email: string; name?: string };
+  SL: typeof import('@proveanything/smartlinks');
+  onNavigate?: (request: any) => void;
+}
+
+export const AppContext = createContext<AppContextValue | null>(null);
+
+/**
+ * Returns app context regardless of rendering mode.
+ * - Direct component mode: reads from AppContext (props)
+ * - Iframe mode: reads from URL search params
+ */
+export function useAppContext(): AppContextValue {
+  const ctx = useContext(AppContext);
+  
+  // If context exists, we're in direct-component mode
+  if (ctx) return ctx;
+  
+  // Otherwise, we're in iframe mode — read from URL params
+  const [searchParams] = useSearchParams();
+  const SL = (window as any).SL ?? require('@proveanything/smartlinks');
+
+  return useMemo(() => ({
+    collectionId: searchParams.get('collectionId') ?? '',
+    appId: searchParams.get('appId') ?? '',
+    productId: searchParams.get('productId') ?? undefined,
+    proofId: searchParams.get('proofId') ?? undefined,
+    pageId: searchParams.get('pageId') ?? undefined,
+    lang: searchParams.get('lang') ?? undefined,
+    SL,
+  }), [searchParams, SL]);
+}
+```
+
+**Usage in your container:**
+
+```tsx
+// src/exports/PublicContainer.tsx
+import { Routes, Route } from 'react-router-dom';
+import { AppContext } from '@/hooks/useAppContext';
+import { Home } from '@/pages/Home';
+import { Detail } from '@/pages/Detail';
+
+export const PublicContainer = (props: Record<string, any>) => {
+  return (
+    <AppContext.Provider value={props}>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/detail/:id" element={<Detail />} />
+      </Routes>
+    </AppContext.Provider>
+  );
+};
+
+// src/pages/Home.tsx
+import { useAppContext } from '@/hooks/useAppContext';
+import { useNavigate } from 'react-router-dom';
+
+export function Home() {
+  const { collectionId, productId, SL } = useAppContext();
+  const navigate = useNavigate();
+  
+  return (
+    <div>
+      <h1>Collection: {collectionId}</h1>
+      <button onClick={() => navigate('/detail/123')}>
+        View Detail
+      </button>
+    </div>
+  );
+}
+```
+
+### Deep Linking
+
+The framework sets the `MemoryRouter`'s initial route based on the `pageId` or `initialPath` prop. For example, if the portal navigates to your container with `pageId: 'settings'`, your router will start at `/settings`.
+
+To advertise deep-linkable pages, declare them in your `app.manifest.json`:
+
+```json
+{
+  "linkable": [
+    { "title": "Home", "path": "/" },
+    { "title": "Settings", "path": "/settings" },
+    { "title": "Item Detail", "path": "/item/:itemId" }
+  ]
+}
+```
+
+---
+
 ## Container Props
 
 Container props extend the standard `SmartLinksWidgetProps` with an additional `className` prop:
@@ -118,15 +302,15 @@ See `widgets.md` for the full `NavigationRequest` documentation and additional e
 
 ## Architecture
 
-Containers use **MemoryRouter** (not HashRouter) because the parent app owns the browser's URL bar. Context is passed via props rather than URL parameters. Each container gets its own `QueryClient` to avoid cache collisions with the parent app.
+The framework wraps containers in a **MemoryRouter** (not HashRouter) because the parent app owns the browser's URL bar. Context is passed via props rather than URL parameters. Each container gets its own `QueryClient` to avoid cache collisions with the parent app.
 
 ```
 Parent App (owns URL bar, provides globals)
-  └── <PublicContainer>                    ← Container component
-        ├── QueryClientProvider (isolated)
-        ├── MemoryRouter (internal routing)
-        ├── LanguageProvider
-        └── PublicPage (+ all sub-routes)
+  └── MemoryRouter                         ← Framework provides this
+       └── <PublicContainer>               ← Container component (no Router!)
+             ├── QueryClientProvider (isolated)
+             ├── LanguageProvider
+             └── Routes/Route (internal navigation)
 ```
 
 ---
@@ -233,7 +417,7 @@ src/containers/
 1. Create your container component in `src/containers/MyContainer.tsx`
 2. Export it from `src/containers/index.ts`
 3. Add it to the `CONTAINER_MANIFEST` in `src/containers/index.ts`
-4. Ensure it uses `MemoryRouter` (not HashRouter)
+4. Ensure it does NOT include a Router wrapper (framework provides `MemoryRouter`)
 5. Give it its own `QueryClient` to avoid cache collisions
 
 ---
@@ -258,7 +442,7 @@ src/containers/
 | -------------------------- | ---------------------------------------- | ---------------------------------------------------- |
 | Container doesn't render   | Missing shared globals                   | Ensure all Shared Dependencies are on `window`       |
 | Styles don't apply         | Missing `containers.css`                 | Load the CSS file alongside the JS bundle            |
-| Routing doesn't work       | Using HashRouter instead of MemoryRouter | Containers must use MemoryRouter                     |
+| Routing doesn't work       | Container includes a Router wrapper      | Remove all Router wrappers (framework provides MemoryRouter) |
 | Query cache conflicts      | Sharing parent's QueryClient             | Each container needs its own `QueryClient` instance  |
 | `cva.cva` runtime error    | Global set to lowercase `cva`            | Use uppercase `CVA` for the global name              |
 | Navigation does nothing    | Using legacy string with `onNavigate`    | Use structured `NavigationRequest` object instead    |

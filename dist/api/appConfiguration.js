@@ -200,6 +200,8 @@ export var userAppData;
 /**
  * Collection/Product-scoped app configuration.
  * This is admin-managed configuration that applies to all users within the scope.
+ * Root-level config fields are typically part of the public view; if you need admin-only
+ * values, store them under a top-level `admin` object so public reads can omit them.
  *
  * @example
  * ```typescript
@@ -229,7 +231,10 @@ export var userAppData;
 export var appConfiguration;
 (function (appConfiguration) {
     /**
-     * Get app configuration for a collection/product scope.
+    * Get app configuration for a collection/product scope.
+    * Public reads return the public view of the config. If the stored config contains a
+    * top-level `admin` object, that block is omitted from public responses and included
+    * when `opts.admin === true`.
      *
      * @param opts - Configuration options including appId and scope (collectionId, productId, etc.)
      * @returns The configuration object
@@ -309,8 +314,10 @@ export var appConfiguration;
     }
     appConfiguration.listWidgetInstances = listWidgetInstances;
     /**
-     * Set app configuration for a collection/product scope.
-     * Requires admin authentication.
+    * Set app configuration for a collection/product scope.
+    * Requires admin authentication.
+    * Writing through the admin endpoint does not make every root-level field private.
+    * Use `config.admin` for confidential values that should only be returned on admin reads.
      *
      * @param opts - Configuration options including appId, scope, and config data
      * @returns The saved configuration

@@ -269,6 +269,23 @@ function generateAPISummary(): void {
   summary += '- **[AI-Native App Manifests](manifests.md)** - How AI workflows discover, configure, and import apps via structured manifests and prose guides\n';
   summary += '- **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide\n\n';
 
+  summary += '## Choosing App Storage\n\n';
+  summary += 'When you need flexible app-specific data, choose the storage model based on shape and lifecycle, not just on what can hold JSON.\n\n';
+  summary += '- **`appConfiguration.getConfig` / `setConfig`** - One config blob per scope. Best for settings, feature flags, and app setup.\n';
+  summary += '- **`appConfiguration.getData` / `getDataItem` / `setDataItem`** - Small keyed documents attached to a scope. Best for lookup tables, content fragments, menus, FAQs, or a handful of standalone items where you already know the ID.\n';
+  summary += '- **`app.records`** - Default choice for richer app-owned entities that need status, visibility, ownership zones, querying, filtering, parent-child links, or lifecycle fields.\n';
+  summary += '- **`app.cases`** - Use when the entity is a workflow item that moves toward resolution and may need assignment, priority, and history.\n';
+  summary += '- **`app.threads`** - Use for conversations, comments, Q&A, or any object centered on replies.\n\n';
+  summary += 'Rule of thumb: if you are modelling a real domain object that users will browse, filter, secure, or evolve over time, start with app objects. If you just need a simple keyed payload hanging off a collection or product, scoped data items are still a good fit.\n\n';
+
+  summary += '## Settings Visibility\n\n';
+  summary += 'For `appConfiguration` config blobs and `collection` settings groups, keep endpoint choice separate from visibility semantics.\n\n';
+  summary += '- **`admin: true` means "use the admin endpoint"** for reads or writes.\n';
+  summary += '- **It does not make every root field private.** Writing through an admin endpoint still saves the normal shared payload.\n';
+  summary += '- **Root-level fields are the public/shared settings view.** Put public labels, colors, toggles, and general config there.\n';
+  summary += '- **Use a top-level `admin` object for confidential values.** Public reads omit that block; admin reads include it.\n';
+  summary += '- **Applies to both** `appConfiguration.getConfig` / `setConfig` **and** `collection.getSettings` / `updateSettings`.\n\n';
+
   // Generate namespace overview
   const apiFiles = fs.readdirSync(apiDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
   const namespaces = apiFiles.map(file => path.basename(file, '.ts')).sort();

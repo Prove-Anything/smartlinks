@@ -44,9 +44,13 @@ export namespace collection {
   }
 
   /**
-   * Retrieve a specific settings group for a collection (public endpoint).
+   * Retrieve a specific settings group for a collection.
+   * Public reads return the public view of the settings group. If the stored payload contains
+   * a top-level `admin` object, that block is omitted from public responses and included when
+   * `admin === true`.
    * @param collectionId – Identifier of the collection
    * @param settingGroup – The settings group name
+   * @param admin – If true, use the admin endpoint and include the admin-only settings block
    * @returns Promise resolving to the settings object
    */
   export async function getSettings(collectionId: string, settingGroup: string, admin?: boolean): Promise<any> {
@@ -68,6 +72,9 @@ export namespace collection {
 
   /**
    * Update a specific settings group for a collection (admin endpoint).
+   * This writes through the admin endpoint, but root-level fields are still part of the public
+   * settings payload. Put confidential values under `settings.admin` if they should only be
+   * returned on admin reads.
    * @param collectionId – Identifier of the collection
    * @param settingGroup – The settings group name
    * @param settings – The settings payload to persist

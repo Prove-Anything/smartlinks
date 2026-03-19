@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.8.6  |  Generated: 2026-03-17T21:25:13.155Z
+Version: 1.8.10  |  Generated: 2026-03-19T15:24:09.009Z
 
 This is a concise summary of all available API functions and types.
 
@@ -41,6 +41,16 @@ When you need flexible app-specific data, choose the storage model based on shap
 - **`app.threads`** - Use for conversations, comments, Q&A, or any object centered on replies.
 
 Rule of thumb: if you are modelling a real domain object that users will browse, filter, secure, or evolve over time, start with app objects. If you just need a simple keyed payload hanging off a collection or product, scoped data items are still a good fit.
+
+## Settings Visibility
+
+For `appConfiguration` config blobs and `collection` settings groups, keep endpoint choice separate from visibility semantics.
+
+- **`admin: true` means "use the admin endpoint"** for reads or writes.
+- **It does not make every root field private.** Writing through an admin endpoint still saves the normal shared payload.
+- **Root-level fields are the public/shared settings view.** Put public labels, colors, toggles, and general config there.
+- **Use a top-level `admin` object for confidential values.** Public reads omit that block; admin reads include it.
+- **Applies to both** `appConfiguration.getConfig` / `setConfig` **and** `collection.getSettings` / `updateSettings`.
 
 ## API Namespaces
 
@@ -5834,10 +5844,17 @@ type AppConfigOptions = {
   /** Item ID - required for getDataItem/deleteDataItem */
   itemId?: string
   
-  /** Use admin endpoints instead of public */
+  /**
+   * Use admin endpoints instead of public.
+   * This selects which endpoint is called; it does not by itself make root-level config fields private.
+   */
   admin?: boolean
   
-  /** Configuration object for setConfig */
+  /**
+   * Configuration object for setConfig.
+   * For admin-only values in app config, store them under a top-level `admin` object.
+   * Public reads return the root config but omit `config.admin`.
+   */
   config?: any
   /** Data object for setDataItem. Best for small keyed scoped documents rather than richer app domain objects. */
   data?: any
@@ -6130,7 +6147,7 @@ Get aggregate statistics for threads POST /threads/aggregate
 Scoped config and keyed data items for collections, products, variants, or batches. Best for settings and small standalone documents, not as the default answer for every app-owned entity.
 
 **getConfig**(opts: AppConfigOptions) → `Promise<any>`
-Get app configuration for a collection/product scope. ```typescript const config = await appConfiguration.getConfig({ appId: 'warranty-portal', collectionId: 'my-collection' }); ```
+Get app configuration for a collection/product scope. Public reads return the public view of the config. If the stored config contains a top-level `admin` object, that block is omitted from public responses and included when `opts.admin === true`. ```typescript const config = await appConfiguration.getConfig({ appId: 'warranty-portal', collectionId: 'my-collection' }); ```
 
 **getWidgetInstance**(opts: GetWidgetInstanceOptions) → `Promise<WidgetInstance<TWidget>>`
 Resolve a configured widget instance by ID from an app's stored config. This is a thin convenience wrapper over `getConfig()` that reads `config.widgets[widgetId]`. ```typescript const widget = await appConfiguration.getWidgetInstance({ collectionId: 'my-collection', appId: 'widget-toolkit', widgetId: 'launch-countdown' }) ```
@@ -6139,7 +6156,7 @@ Resolve a configured widget instance by ID from an app's stored config. This is 
 List configured widget instances for an app. Useful for picker UIs, setup schemas, and widget-to-widget references. ```typescript const widgets = await appConfiguration.listWidgetInstances({ collectionId: 'my-collection', appId: 'widget-toolkit' }) ```
 
 **setConfig**(opts: AppConfigOptions) → `Promise<any>`
-Set app configuration for a collection/product scope. Requires admin authentication. ```typescript await appConfiguration.setConfig({ appId: 'warranty-portal', collectionId: 'my-collection', admin: true, config: { warrantyPeriod: 24, supportEmail: 'support@example.com' } }); ```
+Set app configuration for a collection/product scope. Requires admin authentication. Writing through the admin endpoint does not make every root-level field private. Use `config.admin` for confidential values that should only be returned on admin reads. ```typescript await appConfiguration.setConfig({ appId: 'warranty-portal', collectionId: 'my-collection', admin: true, config: { warrantyPeriod: 24, supportEmail: 'support@example.com' } }); ```
 
 **deleteConfig**(opts: AppConfigOptions) → `Promise<void>`
 Delete app configuration for a collection/product scope. Requires admin authentication. ```typescript await appConfiguration.deleteConfig({ appId: 'warranty-portal', collectionId: 'my-collection', admin: true }); ```
@@ -6614,13 +6631,13 @@ Retrieves all Collections.
 Retrieve a collection by its shortId (public endpoint).
 
 **getSettings**(collectionId: string, settingGroup: string, admin?: boolean) → `Promise<any>`
-Retrieve a specific settings group for a collection (public endpoint).
+Retrieve a specific settings group for a collection. Public reads return the public view of the settings group. If the stored payload contains a top-level `admin` object, that block is omitted from public responses and included when `admin === true`.
 
 **getAppsConfig**(collectionId: string) → `Promise<AppsConfigResponse>`
 Retrieve all configured app module definitions for a collection (public endpoint).
 
 **updateSettings**(collectionId: string, settingGroup: string, settings: any) → `Promise<any>`
-Update a specific settings group for a collection (admin endpoint).
+Update a specific settings group for a collection (admin endpoint). This writes through the admin endpoint, but root-level fields are still part of the public settings payload. Put confidential values under `settings.admin` if they should only be returned on admin reads.
 
 **create**(data: CollectionCreateRequest) → `Promise<CollectionResponse>`
 Create a new collection (admin only).

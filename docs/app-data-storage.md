@@ -104,6 +104,49 @@ This data is scoped to specific collections, products, variants, or batches. It'
 
 If you need richer app-owned entities with querying, lifecycle, access zones, parent-child relationships, or workflow semantics, use [app-objects.md](app-objects.md) instead of forcing everything through `setDataItem`.
 
+### Critical: `admin: true` Controls the Endpoint, Not Field Privacy
+
+This is the part that often gets misunderstood by apps and AI tools:
+
+- `admin: true` means "call the admin endpoint".
+- It does **not** mean "everything I wrote is now admin-only".
+- For app config and collection settings, root-level fields are usually part of the public payload.
+- If you need confidential values, store them under a top-level `admin` object.
+- Public reads omit that `admin` block; admin reads include it.
+
+Example for app config:
+
+```typescript
+await appConfiguration.setConfig({
+  appId: 'warranty-portal',
+  collectionId: 'my-collection',
+  admin: true,
+  config: {
+    theme: 'gold',
+    supportEmail: 'support@example.com',
+    admin: {
+      accessToken: 'secret-token',
+      webhookSecret: 'top-secret'
+    }
+  }
+})
+
+const publicView = await appConfiguration.getConfig({
+  appId: 'warranty-portal',
+  collectionId: 'my-collection'
+})
+// { theme: 'gold', supportEmail: 'support@example.com' }
+
+const adminView = await appConfiguration.getConfig({
+  appId: 'warranty-portal',
+  collectionId: 'my-collection',
+  admin: true
+})
+// { theme: 'gold', supportEmail: 'support@example.com', admin: { ... } }
+```
+
+The same visibility pattern applies to collection settings via `collection.getSettings()` / `collection.updateSettings()`.
+
 ### Use Cases
 - App-specific settings for a collection
 - Product-level configuration
@@ -178,7 +221,7 @@ await appConfiguration.setDataItem({
 | **Shared across collections?** | ✅ Yes | ❌ No | ❌ No |
 | **Requires auth?** | ✅ Yes (user token) | ✅ Yes (admin token for write) | Depends on public/admin endpoint and visibility |
 | **Querying / filtering** | Minimal | Minimal | Strong |
-| **Access control zones** | User-scoped only | Scope only | `data` / `owner` / `admin` zones |
+| **Access control zones** | User-scoped only | Root fields + reserved `admin` block for settings/config | `data` / `owner` / `admin` zones |
 | **Admin write required?** | ❌ No | ✅ Yes (for write operations) | Only for admin endpoints / admin fields |
 
 ---

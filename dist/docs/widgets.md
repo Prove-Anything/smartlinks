@@ -30,6 +30,104 @@ Widgets are self-contained React components that:
 
 ---
 
+## Dual-Mode Rendering
+
+Widgets can run in **two modes**, and the same widget code must work in both:
+
+| Mode | How It Works | When Used |
+|------|-------------|-----------|
+| **Direct Component** | Widget runs directly in the parent's React context | Default - when loaded as ESM/UMD in the parent app |
+| **Iframe** | Widget runs inside an iframe with its own URL | Fallback or when full isolation is needed |
+
+### The Critical Rule: No Router Wrappers
+
+> **❌ Your widget component must NOT be wrapped in a `<Router>`, `<MemoryRouter>`, `<HashRouter>`, or `<BrowserRouter>`.**
+
+**Why?** In direct component mode, the parent application already provides routing context. If your widget includes its own Router, React Router will throw: _"You cannot render a `<Router>` inside another `<Router>`"_.
+
+**Where routing goes:**
+- ✅ Your **iframe entry point** (`App.tsx` / `main.tsx`) should use `HashRouter` 
+- ❌ Your **exported widget** (`PublicComponent.tsx`) should NOT include any Router
+
+Widgets are typically single-view components and don't need internal routing. If you need multi-page navigation, use a container instead.
+
+### The `useAppContext()` Pattern
+
+To write widgets that work identically in both modes, use this abstraction pattern:
+
+```tsx
+// src/hooks/useAppContext.ts
+import { useContext, createContext, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
+
+export interface AppContextValue {
+  collectionId: string;
+  appId: string;
+  productId?: string;
+  proofId?: string;
+  pageId?: string;
+  lang?: string;
+  user?: { id: string; email: string; name?: string };
+  SL: typeof import('@proveanything/smartlinks');
+  onNavigate?: (request: any) => void;
+}
+
+export const AppContext = createContext<AppContextValue | null>(null);
+
+/**
+ * Returns app context regardless of rendering mode.
+ * - Direct component mode: reads from AppContext (props)
+ * - Iframe mode: reads from URL search params
+ */
+export function useAppContext(): AppContextValue {
+  const ctx = useContext(AppContext);
+  
+  // If context exists, we're in direct-component mode
+  if (ctx) return ctx;
+  
+  // Otherwise, we're in iframe mode — read from URL params
+  const [searchParams] = useSearchParams();
+  const SL = (window as any).SL ?? require('@proveanything/smartlinks');
+
+  return useMemo(() => ({
+    collectionId: searchParams.get('collectionId') ?? '',
+    appId: searchParams.get('appId') ?? '',
+    productId: searchParams.get('productId') ?? undefined,
+    proofId: searchParams.get('proofId') ?? undefined,
+    pageId: searchParams.get('pageId') ?? undefined,
+    lang: searchParams.get('lang') ?? undefined,
+    SL,
+  }), [searchParams, SL]);
+}
+```
+
+**Usage in your widget:**
+
+```tsx
+// src/exports/PublicComponent.tsx
+import { AppContext } from '@/hooks/useAppContext';
+import { WidgetContent } from '@/components/WidgetContent';
+
+export const PublicComponent = (props: Record<string, any>) => {
+  return (
+    <AppContext.Provider value={props}>
+      <WidgetContent />
+    </AppContext.Provider>
+  );
+};
+
+// src/components/WidgetContent.tsx
+import { useAppContext } from '@/hooks/useAppContext';
+
+export function WidgetContent() {
+  const { collectionId, productId, SL } = useAppContext();
+  // Works in both direct-component and iframe modes!
+  return <div>Collection: {collectionId}</div>;
+}
+```
+
+---
+
 ## Widget Props Interface
 
 All widgets receive the `SmartLinksWidgetProps` interface:

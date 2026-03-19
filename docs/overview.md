@@ -45,6 +45,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | Topic | File | When to Use |
 |-------|------|-------------|
 | **API Reference** | `docs/API_SUMMARY.md` | Complete SDK function reference, types, error handling |
+| **Building React Components** | `docs/building-react-components.md` | **READ THIS FIRST** — Dual-mode rendering, router rules, useAppContext pattern |
 | **Multi-Page Architecture** | `docs/mpa.md` | Build pipeline, entry points, multi-page setup, content hashing |
 | **AI & Chat** | `docs/ai.md` | Chat completions, RAG, streaming, tool calling, voice, podcasts, TTS |
 | **Analytics** | `docs/analytics.md` | Fire-and-forget page/click/tag analytics plus admin dashboard queries |
@@ -140,6 +141,33 @@ await SL.appConfiguration.setConfig({ collectionId, appId, config: myConfig, adm
 
 This applies to all write operations: `setConfig`, `setDataItem`, `updateDataItem`, etc.
 
+### Endpoint Auth vs Data Visibility
+
+`admin: true` is an endpoint selector, not a privacy marker.
+
+- It tells the SDK to call the admin endpoint.
+- It allows writes and admin reads.
+- It does **not** mean every root-level field you save becomes admin-only.
+
+For `appConfiguration` config blobs and `collection.getSettings()` groups, root-level fields are typically the public-facing settings. If you need private values such as tokens or secrets, store them inside a top-level `admin` object:
+
+```typescript
+await SL.appConfiguration.setConfig({
+  collectionId,
+  appId,
+  admin: true,
+  config: {
+    publicLabel: 'Warranty Portal',
+    color: '#B68C2A',
+    admin: {
+      accessToken: 'secret-token'
+    }
+  }
+})
+```
+
+Public reads omit the `admin` block. Admin reads include it.
+
 ### Config vs Data
 
 | Storage Type | Function | Use Case |
@@ -149,6 +177,8 @@ This applies to all write operations: `setConfig`, `setDataItem`, `updateDataIte
 | **App Objects** (`app.records` / `app.cases` / `app.threads`) | Queryable domain objects | Real app entities, workflows, conversations, richer access control |
 
 Both can be scoped to **collection level** or **product level** by including `productId`.
+
+For config/settings visibility, remember: root fields are the normal shared payload, while a reserved top-level `admin` object is the place for admin-only values.
 
 Prefer `app.records` over `setDataItem` when the data is becoming a real entity that needs lifecycle, ownership, visibility, relationships, or filtering. Keep `setDataItem` for simple keyed scoped documents and config-adjacent content.
 

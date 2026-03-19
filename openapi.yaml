@@ -79,7 +79,7 @@ paths:
     post:
       tags:
         - collection
-      summary: Update a specific settings group for a collection (admin endpoint).
+      summary: Create a new collection (admin only).
       operationId: collection_create
       security:
         - bearerAuth: []
@@ -5446,7 +5446,7 @@ paths:
     post:
       tags:
         - collection
-      summary: Retrieve all configured app module definitions for a collection (public endpoint).
+      summary: Update a specific settings group for a collection (admin endpoint).
       operationId: collection_updateSettings
       security:
         - bearerAuth: []
@@ -7080,7 +7080,7 @@ paths:
     get:
       tags:
         - collection
-      summary: Retrieve a specific settings group for a collection (public endpoint).
+      summary: Retrieve all configured app module definitions for a collection (public endpoint).
       operationId: collection_getAppsConfig
       security: []
       parameters:

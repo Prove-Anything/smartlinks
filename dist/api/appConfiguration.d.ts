@@ -17,9 +17,16 @@ export type AppConfigOptions = {
     batchId?: string;
     /** Item ID - required for getDataItem/deleteDataItem */
     itemId?: string;
-    /** Use admin endpoints instead of public */
+    /**
+     * Use admin endpoints instead of public.
+     * This selects which endpoint is called; it does not by itself make root-level config fields private.
+     */
     admin?: boolean;
-    /** Configuration object for setConfig */
+    /**
+     * Configuration object for setConfig.
+     * For admin-only values in app config, store them under a top-level `admin` object.
+     * Public reads return the root config but omit `config.admin`.
+     */
     config?: any;
     /** Data object for setDataItem. Best for small keyed scoped documents rather than richer app domain objects. */
     data?: any;
@@ -152,6 +159,8 @@ export declare namespace userAppData {
 /**
  * Collection/Product-scoped app configuration.
  * This is admin-managed configuration that applies to all users within the scope.
+ * Root-level config fields are typically part of the public view; if you need admin-only
+ * values, store them under a top-level `admin` object so public reads can omit them.
  *
  * @example
  * ```typescript
@@ -180,7 +189,10 @@ export declare namespace userAppData {
  */
 export declare namespace appConfiguration {
     /**
-     * Get app configuration for a collection/product scope.
+    * Get app configuration for a collection/product scope.
+    * Public reads return the public view of the config. If the stored config contains a
+    * top-level `admin` object, that block is omitted from public responses and included
+    * when `opts.admin === true`.
      *
      * @param opts - Configuration options including appId and scope (collectionId, productId, etc.)
      * @returns The configuration object
@@ -228,8 +240,10 @@ export declare namespace appConfiguration {
      */
     function listWidgetInstances(opts: Omit<GetWidgetInstanceOptions, 'widgetId'>): Promise<WidgetInstanceSummary[]>;
     /**
-     * Set app configuration for a collection/product scope.
-     * Requires admin authentication.
+    * Set app configuration for a collection/product scope.
+    * Requires admin authentication.
+    * Writing through the admin endpoint does not make every root-level field private.
+    * Use `config.admin` for confidential values that should only be returned on admin reads.
      *
      * @param opts - Configuration options including appId, scope, and config data
      * @returns The saved configuration

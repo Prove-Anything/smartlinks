@@ -199,6 +199,26 @@ await SL.appConfiguration.setConfig({
 });
 ```
 
+Important visibility rule for app settings:
+
+- `admin: true` means the SDK uses the admin endpoint.
+- It does not make every root field private.
+- If a value should only be visible to admins, put it under `config.admin`.
+
+```typescript
+await SL.appConfiguration.setConfig({
+  collectionId,
+  appId,
+  admin: true,
+  config: {
+    enableNotifications: true,
+    admin: {
+      apiToken: 'secret-token'
+    }
+  }
+})
+```
+
 ---
 
 ## Metrics & Analytics
@@ -228,6 +248,7 @@ await SL.appConfiguration.setConfig({
 | Issue                 | Cause                      | Fix                                                   |
 | --------------------- | -------------------------- | ----------------------------------------------------- |
 | Config save fails     | Missing `admin: true` flag | Always include `admin: true` for admin operations     |
+| Secret visible publicly | Saved secret at root level | Put confidential values under the top-level `admin` object |
 | Widget doesn't render | Missing required props     | Ensure `collectionId`, `appId`, and `SL` are provided |
 | Import skips rows     | Invalid `productId`        | Verify product IDs exist in the collection            |
 | Theme not applied     | Missing `?theme=` param    | Check URL parameters or postMessage setup             |
