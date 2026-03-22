@@ -1,4 +1,4 @@
-import type { AdminInteractionsCountsByOutcomeRequest, AdminInteractionsQueryRequest, AppendInteractionBody, UpdateInteractionBody, OutcomeCount, InteractionEventRow, PublicInteractionsCountsByOutcomeRequest, PublicInteractionsByUserRequest, CreateInteractionTypeBody, UpdateInteractionTypeBody, ListInteractionTypesQuery, InteractionTypeRecord, InteractionTypeList } from "../types/interaction";
+import type { AdminInteractionsCountsByOutcomeRequest, AdminInteractionsQueryRequest, AdminInteractionsAggregateRequest, AdminInteractionsAggregateResponse, AppendInteractionBody, UpdateInteractionBody, OutcomeCount, InteractionEventRow, PublicInteractionsCountsByOutcomeRequest, PublicInteractionsByUserRequest, CreateInteractionTypeBody, UpdateInteractionTypeBody, ListInteractionTypesQuery, InteractionTypeRecord, InteractionTypeList } from "../types/interaction";
 export declare namespace interactions {
     /**
      * POST /admin/collection/:collectionId/interactions/query
@@ -10,6 +10,15 @@ export declare namespace interactions {
      * Returns array of { outcome, count }.
      */
     function countsByOutcome(collectionId: string, query?: AdminInteractionsCountsByOutcomeRequest): Promise<OutcomeCount[]>;
+    /**
+     * POST /admin/collection/:collectionId/interactions/aggregate
+     * Returns grouped numeric aggregates (sum, avg, min, max, count).
+     */
+    function aggregate(collectionId: string, body: AdminInteractionsAggregateRequest): Promise<AdminInteractionsAggregateResponse>;
+    /**
+     * Legacy-friendly alias for aggregate().
+     */
+    function aggregateByOutcome(collectionId: string, body: AdminInteractionsAggregateRequest): Promise<AdminInteractionsAggregateResponse>;
     /**
      * POST /admin/collection/:collectionId/interactions/append
      * Appends one interaction event.

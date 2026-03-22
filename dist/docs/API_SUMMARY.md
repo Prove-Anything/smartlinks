@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.8.10  |  Generated: 2026-03-19T15:24:09.009Z
+Version: 1.8.11  |  Generated: 2026-03-19T19:58:44.820Z
 
 This is a concise summary of all available API functions and types.
 
@@ -4401,6 +4401,52 @@ interface AdminInteractionsCountsByOutcomeRequest {
 }
 ```
 
+**AdminInteractionsAggregateRequest** (interface)
+```typescript
+interface AdminInteractionsAggregateRequest {
+  appId?: string
+  interactionId?: string
+  interactionIds?: string[]
+  scope?: string
+  outcome?: string | null
+  from?: string
+  to?: string
+  limit?: number
+  dedupeLatest?: boolean
+  groupBy: string
+  aggregate: {
+  field: string
+  ops: Array<'count' | 'sum' | 'avg' | 'min' | 'max'>
+  }
+}
+```
+
+**AdminInteractionsAggregateResponse** (interface)
+```typescript
+interface AdminInteractionsAggregateResponse {
+  groupBy: string
+  aggregate: {
+  field: string
+  ops: Array<'count' | 'sum' | 'avg' | 'min' | 'max'>
+  dedupeLatest?: boolean
+  }
+  rows: AdminInteractionsAggregateRow[]
+}
+```
+
+**AdminInteractionsAggregateRow** (interface)
+```typescript
+interface AdminInteractionsAggregateRow {
+  groupValue: string | null
+  eventCount: number
+  count?: number
+  sum?: number
+  avg?: number
+  min?: number
+  max?: number
+}
+```
+
 **PublicInteractionsCountsByOutcomeRequest** (interface)
 ```typescript
 interface PublicInteractionsCountsByOutcomeRequest {
@@ -6893,6 +6939,14 @@ POST /admin/collection/:collectionId/interactions/query Flexible query for inter
 **countsByOutcome**(collectionId: string,
     query: AdminInteractionsCountsByOutcomeRequest = {}) → `Promise<OutcomeCount[]>`
 POST /admin/collection/:collectionId/interactions/counts-by-outcome Returns array of { outcome, count }.
+
+**aggregate**(collectionId: string,
+    body: AdminInteractionsAggregateRequest) → `Promise<AdminInteractionsAggregateResponse>`
+POST /admin/collection/:collectionId/interactions/aggregate Returns grouped numeric aggregates (sum, avg, min, max, count).
+
+**aggregateByOutcome**(collectionId: string,
+    body: AdminInteractionsAggregateRequest) → `Promise<AdminInteractionsAggregateResponse>`
+Legacy-friendly alias for aggregate().
 
 **appendEvent**(collectionId: string,
     body: AppendInteractionBody) → `Promise<`

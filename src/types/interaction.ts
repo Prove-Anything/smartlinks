@@ -33,6 +33,43 @@ export interface AdminInteractionsCountsByOutcomeRequest {
   idField?: IdField
 }
 
+export interface AdminInteractionsAggregateRequest {
+  appId?: string
+  interactionId?: string
+  interactionIds?: string[]
+  scope?: string
+  outcome?: string | null
+  from?: string
+  to?: string
+  limit?: number
+  dedupeLatest?: boolean
+  groupBy: string
+  aggregate: {
+    field: string
+    ops: Array<'count' | 'sum' | 'avg' | 'min' | 'max'>
+  }
+}
+
+export interface AdminInteractionsAggregateResponse {
+  groupBy: string
+  aggregate: {
+    field: string
+    ops: Array<'count' | 'sum' | 'avg' | 'min' | 'max'>
+    dedupeLatest?: boolean
+  }
+  rows: AdminInteractionsAggregateRow[]
+}
+
+export interface AdminInteractionsAggregateRow {
+  groupValue: string | null
+  eventCount: number
+  count?: number
+  sum?: number
+  avg?: number
+  min?: number
+  max?: number
+}
+
 // Deprecated: AdminActorIdsByInteractionRequest removed with flexible query endpoint
 
 // Public analytics inputs (Interactions)

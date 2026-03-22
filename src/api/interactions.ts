@@ -4,6 +4,8 @@ import type {
   // Admin/public analytics
   AdminInteractionsCountsByOutcomeRequest,
   AdminInteractionsQueryRequest,
+  AdminInteractionsAggregateRequest,
+  AdminInteractionsAggregateResponse,
   AppendInteractionBody,
   UpdateInteractionBody,
   OutcomeCount,
@@ -55,6 +57,28 @@ export namespace interactions {
   ): Promise<OutcomeCount[]> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/counts-by-outcome`
     return post<OutcomeCount[]>(path, query)
+  }
+
+  /**
+   * POST /admin/collection/:collectionId/interactions/aggregate
+   * Returns grouped numeric aggregates (sum, avg, min, max, count).
+   */
+  export async function aggregate(
+    collectionId: string,
+    body: AdminInteractionsAggregateRequest
+  ): Promise<AdminInteractionsAggregateResponse> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/aggregate`
+    return post<AdminInteractionsAggregateResponse>(path, body)
+  }
+
+  /**
+   * Legacy-friendly alias for aggregate().
+   */
+  export async function aggregateByOutcome(
+    collectionId: string,
+    body: AdminInteractionsAggregateRequest
+  ): Promise<AdminInteractionsAggregateResponse> {
+    return aggregate(collectionId, body)
   }
 
   // Deprecated endpoint removed: actorIdsByInteraction

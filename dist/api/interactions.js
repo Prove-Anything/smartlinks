@@ -35,6 +35,22 @@ export var interactions;
         return post(path, query);
     }
     interactions.countsByOutcome = countsByOutcome;
+    /**
+     * POST /admin/collection/:collectionId/interactions/aggregate
+     * Returns grouped numeric aggregates (sum, avg, min, max, count).
+     */
+    async function aggregate(collectionId, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/aggregate`;
+        return post(path, body);
+    }
+    interactions.aggregate = aggregate;
+    /**
+     * Legacy-friendly alias for aggregate().
+     */
+    async function aggregateByOutcome(collectionId, body) {
+        return aggregate(collectionId, body);
+    }
+    interactions.aggregateByOutcome = aggregateByOutcome;
     // Deprecated endpoint removed: actorIdsByInteraction
     /**
      * POST /admin/collection/:collectionId/interactions/append

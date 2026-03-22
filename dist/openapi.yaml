@@ -3382,6 +3382,39 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateInteractionTypeBody"
+  /admin/collection/{collectionId}/interactions/aggregate:
+    post:
+      tags:
+        - interactions
+      summary: "POST /admin/collection/:collectionId/interactions/counts-by-outcome Returns array of { outcome, count }."
+      operationId: interactions_aggregate
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminInteractionsAggregateResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminInteractionsAggregateRequest"
   /admin/collection/{collectionId}/interactions/counts-by-outcome:
     post:
       tags:
@@ -15773,6 +15806,103 @@ components:
           type: boolean
         idField:
           $ref: "#/components/schemas/IdField"
+    AdminInteractionsAggregateRequest:
+      type: object
+      properties:
+        appId:
+          type: string
+        interactionId:
+          type: string
+        interactionIds:
+          type: array
+          items:
+            type: string
+        scope:
+          type: string
+        outcome:
+          type: string
+        from:
+          type: string
+        to:
+          type: string
+        limit:
+          type: number
+        dedupeLatest:
+          type: boolean
+        groupBy:
+          type: string
+        aggregate:
+          type: object
+          additionalProperties: true
+        field:
+          type: string
+        ops:
+          type: array
+          items:
+            type: string
+            enum:
+              - count
+              - sum
+              - avg
+              - min
+              - max
+      required:
+        - groupBy
+        - aggregate
+        - field
+        - ops
+    AdminInteractionsAggregateResponse:
+      type: object
+      properties:
+        groupBy:
+          type: string
+        aggregate:
+          type: object
+          additionalProperties: true
+        field:
+          type: string
+        ops:
+          type: array
+          items:
+            type: string
+            enum:
+              - count
+              - sum
+              - avg
+              - min
+              - max
+        dedupeLatest:
+          type: boolean
+        rows:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminInteractionsAggregateRow"
+      required:
+        - groupBy
+        - aggregate
+        - field
+        - ops
+        - rows
+    AdminInteractionsAggregateRow:
+      type: object
+      properties:
+        groupValue:
+          type: string
+        eventCount:
+          type: number
+        count:
+          type: number
+        sum:
+          type: number
+        avg:
+          type: number
+        min:
+          type: number
+        max:
+          type: number
+      required:
+        - groupValue
+        - eventCount
     PublicInteractionsCountsByOutcomeRequest:
       type: object
       properties:
