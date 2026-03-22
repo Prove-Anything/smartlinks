@@ -241,6 +241,7 @@ function generateAPISummary() {
   summary += '- **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more\n';
   summary += '- **[Communications](comms.md)** - Transactional sends, multi-channel broadcasts, consent management, push registration, and analytics\n';
   summary += '- **[Interactions & Event Tracking](interactions.md)** - Log user events, count outcomes, query history, and define interaction types with permissions\n';
+  summary += '- **[Loyalty: Points, Members & Earning Rules](loyalty.md)** - Loyalty schemes, automatic point earning via interaction rules, member balances, transaction history, and manual adjustments\n';
   summary += '- **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration\n';
   summary += '- **[AI-Native App Manifests](manifests.md)** - How AI workflows discover, configure, and import apps via structured manifests and prose guides\n';
   summary += '- **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide\n\n';
@@ -301,6 +302,7 @@ function generateAPISummary() {
       title: '— Analytics & Events —',
       items: [
         { name: 'interactions', desc: 'Log and analyze interactions/outcomes; aggregates and actor lists; interaction definition CRUD.', docsLink: 'interactions.md' },
+        { name: 'loyalty', desc: 'Loyalty programmes: schemes, earning rules tied to interactions, member balances, transaction ledger, and manual adjustments.', docsLink: 'loyalty.md' },
       ]
     },
     {
@@ -610,7 +612,8 @@ function generateAPISummary() {
     'app.threads': 'Conversation-oriented app objects for comments, discussions, Q&A, and reply-driven experiences.',
     'app.records': 'General-purpose structured app objects. Use these when a simple scoped data item grows into something queryable, lifecycle-aware, or access-controlled.',
     'appConfiguration': 'Scoped config and keyed data items for collections, products, variants, or batches. Best for settings and small standalone documents, not as the default answer for every app-owned entity.',
-    'userAppData': 'User-owned app data stored per user and app, shared across collections.'
+    'userAppData': 'User-owned app data stored per user and app, shared across collections.',
+    'loyalty': 'Loyalty programmes built on top of collections. Configure schemes and earning rules; contacts earn points automatically via interaction events. See the [Loyalty guide](loyalty.md) for the full walkthrough.',
   };
 
   Object.keys(functionsByNamespace).sort().forEach(namespace => {

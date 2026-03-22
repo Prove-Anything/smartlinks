@@ -32,3 +32,4 @@ export * from "./iframeResponder";
 export * from "./ai";
 export * from "./appManifest";
 export * from "./appObjects";
+export * from "./loyalty";

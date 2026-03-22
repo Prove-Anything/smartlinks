@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.8.11  |  Generated: 2026-03-19T19:58:44.820Z
+Version: 1.8.12  |  Generated: 2026-03-22T11:27:19.142Z
 
 This is a concise summary of all available API functions and types.
 
@@ -26,6 +26,7 @@ For detailed guides on specific features:
 - **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more
 - **[Communications](comms.md)** - Transactional sends, multi-channel broadcasts, consent management, push registration, and analytics
 - **[Interactions & Event Tracking](interactions.md)** - Log user events, count outcomes, query history, and define interaction types with permissions
+- **[Loyalty: Points, Members & Earning Rules](loyalty.md)** - Loyalty schemes, automatic point earning via interaction rules, member balances, transaction history, and manual adjustments
 - **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration
 - **[AI-Native App Manifests](manifests.md)** - How AI workflows discover, configure, and import apps via structured manifests and prose guides
 - **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide
@@ -79,6 +80,7 @@ The Smartlinks SDK is organized into the following namespaces:
 
 — Analytics & Events —
 - **interactions** - Log and analyze interactions/outcomes; aggregates and actor lists; interaction definition CRUD. → [Guide](interactions.md)
+- **loyalty** - Loyalty programmes: schemes, earning rules tied to interactions, member balances, transaction ledger, and manual adjustments. → [Guide](loyalty.md)
 
 — Automation —
 - **journeys** - Configure automated flows triggered by events or schedules; steps, rules; full CRUD.
@@ -4861,6 +4863,174 @@ interface LocationSearchResponse {
 
 **LocationPayload** = `Omit<`
 
+### loyalty
+
+**LoyaltyScheme** (interface)
+```typescript
+interface LoyaltyScheme {
+  id: string
+  orgId: string
+  collectionId: string
+  name: string
+  type: string
+  active: boolean
+  createdAt: string // ISO
+  updatedAt: string // ISO
+  deletedAt: string | null // ISO
+  data: DataBlock
+  owner?: DataBlock
+  admin?: DataBlock
+}
+```
+
+**LoyaltyMember** (interface)
+```typescript
+interface LoyaltyMember {
+  id: string
+  orgId: string
+  collectionId: string
+  schemeId: string
+  contactId: string
+  userId: string | null
+  balance: number
+  lifetimePoints: number
+  createdAt: string // ISO
+  updatedAt: string // ISO
+  data: DataBlock
+  owner?: DataBlock
+  admin?: DataBlock
+}
+```
+
+**LoyaltyTransaction** (interface)
+```typescript
+interface LoyaltyTransaction {
+  id: string
+  orgId: string
+  collectionId: string
+  schemeId: string
+  memberId: string
+  points: number
+  reason: string | null
+  idempotencyKey: string | null
+  metadata: DataBlock
+  createdAt: string // ISO
+}
+```
+
+**LoyaltyEarningRule** (interface)
+```typescript
+interface LoyaltyEarningRule {
+  id: string
+  orgId: string
+  collectionId: string
+  schemeId: string
+  interactionId: string
+  points: number
+  * Key-value conditions matched against the interaction event before awarding.
+  * Supports top-level event fields (outcome, scope, status, eventType, etc.)
+  * and dot-path into metadata (e.g. `"metadata.tier": "gold"`).
+  * Empty object = always fires for any event on this interaction.
+  conditions: Record<string, string>
+  maxPerContact: number | null
+  cooldownHours: number | null
+  active: boolean
+  createdAt: string // ISO
+  updatedAt: string // ISO
+  data: DataBlock
+}
+```
+
+**LoyaltyTransactionResult** (interface)
+```typescript
+interface LoyaltyTransactionResult {
+  member: LoyaltyMember
+  transaction: LoyaltyTransaction
+}
+```
+
+**LoyaltyPaginationParams** (interface)
+```typescript
+interface LoyaltyPaginationParams {
+  limit?: number  // default 50, max 200
+  offset?: number
+}
+```
+
+**LoyaltyPaginatedResult<T>** (interface)
+```typescript
+interface LoyaltyPaginatedResult<T> {
+  items: T[]
+  limit: number
+  offset: number
+}
+```
+
+**CreateLoyaltySchemeBody** (interface)
+```typescript
+interface CreateLoyaltySchemeBody {
+  name: string
+  type: string
+  active?: boolean
+  data?: DataBlock
+  owner?: DataBlock
+  admin?: DataBlock
+}
+```
+
+**UpdateLoyaltySchemeBody** (interface)
+```typescript
+interface UpdateLoyaltySchemeBody {
+  name?: string
+  type?: string
+  active?: boolean
+  data?: DataBlock
+  owner?: DataBlock
+  admin?: DataBlock
+}
+```
+
+**CreateLoyaltyEarningRuleBody** (interface)
+```typescript
+interface CreateLoyaltyEarningRuleBody {
+  interactionId: string
+  points: number
+  conditions?: Record<string, string>
+  maxPerContact?: number | null
+  cooldownHours?: number | null
+  active?: boolean
+  data?: DataBlock
+}
+```
+
+**UpdateLoyaltyEarningRuleBody** (interface)
+```typescript
+interface UpdateLoyaltyEarningRuleBody {
+  points?: number
+  conditions?: Record<string, string>
+  maxPerContact?: number | null
+  cooldownHours?: number | null
+  active?: boolean
+  data?: DataBlock
+}
+```
+
+**RecordLoyaltyTransactionBody** (interface)
+```typescript
+interface RecordLoyaltyTransactionBody {
+  points: number
+  reason?: string
+  * Optional caller-supplied key scoped to the scheme.
+  * If a transaction with this key already exists the server returns 409.
+  * Use to safely retry without double-crediting points.
+  idempotencyKey?: string
+  metadata?: DataBlock
+  userId?: string
+}
+```
+
+**DataBlock** = `Record<string, unknown>`
+
 ### nfc
 
 **NfcTagInfo** (interface)
@@ -7063,6 +7233,89 @@ Public: Fetch a global location by ID GET /public/location/:locationId
 **getPublicForCollection**(collectionId: string,
     locationId: string) → `Promise<Location>`
 Public: Fetch a location for a collection; returns either a collection-owned or global fallback GET /public/collection/:collectionId/location/:locationId
+
+### loyalty
+
+Loyalty programmes built on top of collections. Configure schemes and earning rules; contacts earn points automatically via interaction events. See the [Loyalty guide](loyalty.md) for the full walkthrough.
+
+**list**(collectionId: string,
+    params: { includeDeleted?: boolean } = {}) → `Promise<LoyaltyScheme[]>`
+
+**get**(collectionId: string,
+    schemeId: string) → `Promise<LoyaltyScheme>`
+
+**create**(collectionId: string,
+    body: CreateLoyaltySchemeBody) → `Promise<LoyaltyScheme>`
+
+**update**(collectionId: string,
+    schemeId: string,
+    body: UpdateLoyaltySchemeBody) → `Promise<LoyaltyScheme>`
+
+**remove**(collectionId: string,
+    schemeId: string) → `Promise<LoyaltyScheme>`
+
+**listEarningRules**(collectionId: string,
+    schemeId: string) → `Promise<LoyaltyEarningRule[]>`
+
+**getEarningRule**(collectionId: string,
+    schemeId: string,
+    ruleId: string) → `Promise<LoyaltyEarningRule>`
+
+**createEarningRule**(collectionId: string,
+    schemeId: string,
+    body: CreateLoyaltyEarningRuleBody) → `Promise<LoyaltyEarningRule>`
+
+**updateEarningRule**(collectionId: string,
+    schemeId: string,
+    ruleId: string,
+    body: UpdateLoyaltyEarningRuleBody) → `Promise<LoyaltyEarningRule>`
+
+**removeEarningRule**(collectionId: string,
+    schemeId: string,
+    ruleId: string) → `Promise<LoyaltyEarningRule>`
+
+**listMembers**(collectionId: string,
+    schemeId: string,
+    params: LoyaltyPaginationParams = {}) → `Promise<LoyaltyPaginatedResult<LoyaltyMember>>`
+
+**getMember**(collectionId: string,
+    schemeId: string,
+    contactId: string) → `Promise<LoyaltyMember>`
+
+**recordTransaction**(collectionId: string,
+    schemeId: string,
+    contactId: string,
+    body: RecordLoyaltyTransactionBody) → `Promise<LoyaltyTransactionResult>`
+Manually award or deduct points for a contact. - `points` must be a non-zero integer - Positive = award, negative = deduct - Deducting below zero returns HTTP 422 `INSUFFICIENT_BALANCE` - Supply `idempotencyKey` to safely retry without double-crediting Points earned via interaction events are awarded automatically by the server — this endpoint is for manual adjustments and admin overrides.
+
+**getMemberHistory**(collectionId: string,
+    schemeId: string,
+    contactId: string,
+    params: LoyaltyPaginationParams = {}) → `Promise<LoyaltyPaginatedResult<LoyaltyTransaction>>`
+Manually award or deduct points for a contact. - `points` must be a non-zero integer - Positive = award, negative = deduct - Deducting below zero returns HTTP 422 `INSUFFICIENT_BALANCE` - Supply `idempotencyKey` to safely retry without double-crediting Points earned via interaction events are awarded automatically by the server — this endpoint is for manual adjustments and admin overrides.
+
+**publicList**(collectionId: string) → `Promise<LoyaltyScheme[]>`
+List active schemes for a collection. No authentication required.
+
+**publicGet**(collectionId: string,
+    schemeId: string) → `Promise<LoyaltyScheme>`
+Get a single active scheme. No authentication required.
+
+**publicListEarningRules**(collectionId: string,
+    schemeId: string) → `Promise<LoyaltyEarningRule[]>`
+List active earning rules for a scheme — useful for showing "how to earn" in a loyalty UI. No authentication required.
+
+**publicGetMe**(collectionId: string) → `Promise<LoyaltySchemeWithMembership[]>`
+Get all active schemes with the caller's membership embedded in each. This is the primary entry point for a loyalty widget — one call gives you everything needed to render a user's loyalty status across all programs in a collection. - Authenticated: `member` is populated with balance + lifetimePoints (or null if not yet enrolled in that scheme) - Unauthenticated: `member` is null on all schemes
+
+**publicGetMine**(collectionId: string,
+    schemeId: string) → `Promise<LoyaltyMember>`
+Get the authenticated caller's membership (balance + lifetimePoints) on a specific scheme. Requires authentication.
+
+**publicGetMineHistory**(collectionId: string,
+    schemeId: string,
+    params: LoyaltyPaginationParams = {}) → `Promise<LoyaltyPaginatedResult<LoyaltyTransaction>>`
+Get the authenticated caller's transaction history on a specific scheme. Ordered newest first. Requires authentication.
 
 ### models
 

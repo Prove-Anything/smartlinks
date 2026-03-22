@@ -41,6 +41,7 @@ tags:
   - name: journeys
   - name: journeysAnalytics
   - name: location
+  - name: loyalty
   - name: nfc
   - name: order
   - name: product
@@ -3993,6 +3994,433 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/loyaltyScheme:
+    get:
+      tags:
+        - loyalty
+      summary: loyalty.list
+      operationId: loyalty_list
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LoyaltyScheme"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    post:
+      tags:
+        - loyalty
+      summary: loyalty.create
+      operationId: loyalty_create
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyScheme"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLoyaltySchemeBody"
+  /admin/collection/{collectionId}/loyaltyScheme/{schemeId}:
+    get:
+      tags:
+        - loyalty
+      summary: loyalty.get
+      operationId: loyalty_get
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyScheme"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    patch:
+      tags:
+        - loyalty
+      summary: loyalty.update
+      operationId: loyalty_update
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyScheme"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLoyaltySchemeBody"
+    delete:
+      tags:
+        - loyalty
+      summary: loyalty.remove
+      operationId: loyalty_remove
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyScheme"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/loyaltyScheme/{schemeId}/earningRule:
+    get:
+      tags:
+        - loyalty
+      summary: loyalty.listEarningRules
+      operationId: loyalty_listEarningRules
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LoyaltyEarningRule"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    post:
+      tags:
+        - loyalty
+      summary: loyalty.createEarningRule
+      operationId: loyalty_createEarningRule
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyEarningRule"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLoyaltyEarningRuleBody"
+  /admin/collection/{collectionId}/loyaltyScheme/{schemeId}/earningRule/{ruleId}:
+    get:
+      tags:
+        - loyalty
+      summary: loyalty.getEarningRule
+      operationId: loyalty_getEarningRule
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemeId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ruleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyEarningRule"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    patch:
+      tags:
+        - loyalty
+      summary: loyalty.updateEarningRule
+      operationId: loyalty_updateEarningRule
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemeId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ruleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyEarningRule"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLoyaltyEarningRuleBody"
+    delete:
+      tags:
+        - loyalty
+      summary: loyalty.removeEarningRule
+      operationId: loyalty_removeEarningRule
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemeId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: ruleId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyEarningRule"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/loyaltyScheme/{schemeId}/member/{contactId}:
+    get:
+      tags:
+        - loyalty
+      summary: loyalty.getMember
+      operationId: loyalty_getMember
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemeId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: contactId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyMember"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/loyaltyScheme/{schemeId}/member/{contactId}/transaction:
+    post:
+      tags:
+        - loyalty
+      summary: Manually award or deduct points for a contact.
+      operationId: loyalty_recordTransaction
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemeId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: contactId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyTransactionResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RecordLoyaltyTransactionBody"
   /admin/collection/{collectionId}/orders:
     get:
       tags:
@@ -8267,6 +8695,157 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Location"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/loyaltyScheme:
+    get:
+      tags:
+        - loyalty
+      summary: List active schemes for a collection.
+      operationId: loyalty_publicList
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LoyaltyScheme"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/loyaltyScheme/me:
+    get:
+      tags:
+        - loyalty
+      summary: "List active earning rules for a scheme — useful for showing \"how to earn\" in a loyalty UI."
+      operationId: loyalty_publicGetMe
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LoyaltySchemeWithMembership"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/loyaltyScheme/{schemeId}:
+    get:
+      tags:
+        - loyalty
+      summary: List active schemes for a collection.
+      operationId: loyalty_publicGet
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyScheme"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/loyaltyScheme/{schemeId}/earningRule:
+    get:
+      tags:
+        - loyalty
+      summary: List active schemes for a collection.
+      operationId: loyalty_publicListEarningRules
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LoyaltyEarningRule"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/loyaltyScheme/{schemeId}/member/me:
+    get:
+      tags:
+        - loyalty
+      summary: "Get all active schemes with the caller's membership embedded in each."
+      operationId: loyalty_publicGetMine
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: schemeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoyaltyMember"
         400:
           description: Bad request
         401:
@@ -16572,6 +17151,293 @@ components:
       required:
         - items
         - count
+    LoyaltyScheme:
+      type: object
+      properties:
+        id:
+          type: string
+        orgId:
+          type: string
+        collectionId:
+          type: string
+        name:
+          type: string
+        type:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+        data:
+          $ref: "#/components/schemas/DataBlock"
+        owner:
+          $ref: "#/components/schemas/DataBlock"
+        admin:
+          $ref: "#/components/schemas/DataBlock"
+      required:
+        - id
+        - orgId
+        - collectionId
+        - name
+        - type
+        - active
+        - createdAt
+        - updatedAt
+        - deletedAt
+        - data
+    LoyaltyMember:
+      type: object
+      properties:
+        id:
+          type: string
+        orgId:
+          type: string
+        collectionId:
+          type: string
+        schemeId:
+          type: string
+        contactId:
+          type: string
+        userId:
+          type: string
+        balance:
+          type: number
+        lifetimePoints:
+          type: number
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        data:
+          $ref: "#/components/schemas/DataBlock"
+        owner:
+          $ref: "#/components/schemas/DataBlock"
+        admin:
+          $ref: "#/components/schemas/DataBlock"
+      required:
+        - id
+        - orgId
+        - collectionId
+        - schemeId
+        - contactId
+        - userId
+        - balance
+        - lifetimePoints
+        - createdAt
+        - updatedAt
+        - data
+    LoyaltyTransaction:
+      type: object
+      properties:
+        id:
+          type: string
+        orgId:
+          type: string
+        collectionId:
+          type: string
+        schemeId:
+          type: string
+        memberId:
+          type: string
+        points:
+          type: number
+        reason:
+          type: string
+        idempotencyKey:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/DataBlock"
+        createdAt:
+          type: string
+      required:
+        - id
+        - orgId
+        - collectionId
+        - schemeId
+        - memberId
+        - points
+        - reason
+        - idempotencyKey
+        - metadata
+        - createdAt
+    LoyaltyEarningRule:
+      type: object
+      properties:
+        id:
+          type: string
+        orgId:
+          type: string
+        collectionId:
+          type: string
+        schemeId:
+          type: string
+        interactionId:
+          type: string
+        points:
+          type: number
+        conditions:
+          type: object
+          additionalProperties:
+            type: string
+        maxPerContact:
+          type: number
+        cooldownHours:
+          type: number
+        active:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        data:
+          $ref: "#/components/schemas/DataBlock"
+      required:
+        - id
+        - orgId
+        - collectionId
+        - schemeId
+        - interactionId
+        - points
+        - conditions
+        - maxPerContact
+        - cooldownHours
+        - active
+        - createdAt
+        - updatedAt
+        - data
+    LoyaltySchemeWithMembership:
+      type: object
+      properties:
+        member:
+          type: string
+          enum:
+            - owner
+            - admin
+      required:
+        - member
+    LoyaltyTransactionResult:
+      type: object
+      properties:
+        member:
+          $ref: "#/components/schemas/LoyaltyMember"
+        transaction:
+          $ref: "#/components/schemas/LoyaltyTransaction"
+      required:
+        - member
+        - transaction
+    LoyaltyPaginationParams:
+      type: object
+      properties:
+        limit:
+          type: number
+        offset:
+          type: number
+    LoyaltyPaginatedResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/T"
+        limit:
+          type: number
+        offset:
+          type: number
+      required:
+        - items
+        - limit
+        - offset
+    CreateLoyaltySchemeBody:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        active:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/DataBlock"
+        owner:
+          $ref: "#/components/schemas/DataBlock"
+        admin:
+          $ref: "#/components/schemas/DataBlock"
+      required:
+        - name
+        - type
+    UpdateLoyaltySchemeBody:
+      type: object
+      properties:
+        name:
+          type: string
+        type:
+          type: string
+        active:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/DataBlock"
+        owner:
+          $ref: "#/components/schemas/DataBlock"
+        admin:
+          $ref: "#/components/schemas/DataBlock"
+    CreateLoyaltyEarningRuleBody:
+      type: object
+      properties:
+        interactionId:
+          type: string
+        points:
+          type: number
+        conditions:
+          type: object
+          additionalProperties:
+            type: string
+        maxPerContact:
+          type: number
+        cooldownHours:
+          type: number
+        active:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/DataBlock"
+      required:
+        - interactionId
+        - points
+    UpdateLoyaltyEarningRuleBody:
+      type: object
+      properties:
+        points:
+          type: number
+        conditions:
+          type: object
+          additionalProperties:
+            type: string
+        maxPerContact:
+          type: number
+        cooldownHours:
+          type: number
+        active:
+          type: boolean
+        data:
+          $ref: "#/components/schemas/DataBlock"
+    RecordLoyaltyTransactionBody:
+      type: object
+      properties:
+        points:
+          type: number
+        reason:
+          type: string
+        idempotencyKey:
+          type: string
+        metadata:
+          $ref: "#/components/schemas/DataBlock"
+        userId:
+          type: string
+      required:
+        - points
     NfcTagInfo:
       type: object
       properties:
