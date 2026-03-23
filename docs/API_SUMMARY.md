@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.9.3  |  Generated: 2026-03-23T18:12:23.239Z
+Version: 1.9.5  |  Generated: 2026-03-23T20:19:00.201Z
 
 This is a concise summary of all available API functions and types.
 
@@ -10,13 +10,16 @@ For detailed guides on specific features:
 
 - **[SmartLinks Microapp Overview](overview.md)** - Platform architecture, data model, auth patterns, storage, anti-patterns, and quick-reference for all SDK docs
 - **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation
+- **[Translations](translations.md)** - Runtime translation lookup, browser-side IndexedDB caching, and admin translation management
 - **[Widgets](widgets.md)** - Embeddable React components for parent applications
 - **[Containers](containers.md)** - Building full-app embeddable containers (lazy-loaded) 
+- **[Scanner Containers](scanner-container.md)** - Building scanner microapps for the SmartLinks Scanner Android host (RFID, NFC, QR, key events)
 - **[Multi-Page App Architecture](mpa.md)** - Vite MPA build pipeline: public/admin entry points, widget/container/executor bundles, content-hashed CDN assets
 - **[App Configuration Files](app-manifest.md)** - `app.manifest.json` and `app.admin.json` reference — bundles, components, setup questions, import schemas, tunable fields, and metrics
 - **[Executor Model](executor.md)** - Programmatic JS bundles for AI-driven setup, server-side SEO metadata generation, and LLM content for AI crawlers
 - **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections
 - **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication
+- **[Utilities](utils.md)** - Helper functions for building portal paths, URLs, and common tasks
 - **[i18n](i18n.md)** - Internationalization and localization
 - **[Liquid Templates](liquid-templates.md)** - Dynamic templating for content generation
 - **[Theme System](theme.system.md)** - Theme configuration and customization
@@ -110,6 +113,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **realtime** - Functions for realtime operations
 - **tags** - Functions for tags operations
 - **template** - Functions for template operations
+- **translations** - Functions for translations operations
 
 ## HTTP Utilities
 
@@ -6343,6 +6347,153 @@ interface TemplateRenderSourceResponse {
 
 **TemplatePublic** = `TemplateBase`
 
+### translations
+
+**TranslationContext** (interface)
+```typescript
+interface TranslationContext {
+  surface?: string
+  field?: string
+  [key: string]: TranslationContextValue | undefined
+}
+```
+
+**TranslationLookupRequestBase** (interface)
+```typescript
+interface TranslationLookupRequestBase {
+  targetLanguage: string
+  sourceLanguage?: string
+  mode?: TranslationLookupMode
+  contentType?: TranslationContentType
+  context?: TranslationContext
+  returnMeta?: boolean
+}
+```
+
+**TranslationLookupItem** (interface)
+```typescript
+interface TranslationLookupItem {
+  index: number
+  hash: string
+  sourceText: string
+  translatedText?: string
+  status?: TranslationItemStatus
+  provider?: string
+  model?: string
+  isOverride?: boolean
+  quality?: TranslationQuality
+  createdAt?: string
+  updatedAt?: string
+}
+```
+
+**TranslationLookupResponse** (interface)
+```typescript
+interface TranslationLookupResponse {
+  targetLanguage: string
+  sourceLanguage?: string
+  mode?: TranslationLookupMode
+  items: TranslationLookupItem[]
+}
+```
+
+**ResolvedTranslationResponse** (interface)
+```typescript
+interface ResolvedTranslationResponse {
+  targetLanguage: string
+  sourceLanguage?: string
+  mode?: TranslationLookupMode
+  items: ResolvedTranslationItem[]
+}
+```
+
+**TranslationHashOptions** (interface)
+```typescript
+interface TranslationHashOptions {
+  trim?: boolean
+  collapseWhitespace?: boolean
+  unicodeNormalization?: 'NFC' | 'NFKC' | false
+}
+```
+
+**TranslationResolveOptions** (interface)
+```typescript
+interface TranslationResolveOptions {
+  useLocalCache?: boolean
+  refreshLocalCache?: boolean
+  localCacheTtlMs?: number
+  hashOptions?: TranslationHashOptions
+}
+```
+
+**TranslationRecord** (interface)
+```typescript
+interface TranslationRecord {
+  id: string
+  collectionId: string
+  sourceHash: string
+  sourceText: string
+  sourceLanguage?: string
+  targetLanguage: string
+  contentType: string
+  contextKey?: string | null
+  translatedText: string
+  provider?: string | null
+  model?: string | null
+  quality: TranslationQuality
+  isOverride: boolean
+  metadata?: Record<string, any>
+  createdAt: string
+  updatedAt: string
+}
+```
+
+**TranslationListParams** (interface)
+```typescript
+interface TranslationListParams {
+  targetLanguage?: string
+  sourceLanguage?: string
+  contentType?: string
+  contextKey?: string
+  q?: string
+  isOverride?: boolean
+  limit?: number
+  offset?: number
+}
+```
+
+**TranslationListResponse** (interface)
+```typescript
+interface TranslationListResponse {
+  items: TranslationRecord[]
+  total?: number
+  limit?: number
+  offset?: number
+}
+```
+
+**TranslationUpdateRequest** (interface)
+```typescript
+interface TranslationUpdateRequest {
+  translatedText?: string
+  isOverride?: boolean
+  quality?: TranslationQuality
+  metadata?: Record<string, any>
+}
+```
+
+**TranslationLookupMode** = `'cache-fill' | 'cache-only'`
+
+**TranslationContentType** = `'text/plain' | 'text/html' | 'text/x-liquid' | (string & {})`
+
+**TranslationQuality** = `'machine' | 'human' | 'passthrough' | (string & {})`
+
+**TranslationItemStatus** = `'cached' | 'generated' | 'miss' | 'passthrough' | 'local-cache' | (string & {})`
+
+**TranslationContextValue** = `string | number | boolean | null`
+
+**TranslationLookupRequest** = `TranslationLookupSingleRequest | TranslationLookupBatchRequest`
+
 ### variant
 
 **VariantResponse** = `any`
@@ -6409,6 +6560,140 @@ type VerifyTokenResponse = {
   name?: string
   email?: string
   account?: Record<string, any>
+}
+```
+
+### conditions (utils)
+
+**BaseCondition** (interface)
+```typescript
+interface BaseCondition {
+  type: string
+  contains?: boolean
+  passes?: boolean
+}
+```
+
+**ConditionSet** (interface)
+```typescript
+interface ConditionSet {
+  id?: string
+  type?: 'and' | 'or'
+  conditions?: Condition[]
+}
+```
+
+**UserLocation** (interface)
+```typescript
+interface UserLocation {
+  country?: string
+  latitude?: number
+  longitude?: number
+}
+```
+
+**PlatformInfo** (interface)
+```typescript
+interface PlatformInfo {
+  android?: boolean
+  ios?: boolean
+  win?: boolean
+  mac?: boolean
+}
+```
+
+**StatsInfo** (interface)
+```typescript
+interface StatsInfo {
+  version?: string | null
+  platform?: PlatformInfo
+  mobile?: boolean
+}
+```
+
+**UserInfo** (interface)
+```typescript
+interface UserInfo {
+  valid: boolean
+  uid?: string
+  location?: UserLocation
+  groups?: string[]
+}
+```
+
+**ProductInfo** (interface)
+```typescript
+interface ProductInfo {
+  id: string
+  tags?: Record<string, any>
+}
+```
+
+**ProofInfo** (interface)
+```typescript
+interface ProofInfo {
+  id?: string
+  userId?: string
+  claimable?: boolean
+  virtual?: boolean
+}
+```
+
+**CollectionInfo** (interface)
+```typescript
+interface CollectionInfo {
+  id: string
+  roles?: Record<string, any>
+}
+```
+
+**ConditionParams** (interface)
+```typescript
+interface ConditionParams {
+  condition?: ConditionSet
+  conditionId?: string
+  conditionStack?: string[]
+  user?: UserInfo
+  product?: ProductInfo
+  proof?: ProofInfo
+  collection?: CollectionInfo
+  stats?: StatsInfo
+  fetchCondition?: (collectionId: string, conditionId: string) => Promise<ConditionSet | null>
+  getLocation?: () => Promise<{ latitude: number; longitude: number }>
+  debugConditions?: boolean | ConditionDebugOptions
+  [key: string]: any
+}
+```
+
+**ConditionDebugOptions** (interface)
+```typescript
+interface ConditionDebugOptions {
+  enabled?: boolean
+  logger?: ConditionDebugLogger
+  label?: string
+}
+```
+
+**RegionKey** = `keyof typeof REGION_COUNTRIES`
+
+**Condition** = ``
+
+**ConditionDebugLogger** = `(...args: any[]) => void`
+
+### paths (utils)
+
+**PortalPathParams** (interface)
+```typescript
+interface PortalPathParams {
+  collection: Collection | { shortId: string; portalUrl?: string }
+  product?: Product
+  productId?: string
+  batch?: BatchResponse
+  batchId?: string
+  variant?: { id: string } | string
+  proof?: Proof | string
+  queryParams?: Record<string, string>
+  pathOnly?: boolean
 }
 ```
 
@@ -8168,6 +8453,33 @@ Reverse lookup by ref via POST (public). `POST /public/collection/:collectionId/
 
 **renderSource**(collectionId: string,
     body: TemplateRenderSourceRequest) → `Promise<TemplateRenderSourceResponse>`
+
+### translations
+
+**hashText**(text: string, options?: TranslationHashOptions) → `Promise<string>`
+
+**hashTexts**(texts: string[], options?: TranslationHashOptions) → `Promise<string[]>`
+
+**normalizeText**(text: string, options?: TranslationHashOptions) → `string`
+
+**lookup**(collectionId: string,
+    body: TranslationLookupRequest) → `Promise<TranslationLookupResponse>`
+
+**resolve**(collectionId: string,
+    body: TranslationLookupRequest,
+    options: TranslationResolveOptions = {}) → `Promise<ResolvedTranslationResponse>`
+
+**list**(collectionId: string,
+    params?: TranslationListParams) → `Promise<TranslationListResponse>`
+
+**get**(collectionId: string,
+    translationId: string) → `Promise<TranslationRecord>`
+
+**update**(collectionId: string,
+    translationId: string,
+    body: TranslationUpdateRequest) → `Promise<TranslationRecord>`
+
+**clearLocalCache**(collectionId?: string) → `Promise<void>`
 
 ### tts
 

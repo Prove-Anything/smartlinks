@@ -49,6 +49,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Multi-Page Architecture** | `docs/mpa.md` | Build pipeline, entry points, multi-page setup, content hashing |
 | **AI & Chat** | `docs/ai.md` | Chat completions, RAG, streaming, tool calling, voice, podcasts, TTS |
 | **Analytics** | `docs/analytics.md` | Fire-and-forget page/click/tag analytics plus admin dashboard queries |
+| **Translations** | `docs/translations.md` | Runtime translation lookup, local-first IndexedDB caching, and translation admin APIs |
 | **Theming** | `docs/theme.system.md` | Implementing dynamic themes via URL params or postMessage |
 | **Theme Defaults** | `docs/theme-defaults.md` | Default colour values for light/dark modes |
 | **Internationalization** | `docs/i18n.md` | Adding multi-language support, translation patterns |

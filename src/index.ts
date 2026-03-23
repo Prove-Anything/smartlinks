@@ -162,6 +162,29 @@ export type {
 } from "./types/product"
 
 export type {
+  TranslationLookupMode,
+  TranslationContentType,
+  TranslationQuality,
+  TranslationItemStatus,
+  TranslationContextValue,
+  TranslationContext,
+  TranslationLookupRequestBase,
+  TranslationLookupSingleRequest,
+  TranslationLookupBatchRequest,
+  TranslationLookupRequest,
+  TranslationLookupItem,
+  TranslationLookupResponse,
+  ResolvedTranslationItem,
+  ResolvedTranslationResponse,
+  TranslationHashOptions,
+  TranslationResolveOptions,
+  TranslationRecord,
+  TranslationListParams,
+  TranslationListResponse,
+  TranslationUpdateRequest,
+} from "./types/translations"
+
+export type {
   FacetBucket,
   FacetDefinition,
   FacetDefinitionWriteInput,

@@ -53,6 +53,7 @@ tags:
   - name: segments
   - name: tags
   - name: template
+  - name: translations
   - name: variant
 security:
   - bearerAuth: []
@@ -105,115 +106,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CollectionCreateRequest"
-  /admin/collection//async/jobs:
-    post:
-      tags:
-        - async
-      summary: "Enqueue a background job for a collection POST /admin/collection/:collectionId/async/jobs (202)"
-      operationId: async_enqueueAsyncJob
-      security:
-        - bearerAuth: []
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/EnqueueAsyncJobResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/EnqueueAsyncJobRequest"
-  /admin/collection//async/jobs/{jobId}:
-    get:
-      tags:
-        - async
-      summary: "Enqueue a background job for a collection POST /admin/collection/:collectionId/async/jobs (202) / export async function"
-      operationId: async_getAsyncJobStatus
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Job"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection//jobs/{jobId}:
-    get:
-      tags:
-        - jobs
-      summary: "List visible jobs for a collection GET /admin/collection/:collectionId/jobs / export async function listJobs( collection"
-      operationId: jobs_getJob
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: jobId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Job"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection//jobs{qs}:
-    get:
-      tags:
-        - jobs
-      summary: "List visible jobs for a collection GET /admin/collection/:collectionId/jobs"
-      operationId: jobs_listJobs
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: qs
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/JobsPage"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection//product//batch/{batchId}:
+  /admin/collection/product/batch/{batchId}:
     get:
       tags:
         - batch
@@ -299,7 +192,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection//product//variant/{variantId}:
+  /admin/collection/product/variant/{variantId}:
     get:
       tags:
         - variant
@@ -385,7 +278,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection//product/{productId}/batch:
+  /admin/collection/product/{productId}/batch:
     get:
       tags:
         - batch
@@ -446,7 +339,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/BatchCreateRequest"
-  /admin/collection//product/{productId}/variant:
+  /admin/collection/product/{productId}/variant:
     get:
       tags:
         - variant
@@ -738,6 +631,24 @@ paths:
           required: true
           schema:
             type: string
+        - name: provider
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - gemini
+              - openai
+        - name: capability
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - text
+              - vision
+              - audio
+              - code
       responses:
         200:
           description: Success
@@ -1033,7 +944,133 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/async/jobs:
+    post:
+      tags:
+        - async
+      summary: "Enqueue a background job for a collection POST /admin/collection/:collectionId/async/jobs (202)"
+      operationId: async_enqueueAsyncJob
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnqueueAsyncJobResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EnqueueAsyncJobRequest"
+  /admin/collection/{collectionId}/async/jobs/{jobId}:
+    get:
+      tags:
+        - async
+      summary: "Enqueue a background job for a collection POST /admin/collection/:collectionId/async/jobs (202) / export async function"
+      operationId: async_getAsyncJobStatus
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/attestations:
+    get:
+      tags:
+        - attestations
+      summary: List attestations for a subject (admin).
+      operationId: attestations_list
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: subjectType
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationSubjectType"
+        - name: subjectId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: attestationType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: recordedAfter
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: recordedBefore
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListAttestationsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
     post:
       tags:
         - attestations
@@ -1066,7 +1103,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateAttestationInput"
-  /admin/collection/{collectionId}/attestations/latest{qs}:
+  /admin/collection/{collectionId}/attestations/latest:
     get:
       tags:
         - attestations
@@ -1080,9 +1117,14 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: subjectType
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationSubjectType"
+        - name: subjectId
+          in: query
+          required: false
           schema:
             type: string
       responses:
@@ -1098,7 +1140,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/attestations/summary{qs}:
+  /admin/collection/{collectionId}/attestations/summary:
     get:
       tags:
         - attestations
@@ -1112,11 +1154,46 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: subjectType
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationSubjectType"
+        - name: subjectId
+          in: query
+          required: false
           schema:
             type: string
+        - name: attestationType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: valueField
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: groupBy
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationGroupBy"
+        - name: recordedAfter
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: recordedBefore
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
       responses:
         200:
           description: Success
@@ -1130,7 +1207,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/attestations/tree-latest{qs}:
+  /admin/collection/{collectionId}/attestations/tree-latest:
     get:
       tags:
         - attestations
@@ -1144,11 +1221,16 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: subjectId
+          in: query
+          required: false
           schema:
             type: string
+        - name: includeItems
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -1162,7 +1244,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/attestations/tree-summary{qs}:
+  /admin/collection/{collectionId}/attestations/tree-summary:
     get:
       tags:
         - attestations
@@ -1176,11 +1258,46 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: subjectId
+          in: query
+          required: false
           schema:
             type: string
+        - name: attestationType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: valueField
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: groupBy
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationGroupBy"
+        - name: recordedAfter
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: recordedBefore
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: includeItems
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -1194,7 +1311,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/attestations/verify{qs}:
+  /admin/collection/{collectionId}/attestations/verify:
     get:
       tags:
         - attestations
@@ -1208,9 +1325,19 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: subjectType
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationSubjectType"
+        - name: subjectId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: attestationType
+          in: query
+          required: false
           schema:
             type: string
       responses:
@@ -1220,38 +1347,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ChainVerifyResult"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/attestations{qs}:
-    get:
-      tags:
-        - attestations
-      summary: List attestations for a subject (admin).
-      operationId: attestations_list
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qs
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListAttestationsResponse"
         400:
           description: Bad request
         401:
@@ -1394,6 +1489,21 @@ paths:
           required: true
           schema:
             type: string
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: productId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
       responses:
         200:
           description: Success
@@ -1487,6 +1597,21 @@ paths:
         - name: collectionId
           in: path
           required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: appId
+          in: query
+          required: false
           schema:
             type: string
       responses:
@@ -1743,7 +1868,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/BroadcastPreviewRequest"
-  /admin/collection/{collectionId}/broadcasts/{id}/recipients{qs}:
+  /admin/collection/{collectionId}/broadcasts/{id}/recipients:
     get:
       tags:
         - broadcasts
@@ -1758,11 +1883,6 @@ paths:
           schema:
             type: string
         - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qs
           in: path
           required: true
           schema:
@@ -1934,7 +2054,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/claimSet//assignClaims:
+  /admin/collection/{collectionId}/claimSet/assignClaims:
     post:
       tags:
         - claimSet
@@ -1966,7 +2086,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/AssignClaimsRequest"
-  /admin/collection/{collectionId}/claimSet//makeClaim:
+  /admin/collection/{collectionId}/claimSet/makeClaim:
     post:
       tags:
         - claimSet
@@ -2236,6 +2356,38 @@ paths:
             schema:
               $ref: "#/components/schemas/TransactionalSendRequest"
   /admin/collection/{collectionId}/comm.settings:
+    get:
+      tags:
+        - comms
+      summary: "Public: Register a Web Push subscription under unified comms."
+      operationId: comms_getSettings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: includeSecret
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
     patch:
       tags:
         - comms
@@ -2270,44 +2422,6 @@ paths:
             schema:
               type: object
               additionalProperties: true
-  /admin/collection/{collectionId}/comm.settings{qs}:
-    get:
-      tags:
-        - comms
-      summary: "Public: Register a Web Push subscription under unified comms."
-      operationId: comms_getSettings
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qs
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: includeSecret
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: true
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /admin/collection/{collectionId}/comm/log:
     post:
       tags:
@@ -2801,6 +2915,67 @@ paths:
         404:
           description: Not found
   /admin/collection/{collectionId}/containers:
+    get:
+      tags:
+        - containers
+      summary: List containers (admin).
+      operationId: containers_list
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ContainerStatus"
+        - name: ref
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: parentContainerId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: topLevel
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListContainersResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
     post:
       tags:
         - containers
@@ -2833,7 +3008,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateContainerInput"
-  /admin/collection/{collectionId}/containers/find-for-item{qs}:
+  /admin/collection/{collectionId}/containers/find-for-item:
     get:
       tags:
         - containers
@@ -2847,9 +3022,14 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: itemType
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ContainerItemType"
+        - name: itemId
+          in: query
+          required: false
           schema:
             type: string
       responses:
@@ -2866,6 +3046,52 @@ paths:
         404:
           description: Not found
   /admin/collection/{collectionId}/containers/{containerId}:
+    get:
+      tags:
+        - containers
+      summary: Get a single container by ID (admin).
+      operationId: containers_get
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tree
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: treeDepth
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: includeContents
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Container"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
     patch:
       tags:
         - containers
@@ -2907,8 +3133,8 @@ paths:
     get:
       tags:
         - containers
-      summary: Soft-remove items from a container (admin).
-      operationId: containers_removeItems
+      summary: List items currently (or historically) inside a container (admin).
+      operationId: containers_listItems
       security:
         - bearerAuth: []
       parameters:
@@ -2922,13 +3148,28 @@ paths:
           required: true
           schema:
             type: string
+        - name: history
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/RemoveContainerItemsResponse"
+                $ref: "#/components/schemas/ContainerItemsResponse"
         400:
           description: Bad request
         401:
@@ -2972,112 +3213,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/AddContainerItemsInput"
-  /admin/collection/{collectionId}/containers/{containerId}/items{qs}:
-    get:
-      tags:
-        - containers
-      summary: List items currently (or historically) inside a container (admin).
-      operationId: containers_listItems
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: containerId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qs
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ContainerItemsResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/containers/{containerId}{qs}:
-    get:
-      tags:
-        - containers
-      summary: Get a single container by ID (admin).
-      operationId: containers_get
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: containerId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qs
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Container"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/containers{qs}:
-    get:
-      tags:
-        - containers
-      summary: List containers (admin).
-      operationId: containers_list
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qs
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListContainersResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /admin/collection/{collectionId}/crate:
     get:
       tags:
@@ -3092,6 +3227,21 @@ paths:
           required: true
           schema:
             type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: startAfter
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: includeDeleted
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -3251,6 +3401,27 @@ paths:
           required: true
           schema:
             type: string
+        - name: includeValues
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: includeDeleted
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: kind
+          in: query
+          required: false
+          schema:
+            type: object
+            additionalProperties: true
+        - name: reserved
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -3348,6 +3519,16 @@ paths:
           required: true
           schema:
             type: string
+        - name: includeValues
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: includeDeleted
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -3449,6 +3630,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: includeDeleted
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -3523,6 +3709,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: includeDeleted
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -3731,6 +3922,47 @@ paths:
         404:
           description: Not found
   /admin/collection/{collectionId}/interactions:
+    get:
+      tags:
+        - interactions
+      summary: interactions.list
+      operationId: interactions_list
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InteractionTypeList"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
     post:
       tags:
         - interactions
@@ -3967,12 +4199,12 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/interactions/{qs}:
+  /admin/collection/{collectionId}/jobs:
     get:
       tags:
-        - interactions
-      summary: interactions.list
-      operationId: interactions_list
+        - jobs
+      summary: "List visible jobs for a collection GET /admin/collection/:collectionId/jobs"
+      operationId: jobs_listJobs
       security:
         - bearerAuth: []
       parameters:
@@ -3981,7 +4213,64 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
+        - name: state
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/JobStatus"
+        - name: task
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JobsPage"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/jobs/{jobId}:
+    get:
+      tags:
+        - jobs
+      summary: "List visible jobs for a collection GET /admin/collection/:collectionId/jobs / export async function listJobs( collection"
+      operationId: jobs_getJob
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: jobId
           in: path
           required: true
           schema:
@@ -3992,7 +4281,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InteractionTypeList"
+                $ref: "#/components/schemas/Job"
         400:
           description: Bad request
         401:
@@ -4013,6 +4302,34 @@ paths:
           required: true
           schema:
             type: string
+        - name: appId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: active
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: journeyType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - event_triggered
+              - scheduled
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
       responses:
         200:
           description: Success
@@ -4311,7 +4628,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/LocationPayload"
-  /admin/collection/{collectionId}/location/search{qs}:
+  /admin/collection/{collectionId}/location/search:
     get:
       tags:
         - location
@@ -4325,11 +4642,40 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: q
+          in: query
+          required: false
           schema:
             type: string
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: countryCode
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: countryName
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - name
+              - countryCode
+              - countryName
       responses:
         200:
           description: Success
@@ -4815,6 +5161,36 @@ paths:
           required: true
           schema:
             type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: orderRef
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: customerId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: includeItems
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -5058,6 +5434,16 @@ paths:
           required: true
           schema:
             type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
       responses:
         200:
           description: Success
@@ -5123,6 +5509,21 @@ paths:
           required: true
           schema:
             type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: includeItems
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -5155,6 +5556,21 @@ paths:
           required: true
           schema:
             type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: includeOrder
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -5215,6 +5631,66 @@ paths:
           required: true
           schema:
             type: string
+        - name: groupByStatus
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: groupByCollection
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: groupByCustomer
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: groupByDate
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: groupByItemType
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: groupByProduct
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: includeItemStats
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: includeCount
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: topN
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: createdAfter
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: createdBefore
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         200:
           description: Success
@@ -5247,6 +5723,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: includeItems
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -5347,6 +5828,16 @@ paths:
           required: true
           schema:
             type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
       responses:
         200:
           description: Success
@@ -6615,6 +7106,29 @@ paths:
           required: true
           schema:
             type: string
+        - name: appId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: filterType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - dynamic
+              - static
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
       responses:
         200:
           description: Success
@@ -6874,6 +7388,41 @@ paths:
           required: true
           schema:
             type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: productId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: variantId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: batchId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: refType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: refId
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         200:
           description: Success
@@ -6964,6 +7513,21 @@ paths:
         - name: collectionId
           in: path
           required: true
+          schema:
+            type: string
+        - name: refType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: refId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: embed
+          in: query
+          required: false
           schema:
             type: string
       responses:
@@ -7280,6 +7844,142 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TemplateRenderRequest"
+  /admin/collection/{collectionId}/translations:
+    get:
+      tags:
+        - translations
+      summary: translations.list
+      operationId: translations_list
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: targetLanguage
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sourceLanguage
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: contentType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: contextKey
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: isOverride
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranslationListResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/translations/{translationId}:
+    get:
+      tags:
+        - translations
+      summary: translations.get
+      operationId: translations_get
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: translationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranslationRecord"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    patch:
+      tags:
+        - translations
+      summary: translations.update
+      operationId: translations_update
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: translationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranslationRecord"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TranslationUpdateRequest"
   /api/admin/auth/push:
     get:
       tags:
@@ -7307,6 +8007,17 @@ paths:
       summary: realtime.getPublicToken
       operationId: realtime_getPublicToken
       security: []
+      parameters:
+        - name: collectionId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: appId
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         200:
           description: Success
@@ -8259,7 +8970,33 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection//product//batch/{batchId}:
+  /public/collection/getShortId/{shortId}:
+    get:
+      tags:
+        - collection
+      summary: Retrieves all Collections.
+      operationId: collection_getShortId
+      security: []
+      parameters:
+        - name: shortId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/product/batch/{batchId}:
     get:
       tags:
         - batch
@@ -8285,7 +9022,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection//product//variant/{variantId}:
+  /public/collection/product/variant/{variantId}:
     get:
       tags:
         - variant
@@ -8305,32 +9042,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VariantResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /public/collection/getShortId/{shortId}:
-    get:
-      tags:
-        - collection
-      summary: Retrieves all Collections.
-      operationId: collection_getShortId
-      security: []
-      parameters:
-        - name: shortId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CollectionResponse"
         400:
           description: Bad request
         401:
@@ -8548,7 +9259,68 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection/{collectionId}/attestations/latest{qs}:
+  /public/collection/{collectionId}/attestations:
+    get:
+      tags:
+        - attestations
+      summary: List attestations for a subject (public).
+      operationId: attestations_publicList
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: subjectType
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationSubjectType"
+        - name: subjectId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: attestationType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: recordedAfter
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: recordedBefore
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicListAttestationsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/attestations/latest:
     get:
       tags:
         - attestations
@@ -8561,9 +9333,14 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: subjectType
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationSubjectType"
+        - name: subjectId
+          in: query
+          required: false
           schema:
             type: string
       responses:
@@ -8579,7 +9356,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection/{collectionId}/attestations/summary{qs}:
+  /public/collection/{collectionId}/attestations/summary:
     get:
       tags:
         - attestations
@@ -8592,11 +9369,46 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: subjectType
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationSubjectType"
+        - name: subjectId
+          in: query
+          required: false
           schema:
             type: string
+        - name: attestationType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: valueField
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: groupBy
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationGroupBy"
+        - name: recordedAfter
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: recordedBefore
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
       responses:
         200:
           description: Success
@@ -8610,7 +9422,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection/{collectionId}/attestations/tree-latest{qs}:
+  /public/collection/{collectionId}/attestations/tree-latest:
     get:
       tags:
         - attestations
@@ -8623,11 +9435,16 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: subjectId
+          in: query
+          required: false
           schema:
             type: string
+        - name: includeItems
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -8641,7 +9458,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection/{collectionId}/attestations/tree-summary{qs}:
+  /public/collection/{collectionId}/attestations/tree-summary:
     get:
       tags:
         - attestations
@@ -8654,11 +9471,46 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: subjectId
+          in: query
+          required: false
           schema:
             type: string
+        - name: attestationType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: valueField
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: groupBy
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationGroupBy"
+        - name: recordedAfter
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: recordedBefore
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: includeItems
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -8666,37 +9518,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PublicAttestationTreeSummaryResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /public/collection/{collectionId}/attestations{qs}:
-    get:
-      tags:
-        - attestations
-      summary: List attestations for a subject (public).
-      operationId: attestations_publicList
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qs
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PublicListAttestationsResponse"
         400:
           description: Bad request
         401:
@@ -8737,7 +9558,7 @@ paths:
             schema:
               type: object
               additionalProperties: true
-  /public/collection/{collectionId}/comm/methods{qs}:
+  /public/collection/{collectionId}/comm/methods:
     get:
       tags:
         - comms
@@ -8746,11 +9567,6 @@ paths:
       security: []
       parameters:
         - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qs
           in: path
           required: true
           schema:
@@ -8908,7 +9724,7 @@ paths:
             schema:
               type: object
               additionalProperties: true
-  /public/collection/{collectionId}/comm/subscription/check{qs}:
+  /public/collection/{collectionId}/comm/subscription/check:
     get:
       tags:
         - comms
@@ -8917,11 +9733,6 @@ paths:
       security: []
       parameters:
         - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qs
           in: path
           required: true
           schema:
@@ -9021,7 +9832,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection/{collectionId}/comm/unsubscribe{qs}:
+  /public/collection/{collectionId}/comm/unsubscribe:
     get:
       tags:
         - comms
@@ -9030,11 +9841,6 @@ paths:
       security: []
       parameters:
         - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qs
           in: path
           required: true
           schema:
@@ -9188,6 +9994,179 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/collection/{collectionId}/containers:
+    get:
+      tags:
+        - containers
+      summary: List containers (public).
+      operationId: containers_publicList
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/ContainerStatus"
+        - name: ref
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: parentContainerId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: topLevel
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicListContainersResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/containers/{containerId}:
+    get:
+      tags:
+        - containers
+      summary: Get a single container (public).
+      operationId: containers_publicGet
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tree
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: treeDepth
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: includeContents
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Container"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/containers/{containerId}/attestations:
+    get:
+      tags:
+        - attestations
+      summary: List attestations for a specific container (public shortcut).
+      operationId: attestations_publicContainerList
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: containerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: subjectType
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationSubjectType"
+        - name: subjectId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: attestationType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: recordedAfter
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: recordedBefore
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublicListAttestationsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/collection/{collectionId}/containers/{containerId}/attestations/latest:
     get:
       tags:
@@ -9219,7 +10198,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection/{collectionId}/containers/{containerId}/attestations/summary{qs}:
+  /public/collection/{collectionId}/containers/{containerId}/attestations/summary:
     get:
       tags:
         - attestations
@@ -9237,11 +10216,46 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: subjectType
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationSubjectType"
+        - name: subjectId
+          in: query
+          required: false
           schema:
             type: string
+        - name: attestationType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: valueField
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: groupBy
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationGroupBy"
+        - name: recordedAfter
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: recordedBefore
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
       responses:
         200:
           description: Success
@@ -9255,7 +10269,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection/{collectionId}/containers/{containerId}/attestations/tree-latest{qs}:
+  /public/collection/{collectionId}/containers/{containerId}/attestations/tree-latest:
     get:
       tags:
         - attestations
@@ -9273,11 +10287,16 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: subjectId
+          in: query
+          required: false
           schema:
             type: string
+        - name: includeItems
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -9291,7 +10310,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection/{collectionId}/containers/{containerId}/attestations/tree-summary{qs}:
+  /public/collection/{collectionId}/containers/{containerId}/attestations/tree-summary:
     get:
       tags:
         - attestations
@@ -9309,11 +10328,46 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: subjectId
+          in: query
+          required: false
           schema:
             type: string
+        - name: attestationType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: valueField
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: groupBy
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationGroupBy"
+        - name: recordedAfter
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: recordedBefore
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: includeItems
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -9327,43 +10381,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection/{collectionId}/containers/{containerId}/attestations{qs}:
-    get:
-      tags:
-        - attestations
-      summary: List attestations for a specific container (public shortcut).
-      operationId: attestations_publicContainerList
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: containerId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qs
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PublicListAttestationsResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /public/collection/{collectionId}/containers/{containerId}/items{qs}:
+  /public/collection/{collectionId}/containers/{containerId}/items:
     get:
       tags:
         - containers
@@ -9381,11 +10399,21 @@ paths:
           required: true
           schema:
             type: string
-        - name: qs
-          in: path
-          required: true
+        - name: history
+          in: query
+          required: false
           schema:
-            type: string
+            type: boolean
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
       responses:
         200:
           description: Success
@@ -9393,73 +10421,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ContainerItemsResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /public/collection/{collectionId}/containers/{containerId}{qs}:
-    get:
-      tags:
-        - containers
-      summary: Get a single container (public).
-      operationId: containers_publicGet
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: containerId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qs
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/Container"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /public/collection/{collectionId}/containers{qs}:
-    get:
-      tags:
-        - containers
-      summary: List containers (public).
-      operationId: containers_publicList
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qs
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PublicListContainersResponse"
         400:
           description: Bad request
         401:
@@ -9479,6 +10440,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: includeValues
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -9542,6 +10508,11 @@ paths:
           required: true
           schema:
             type: string
+        - name: includeValues
+          in: query
+          required: false
+          schema:
+            type: boolean
       responses:
         200:
           description: Success
@@ -9616,6 +10587,47 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FacetValueResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/interactions:
+    get:
+      tags:
+        - interactions
+      summary: interactions.publicList
+      operationId: interactions_publicList
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InteractionTypeList"
         400:
           description: Bad request
         401:
@@ -9715,37 +10727,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/InteractionTypeRecord"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /public/collection/{collectionId}/interactions/{qs}:
-    get:
-      tags:
-        - interactions
-      summary: interactions.publicList
-      operationId: interactions_publicList
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qs
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/InteractionTypeList"
         400:
           description: Bad request
         401:
@@ -10546,6 +11527,21 @@ paths:
           required: true
           schema:
             type: string
+        - name: refType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: refId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: embed
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         200:
           description: Success
@@ -10601,6 +11597,16 @@ paths:
         - name: collectionId
           in: path
           required: true
+          schema:
+            type: string
+        - name: tagIds
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: embed
+          in: query
+          required: false
           schema:
             type: string
       responses:
@@ -10737,6 +11743,38 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/collection/{collectionId}/translations/lookup:
+    post:
+      tags:
+        - translations
+      summary: translations.lookup
+      operationId: translations_lookup
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranslationLookupResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TranslationLookupRequest"
   /public/location/{locationId}:
     get:
       tags:
@@ -11056,6 +12094,41 @@ paths:
         - name: appId
           in: path
           required: true
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: priority
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: ref
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: proofId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: contactId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: assignedTo
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: closedAt
+          in: query
+          required: false
           schema:
             type: string
       responses:
@@ -20922,6 +21995,236 @@ components:
           additionalProperties: true
       required:
         - ok
+    TranslationContext:
+      type: object
+      properties:
+        surface:
+          type: string
+        field:
+          type: string
+    TranslationLookupRequestBase:
+      type: object
+      properties:
+        targetLanguage:
+          type: string
+        sourceLanguage:
+          type: string
+        mode:
+          $ref: "#/components/schemas/TranslationLookupMode"
+        contentType:
+          $ref: "#/components/schemas/TranslationContentType"
+        context:
+          $ref: "#/components/schemas/TranslationContext"
+        returnMeta:
+          type: boolean
+      required:
+        - targetLanguage
+    TranslationLookupSingleRequest:
+      type: object
+      properties:
+        text:
+          type: string
+        texts: {}
+      required:
+        - text
+    TranslationLookupBatchRequest:
+      type: object
+      properties:
+        text: {}
+        texts:
+          type: array
+          items:
+            type: string
+      required:
+        - texts
+    TranslationLookupItem:
+      type: object
+      properties:
+        index:
+          type: number
+        hash:
+          type: string
+        sourceText:
+          type: string
+        translatedText:
+          type: string
+        status:
+          $ref: "#/components/schemas/TranslationItemStatus"
+        provider:
+          type: string
+        model:
+          type: string
+        isOverride:
+          type: boolean
+        quality:
+          $ref: "#/components/schemas/TranslationQuality"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - index
+        - hash
+        - sourceText
+    TranslationLookupResponse:
+      type: object
+      properties:
+        targetLanguage:
+          type: string
+        sourceLanguage:
+          type: string
+        mode:
+          $ref: "#/components/schemas/TranslationLookupMode"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TranslationLookupItem"
+      required:
+        - targetLanguage
+        - items
+    ResolvedTranslationItem:
+      type: object
+      properties:
+        cacheSource:
+          type: string
+          enum:
+            - local
+            - remote
+        expiresAt:
+          type: number
+    ResolvedTranslationResponse:
+      type: object
+      properties:
+        targetLanguage:
+          type: string
+        sourceLanguage:
+          type: string
+        mode:
+          $ref: "#/components/schemas/TranslationLookupMode"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResolvedTranslationItem"
+      required:
+        - targetLanguage
+        - items
+    TranslationHashOptions:
+      type: object
+      properties:
+        trim:
+          type: boolean
+        collapseWhitespace:
+          type: boolean
+        unicodeNormalization:
+          type: string
+          enum:
+            - NFC
+            - NFKC
+    TranslationResolveOptions:
+      type: object
+      properties:
+        useLocalCache:
+          type: boolean
+        refreshLocalCache:
+          type: boolean
+        localCacheTtlMs:
+          type: number
+        hashOptions:
+          $ref: "#/components/schemas/TranslationHashOptions"
+    TranslationRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        collectionId:
+          type: string
+        sourceHash:
+          type: string
+        sourceText:
+          type: string
+        sourceLanguage:
+          type: string
+        targetLanguage:
+          type: string
+        contentType:
+          type: string
+        contextKey:
+          type: string
+        translatedText:
+          type: string
+        provider:
+          type: string
+        model:
+          type: string
+        quality:
+          $ref: "#/components/schemas/TranslationQuality"
+        isOverride:
+          type: boolean
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - collectionId
+        - sourceHash
+        - sourceText
+        - targetLanguage
+        - contentType
+        - translatedText
+        - quality
+        - isOverride
+        - createdAt
+        - updatedAt
+    TranslationListParams:
+      type: object
+      properties:
+        targetLanguage:
+          type: string
+        sourceLanguage:
+          type: string
+        contentType:
+          type: string
+        contextKey:
+          type: string
+        q:
+          type: string
+        isOverride:
+          type: boolean
+        limit:
+          type: number
+        offset:
+          type: number
+    TranslationListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TranslationRecord"
+        total:
+          type: number
+        limit:
+          type: number
+        offset:
+          type: number
+      required:
+        - items
+    TranslationUpdateRequest:
+      type: object
+      properties:
+        translatedText:
+          type: string
+        isOverride:
+          type: boolean
+        quality:
+          $ref: "#/components/schemas/TranslationQuality"
+        metadata:
+          type: object
+          additionalProperties: true
     AppConfigOptions:
       type: object
       properties:

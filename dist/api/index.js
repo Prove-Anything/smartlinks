@@ -38,3 +38,4 @@ export { app } from "./appObjects";
 export { attestations } from "./attestations";
 export { containers } from "./containers";
 export { loyalty } from "./loyalty";
+export { translations } from "./translations";

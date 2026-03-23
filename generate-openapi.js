@@ -223,16 +223,22 @@ function toOaPath(tpl) {
   return tpl
     // Strip ternary expressions like ${qs ? `?${qs}` : ''} or ${query ? `?...` : ""}
     .replace(/\$\{[^}?]*\?[^`}]*`?[^`}]*`?[^}]*\}/g, '')
+    // Strip query helper interpolations like ${qs}, ${query}, ${buildQueryString(params)}
+    .replace(/\/?\$\{[^}]*\b(?:qs|query|search|queryString|queryParams|build\w*Query\w*|encodeQuery)\b[^}]*\}/gi, '')
     // Strip naked conditional tails like ${qs ? or ${query ?  (partial captures from nested template literal)
     .replace(/\$\{[^}]*\?.*$/g, '')
     // Convert ${encodeURIComponent(x)} → {x}
     .replace(/\$\{encodeURIComponent\((\w+)\)\}/g, '{$1}')
+    // Convert ${enc(x)} or other single-arg wrapper helpers → {x}
+    .replace(/\$\{[A-Za-z_$][\w$]*\((\w+)\)\}/g, '{$1}')
     // Convert ${x} → {x}
     .replace(/\$\{(\w+)\}/g, '{$1}')
     // Strip any remaining ${...} or partial ${ expressions
     .replace(/\$\{[^}]*\}?/g, '')
     // Strip query string
     .replace(/[?#].*$/, '')
+    // Collapse duplicate slashes introduced by stripped interpolations
+    .replace(/\/+/g, '/')
     // Strip trailing slash
     .replace(/\/$/, '');
 }
@@ -250,6 +256,43 @@ function extractQueryParams(body) {
     if (!seen.has(m[1])) { seen.add(m[1]); params.push(m[1]); }
   }
   return params;
+}
+
+function isPrimitiveTsType(type) {
+  return ['string', 'number', 'boolean', 'any', 'unknown', 'void', 'never', 'undefined'].includes(type);
+}
+
+function guessQueryParamType(sigParams, rawPathStr, body, method) {
+  if (method !== 'get') return null;
+
+  const hasQueryInterpolation = /\$\{[^}]*\b(?:qs|query|search|queryString|queryParams|build\w*Query\w*|encodeQuery)\b[^}]*\}/i.test(rawPathStr || '');
+  const hasQueryBuilder = /URLSearchParams|build\w*Query\w*|encodeQuery/.test(body || '');
+  if (!hasQueryInterpolation && !hasQueryBuilder) return null;
+
+  const candidate = sigParams.find((param) =>
+    ['query', 'params', 'options', 'search'].includes(param.name) && !isPrimitiveTsType(param.type)
+  );
+
+  return candidate ? candidate.type : null;
+}
+
+function getSchemaForType(type, schemas, known) {
+  if (!type) return null;
+  const schema = tsToSchema(type, known);
+  if (!schema || !Object.keys(schema).length) return null;
+
+  if (schema.$ref) {
+    const refName = schema.$ref.split('/').pop();
+    return refName ? schemas[refName] || null : null;
+  }
+
+  return schema;
+}
+
+function getQueryParamSchemas(type, schemas, known) {
+  const schema = getSchemaForType(type, schemas, known);
+  if (!schema || !schema.properties) return {};
+  return schema.properties;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -557,6 +600,7 @@ function parseApiFile(filePath, known) {
     // Path & query params
     const pParams = extractPathParams(oaPath);
     const qParams = extractQueryParams(body);
+    const queryParamType = guessQueryParamType(sigParams, resolvedPath, body, httpMethod);
 
     // Request body type
     let reqBodyType = null;
@@ -585,6 +629,7 @@ function parseApiFile(filePath, known) {
       reqBodyType,
       pParams,
       qParams,
+      queryParamType,
       security,
     });
   }
@@ -646,11 +691,22 @@ function buildSpec() {
       if (!ep) continue;
 
       const parameters = [];
+      const queryParamSchemas = getQueryParamSchemas(ep.queryParamType, schemas, known);
+      const queryParamNames = Array.from(new Set([
+        ...ep.qParams,
+        ...Object.keys(queryParamSchemas),
+      ]));
+
       for (const pp of ep.pParams) {
         parameters.push({ name: pp, in: 'path', required: true, schema: { type: 'string' } });
       }
-      for (const qp of ep.qParams) {
-        parameters.push({ name: qp, in: 'query', required: false, schema: { type: 'string' } });
+      for (const qp of queryParamNames) {
+        parameters.push({
+          name: qp,
+          in: 'query',
+          required: false,
+          schema: queryParamSchemas[qp] || { type: 'string' },
+        });
       }
 
       const responseSchema = ep.responseType && ep.responseType !== 'void'

@@ -1,4 +1,5 @@
 // generate-api-summary.js
+// Canonical API summary generator used by package.json build/docs scripts.
 const fs = require('fs');
 const path = require('path');
 
@@ -225,13 +226,16 @@ function generateAPISummary() {
   summary += 'For detailed guides on specific features:\n\n';
   summary += '- **[SmartLinks Microapp Overview](overview.md)** - Platform architecture, data model, auth patterns, storage, anti-patterns, and quick-reference for all SDK docs\n';
   summary += '- **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation\n';
+  summary += '- **[Translations](translations.md)** - Runtime translation lookup, browser-side IndexedDB caching, and admin translation management\n';
   summary += '- **[Widgets](widgets.md)** - Embeddable React components for parent applications\n';
   summary += '- **[Containers](containers.md)** - Building full-app embeddable containers (lazy-loaded) \n';
+  summary += '- **[Scanner Containers](scanner-container.md)** - Building scanner microapps for the SmartLinks Scanner Android host (RFID, NFC, QR, key events)\n';
   summary += '- **[Multi-Page App Architecture](mpa.md)** - Vite MPA build pipeline: public/admin entry points, widget/container/executor bundles, content-hashed CDN assets\n';
   summary += '- **[App Configuration Files](app-manifest.md)** - `app.manifest.json` and `app.admin.json` reference — bundles, components, setup questions, import schemas, tunable fields, and metrics\n';
   summary += '- **[Executor Model](executor.md)** - Programmatic JS bundles for AI-driven setup, server-side SEO metadata generation, and LLM content for AI crawlers\n';
   summary += '- **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections\n';
   summary += '- **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication\n';
+  summary += '- **[Utilities](utils.md)** - Helper functions for building portal paths, URLs, and common tasks\n';
   summary += '- **[i18n](i18n.md)** - Internationalization and localization\n';
   summary += '- **[Liquid Templates](liquid-templates.md)** - Dynamic templating for content generation\n';
   summary += '- **[Theme System](theme.system.md)** - Theme configuration and customization\n';
@@ -567,6 +571,16 @@ function generateAPISummary() {
     const defs = extractTypesFromFile(path.join(apiDir, file));
     if (defs.length) collectedSections.push({ title: moduleName + ' (api)', defs });
   });
+
+  const utilsDir = path.join(srcDir, 'utils');
+  if (fs.existsSync(utilsDir)) {
+    const utilsFiles = fs.readdirSync(utilsDir).filter(file => file.endsWith('.ts') && file !== 'index.ts');
+    utilsFiles.forEach(file => {
+      const moduleName = path.basename(file, '.ts');
+      const defs = extractTypesFromFile(path.join(utilsDir, file));
+      if (defs.length) collectedSections.push({ title: moduleName + ' (utils)', defs });
+    });
+  }
 
   collectedSections.forEach(section => {
     summary += `### ${section.title}\n\n`;
