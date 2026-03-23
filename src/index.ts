@@ -21,6 +21,8 @@ export * as utils from './utils'
 export type {
   PortalPathParams,
   ConditionParams,
+  ConditionDebugOptions,
+  ConditionDebugLogger,
   ConditionSet,
   Condition,
   UserInfo,
@@ -137,10 +139,47 @@ export type {
 export type { BroadcastSendRequest } from "./types/broadcasts"
 export type { AppConfigOptions } from "./api/appConfiguration"
 export type {
+  AdditionalGtin,
+  ISODateString,
+  JsonPrimitive,
+  JsonValue,
   ProductCreateRequest,
+  ProductClaimCreateInput,
+  ProductClaimCreateRequestBody,
+  ProductClaimLookupInput,
+  ProductFacetMap,
+  ProductFacetValue,
+  ProductImage,
+  ProductImageThumbnails,
+  ProductImageUrlInput,
+  ProductKey,
+  ProductQueryRequest,
+  ProductQueryResponse,
   ProductUpdateRequest,
   Product,
+  ProductWriteInput,
+  PublicProduct,
 } from "./types/product"
+
+export type {
+  FacetBucket,
+  FacetDefinition,
+  FacetDefinitionWriteInput,
+  FacetGetParams,
+  FacetListParams,
+  FacetListResponse,
+  FacetQueryRequest,
+  FacetQueryResponse,
+  FacetValue,
+  FacetValueDefinition,
+  FacetValueGetParams,
+  FacetValueListParams,
+  FacetValueListResponse,
+  FacetValueResponse,
+  FacetValueWriteInput,
+  PublicFacetListParams,
+} from "./types/facets"
+
 
 // Collections & Proofs
 export type {

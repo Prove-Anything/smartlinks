@@ -35,6 +35,7 @@ tags:
   - name: contact
   - name: containers
   - name: crate
+  - name: facets
   - name: form
   - name: interactions
   - name: jobs
@@ -45,6 +46,7 @@ tags:
   - name: nfc
   - name: order
   - name: product
+  - name: products
   - name: proof
   - name: qr
   - name: realtime
@@ -3235,6 +3237,384 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/facets:
+    get:
+      tags:
+        - facets
+      summary: facets.list
+      operationId: facets_list
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetListResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    post:
+      tags:
+        - facets
+      summary: facets.create
+      operationId: facets_create
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetDefinition"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FacetDefinitionWriteInput"
+  /admin/collection/{collectionId}/facets/query:
+    post:
+      tags:
+        - facets
+      summary: facets.query
+      operationId: facets_query
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetQueryResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FacetQueryRequest"
+  /admin/collection/{collectionId}/facets/{facetKey}:
+    get:
+      tags:
+        - facets
+      summary: facets.get
+      operationId: facets_get
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: facetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetDefinition"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    put:
+      tags:
+        - facets
+      summary: facets.update
+      operationId: facets_update
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: facetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetDefinition"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FacetDefinitionWriteInput"
+    delete:
+      tags:
+        - facets
+      summary: facets.remove
+      operationId: facets_remove
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: facetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/facets/{facetKey}/values:
+    get:
+      tags:
+        - facets
+      summary: facets.listValues
+      operationId: facets_listValues
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: facetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetValueListResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    post:
+      tags:
+        - facets
+      summary: facets.createValue
+      operationId: facets_createValue
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: facetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetValueResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FacetValueWriteInput"
+  /admin/collection/{collectionId}/facets/{facetKey}/values/{valueKey}:
+    get:
+      tags:
+        - facets
+      summary: facets.getValue
+      operationId: facets_getValue
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: facetKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: valueKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetValueResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    put:
+      tags:
+        - facets
+      summary: facets.updateValue
+      operationId: facets_updateValue
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: facetKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: valueKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetValueResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FacetValueWriteInput"
+    delete:
+      tags:
+        - facets
+      summary: facets.removeValue
+      operationId: facets_removeValue
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: facetKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: valueKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/form:
     post:
       tags:
@@ -5082,6 +5462,39 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ProductCreateRequest"
+  /admin/collection/{collectionId}/product/find:
+    post:
+      tags:
+        - product
+      summary: Delete a product for a collection (admin only).
+      operationId: product_find
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductQueryResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductQueryRequest"
   /admin/collection/{collectionId}/product/{productId}:
     put:
       tags:
@@ -5268,11 +5681,134 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/product/{productId}/claimWindow:
+    post:
+      tags:
+        - product
+      summary: "/ export async function clone( collectionId: string, productId: string, body: Record<string, JsonValue> = {} ): Promise<"
+      operationId: product_createClaimWindow
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                $ref: "#/components/schemas/JsonValue"
+  /admin/collection/{collectionId}/product/{productId}/claimWindow/{claimId}:
+    put:
+      tags:
+        - product
+      summary: "/ export async function listAssets( collectionId: string, productId: string, admin?: boolean ): Promise<unknown> { const"
+      operationId: product_updateClaimWindow
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                $ref: "#/components/schemas/JsonValue"
+  /admin/collection/{collectionId}/product/{productId}/clone:
+    post:
+      tags:
+        - product
+      summary: "/ export async function publicFind( collectionId: string, params?: ProductPublicFindParams ): Promise<ProductResponse[]>"
+      operationId: product_clone
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                $ref: "#/components/schemas/JsonValue"
   /admin/collection/{collectionId}/product/{productId}/getSN:
     get:
       tags:
         - product
-      summary: Delete a product for a collection (admin only).
+      summary: "/ export async function refresh( collectionId: string, productId: string ): Promise<ProductResponse> { const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/refresh` return request<ProductResponse>(path) } /** Get serial numbers for a product (admin only)."
       operationId: product_getSN
       security:
         - bearerAuth: []
@@ -5520,6 +6056,38 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/product/{productId}/refresh:
+    get:
+      tags:
+        - product
+      summary: "/ export async function createClaimWindow( collectionId: string, productId: string, body: Record<string, JsonValue> ): P"
+      operationId: product_refresh
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/product/{productId}/variant/{variantId}/getSN:
     get:
       tags:
@@ -5597,6 +6165,332 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/products:
+    post:
+      tags:
+        - products
+      summary: products.create
+      operationId: products_create
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductCreateRequest"
+  /admin/collection/{collectionId}/products/query:
+    post:
+      tags:
+        - products
+      summary: products.query
+      operationId: products_query
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductQueryResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductQueryRequest"
+  /admin/collection/{collectionId}/products/{productId}:
+    put:
+      tags:
+        - products
+      summary: products.update
+      operationId: products_update
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductUpdateRequest"
+    delete:
+      tags:
+        - products
+      summary: products.remove
+      operationId: products_remove
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/products/{productId}/claimWindow:
+    post:
+      tags:
+        - products
+      summary: products.createClaimWindow
+      operationId: products_createClaimWindow
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                $ref: "#/components/schemas/JsonValue"
+  /admin/collection/{collectionId}/products/{productId}/claimWindow/{claimId}:
+    put:
+      tags:
+        - products
+      summary: products.updateClaimWindow
+      operationId: products_updateClaimWindow
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                $ref: "#/components/schemas/JsonValue"
+  /admin/collection/{collectionId}/products/{productId}/clone:
+    post:
+      tags:
+        - products
+      summary: products.clone
+      operationId: products_clone
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties:
+                $ref: "#/components/schemas/JsonValue"
+  /admin/collection/{collectionId}/products/{productId}/getSN:
+    get:
+      tags:
+        - products
+      summary: products.getSN
+      operationId: products_getSN
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/products/{productId}/lookupSN/{codeId}:
+    get:
+      tags:
+        - products
+      summary: products.lookupSN
+      operationId: products_lookupSN
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: codeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/products/{productId}/proofs/{proofId}/migrate:
     post:
       tags:
@@ -5641,6 +6535,38 @@ paths:
             schema:
               type: object
               additionalProperties: true
+  /admin/collection/{collectionId}/products/{productId}/refresh:
+    get:
+      tags:
+        - products
+      summary: products.refresh
+      operationId: products_refresh
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/proof/findByUser/{userId}:
     get:
       tags:
@@ -8540,6 +9466,162 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/collection/{collectionId}/facets:
+    get:
+      tags:
+        - facets
+      summary: facets.publicList
+      operationId: facets_publicList
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetListResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/facets/query:
+    post:
+      tags:
+        - facets
+      summary: facets.publicQuery
+      operationId: facets_publicQuery
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetQueryResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FacetQueryRequest"
+  /public/collection/{collectionId}/facets/{facetKey}:
+    get:
+      tags:
+        - facets
+      summary: facets.publicGet
+      operationId: facets_publicGet
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: facetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetDefinition"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/facets/{facetKey}/values:
+    get:
+      tags:
+        - facets
+      summary: facets.publicListValues
+      operationId: facets_publicListValues
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: facetKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetValueListResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/facets/{facetKey}/values/{valueKey}:
+    get:
+      tags:
+        - facets
+      summary: facets.publicGetValue
+      operationId: facets_publicGetValue
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: facetKey
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: valueKey
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetValueResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/collection/{collectionId}/interactions/by-user:
     post:
       tags:
@@ -8852,6 +9934,34 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/collection/{collectionId}/product/find:
+    get:
+      tags:
+        - product
+      summary: "/ export async function find( collectionId: string, body: ProductQueryRequest ): Promise<ProductQueryResponse> { const p"
+      operationId: product_publicFind
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProductResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/collection/{collectionId}/product/{productId}/asset:
     get:
       tags:
@@ -8915,6 +10025,77 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AssetResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/product/{productId}/createClaim:
+    post:
+      tags:
+        - product
+      summary: "/ export async function publicLookupClaim( collectionId: string, productId: string, claimId: string ): Promise<unknown>"
+      operationId: product_publicCreateClaim
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductClaimCreateRequestBody"
+  /public/collection/{collectionId}/product/{productId}/lookupClaim/{claimId}:
+    get:
+      tags:
+        - product
+      summary: Look up a serial number by code for a product (admin only).
+      operationId: product_publicLookupClaim
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema: {}
         400:
           description: Bad request
         401:
@@ -9248,6 +10429,77 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ProofClaimRequest"
+  /public/collection/{collectionId}/products/{productId}/createClaim:
+    post:
+      tags:
+        - products
+      summary: products.publicCreateClaim
+      operationId: products_publicCreateClaim
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProductClaimCreateRequestBody"
+  /public/collection/{collectionId}/products/{productId}/lookupClaim/{claimId}:
+    get:
+      tags:
+        - products
+      summary: products.publicLookupClaim
+      operationId: products_publicLookupClaim
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: claimId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/collection/{collectionId}/proof{qp}:
     get:
       tags:
@@ -15977,6 +17229,300 @@ components:
       required:
         - code
         - message
+    FacetDefinition:
+      type: object
+      properties:
+        id:
+          type: string
+        orgId:
+          type: string
+        collectionId:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        cardinality:
+          type: object
+          additionalProperties: true
+        kind:
+          type: object
+          additionalProperties: true
+        hierarchical:
+          type: boolean
+        reserved:
+          type: boolean
+        enabled:
+          type: boolean
+        sortOrder:
+          type: number
+        config:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+        values:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetValue"
+      required:
+        - key
+        - name
+    FacetValue:
+      type: object
+      properties:
+        id:
+          type: string
+        orgId:
+          type: string
+        collectionId:
+          type: string
+        facetDefinitionId:
+          type: string
+        facetKey:
+          type: string
+        key:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        shortName:
+          type: string
+        description:
+          type: string
+        color:
+          type: string
+        icon:
+          type: string
+        image:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        metadata:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        sortOrder:
+          type: number
+        parentValueId:
+          type: string
+        parentValueKey:
+          type: string
+        enabled:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+        count:
+          type: number
+      required:
+        - facetKey
+        - key
+        - name
+    FacetDefinitionWriteInput:
+      type: object
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        cardinality:
+          type: object
+          additionalProperties: true
+        kind:
+          type: object
+          additionalProperties: true
+        hierarchical:
+          type: boolean
+        reserved:
+          type: boolean
+        enabled:
+          type: boolean
+        sortOrder:
+          type: number
+        config:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+      required:
+        - name
+    FacetValueWriteInput:
+      type: object
+      properties:
+        key:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        shortName:
+          type: string
+        description:
+          type: string
+        color:
+          type: string
+        icon:
+          type: string
+        image:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        metadata:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        sortOrder:
+          type: number
+        parentValueKey:
+          type: string
+        enabled:
+          type: boolean
+      required:
+        - name
+    FacetListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetDefinition"
+      required:
+        - items
+    FacetValueListResponse:
+      type: object
+      properties:
+        facet:
+          $ref: "#/components/schemas/FacetDefinition"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetValue"
+      required:
+        - facet
+        - items
+    FacetValueResponse:
+      type: object
+      properties:
+        facet:
+          $ref: "#/components/schemas/FacetDefinition"
+        item:
+          $ref: "#/components/schemas/FacetValue"
+      required:
+        - facet
+        - item
+    FacetQueryRequest:
+      type: object
+      properties:
+        facetKeys:
+          type: array
+          items:
+            type: string
+        includeEmpty:
+          type: boolean
+        includeDeleted:
+          type: boolean
+        query:
+          type: object
+          additionalProperties: true
+        facetEquals:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              oneOf:
+                - $ref: "#/components/schemas/JsonValue"
+                - $ref: "#/components/schemas/JsonValue"
+    FacetBucket:
+      type: object
+      properties:
+        facetKey:
+          type: string
+        valueKey:
+          type: string
+        name:
+          type: string
+        count:
+          type: number
+      required:
+        - facetKey
+        - valueKey
+        - count
+    FacetQueryResponse:
+      type: object
+      properties:
+        items:
+          type: object
+          additionalProperties: true
+        facet:
+          $ref: "#/components/schemas/FacetDefinition"
+        values:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetValue"
+        buckets:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetBucket"
+        meta:
+          type: object
+          additionalProperties: true
+        source:
+          type: object
+          additionalProperties: true
+        matchedProducts:
+          type: number
+      required:
+        - items
+        - facet
+        - values
+        - buckets
+    FacetListParams:
+      type: object
+      properties:
+        includeValues:
+          type: boolean
+        includeDeleted:
+          type: boolean
+        kind:
+          type: object
+          additionalProperties: true
+        reserved:
+          type: boolean
+    PublicFacetListParams:
+      type: object
+      properties:
+        includeValues:
+          type: boolean
+    FacetGetParams:
+      type: object
+      properties:
+        includeValues:
+          type: boolean
+        includeDeleted:
+          type: boolean
+    FacetValueListParams:
+      type: object
+      properties:
+        includeDeleted:
+          type: boolean
+    FacetValueGetParams:
+      type: object
+      properties:
+        includeDeleted:
+          type: boolean
     CachedData:
       type: object
       properties:
@@ -18391,61 +19937,348 @@ components:
         - scansByDay
         - adminScansByDay
         - customerScansByDay
-    Product:
+    ProductKey:
       type: object
       properties:
-        id:
-          type: string
-        name:
-          type: string
         collectionId:
           type: string
-        description:
+        id:
           type: string
-        gtin:
-          type: string
-        type:
-          type: string
-        heroImage:
-          type: object
-          additionalProperties: true
-        url:
-          type: string
-        thumbnails:
-          type: object
-          additionalProperties: true
+      required:
+        - collectionId
+        - id
+    ProductImageThumbnails:
+      type: object
+      properties:
         x100:
           type: string
         x200:
           type: string
         x512:
           type: string
-        tags:
+    ProductImage:
+      type: object
+      properties:
+        id:
+          type: string
+        collectionId:
+          type: string
+        productId:
+          type: string
+        site:
+          type: string
+        name:
+          type: string
+        cleanName:
+          type: string
+        assetType:
+          type: string
+        type:
+          type: string
+        url:
+          type: string
+        thumbnails:
+          $ref: "#/components/schemas/ProductImageThumbnails"
+        contentType:
+          type: string
+        size:
           type: object
           additionalProperties: true
+        hash:
+          type: string
+        createdAt:
+          $ref: "#/components/schemas/ISODateString"
+        updatedAt:
+          $ref: "#/components/schemas/ISODateString"
+        deletedAt:
+          $ref: "#/components/schemas/ISODateString"
+    ProductImageUrlInput:
+      type: object
+      properties:
+        url:
+          type: string
+      required:
+        - url
+    AdditionalGtin:
+      type: object
+      properties:
+        gtin:
+          type: string
+        owner:
+          type: boolean
+      required:
+        - gtin
+    ProductFacetValue:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+        shortName:
+          type: string
+        description:
+          type: string
+        color:
+          type: string
+        icon:
+          type: string
+      required:
+        - key
+        - name
+    ProductFacetMap:
+      type: object
+      properties: {}
+    ProductQueryRequest:
+      type: object
+      properties:
+        query:
+          type: object
+          additionalProperties: true
+        search:
+          type: string
+        status:
+          type: array
+          items:
+            type: string
+        productIds:
+          type: array
+          items:
+            type: string
+        sku:
+          type: string
+        gtin:
+          type: string
+        updatedAfter:
+          $ref: "#/components/schemas/ISODateString"
+        updatedBefore:
+          $ref: "#/components/schemas/ISODateString"
+        createdAfter:
+          $ref: "#/components/schemas/ISODateString"
+        createdBefore:
+          $ref: "#/components/schemas/ISODateString"
+        facetEquals:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        sort:
+          type: object
+          additionalProperties: true
+        field:
+          type: string
+        direction:
+          type: string
+          enum:
+            - asc
+            - desc
+        page:
+          type: object
+          additionalProperties: true
+        limit:
+          type: number
+        offset:
+          type: number
+        cursor:
+          type: string
+        includeDeleted:
+          type: boolean
+      required:
+        - field
+        - direction
+    Product:
+      type: object
+      properties:
+        orgId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        gtin:
+          type: string
+        ownGtin:
+          type: boolean
+        additionalGtins:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdditionalGtin"
+        sku:
+          type: string
+        label:
+          type: string
+        status:
+          type: string
+        sortOrder:
+          type: number
+        heroImage:
+          $ref: "#/components/schemas/ProductImage"
+        facets:
+          $ref: "#/components/schemas/ProductFacetMap"
         data:
           type: object
-          additionalProperties: true
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
         admin:
           type: object
-          additionalProperties: true
-        allowAutoGenerateClaims:
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        extra:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        validCollections:
+          type: array
+          items:
+            type: string
+        group:
           type: boolean
-        lastSerialId:
-          type: number
+        createdAt:
+          $ref: "#/components/schemas/ISODateString"
+        updatedAt:
+          $ref: "#/components/schemas/ISODateString"
+        deletedAt:
+          $ref: "#/components/schemas/ISODateString"
       required:
-        - id
         - name
-        - collectionId
-        - description
-        - heroImage
-        - url
-        - thumbnails
-        - x100
-        - x200
-        - x512
-        - tags
-        - data
+    PublicProduct:
+      type: object
+      properties:
+        admin: {}
+    ProductWriteInput:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        gtin:
+          type: string
+        ownGtin:
+          type: boolean
+        additionalGtins:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdditionalGtin"
+        sku:
+          type: string
+        label:
+          type: string
+        status:
+          type: string
+        sortOrder:
+          type: number
+        heroImage:
+          type: object
+          additionalProperties: true
+        facets:
+          $ref: "#/components/schemas/ProductFacetMap"
+        data:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        admin:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        extra:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        validCollections:
+          type: array
+          items:
+            type: string
+      required:
+        - name
+    ProductQueryResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Product"
+        page:
+          type: object
+          additionalProperties: true
+        limit:
+          type: number
+        offset:
+          type: number
+        returned:
+          type: number
+        total:
+          type: number
+        hasMore:
+          type: boolean
+        nextCursor:
+          type: string
+        meta:
+          type: object
+          additionalProperties: true
+        apiVersion:
+          type: string
+          enum:
+            - v1
+        mode:
+          type: string
+          enum:
+            - canonical-products
+            - legacy-product-compatibility
+        source:
+          type: string
+          enum:
+            - postgres
+            - firestore
+            - compatibility-layer
+        queryMode:
+          type: string
+          enum:
+            - canonical
+            - compatibility
+        unsupportedFilters:
+          type: array
+          items:
+            type: string
+        supportedSortFields:
+          type: array
+          items:
+            type: string
+      required:
+        - items
+    ProductClaimLookupInput:
+      type: object
+      properties:
+        claimId:
+          type: string
+      required:
+        - claimId
+    ProductClaimCreateInput:
+      type: object
+      properties:
+        claimId:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        emailConfirmation:
+          type: boolean
+        data:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        options:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+      required:
+        - claimId
     Proof:
       type: object
       properties:

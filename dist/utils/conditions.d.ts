@@ -23,6 +23,7 @@ export interface BaseCondition {
 export interface CountryCondition extends BaseCondition {
     type: 'country';
     countries?: string[];
+    /** @deprecated Regions are applied automatically when regions is provided. */
     useRegions?: boolean;
     regions?: RegionKey[];
     contains: boolean;
@@ -209,8 +210,16 @@ export interface ConditionParams {
         latitude: number;
         longitude: number;
     }>;
+    /** Enable verbose condition evaluation logging for this invocation */
+    debugConditions?: boolean | ConditionDebugOptions;
     /** Any additional custom fields for value-based conditions */
     [key: string]: any;
+}
+export type ConditionDebugLogger = (...args: any[]) => void;
+export interface ConditionDebugOptions {
+    enabled?: boolean;
+    logger?: ConditionDebugLogger;
+    label?: string;
 }
 /**
  * Validates if a condition set passes based on the provided parameters.
@@ -246,7 +255,6 @@ export interface ConditionParams {
  *     type: 'and',
  *     conditions: [{
  *       type: 'country',
- *       useRegions: true,
  *       regions: ['eu'],
  *       contains: true
  *     }]

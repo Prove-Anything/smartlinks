@@ -37,6 +37,7 @@ export interface BaseCondition {
 export interface CountryCondition extends BaseCondition {
   type: 'country'
   countries?: string[]
+  /** @deprecated Regions are applied automatically when regions is provided. */
   useRegions?: boolean
   regions?: RegionKey[]
   contains: boolean
@@ -251,12 +252,188 @@ export interface ConditionParams {
   fetchCondition?: (collectionId: string, conditionId: string) => Promise<ConditionSet | null>
   /** Function to get user's current location (optional) */
   getLocation?: () => Promise<{ latitude: number; longitude: number }>
+  /** Enable verbose condition evaluation logging for this invocation */
+  debugConditions?: boolean | ConditionDebugOptions
   /** Any additional custom fields for value-based conditions */
   [key: string]: any
 }
 
+export type ConditionDebugLogger = (...args: any[]) => void
+
+export interface ConditionDebugOptions {
+  enabled?: boolean
+  logger?: ConditionDebugLogger
+  label?: string
+}
+
+type ConditionCheckResult = {
+  passed: boolean
+  detail?: string
+  context?: Record<string, unknown>
+}
+
+type ConditionDebugState = {
+  depth: number
+  logger: ConditionDebugLogger
+  label?: string
+}
+
+type InternalConditionParams = ConditionParams & {
+  __conditionDebugState?: ConditionDebugState
+}
+
 // Condition cache
 const conditionCache: Record<string, ConditionSet> = {}
+const CONDITION_DEBUG_GLOBAL_KEY = 'SMARTLINKS_CONDITION_DEBUG'
+
+function defaultConditionDebugLogger(...args: any[]) {
+  if (typeof console === 'undefined') return
+  if (typeof console.debug === 'function') {
+    console.debug(...args)
+    return
+  }
+  if (typeof console.log === 'function') {
+    console.log(...args)
+  }
+}
+
+function getGlobalConditionDebugOptions(): boolean | ConditionDebugOptions | undefined {
+  if (typeof globalThis === 'undefined') {
+    return undefined
+  }
+
+  const value = (globalThis as Record<string, unknown>)[CONDITION_DEBUG_GLOBAL_KEY]
+  if (typeof value === 'boolean') {
+    return value
+  }
+  if (value && typeof value === 'object') {
+    return value as ConditionDebugOptions
+  }
+  return undefined
+}
+
+function resolveConditionDebugState(params: ConditionParams): ConditionDebugState | undefined {
+  const globalOptions = getGlobalConditionDebugOptions()
+  const localOptions = params.debugConditions
+  const mergedOptions: ConditionDebugOptions = {
+    ...(typeof globalOptions === 'object' ? globalOptions : {}),
+    ...(typeof localOptions === 'object' ? localOptions : {}),
+  }
+
+  let enabled = false
+  if (typeof globalOptions === 'boolean') {
+    enabled = globalOptions
+  } else if (typeof globalOptions === 'object' && globalOptions) {
+    enabled = globalOptions.enabled ?? true
+  }
+
+  if (typeof localOptions === 'boolean') {
+    enabled = localOptions
+  } else if (typeof localOptions === 'object' && localOptions) {
+    enabled = localOptions.enabled ?? true
+  }
+
+  if (!enabled) {
+    return undefined
+  }
+
+  return {
+    depth: 0,
+    label: mergedOptions.label,
+    logger: mergedOptions.logger ?? defaultConditionDebugLogger,
+  }
+}
+
+function createChildDebugState(state: ConditionDebugState | undefined): ConditionDebugState | undefined {
+  if (!state) {
+    return undefined
+  }
+
+  return {
+    ...state,
+    depth: state.depth + 1,
+  }
+}
+
+function logConditionDebug(state: ConditionDebugState | undefined, message: string, context?: Record<string, unknown>) {
+  if (!state) {
+    return
+  }
+
+  const indent = '  '.repeat(state.depth)
+  const prefix = state.label
+    ? `[smartlinks:conditions:${state.label}]`
+    : '[smartlinks:conditions]'
+
+  if (context) {
+    state.logger(`${prefix} ${indent}${message}`, context)
+    return
+  }
+
+  state.logger(`${prefix} ${indent}${message}`)
+}
+
+function summarizeConditionSet(condition: ConditionSet): string {
+  return `${condition.type ?? 'and'} (${condition.conditions?.length ?? 0} conditions)`
+}
+
+function summarizeCondition(condition: Condition): string {
+  switch (condition.type) {
+    case 'country':
+      return `country regions=${condition.regions?.join(',') || 'none'} countries=${condition.countries?.join(',') || 'none'} contains=${condition.contains}`
+    case 'version':
+      return `version [${condition.versions.join(', ')}] contains=${condition.contains}`
+    case 'device':
+      return `device [${condition.displays.join(', ')}] contains=${condition.contains}`
+    case 'condition':
+      return `condition ref=${condition.conditionId} passes=${condition.passes}`
+    case 'user':
+      return `user type=${condition.userType}`
+    case 'product':
+      return `product ids=${condition.productIds.join(', ')} contains=${condition.contains}`
+    case 'tag':
+      return `tag tags=${condition.tags.join(', ')} contains=${condition.contains}`
+    case 'date':
+      return `date test=${condition.dateTest}`
+    case 'geofence':
+      return `geofence contains=${condition.contains}`
+    case 'value':
+      return `value field=${condition.field} ${condition.validationType} ${String(condition.value)}`
+    case 'itemStatus':
+      return `itemStatus ${condition.statusType}`
+    default:
+      return 'unknown condition'
+  }
+}
+
+async function evaluateConditionEntry(condition: Condition, params: InternalConditionParams): Promise<ConditionCheckResult | undefined> {
+  switch (condition.type) {
+    case 'country':
+      return validateCountry(condition as CountryCondition, params)
+    case 'version':
+      return validateVersion(condition as VersionCondition, params)
+    case 'device':
+      return validateDevice(condition as DeviceCondition, params)
+    case 'condition':
+      return validateNestedCondition(condition as NestedCondition, params)
+    case 'user':
+      return validateUser(condition as UserCondition, params)
+    case 'product':
+      return validateProduct(condition as ProductCondition, params)
+    case 'tag':
+      return validateTag(condition as TagCondition, params)
+    case 'date':
+      return validateDate(condition as DateCondition, params)
+    case 'geofence':
+      return validateGeofence(condition as GeofenceCondition, params)
+    case 'value':
+      return validateValue(condition as ValueCondition, params)
+    case 'itemStatus':
+      return validateItemStatus(condition as ItemStatusCondition, params)
+    default:
+      return undefined
+  }
+}
 
 /**
  * Validates if a condition set passes based on the provided parameters.
@@ -292,7 +469,6 @@ const conditionCache: Record<string, ConditionSet> = {}
  *     type: 'and',
  *     conditions: [{
  *       type: 'country',
- *       useRegions: true,
  *       regions: ['eu'],
  *       contains: true
  *     }]
@@ -327,8 +503,13 @@ const conditionCache: Record<string, ConditionSet> = {}
  * ```
  */
 export async function validateCondition(params: ConditionParams): Promise<boolean> {
+  const internalParams = params as InternalConditionParams
+  internalParams.__conditionDebugState ??= resolveConditionDebugState(params)
+  const debugState = internalParams.__conditionDebugState
+
   // If no condition specified, pass by default
   if (!params.conditionId && !params.condition) {
+    logConditionDebug(debugState, 'No condition supplied; passing by default.')
     return true
   }
 
@@ -338,16 +519,22 @@ export async function validateCondition(params: ConditionParams): Promise<boolea
   if (params.conditionId) {
     // Check cache first
     if (!conditionCache[params.conditionId]) {
+      logConditionDebug(debugState, 'Condition cache miss.', { conditionId: params.conditionId })
       // Try to fetch if function provided
       if (params.fetchCondition && params.collection) {
         const fetchedCond = await params.fetchCondition(params.collection.id, params.conditionId)
         if (fetchedCond) {
           conditionCache[params.conditionId] = fetchedCond
+          logConditionDebug(debugState, 'Fetched condition into cache.', {
+            conditionId: params.conditionId,
+            conditionSet: summarizeConditionSet(fetchedCond),
+          })
         }
       }
     }
 
     if (!conditionCache[params.conditionId]) {
+      logConditionDebug(debugState, 'Condition not found; passing by default.', { conditionId: params.conditionId })
       return true
     }
 
@@ -356,296 +543,426 @@ export async function validateCondition(params: ConditionParams): Promise<boolea
     params.conditionStack.push(params.conditionId)
 
     cond = conditionCache[params.conditionId]
+  } else {
+    logConditionDebug(debugState, 'Evaluating inline condition set.', {
+      conditionSet: cond ? summarizeConditionSet(cond) : 'none',
+    })
   }
 
   if (!cond) {
+    logConditionDebug(debugState, 'Resolved condition set is empty; passing by default.')
     return true
   }
 
   // Default to AND logic
-  cond.type ??= 'and'
+  const conditionType = cond.type ?? 'and'
 
   // Empty condition set passes
   if (!cond.conditions || cond.conditions.length === 0) {
+    logConditionDebug(debugState, 'Condition set has no entries; passing by default.', {
+      conditionSet: summarizeConditionSet(cond),
+    })
     return true
   }
 
-  // Evaluate each condition
-  for (const c of cond.conditions) {
-    let result = false
+  logConditionDebug(debugState, 'Condition set start.', {
+    logic: conditionType,
+    conditionCount: cond.conditions.length,
+    conditionId: params.conditionId,
+  })
 
-    switch (c.type) {
-      case 'country':
-        result = await validateCountry(c as CountryCondition, params)
-        break
-      case 'version':
-        result = await validateVersion(c as VersionCondition, params)
-        break
-      case 'device':
-        result = await validateDevice(c as DeviceCondition, params)
-        break
-      case 'condition':
-        result = await validateNestedCondition(c as NestedCondition, params)
-        break
-      case 'user':
-        result = await validateUser(c as UserCondition, params)
-        break
-      case 'product':
-        result = await validateProduct(c as ProductCondition, params)
-        break
-      case 'tag':
-        result = await validateTag(c as TagCondition, params)
-        break
-      case 'date':
-        result = await validateDate(c as DateCondition, params)
-        break
-      case 'geofence':
-        result = await validateGeofence(c as GeofenceCondition, params)
-        break
-      case 'value':
-        result = await validateValue(c as ValueCondition, params)
-        break
-      case 'itemStatus':
-        result = await validateItemStatus(c as ItemStatusCondition, params)
-        break
-      default:
-        // Unknown condition type, skip
-        continue
+  // Evaluate each condition
+  for (const [index, c] of cond.conditions.entries()) {
+    logConditionDebug(debugState, `Condition ${index + 1}/${cond.conditions.length} start: ${summarizeCondition(c)}`)
+    const evaluation = await evaluateConditionEntry(c, internalParams)
+
+    if (!evaluation) {
+      logConditionDebug(debugState, `Condition ${index + 1} skipped: unknown type.`, { type: c.type })
+      continue
     }
 
+    logConditionDebug(debugState, `Condition ${index + 1} result: ${evaluation.passed ? 'PASS' : 'FAIL'}`, {
+      type: c.type,
+      detail: evaluation.detail,
+      ...evaluation.context,
+    })
+
     // AND logic: if any condition fails, entire set fails
-    if (!result && cond.type === 'and') {
+    if (!evaluation.passed && conditionType === 'and') {
+      logConditionDebug(debugState, 'Condition set short-circuited to FAIL (AND logic).')
       return false
     }
 
     // OR logic: if any condition passes, entire set passes
-    if (result && cond.type === 'or') {
+    if (evaluation.passed && conditionType === 'or') {
+      logConditionDebug(debugState, 'Condition set short-circuited to PASS (OR logic).')
       return true
     }
   }
 
   // AND: all passed
-  if (cond.type === 'and') {
+  if (conditionType === 'and') {
+    logConditionDebug(debugState, 'Condition set result: PASS.')
     return true
   }
 
   // OR: all failed
+  logConditionDebug(debugState, 'Condition set result: FAIL.')
   return false
 }
 
 /**
  * Validate country-based condition
  */
-async function validateCountry(condition: CountryCondition, params: ConditionParams): Promise<boolean> {
+async function validateCountry(condition: CountryCondition, params: ConditionParams): Promise<ConditionCheckResult> {
   const country = params.user?.location?.country
 
   if (!country) {
-    return false
+    return {
+      passed: false,
+      detail: 'User country was not available.',
+    }
   }
 
-  // Build country list from regions or direct country list
-  let countryList = condition.countries || []
+  // Build country list from direct countries and any configured regions.
+  const countryList = [...(condition.countries || [])]
 
-  if (condition.useRegions && condition.regions?.length) {
-    countryList = []
+  if (condition.regions?.length) {
     for (const region of condition.regions) {
       if (REGION_COUNTRIES[region]) {
         countryList.push(...REGION_COUNTRIES[region])
       }
     }
-    // Remove duplicates
-    countryList = [...new Set(countryList)]
   }
 
-  if (!countryList.length) {
-    return false
+  const normalizedCountryList = [...new Set(countryList)]
+
+  if (!normalizedCountryList.length) {
+    return {
+      passed: false,
+      detail: 'No countries or regions were configured on the condition.',
+    }
   }
 
-  const inList = countryList.includes(country)
+  const inList = normalizedCountryList.includes(country)
 
   // contains=true: pass if country IS in list
   // contains=false: pass if country is NOT in list
-  return condition.contains ? inList : !inList
+  return {
+    passed: condition.contains ? inList : !inList,
+    detail: condition.contains
+      ? `Country ${country} ${inList ? 'matched' : 'did not match'} the allowed list.`
+      : `Country ${country} ${inList ? 'matched' : 'did not match'} the blocked list.`,
+    context: {
+      country,
+      regions: condition.regions,
+      countryList: normalizedCountryList,
+      contains: condition.contains,
+    },
+  }
 }
 
 /**
  * Validate version-based condition
  */
-async function validateVersion(condition: VersionCondition, params: ConditionParams): Promise<boolean> {
+async function validateVersion(condition: VersionCondition, params: ConditionParams): Promise<ConditionCheckResult> {
   const version = params.stats?.version ?? null
   const inList = condition.versions.includes(version as string)
 
-  return condition.contains ? inList : !inList
+  return {
+    passed: condition.contains ? inList : !inList,
+    detail: `Version ${version ?? 'null'} ${inList ? 'matched' : 'did not match'} the configured list.`,
+    context: {
+      version,
+      versions: condition.versions,
+      contains: condition.contains,
+    },
+  }
 }
 
 /**
  * Validate device/platform condition
  */
-async function validateDevice(condition: DeviceCondition, params: ConditionParams): Promise<boolean> {
+async function validateDevice(condition: DeviceCondition, params: ConditionParams): Promise<ConditionCheckResult> {
   const displays = condition.displays
   const platform = params.stats?.platform
   const mobile = params.stats?.mobile
 
   for (const display of displays) {
     if (display === 'android' && platform?.android) {
-      return condition.contains
+      return {
+        passed: condition.contains,
+        detail: 'Matched android platform.',
+        context: { matchedDisplay: display, contains: condition.contains, platform, mobile },
+      }
     }
     if (display === 'ios' && platform?.ios) {
-      return condition.contains
+      return {
+        passed: condition.contains,
+        detail: 'Matched ios platform.',
+        context: { matchedDisplay: display, contains: condition.contains, platform, mobile },
+      }
     }
     if (display === 'win' && platform?.win) {
-      return condition.contains
+      return {
+        passed: condition.contains,
+        detail: 'Matched win platform.',
+        context: { matchedDisplay: display, contains: condition.contains, platform, mobile },
+      }
     }
     if (display === 'mac' && platform?.mac) {
-      return condition.contains
+      return {
+        passed: condition.contains,
+        detail: 'Matched mac platform.',
+        context: { matchedDisplay: display, contains: condition.contains, platform, mobile },
+      }
     }
     if (display === 'desktop' && !mobile) {
-      return condition.contains
+      return {
+        passed: condition.contains,
+        detail: 'Matched desktop device mode.',
+        context: { matchedDisplay: display, contains: condition.contains, platform, mobile },
+      }
     }
     if (display === 'mobile' && mobile) {
-      return condition.contains
+      return {
+        passed: condition.contains,
+        detail: 'Matched mobile device mode.',
+        context: { matchedDisplay: display, contains: condition.contains, platform, mobile },
+      }
     }
   }
 
-  return !condition.contains
+  return {
+    passed: !condition.contains,
+    detail: 'No configured display matched the current platform/device.',
+    context: { displays, contains: condition.contains, platform, mobile },
+  }
 }
 
 /**
  * Validate nested condition reference
  */
-async function validateNestedCondition(condition: NestedCondition, params: ConditionParams): Promise<boolean> {
-  const newParams = { ...params }
+async function validateNestedCondition(condition: NestedCondition, params: InternalConditionParams): Promise<ConditionCheckResult> {
+  const newParams: InternalConditionParams = { ...params }
   newParams.conditionId = condition.conditionId
+  newParams.__conditionDebugState = createChildDebugState(params.__conditionDebugState)
 
   // Prevent infinite recursion
   newParams.conditionStack = [...(newParams.conditionStack || [])]
   if (newParams.conditionStack.includes(condition.conditionId)) {
-    return true
+    return {
+      passed: true,
+      detail: `Nested condition ${condition.conditionId} skipped to avoid recursion.`,
+      context: { conditionId: condition.conditionId, conditionStack: newParams.conditionStack },
+    }
   }
 
   const result = await validateCondition(newParams)
-  return condition.passes ? result : !result
+  return {
+    passed: condition.passes ? result : !result,
+    detail: `Nested condition ${condition.conditionId} ${result ? 'passed' : 'failed'} and passes=${condition.passes}.`,
+    context: { conditionId: condition.conditionId, nestedResult: result, passes: condition.passes },
+  }
 }
 
 /**
  * Validate user-based condition
  */
-async function validateUser(condition: UserCondition, params: ConditionParams): Promise<boolean> {
+async function validateUser(condition: UserCondition, params: ConditionParams): Promise<ConditionCheckResult> {
   const userType = condition.userType
 
   switch (userType) {
     case 'valid':
       // User is logged in
-      return params.user?.valid ?? false
+      return {
+        passed: params.user?.valid ?? false,
+        detail: `User valid flag is ${params.user?.valid ?? false}.`,
+      }
 
     case 'invalid':
       // User is not logged in
-      return !(params.user?.valid ?? false)
+      return {
+        passed: !(params.user?.valid ?? false),
+        detail: `User valid flag is ${params.user?.valid ?? false}.`,
+      }
 
     case 'owner':
       // User owns the proof
-      return !!(
+      return {
+        passed: !!(
         params.proof &&
         params.user?.valid &&
         params.user.uid &&
         params.user.uid === params.proof.userId
-      )
+        ),
+        detail: 'Owner check compares user.uid with proof.userId.',
+        context: {
+          userId: params.user?.uid,
+          proofUserId: params.proof?.userId,
+          userValid: params.user?.valid ?? false,
+        },
+      }
 
     case 'admin':
       // User is admin of the collection
-      return !!(
+      return {
+        passed: !!(
         params.collection &&
         params.user?.valid &&
         params.user.uid &&
         params.collection.roles &&
         params.collection.roles[params.user.uid]
-      )
+        ),
+        detail: 'Admin check looks for a role entry on collection.roles.',
+        context: {
+          userId: params.user?.uid,
+          userValid: params.user?.valid ?? false,
+          hasRoles: !!params.collection?.roles,
+        },
+      }
 
     case 'group':
       // User is member of specific group
       // TODO: Implement group membership check
-      return !!(
+      return {
+        passed: !!(
         params.collection &&
         params.user?.valid &&
         params.user.groups
-      )
+        ),
+        detail: 'Group condition currently checks only that groups are present on the user.',
+        context: {
+          groupId: condition.groupId,
+          groups: params.user?.groups,
+          userValid: params.user?.valid ?? false,
+        },
+      }
 
     default:
-      return true
+      return {
+        passed: true,
+        detail: `Unknown userType ${userType}; passing by default.`,
+      }
   }
 }
 
 /**
  * Validate product-based condition
  */
-async function validateProduct(condition: ProductCondition, params: ConditionParams): Promise<boolean> {
+async function validateProduct(condition: ProductCondition, params: ConditionParams): Promise<ConditionCheckResult> {
   const productId = params.product?.id
 
   // No product ID available
   if (!productId) {
-    return !condition.contains
+    return {
+      passed: !condition.contains,
+      detail: 'Product ID was not available.',
+      context: { contains: condition.contains, productIds: condition.productIds },
+    }
   }
 
   const inList = condition.productIds.includes(productId)
-  return condition.contains ? inList : !inList
+  return {
+    passed: condition.contains ? inList : !inList,
+    detail: `Product ${productId} ${inList ? 'matched' : 'did not match'} the configured list.`,
+    context: { productId, productIds: condition.productIds, contains: condition.contains },
+  }
 }
 
 /**
  * Validate tag-based condition
  */
-async function validateTag(condition: TagCondition, params: ConditionParams): Promise<boolean> {
+async function validateTag(condition: TagCondition, params: ConditionParams): Promise<ConditionCheckResult> {
   const productId = params.product?.id
 
   // No product
   if (!productId) {
-    return !condition.contains
+    return {
+      passed: !condition.contains,
+      detail: 'Product ID was not available.',
+      context: { contains: condition.contains, tags: condition.tags },
+    }
   }
 
   // No tags on product
   if (!params.product?.tags) {
-    return !condition.contains
+    return {
+      passed: !condition.contains,
+      detail: 'Product tags were not available.',
+      context: { productId, contains: condition.contains, tags: condition.tags },
+    }
   }
 
   // Check if any condition tag exists on product
   for (const tag of condition.tags) {
     if (params.product.tags[tag]) {
-      return condition.contains
+      return {
+        passed: condition.contains,
+        detail: `Product ${productId} matched tag ${tag}.`,
+        context: { productId, matchedTag: tag, contains: condition.contains },
+      }
     }
   }
 
-  return !condition.contains
+  return {
+    passed: !condition.contains,
+    detail: `Product ${productId} did not match any configured tag.`,
+    context: { productId, tags: condition.tags, contains: condition.contains },
+  }
 }
 
 /**
  * Validate date-based condition
  */
-async function validateDate(condition: DateCondition, params: ConditionParams): Promise<boolean> {
+async function validateDate(condition: DateCondition, params: ConditionParams): Promise<ConditionCheckResult> {
   const now = Date.now()
 
   switch (condition.dateTest) {
     case 'before':
-      if (!condition.beforeDate) return false
-      return now < Date.parse(condition.beforeDate)
+      if (!condition.beforeDate) {
+        return { passed: false, detail: 'beforeDate was not provided.' }
+      }
+      return {
+        passed: now < Date.parse(condition.beforeDate),
+        detail: `Current time is ${now < Date.parse(condition.beforeDate) ? 'before' : 'not before'} ${condition.beforeDate}.`,
+        context: { now, beforeDate: condition.beforeDate },
+      }
 
     case 'after':
-      if (!condition.afterDate) return false
-      return now > Date.parse(condition.afterDate)
+      if (!condition.afterDate) {
+        return { passed: false, detail: 'afterDate was not provided.' }
+      }
+      return {
+        passed: now > Date.parse(condition.afterDate),
+        detail: `Current time is ${now > Date.parse(condition.afterDate) ? 'after' : 'not after'} ${condition.afterDate}.`,
+        context: { now, afterDate: condition.afterDate },
+      }
 
     case 'between':
-      if (!condition.rangeDate || condition.rangeDate.length !== 2) return false
+      if (!condition.rangeDate || condition.rangeDate.length !== 2) {
+        return { passed: false, detail: 'rangeDate must contain exactly two entries.' }
+      }
       const start = Date.parse(condition.rangeDate[0])
       const end = Date.parse(condition.rangeDate[1])
-      return now > start && now < end
+      return {
+        passed: now > start && now < end,
+        detail: `Current time is ${now > start && now < end ? 'within' : 'outside'} the configured date range.`,
+        context: { now, start, end, rangeDate: condition.rangeDate },
+      }
 
     default:
-      return false
+      return {
+        passed: false,
+        detail: `Unsupported dateTest ${condition.dateTest}.`,
+      }
   }
 }
 
 /**
  * Validate geofence-based condition
  */
-async function validateGeofence(condition: GeofenceCondition, params: ConditionParams): Promise<boolean> {
+async function validateGeofence(condition: GeofenceCondition, params: ConditionParams): Promise<ConditionCheckResult> {
   let lat: number | undefined
   let lng: number | undefined
 
@@ -662,12 +979,19 @@ async function validateGeofence(condition: GeofenceCondition, params: ConditionP
       lat = location.latitude
       lng = location.longitude
     } catch (error) {
-      return false
+      return {
+        passed: false,
+        detail: 'getLocation threw while resolving user coordinates.',
+        context: { error },
+      }
     }
   }
 
   if (lat === undefined || lng === undefined) {
-    return false
+    return {
+      passed: false,
+      detail: 'Latitude/longitude were not available.',
+    }
   }
 
   // Check if outside bounding box
@@ -677,13 +1001,27 @@ async function validateGeofence(condition: GeofenceCondition, params: ConditionP
     lng < condition.left ||
     lng > condition.right
 
-  return condition.contains ? !outside : outside
+  return {
+    passed: condition.contains ? !outside : outside,
+    detail: `Coordinates are ${outside ? 'outside' : 'inside'} the configured geofence.`,
+    context: {
+      latitude: lat,
+      longitude: lng,
+      contains: condition.contains,
+      bounds: {
+        top: condition.top,
+        bottom: condition.bottom,
+        left: condition.left,
+        right: condition.right,
+      },
+    },
+  }
 }
 
 /**
  * Validate value comparison condition
  */
-async function validateValue(condition: ValueCondition, params: ConditionParams): Promise<boolean> {
+async function validateValue(condition: ValueCondition, params: ConditionParams): Promise<ConditionCheckResult> {
   // Navigate to field value using dot notation
   const fieldPath = condition.field.split('.')
   let base: any = params
@@ -692,7 +1030,10 @@ async function validateValue(condition: ValueCondition, params: ConditionParams)
     if (base && typeof base === 'object' && field in base && typeof base[field] !== 'undefined') {
       base = base[field]
     } else {
-      return false
+      return {
+        passed: false,
+        detail: `Field ${condition.field} was not found in the provided params.`,
+      }
     }
   }
 
@@ -706,45 +1047,86 @@ async function validateValue(condition: ValueCondition, params: ConditionParams)
   }
 
   // Perform comparison
+  let passed = false
   switch (condition.validationType) {
     case 'equal':
-      return base == val
+      passed = base == val
+      break
     case 'not':
-      return base != val
+      passed = base != val
+      break
     case 'greater':
-      return base > val
+      passed = base > val
+      break
     case 'less':
-      return base < val
+      passed = base < val
+      break
     default:
-      return false
+      return {
+        passed: false,
+        detail: `Unsupported validationType ${condition.validationType}.`,
+      }
+  }
+
+  return {
+    passed,
+    detail: `Compared field ${condition.field} (${String(base)}) with ${String(val)} using ${condition.validationType}.`,
+    context: {
+      field: condition.field,
+      fieldValue: base,
+      comparisonValue: val,
+      fieldType: condition.fieldType,
+      validationType: condition.validationType,
+    },
   }
 }
 
 /**
  * Validate item status condition
  */
-async function validateItemStatus(condition: ItemStatusCondition, params: ConditionParams): Promise<boolean> {
+async function validateItemStatus(condition: ItemStatusCondition, params: ConditionParams): Promise<ConditionCheckResult> {
   switch (condition.statusType) {
     case 'isClaimable':
-      return !!(params.proof && params.proof.claimable)
+      return {
+        passed: !!(params.proof && params.proof.claimable),
+        detail: 'Checked proof.claimable for truthiness.',
+      }
 
     case 'notClaimable':
-      return !!(params.proof && !params.proof.claimable)
+      return {
+        passed: !!(params.proof && !params.proof.claimable),
+        detail: 'Checked proof.claimable for falsiness.',
+      }
 
     case 'noProof':
-      return !params.proof
+      return {
+        passed: !params.proof,
+        detail: 'Checked that no proof object was provided.',
+      }
 
     case 'hasProof':
-      return !!params.proof
+      return {
+        passed: !!params.proof,
+        detail: 'Checked that a proof object was provided.',
+      }
 
     case 'isVirtual':
-      return !!(params.proof && params.proof.virtual)
+      return {
+        passed: !!(params.proof && params.proof.virtual),
+        detail: 'Checked proof.virtual for truthiness.',
+      }
 
     case 'notVirtual':
-      return !!(params.proof && !params.proof.virtual)
+      return {
+        passed: !!(params.proof && !params.proof.virtual),
+        detail: 'Checked proof.virtual for falsiness.',
+      }
 
     default:
-      return false
+      return {
+        passed: false,
+        detail: `Unsupported statusType ${condition.statusType}.`,
+      }
   }
 }
 

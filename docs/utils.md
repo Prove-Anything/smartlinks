@@ -280,6 +280,8 @@ const path = utils.buildPortalPath(params)
 
 The `validateCondition` function helps determine if content should be shown or hidden based on various criteria like geography, device type, user status, dates, and more.
 
+Enable verbose tracing per invocation with `debugConditions`, or set `globalThis.SMARTLINKS_CONDITION_DEBUG = true` in a browser/devtools session to trace every evaluation.
+
 ### Basic Usage
 
 ```typescript
@@ -291,7 +293,6 @@ const canShow = await utils.validateCondition({
     type: 'and',
     conditions: [{
       type: 'country',
-      useRegions: true,
       regions: ['eu'],
       contains: true
     }]
@@ -328,12 +329,25 @@ await utils.validateCondition({
     type: 'and',
     conditions: [{
       type: 'country',
-      useRegions: true,
       regions: ['eu', 'uk'],
       contains: true  // true = show IN these regions, false = hide IN these regions
     }]
   },
   user: { valid: true, location: { country: 'FR' } }
+})
+
+// Regions and explicit countries can be combined
+await utils.validateCondition({
+  condition: {
+    type: 'and',
+    conditions: [{
+      type: 'country',
+      regions: ['eu'],
+      countries: ['CH'],
+      contains: true
+    }]
+  },
+  user: { valid: true, location: { country: 'CH' } }
 })
 
 // Or specific countries
@@ -582,7 +596,7 @@ await utils.validateCondition({
     conditions: [
       { type: 'user', userType: 'valid' },
       { type: 'device', displays: ['mobile'], contains: true },
-      { type: 'country', useRegions: true, regions: ['eu'], contains: true }
+      { type: 'country', regions: ['eu'], contains: true }
     ]
   },
   user: { valid: true, location: { country: 'FR' } },
@@ -630,12 +644,49 @@ const showNewFeature = await utils.validateCondition({
   condition: {
     type: 'and',
     conditions: [
-      { type: 'country', useRegions: true, regions: ['northamerica'], contains: true },
+      { type: 'country', regions: ['northamerica'], contains: true },
       { type: 'date', dateTest: 'after', afterDate: '2026-03-01' }
     ]
   },
   user: { valid: true, location: { country: 'US' } }
 })
+
+### Debug Logging
+
+Trace which condition is being evaluated, whether it passed, and why:
+
+```typescript
+await utils.validateCondition({
+  condition: {
+    type: 'and',
+    conditions: [
+      { type: 'user', userType: 'valid' },
+      { type: 'country', regions: ['eu'], contains: true }
+    ]
+  },
+  user: { valid: true, location: { country: 'DE' } },
+  debugConditions: true
+})
+
+// Or enable globally in the browser console/devtools
+globalThis.SMARTLINKS_CONDITION_DEBUG = true
+```
+
+If you want to route logs somewhere specific, pass a logger:
+
+```typescript
+await utils.validateCondition({
+  condition: {
+    type: 'and',
+    conditions: [{ type: 'user', userType: 'valid' }]
+  },
+  user: { valid: true },
+  debugConditions: {
+    label: 'checkout-gate',
+    logger: (...args) => console.log(...args)
+  }
+})
+```
 ```
 
 #### Mobile-Only Features

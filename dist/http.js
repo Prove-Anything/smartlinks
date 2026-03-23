@@ -83,7 +83,7 @@ const CACHE_TTL_RULES = [
     { pattern: /\/proof\/[^/]*(\?.*)?$/i, ttlMs: 30000 },
     { pattern: /\/attestation\/[^/]*(\?.*)?$/i, ttlMs: 2 * 60000 },
     // Slow-changing top-level resources — long TTLs, matched only when path ends at the ID
-    { pattern: /\/product\/[^/]*(\?.*)?$/i, ttlMs: 60 * 60000 },
+    { pattern: /\/products?\/[^/]*(\?.*)?$/i, ttlMs: 60 * 60000 },
     { pattern: /\/variant\/[^/]*(\?.*)?$/i, ttlMs: 60 * 60000 },
     { pattern: /\/collection\/[^/]*(\?.*)?$/i, ttlMs: 60 * 60000 }, // 1 hour
 ];
@@ -507,7 +507,8 @@ export function configureSdkCache(options) {
  * ```ts
  * invalidateCache()                     // clear everything
  * invalidateCache('/collection/abc123') // one specific collection
- * invalidateCache('/product/')          // all product responses
+ * invalidateCache('/product/')          // all legacy singular product responses
+ * invalidateCache('/products/')         // all canonical plural product responses
  * ```
  */
 export function invalidateCache(urlPattern) {

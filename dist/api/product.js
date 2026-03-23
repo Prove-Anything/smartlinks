@@ -3,6 +3,7 @@ import { request, post, put, del } from "../http";
 export var product;
 (function (product) {
     /**
+    * @deprecated Use `products.get(...)`.
      * Retrieves a single Product Item by Collection ID and Product ID.
      * @param collectionId – Identifier of the parent collection
      * @param productId    – Identifier of the product item
@@ -17,6 +18,7 @@ export var product;
     }
     product.get = get;
     /**
+     * @deprecated Use `products.list(...)`.
      * List all Product Items for a Collection.
      * @param collectionId – Identifier of the parent collection
      * @param admin        – If true, use admin endpoint; otherwise, use public
@@ -30,6 +32,7 @@ export var product;
     }
     product.list = list;
     /**
+     * @deprecated Use `products.create(...)`.
      * Create a new product for a collection (admin only).
      * The `data` payload follows the same shape as ProductResponse minus `id` and `collectionId`.
      *
@@ -45,7 +48,6 @@ export var product;
      *   name: 'Wine Bottle',
      *   description: 'Premium red wine',
      *   heroImage: 'https://example.com/wine.jpg', // Auto-fetched!
-     *   tags: {},
      *   data: {}
      * });
      * ```
@@ -61,6 +63,7 @@ export var product;
     }
     product.create = create;
     /**
+     * @deprecated Use `products.update(...)`.
      * Update a product for a collection (admin only).
      * The `data` payload is a partial of ProductResponse minus `id` and `collectionId`.
      *
@@ -89,6 +92,7 @@ export var product;
     }
     product.update = update;
     /**
+     * @deprecated Use `products.remove(...)`.
      * Delete a product for a collection (admin only).
      * @param collectionId – Identifier of the parent collection
      * @param productId – Identifier of the product
@@ -101,6 +105,79 @@ export var product;
     }
     product.remove = remove;
     /**
+     * @deprecated Legacy compatibility endpoint only. Use `products.query(...)` for new integrations.
+     */
+    async function find(collectionId, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/find`;
+        return post(path, body);
+    }
+    product.find = find;
+    /**
+     * @deprecated Legacy compatibility endpoint only. Use `products.get(...)` when the product id is known.
+     */
+    async function publicFind(collectionId, params) {
+        const searchParams = new URLSearchParams();
+        if (params) {
+            for (const [key, value] of Object.entries(params)) {
+                if (value === undefined || value === null)
+                    continue;
+                if (Array.isArray(value)) {
+                    for (const item of value)
+                        searchParams.append(key, String(item));
+                }
+                else {
+                    searchParams.set(key, String(value));
+                }
+            }
+        }
+        const query = searchParams.toString();
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/product/find${query ? `?${query}` : ''}`;
+        return request(path);
+    }
+    product.publicFind = publicFind;
+    /**
+     * @deprecated Use `products.clone(...)`.
+     */
+    async function clone(collectionId, productId, body = {}) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/clone`;
+        return post(path, body);
+    }
+    product.clone = clone;
+    /**
+     * @deprecated Use `products.listAssets(...)`.
+     */
+    async function listAssets(collectionId, productId, admin) {
+        const base = admin ? '/admin' : '/public';
+        const path = `${base}/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/asset`;
+        return request(path);
+    }
+    product.listAssets = listAssets;
+    /**
+     * @deprecated Use `products.createClaimWindow(...)`.
+     */
+    async function createClaimWindow(collectionId, productId, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/claimWindow`;
+        return post(path, body);
+    }
+    product.createClaimWindow = createClaimWindow;
+    /**
+     * @deprecated Use `products.updateClaimWindow(...)`.
+     */
+    async function updateClaimWindow(collectionId, productId, claimId, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/claimWindow/${encodeURIComponent(claimId)}`;
+        return put(path, body);
+    }
+    product.updateClaimWindow = updateClaimWindow;
+    /**
+     * @deprecated Use `products.refresh(...)`.
+     */
+    async function refresh(collectionId, productId) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/refresh`;
+        return request(path);
+    }
+    product.refresh = refresh;
+    /**
+     * @deprecated Use `products.getSN(...)`.
      * Get serial numbers for a product (admin only).
      * @param collectionId - Identifier of the parent collection
      * @param productId - Identifier of the product
@@ -119,6 +196,7 @@ export var product;
     }
     product.getSN = getSN;
     /**
+     * @deprecated Use `products.lookupSN(...)`.
      * Look up a serial number by code for a product (admin only).
      * @param collectionId - Identifier of the parent collection
      * @param productId - Identifier of the product
@@ -131,4 +209,20 @@ export var product;
         return request(path);
     }
     product.lookupSN = lookupSN;
+    /**
+     * @deprecated Use `products.publicLookupClaim(...)`.
+     */
+    async function publicLookupClaim(collectionId, productId, claimId) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/lookupClaim/${encodeURIComponent(claimId)}`;
+        return request(path);
+    }
+    product.publicLookupClaim = publicLookupClaim;
+    /**
+     * @deprecated Use `products.publicCreateClaim(...)`.
+     */
+    async function publicCreateClaim(collectionId, productId, body) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/createClaim`;
+        return post(path, body);
+    }
+    product.publicCreateClaim = publicCreateClaim;
 })(product || (product = {}));

@@ -593,7 +593,7 @@ export class IframeResponder {
         }
         // Product request - ONLY match direct product endpoint, not app config endpoints
         if (this.cache.product && this.options.productId) {
-            const productMatch = path.match(/^public\/collection\/[^/]+\/product\/([^/]+)$/);
+            const productMatch = path.match(/^public\/collection\/[^/]+\/products?\/([^/]+)$/);
             if (productMatch && productMatch[1] === this.options.productId) {
                 return JSON.parse(JSON.stringify(this.cache.product));
             }

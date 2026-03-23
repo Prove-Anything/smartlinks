@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.8.12  |  Generated: 2026-03-22T11:27:19.142Z
+Version: 1.9.3  |  Generated: 2026-03-23T18:12:23.239Z
 
 This is a concise summary of all available API functions and types.
 
@@ -101,10 +101,12 @@ The Smartlinks SDK is organized into the following namespaces:
 - **attestation** - Functions for attestation operations
 - **attestations** - Functions for attestations operations
 - **containers** - Functions for containers operations
+- **facets** - Functions for facets operations
 - **jobs** - Functions for jobs operations
 - **journeysAnalytics** - Functions for journeysAnalytics operations
 - **location** - Functions for location operations
 - **order** - Functions for order operations
+- **products** - Functions for products operations
 - **realtime** - Functions for realtime operations
 - **tags** - Functions for tags operations
 - **template** - Functions for template operations
@@ -161,7 +163,7 @@ Returns true if the SDK currently has any auth credential set (bearer token or A
 Configure the SDK's built-in in-memory GET cache. The cache is transparent — it sits inside the HTTP layer and requires no changes to your existing API calls. All GET requests benefit automatically. Per-resource rules (collections/products → 1 h, proofs → 30 s, etc.) override this value. in-memory only (`'none'`, default). Ignored in Node.js. fallback, from the original fetch time (default: 7 days). `SmartlinksOfflineError` with stale data instead of propagating the network error. caches on page load/refresh. IndexedDB persists for offline. ```ts // Enable IndexedDB persistence for offline support configureSdkCache({ persistence: 'indexeddb' }) // Disable cache entirely in test environments configureSdkCache({ enabled: false }) // Keep caches across page refreshes (not recommended for production) configureSdkCache({ clearOnPageLoad: false }) ```
 
 **invalidateCache**(urlPattern?: string) → `void`
-Manually invalidate entries in the SDK's GET cache. *contains* this string is removed. Omit (or pass `undefined`) to wipe the entire cache. ```ts invalidateCache()                     // clear everything invalidateCache('/collection/abc123') // one specific collection invalidateCache('/product/')          // all product responses ```
+Manually invalidate entries in the SDK's GET cache. *contains* this string is removed. Omit (or pass `undefined`) to wipe the entire cache. ```ts invalidateCache()                     // clear everything invalidateCache('/collection/abc123') // one specific collection invalidateCache('/product/')          // all legacy singular product responses invalidateCache('/products/')         // all canonical plural product responses ```
 
 **proxyUploadFormData**(path: string,
   formData: FormData,
@@ -4175,6 +4177,194 @@ interface ErrorResponse {
 }
 ```
 
+### facets
+
+**FacetDefinition** (interface)
+```typescript
+interface FacetDefinition {
+  id?: string
+  orgId?: string
+  collectionId?: string | null
+  key: string
+  name: string
+  description?: string | null
+  cardinality?: "single" | "multi"
+  kind?: "system" | "custom"
+  hierarchical?: boolean
+  reserved?: boolean
+  enabled?: boolean
+  sortOrder?: number | null
+  config?: Record<string, JsonValue>
+  createdAt?: string
+  updatedAt?: string
+  deletedAt?: string | null
+  values?: FacetValue[]
+}
+```
+
+**FacetValue** (interface)
+```typescript
+interface FacetValue {
+  id?: string
+  orgId?: string
+  collectionId?: string | null
+  facetDefinitionId?: string
+  facetKey: string
+  key: string
+  slug?: string | null
+  name: string
+  shortName?: string | null
+  description?: string | null
+  color?: string | null
+  icon?: string | null
+  image?: Record<string, JsonValue> | null
+  metadata?: Record<string, JsonValue>
+  sortOrder?: number | null
+  parentValueId?: string | null
+  parentValueKey?: string | null
+  enabled?: boolean
+  createdAt?: string
+  updatedAt?: string
+  deletedAt?: string | null
+  count?: number
+}
+```
+
+**FacetDefinitionWriteInput** (interface)
+```typescript
+interface FacetDefinitionWriteInput {
+  key?: string
+  name: string
+  description?: string | null
+  cardinality?: "single" | "multi"
+  kind?: "system" | "custom"
+  hierarchical?: boolean
+  reserved?: boolean
+  enabled?: boolean
+  sortOrder?: number | null
+  config?: Record<string, JsonValue>
+}
+```
+
+**FacetValueWriteInput** (interface)
+```typescript
+interface FacetValueWriteInput {
+  key?: string
+  slug?: string | null
+  name: string
+  shortName?: string | null
+  description?: string | null
+  color?: string | null
+  icon?: string | null
+  image?: Record<string, JsonValue> | null
+  metadata?: Record<string, JsonValue>
+  sortOrder?: number | null
+  parentValueKey?: string | null
+  enabled?: boolean
+}
+```
+
+**FacetListResponse** (interface)
+```typescript
+interface FacetListResponse {
+  items: FacetDefinition[]
+}
+```
+
+**FacetValueListResponse** (interface)
+```typescript
+interface FacetValueListResponse {
+  facet: FacetDefinition
+  items: FacetValue[]
+}
+```
+
+**FacetValueResponse** (interface)
+```typescript
+interface FacetValueResponse {
+  facet: FacetDefinition
+  item: FacetValue
+}
+```
+
+**FacetQueryRequest** (interface)
+```typescript
+interface FacetQueryRequest {
+  facetKeys?: string[]
+  includeEmpty?: boolean
+  includeDeleted?: boolean
+  query?: ProductQueryRequest["query"] & {
+  facetEquals?: Record<string, JsonValue | JsonValue[]>
+  }
+}
+```
+
+**FacetBucket** (interface)
+```typescript
+interface FacetBucket {
+  facetKey: string
+  valueKey: string
+  name?: string
+  count: number
+}
+```
+
+**FacetQueryResponse** (interface)
+```typescript
+interface FacetQueryResponse {
+  items: Array<{
+  facet: FacetDefinition
+  values: FacetValue[]
+  }>
+  buckets: FacetBucket[]
+  meta?: {
+  source?: "postgres"
+  matchedProducts?: number
+  }
+}
+```
+
+**FacetListParams** (interface)
+```typescript
+interface FacetListParams {
+  includeValues?: boolean
+  includeDeleted?: boolean
+  kind?: "system" | "custom"
+  reserved?: boolean
+}
+```
+
+**PublicFacetListParams** (interface)
+```typescript
+interface PublicFacetListParams {
+  includeValues?: boolean
+}
+```
+
+**FacetGetParams** (interface)
+```typescript
+interface FacetGetParams {
+  includeValues?: boolean
+  includeDeleted?: boolean
+}
+```
+
+**FacetValueListParams** (interface)
+```typescript
+interface FacetValueListParams {
+  includeDeleted?: boolean
+}
+```
+
+**FacetValueGetParams** (interface)
+```typescript
+interface FacetValueGetParams {
+  includeDeleted?: boolean
+}
+```
+
+**FacetValueDefinition** = `FacetValue`
+
 ### iframeResponder
 
 **CachedData** (interface)
@@ -5578,46 +5768,167 @@ interface CollectionSummaryResponse {
 
 ### product
 
-**Product** (interface)
+**ProductKey** (interface)
 ```typescript
-interface Product {
-  id: string
-  name: string
+interface ProductKey {
   collectionId: string
-  description: string
-  gtin?: string
+  id: string
+}
+```
+
+**ProductImageThumbnails** (interface)
+```typescript
+interface ProductImageThumbnails {
+  x100?: string
+  x200?: string
+  x512?: string
+}
+```
+
+**ProductImage** (interface)
+```typescript
+interface ProductImage {
+  id?: string
+  collectionId?: string
+  productId?: string
+  site?: string
+  name?: string
+  cleanName?: string
+  assetType?: string
   type?: string
-  * Hero image asset object.
-  * When creating/updating, you can pass either:
-  * - A full asset object with url and thumbnails
-  * - A string URL - the system will automatically fetch and store the image
-  heroImage: {
+  url?: string
+  thumbnails?: ProductImageThumbnails
+  contentType?: string
+  size?: string | number
+  hash?: string
+  createdAt?: ISODateString | null
+  updatedAt?: ISODateString | null
+  deletedAt?: ISODateString | null
+}
+```
+
+**ProductImageUrlInput** (interface)
+```typescript
+interface ProductImageUrlInput {
   url: string
-  thumbnails: {
-  x100: string
-  x200: string
-  x512: string
+}
+```
+
+**AdditionalGtin** (interface)
+```typescript
+interface AdditionalGtin {
+  gtin: string
+  owner?: boolean | null
+}
+```
+
+**ProductFacetValue** (interface)
+```typescript
+interface ProductFacetValue {
+  id?: string
+  key: string
+  slug?: string
+  name: string
+  shortName?: string
+  description?: string
+  color?: string
+  icon?: string
+}
+```
+
+**ProductFacetMap** (interface)
+```typescript
+interface ProductFacetMap {
+  [facetKey: string]: ProductFacetValue[]
+}
+```
+
+**ProductQueryRequest** (interface)
+```typescript
+interface ProductQueryRequest {
+  query?: {
+  search?: string
+  status?: string[]
+  productIds?: string[]
+  sku?: string
+  gtin?: string
+  updatedAfter?: ISODateString
+  updatedBefore?: ISODateString
+  createdAfter?: ISODateString
+  createdBefore?: ISODateString
+  facetEquals?: Record<string, JsonValue>
   }
+  sort?: Array<{
+  field: string
+  direction: 'asc' | 'desc'
+  }>
+  page?: {
+  limit?: number
+  offset?: number
+  cursor?: string | null
   }
-  tags: {
-  [tagName: string]: boolean
-  } // Flexible map of tags with true/false values
-  data: {
-  [key: string]: any
-  } // Flexible key/value data map
-  admin?: {
-  allowAutoGenerateClaims?: boolean
-  lastSerialId?: number
-  [key: string]: any
+  includeDeleted?: boolean
+}
+```
+
+**ProductWriteInput** (interface)
+```typescript
+interface ProductWriteInput {
+  id?: string
+  name: string
+  description?: string | null
+  gtin?: string | null
+  ownGtin?: boolean | null
+  additionalGtins?: AdditionalGtin[]
+  sku?: string | null
+  label?: string | null
+  status?: string | null
+  sortOrder?: number | null
+  heroImage?: ProductImage | ProductImageUrlInput | string | null
+  facets?: ProductFacetMap
+  data?: Record<string, JsonValue>
+  admin?: Record<string, JsonValue>
+  extra?: Record<string, JsonValue>
+  validCollections?: string[]
+}
+```
+
+**ProductQueryResponse** (interface)
+```typescript
+interface ProductQueryResponse {
+  items: Product[]
+  page?: {
+  limit?: number
+  offset?: number
+  returned?: number
+  total?: number
+  hasMore?: boolean
+  nextCursor?: string | null
+  }
+  meta?: {
+  apiVersion?: 'v1'
+  mode?: 'canonical-products' | 'legacy-product-compatibility'
+  source?: 'postgres' | 'firestore' | 'compatibility-layer'
+  queryMode?: 'canonical' | 'compatibility'
+  unsupportedFilters?: string[]
+  supportedSortFields?: string[]
   }
 }
 ```
 
+**JsonPrimitive** = `string | number | boolean | null`
+
+**JsonValue** = ``
+
+**ISODateString** = `string`
+
+**ProductClaimCreateRequestBody** = `Omit<ProductClaimCreateInput, 'collectionId' | 'id'>`
+
 **ProductResponse** = `Product`
 
-**ProductCreateRequest** = `Omit<Product, 'id' | 'collectionId'> & {`
+**ProductCreateRequest** = `ProductWriteInput`
 
-**ProductUpdateRequest** = `Partial<Omit<Product, 'id' | 'collectionId'>> & {`
+**ProductUpdateRequest** = `Partial<Omit<ProductWriteInput, 'id'>>`
 
 ### proof
 
@@ -7083,6 +7394,67 @@ Update a crate for a collection (admin only). ```typescript const updated = awai
     crateId: string) → `Promise<DeleteCrateResponse>`
 Delete a crate for a collection (admin only). This performs a soft delete. ```typescript await crate.remove('coll_123', 'crate_abc123') ```
 
+### facets
+
+**list**(collectionId: string,
+    params?: FacetListParams) → `Promise<FacetListResponse>`
+
+**create**(collectionId: string,
+    data: FacetDefinitionWriteInput) → `Promise<FacetDefinition>`
+
+**get**(collectionId: string,
+    facetKey: string,
+    params?: FacetGetParams) → `Promise<FacetDefinition>`
+
+**update**(collectionId: string,
+    facetKey: string,
+    data: FacetDefinitionWriteInput) → `Promise<FacetDefinition>`
+
+**remove**(collectionId: string,
+    facetKey: string) → `Promise<void>`
+
+**listValues**(collectionId: string,
+    facetKey: string,
+    params?: FacetValueListParams) → `Promise<FacetValueListResponse>`
+
+**createValue**(collectionId: string,
+    facetKey: string,
+    data: FacetValueWriteInput) → `Promise<FacetValueResponse>`
+
+**getValue**(collectionId: string,
+    facetKey: string,
+    valueKey: string,
+    params?: FacetValueGetParams) → `Promise<FacetValueResponse>`
+
+**updateValue**(collectionId: string,
+    facetKey: string,
+    valueKey: string,
+    data: FacetValueWriteInput) → `Promise<FacetValueResponse>`
+
+**removeValue**(collectionId: string,
+    facetKey: string,
+    valueKey: string) → `Promise<void>`
+
+**query**(collectionId: string,
+    body: FacetQueryRequest) → `Promise<FacetQueryResponse>`
+
+**publicList**(collectionId: string,
+    params?: PublicFacetListParams) → `Promise<FacetListResponse>`
+
+**publicGet**(collectionId: string,
+    facetKey: string,
+    params?: PublicFacetListParams) → `Promise<FacetDefinition>`
+
+**publicListValues**(collectionId: string,
+    facetKey: string) → `Promise<FacetValueListResponse>`
+
+**publicGetValue**(collectionId: string,
+    facetKey: string,
+    valueKey: string) → `Promise<FacetValueResponse>`
+
+**publicQuery**(collectionId: string,
+    body: FacetQueryRequest) → `Promise<FacetQueryResponse>`
+
 ### form
 
 **get**(collectionId: string, formId: string, admin?: boolean) → `Promise<any>`
@@ -7452,7 +7824,7 @@ List all Product Items for a Collection.
 
 **create**(collectionId: string,
     data: ProductCreateRequest) → `Promise<ProductResponse>`
-Create a new product for a collection (admin only). The `data` payload follows the same shape as ProductResponse minus `id` and `collectionId`. **Hero Image Auto-Fetch:** You can pass `heroImage` as either: - A full asset object: `{ url: '...', thumbnails: {...} }` - A string URL: The system automatically fetches and stores the image ```typescript // Using a URL - auto-fetched and stored const product = await product.create(collectionId, { name: 'Wine Bottle', description: 'Premium red wine', heroImage: 'https://example.com/wine.jpg', // Auto-fetched! tags: {}, data: {} }); ```
+Create a new product for a collection (admin only). The `data` payload follows the same shape as ProductResponse minus `id` and `collectionId`. **Hero Image Auto-Fetch:** You can pass `heroImage` as either: - A full asset object: `{ url: '...', thumbnails: {...} }` - A string URL: The system automatically fetches and stores the image ```typescript // Using a URL - auto-fetched and stored const product = await product.create(collectionId, { name: 'Wine Bottle', description: 'Premium red wine', heroImage: 'https://example.com/wine.jpg', // Auto-fetched! data: {} }); ```
 
 **update**(collectionId: string,
     productId: string,
@@ -7463,16 +7835,109 @@ Update a product for a collection (admin only). The `data` payload is a partial 
     productId: string) → `Promise<void>`
 Delete a product for a collection (admin only).
 
+**find**(collectionId: string,
+    body: ProductQueryRequest) → `Promise<ProductQueryResponse>`
+
+**publicFind**(collectionId: string,
+    params?: ProductPublicFindParams) → `Promise<ProductResponse[]>`
+
+**clone**(collectionId: string,
+    productId: string,
+    body: Record<string, JsonValue> = {}) → `Promise<ProductResponse>`
+
+**listAssets**(collectionId: string,
+    productId: string,
+    admin?: boolean) → `Promise<unknown>`
+
+**createClaimWindow**(collectionId: string,
+    productId: string,
+    body: Record<string, JsonValue>) → `Promise<unknown>`
+
+**updateClaimWindow**(collectionId: string,
+    productId: string,
+    claimId: string,
+    body: Record<string, JsonValue>) → `Promise<unknown>`
+
+**refresh**(collectionId: string,
+    productId: string) → `Promise<ProductResponse>`
+
 **getSN**(collectionId: string,
     productId: string,
     startIndex: number = 0,
-    count: number = 10) → `Promise<any>`
+    count: number = 10) → `Promise<unknown>`
 Get serial numbers for a product (admin only).
 
 **lookupSN**(collectionId: string,
     productId: string,
-    codeId: string) → `Promise<any>`
+    codeId: string) → `Promise<unknown>`
 Look up a serial number by code for a product (admin only).
+
+**publicLookupClaim**(collectionId: string,
+    productId: string,
+    claimId: string) → `Promise<unknown>`
+
+**publicCreateClaim**(collectionId: string,
+    productId: string,
+    body: ProductClaimCreateRequestBody) → `Promise<unknown>`
+
+### products
+
+**get**(collectionId: string,
+    productId: string,
+    admin?: boolean) → `Promise<ProductResponse>`
+
+**list**(collectionId: string,
+    admin?: boolean) → `Promise<ProductResponse[]>`
+
+**create**(collectionId: string,
+    data: ProductCreateRequest) → `Promise<ProductResponse>`
+
+**update**(collectionId: string,
+    productId: string,
+    data: ProductUpdateRequest) → `Promise<ProductResponse>`
+
+**remove**(collectionId: string,
+    productId: string) → `Promise<void>`
+
+**query**(collectionId: string,
+    body: ProductQueryRequest) → `Promise<ProductQueryResponse>`
+
+**clone**(collectionId: string,
+    productId: string,
+    body: Record<string, JsonValue> = {}) → `Promise<ProductResponse>`
+
+**listAssets**(collectionId: string,
+    productId: string,
+    admin?: boolean) → `Promise<unknown>`
+
+**createClaimWindow**(collectionId: string,
+    productId: string,
+    body: Record<string, JsonValue>) → `Promise<unknown>`
+
+**updateClaimWindow**(collectionId: string,
+    productId: string,
+    claimId: string,
+    body: Record<string, JsonValue>) → `Promise<unknown>`
+
+**refresh**(collectionId: string,
+    productId: string) → `Promise<ProductResponse>`
+
+**getSN**(collectionId: string,
+    productId: string,
+    startIndex: number = 0,
+    count: number = 10) → `Promise<unknown>`
+
+**lookupSN**(collectionId: string,
+    productId: string,
+    codeId: string) → `Promise<unknown>`
+
+**publicLookupClaim**(collectionId: string,
+    productId: string,
+    claimId: string) → `Promise<unknown>`
+
+**publicCreateClaim**(collectionId: string,
+    productId: string,
+    body: ProductClaimCreateRequestBody) → `Promise<unknown>`
 
 ### proof
 

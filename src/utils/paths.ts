@@ -104,9 +104,9 @@ export function buildPortalPath(params: PortalPathParams): string {
 
   if (product) {
     extractedProductId = product.id
-    gtin = product.gtin
+    gtin = product.gtin ?? undefined
     // ownGtin is a critical product setting - only read from product, never override
-    ownGtin = 'ownGtin' in product ? (product as any).ownGtin : undefined
+    ownGtin = 'ownGtin' in product ? (product as any).ownGtin ?? undefined : undefined
   } else if (productId) {
     extractedProductId = productId
   }

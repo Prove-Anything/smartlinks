@@ -1,4 +1,5 @@
 export * from "./collection";
+export * from "./facets";
 export * from "./product";
 export * from "./proof";
 export * from "./appConfiguration";

@@ -1,65 +1,173 @@
 // src/types/product.ts
-/**
- * Product domain model.
- */
-export interface Product {
-  /** Unique identifier for the product */
-  id: string
-  /** Name of the product */
-  name: string
-  /** Unique identifier for the product's collection */
+export type JsonPrimitive = string | number | boolean | null
+
+export type JsonValue =
+  | JsonPrimitive
+  | JsonValue[]
+  | { [key: string]: JsonValue }
+
+export type ISODateString = string
+
+export interface ProductKey {
   collectionId: string
-  /** Detailed description of the product */
-  description: string
-  /** A product GTIN (Global Trade Item Number) */
-  gtin?: string
-  /** An optional product type from the standard smartlinks types */
+  id: string
+}
+
+export interface ProductImageThumbnails {
+  x100?: string
+  x200?: string
+  x512?: string
+}
+
+export interface ProductImage {
+  id?: string
+  collectionId?: string
+  productId?: string
+  site?: string
+  name?: string
+  cleanName?: string
+  assetType?: string
   type?: string
+  url?: string
+  thumbnails?: ProductImageThumbnails
+  contentType?: string
+  size?: string | number
+  hash?: string
+  createdAt?: ISODateString | null
+  updatedAt?: ISODateString | null
+  deletedAt?: ISODateString | null
+}
 
-  /** 
-   * Hero image asset object.
-   * When creating/updating, you can pass either:
-   * - A full asset object with url and thumbnails
-   * - A string URL - the system will automatically fetch and store the image
-   */
-  heroImage: {
-    /** URL to the asset */
-    url: string
-    /** Thumbnail URLs in different sizes */
-    thumbnails: {
-      x100: string
-      x200: string
-      x512: string
-    }
+export interface ProductImageUrlInput {
+  url: string
+}
+
+export interface AdditionalGtin {
+  gtin: string
+  owner?: boolean | null
+}
+
+export interface ProductFacetValue {
+  id?: string
+  key: string
+  slug?: string
+  name: string
+  shortName?: string
+  description?: string
+  color?: string
+  icon?: string
+}
+
+export interface ProductFacetMap {
+  [facetKey: string]: ProductFacetValue[]
+}
+
+export interface ProductQueryRequest {
+  query?: {
+    search?: string
+    status?: string[]
+    productIds?: string[]
+    sku?: string
+    gtin?: string
+    updatedAfter?: ISODateString
+    updatedBefore?: ISODateString
+    createdAfter?: ISODateString
+    createdBefore?: ISODateString
+    facetEquals?: Record<string, JsonValue>
   }
-  /** Flexible map of tags with true/false values */
-  tags: {
-    [tagName: string]: boolean
-  } // Flexible map of tags with true/false values
-  /** Flexible key/value data map */
-  data: {
-    [key: string]: any
-  } // Flexible key/value data map
-  /** Admin-only configuration */
-  admin?: {
-    /** Allow users to claim this product without providing a proof ID (overrides collection setting) */
-    allowAutoGenerateClaims?: boolean
-    /** Last generated serial ID for auto-claim functionality */
-    lastSerialId?: number
-    [key: string]: any
+  sort?: Array<{
+    field: string
+    direction: 'asc' | 'desc'
+  }>
+  page?: {
+    limit?: number
+    offset?: number
+    cursor?: string | null
+  }
+  includeDeleted?: boolean
+}
+
+export interface Product extends ProductKey {
+  orgId?: string | null
+  name: string
+  description?: string | null
+  gtin?: string | null
+  ownGtin?: boolean | null
+  additionalGtins?: AdditionalGtin[]
+  sku?: string | null
+  label?: string | null
+  status?: string | null
+  sortOrder?: number | null
+  heroImage?: ProductImage | null
+  facets?: ProductFacetMap
+  data?: Record<string, JsonValue>
+  admin?: Record<string, JsonValue>
+  extra?: Record<string, JsonValue>
+  validCollections?: string[]
+  group?: boolean | null
+  createdAt?: ISODateString | null
+  updatedAt?: ISODateString | null
+  deletedAt?: ISODateString | null
+}
+
+export interface PublicProduct extends Omit<Product, 'admin'> {
+  admin?: never
+}
+
+export interface ProductWriteInput {
+  id?: string
+  name: string
+  description?: string | null
+  gtin?: string | null
+  ownGtin?: boolean | null
+  additionalGtins?: AdditionalGtin[]
+  sku?: string | null
+  label?: string | null
+  status?: string | null
+  sortOrder?: number | null
+  heroImage?: ProductImage | ProductImageUrlInput | string | null
+  facets?: ProductFacetMap
+  data?: Record<string, JsonValue>
+  admin?: Record<string, JsonValue>
+  extra?: Record<string, JsonValue>
+  validCollections?: string[]
+}
+
+export interface ProductQueryResponse {
+  items: Product[]
+  page?: {
+    limit?: number
+    offset?: number
+    returned?: number
+    total?: number
+    hasMore?: boolean
+    nextCursor?: string | null
+  }
+  meta?: {
+    apiVersion?: 'v1'
+    mode?: 'canonical-products' | 'legacy-product-compatibility'
+    source?: 'postgres' | 'firestore' | 'compatibility-layer'
+    queryMode?: 'canonical' | 'compatibility'
+    unsupportedFilters?: string[]
+    supportedSortFields?: string[]
   }
 }
 
-// Backwards compatibility alias
+export interface ProductClaimLookupInput extends ProductKey {
+  claimId: string
+}
+
+export interface ProductClaimCreateInput extends ProductKey {
+  claimId: string
+  email?: string
+  name?: string
+  emailConfirmation?: boolean
+  data?: Record<string, JsonValue>
+  options?: Record<string, JsonValue>
+}
+
+export type ProductClaimCreateRequestBody = Omit<ProductClaimCreateInput, 'collectionId' | 'id'>
+
 export type ProductResponse = Product
-
-// Input types for creating/updating products
-// Note: heroImage can be either a full object or just a string URL
-// When a string URL is provided, the system automatically fetches and stores it
-export type ProductCreateRequest = Omit<Product, 'id' | 'collectionId'> & {
-  heroImage?: Product['heroImage'] | string
-}
-
-export type ProductUpdateRequest = Partial<Omit<Product, 'id' | 'collectionId'>> & {
-  heroImage?: Product['heroImage'] | string
-}
+export type ProductCreateRequest = ProductWriteInput
+export type ProductUpdateRequest = Partial<Omit<ProductWriteInput, 'id'>>

@@ -60,6 +60,7 @@
  * ```
  */
 export function buildPortalPath(params) {
+    var _a, _b;
     const { collection, product, productId, batch, batchId, variant, proof, queryParams = {}, pathOnly = false } = params;
     // Extract values from collection
     const shortId = collection.shortId;
@@ -70,9 +71,9 @@ export function buildPortalPath(params) {
     let extractedProductId;
     if (product) {
         extractedProductId = product.id;
-        gtin = product.gtin;
+        gtin = (_a = product.gtin) !== null && _a !== void 0 ? _a : undefined;
         // ownGtin is a critical product setting - only read from product, never override
-        ownGtin = 'ownGtin' in product ? product.ownGtin : undefined;
+        ownGtin = 'ownGtin' in product ? (_b = product.ownGtin) !== null && _b !== void 0 ? _b : undefined : undefined;
     }
     else if (productId) {
         extractedProductId = productId;

@@ -13,7 +13,6 @@ async function runConditionExamples() {
       type: 'and',
       conditions: [{
         type: 'country',
-        useRegions: true,
         regions: ['eu'],
         contains: true
       }]
@@ -137,7 +136,7 @@ async function runConditionExamples() {
       conditions: [
         { type: 'user', userType: 'valid' },
         { type: 'device', displays: ['mobile'], contains: true },
-        { type: 'country', useRegions: true, regions: ['eu'], contains: true }
+        { type: 'country', regions: ['eu'], contains: true }
       ]
     },
     user: { valid: true, uid: 'user123', location: { country: 'FR' } },
@@ -254,8 +253,24 @@ async function runConditionExamples() {
   console.log('   All conditions pass:', failedAndCheck) // false
   console.log()
 
-  // Example 15: Complex real-world scenario
-  console.log('15. Complex scenario (premium mobile campaign in EU)')
+  // Example 15: Verbose logging for condition evaluation
+  console.log('15. Verbose logging for condition evaluation')
+  const debugCheck = await utils.validateCondition({
+    condition: {
+      type: 'and',
+      conditions: [
+        { type: 'user', userType: 'valid' },
+        { type: 'country', regions: ['eu'], contains: true }
+      ]
+    },
+    user: { valid: true, uid: 'user123', location: { country: 'DE' } },
+    debugConditions: { label: 'demo' }
+  })
+  console.log('   Debugged condition pass result:', debugCheck) // true
+  console.log()
+
+  // Example 16: Complex real-world scenario
+  console.log('16. Complex scenario (premium mobile campaign in EU)')
   const complexCheck = await utils.validateCondition({
     condition: {
       type: 'and',
@@ -274,7 +289,7 @@ async function runConditionExamples() {
           ]
         },
         { type: 'device', displays: ['mobile'], contains: true },
-        { type: 'country', useRegions: true, regions: ['eu'], contains: true },
+        { type: 'country', regions: ['eu'], contains: true },
         { 
           type: 'date', 
           dateTest: 'between',

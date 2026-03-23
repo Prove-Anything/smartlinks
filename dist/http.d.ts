@@ -117,7 +117,8 @@ export declare function configureSdkCache(options: {
  * ```ts
  * invalidateCache()                     // clear everything
  * invalidateCache('/collection/abc123') // one specific collection
- * invalidateCache('/product/')          // all product responses
+ * invalidateCache('/product/')          // all legacy singular product responses
+ * invalidateCache('/products/')         // all canonical plural product responses
  * ```
  */
 export declare function invalidateCache(urlPattern?: string): void;
