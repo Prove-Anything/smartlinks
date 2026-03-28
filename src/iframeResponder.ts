@@ -528,9 +528,15 @@ export class IframeResponder {
       }
       
       const fetchResponse = await fetch(fullUrl, fetchOptions);
-      const responseData = await fetchResponse.json();
-      
-      response.data = responseData;
+      const responseData = await fetchResponse.json().catch(() => null);
+
+      if (!fetchResponse.ok) {
+        response.error = responseData?.message || `Request failed with status ${fetchResponse.status}`;
+        response.statusCode = fetchResponse.status;
+        response.errorBody = responseData;
+      } else {
+        response.data = responseData;
+      }
     } catch (err: any) {
       console.error('[IframeResponder] Proxy request error:', err);
       response.error = err?.message || 'Unknown error';
