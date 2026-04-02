@@ -680,6 +680,7 @@ function ensureProxyListener() {
     if (window._smartlinksProxyListener)
         return;
     window.addEventListener("message", (event) => {
+        var _a, _b, _c, _d;
         const msg = event.data;
         if ((msg === null || msg === void 0 ? void 0 : msg._smartlinksProxyStream) && msg.id) {
             const pendingStream = proxyStreamPending.get(msg.id);
@@ -705,7 +706,18 @@ function ensureProxyListener() {
         const pending = proxyPending[msg.id];
         if (pending) {
             if (msg.error) {
-                pending.reject(new Error(msg.error));
+                // msg.error may be a string or an object (e.g. { message, statusCode, errorCode, ... })
+                const errObj = typeof msg.error === 'object' && msg.error !== null ? msg.error : null;
+                const statusCode = (_a = msg.statusCode) !== null && _a !== void 0 ? _a : errObj === null || errObj === void 0 ? void 0 : errObj.statusCode;
+                const message = (_b = errObj === null || errObj === void 0 ? void 0 : errObj.message) !== null && _b !== void 0 ? _b : (typeof msg.error === 'string' ? msg.error : 'Request failed');
+                const errorBody = (_d = (_c = msg.errorBody) !== null && _c !== void 0 ? _c : errObj) !== null && _d !== void 0 ? _d : msg.error;
+                if (statusCode) {
+                    const errBody = normalizeErrorResponse(errorBody, statusCode);
+                    pending.reject(new SmartlinksApiError(message, statusCode, errBody));
+                }
+                else {
+                    pending.reject(new Error(message));
+                }
             }
             else {
                 pending.resolve(msg.data);

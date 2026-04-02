@@ -1,142 +1,181 @@
-import { request, post, put } from "../http";
-import { UpdateClaimDataRequest, AssignClaimsRequest } from "../types";
+import { request, post, put, del } from "../http";
+import {
+  UpdateClaimDataRequest,
+  AssignClaimsRequest,
+  CreateClaimSetTagRequest,
+  CreateClaimSetTagResponse,
+  CreateClaimSetRequest,
+  ImportClaimSetTagsRequest,
+  ImportClaimSetTagsResponse,
+} from "../types";
+
+/**
+ * Returns the base path for claim set endpoints.
+ * When collectionId is provided, routes to the collection-scoped admin API.
+ * When omitted, routes to the user-scoped admin API (global claim sets).
+ */
+function base(collectionId?: string): string {
+  return collectionId
+    ? `/admin/collection/${encodeURIComponent(collectionId)}/claimSet`
+    : `/admin/claimSet`;
+}
 
 export namespace claimSet {
   /**
-   * Get all claim sets for a collection.
-   * @param collectionId – The collection identifier
-   * @returns Promise resolving to an array of claim sets
+   * Get all claim sets.
+   * When collectionId is provided, returns claim sets for that collection.
+   * When omitted, returns all claim sets owned by the authenticated user.
+   * @param collectionId – Optional collection identifier
    */
-  export async function getAllForCollection(collectionId: string): Promise<any[]> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet`;
-    return request<any[]>(path);
+  export async function getAll(collectionId?: string): Promise<any[]> {
+    return request<any[]>(base(collectionId));
   }
 
   /**
-   * Get a specific claim set for a collection.
-   * @param collectionId – The collection identifier
+   * Get a specific claim set by ID.
    * @param claimSetId – The claim set identifier
-   * @returns Promise resolving to a claim set object
+   * @param collectionId – Optional collection identifier; omit for user-scoped access
    */
-  export async function getForCollection(collectionId: string, claimSetId: string): Promise<any> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet/${encodeURIComponent(claimSetId)}`;
-    return request<any>(path);
+  export async function get(claimSetId: string, collectionId?: string): Promise<any> {
+    return request<any>(`${base(collectionId)}/${encodeURIComponent(claimSetId)}`);
   }
 
   /**
-   * Get all tags for a claim set.
-   * @param collectionId – The collection identifier
-   * @param claimSetId – The claim set identifier
-   * @returns Promise resolving to an array of tags
+   * Create a new claim set.
+   * When collectionId is provided, creates it scoped to that collection.
+   * When omitted, creates a global user-owned claim set.
+   * @param params – Claim set creation parameters
+   * @param collectionId – Optional collection identifier
    */
-  export async function getAllTags(collectionId: string, claimSetId: string): Promise<any[]> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet/${encodeURIComponent(claimSetId)}/tags`;
-    return request<any[]>(path);
+  export async function create(params: CreateClaimSetRequest, collectionId?: string): Promise<any> {
+    return post<any>(base(collectionId), params);
   }
 
   /**
-   * Get a report for a claim set.
+   * Update a claim set.
+   * @param claimSetId – The claim set identifier
+   * @param params – Fields to update
+   * @param collectionId – Optional collection identifier; omit for user-scoped access
+   */
+  export async function update(claimSetId: string, params: any, collectionId?: string): Promise<any> {
+    return put<any>(`${base(collectionId)}/${encodeURIComponent(claimSetId)}`, params);
+  }
+
+  /**
+   * Delete (soft-delete) a claim set.
+   * @param claimSetId – The claim set identifier
+   * @param collectionId – Optional collection identifier; omit for user-scoped access
+   */
+  export async function remove(claimSetId: string, collectionId?: string): Promise<any> {
+    return del<any>(`${base(collectionId)}/${encodeURIComponent(claimSetId)}`);
+  }
+
+  /**
+   * Get all tags for a claim set (including data).
+   * @param claimSetId – The claim set identifier
+   * @param collectionId – Optional collection identifier; omit for user-scoped access
+   */
+  export async function getAllTags(claimSetId: string, collectionId?: string): Promise<any> {
+    return request<any>(`${base(collectionId)}/${encodeURIComponent(claimSetId)}/tags`);
+  }
+
+  /**
+   * Get assigned tags for a claim set — tags soft-assigned to a collection or product.
+   * @param claimSetId – The claim set identifier
+   * @param collectionId – Optional collection identifier; omit for user-scoped access
+   */
+  export async function getAssignedTags(claimSetId: string, collectionId?: string): Promise<any> {
+    return request<any>(`${base(collectionId)}/${encodeURIComponent(claimSetId)}/assignedTags`);
+  }
+
+  /**
+   * Create a single tag inside a claim set.
+   * @param claimSetId – The claim set identifier
+   * @param data – Tag creation parameters
+   * @param collectionId – Optional collection identifier; omit for user-scoped access
+   */
+  export async function createTag(
+    claimSetId: string,
+    data: CreateClaimSetTagRequest,
+    collectionId?: string
+  ): Promise<CreateClaimSetTagResponse> {
+    return post<CreateClaimSetTagResponse>(
+      `${base(collectionId)}/${encodeURIComponent(claimSetId)}/createTag`,
+      data
+    );
+  }
+
+  /**
+   * Bulk import tags into a claim set.
+   * @param claimSetId – The claim set identifier
+   * @param data – Import parameters: tags array and optional mode ("upsert" | "replace")
+   * @param collectionId – Optional collection identifier; omit for user-scoped access
+   */
+  export async function importTags(
+    claimSetId: string,
+    data: ImportClaimSetTagsRequest,
+    collectionId?: string
+  ): Promise<ImportClaimSetTagsResponse> {
+    return post<ImportClaimSetTagsResponse>(
+      `${base(collectionId)}/${encodeURIComponent(claimSetId)}/importTags`,
+      data
+    );
+  }
+
+  // ─── Collection-scoped-only operations ──────────────────────────────────────
+
+  /**
+   * Get a report for a claim set (collection-scoped).
    * @param collectionId – The collection identifier
    * @param claimSetId – The claim set identifier
-   * @returns Promise resolving to a report object
    */
   export async function getReport(collectionId: string, claimSetId: string): Promise<any> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet/${encodeURIComponent(claimSetId)}/report`;
-    return request<any>(path);
-  }
-
-  /**
-   * Get assigned tags for a claim set.
-   * @param collectionId – The collection identifier
-   * @param claimSetId – The claim set identifier
-   * @returns Promise resolving to assigned tags
-   */
-  export async function getAssignedTags(collectionId: string, claimSetId: string): Promise<any> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet/${encodeURIComponent(claimSetId)}/assignedTags`;
-    return request<any>(path);
+    return request<any>(`${base(collectionId)}/${encodeURIComponent(claimSetId)}/report`);
   }
 
   /**
    * Get tag summary for a collection.
    * @param collectionId – The collection identifier
-   * @returns Promise resolving to tag summary
    */
   export async function getTagSummary(collectionId: string): Promise<any> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet/tagSummary`;
-    return request<any>(path);
+    return request<any>(`${base(collectionId)}/tagSummary`);
   }
 
   /**
    * Perform a tag query for a collection.
    * @param collectionId – The collection identifier
    * @param data – The query data
-   * @returns Promise resolving to query results
    */
   export async function tagQuery(collectionId: string, data: any): Promise<any> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet/tagQuery`;
-    return post<any>(path, data);
+    return post<any>(`${base(collectionId)}/tagQuery`, data);
   }
 
   /**
-   * Create a new claim set for a collection.
+   * Make a claim against a claim set (collection-scoped).
    * @param collectionId – The collection identifier
-   * @param params – The claim set creation parameters
-   * @returns Promise resolving to the created claim set
-   */
-  export async function createForCollection(collectionId: string, params: any): Promise<any> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet`;
-    return post<any>(path, params);
-  }
-
-  /**
-   * Update a claim set for a collection.
-   * @param collectionId – The collection identifier
-   * @param params – The claim set update parameters (must include id)
-   * @returns Promise resolving to the updated claim set
-   */
-  export async function updateForCollection(collectionId: string, params: any): Promise<any> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet/${encodeURIComponent(params.id)}`;
-    return put<any>(path, params);
-  }
-
-  /**
-   * Make a claim for a claim set.
-   * @param collectionId – The collection identifier
-   * @param params – The claim parameters (must include id)
-   * @returns Promise resolving to the claim result
+   * @param params – Claim parameters (must include id)
    */
   export async function makeClaim(collectionId: string, params: any): Promise<any> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet/${encodeURIComponent(params.id)}/makeClaim`;
-    return post<any>(path, params);
+    return post<any>(`${base(collectionId)}/${encodeURIComponent(params.id)}/makeClaim`, params);
   }
 
   /**
-   * Assign claims to a claim set.
+   * Assign claims to codes or ranges within a collection.
    * @param collectionId – The collection identifier
-   * @param data – The claims data to assign
-   *  {
-   *    id: string,          // claim set id (required)
-   *    collectionId: string,// required
-   *    productId: string,   // required
-   *    batchId?: string,    // optional
-   *    start?: number,      // optional bulk range start
-   *    end?: number,        // optional bulk range end
-   *    codeId?: string,     // optional single code
-   *    data?: { [k: string]: any } // optional claim key/values
-   *  }
+   * @param data – Claims assignment data
    */
   export async function assignClaims(collectionId: string, data: AssignClaimsRequest): Promise<any> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet/${encodeURIComponent(data.id)}/assignClaims`;
-    return post<any>(path, data);
+    return post<any>(`${base(collectionId)}/${encodeURIComponent(data.id)}/assignClaims`, data);
   }
 
   /**
-   * Update claim data for a collection.
+   * Update claim data for a claim set (collection-scoped).
    * @param collectionId – The collection identifier
-   * @param data – The claim data to update
+   * @param data – Claim data to update
    */
   export async function updateClaimData(collectionId: string, data: UpdateClaimDataRequest): Promise<any> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/claimSet/updateClaimData`;
-    return post<any>(path, data);
+    return post<any>(`${base(collectionId)}/updateClaimData`, data);
   }
 }
+
+

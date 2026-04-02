@@ -1976,89 +1976,11 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/BroadcastSendTestRequest"
-  /admin/collection/{collectionId}/claimSet:
-    get:
-      tags:
-        - claimSet
-      summary: Get all claim sets for a collection.
-      operationId: claimSet_getAllForCollection
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
+  /admin/collection/{collectionId}/claimSetd)}/assignClaims:
     post:
       tags:
         - claimSet
       summary: Perform a tag query for a collection.
-      operationId: claimSet_createForCollection
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-    put:
-      tags:
-        - claimSet
-      summary: Create a new claim set for a collection.
-      operationId: claimSet_updateForCollection
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/claimSet/assignClaims:
-    post:
-      tags:
-        - claimSet
-      summary: Assign claims to a claim set.
       operationId: claimSet_assignClaims
       security:
         - bearerAuth: []
@@ -2086,11 +2008,11 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/AssignClaimsRequest"
-  /admin/collection/{collectionId}/claimSet/makeClaim:
+  /admin/collection/{collectionId}/claimSetd)}/makeClaim:
     post:
       tags:
         - claimSet
-      summary: Update a claim set for a collection.
+      summary: Get tag summary for a collection.
       operationId: claimSet_makeClaim
       security:
         - bearerAuth: []
@@ -2112,11 +2034,11 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/claimSet/tagQuery:
+  /admin/collection/{collectionId}/claimSetd)}/tagQuery:
     post:
       tags:
         - claimSet
-      summary: Get tag summary for a collection.
+      summary: Get a report for a claim set (collection-scoped).
       operationId: claimSet_tagQuery
       security:
         - bearerAuth: []
@@ -2138,11 +2060,11 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/claimSet/tagSummary:
+  /admin/collection/{collectionId}/claimSetd)}/tagSummary:
     get:
       tags:
         - claimSet
-      summary: Get assigned tags for a claim set.
+      summary: Get a report for a claim set (collection-scoped).
       operationId: claimSet_getTagSummary
       security:
         - bearerAuth: []
@@ -2164,11 +2086,11 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/claimSet/updateClaimData:
+  /admin/collection/{collectionId}/claimSetd)}/updateClaimData:
     post:
       tags:
         - claimSet
-      summary: Update claim data for a collection.
+      summary: Make a claim against a claim set (collection-scoped).
       operationId: claimSet_updateClaimData
       security:
         - bearerAuth: []
@@ -2196,12 +2118,12 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/UpdateClaimDataRequest"
-  /admin/collection/{collectionId}/claimSet/{claimSetId}:
+  /admin/collection/{collectionId}/claimSetd)}/{claimSetId}:
     get:
       tags:
         - claimSet
-      summary: Get all claim sets for a collection.
-      operationId: claimSet_getForCollection
+      summary: Returns the base path for claim set endpoints.
+      operationId: claimSet_get
       security:
         - bearerAuth: []
       parameters:
@@ -2227,11 +2149,71 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/claimSet/{claimSetId}/assignedTags:
+    put:
+      tags:
+        - claimSet
+      summary: Create a new claim set.
+      operationId: claimSet_update
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: claimSetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    delete:
+      tags:
+        - claimSet
+      summary: Update a claim set.
+      operationId: claimSet_remove
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: claimSetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/claimSetd)}/{claimSetId}/assignedTags:
     get:
       tags:
         - claimSet
-      summary: Get a report for a claim set.
+      summary: Get all tags for a claim set (including data).
       operationId: claimSet_getAssignedTags
       security:
         - bearerAuth: []
@@ -2258,11 +2240,87 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/claimSet/{claimSetId}/report:
+  /admin/collection/{collectionId}/claimSetd)}/{claimSetId}/createTag:
+    post:
+      tags:
+        - claimSet
+      summary: Get assigned tags for a claim set — tags soft-assigned to a collection or product.
+      operationId: claimSet_createTag
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: claimSetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateClaimSetTagResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClaimSetTagRequest"
+  /admin/collection/{collectionId}/claimSetd)}/{claimSetId}/importTags:
+    post:
+      tags:
+        - claimSet
+      summary: Create a single tag inside a claim set.
+      operationId: claimSet_importTags
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: claimSetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportClaimSetTagsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportClaimSetTagsRequest"
+  /admin/collection/{collectionId}/claimSetd)}/{claimSetId}/report:
     get:
       tags:
         - claimSet
-      summary: Get all tags for a claim set.
+      summary: Bulk import tags into a claim set.
       operationId: claimSet_getReport
       security:
         - bearerAuth: []
@@ -2289,11 +2347,11 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/claimSet/{claimSetId}/tags:
+  /admin/collection/{collectionId}/claimSetd)}/{claimSetId}/tags:
     get:
       tags:
         - claimSet
-      summary: Get a specific claim set for a collection.
+      summary: Update a claim set.
       operationId: claimSet_getAllTags
       security:
         - bearerAuth: []
@@ -2313,9 +2371,7 @@ paths:
           description: Success
           content:
             application/json:
-              schema:
-                type: array
-                items: {}
+              schema: {}
         400:
           description: Bad request
         401:
@@ -16808,6 +16864,95 @@ components:
         - id
         - collectionId
         - productId
+    CreateClaimSetTagRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        tagId:
+          type: string
+        productId:
+          type: string
+        collectionId:
+          type: string
+        batchId:
+          type: string
+        password:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+    CreateClaimSetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        claimMode:
+          type: string
+        allocationMode:
+          type: string
+      required:
+        - name
+        - claimMode
+        - allocationMode
+    ImportClaimSetTagItem:
+      type: object
+      properties:
+        id:
+          type: string
+        tagId:
+          type: string
+        index:
+          type: number
+      required:
+        - id
+    ImportClaimSetTagsRequest:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/ImportClaimSetTagItem"
+        mode:
+          type: string
+          enum:
+            - upsert
+            - replace
+      required:
+        - tags
+    ImportClaimSetTagsResponse:
+      type: object
+      properties:
+        written:
+          type: number
+      required:
+        - written
+    CreateClaimSetTagResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        claimSetId:
+          type: string
+        createdAt:
+          type: string
+        tagId:
+          type: string
+        productId:
+          type: string
+        collectionId:
+          type: string
+        batchId:
+          type: string
+        password:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - claimSetId
+        - createdAt
     Collection:
       type: object
       properties:
@@ -18762,6 +18907,9 @@ components:
         data: {}
         error:
           type: string
+        statusCode:
+          type: number
+        errorBody: {}
       required:
         - _smartlinksProxyResponse
         - id

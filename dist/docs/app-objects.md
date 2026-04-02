@@ -576,8 +576,7 @@ const usageStats = await app.records.aggregate(collectionId, appId, {
 
 ## Public Create Policies
 
-Control who can create objects on **public endpoints** using Firestore-based policies at:  
-`sites/{collectionId}/apps/{appId}.publicCreate`
+Control who can create objects on **public endpoints** by setting a `publicCreate` policy on your app's config. This is a `publicCreate` field inside your app config object (identified by `appId` within your collection).
 
 ### Policy Structure
 
@@ -901,7 +900,7 @@ For high-volume queries, consider:
 - Filter by `status`, `recordType`, or `category` to reduce result sets
 - Use `limit` and `offset` for pagination (max 500 per page)
 - Use aggregations instead of fetching all records and counting client-side
-- Index commonly filtered fields in Firestore if you add custom indexes
+- Index commonly filtered fields if you add custom indexes
 
 ### Status Conventions
 

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.9.5  |  Generated: 2026-03-23T20:19:00.201Z
+Version: 1.9.14  |  Generated: 2026-03-31T19:46:30.667Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2853,6 +2853,70 @@ interface AssignClaimsRequest {
 }
 ```
 
+**CreateClaimSetTagRequest** (interface)
+```typescript
+interface CreateClaimSetTagRequest {
+  id?: string
+  tagId?: string
+  productId?: string
+  collectionId?: string
+  batchId?: string
+  password?: string
+  data?: Record<string, unknown>
+}
+```
+
+**CreateClaimSetRequest** (interface)
+```typescript
+interface CreateClaimSetRequest {
+  name: string
+  claimMode: string
+  allocationMode: string
+}
+```
+
+**ImportClaimSetTagItem** (interface)
+```typescript
+interface ImportClaimSetTagItem {
+  id: string
+  tagId?: string
+  index?: number
+}
+```
+
+**ImportClaimSetTagsRequest** (interface)
+```typescript
+interface ImportClaimSetTagsRequest {
+  tags: ImportClaimSetTagItem[]
+  * Import mode:
+  * - "upsert" (default) merges with existing tags
+  * - "replace" wipes all existing tags first then writes the new set
+  mode?: 'upsert' | 'replace'
+}
+```
+
+**ImportClaimSetTagsResponse** (interface)
+```typescript
+interface ImportClaimSetTagsResponse {
+  written: number
+}
+```
+
+**CreateClaimSetTagResponse** (interface)
+```typescript
+interface CreateClaimSetTagResponse {
+  id: string
+  claimSetId: string
+  createdAt: string
+  tagId?: string
+  productId?: string
+  collectionId?: string
+  batchId?: string
+  password?: string
+  data?: Record<string, unknown>
+}
+```
+
 ### collection
 
 **Collection** (interface)
@@ -4468,6 +4532,8 @@ interface ProxyResponse {
   id: string;
   data?: any;
   error?: string;
+  statusCode?: number;
+  errorBody?: any;
 }
 ```
 
@@ -7395,20 +7461,39 @@ Create a Responses API request (streaming or non-streaming)
 
 ### claimSet
 
-**getAllForCollection**(collectionId: string) → `Promise<any[]>`
-Get all claim sets for a collection.
+**getAll**(collectionId?: string) → `Promise<any[]>`
+Get all claim sets. When collectionId is provided, returns claim sets for that collection. When omitted, returns all claim sets owned by the authenticated user.
 
-**getForCollection**(collectionId: string, claimSetId: string) → `Promise<any>`
-Get a specific claim set for a collection.
+**get**(claimSetId: string, collectionId?: string) → `Promise<any>`
+Get a specific claim set by ID.
 
-**getAllTags**(collectionId: string, claimSetId: string) → `Promise<any[]>`
-Get all tags for a claim set.
+**create**(params: CreateClaimSetRequest, collectionId?: string) → `Promise<any>`
+Create a new claim set. When collectionId is provided, creates it scoped to that collection. When omitted, creates a global user-owned claim set.
+
+**update**(claimSetId: string, params: any, collectionId?: string) → `Promise<any>`
+Update a claim set.
+
+**remove**(claimSetId: string, collectionId?: string) → `Promise<any>`
+Delete (soft-delete) a claim set.
+
+**getAllTags**(claimSetId: string, collectionId?: string) → `Promise<any>`
+Get all tags for a claim set (including data).
+
+**getAssignedTags**(claimSetId: string, collectionId?: string) → `Promise<any>`
+Get assigned tags for a claim set — tags soft-assigned to a collection or product.
+
+**createTag**(claimSetId: string,
+    data: CreateClaimSetTagRequest,
+    collectionId?: string) → `Promise<CreateClaimSetTagResponse>`
+Create a single tag inside a claim set.
+
+**importTags**(claimSetId: string,
+    data: ImportClaimSetTagsRequest,
+    collectionId?: string) → `Promise<ImportClaimSetTagsResponse>`
+Bulk import tags into a claim set.
 
 **getReport**(collectionId: string, claimSetId: string) → `Promise<any>`
-Get a report for a claim set.
-
-**getAssignedTags**(collectionId: string, claimSetId: string) → `Promise<any>`
-Get assigned tags for a claim set.
+Get a report for a claim set (collection-scoped).
 
 **getTagSummary**(collectionId: string) → `Promise<any>`
 Get tag summary for a collection.
@@ -7416,20 +7501,14 @@ Get tag summary for a collection.
 **tagQuery**(collectionId: string, data: any) → `Promise<any>`
 Perform a tag query for a collection.
 
-**createForCollection**(collectionId: string, params: any) → `Promise<any>`
-Create a new claim set for a collection.
-
-**updateForCollection**(collectionId: string, params: any) → `Promise<any>`
-Update a claim set for a collection.
-
 **makeClaim**(collectionId: string, params: any) → `Promise<any>`
-Make a claim for a claim set.
+Make a claim against a claim set (collection-scoped).
 
 **assignClaims**(collectionId: string, data: AssignClaimsRequest) → `Promise<any>`
-Assign claims to a claim set. { id: string,          // claim set id (required) collectionId: string,// required productId: string,   // required batchId?: string,    // optional start?: number,      // optional bulk range start end?: number,        // optional bulk range end codeId?: string,     // optional single code data?: { [k: string]: any } // optional claim key/values }
+Assign claims to codes or ranges within a collection.
 
 **updateClaimData**(collectionId: string, data: UpdateClaimDataRequest) → `Promise<any>`
-Update claim data for a collection.
+Update claim data for a claim set (collection-scoped).
 
 ### collection
 

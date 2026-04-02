@@ -746,11 +746,17 @@ function ensureProxyListener() {
     const pending = proxyPending[msg.id]
     if (pending) {
       if (msg.error) {
-        if (msg.statusCode) {
-          const errBody = normalizeErrorResponse(msg.errorBody ?? msg.error, msg.statusCode)
-          pending.reject(new SmartlinksApiError(msg.error, msg.statusCode, errBody))
+        // msg.error may be a string or an object (e.g. { message, statusCode, errorCode, ... })
+        const errObj = typeof msg.error === 'object' && msg.error !== null ? msg.error : null
+        const statusCode: number | undefined = msg.statusCode ?? errObj?.statusCode
+        const message: string = errObj?.message ?? (typeof msg.error === 'string' ? msg.error : 'Request failed')
+        const errorBody = msg.errorBody ?? errObj ?? msg.error
+
+        if (statusCode) {
+          const errBody = normalizeErrorResponse(errorBody, statusCode)
+          pending.reject(new SmartlinksApiError(message, statusCode, errBody))
         } else {
-          pending.reject(new Error(msg.error))
+          pending.reject(new Error(message))
         }
       } else {
         pending.resolve(msg.data)

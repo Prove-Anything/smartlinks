@@ -67,6 +67,8 @@ export interface ProxyResponse {
     id: string;
     data?: any;
     error?: string;
+    statusCode?: number;
+    errorBody?: any;
 }
 export interface ProxyStreamRequest {
     _smartlinksProxyStreamRequest: true;
