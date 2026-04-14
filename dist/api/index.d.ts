@@ -36,3 +36,5 @@ export { attestations } from "./attestations";
 export { containers } from "./containers";
 export { loyalty } from "./loyalty";
 export { translations } from "./translations";
+export { config } from "./config";
+export { http } from "./http";

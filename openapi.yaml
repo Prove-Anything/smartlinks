@@ -32,6 +32,7 @@ tags:
   - name: claimSet
   - name: collection
   - name: comms
+  - name: config
   - name: contact
   - name: containers
   - name: crate
@@ -11831,6 +11832,50 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TranslationLookupRequest"
+  /public/config/fields:
+    get:
+      tags:
+        - config
+      summary: Returns the full platform field catalog.
+      operationId: config_getFields
+      security: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FieldDefinition"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/config/proofTypes:
+    get:
+      tags:
+        - config
+      summary: Returns the full platform field catalog.
+      operationId: config_getProofTypes
+      security: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ProofTypeDefinition"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/location/{locationId}:
     get:
       tags:
@@ -17691,6 +17736,132 @@ components:
       required:
         - ok
         - error
+    FieldOption:
+      type: object
+      properties:
+        label:
+          type: string
+        value:
+          type: string
+      required:
+        - label
+        - value
+    FieldDefinition:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        storageKey:
+          type: string
+        type:
+          $ref: "#/components/schemas/FieldType"
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldOption"
+        required:
+          type: boolean
+        col:
+          type: number
+        placeholder:
+          type: string
+        help:
+          type: string
+        min:
+          type: number
+        max:
+          type: number
+        step:
+          type: number
+        rows:
+          type: number
+        autoGrow:
+          type: boolean
+        accept:
+          type: string
+        clearable:
+          type: boolean
+        disabled:
+          type: boolean
+        showIf:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - label
+        - type
+    ProofTypeDefinition:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        active:
+          type: boolean
+        group:
+          type: boolean
+        proofTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProofMechanism"
+        proofType:
+          $ref: "#/components/schemas/ProofMechanism"
+        groupFields:
+          type: array
+          items:
+            type: string
+        proofFields:
+          type: array
+          items:
+            type: string
+        listFields:
+          type: object
+          additionalProperties:
+            type: boolean
+        freeApps:
+          type: array
+          items:
+            type: string
+        apps:
+          type: array
+          items:
+            type: string
+        collection:
+          type: string
+        action:
+          type: string
+        bound:
+          type: string
+          enum:
+            - soul
+        translations:
+          type: object
+          additionalProperties:
+            type: string
+        hideProductTools:
+          type: boolean
+      required:
+        - id
+        - name
+        - group
+    FieldType:
+      type: array
+      items:
+        type: string
+        enum:
+          - text
+          - email
+          - url
+          - textarea
+          - number
+          - select
     Contact:
       type: object
       properties:

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.9.14  |  Generated: 2026-03-31T19:46:30.667Z
+Version: 1.9.16  |  Generated: 2026-04-13T17:25:57.673Z
 
 This is a concise summary of all available API functions and types.
 
@@ -103,8 +103,10 @@ The Smartlinks SDK is organized into the following namespaces:
 - **async** - Functions for async operations
 - **attestation** - Functions for attestation operations
 - **attestations** - Functions for attestations operations
+- **config** - Functions for config operations
 - **containers** - Functions for containers operations
 - **facets** - Functions for facets operations
+- **http** - Functions for http operations
 - **jobs** - Functions for jobs operations
 - **journeysAnalytics** - Functions for journeysAnalytics operations
 - **location** - Functions for location operations
@@ -3744,6 +3746,90 @@ export interface TransactionalSendError {
 }
 
 export type TransactionalSendResult =`
+
+### config
+
+**FieldOption** (interface)
+```typescript
+interface FieldOption {
+  label: string
+  value: string
+}
+```
+
+**FieldDefinition** (interface)
+```typescript
+interface FieldDefinition {
+  id: string
+  label: string
+  storageKey?: string
+  type: FieldType
+  options?: FieldOption[]
+  required?: boolean
+  col?: number
+  placeholder?: string
+  help?: string
+  min?: number
+  max?: number
+  step?: number
+  rows?: number
+  autoGrow?: boolean
+  accept?: string
+  clearable?: boolean
+  disabled?: boolean
+  * Conditional visibility. If absent the field is always shown.
+  * Object form: `{ field: 'someKey', equals: 'someValue' }` — show when `model[field] === equals`.
+  showIf?: { field: string; equals: unknown }
+}
+```
+
+**ProofTypeDefinition** (interface)
+```typescript
+interface ProofTypeDefinition {
+  id: string
+  name: string
+  description?: string
+  * Grouping used to organise proof types in the picker.
+  * Examples: 'basic', 'retail', 'ownable', 'consumable', 'attendance',
+  * 'qualification', 'creative', 'memories', 'safety', 'connected',
+  * 'smartdocent', 'tradable'
+  category?: string
+  * Whether this proof type is shown to users.
+  * Only types with `active === true` are returned to the public API
+  * when the platform admin has filtered by "Only Active".
+  active?: boolean
+  group: boolean
+  * The underlying proof mechanisms that products of this type can use.
+  * Stored as `proofTypes` (plural) on the product document.
+  proofTypes?: ProofMechanism[]
+  proofType?: ProofMechanism
+  * Field IDs (from the field catalog) shown when creating/editing the product group.
+  * Ordered — rendered in this sequence.
+  groupFields?: string[]
+  * Field IDs shown when creating/editing an individual proof item within the group.
+  * If absent, falls back to groupFields.
+  proofFields?: string[]
+  * Column definitions shown in the proof list view.
+  * Keys are field IDs; value true means show the column.
+  listFields?: Record<string, boolean>
+  * App uniqueNames automatically installed (for free) when this proof type is selected.
+  freeApps?: string[]
+  * App uniqueNames shown as recommended paid add-ons for this proof type.
+  apps?: string[]
+  collection?: string
+  action?: string
+  bound?: 'soul'
+  * UI translation overrides for this proof type.
+  * Keys are source English words; values are replacement strings.
+  * Example: `{ "Products": "Works" }`
+  translations?: Record<string, string>
+  hideProductTools?: boolean
+}
+```
+
+**FieldType** = ``
+
+**ProofMechanism** = ``
 
 ### contact
 
@@ -7637,6 +7723,14 @@ Logging: Append a single communication event. POST /admin/collection/:collection
     body: LogBulkCommunicationEventsBody | ({ sourceId: string; ids: string[]; idField?: 'userId'|'contactId'; [k: string]: any }) → `void`
 Logging: Append many communication events for a list of IDs. POST /admin/collection/:collectionId/comm/log/bulk
 
+### config
+
+**getFields**() → `Promise<FieldDefinition[]>`
+Returns the full platform field catalog. Fields are used as building blocks for proof type templates — they define the input widgets shown when creating or editing products and proof items. **Endpoint:** `GET /api/v1/public/config/fields`
+
+**getProofTypes**() → `Promise<ProofTypeDefinition[]>`
+Returns all proof type definitions. Proof types are templates that specify which fields to show, which apps are pre-installed, and how the portal behaves for a given product category. **Endpoint:** `GET /api/v1/public/config/proofTypes`
+
 ### contact
 
 **create**(collectionId: string, data: ContactCreateRequest) → `Promise<ContactResponse>`
@@ -7835,6 +7929,23 @@ Update a form for a collection (admin only).
 
 **remove**(collectionId: string, formId: string) → `Promise<void>`
 Delete a form for a collection (admin only).
+
+### http
+
+**get**(path: string) → `Promise<T>`
+Perform a GET request to any API endpoint. const fields = await http.get<FieldDefinition[]>('/public/config/fields')
+
+**post**(path: string, body: any) → `Promise<T>`
+Perform a POST request to any API endpoint. const result = await http.post('/public/app/eticket/uploadTickets', { collectionId, productId, appId, data, })
+
+**put**(path: string, body: any) → `Promise<T>`
+Perform a PUT request to any API endpoint.
+
+**patch**(path: string, body: any) → `Promise<T>`
+Perform a PATCH request to any API endpoint.
+
+**del**(path: string) → `Promise<T>`
+Perform a DELETE request to any API endpoint.
 
 ### interactions
 

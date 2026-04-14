@@ -33,3 +33,4 @@ export * from "./appManifest";
 export * from "./appObjects";
 export * from "./loyalty";
 export * from "./translations";
+export * from "./config";
