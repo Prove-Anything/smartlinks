@@ -1,4 +1,4 @@
-import type { AppCase, CreateCaseInput, UpdateCaseInput, AppendHistoryInput, CaseSummaryRequest, CaseSummaryResponse, CaseListQueryParams, AppThread, CreateThreadInput, UpdateThreadInput, ReplyInput, ThreadListQueryParams, AppRecord, CreateRecordInput, UpdateRecordInput, RecordListQueryParams, PaginatedResponse, AggregateRequest, AggregateResponse, RelatedResponse } from '../types/appObjects';
+import type { AppCase, CreateCaseInput, UpdateCaseInput, AppendHistoryInput, CaseSummaryRequest, CaseSummaryResponse, CaseListQueryParams, AppThread, CreateThreadInput, UpdateThreadInput, ReplyInput, ThreadListQueryParams, AppRecord, CreateRecordInput, CreateRecordResponse, UpdateRecordInput, RecordListQueryParams, PaginatedResponse, AggregateRequest, AggregateResponse, RelatedResponse } from '../types/appObjects';
 export declare namespace app {
     namespace cases {
         /**
@@ -95,8 +95,15 @@ export declare namespace app {
         /**
          * Create a new record
          * POST /records
+         *
+         * When called on the public endpoint (admin = false) with an anonymous
+         * caller, and the app's `publicCreate.records.anonymous.edit.editToken`
+         * policy is enabled, the response includes a one-time `editToken` string.
+         * Store it immediately — it is never returned again.
+         *
+         * @see {@link updateWithToken} — use the edit token for a follow-up amendment
          */
-        function create(collectionId: string, appId: string, input: CreateRecordInput, admin?: boolean): Promise<AppRecord>;
+        function create(collectionId: string, appId: string, input: CreateRecordInput, admin?: boolean): Promise<CreateRecordResponse>;
         /**
          * List records with optional query parameters
          * GET /records
@@ -113,6 +120,53 @@ export declare namespace app {
          * Admin can update any field, public (owner) can only update data and owner
          */
         function update(collectionId: string, appId: string, recordId: string, input: UpdateRecordInput, admin?: boolean): Promise<AppRecord>;
+        /**
+         * Amend the `data` zone of a record using an anonymous edit token.
+         * PATCH /records/:recordId  (public endpoint, no auth)
+         *
+         * This is the follow-up call after an anonymous `create()` that returned an
+         * `editToken`.  Present the token via `X-Edit-Token` — the server validates
+         * it with a constant-time comparison and, if `windowMinutes` is configured
+         * in the policy, checks that the token has not expired.
+         *
+         * **Scope:** only the `data` zone may be modified via this path.
+         * `owner`, `admin`, `status`, `visibility`, and indexed fields are
+         * immutable to anonymous token holders.
+         *
+         * @param collectionId - Collection the record belongs to
+         * @param appId        - App the record belongs to
+         * @param recordId     - ID of the record to amend
+         * @param data         - New (full replacement) value for the `data` zone
+         * @param editToken    - Token received from the original `create()` response
+         *
+         * @example
+         * ```ts
+         * const record = await app.records.create(collectionId, appId, {
+         *   recordType: 'payment',
+         *   visibility: 'public',
+         *   data: { amount: 9900, currency: 'USD' },
+         * })
+         * const { editToken } = record  // store this immediately!
+         *
+         * // Later, once the payment gateway confirms:
+         * const updated = await app.records.updateWithToken(
+         *   collectionId,
+         *   appId,
+         *   record.id,
+         *   { amount: 9900, currency: 'USD', transactionId: 'txn_abc123' },
+         *   editToken,
+         * )
+         * ```
+         *
+         * ### Error codes
+         * | HTTP | `errorCode`           | Meaning                                           |
+         * |------|-----------------------|---------------------------------------------------|
+         * | 401  | `UNAUTHORIZED`        | No auth token and no `X-Edit-Token` header        |
+         * | 403  | `FORBIDDEN`           | Policy not enabled, or token does not match       |
+         * | 403  | `EDIT_WINDOW_EXPIRED` | `windowMinutes` elapsed since record creation     |
+         * | 404  | `NOT_FOUND`           | Record does not exist                             |
+         */
+        function updateWithToken(collectionId: string, appId: string, recordId: string, data: Record<string, unknown>, editToken: string): Promise<AppRecord>;
         /**
          * Soft delete a record
          * DELETE /records/:recordId

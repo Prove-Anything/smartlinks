@@ -576,26 +576,65 @@ const usageStats = await app.records.aggregate(collectionId, appId, {
 
 ## Public Create Policies
 
-Control who can create objects on **public endpoints** by setting a `publicCreate` policy on your app's config. This is a `publicCreate` field inside your app config object (identified by `appId` within your collection).
+Control who can create objects on **public endpoints** by setting a `publicCreate` policy on your app's config document (identified by `appId` within your collection).
+
+Set the policy via:
+```
+POST /api/v1/admin/collection/:collectionId/apps/:appId
+```
+
+The server reads this document at request time — no cache invalidation or service restart is required.
 
 ### Policy Structure
 
+Each object type (`cases`, `threads`, `records`) has **independent branches** for anonymous and authenticated callers. Each branch carries its own `allow` flag, optional field overrides (`enforce`), and — for records — optional edit-token config (`edit`).
+
 ```typescript
 interface PublicCreatePolicy {
-  cases?: {
-    allow: {
-      anonymous?: boolean      // allow unauthenticated users
-      authenticated?: boolean  // allow authenticated contacts
-    }
-    enforce?: {
-      anonymous?: Partial<CreateCaseInput>     // force these values for anon
-      authenticated?: Partial<CreateCaseInput> // force these values for auth
-    }
+  cases?:   PublicCreateObjectRule
+  threads?: PublicCreateObjectRule
+  records?: PublicCreateObjectRule
+}
+
+interface PublicCreateObjectRule {
+  anonymous?:     PublicCreateBranch
+  authenticated?: PublicCreateBranch
+}
+
+interface PublicCreateBranch {
+  /** Whether creation is permitted for this caller class */
+  allow: boolean
+
+  /**
+   * Hard overrides merged over the caller's body before writing.
+   * Lock down visibility and status regardless of what clients send.
+   */
+  enforce?: {
+    visibility?: 'public' | 'owner' | 'admin'
+    status?:     string
   }
-  threads?: { /* same structure */ }
-  records?: { /* same structure */ }
+
+  /**
+   * Anonymous edit-token config — records only.
+   * See "Anonymous Edit Tokens" section below.
+   */
+  edit?: {
+    editToken:      boolean
+    windowMinutes?: number  // omit for no expiry
+  }
 }
 ```
+
+#### Visibility enforcement guard-rails
+
+The server silently corrects misconfigured visibility values:
+
+| Caller type     | `enforce.visibility` supplied | Server overrides to |
+|-----------------|-------------------------------|---------------------|
+| `anonymous`     | `'owner'`                     | `'admin'`           |
+| `authenticated` | `'public'`                    | `'owner'`           |
+
+These guards exist because anonymous callers have no identity to own a record, and `'public'` visibility on authenticated-only objects would be a misconfiguration.
 
 ### Example Policies
 
@@ -603,20 +642,15 @@ interface PublicCreatePolicy {
 
 ```json
 {
-  "cases": {
-    "allow": {
-      "anonymous": true,
-      "authenticated": true
-    },
-    "enforce": {
+  "publicCreate": {
+    "cases": {
       "anonymous": {
-        "visibility": "owner",
-        "status": "open",
-        "category": "support"
+        "allow": true,
+        "enforce": { "visibility": "public", "status": "open" }
       },
       "authenticated": {
-        "visibility": "owner",
-        "status": "open"
+        "allow": true,
+        "enforce": { "visibility": "owner", "status": "open" }
       }
     }
   }
@@ -627,15 +661,35 @@ interface PublicCreatePolicy {
 
 ```json
 {
-  "threads": {
-    "allow": {
-      "anonymous": false,
-      "authenticated": true
-    },
-    "enforce": {
+  "publicCreate": {
+    "threads": {
+      "anonymous":     { "allow": false },
       "authenticated": {
-        "visibility": "public",
-        "status": "open"
+        "allow": true,
+        "enforce": { "visibility": "public", "status": "open" }
+      }
+    }
+  }
+}
+```
+
+**Anonymous record creation with edit token (30-minute window):**
+
+```json
+{
+  "publicCreate": {
+    "records": {
+      "anonymous": {
+        "allow": true,
+        "enforce": { "visibility": "public", "status": "pending" },
+        "edit": {
+          "editToken": true,
+          "windowMinutes": 30
+        }
+      },
+      "authenticated": {
+        "allow": true,
+        "enforce": { "visibility": "owner", "status": "pending" }
       }
     }
   }
@@ -646,16 +700,113 @@ interface PublicCreatePolicy {
 
 ```json
 {
-  "records": {
-    "allow": {
-      "anonymous": false,
-      "authenticated": false
+  "publicCreate": {
+    "records": {
+      "anonymous":     { "allow": false },
+      "authenticated": { "allow": false }
     }
   }
 }
 ```
 
-The `enforce` values are **merged over** the caller's request body, so you can lock down fields like `visibility`, `status`, or `category` regardless of what clients send.
+The `enforce` values are **merged over** the caller's request body, so you can lock down fields like `visibility` and `status` regardless of what clients send.
+
+---
+
+## Anonymous Edit Tokens
+
+Enables an anonymous caller to amend a record they just created — without authentication — by presenting a short-lived secret token.
+
+Designed for flows where a client needs to make a follow-up update before a server-side process locks the record. Common examples: payment + confirmation, multi-step forms, IoT device registration.
+
+### How It Works
+
+```
+1. Configure — set publicCreate.records.anonymous.edit.editToken: true in app config
+2. Create    — anonymous POST /records returns { ...record, editToken: "3f8a2c1e..." }
+               Token is stored in record's admin zone; never visible again
+3. Amend     — PATCH /records/:recordId with X-Edit-Token header
+               Only the data zone may be modified
+4. Expiry    — if windowMinutes is set, token is rejected after that many minutes
+```
+
+### SDK Usage
+
+```typescript
+import { app } from '@proveanything/smartlinks';
+
+// Step 1: Create the record (anonymous caller — no auth token)
+const response = await app.records.create(collectionId, appId, {
+  recordType: 'payment',
+  visibility: 'public',
+  data: { amount: 9900, currency: 'USD' },
+})
+
+// editToken is present only when the policy has editToken: true
+const { editToken } = response  // ⚠️ store immediately — returned once only
+
+// Step 2: After external confirmation (e.g. payment gateway callback)
+const updated = await app.records.updateWithToken(
+  collectionId,
+  appId,
+  response.id,
+  { amount: 9900, currency: 'USD', transactionId: 'txn_abc123' },
+  editToken,
+)
+```
+
+`app.records.updateWithToken()` sends the token as the `X-Edit-Token` request header on the public PATCH endpoint — no auth token needed.
+
+### Creation Response Shape
+
+```typescript
+interface CreateRecordResponse extends AppRecord {
+  /**
+   * Present only on anonymous creation when editToken policy is enabled.
+   * Returned ONCE — store it client-side immediately.
+   */
+  editToken?: string
+}
+```
+
+Example creation response:
+
+```json
+{
+  "id": "a1b2c3d4-...",
+  "recordType": "payment",
+  "status": "pending",
+  "visibility": "public",
+  "data": { "amount": 9900, "currency": "USD" },
+  "createdAt": "2026-04-16T12:00:00.000Z",
+  "editToken": "3f8a2c1e..."
+}
+```
+
+### Amendment Scope
+
+Anonymous token updates may only modify the **`data` zone**. The following are immutable via this path:
+
+- `owner`, `admin` zones
+- `status`, `visibility`
+- All indexed fields (`recordType`, `ref`, `startsAt`, `expiresAt`, etc.)
+
+### Error Codes
+
+| HTTP | `errorCode`            | Meaning                                          |
+|------|------------------------|--------------------------------------------------|
+| 401  | `UNAUTHORIZED`         | No auth token and no `X-Edit-Token` header       |
+| 403  | `FORBIDDEN`            | `editToken` policy not enabled for this app      |
+| 403  | `FORBIDDEN`            | Token does not match                             |
+| 403  | `EDIT_WINDOW_EXPIRED`  | `windowMinutes` elapsed since record creation    |
+| 404  | `NOT_FOUND`            | Record does not exist                            |
+
+### Security Notes
+
+- The token is stored in `admin.editToken` and is **always stripped** from public and owner responses — it cannot be read back after creation.
+- Token comparison uses `crypto.timingSafeEqual` to prevent timing-based oracle attacks.
+- The token is a 32-byte (`crypto.randomBytes(32)`) hex string — 256 bits of entropy.
+- For sensitive flows, combine `windowMinutes` with a server-side process that removes or overwrites the token once the record is confirmed.
 
 ---
 

@@ -369,23 +369,116 @@ export interface RelatedResponse {
     records: AppRecord[];
 }
 /**
- * Public create policy configuration
+ * Top-level public-create policy stored under the `publicCreate` key of an
+ * app config document.  Controls which caller types may create objects on
+ * **public** App Objects endpoints.
+ *
+ * Set via `POST /api/v1/admin/collection/:collectionId/apps/:appId` with the
+ * policy as the request body (merged over any existing config).
+ *
+ * The server reads this document at request time — no cache invalidation or
+ * service restart is required after changing it.
  */
 export interface PublicCreatePolicy {
-    cases?: PublicCreateRule;
-    threads?: PublicCreateRule;
-    records?: PublicCreateRule;
+    cases?: PublicCreateObjectRule;
+    threads?: PublicCreateObjectRule;
+    records?: PublicCreateObjectRule;
 }
 /**
- * Rule for public create operations
+ * Per-object-type rule within a {@link PublicCreatePolicy}.
+ * Each caller class (`anonymous`, `authenticated`) has its own independent
+ * branch so you can apply different enforcement for each.
  */
-export interface PublicCreateRule {
-    allow: {
-        anonymous?: boolean;
-        authenticated?: boolean;
-    };
+export interface PublicCreateObjectRule {
+    /** Rules for unauthenticated (anonymous) callers */
+    anonymous?: PublicCreateBranch;
+    /** Rules for authenticated (signed-in contact) callers */
+    authenticated?: PublicCreateBranch;
+}
+/**
+ * Policy branch for a single caller class.
+ *
+ * ### Visibility enforcement guard-rails
+ *
+ * The server silently corrects misconfigured visibility values:
+ *
+ * | Caller type     | `enforce.visibility` supplied | Server overrides to  |
+ * |-----------------|-------------------------------|----------------------|
+ * | `anonymous`     | `'owner'`                     | `'admin'`            |
+ * | `authenticated` | `'public'`                    | `'owner'`            |
+ *
+ * These guards exist because anonymous callers have no identity to own a
+ * record, and `'public'` visibility for authenticated-only objects would be
+ * a misconfiguration.
+ */
+export interface PublicCreateBranch {
+    /** Whether creation is permitted for this caller class */
+    allow: boolean;
+    /**
+     * Field values merged **over** the caller's request body before writing.
+     * Use this to lock down `visibility` and `status` regardless of what the
+     * client sends.
+     */
     enforce?: {
-        anonymous?: Partial<CreateCaseInput | CreateThreadInput | CreateRecordInput>;
-        authenticated?: Partial<CreateCaseInput | CreateThreadInput | CreateRecordInput>;
+        visibility?: 'public' | 'owner' | 'admin';
+        status?: string;
     };
+    /**
+     * Anonymous edit-token configuration.
+     * **Records only** — ignored for cases and threads.
+     *
+     * When `editToken: true`, the server generates a one-time 256-bit hex token
+     * on anonymous record creation, stores it in `admin.editToken` (never
+     * exposed to public / owner responses), and returns it **once** in the
+     * creation response under the `editToken` key.
+     *
+     * The client can then pass that token as the `X-Edit-Token` header on
+     * `PATCH /records/:recordId` to amend the `data` zone without
+     * authentication.
+     *
+     * @see {@link CreateRecordResponse} — creation response shape
+     * @see {@link records.updateWithToken} — SDK method for the amendment call
+     */
+    edit?: {
+        /** Enable edit-token generation on anonymous record creation */
+        editToken: boolean;
+        /**
+         * Optional expiry window in minutes from `createdAt`.
+         * After this many minutes the token is rejected with HTTP 403
+         * `EDIT_WINDOW_EXPIRED`.  Omit for no expiry.
+         */
+        windowMinutes?: number;
+    };
+}
+/**
+ * Response from `app.records.create()` when the caller is anonymous and the
+ * app's `publicCreate.records.anonymous.edit.editToken` policy is `true`.
+ *
+ * The `editToken` field is present **only on the creation response** — it is
+ * stored in the record's `admin` zone and never returned again.  Store it
+ * client-side immediately.
+ *
+ * Use `app.records.updateWithToken()` to amend the record's `data` zone with
+ * this token.
+ *
+ * @example
+ * ```ts
+ * const response = await app.records.create(collectionId, appId, {
+ *   recordType: 'payment',
+ *   visibility: 'public',
+ *   data: { amount: 9900, currency: 'USD' },
+ * })
+ * // response.editToken is present when the policy has editToken: true
+ * const editToken = response.editToken
+ * ```
+ */
+export interface CreateRecordResponse extends AppRecord {
+    /**
+     * Short-lived edit token.  Present only when:
+     * 1. The caller is anonymous, AND
+     * 2. The app policy has `publicCreate.records.anonymous.edit.editToken: true`
+     *
+     * This value is returned **once** and cannot be retrieved again.
+     */
+    editToken?: string;
 }

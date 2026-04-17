@@ -15,6 +15,7 @@ import type {
   ThreadListQueryParams,
   AppRecord,
   CreateRecordInput,
+  CreateRecordResponse,
   UpdateRecordInput,
   RecordListQueryParams,
   PaginatedResponse,
@@ -295,15 +296,22 @@ export namespace records {
   /**
    * Create a new record
    * POST /records
+   *
+   * When called on the public endpoint (admin = false) with an anonymous
+   * caller, and the app's `publicCreate.records.anonymous.edit.editToken`
+   * policy is enabled, the response includes a one-time `editToken` string.
+   * Store it immediately — it is never returned again.
+   *
+   * @see {@link updateWithToken} — use the edit token for a follow-up amendment
    */
   export async function create(
     collectionId: string,
     appId: string,
     input: CreateRecordInput,
     admin: boolean = false
-  ): Promise<AppRecord> {
+  ): Promise<CreateRecordResponse> {
     const path = basePath(collectionId, appId, admin)
-    return post<AppRecord>(path, input)
+    return post<CreateRecordResponse>(path, input)
   }
 
   /**
@@ -349,6 +357,63 @@ export namespace records {
   ): Promise<AppRecord> {
     const path = `${basePath(collectionId, appId, admin)}/${encodeURIComponent(recordId)}`
     return patch<AppRecord>(path, input)
+  }
+
+  /**
+   * Amend the `data` zone of a record using an anonymous edit token.
+   * PATCH /records/:recordId  (public endpoint, no auth)
+   *
+   * This is the follow-up call after an anonymous `create()` that returned an
+   * `editToken`.  Present the token via `X-Edit-Token` — the server validates
+   * it with a constant-time comparison and, if `windowMinutes` is configured
+   * in the policy, checks that the token has not expired.
+   *
+   * **Scope:** only the `data` zone may be modified via this path.
+   * `owner`, `admin`, `status`, `visibility`, and indexed fields are
+   * immutable to anonymous token holders.
+   *
+   * @param collectionId - Collection the record belongs to
+   * @param appId        - App the record belongs to
+   * @param recordId     - ID of the record to amend
+   * @param data         - New (full replacement) value for the `data` zone
+   * @param editToken    - Token received from the original `create()` response
+   *
+   * @example
+   * ```ts
+   * const record = await app.records.create(collectionId, appId, {
+   *   recordType: 'payment',
+   *   visibility: 'public',
+   *   data: { amount: 9900, currency: 'USD' },
+   * })
+   * const { editToken } = record  // store this immediately!
+   *
+   * // Later, once the payment gateway confirms:
+   * const updated = await app.records.updateWithToken(
+   *   collectionId,
+   *   appId,
+   *   record.id,
+   *   { amount: 9900, currency: 'USD', transactionId: 'txn_abc123' },
+   *   editToken,
+   * )
+   * ```
+   *
+   * ### Error codes
+   * | HTTP | `errorCode`           | Meaning                                           |
+   * |------|-----------------------|---------------------------------------------------|
+   * | 401  | `UNAUTHORIZED`        | No auth token and no `X-Edit-Token` header        |
+   * | 403  | `FORBIDDEN`           | Policy not enabled, or token does not match       |
+   * | 403  | `EDIT_WINDOW_EXPIRED` | `windowMinutes` elapsed since record creation     |
+   * | 404  | `NOT_FOUND`           | Record does not exist                             |
+   */
+  export async function updateWithToken(
+    collectionId: string,
+    appId: string,
+    recordId: string,
+    data: Record<string, unknown>,
+    editToken: string
+  ): Promise<AppRecord> {
+    const path = `${basePath(collectionId, appId, false)}/${encodeURIComponent(recordId)}`
+    return patch<AppRecord>(path, { data }, { 'X-Edit-Token': editToken })
   }
 
   /**

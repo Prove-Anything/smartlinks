@@ -44,12 +44,12 @@ export namespace authKit {
 
   /** Send a magic link email to the user (public). */
   export async function sendMagicLink(clientId: string, data: { email: string; redirectUrl: string; accountData?: Record<string, any> }): Promise<MagicLinkSendResponse> {
-    return post<MagicLinkSendResponse>(`/authkit/${encodeURIComponent(clientId)}/magic-link/send`, data)
+    return post<MagicLinkSendResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/magic-link/send`, data)
   }
 
   /** Verify a magic link token and authenticate/create the user (public). */
   export async function verifyMagicLink(clientId: string, token: string): Promise<MagicLinkVerifyResponse> {
-    const res = await post<MagicLinkVerifyResponse>(`/authkit/${encodeURIComponent(clientId)}/magic-link/verify`, { token })
+    const res = await post<MagicLinkVerifyResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/magic-link/verify`, { token })
     if (res.token) setBearerToken(res.token)
     return res
   }

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.9.16  |  Generated: 2026-04-13T17:25:57.673Z
+Version: 1.9.19  |  Generated: 2026-04-16T12:41:11.180Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1957,22 +1957,51 @@ interface RelatedResponse {
 **PublicCreatePolicy** (interface)
 ```typescript
 interface PublicCreatePolicy {
-  cases?: PublicCreateRule
-  threads?: PublicCreateRule
-  records?: PublicCreateRule
+  cases?:   PublicCreateObjectRule
+  threads?: PublicCreateObjectRule
+  records?: PublicCreateObjectRule
 }
 ```
 
-**PublicCreateRule** (interface)
+**PublicCreateObjectRule** (interface)
 ```typescript
-interface PublicCreateRule {
-  allow: {
-  anonymous?: boolean
-  authenticated?: boolean
-  }
+interface PublicCreateObjectRule {
+  anonymous?:     PublicCreateBranch
+  authenticated?: PublicCreateBranch
+}
+```
+
+**PublicCreateBranch** (interface)
+```typescript
+interface PublicCreateBranch {
+  allow: boolean
+  * Field values merged **over** the caller's request body before writing.
+  * Use this to lock down `visibility` and `status` regardless of what the
+  * client sends.
   enforce?: {
-  anonymous?: Partial<CreateCaseInput | CreateThreadInput | CreateRecordInput>
-  authenticated?: Partial<CreateCaseInput | CreateThreadInput | CreateRecordInput>
+  visibility?: 'public' | 'owner' | 'admin'
+  status?:     string
+  }
+  * Anonymous edit-token configuration.
+  * **Records only** — ignored for cases and threads.
+  *
+  * When `editToken: true`, the server generates a one-time 256-bit hex token
+  * on anonymous record creation, stores it in `admin.editToken` (never
+  * exposed to public / owner responses), and returns it **once** in the
+  * creation response under the `editToken` key.
+  *
+  * The client can then pass that token as the `X-Edit-Token` header on
+  * `PATCH /records/:recordId` to amend the `data` zone without
+  * authentication.
+  *
+  * @see {@link CreateRecordResponse} — creation response shape
+  * @see {@link records.updateWithToken} — SDK method for the amendment call
+  edit?: {
+  editToken: boolean
+  * Optional expiry window in minutes from `createdAt`.
+  * After this many minutes the token is rejected with HTTP 403
+  * `EDIT_WINDOW_EXPIRED`.  Omit for no expiry.
+  windowMinutes?: number
   }
 }
 ```
@@ -6654,6 +6683,46 @@ interface TranslationUpdateRequest {
 
 **VariantUpdateRequest** = `any`
 
+### widgets
+
+**NavigationRequest** (interface)
+```typescript
+interface NavigationRequest {
+  appId: string
+  deepLink?: string
+  params?: Record<string, string>
+  productId?: string
+  proofId?: string
+}
+```
+
+**SmartLinksWidgetProps** (interface)
+```typescript
+interface SmartLinksWidgetProps {
+  collectionId: string
+  appId: string
+  productId?: string
+  proofId?: string
+  user?: {
+  id?: string
+  email?: string
+  name?: string
+  admin?: boolean
+  }
+  * Pre-initialised SmartLinks SDK instance provided by the parent platform.
+  * At runtime this is `typeof import('@proveanything/smartlinks')`.
+  SL: Record<string, unknown>
+  * Navigation callback.  Emit a `NavigationRequest` to ask the parent
+  * platform to navigate to another app.  A legacy plain-string path is also
+  * accepted for backward compatibility.
+  onNavigate?: (request: NavigationRequest | string) => void
+  publicPortalUrl?: string
+  size?: 'compact' | 'standard' | 'large'
+  lang?: string
+  translations?: Record<string, string>
+}
+```
+
 ### appConfiguration (api)
 
 **AppConfigOptions** (type)
@@ -7024,8 +7093,8 @@ General-purpose structured app objects. Use these when a simple scoped data item
 **create**(collectionId: string,
     appId: string,
     input: CreateRecordInput,
-    admin: boolean = false) → `Promise<AppRecord>`
-Create a new record POST /records
+    admin: boolean = false) → `Promise<CreateRecordResponse>`
+Create a new record POST /records When called on the public endpoint (admin = false) with an anonymous caller, and the app's `publicCreate.records.anonymous.edit.editToken` policy is enabled, the response includes a one-time `editToken` string. Store it immediately — it is never returned again.
 
 **list**(collectionId: string,
     appId: string,
@@ -7045,6 +7114,13 @@ Get a single record by ID GET /records/:recordId
     input: UpdateRecordInput,
     admin: boolean = false) → `Promise<AppRecord>`
 Update a record PATCH /records/:recordId Admin can update any field, public (owner) can only update data and owner
+
+**updateWithToken**(collectionId: string,
+    appId: string,
+    recordId: string,
+    data: Record<string, unknown>,
+    editToken: string) → `Promise<AppRecord>`
+Amend the `data` zone of a record using an anonymous edit token. PATCH /records/:recordId  (public endpoint, no auth) This is the follow-up call after an anonymous `create()` that returned an `editToken`.  Present the token via `X-Edit-Token` — the server validates it with a constant-time comparison and, if `windowMinutes` is configured in the policy, checks that the token has not expired. **Scope:** only the `data` zone may be modified via this path. `owner`, `admin`, `status`, `visibility`, and indexed fields are immutable to anonymous token holders. ```ts const record = await app.records.create(collectionId, appId, { recordType: 'payment', visibility: 'public', data: { amount: 9900, currency: 'USD' }, }) const { editToken } = record  // store this immediately! // Later, once the payment gateway confirms: const updated = await app.records.updateWithToken( collectionId, appId, record.id, { amount: 9900, currency: 'USD', transactionId: 'txn_abc123' }, editToken, ) ``` ### Error codes | HTTP | `errorCode`           | Meaning                                           | |------|-----------------------|---------------------------------------------------| | 401  | `UNAUTHORIZED`        | No auth token and no `X-Edit-Token` header        | | 403  | `FORBIDDEN`           | Policy not enabled, or token does not match       | | 403  | `EDIT_WINDOW_EXPIRED` | `windowMinutes` elapsed since record creation     | | 404  | `NOT_FOUND`           | Record does not exist                             |
 
 **remove**(collectionId: string,
     appId: string,

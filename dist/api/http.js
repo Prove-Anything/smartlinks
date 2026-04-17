@@ -23,6 +23,10 @@
 //     { collectionId, productId, appId, data }
 //   )
 import { request as _get, post as _post, put as _put, patch as _patch, del as _del, } from '../http';
+/** Ensure the path always starts with `/` so it concatenates correctly with baseURL. */
+function normalizePath(path) {
+    return path.startsWith('/') ? path : `/${path}`;
+}
 export var http;
 (function (http) {
     /**
@@ -36,7 +40,7 @@ export var http;
      * const fields = await http.get<FieldDefinition[]>('/public/config/fields')
      */
     async function get(path) {
-        return _get(path);
+        return _get(normalizePath(path));
     }
     http.get = get;
     /**
@@ -56,7 +60,7 @@ export var http;
      * })
      */
     async function post(path, body) {
-        return _post(path, body);
+        return _post(normalizePath(path), body);
     }
     http.post = post;
     /**
@@ -68,7 +72,7 @@ export var http;
      * @throws {SmartlinksApiError} on non-2xx responses
      */
     async function put(path, body) {
-        return _put(path, body);
+        return _put(normalizePath(path), body);
     }
     http.put = put;
     /**
@@ -80,7 +84,7 @@ export var http;
      * @throws {SmartlinksApiError} on non-2xx responses
      */
     async function patch(path, body) {
-        return _patch(path, body);
+        return _patch(normalizePath(path), body);
     }
     http.patch = patch;
     /**
@@ -91,7 +95,7 @@ export var http;
      * @throws {SmartlinksApiError} on non-2xx responses
      */
     async function del(path) {
-        return _del(path);
+        return _del(normalizePath(path));
     }
     http.del = del;
 })(http || (http = {}));

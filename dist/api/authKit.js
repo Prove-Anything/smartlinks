@@ -25,12 +25,12 @@ export var authKit;
     authKit.googleLogin = googleLogin;
     /** Send a magic link email to the user (public). */
     async function sendMagicLink(clientId, data) {
-        return post(`/authkit/${encodeURIComponent(clientId)}/magic-link/send`, data);
+        return post(`/authkit/${encodeURIComponent(clientId)}/auth/magic-link/send`, data);
     }
     authKit.sendMagicLink = sendMagicLink;
     /** Verify a magic link token and authenticate/create the user (public). */
     async function verifyMagicLink(clientId, token) {
-        const res = await post(`/authkit/${encodeURIComponent(clientId)}/magic-link/verify`, { token });
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/magic-link/verify`, { token });
         if (res.token)
             setBearerToken(res.token);
         return res;

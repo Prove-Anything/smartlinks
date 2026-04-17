@@ -36,3 +36,4 @@ export * from "./appObjects";
 export * from "./loyalty";
 export * from "./translations";
 export * from "./config";
+export * from "./widgets";

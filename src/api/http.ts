@@ -31,6 +31,11 @@ import {
   del as _del,
 } from '../http'
 
+/** Ensure the path always starts with `/` so it concatenates correctly with baseURL. */
+function normalizePath(path: string): string {
+  return path.startsWith('/') ? path : `/${path}`
+}
+
 export namespace http {
 
   /**
@@ -44,7 +49,7 @@ export namespace http {
    * const fields = await http.get<FieldDefinition[]>('/public/config/fields')
    */
   export async function get<T>(path: string): Promise<T> {
-    return _get<T>(path)
+    return _get<T>(normalizePath(path))
   }
 
   /**
@@ -64,7 +69,7 @@ export namespace http {
    * })
    */
   export async function post<T>(path: string, body: any): Promise<T> {
-    return _post<T>(path, body)
+    return _post<T>(normalizePath(path), body)
   }
 
   /**
@@ -76,7 +81,7 @@ export namespace http {
    * @throws {SmartlinksApiError} on non-2xx responses
    */
   export async function put<T>(path: string, body: any): Promise<T> {
-    return _put<T>(path, body)
+    return _put<T>(normalizePath(path), body)
   }
 
   /**
@@ -88,7 +93,7 @@ export namespace http {
    * @throws {SmartlinksApiError} on non-2xx responses
    */
   export async function patch<T>(path: string, body: any): Promise<T> {
-    return _patch<T>(path, body)
+    return _patch<T>(normalizePath(path), body)
   }
 
   /**
@@ -99,7 +104,7 @@ export namespace http {
    * @throws {SmartlinksApiError} on non-2xx responses
    */
   export async function del<T>(path: string): Promise<T> {
-    return _del<T>(path)
+    return _del<T>(normalizePath(path))
   }
 
 }

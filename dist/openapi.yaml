@@ -8380,6 +8380,65 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /authkit/{clientId}/auth/magic-link/send:
+    post:
+      tags:
+        - authKit
+      summary: Login with email + password (public).
+      operationId: authKit_sendMagicLink
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MagicLinkSendResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+  /authkit/{clientId}/auth/magic-link/verify:
+    post:
+      tags:
+        - authKit
+      summary: Google OAuth login (public).
+      operationId: authKit_verifyMagicLink
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MagicLinkVerifyResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /authkit/{clientId}/auth/phone/send-code:
     post:
       tags:
@@ -8610,65 +8669,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/VerifyResetTokenResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /authkit/{clientId}/magic-link/send:
-    post:
-      tags:
-        - authKit
-      summary: Login with email + password (public).
-      operationId: authKit_sendMagicLink
-      security: []
-      parameters:
-        - name: clientId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MagicLinkSendResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: true
-  /authkit/{clientId}/magic-link/verify:
-    post:
-      tags:
-        - authKit
-      summary: Google OAuth login (public).
-      operationId: authKit_verifyMagicLink
-      security: []
-      parameters:
-        - name: clientId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/MagicLinkVerifyResponse"
         400:
           description: Bad request
         401:
@@ -12417,6 +12417,54 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /{zone}/collection/{collectionId}/app/{appId}/recordse)}/{recordId}:
+    patch:
+      tags:
+        - records
+      summary: records.updateWithToken
+      operationId: records_updateWithToken
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppRecord"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
   /{zone}/collection/{collectionId}/app/{appId}/recordsn)}/aggregate:
     post:
       tags:
@@ -12550,7 +12598,7 @@ paths:
     get:
       tags:
         - records
-      summary: "Create a new record POST /records / export async function create( collectionId: string, appId: string, input: CreateReco"
+      summary: "List records with optional query parameters GET /records / export async function list( collectionId: string, appId: stri"
       operationId: records_get
       security: []
       parameters:
@@ -15602,26 +15650,49 @@ components:
       type: object
       properties:
         cases:
-          $ref: "#/components/schemas/PublicCreateRule"
+          $ref: "#/components/schemas/PublicCreateObjectRule"
         threads:
-          $ref: "#/components/schemas/PublicCreateRule"
+          $ref: "#/components/schemas/PublicCreateObjectRule"
         records:
-          $ref: "#/components/schemas/PublicCreateRule"
-    PublicCreateRule:
+          $ref: "#/components/schemas/PublicCreateObjectRule"
+    PublicCreateObjectRule:
+      type: object
+      properties:
+        anonymous:
+          $ref: "#/components/schemas/PublicCreateBranch"
+        authenticated:
+          $ref: "#/components/schemas/PublicCreateBranch"
+    PublicCreateBranch:
       type: object
       properties:
         allow:
-          type: object
-          additionalProperties: true
-        anonymous:
-          $ref: "#/components/schemas/CreateCaseInput"
-        authenticated:
-          $ref: "#/components/schemas/CreateCaseInput"
+          type: boolean
         enforce:
           type: object
           additionalProperties: true
+        visibility:
+          type: string
+          enum:
+            - public
+            - owner
+            - admin
+        status:
+          type: string
+        edit:
+          type: object
+          additionalProperties: true
+        editToken:
+          type: boolean
+        windowMinutes:
+          type: number
       required:
         - allow
+        - editToken
+    CreateRecordResponse:
+      type: object
+      properties:
+        editToken:
+          type: string
     Asset:
       type: object
       properties:
@@ -22544,6 +22615,66 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    NavigationRequest:
+      type: object
+      properties:
+        appId:
+          type: string
+        deepLink:
+          type: string
+        params:
+          type: object
+          additionalProperties:
+            type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+      required:
+        - appId
+    SmartLinksWidgetProps:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        appId:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        user:
+          type: object
+          additionalProperties: true
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        admin:
+          type: boolean
+        SL:
+          type: object
+          additionalProperties: true
+        publicPortalUrl:
+          type: string
+        size:
+          type: string
+          enum:
+            - compact
+            - standard
+            - large
+        lang:
+          type: string
+        translations:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+        - collectionId
+        - appId
+        - SL
     AppConfigOptions:
       type: object
       properties:
