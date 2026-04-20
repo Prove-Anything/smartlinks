@@ -93,7 +93,7 @@ function summarizeConditionSet(condition) {
     return `${(_a = condition.type) !== null && _a !== void 0 ? _a : 'and'} (${(_c = (_b = condition.conditions) === null || _b === void 0 ? void 0 : _b.length) !== null && _c !== void 0 ? _c : 0} conditions)`;
 }
 function summarizeCondition(condition) {
-    var _a, _b;
+    var _a, _b, _c, _d, _e;
     switch (condition.type) {
         case 'country':
             return `country regions=${((_a = condition.regions) === null || _a === void 0 ? void 0 : _a.join(',')) || 'none'} countries=${((_b = condition.countries) === null || _b === void 0 ? void 0 : _b.join(',')) || 'none'} contains=${condition.contains}`;
@@ -115,6 +115,11 @@ function summarizeCondition(condition) {
             return `geofence contains=${condition.contains}`;
         case 'value':
             return `value field=${condition.field} ${condition.validationType} ${String(condition.value)}`;
+        case 'facet': {
+            const mode = (_c = condition.matchMode) !== null && _c !== void 0 ? _c : 'any';
+            const vals = (_e = (_d = condition.values) === null || _d === void 0 ? void 0 : _d.join(', ')) !== null && _e !== void 0 ? _e : '—';
+            return `facet key=${condition.facetKey} mode=${mode} values=[${vals}]`;
+        }
         case 'itemStatus':
             return `itemStatus ${condition.statusType}`;
         default:
@@ -143,6 +148,8 @@ async function evaluateConditionEntry(condition, params) {
             return validateGeofence(condition, params);
         case 'value':
             return validateValue(condition, params);
+        case 'facet':
+            return validateFacet(condition, params);
         case 'itemStatus':
             return validateItemStatus(condition, params);
         default:
@@ -162,6 +169,7 @@ async function evaluateConditionEntry(condition, params) {
  * - **user** - User authentication status (logged in, owner, admin)
  * - **product** - Product-specific conditions
  * - **tag** - Product tag-based conditions
+ * - **facet** - Product facet-based conditions (any/all/none of specific facet values)
  * - **date** - Time-based conditions (before, after, between dates)
  * - **geofence** - Location-based restrictions
  * - **value** - Custom field comparisons
@@ -728,6 +736,82 @@ async function validateValue(condition, params) {
             fieldType: condition.fieldType,
             validationType: condition.validationType,
         },
+    };
+}
+/**
+ * Validate facet-based condition
+ */
+async function validateFacet(condition, params) {
+    var _a, _b, _c;
+    const { facetKey, matchMode = 'any', values = [] } = condition;
+    const facets = (_a = params.product) === null || _a === void 0 ? void 0 : _a.facets;
+    // No product
+    if (!((_b = params.product) === null || _b === void 0 ? void 0 : _b.id)) {
+        return {
+            passed: false,
+            detail: 'Product ID was not available.',
+            context: { facetKey, matchMode },
+        };
+    }
+    const assigned = (_c = facets === null || facets === void 0 ? void 0 : facets[facetKey]) !== null && _c !== void 0 ? _c : [];
+    const assignedKeys = assigned.map(v => v.key);
+    // Presence-only modes — ignore `values`
+    if (matchMode === 'hasFacet') {
+        return {
+            passed: assignedKeys.length > 0,
+            detail: `Product ${assigned.length > 0 ? 'has' : 'does not have'} values on facet '${facetKey}'.`,
+            context: { facetKey, assignedKeys },
+        };
+    }
+    if (matchMode === 'notHasFacet') {
+        return {
+            passed: assignedKeys.length === 0,
+            detail: `Product ${assigned.length === 0 ? 'has no' : 'has'} values on facet '${facetKey}'.`,
+            context: { facetKey, assignedKeys },
+        };
+    }
+    // Value-matching modes require at least one value to test
+    if (values.length === 0) {
+        return {
+            passed: false,
+            detail: `Facet condition for '${facetKey}' with matchMode '${matchMode}' requires at least one value.`,
+            context: { facetKey, matchMode },
+        };
+    }
+    if (matchMode === 'any') {
+        const matched = values.filter(v => assignedKeys.includes(v));
+        return {
+            passed: matched.length > 0,
+            detail: matched.length > 0
+                ? `Product matched facet '${facetKey}' value(s): [${matched.join(', ')}].`
+                : `Product did not match any of [${values.join(', ')}] on facet '${facetKey}'.`,
+            context: { facetKey, matchMode, testedValues: values, matched, assignedKeys },
+        };
+    }
+    if (matchMode === 'all') {
+        const missing = values.filter(v => !assignedKeys.includes(v));
+        return {
+            passed: missing.length === 0,
+            detail: missing.length === 0
+                ? `Product has all required values on facet '${facetKey}'.`
+                : `Product is missing [${missing.join(', ')}] on facet '${facetKey}'.`,
+            context: { facetKey, matchMode, testedValues: values, missing, assignedKeys },
+        };
+    }
+    if (matchMode === 'none') {
+        const matched = values.filter(v => assignedKeys.includes(v));
+        return {
+            passed: matched.length === 0,
+            detail: matched.length === 0
+                ? `Product correctly has none of [${values.join(', ')}] on facet '${facetKey}'.`
+                : `Product has forbidden value(s) [${matched.join(', ')}] on facet '${facetKey}'.`,
+            context: { facetKey, matchMode, testedValues: values, matched, assignedKeys },
+        };
+    }
+    return {
+        passed: false,
+        detail: `Unsupported facet matchMode '${matchMode}'.`,
+        context: { facetKey, matchMode },
     };
 }
 /**

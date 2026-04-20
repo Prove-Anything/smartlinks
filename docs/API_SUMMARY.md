@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.9.19  |  Generated: 2026-04-16T12:41:11.180Z
+Version: 1.9.20  |  Generated: 2026-04-17T10:13:30.466Z
 
 This is a concise summary of all available API functions and types.
 
@@ -6847,6 +6847,18 @@ interface UserInfo {
 interface ProductInfo {
   id: string
   tags?: Record<string, any>
+  * Facet values assigned to this product.
+  * Shape mirrors `ProductFacetMap`: a map of facet key → array of value objects.
+  * Each value object must have at minimum a `key` string property.
+  *
+  * @example
+  * ```ts
+  * {
+  *   material: [{ key: 'cotton', name: 'Cotton' }],
+  *   certifications: [{ key: 'organic', name: 'Organic' }, { key: 'recycled', name: 'Recycled' }]
+  * }
+  * ```
+  facets?: Record<string, Array<{ key: string; [k: string]: unknown }>>
 }
 ```
 

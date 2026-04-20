@@ -115,9 +115,61 @@ export interface ItemStatusCondition extends BaseCondition {
     statusType: 'isClaimable' | 'notClaimable' | 'noProof' | 'hasProof' | 'isVirtual' | 'notVirtual';
 }
 /**
+ * Facet-based condition — gates on the facet values assigned to the current product.
+ *
+ * The `facetKey` identifies which facet dimension to inspect (e.g. `'material'`, `'region'`,
+ * `'certifications'`).  The optional `values` array lists the value `key`s to test.
+ *
+ * ### Match modes (`matchMode`)
+ *
+ * | Mode | Passes when |
+ * |------|-------------|
+ * | `'any'` (default) | The product has **at least one** of the listed values on this facet |
+ * | `'all'` | The product has **every** listed value (multi-value facets only) |
+ * | `'none'` | The product has **none** of the listed values |
+ * | `'hasFacet'` | The product has **any** value on this facet (ignores `values`) |
+ * | `'notHasFacet'` | The product has **no** values on this facet (ignores `values`) |
+ *
+ * ### Examples
+ *
+ * ```typescript
+ * // Must carry the 'cotton' or 'linen' value on the 'material' facet
+ * { type: 'facet', facetKey: 'material', matchMode: 'any', values: ['cotton', 'linen'] }
+ *
+ * // Must carry BOTH 'organic' and 'recycled' on the 'certifications' facet
+ * { type: 'facet', facetKey: 'certifications', matchMode: 'all', values: ['organic', 'recycled'] }
+ *
+ * // Must NOT carry 'discontinued' on the 'status' facet
+ * { type: 'facet', facetKey: 'status', matchMode: 'none', values: ['discontinued'] }
+ *
+ * // Product must have at least one value on the 'region' facet
+ * { type: 'facet', facetKey: 'region', matchMode: 'hasFacet' }
+ * ```
+ */
+export interface FacetCondition extends BaseCondition {
+    type: 'facet';
+    /** The facet dimension key to inspect (e.g. `'material'`, `'region'`) */
+    facetKey: string;
+    /**
+     * How to match against `values`.
+     * - `'any'` — pass if the product has at least one of the listed values (default)
+     * - `'all'` — pass if the product has every listed value
+     * - `'none'` — pass if the product has none of the listed values
+     * - `'hasFacet'` — pass if the product has any value on this facet (ignores `values`)
+     * - `'notHasFacet'` — pass if the product has no values on this facet (ignores `values`)
+     */
+    matchMode?: 'any' | 'all' | 'none' | 'hasFacet' | 'notHasFacet';
+    /**
+     * Facet value keys to test against.
+     * Required for `'any'`, `'all'`, and `'none'` match modes.
+     * Ignored for `'hasFacet'` and `'notHasFacet'`.
+     */
+    values?: string[];
+}
+/**
  * Union of all condition types
  */
-export type Condition = CountryCondition | VersionCondition | DeviceCondition | NestedCondition | UserCondition | ProductCondition | TagCondition | DateCondition | GeofenceCondition | ValueCondition | ItemStatusCondition;
+export type Condition = CountryCondition | VersionCondition | DeviceCondition | NestedCondition | UserCondition | ProductCondition | TagCondition | FacetCondition | DateCondition | GeofenceCondition | ValueCondition | ItemStatusCondition;
 /**
  * Condition set that combines multiple conditions
  */
@@ -166,6 +218,23 @@ export interface UserInfo {
 export interface ProductInfo {
     id: string;
     tags?: Record<string, any>;
+    /**
+     * Facet values assigned to this product.
+     * Shape mirrors `ProductFacetMap`: a map of facet key → array of value objects.
+     * Each value object must have at minimum a `key` string property.
+     *
+     * @example
+     * ```ts
+     * {
+     *   material: [{ key: 'cotton', name: 'Cotton' }],
+     *   certifications: [{ key: 'organic', name: 'Organic' }, { key: 'recycled', name: 'Recycled' }]
+     * }
+     * ```
+     */
+    facets?: Record<string, Array<{
+        key: string;
+        [k: string]: unknown;
+    }>>;
 }
 /**
  * Proof information for condition validation
@@ -234,6 +303,7 @@ export interface ConditionDebugOptions {
  * - **user** - User authentication status (logged in, owner, admin)
  * - **product** - Product-specific conditions
  * - **tag** - Product tag-based conditions
+ * - **facet** - Product facet-based conditions (any/all/none of specific facet values)
  * - **date** - Time-based conditions (before, after, between dates)
  * - **geofence** - Location-based restrictions
  * - **value** - Custom field comparisons
