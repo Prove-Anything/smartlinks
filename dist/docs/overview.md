@@ -64,6 +64,10 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Liquid Templates** | `docs/liquid-templates.md` | Dynamic content rendering with LiquidJS |
 | **Iframe Responder** | `docs/iframe-responder.md` | Iframe communication and proxy mode internals |
 | **AI Guide Template** | `docs/ai-guide-template.md` | Template for creating `public/ai-guide.md` — customise per app |
+| **Forms** | `docs/forms.md` | Form definitions, schema-driven rendering, submission patterns |
+| **Auth Kit** | `docs/auth-kit.md` | End-user sign-in: email/password, magic links, phone OTP, Google OAuth |
+| **Records Admin Pattern** | `docs/records-admin-pattern.md` | Standard pattern for per-product/facet/variant/batch admin UIs |
+| **UI Utils** | `docs/ui-utils.md` | `@proveanything/smartlinks-utils-ui` — React shells, hooks, and primitives for records-based apps |
 
 ---
 

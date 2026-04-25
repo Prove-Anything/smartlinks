@@ -69,6 +69,8 @@ export interface Collection {
     portalUrl?: string;
     /** Allow users to claim products without providing a proof ID (auto-generates serial on-demand) */
     allowAutoGenerateClaims?: boolean;
+    variants: boolean;
+    batches: boolean;
     defaultAuthKitId: string;
 }
 export type CollectionResponse = Collection;

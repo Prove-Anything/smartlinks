@@ -1,4 +1,4 @@
-import type { AppCase, CreateCaseInput, UpdateCaseInput, AppendHistoryInput, CaseSummaryRequest, CaseSummaryResponse, CaseListQueryParams, AppThread, CreateThreadInput, UpdateThreadInput, ReplyInput, ThreadListQueryParams, AppRecord, CreateRecordInput, CreateRecordResponse, UpdateRecordInput, RecordListQueryParams, PaginatedResponse, AggregateRequest, AggregateResponse, RelatedResponse } from '../types/appObjects';
+import type { AppCase, CreateCaseInput, UpdateCaseInput, AppendHistoryInput, CaseSummaryRequest, CaseSummaryResponse, CaseListQueryParams, AppThread, CreateThreadInput, UpdateThreadInput, ReplyInput, ThreadListQueryParams, AppRecord, CreateRecordInput, CreateRecordResponse, UpdateRecordInput, UpsertRecordInput, UpsertRecordResponse, MatchRecordsInput, MatchResult, BulkUpsertItem, BulkUpsertResult, BulkDeleteResult, BulkDeleteInput, RecordListQueryParams, PaginatedResponse, AggregateRequest, AggregateResponse, RelatedResponse } from '../types/appObjects';
 export declare namespace app {
     namespace cases {
         /**
@@ -179,5 +179,65 @@ export declare namespace app {
          * POST /records/aggregate
          */
         function aggregate(collectionId: string, appId: string, request: AggregateRequest, admin?: boolean): Promise<AggregateResponse>;
+        /**
+         * Restore a soft-deleted record.
+         * POST /records/:recordId/restore (admin only)
+         */
+        function restore(collectionId: string, appId: string, recordId: string): Promise<AppRecord>;
+        /**
+         * Upsert a record by ref — creates if no record with that ref exists,
+         * otherwise updates. Scope, specificity, and ref are canonicalized on write.
+         * POST /records/upsert (admin only)
+         */
+        function upsert(collectionId: string, appId: string, input: UpsertRecordInput): Promise<UpsertRecordResponse>;
+        /**
+         * Match records against a runtime target scope.
+         * Returns records whose scope is satisfied by the target,
+         * ordered by specificity descending (most specific first).
+         * POST /records/match
+         *
+         * @param admin - false for public endpoint (visibility-filtered), true for admin
+         *
+         * @example
+         * ```ts
+         * const { records, best } = await app.records.match(collectionId, appId, {
+         *   target: { productId: 'prod_abc', facets: { tier: ['gold'] } },
+         *   strategy: 'best',
+         *   recordType: 'nutrition',
+         * }, true);
+         * // best.nutrition → the single highest-specificity nutrition record
+         * ```
+         */
+        function match(collectionId: string, appId: string, input: MatchRecordsInput, admin?: boolean): Promise<MatchResult>;
+        /**
+         * Upsert up to 500 records in a single transaction.
+         * Each row is individually error-isolated — a failure on one row does not
+         * abort the others.
+         * POST /records/bulk-upsert (admin only)
+         */
+        function bulkUpsert(collectionId: string, appId: string, records: BulkUpsertItem[]): Promise<BulkUpsertResult>;
+        /**
+         * Soft-delete records in bulk.
+         * Supports two modes:
+         * - **refs mode**: explicit list of refs (max 1000)
+         * - **scope mode**: delete by scope anchor (productId / variantId / etc.)
+         *
+         * POST /records/bulk-delete (admin only)
+         *
+         * @example
+         * ```ts
+         * // Refs mode
+         * await app.records.bulkDelete(collectionId, appId, {
+         *   refs: ['product:prod_abc', 'product:prod_xyz'],
+         *   recordType: 'nutrition',
+         * });
+         *
+         * // Scope mode
+         * await app.records.bulkDelete(collectionId, appId, {
+         *   scope: { productId: 'prod_abc' },
+         * });
+         * ```
+         */
+        function bulkDelete(collectionId: string, appId: string, input: BulkDeleteInput): Promise<BulkDeleteResult>;
     }
 }

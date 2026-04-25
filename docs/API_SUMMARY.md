@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.9.20  |  Generated: 2026-04-17T10:13:30.466Z
+Version: 1.10.0  |  Generated: 2026-04-25T13:26:09.113Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1880,6 +1880,117 @@ interface ReplyInput {
 }
 ```
 
+**ScopeFacetClause** (interface)
+```typescript
+interface ScopeFacetClause {
+  key: string
+  valueKeys: string[]
+}
+```
+
+**RecordScope** (interface)
+```typescript
+interface RecordScope {
+  productId?: string
+  variantId?: string
+  proofId?: string
+  batchId?: string
+  * Arbitrary facet clauses.
+  * Clauses are ANDed together; valueKeys within a clause are ORed.
+  facets?: ScopeFacetClause[]
+}
+```
+
+**RecordTarget** (interface)
+```typescript
+interface RecordTarget {
+  productId?: string
+  variantId?: string
+  proofId?: string
+  batchId?: string
+  * Facet values the caller possesses, keyed by facet key.
+  * A scope clause is satisfied if ANY of the clause's valueKeys appears here.
+  facets?: Record<string, string[]>
+}
+```
+
+**BulkUpsertItem** (interface)
+```typescript
+interface BulkUpsertItem {
+  ref: string
+  recordType?: string
+  customId?: string
+  sourceSystem?: string
+  startsAt?: string | null
+  expiresAt?: string | null
+  status?: string | null
+  scope?: RecordScope
+  data?: Record<string, unknown> | null
+  metadata?: Record<string, unknown> | null
+}
+```
+
+**BulkUpsertResult** (interface)
+```typescript
+interface BulkUpsertResult {
+  saved: number
+  failed: number
+  results: Array<
+  | { index: number; status: 'created'; id: string; ref: string; created: true }
+  | { index: number; status: 'updated'; id: string; ref: string; created: false }
+  | { index: number; status: 'error'; error: string }
+  >
+}
+```
+
+**BulkDeleteResult** (interface)
+```typescript
+interface BulkDeleteResult {
+  deleted: number
+}
+```
+
+**MatchResult** (interface)
+```typescript
+interface MatchResult {
+  records: MatchedRecord[]
+  * Only present when strategy is 'best'.
+  * The single highest-specificity record per recordType.
+  best?: Record<string, MatchedRecord>
+}
+```
+
+**UpsertRecordInput** (interface)
+```typescript
+interface UpsertRecordInput {
+  ref: string
+  recordType?: string
+  customId?: string
+  sourceSystem?: string
+  startsAt?: string | null
+  expiresAt?: string | null
+  status?: string | null
+  scope?: RecordScope
+  data?: Record<string, unknown> | null
+  metadata?: Record<string, unknown> | null
+}
+```
+
+**MatchRecordsInput** (interface)
+```typescript
+interface MatchRecordsInput {
+  target: RecordTarget
+  * 'all'  — return all matching records (default)
+  * 'best' — return the highest-specificity record per recordType
+  strategy?: 'all' | 'best'
+  recordType?: string
+  limit?: number
+  includeScheduled?: boolean
+  includeExpired?: boolean
+  at?: string
+}
+```
+
 **AppRecord** (interface)
 ```typescript
 interface AppRecord {
@@ -1888,9 +1999,11 @@ interface AppRecord {
   collectionId: string
   appId: string
   visibility: Visibility
-  recordType: string
+  recordType: string | null
   ref: string | null
-  status: string // default 'active'
+  customId: string | null
+  sourceSystem: string | null
+  status: string | null
   productId: string | null
   proofId: string | null
   contactId: string | null
@@ -1903,9 +2016,16 @@ interface AppRecord {
   startsAt: string | null
   expiresAt: string | null
   deletedAt: string | null // admin only
+  * Structured scope definition. Empty object means universal.
+  * Platform-canonicalized on write (keys sorted, valueKeys deduplicated).
+  scope: RecordScope
+  * Numeric specificity score computed from scope.
+  * Higher = more specific. 0 = universal scope.
+  specificity: number
   data: Record<string, unknown>
   owner: Record<string, unknown>
   admin: Record<string, unknown> // admin only
+  metadata: Record<string, unknown> | null
 }
 ```
 
@@ -1914,7 +2034,7 @@ interface AppRecord {
 interface CreateRecordInput {
   recordType: string
   visibility?: Visibility // default 'owner'
-  ref?: string
+  ref?: string             // derived from scope if omitted and scope provided
   status?: string // default 'active'
   productId?: string
   proofId?: string
@@ -1925,9 +2045,13 @@ interface CreateRecordInput {
   parentId?: string
   startsAt?: string // ISO 8601
   expiresAt?: string
+  scope?: RecordScope
+  customId?: string
+  sourceSystem?: string
   data?: Record<string, unknown>
   owner?: Record<string, unknown>
   admin?: Record<string, unknown> // admin only
+  metadata?: Record<string, unknown>
 }
 ```
 
@@ -1943,6 +2067,10 @@ interface UpdateRecordInput {
   recordType?: string
   startsAt?: string
   expiresAt?: string
+  scope?: RecordScope
+  customId?: string
+  sourceSystem?: string
+  metadata?: Record<string, unknown>
 }
 ```
 
@@ -2009,6 +2137,10 @@ interface PublicCreateBranch {
 **Visibility** = `'public' | 'owner' | 'admin'`
 
 **CallerRole** = `'admin' | 'owner' | 'public'`
+
+**BulkDeleteInput** = ``
+
+**MatchedAtLevel** = ``
 
 ### asset
 
@@ -2994,6 +3126,8 @@ interface Collection {
   secondaryColor?: string
   portalUrl?: string // URL for the collection's portal (if applicable)
   allowAutoGenerateClaims?: boolean
+  variants: boolean // does this collection support variants?
+  batches: boolean // does this collection support batches?
   defaultAuthKitId: string // default auth kit for this collection, used for auth
 }
 ```
@@ -7145,6 +7279,32 @@ Soft delete a record DELETE /records/:recordId
     request: AggregateRequest,
     admin: boolean = false) → `Promise<AggregateResponse>`
 Get aggregate statistics for records POST /records/aggregate
+
+**restore**(collectionId: string,
+    appId: string,
+    recordId: string) → `Promise<AppRecord>`
+Restore a soft-deleted record. POST /records/:recordId/restore (admin only)
+
+**upsert**(collectionId: string,
+    appId: string,
+    input: UpsertRecordInput) → `Promise<UpsertRecordResponse>`
+Upsert a record by ref — creates if no record with that ref exists, otherwise updates. Scope, specificity, and ref are canonicalized on write. POST /records/upsert (admin only)
+
+**match**(collectionId: string,
+    appId: string,
+    input: MatchRecordsInput,
+    admin: boolean = false) → `Promise<MatchResult>`
+Match records against a runtime target scope. Returns records whose scope is satisfied by the target, ordered by specificity descending (most specific first). POST /records/match ```ts const { records, best } = await app.records.match(collectionId, appId, { target: { productId: 'prod_abc', facets: { tier: ['gold'] } }, strategy: 'best', recordType: 'nutrition', }, true); // best.nutrition → the single highest-specificity nutrition record ```
+
+**bulkUpsert**(collectionId: string,
+    appId: string,
+    records: BulkUpsertItem[]) → `Promise<BulkUpsertResult>`
+Upsert up to 500 records in a single transaction. Each row is individually error-isolated — a failure on one row does not abort the others. POST /records/bulk-upsert (admin only)
+
+**bulkDelete**(collectionId: string,
+    appId: string,
+    input: BulkDeleteInput) → `Promise<BulkDeleteResult>`
+Soft-delete records in bulk. Supports two modes: - **refs mode**: explicit list of refs (max 1000) - **scope mode**: delete by scope anchor (productId / variantId / etc.) POST /records/bulk-delete (admin only) ```ts // Refs mode await app.records.bulkDelete(collectionId, appId, { refs: ['product:prod_abc', 'product:prod_xyz'], recordType: 'nutrition', }); // Scope mode await app.records.bulkDelete(collectionId, appId, { scope: { productId: 'prod_abc' }, }); ```
 
 ### app.threads
 

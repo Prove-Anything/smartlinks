@@ -17,7 +17,6 @@ tags:
   - name: publicClient
   - name: voice
   - name: userAppData
-  - name: appConfiguration
   - name: cases
   - name: threads
   - name: records
@@ -29,7 +28,6 @@ tags:
   - name: authKit
   - name: batch
   - name: broadcasts
-  - name: claimSet
   - name: collection
   - name: comms
   - name: config
@@ -63,7 +61,7 @@ paths:
     post:
       tags:
         - auth
-      summary: Logout (clears bearerToken for future API calls).
+      summary: Requests an admin JWT for the current user and a specific collection Returns JWT if valid.
       operationId: auth_requestAdminJWT
       security:
         - bearerAuth: []
@@ -311,7 +309,7 @@ paths:
     post:
       tags:
         - batch
-      summary: List all batches for a collection and product (admin only).
+      summary: Create a new batch for a collection and product (admin only).
       operationId: batch_create
       security:
         - bearerAuth: []
@@ -372,7 +370,7 @@ paths:
     post:
       tags:
         - variant
-      summary: List all variants for a collection and product (admin only).
+      summary: Create a new variant for a collection and product (admin only).
       operationId: variant_create
       security:
         - bearerAuth: []
@@ -405,7 +403,7 @@ paths:
     put:
       tags:
         - collection
-      summary: Create a new collection (admin only).
+      summary: Update a collection (admin only).
       operationId: collection_update
       security:
         - bearerAuth: []
@@ -437,7 +435,7 @@ paths:
     delete:
       tags:
         - collection
-      summary: Update a collection (admin only).
+      summary: Delete a collection (admin only).
       operationId: collection_remove
       security:
         - bearerAuth: []
@@ -465,7 +463,7 @@ paths:
     post:
       tags:
         - rag
-      summary: "Get specific model information / export async function get(collectionId: string, modelId: string): Promise<AIModel> { co"
+      summary: Configure AI assistant behavior
       operationId: rag_configureAssistant
       security:
         - bearerAuth: []
@@ -498,7 +496,7 @@ paths:
     post:
       tags:
         - voice
-      summary: "Search stock photos or similar via AI (admin) / export async function searchPhotos( collectionId: string, params: AISearchPhotosRequest ): Promise<AISearchPhotosPhoto[]> { const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/searchPhotos` return post<AISearchPhotosPhoto[]>(path, params) } /** Upload a file for AI usage (admin)."
+      summary: Create or warm a cache for AI (admin)
       operationId: voice_createCache
       security:
         - bearerAuth: []
@@ -524,7 +522,7 @@ paths:
     post:
       tags:
         - voice
-      summary: "Generate text/content via AI (admin) / export async function generateContent( collectionId: string, params: AIGenerateCo"
+      summary: Generate an image via AI (admin)
       operationId: voice_generateImage
       security:
         - bearerAuth: []
@@ -556,7 +554,7 @@ paths:
     post:
       tags:
         - podcast
-      summary: "Reset rate limit for a user / export async function reset(collectionId: string, userId: string): Promise<{ success: bool"
+      summary: Generate a NotebookLM-style conversational podcast from product documents
       operationId: podcast_generate
       security:
         - bearerAuth: []
@@ -589,7 +587,7 @@ paths:
     post:
       tags:
         - rag
-      summary: "List available AI models / export async function list(collectionId: string, params?: AIModelListParams): Promise<AIModel"
+      summary: Index a document for RAG
       operationId: rag_indexDocument
       security:
         - bearerAuth: []
@@ -618,7 +616,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/IndexDocumentRequest"
-  /admin/collection/{collectionId}/ai/models)}:
+  /admin/collection/{collectionId}/ai/models:
     get:
       tags:
         - models
@@ -667,7 +665,7 @@ paths:
     get:
       tags:
         - models
-      summary: "List available AI models / export async function list(collectionId: string, params?: AIModelListParams): Promise<AIModel"
+      summary: Get specific model information
       operationId: models_get
       security:
         - bearerAuth: []
@@ -699,7 +697,7 @@ paths:
     get:
       tags:
         - podcast
-      summary: Generate a NotebookLM-style conversational podcast from product documents / export async function generate( collectionId
+      summary: Get podcast generation status
       operationId: podcast_getStatus
       security:
         - bearerAuth: []
@@ -731,7 +729,7 @@ paths:
     post:
       tags:
         - voice
-      summary: "Generate text/content via AI (admin) / export async function generateContent( collectionId: string, params: AIGenerateCo"
+      summary: Search stock photos or similar via AI (admin)
       operationId: voice_searchPhotos
       security:
         - bearerAuth: []
@@ -766,7 +764,7 @@ paths:
     get:
       tags:
         - sessions
-      summary: "Configure AI assistant behavior / export async function configureAssistant( collectionId: string, request: ConfigureAssi"
+      summary: Get session statistics
       operationId: sessions_stats
       security:
         - bearerAuth: []
@@ -793,7 +791,7 @@ paths:
     post:
       tags:
         - tts
-      summary: "Get podcast generation status / export async function getStatus(collectionId: string, podcastId: string): Promise<Podcas"
+      summary: Generate text-to-speech audio
       operationId: tts_generate
       security:
         - bearerAuth: []
@@ -826,7 +824,7 @@ paths:
     post:
       tags:
         - voice
-      summary: "Generate an image via AI (admin) / export async function generateImage(collectionId: string, params: AIGenerateImageRequest): Promise<any> { const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/generateImage` return post<any>(path, params) } /** Search stock photos or similar via AI (admin) / export async function searchPhotos( collectionId: string, params: AISearchPhotosRequest ): Promise<AISearchPhotosPhoto[]> { const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/searchPhotos` return post<AISearchPhotosPhoto[]>(path, params) } /** Upload a file for AI usage (admin)."
+      summary: Upload a file for AI usage (admin).
       operationId: voice_uploadFile
       security:
         - bearerAuth: []
@@ -918,7 +916,7 @@ paths:
     post:
       tags:
         - collection
-      summary: Look up a serial number by code for a collection (admin only).
+      summary: Assign a value to a serial number for a collection (admin only).
       operationId: collection_assignSN
       security:
         - bearerAuth: []
@@ -982,7 +980,7 @@ paths:
     get:
       tags:
         - async
-      summary: "Enqueue a background job for a collection POST /admin/collection/:collectionId/async/jobs (202) / export async function"
+      summary: "Get job status by ID (may return 404 if completed/removed) GET /admin/collection/:collectionId/async/jobs/:jobId"
       operationId: async_getAsyncJobStatus
       security:
         - bearerAuth: []
@@ -1977,408 +1975,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/BroadcastSendTestRequest"
-  /admin/collection/{collectionId}/claimSetd)}/assignClaims:
-    post:
-      tags:
-        - claimSet
-      summary: Perform a tag query for a collection.
-      operationId: claimSet_assignClaims
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AssignClaimsRequest"
-  /admin/collection/{collectionId}/claimSetd)}/makeClaim:
-    post:
-      tags:
-        - claimSet
-      summary: Get tag summary for a collection.
-      operationId: claimSet_makeClaim
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/claimSetd)}/tagQuery:
-    post:
-      tags:
-        - claimSet
-      summary: Get a report for a claim set (collection-scoped).
-      operationId: claimSet_tagQuery
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/claimSetd)}/tagSummary:
-    get:
-      tags:
-        - claimSet
-      summary: Get a report for a claim set (collection-scoped).
-      operationId: claimSet_getTagSummary
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/claimSetd)}/updateClaimData:
-    post:
-      tags:
-        - claimSet
-      summary: Make a claim against a claim set (collection-scoped).
-      operationId: claimSet_updateClaimData
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateClaimDataRequest"
-  /admin/collection/{collectionId}/claimSetd)}/{claimSetId}:
-    get:
-      tags:
-        - claimSet
-      summary: Returns the base path for claim set endpoints.
-      operationId: claimSet_get
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: claimSetId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-    put:
-      tags:
-        - claimSet
-      summary: Create a new claim set.
-      operationId: claimSet_update
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: claimSetId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-    delete:
-      tags:
-        - claimSet
-      summary: Update a claim set.
-      operationId: claimSet_remove
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: claimSetId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/claimSetd)}/{claimSetId}/assignedTags:
-    get:
-      tags:
-        - claimSet
-      summary: Get all tags for a claim set (including data).
-      operationId: claimSet_getAssignedTags
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: claimSetId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/claimSetd)}/{claimSetId}/createTag:
-    post:
-      tags:
-        - claimSet
-      summary: Get assigned tags for a claim set — tags soft-assigned to a collection or product.
-      operationId: claimSet_createTag
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: claimSetId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CreateClaimSetTagResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CreateClaimSetTagRequest"
-  /admin/collection/{collectionId}/claimSetd)}/{claimSetId}/importTags:
-    post:
-      tags:
-        - claimSet
-      summary: Create a single tag inside a claim set.
-      operationId: claimSet_importTags
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: claimSetId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ImportClaimSetTagsResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ImportClaimSetTagsRequest"
-  /admin/collection/{collectionId}/claimSetd)}/{claimSetId}/report:
-    get:
-      tags:
-        - claimSet
-      summary: Bulk import tags into a claim set.
-      operationId: claimSet_getReport
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: claimSetId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/claimSetd)}/{claimSetId}/tags:
-    get:
-      tags:
-        - claimSet
-      summary: Update a claim set.
-      operationId: claimSet_getAllTags
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: claimSetId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /admin/collection/{collectionId}/comm.send:
     post:
       tags:
@@ -2416,7 +2012,7 @@ paths:
     get:
       tags:
         - comms
-      summary: "Public: Register a Web Push subscription under unified comms."
+      summary: "Admin: Get current comms settings for a collection."
       operationId: comms_getSettings
       security:
         - bearerAuth: []
@@ -2448,7 +2044,7 @@ paths:
     patch:
       tags:
         - comms
-      summary: "Admin: Get current comms settings for a collection."
+      summary: "Admin: Patch comms settings for a collection."
       operationId: comms_patchSettings
       security:
         - bearerAuth: []
@@ -2516,7 +2112,7 @@ paths:
     post:
       tags:
         - comms
-      summary: "Logging: Append a single communication event."
+      summary: "Logging: Append many communication events for a list of IDs."
       operationId: comms_logBulkCommunicationEvents
       security:
         - bearerAuth: []
@@ -2552,7 +2148,7 @@ paths:
     post:
       tags:
         - comms
-      summary: "Public: Resolve contacts for a subject with identity hints."
+      summary: "Analytics: Query communication events by user or contact."
       operationId: comms_queryByUser
       security:
         - bearerAuth: []
@@ -2587,7 +2183,7 @@ paths:
     post:
       tags:
         - comms
-      summary: "Analytics: Query communication events by user or contact."
+      summary: "Analytics: Recipient IDs for a communication source."
       operationId: comms_queryRecipientIds
       security:
         - bearerAuth: []
@@ -2622,7 +2218,7 @@ paths:
     post:
       tags:
         - comms
-      summary: "Analytics: Recipients who did not perform an action."
+      summary: "Analytics: Recipients who performed an action, optionally with outcome."
       operationId: comms_queryRecipientsWithAction
       security:
         - bearerAuth: []
@@ -2658,7 +2254,7 @@ paths:
     post:
       tags:
         - comms
-      summary: "Analytics: Recipient IDs for a communication source."
+      summary: "Analytics: Recipients who did not perform an action."
       operationId: comms_queryRecipientsWithoutAction
       security:
         - bearerAuth: []
@@ -3867,7 +3463,7 @@ paths:
     post:
       tags:
         - form
-      summary: List all forms for a collection.
+      summary: Create a new form for a collection (admin only).
       operationId: form_create
       security:
         - bearerAuth: []
@@ -3893,7 +3489,7 @@ paths:
     put:
       tags:
         - form
-      summary: List all forms for a collection.
+      summary: Update a form for a collection (admin only).
       operationId: form_update
       security:
         - bearerAuth: []
@@ -3923,7 +3519,7 @@ paths:
     delete:
       tags:
         - form
-      summary: Create a new form for a collection (admin only).
+      summary: Delete a form for a collection (admin only).
       operationId: form_remove
       security:
         - bearerAuth: []
@@ -3956,7 +3552,7 @@ paths:
     get:
       tags:
         - collection
-      summary: Delete a collection (admin only).
+      summary: Get serial numbers for a collection (admin only).
       operationId: collection_getSN
       security:
         - bearerAuth: []
@@ -4056,7 +3652,7 @@ paths:
     post:
       tags:
         - interactions
-      summary: "POST /admin/collection/:collectionId/interactions/counts-by-outcome Returns array of { outcome, count }."
+      summary: "POST /admin/collection/:collectionId/interactions/aggregate Returns grouped numeric aggregates (sum, avg, min, max, count)."
       operationId: interactions_aggregate
       security:
         - bearerAuth: []
@@ -4089,7 +3685,7 @@ paths:
     post:
       tags:
         - interactions
-      summary: "POST /admin/collection/:collectionId/interactions/query Flexible query for interaction events with optional includes."
+      summary: "POST /admin/collection/:collectionId/interactions/counts-by-outcome Returns array of { outcome, count }."
       operationId: interactions_countsByOutcome
       security:
         - bearerAuth: []
@@ -4317,7 +3913,7 @@ paths:
     get:
       tags:
         - jobs
-      summary: "List visible jobs for a collection GET /admin/collection/:collectionId/jobs / export async function listJobs( collection"
+      summary: "Get a single job GET /admin/collection/:collectionId/jobs/:jobId"
       operationId: jobs_getJob
       security:
         - bearerAuth: []
@@ -4436,7 +4032,7 @@ paths:
     post:
       tags:
         - journeysAnalytics
-      summary: "POST /admin/collection/:collectionId/journeys.analytics/:journeyId/steps/:stepId/recipients Returns recipient IDs for a given journey step."
+      summary: "POST /admin/collection/:collectionId/journeys.analytics/:journeyId/funnel-report Computes conversion, counts, and avg time across mapped steps in a period."
       operationId: journeysAnalytics_funnelReport
       security:
         - bearerAuth: []
@@ -4512,7 +4108,7 @@ paths:
     post:
       tags:
         - journeysAnalytics
-      summary: "POST /admin/collection/:collectionId/journeys.analytics/:journeyId/stats Computes journey stats over a time window; outcome defaults to 'success'."
+      summary: "POST /admin/collection/:collectionId/journeys.analytics/:journeyId/steps/:stepId/recipients Returns recipient IDs for a given journey step."
       operationId: journeysAnalytics_recipients
       security:
         - bearerAuth: []
@@ -4656,7 +4252,7 @@ paths:
     post:
       tags:
         - location
-      summary: "Platform: Create a global location (super admin; requires features.adminApps) POST /platform/location / export async fun"
+      summary: "Admin: Create a collection-scoped location POST /admin/collection/:collectionId/location"
       operationId: location_create
       security:
         - bearerAuth: []
@@ -4689,7 +4285,7 @@ paths:
     get:
       tags:
         - location
-      summary: "Platform: Create a global location (super admin; requires features.adminApps) POST /platform/location / export async fun"
+      summary: "Admin: Search locations to pick during setup (combines collection + global) GET /admin/collection/:collectionId/location"
       operationId: location_search
       security:
         - bearerAuth: []
@@ -6014,7 +5610,7 @@ paths:
     post:
       tags:
         - product
-      summary: Delete a product for a collection (admin only).
+      summary: product.find
       operationId: product_find
       security:
         - bearerAuth: []
@@ -6194,7 +5790,7 @@ paths:
     get:
       tags:
         - proof
-      summary: Get proofs for a product (admin only).
+      summary: Get proofs for a batch (admin only).
       operationId: proof_getByBatch
       security:
         - bearerAuth: []
@@ -6233,7 +5829,7 @@ paths:
     post:
       tags:
         - product
-      summary: "/ export async function clone( collectionId: string, productId: string, body: Record<string, JsonValue> = {} ): Promise<"
+      summary: product.createClaimWindow
       operationId: product_createClaimWindow
       security:
         - bearerAuth: []
@@ -6272,7 +5868,7 @@ paths:
     put:
       tags:
         - product
-      summary: "/ export async function listAssets( collectionId: string, productId: string, admin?: boolean ): Promise<unknown> { const"
+      summary: product.updateClaimWindow
       operationId: product_updateClaimWindow
       security:
         - bearerAuth: []
@@ -6316,7 +5912,7 @@ paths:
     post:
       tags:
         - product
-      summary: "/ export async function publicFind( collectionId: string, params?: ProductPublicFindParams ): Promise<ProductResponse[]>"
+      summary: product.clone
       operationId: product_clone
       security:
         - bearerAuth: []
@@ -6356,7 +5952,7 @@ paths:
     get:
       tags:
         - product
-      summary: "/ export async function refresh( collectionId: string, productId: string ): Promise<ProductResponse> { const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/refresh` return request<ProductResponse>(path) } /** Get serial numbers for a product (admin only)."
+      summary: Get serial numbers for a product (admin only).
       operationId: product_getSN
       security:
         - bearerAuth: []
@@ -6423,7 +6019,7 @@ paths:
     get:
       tags:
         - proof
-      summary: Delete a proof for a product (admin only).
+      summary: Get proofs for a product (admin only).
       operationId: proof_getByProduct
       security:
         - bearerAuth: []
@@ -6456,7 +6052,7 @@ paths:
     post:
       tags:
         - proof
-      summary: List all Proofs for a Collection.
+      summary: Create a proof for a product (admin only).
       operationId: proof_create
       security:
         - bearerAuth: []
@@ -6494,7 +6090,7 @@ paths:
     post:
       tags:
         - proof
-      summary: Get proofs for a user in a collection (admin only).
+      summary: Find proofs for a product (admin only).
       operationId: proof_findByProduct
       security:
         - bearerAuth: []
@@ -6528,7 +6124,7 @@ paths:
     put:
       tags:
         - proof
-      summary: Create a proof for a product (admin only).
+      summary: Update a proof for a product (admin only).
       operationId: proof_update
       security:
         - bearerAuth: []
@@ -6608,7 +6204,7 @@ paths:
     get:
       tags:
         - product
-      summary: "/ export async function createClaimWindow( collectionId: string, productId: string, body: Record<string, JsonValue> ): P"
+      summary: product.refresh
       operationId: product_refresh
       security:
         - bearerAuth: []
@@ -7119,7 +6715,7 @@ paths:
     get:
       tags:
         - proof
-      summary: Delete a proof for a product (admin only).
+      summary: Get proofs for a user in a collection (admin only).
       operationId: proof_getByUser
       security:
         - bearerAuth: []
@@ -8332,7 +7928,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: Namespace containing helper functions for the new AuthKit API.
+      summary: Google OAuth login (public).
       operationId: authKit_googleLogin
       security: []
       parameters:
@@ -8358,7 +7954,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: Namespace containing helper functions for the new AuthKit API.
+      summary: Login with email + password (public).
       operationId: authKit_login
       security: []
       parameters:
@@ -8384,7 +7980,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: Login with email + password (public).
+      summary: Send a magic link email to the user (public).
       operationId: authKit_sendMagicLink
       security: []
       parameters:
@@ -8417,7 +8013,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: Google OAuth login (public).
+      summary: Verify a magic link token and authenticate/create the user (public).
       operationId: authKit_verifyMagicLink
       security: []
       parameters:
@@ -8443,7 +8039,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: Send a magic link email to the user (public).
+      summary: Send phone verification code (public).
       operationId: authKit_sendPhoneCode
       security: []
       parameters:
@@ -8469,7 +8065,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: Verify a magic link token and authenticate/create the user (public).
+      summary: Verify phone verification code (public).
       operationId: authKit_verifyPhoneCode
       security: []
       parameters:
@@ -8495,7 +8091,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: Namespace containing helper functions for the new AuthKit API.
+      summary: Register a new user (public).
       operationId: authKit_register
       security: []
       parameters:
@@ -8561,7 +8157,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: Send phone verification code (public).
+      summary: Verify phone verification code (public).
       operationId: authKit_requestPasswordReset
       security: []
       parameters:
@@ -8751,7 +8347,7 @@ paths:
     post:
       tags:
         - userAppData
-      summary: "Get user's config blob for an app."
+      summary: "Set user's config blob for an app."
       operationId: userAppData_setConfig
       security:
         - bearerAuth: []
@@ -8776,7 +8372,7 @@ paths:
     delete:
       tags:
         - userAppData
-      summary: "Set user's config blob for an app."
+      summary: "Delete user's config blob for an app."
       operationId: userAppData_deleteConfig
       security:
         - bearerAuth: []
@@ -8804,7 +8400,7 @@ paths:
     get:
       tags:
         - userAppData
-      summary: "Delete user's config blob for an app."
+      summary: "List all user's data items for an app."
       operationId: userAppData_list
       security:
         - bearerAuth: []
@@ -8831,7 +8427,7 @@ paths:
     post:
       tags:
         - userAppData
-      summary: Get a specific user data item by ID.
+      summary: Create or update a user data item.
       operationId: userAppData_set
       security:
         - bearerAuth: []
@@ -8857,7 +8453,7 @@ paths:
     get:
       tags:
         - userAppData
-      summary: "List all user's data items for an app."
+      summary: Get a specific user data item by ID.
       operationId: userAppData_get
       security:
         - bearerAuth: []
@@ -8887,7 +8483,7 @@ paths:
     delete:
       tags:
         - userAppData
-      summary: Create or update a user data item.
+      summary: Delete a user data item by ID.
       operationId: userAppData_remove
       security:
         - bearerAuth: []
@@ -8962,7 +8558,7 @@ paths:
     post:
       tags:
         - auth
-      summary: Requests an admin JWT for the current user and a specific collection Returns JWT if valid.
+      summary: Tries to register a new user account.
       operationId: auth_registerUser
       security:
         - bearerAuth: []
@@ -8989,7 +8585,7 @@ paths:
     post:
       tags:
         - auth
-      summary: Requests an admin JWT for the current user and a specific collection Returns JWT if valid.
+      summary: Requests a JWT for the current user and a specific collection/product/proof Validates if the user has access to the reso
       operationId: auth_requestPublicJWT
       security:
         - bearerAuth: []
@@ -9010,7 +8606,7 @@ paths:
     post:
       tags:
         - auth
-      summary: Login with email and password.
+      summary: Verifies the current bearerToken (or a provided token).
       operationId: auth_verifyToken
       security:
         - bearerAuth: []
@@ -9031,7 +8627,7 @@ paths:
     get:
       tags:
         - collection
-      summary: Retrieves all Collections.
+      summary: Retrieve a collection by its shortId (public endpoint).
       operationId: collection_getShortId
       security: []
       parameters:
@@ -9109,7 +8705,7 @@ paths:
     post:
       tags:
         - publicClient
-      summary: "Generate text-to-speech audio / export async function generate( collectionId: string, request: TTSRequest ): Promise<Blo"
+      summary: Chat with product assistant (RAG)
       operationId: publicClient_chat
       security: []
       parameters:
@@ -9141,7 +8737,7 @@ paths:
     get:
       tags:
         - publicClient
-      summary: "Get session history / export async function getSession(collectionId: string, sessionId: string): Promise<Session> { cons"
+      summary: Check rate limit status
       operationId: publicClient_getRateLimit
       security: []
       parameters:
@@ -9172,7 +8768,7 @@ paths:
     get:
       tags:
         - publicClient
-      summary: "Chat with product assistant (RAG) / export async function chat( collectionId: string, request: PublicChatRequest ): Prom"
+      summary: Get session history
       operationId: publicClient_getSession
       security: []
       parameters:
@@ -9203,7 +8799,7 @@ paths:
     post:
       tags:
         - publicClient
-      summary: "Clear session history / export async function clearSession(collectionId: string, sessionId: string): Promise<{ success:"
+      summary: Generate ephemeral token for Gemini Live
       operationId: publicClient_getToken
       security: []
       parameters:
@@ -9585,7 +9181,7 @@ paths:
     post:
       tags:
         - comms
-      summary: "Public: List registered contact methods."
+      summary: "Public: Register email method for a contact."
       operationId: comms_registerEmail
       security: []
       parameters:
@@ -9619,7 +9215,7 @@ paths:
     get:
       tags:
         - comms
-      summary: "Public: Check subscription status for a subject."
+      summary: "Public: List registered contact methods."
       operationId: comms_listMethods
       security: []
       parameters:
@@ -9656,7 +9252,7 @@ paths:
     post:
       tags:
         - comms
-      summary: "Communications namespace for sending notifications and managing user communications / export namespace comms { /** Public: Get VAPID public key used for Web Push subscriptions."
+      summary: "Public: Register a Web Push subscription under unified comms."
       operationId: comms_registerPush
       security: []
       parameters:
@@ -9690,7 +9286,7 @@ paths:
     get:
       tags:
         - comms
-      summary: "Communications namespace for sending notifications and managing user communications / export namespace comms { /** Public: Get VAPID public key used for Web Push subscriptions."
+      summary: "Public: Get VAPID public key used for Web Push subscriptions."
       operationId: comms_getPushVapidPublicKey
       security: []
       parameters:
@@ -9717,7 +9313,7 @@ paths:
     post:
       tags:
         - comms
-      summary: "Public: Register email method for a contact."
+      summary: "Public: Register SMS method for a contact."
       operationId: comms_registerSms
       security: []
       parameters:
@@ -9751,7 +9347,7 @@ paths:
     post:
       tags:
         - comms
-      summary: "Public: Upsert preferences for a specific subject (or default if subject omitted)."
+      summary: "Public: Subscribe/unsubscribe contact to a subject."
       operationId: comms_subscribe
       security: []
       parameters:
@@ -9785,7 +9381,7 @@ paths:
     get:
       tags:
         - comms
-      summary: "Public: Subscribe/unsubscribe contact to a subject."
+      summary: "Public: Check subscription status for a subject."
       operationId: comms_checkSubscription
       security: []
       parameters:
@@ -9832,7 +9428,7 @@ paths:
     post:
       tags:
         - comms
-      summary: "Public: Register SMS method for a contact."
+      summary: "Public: Resolve contacts for a subject with identity hints."
       operationId: comms_resolveSubscriptions
       security: []
       parameters:
@@ -9866,7 +9462,7 @@ paths:
     get:
       tags:
         - comms
-      summary: "Admin: Patch comms settings for a collection."
+      summary: "Public: Fetch configured topics for a collection."
       operationId: comms_getPublicTopics
       security: []
       parameters:
@@ -9893,7 +9489,7 @@ paths:
     get:
       tags:
         - comms
-      summary: "Public: Fetch configured topics for a collection."
+      summary: "Public: Unsubscribe a contact from a category or channel."
       operationId: comms_unsubscribe
       security: []
       parameters:
@@ -10228,7 +9824,7 @@ paths:
     get:
       tags:
         - attestations
-      summary: Time-series summary for a specific container (public shortcut).
+      summary: Latest snapshot for a specific container (public shortcut).
       operationId: attestations_publicContainerLatest
       security: []
       parameters:
@@ -10330,7 +9926,7 @@ paths:
     get:
       tags:
         - attestations
-      summary: Tree time-series summary rooted at a specific container (public shortcut).
+      summary: Tree latest snapshot rooted at a specific container (public shortcut).
       operationId: attestations_publicContainerTreeLatest
       security: []
       parameters:
@@ -10371,7 +9967,7 @@ paths:
     get:
       tags:
         - attestations
-      summary: Latest snapshot for a specific container (public shortcut).
+      summary: Tree time-series summary rooted at a specific container (public shortcut).
       operationId: attestations_publicContainerTreeSummary
       security: []
       parameters:
@@ -10794,7 +10390,7 @@ paths:
     get:
       tags:
         - location
-      summary: "Admin: Search locations to pick during setup (combines collection + global) GET /admin/collection/:collectionId/location"
+      summary: "Public: Fetch a location for a collection; returns either a collection-owned or global fallback GET /public/collection/:"
       operationId: location_getPublicForCollection
       security: []
       parameters:
@@ -10853,7 +10449,7 @@ paths:
     get:
       tags:
         - loyalty
-      summary: "List active earning rules for a scheme — useful for showing \"how to earn\" in a loyalty UI."
+      summary: "Get all active schemes with the caller's membership embedded in each."
       operationId: loyalty_publicGetMe
       security: []
       parameters:
@@ -10881,7 +10477,7 @@ paths:
     get:
       tags:
         - loyalty
-      summary: List active schemes for a collection.
+      summary: Get a single active scheme.
       operationId: loyalty_publicGet
       security: []
       parameters:
@@ -10912,7 +10508,7 @@ paths:
     get:
       tags:
         - loyalty
-      summary: List active schemes for a collection.
+      summary: "List active earning rules for a scheme — useful for showing \"how to earn\" in a loyalty UI."
       operationId: loyalty_publicListEarningRules
       security: []
       parameters:
@@ -10945,7 +10541,7 @@ paths:
     get:
       tags:
         - loyalty
-      summary: "Get all active schemes with the caller's membership embedded in each."
+      summary: "Get the authenticated caller's membership (balance + lifetimePoints) on a specific scheme."
       operationId: loyalty_publicGetMine
       security: []
       parameters:
@@ -10976,7 +10572,7 @@ paths:
     get:
       tags:
         - product
-      summary: "/ export async function find( collectionId: string, body: ProductQueryRequest ): Promise<ProductQueryResponse> { const p"
+      summary: product.publicFind
       operationId: product_publicFind
       security: []
       parameters:
@@ -11073,7 +10669,7 @@ paths:
     post:
       tags:
         - product
-      summary: "/ export async function publicLookupClaim( collectionId: string, productId: string, claimId: string ): Promise<unknown>"
+      summary: product.publicCreateClaim
       operationId: product_publicCreateClaim
       security: []
       parameters:
@@ -11109,7 +10705,7 @@ paths:
     get:
       tags:
         - product
-      summary: Look up a serial number by code for a product (admin only).
+      summary: product.publicLookupClaim
       operationId: product_publicLookupClaim
       security: []
       parameters:
@@ -11222,7 +10818,7 @@ paths:
     get:
       tags:
         - attestation
-      summary: "These endpoints store attestation data against a specific proof in Firestore (`/product/:productId/proof/:proofId/attestations`)."
+      summary: List all attestations for a proof.
       operationId: attestation_list
       security: []
       parameters:
@@ -11259,7 +10855,7 @@ paths:
     post:
       tags:
         - attestation
-      summary: Get a single attestation by ID.
+      summary: Create a new attestation for a proof.
       operationId: attestation_create
       security: []
       parameters:
@@ -11301,7 +10897,7 @@ paths:
     get:
       tags:
         - attestation
-      summary: List all attestations for a proof.
+      summary: Get a single attestation by ID.
       operationId: attestation_get
       security: []
       parameters:
@@ -11341,7 +10937,7 @@ paths:
     put:
       tags:
         - attestation
-      summary: Create a new attestation for a proof.
+      summary: Update an attestation.
       operationId: attestation_update
       security: []
       parameters:
@@ -11387,7 +10983,7 @@ paths:
     delete:
       tags:
         - attestation
-      summary: Update an attestation.
+      summary: Delete an attestation.
       operationId: attestation_remove
       security: []
       parameters:
@@ -11429,7 +11025,7 @@ paths:
     put:
       tags:
         - proof
-      summary: Update a proof for a product (admin only).
+      summary: Claim a proof for a product using a proof ID (serial number, NFC tag, etc.).
       operationId: proof_claim
       security: []
       parameters:
@@ -11542,7 +11138,7 @@ paths:
     get:
       tags:
         - proof
-      summary: Retrieves a single Proof by Collection ID, Product ID, and Proof ID.
+      summary: List all Proofs for a Collection.
       operationId: proof_list
       security: []
       parameters:
@@ -11858,7 +11454,7 @@ paths:
     get:
       tags:
         - config
-      summary: Returns the full platform field catalog.
+      summary: Returns all proof type definitions.
       operationId: config_getProofTypes
       security: []
       responses:
@@ -11880,7 +11476,7 @@ paths:
     get:
       tags:
         - location
-      summary: "Admin: Create a collection-scoped location POST /admin/collection/:collectionId/location / export async function create("
+      summary: "Public: Fetch a global location by ID GET /public/location/:locationId"
       operationId: location_getPublic
       security: []
       parameters:
@@ -11932,7 +11528,7 @@ paths:
     get:
       tags:
         - nfc
-      summary: Claim an NFC tag (public).
+      summary: Lookup a tag by its ID (public).
       operationId: nfc_lookupTag
       security: []
       parameters:
@@ -11960,7 +11556,7 @@ paths:
     post:
       tags:
         - nfc
-      summary: Claim an NFC tag (public).
+      summary: Validate an NFC tag payload (public).
       operationId: nfc_validate
       security: []
       responses:
@@ -11986,7 +11582,7 @@ paths:
     get:
       tags:
         - qr
-      summary: QR namespace for public short code lookups.
+      summary: Resolve a short code to related resource identifiers.
       operationId: qr_lookupShortCode
       security: []
       parameters:
@@ -12093,92 +11689,11 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /{base}:
-    get:
-      tags:
-        - appConfiguration
-      summary: Get app configuration for a collection/product scope.
-      operationId: appConfiguration_getConfig
-      security: []
-      parameters:
-        - name: base
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-    post:
-      tags:
-        - appConfiguration
-      summary: Set app configuration for a collection/product scope.
-      operationId: appConfiguration_setConfig
-      security: []
-      parameters:
-        - name: base
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AppConfigOptions"
-    delete:
-      tags:
-        - appConfiguration
-      summary: Delete app configuration for a collection/product scope.
-      operationId: appConfiguration_deleteConfig
-      security: []
-      parameters:
-        - name: base
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: true
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /{zone}/collection/{collectionId}/app/{appId}/records:
+  /{zone}/collection/{collectionId}/app/{appId}/cases:
     get:
       tags:
         - cases
-      summary: "Build the base path for cases endpoints / function basePath(collectionId: string, appId: string, admin: boolean = false)"
+      summary: List cases with optional query parameters GET /cases
       operationId: cases_list
       security: []
       parameters:
@@ -12249,7 +11764,7 @@ paths:
     post:
       tags:
         - cases
-      summary: "Build the base path for cases endpoints / function basePath(collectionId: string, appId: string, admin: boolean = false)"
+      summary: Create a new case POST /cases
       operationId: cases_create
       security: []
       parameters:
@@ -12287,189 +11802,11 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CreateCaseInput"
-  /{zone}/collection/{collectionId}/app/{appId}/recordse)}/summary:
+  /{zone}/collection/{collectionId}/app/{appId}/cases/aggregate:
     post:
       tags:
         - cases
-      summary: "Soft delete a case DELETE /cases/:caseId / export async function remove( collectionId: string, appId: string, caseId: st"
-      operationId: cases_summary
-      security: []
-      parameters:
-        - name: zone
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: appId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CaseSummaryResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CaseSummaryRequest"
-  /{zone}/collection/{collectionId}/app/{appId}/recordse)}/{caseId}/history:
-    post:
-      tags:
-        - cases
-      summary: "Get aggregate statistics for cases POST /cases/aggregate / export async function aggregate( collectionId: string, appId:"
-      operationId: cases_appendHistory
-      security: []
-      parameters:
-        - name: zone
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: appId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: caseId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AppCase"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/AppendHistoryInput"
-  /{zone}/collection/{collectionId}/app/{appId}/recordse)}/{caseId}/related:
-    get:
-      tags:
-        - cases
-      summary: "Get case summary (admin only) POST /cases/summary / export async function summary( collectionId: string, appId: string,"
-      operationId: cases_related
-      security: []
-      parameters:
-        - name: zone
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: appId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: caseId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RelatedResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /{zone}/collection/{collectionId}/app/{appId}/recordse)}/{recordId}:
-    patch:
-      tags:
-        - records
-      summary: records.updateWithToken
-      operationId: records_updateWithToken
-      security: []
-      parameters:
-        - name: zone
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: appId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: recordId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AppRecord"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties: true
-  /{zone}/collection/{collectionId}/app/{appId}/recordsn)}/aggregate:
-    post:
-      tags:
-        - cases
-      summary: "Update a case PATCH /cases/:caseId Admin can update any field, public (owner) can only update data and owner zones / exp"
+      summary: Get aggregate statistics for cases POST /cases/aggregate
       operationId: cases_aggregate
       security: []
       parameters:
@@ -12507,11 +11844,53 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/AggregateRequest"
-  /{zone}/collection/{collectionId}/app/{appId}/recordsn)}/{caseId}:
+  /{zone}/collection/{collectionId}/app/{appId}/cases/summary:
+    post:
+      tags:
+        - cases
+      summary: Get case summary (admin only) POST /cases/summary
+      operationId: cases_summary
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CaseSummaryResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CaseSummaryRequest"
+  /{zone}/collection/{collectionId}/app/{appId}/cases/{caseId}:
     get:
       tags:
         - cases
-      summary: "Create a new case POST /cases / export async function create( collectionId: string, appId: string, input: CreateCaseInpu"
+      summary: "Get a single case by ID GET /cases/:caseId"
       operationId: cases_get
       security: []
       parameters:
@@ -12551,7 +11930,7 @@ paths:
     patch:
       tags:
         - cases
-      summary: "List cases with optional query parameters GET /cases / export async function list( collectionId: string, appId: string,"
+      summary: "Update a case PATCH /cases/:caseId Admin can update any field, public (owner) can only update data and owner zones"
       operationId: cases_update
       security: []
       parameters:
@@ -12594,11 +11973,484 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/UpdateCaseInput"
-  /{zone}/collection/{collectionId}/app/{appId}/recordsn)}/{recordId}:
+  /{zone}/collection/{collectionId}/app/{appId}/cases/{caseId}/history:
+    post:
+      tags:
+        - cases
+      summary: "Append an entry to case history (admin only) POST /cases/:caseId/history"
+      operationId: cases_appendHistory
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppCase"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppendHistoryInput"
+  /{zone}/collection/{collectionId}/app/{appId}/cases/{caseId}/related:
+    get:
+      tags:
+        - cases
+      summary: "Get related threads and records for a case (admin only) GET /cases/:caseId/related"
+      operationId: cases_related
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: caseId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RelatedResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /{zone}/collection/{collectionId}/app/{appId}/records:
     get:
       tags:
         - records
-      summary: "List records with optional query parameters GET /records / export async function list( collectionId: string, appId: stri"
+      summary: List records with optional query parameters GET /records
+      operationId: records_list
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: recordType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: ref
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: refPrefix
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: customId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sourceSystem
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: proofId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: variantId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: batchId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: authorId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: parentType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: parentId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: startsAt
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: expiresAt
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: includeScheduled
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: includeExpired
+          in: query
+          required: false
+          schema:
+            type: boolean
+        - name: at
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: contactId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: includeDeleted
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    post:
+      tags:
+        - records
+      summary: "Create a new record POST /records When called on the public endpoint (admin = false) with an anonymous caller, and the app's `publicCreate.records.anonymous.edit.editToken` policy is enabled, the response includes a one-time `editToken` string."
+      operationId: records_create
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateRecordResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateRecordInput"
+  /{zone}/collection/{collectionId}/app/{appId}/records/aggregate:
+    post:
+      tags:
+        - records
+      summary: Get aggregate statistics for records POST /records/aggregate
+      operationId: records_aggregate
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AggregateResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AggregateRequest"
+  /{zone}/collection/{collectionId}/app/{appId}/records/bulk-delete:
+    post:
+      tags:
+        - records
+      summary: Soft-delete records in bulk.
+      operationId: records_bulkDelete
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkDeleteResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BulkDeleteInput"
+  /{zone}/collection/{collectionId}/app/{appId}/records/bulk-upsert:
+    post:
+      tags:
+        - records
+      summary: Upsert up to 500 records in a single transaction.
+      operationId: records_bulkUpsert
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BulkUpsertResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: "#/components/schemas/BulkUpsertItem"
+  /{zone}/collection/{collectionId}/app/{appId}/records/match:
+    post:
+      tags:
+        - records
+      summary: Match records against a runtime target scope.
+      operationId: records_match
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MatchResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MatchRecordsInput"
+  /{zone}/collection/{collectionId}/app/{appId}/records/upsert:
+    post:
+      tags:
+        - records
+      summary: Upsert a record by ref — creates if no record with that ref exists, otherwise updates.
+      operationId: records_upsert
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpsertRecordResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertRecordInput"
+  /{zone}/collection/{collectionId}/app/{appId}/records/{recordId}:
+    get:
+      tags:
+        - records
+      summary: "Get a single record by ID GET /records/:recordId"
       operationId: records_get
       security: []
       parameters:
@@ -12638,7 +12490,7 @@ paths:
     patch:
       tags:
         - records
-      summary: "List records with optional query parameters GET /records / export async function list( collectionId: string, appId: stri"
+      summary: "Update a record PATCH /records/:recordId Admin can update any field, public (owner) can only update data and owner"
       operationId: records_update
       security: []
       parameters:
@@ -12681,11 +12533,202 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/UpdateRecordInput"
-  /{zone}/collection/{collectionId}/app/{appId}/recordsn)}/{threadId}:
+  /{zone}/collection/{collectionId}/app/{appId}/records/{recordId}/restore:
+    post:
+      tags:
+        - records
+      summary: Restore a soft-deleted record.
+      operationId: records_restore
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: recordId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppRecord"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /{zone}/collection/{collectionId}/app/{appId}/threads:
     get:
       tags:
         - threads
-      summary: "Create a new thread POST /threads / export async function create( collectionId: string, appId: string, input: CreateThre"
+      summary: List threads with optional query parameters GET /threads
+      operationId: threads_list
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: slug
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: authorId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: parentType
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: parentId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: tag
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: contactId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    post:
+      tags:
+        - threads
+      summary: Create a new thread POST /threads
+      operationId: threads_create
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppThread"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateThreadInput"
+  /{zone}/collection/{collectionId}/app/{appId}/threads/aggregate:
+    post:
+      tags:
+        - threads
+      summary: Get aggregate statistics for threads POST /threads/aggregate
+      operationId: threads_aggregate
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AggregateResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AggregateRequest"
+  /{zone}/collection/{collectionId}/app/{appId}/threads/{threadId}:
+    get:
+      tags:
+        - threads
+      summary: "Get a single thread by ID GET /threads/:threadId"
       operationId: threads_get
       security: []
       parameters:
@@ -12725,7 +12768,7 @@ paths:
     patch:
       tags:
         - threads
-      summary: "List threads with optional query parameters GET /threads / export async function list( collectionId: string, appId: stri"
+      summary: "Update a thread PATCH /threads/:threadId Admin can update any field, public (owner) can only update body, tags, data, ow"
       operationId: threads_update
       security: []
       parameters:
@@ -12768,11 +12811,11 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/UpdateThreadInput"
-  /{zone}/collection/{collectionId}/app/{appId}/recordsn)}/{threadId}/reply:
+  /{zone}/collection/{collectionId}/app/{appId}/threads/{threadId}/reply:
     post:
       tags:
         - threads
-      summary: "Soft delete a thread DELETE /threads/:threadId / export async function remove( collectionId: string, appId: string, thre"
+      summary: "Add a reply to a thread POST /threads/:threadId/reply Atomically appends to replies array, increments replyCount, update"
       operationId: threads_reply
       security: []
       parameters:
@@ -15471,6 +15514,174 @@ components:
           type: string
         contactId:
           type: string
+    ScopeFacetClause:
+      type: object
+      properties:
+        key:
+          type: string
+        valueKeys:
+          type: array
+          items:
+            type: string
+      required:
+        - key
+        - valueKeys
+    RecordScope:
+      type: object
+      properties:
+        productId:
+          type: string
+        variantId:
+          type: string
+        proofId:
+          type: string
+        batchId:
+          type: string
+        facets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScopeFacetClause"
+    RecordTarget:
+      type: object
+      properties:
+        productId:
+          type: string
+        variantId:
+          type: string
+        proofId:
+          type: string
+        batchId:
+          type: string
+        facets:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+    BulkUpsertItem:
+      type: object
+      properties:
+        ref:
+          type: string
+        recordType:
+          type: string
+        customId:
+          type: string
+        sourceSystem:
+          type: string
+        startsAt:
+          type: string
+        expiresAt:
+          type: string
+        status:
+          type: string
+        scope:
+          $ref: "#/components/schemas/RecordScope"
+        data:
+          type: object
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - ref
+    BulkUpsertResult:
+      type: object
+      properties:
+        saved:
+          type: number
+        failed:
+          type: number
+        results:
+          type: object
+          additionalProperties: true
+      required:
+        - saved
+        - failed
+        - results
+    BulkDeleteResult:
+      type: object
+      properties:
+        deleted:
+          type: number
+      required:
+        - deleted
+    MatchedRecord:
+      type: object
+      properties:
+        matchedAt:
+          $ref: "#/components/schemas/MatchedAtLevel"
+      required:
+        - matchedAt
+    MatchResult:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchedRecord"
+        best:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/MatchedRecord"
+      required:
+        - records
+    UpsertRecordInput:
+      type: object
+      properties:
+        ref:
+          type: string
+        recordType:
+          type: string
+        customId:
+          type: string
+        sourceSystem:
+          type: string
+        startsAt:
+          type: string
+        expiresAt:
+          type: string
+        status:
+          type: string
+        scope:
+          $ref: "#/components/schemas/RecordScope"
+        data:
+          type: object
+          additionalProperties: true
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - ref
+    UpsertRecordResponse:
+      type: object
+      properties:
+        created:
+          type: boolean
+      required:
+        - created
+    MatchRecordsInput:
+      type: object
+      properties:
+        target:
+          $ref: "#/components/schemas/RecordTarget"
+        strategy:
+          type: string
+          enum:
+            - all
+            - best
+        recordType:
+          type: string
+        limit:
+          type: number
+        includeScheduled:
+          type: boolean
+        includeExpired:
+          type: boolean
+        at:
+          type: string
+      required:
+        - target
     AppRecord:
       type: object
       properties:
@@ -15487,6 +15698,10 @@ components:
         recordType:
           type: string
         ref:
+          type: string
+        customId:
+          type: string
+        sourceSystem:
           type: string
         status:
           type: string
@@ -15514,6 +15729,10 @@ components:
           type: string
         deletedAt:
           type: string
+        scope:
+          $ref: "#/components/schemas/RecordScope"
+        specificity:
+          type: number
         data:
           type: object
           additionalProperties: true
@@ -15521,6 +15740,9 @@ components:
           type: object
           additionalProperties: true
         admin:
+          type: object
+          additionalProperties: true
+        metadata:
           type: object
           additionalProperties: true
       required:
@@ -15531,6 +15753,8 @@ components:
         - visibility
         - recordType
         - ref
+        - customId
+        - sourceSystem
         - status
         - productId
         - proofId
@@ -15544,9 +15768,12 @@ components:
         - startsAt
         - expiresAt
         - deletedAt
+        - scope
+        - specificity
         - data
         - owner
         - admin
+        - metadata
     CreateRecordInput:
       type: object
       properties:
@@ -15576,6 +15803,12 @@ components:
           type: string
         expiresAt:
           type: string
+        scope:
+          $ref: "#/components/schemas/RecordScope"
+        customId:
+          type: string
+        sourceSystem:
+          type: string
         data:
           type: object
           additionalProperties: true
@@ -15583,6 +15816,9 @@ components:
           type: object
           additionalProperties: true
         admin:
+          type: object
+          additionalProperties: true
+        metadata:
           type: object
           additionalProperties: true
       required:
@@ -15611,6 +15847,15 @@ components:
           type: string
         expiresAt:
           type: string
+        scope:
+          $ref: "#/components/schemas/RecordScope"
+        customId:
+          type: string
+        sourceSystem:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
     RecordListQueryParams:
       type: object
       properties:
@@ -15618,7 +15863,19 @@ components:
           type: string
         ref:
           type: string
+        refPrefix:
+          type: string
+        customId:
+          type: string
+        sourceSystem:
+          type: string
         proofId:
+          type: string
+        variantId:
+          type: string
+        batchId:
+          type: string
+        q:
           type: string
         authorId:
           type: string
@@ -15630,8 +15887,16 @@ components:
           type: string
         expiresAt:
           type: string
+        includeScheduled:
+          type: boolean
+        includeExpired:
+          type: boolean
+        at:
+          type: string
         contactId:
           type: string
+        includeDeleted:
+          type: boolean
     RelatedResponse:
       type: object
       properties:
@@ -17134,6 +17399,10 @@ components:
           type: string
         allowAutoGenerateClaims:
           type: boolean
+        variants:
+          type: boolean
+        batches:
+          type: boolean
         defaultAuthKitId:
           type: string
       required:
@@ -17159,6 +17428,8 @@ components:
         - supported
         - roles
         - shortId
+        - variants
+        - batches
         - defaultAuthKitId
     AppConfig:
       type: object

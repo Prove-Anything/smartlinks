@@ -201,9 +201,19 @@ function extractBlock(content, startIdx) {
 
 function jsDocBefore(content, idx) {
   const prev = content.slice(Math.max(0, idx - 1000), idx);
-  const m = prev.match(/\/\*\*([\s\S]*?)\*\/\s*(?:export\s+)?$/);
-  if (!m) return '';
-  const full = m[1]
+
+  // Find the last */ in the window and verify only whitespace follows it
+  // (i.e. the comment ends immediately before the function declaration).
+  const lastDocEnd = prev.lastIndexOf('*/');
+  if (lastDocEnd === -1) return '';
+  if (prev.slice(lastDocEnd + 2).trim()) return ''; // non-whitespace between */ and function
+
+  // Walk backward to the matching /**
+  const docStart = prev.lastIndexOf('/**', lastDocEnd);
+  if (docStart === -1) return '';
+
+  const body = prev.slice(docStart + 3, lastDocEnd);
+  const full = body
     .split('\n')
     .map(l => l.replace(/^\s*\*\s?/, '').trim())
     .filter(l => l && !l.startsWith('@') && !l.startsWith('*') && !l.startsWith('```'))
@@ -220,7 +230,17 @@ function jsDocBefore(content, idx) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 function toOaPath(tpl) {
-  return tpl
+  // Pre-strip any ${expr} that contains nested braces (multi-line object args like encodeQueryParams({...}))
+  // These are query-building helpers and should be removed entirely.
+  let cleaned = tpl;
+  let prev;
+  do {
+    prev = cleaned;
+    // Remove ${helper({...})} — any interpolation whose content has a nested {
+    cleaned = cleaned.replace(/\$\{[^}]*\{[^}]*\}[^}]*\}/g, '');
+  } while (cleaned !== prev);
+
+  return cleaned
     // Strip ternary expressions like ${qs ? `?${qs}` : ''} or ${query ? `?...` : ""}
     .replace(/\$\{[^}?]*\?[^`}]*`?[^`}]*`?[^}]*\}/g, '')
     // Strip query helper interpolations like ${qs}, ${query}, ${buildQueryString(params)}
@@ -449,9 +469,15 @@ function resolveRawPath(rawPath, helperDefs) {
         .replace(/\$\{zone\}/g, '{zone}')
         .replace(/\$\{admin \? 'admin' : 'public'\}/g, '{zone}')
         .replace(/\$\{[^}]+\? 'admin' : 'public'\}/g, '{zone}');
-      // Strip off the rest of rawPath that may append to the helper result
-      const afterHelper = rawPath.slice(helperCall[0].length).trim();
-      const continuation = afterHelper.replace(/^\s*\+\s*/, '').replace(/^`/, '').replace(/`$/, '');
+      // Strip off the rest of rawPath after the helper call.
+      // helperCall.index is where the function name starts (e.g. after `${`),
+      // so we must skip both the offset AND the closing `}` of any `${...}`.
+      const afterHelper = rawPath.slice(helperCall.index + helperCall[0].length).trim();
+      const continuation = afterHelper
+        .replace(/^\}/, '')          // strip closing } of ${helperCall(...)}
+        .replace(/^\s*\+\s*/, '')    // strip optional + concatenation
+        .replace(/^`/, '')           // strip leading backtick if present
+        .replace(/`$/, '');          // strip trailing backtick if present
       return resolved + continuation;
     }
   }
@@ -459,7 +485,8 @@ function resolveRawPath(rawPath, helperDefs) {
   return rawPath;
 }
 
-// Extract helper function bodies (e.g. basePath) from a file's content
+// Extract helper function bodies (e.g. basePath) from a content block.
+// Returns an object mapping function name → body string.
 function extractHelpers(content) {
   const helpers = Object.create(null);  // null prototype avoids toString/constructor etc. matching
   const re = /function (\w+)\s*\([^)]*\)[^{]*\{/g;
@@ -471,6 +498,25 @@ function extractHelpers(content) {
   return helpers;
 }
 
+// Build a map of namespace name → helpers defined inside that namespace block.
+// For files with repeated helper names (like appObjects.ts with 3 × basePath),
+// each namespace gets its own scoped copy so the right one is resolved.
+function extractHelpersPerNamespace(content) {
+  const nsHelpers = {};  // nsName → helpers object
+  const nsRe = /export namespace (\w+)\s*\{/g;
+  let m;
+  while ((m = nsRe.exec(content)) !== null) {
+    const nsName = m[1];
+    const block = extractBlock(content, m.index + m[0].length - 1);
+    if (block) {
+      nsHelpers[nsName] = extractHelpers(block);
+    }
+  }
+  // Also extract file-level helpers (outside any namespace)
+  nsHelpers['__file__'] = extractHelpers(content);
+  return nsHelpers;
+}
+
 function parseApiFile(filePath, known) {
   const content = fs.readFileSync(filePath, 'utf8');
   const endpoints = [];
@@ -480,8 +526,10 @@ function parseApiFile(filePath, known) {
   const nsM = content.match(/export namespace (\w+)\s*\{/);
   const outerNs = nsM ? nsM[1] : path.basename(filePath, '.ts');
 
-  // Helper function definitions (e.g. basePath)
-  const helpers = extractHelpers(content);
+  // Helper function definitions per namespace (handles files with repeated helper names)
+  const nsHelpersMap = extractHelpersPerNamespace(content);
+  // File-level helper fallback
+  const fileHelpers = nsHelpersMap['__file__'] || Object.create(null);
 
   // Find all exported functions (including those inside nested namespaces)
   const funcRe = /export\s+(?:async\s+)?function\s+(\w+)\s*\(/g;
@@ -567,7 +615,8 @@ function parseApiFile(filePath, known) {
 
     // Pattern B: two-step — const path = `...`; return verb<T>(path, ...)
     if (!rawPathStr) {
-      const pathDef = body.match(/const\s+(?:path|url|endpoint)\s*=\s*(`[^`]+`|"[^"]+"|'[^']+'|[^\n;]+)/);
+      // Use a backtick-balanced match to handle multi-line template literals
+      const pathDef = body.match(/const\s+(?:path|url|endpoint)\s*=\s*(`[\s\S]*?`|"[^"]+"|'[^']+'|[^\n;]+)/);
       const verbM   = body.match(/\b(post|patch|del|request|requestWithOptions|put)\s*<([^>]+)>/);
       if (pathDef && verbM) {
         const val = pathDef[1].trim();
@@ -583,7 +632,9 @@ function parseApiFile(filePath, known) {
     if (!httpMethod || !rawPathStr) continue;
 
     // Resolve helper-based paths (e.g. basePath(...))
-    const resolvedPath = resolveRawPath(rawPathStr, helpers);
+    // Use helpers from the function's own namespace, falling back to file-level helpers
+    const localHelpers = nsHelpersMap[tag] || fileHelpers;
+    const resolvedPath = resolveRawPath(rawPathStr, localHelpers);
     if (!resolvedPath) continue;
 
     const oaPath = toOaPath(resolvedPath);

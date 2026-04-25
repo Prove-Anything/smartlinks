@@ -72,6 +72,9 @@ export interface Collection {
   /** Allow users to claim products without providing a proof ID (auto-generates serial on-demand) */
   allowAutoGenerateClaims?: boolean
 
+  variants: boolean // does this collection support variants?
+  batches: boolean // does this collection support batches?
+
   defaultAuthKitId: string // default auth kit for this collection, used for auth
 }
 

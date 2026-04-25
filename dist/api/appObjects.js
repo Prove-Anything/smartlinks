@@ -176,7 +176,7 @@ export var app;
     })(threads = app.threads || (app.threads = {}));
     // ==================== RECORDS ====================
     let records;
-    (function (records) {
+    (function (records_1) {
         /**
          * Build the base path for records endpoints
          */
@@ -199,7 +199,7 @@ export var app;
             const path = basePath(collectionId, appId, admin);
             return post(path, input);
         }
-        records.create = create;
+        records_1.create = create;
         /**
          * List records with optional query parameters
          * GET /records
@@ -209,7 +209,7 @@ export var app;
             const queryParams = params ? buildQueryString(params) : '';
             return request(`${path}${queryParams}`);
         }
-        records.list = list;
+        records_1.list = list;
         /**
          * Get a single record by ID
          * GET /records/:recordId
@@ -218,7 +218,7 @@ export var app;
             const path = `${basePath(collectionId, appId, admin)}/${encodeURIComponent(recordId)}`;
             return request(path);
         }
-        records.get = get;
+        records_1.get = get;
         /**
          * Update a record
          * PATCH /records/:recordId
@@ -228,7 +228,7 @@ export var app;
             const path = `${basePath(collectionId, appId, admin)}/${encodeURIComponent(recordId)}`;
             return patch(path, input);
         }
-        records.update = update;
+        records_1.update = update;
         /**
          * Amend the `data` zone of a record using an anonymous edit token.
          * PATCH /records/:recordId  (public endpoint, no auth)
@@ -279,7 +279,7 @@ export var app;
             const path = `${basePath(collectionId, appId, false)}/${encodeURIComponent(recordId)}`;
             return patch(path, { data }, { 'X-Edit-Token': editToken });
         }
-        records.updateWithToken = updateWithToken;
+        records_1.updateWithToken = updateWithToken;
         /**
          * Soft delete a record
          * DELETE /records/:recordId
@@ -288,7 +288,7 @@ export var app;
             const path = `${basePath(collectionId, appId, admin)}/${encodeURIComponent(recordId)}`;
             return del(path);
         }
-        records.remove = remove;
+        records_1.remove = remove;
         /**
          * Get aggregate statistics for records
          * POST /records/aggregate
@@ -297,7 +297,87 @@ export var app;
             const path = `${basePath(collectionId, appId, admin)}/aggregate`;
             return post(path, request);
         }
-        records.aggregate = aggregate;
+        records_1.aggregate = aggregate;
+        /**
+         * Restore a soft-deleted record.
+         * POST /records/:recordId/restore (admin only)
+         */
+        async function restore(collectionId, appId, recordId) {
+            const path = `${basePath(collectionId, appId, true)}/${encodeURIComponent(recordId)}/restore`;
+            return post(path, {});
+        }
+        records_1.restore = restore;
+        /**
+         * Upsert a record by ref — creates if no record with that ref exists,
+         * otherwise updates. Scope, specificity, and ref are canonicalized on write.
+         * POST /records/upsert (admin only)
+         */
+        async function upsert(collectionId, appId, input) {
+            const path = `${basePath(collectionId, appId, true)}/upsert`;
+            return post(path, input);
+        }
+        records_1.upsert = upsert;
+        /**
+         * Match records against a runtime target scope.
+         * Returns records whose scope is satisfied by the target,
+         * ordered by specificity descending (most specific first).
+         * POST /records/match
+         *
+         * @param admin - false for public endpoint (visibility-filtered), true for admin
+         *
+         * @example
+         * ```ts
+         * const { records, best } = await app.records.match(collectionId, appId, {
+         *   target: { productId: 'prod_abc', facets: { tier: ['gold'] } },
+         *   strategy: 'best',
+         *   recordType: 'nutrition',
+         * }, true);
+         * // best.nutrition → the single highest-specificity nutrition record
+         * ```
+         */
+        async function match(collectionId, appId, input, admin = false) {
+            const path = `${basePath(collectionId, appId, admin)}/match`;
+            return post(path, input);
+        }
+        records_1.match = match;
+        /**
+         * Upsert up to 500 records in a single transaction.
+         * Each row is individually error-isolated — a failure on one row does not
+         * abort the others.
+         * POST /records/bulk-upsert (admin only)
+         */
+        async function bulkUpsert(collectionId, appId, records) {
+            const path = `${basePath(collectionId, appId, true)}/bulk-upsert`;
+            return post(path, { records });
+        }
+        records_1.bulkUpsert = bulkUpsert;
+        /**
+         * Soft-delete records in bulk.
+         * Supports two modes:
+         * - **refs mode**: explicit list of refs (max 1000)
+         * - **scope mode**: delete by scope anchor (productId / variantId / etc.)
+         *
+         * POST /records/bulk-delete (admin only)
+         *
+         * @example
+         * ```ts
+         * // Refs mode
+         * await app.records.bulkDelete(collectionId, appId, {
+         *   refs: ['product:prod_abc', 'product:prod_xyz'],
+         *   recordType: 'nutrition',
+         * });
+         *
+         * // Scope mode
+         * await app.records.bulkDelete(collectionId, appId, {
+         *   scope: { productId: 'prod_abc' },
+         * });
+         * ```
+         */
+        async function bulkDelete(collectionId, appId, input) {
+            const path = `${basePath(collectionId, appId, true)}/bulk-delete`;
+            return post(path, input);
+        }
+        records_1.bulkDelete = bulkDelete;
     })(records = app.records || (app.records = {}));
 })(app || (app = {})); // end namespace app
 // ==================== HELPERS ====================

@@ -432,7 +432,7 @@ const productComments = await app.threads.list(collectionId, appId, {
 
 ## Records
 
-**Records** are the most flexible object type — use them for structured data with time-based lifecycles, hierarchies, or custom schemas.
+**Records** are the most flexible object type — use them for structured data with time-based lifecycles, hierarchies, or custom schemas. Records also support **structured scoping** — each record can declare which products, variants, batches, proofs, or facet values it applies to, and the platform can match records against a runtime context.
 
 ### When to Use Records
 
@@ -444,15 +444,279 @@ const productComments = await app.threads.list(collectionId, appId, {
 - **Usage logs** — record product usage metrics
 - **Audit trails** — immutable logs of actions
 - **Loyalty points** — track points earned/redeemed
+- **Per-product / per-facet configuration** — scoped data that varies by product axis (see [records-admin-pattern.md](records-admin-pattern.md))
 
 ### Key Features
 
 - **Record types** — `recordType` field for categorization (required)
 - **Time windows** — `startsAt` and `expiresAt` for time-based data
+- **Scoped targeting** — `scope` object restricts which products/variants/facets the record applies to
+- **Specificity scoring** — `specificity` enables "best match" resolution across multiple scoped records
 - **Parent linking** — attach to products, proofs, contacts, etc.
 - **Author tracking** — `authorId` + `authorType`
 - **Status lifecycle** — custom statuses (default `'active'`)
-- **References** — optional `ref` field for external IDs
+- **References** — optional `ref` field for external IDs; auto-derived from scope if omitted
+
+### Scoped Records
+
+Every record has a `scope` object. An empty scope (`{}`) means the record is universal — it applies everywhere. A populated scope restricts which context the record applies to.
+
+```typescript
+import { app } from '@proveanything/smartlinks';
+
+// A nutrition record scoped to a specific product
+await app.records.create(collectionId, appId, {
+  recordType: 'nutrition',
+  scope: { productId: 'prod_abc' },
+  data: { calories: 250, protein: 12.5 },
+}, true);
+
+// A nutrition record for a specific variant, overriding the product-level record
+await app.records.create(collectionId, appId, {
+  recordType: 'nutrition',
+  scope: { productId: 'prod_abc', variantId: 'var_500ml' },
+  data: { calories: 260, protein: 12.5 },
+}, true);
+
+// A record scoped to a facet value (applies to all products with tier=gold)
+await app.records.create(collectionId, appId, {
+  recordType: 'loyalty_promo',
+  scope: {
+    facets: [{ key: 'tier', valueKeys: ['gold', 'platinum'] }]
+  },
+  data: { discountPercent: 15 },
+}, true);
+```
+
+The `ref` field is derived automatically when `scope` is provided and `ref` is omitted:
+
+```
+scope: { productId: 'prod_abc' }           → ref: 'product:prod_abc'
+scope: { productId: 'prod_abc', variantId: 'var_x' } → ref: 'product:prod_abc/variant:var_x'
+scope: {}                                  → ref: '' (universal)
+```
+
+#### Specificity scores
+
+When multiple scoped records match a context, they are ordered by `specificity`. Higher = more specific:
+
+| Scope element | Points |
+|---------------|--------|
+| `proofId` | +1000 |
+| `batchId` | +500 |
+| `variantId` | +250 |
+| `productId` | +100 |
+| Per facet clause | +10 |
+| Per facet value key | +1 |
+
+### Matching Records Against a Context
+
+Use `app.records.match()` to find records whose scope is satisfied by a runtime target:
+
+```typescript
+// Find all nutrition records that apply for this product + facet context
+const { records } = await app.records.match(collectionId, appId, {
+  target: {
+    productId: 'prod_abc',
+    facets: { tier: ['gold'] },
+  },
+  recordType: 'nutrition',
+}, true);
+// records is ordered by specificity descending — most specific first
+// each record carries a `matchedAt` field indicating which scope dimension matched
+
+// Or use strategy: 'best' to get the single winner per recordType
+const { best } = await app.records.match(collectionId, appId, {
+  target: { productId: 'prod_abc', variantId: 'var_500ml' },
+  strategy: 'best',
+}, true);
+// best.nutrition → the highest-specificity nutrition record for this context
+```
+
+Facet matching rules:
+- Multiple `facets` clauses are **ANDed** — all must be satisfied
+- Values within a single clause are **ORed** — any matching value satisfies it
+- A record with no facet clauses is satisfied by any target
+
+#### `matchedAt` — match attribution
+
+Every record in the response includes a `matchedAt` field indicating **which scope dimension caused the match**. Use it to render attribution labels without inspecting scope fields:
+
+```typescript
+const { records } = await app.records.match(collectionId, appId, { target, recordType: 'nutrition' }, true);
+
+for (const record of records) {
+  switch (record.matchedAt) {
+    case 'proof':     /* "Scan-specific" */     break;
+    case 'batch':     /* "Batch-specific" */    break;
+    case 'variant':   /* "Size-specific" */     break;
+    case 'product':   /* "Inherited from product" */ break;
+    case 'facet':     /* "Tier-specific" */     break;
+    case 'universal': /* "Default" */           break;
+  }
+}
+```
+
+Precedence follows specificity order: `proof > batch > variant > product > facet > universal`.
+
+#### React — `useResolvedRecord`
+
+For React consumers, the `useResolvedRecord` hook in `@proveanything/smartlinks-utils-ui` wraps `records.match()` and returns the best-matching record with loading and error states. The raw `records.match()` API exists for non-React consumers and custom resolution logic.
+
+### Upsert
+
+Create-or-update a record by `ref` in a single call:
+
+```typescript
+const { created } = await app.records.upsert(collectionId, appId, {
+  ref: 'product:prod_abc',
+  recordType: 'nutrition',
+  scope: { productId: 'prod_abc' },
+  data: { calories: 250, protein: 12.5 },
+});
+// created: true if new, false if updated
+```
+
+### Bulk Operations
+
+Upsert or delete large sets of records efficiently:
+
+```typescript
+// Bulk upsert up to 500 records in one transaction
+const result = await app.records.bulkUpsert(collectionId, appId, [
+  { ref: 'product:prod_abc', recordType: 'nutrition', scope: { productId: 'prod_abc' }, data: { calories: 250 } },
+  { ref: 'product:prod_xyz', recordType: 'nutrition', scope: { productId: 'prod_xyz' }, data: { calories: 180 } },
+]);
+// result: { saved: 2, failed: 0, results: [...] }
+
+// Bulk delete by explicit refs
+await app.records.bulkDelete(collectionId, appId, {
+  refs: ['product:prod_abc', 'product:prod_xyz'],
+  recordType: 'nutrition',
+});
+
+// Bulk delete by scope anchor (all records under a product)
+await app.records.bulkDelete(collectionId, appId, {
+  scope: { productId: 'prod_abc' },
+});
+```
+
+### Soft-Delete Semantics
+
+`delete` and `bulkDelete` **soft-delete** records: the row is retained with a non-null `deletedAt` and excluded from all queries by default. Records are **recoverable indefinitely** — there is no expiry on `deletedAt`.
+
+```typescript
+// Single-record restore
+const restored = await app.records.restore(collectionId, appId, recordId);
+
+// List including deleted records (admin only)
+const all = await app.records.list(collectionId, appId, {
+  recordType: 'nutrition',
+  includeDeleted: true,
+}, true);
+// all.data includes records with non-null deletedAt
+```
+
+`bulkDelete` is fully reversible: rows survive with their IDs intact. Restore individually via `restore`, or re-write via `bulkUpsert` (which will find the existing row by `ref` and update it, clearing `deletedAt` in the process).
+
+### Text Search
+
+The `q` parameter on `GET /records` performs a **case-insensitive substring match** (`ILIKE`) on `data->>'label'`. It works on both admin and public list endpoints today:
+
+```typescript
+const results = await app.records.list(collectionId, appId, {
+  recordType: 'product',
+  q: 'premium',
+}, true);
+// returns records where data.label contains 'premium' (case-insensitive)
+```
+
+> `q` is not a full-text index and does not return ranked results. For ranked relevance search over large corpora, use the Elasticsearch integration.
+
+### External ID / ETL Workflow
+
+`customId` and `sourceSystem` provide a stable external key pair for loading records from external systems (CMS, ERP, PIM, etc.):
+
+- Both fields are **indexed** via a composite index on `(sourceSystem, customIdNormalized)`.
+- `customId` is **filterable** on `GET /records?customId=x&sourceSystem=y`.
+- The pair is **not unique** — the same external ID can exist across different `recordType` values by design (a CMS slug can appear in both a `content` and a `nutrition` record).
+- `upsert` currently keys on `ref`, not `customId`. The recommended ETL pattern is to derive a stable `ref` from the external ID and pass `customId` alongside:
+
+```typescript
+// Idiomatic ETL upsert: ref is derived from the external key, customId carries it too
+await app.records.upsert(collectionId, appId, {
+  ref: `cms:${slug}`,          // stable find-or-create key
+  customId: slug,
+  sourceSystem: 'contentful',
+  recordType: 'content_page',
+  scope: { productId },
+  data: { title, body },
+});
+// upsert finds-or-creates by ref deterministically,
+// customId is stored for later reverse-lookup via ?customId=&sourceSystem=
+```
+
+### Counts by Record Type
+
+`aggregate()` returns counts grouped by `record_type` in a single round-trip — no separate endpoint needed:
+
+```typescript
+const stats = await app.records.aggregate(collectionId, appId, {
+  groupBy: ['record_type'],
+  metrics: ['count'],
+  // Optionally narrow the corpus:
+  filters: { status: 'active' },
+}, true);
+// stats.groups → [{ record_type: 'nutrition', count: 42 }, { record_type: 'loyalty_promo', count: 7 }, ...]
+// Ordered by count descending
+```
+
+You can also combine with other filters:
+
+```typescript
+// Counts per type for a specific product
+await app.records.aggregate(collectionId, appId, {
+  groupBy: ['record_type'],
+  metrics: ['count'],
+  filters: { product_id: 'prod_abc' },
+}, true);
+```
+
+### Canonical Ref Format
+
+The `ref` field is **server-derived** when you provide a `scope` and omit `ref`. Clients should never construct ref strings manually. The authoritative grammar is slash-joined:
+
+```
+[facet:{key}={val1}+{val2}/][product:{productId}/][variant:{variantId}/][batch:{batchId}/][proof:{proofId}]
+```
+
+Examples:
+
+| Scope | Derived ref |
+|-------|-------------|
+| `{ productId: 'prod_abc' }` | `product:prod_abc` |
+| `{ productId: 'prod_abc', variantId: 'var_500ml' }` | `product:prod_abc/variant:var_500ml` |
+| `{ batchId: 'batch_q1' }` | `batch:batch_q1` |
+| `{ facets: [{ key: 'tier', valueKeys: ['gold'] }] }` | `facet:tier=gold` |
+| `{}` | `''` (universal) |
+
+`parseRef` / `buildRef` in `data/refs.ts` should be used for **display and URL round-tripping only**, never as upsert keys. For ETL use cases, set an explicit `ref` using a stable external key (see [External ID / ETL Workflow](#external-id--etl-workflow)).
+
+`startsAt` and `expiresAt` control record active windows. The list and match endpoints respect scheduling by default (only returning currently-active records). Override with:
+
+```typescript
+// Include future records and expired records
+await app.records.list(collectionId, appId, {
+  includeScheduled: true,
+  includeExpired: true,
+}, true);
+
+// Preview what records will be active at a future point in time
+await app.records.match(collectionId, appId, {
+  target: { productId: 'prod_abc' },
+  at: '2026-06-01T00:00:00Z',
+}, true);
+```
 
 ### Example: Product Registration
 

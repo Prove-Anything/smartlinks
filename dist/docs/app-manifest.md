@@ -95,7 +95,20 @@ The manifest is loaded automatically by the platform for every collection page. 
     { "title": "Home",     "path": "/" },
     { "title": "Gallery",  "path": "/gallery" },
     { "title": "Settings", "path": "/settings", "params": { "tab": "advanced" } }
-  ]
+  ],
+
+  "records": {
+    "nutrition": {
+      "scopes": ["product", "facet", "batch"],
+      "defaultScope": "facet",
+      "label": "Nutrition info"
+    },
+    "cooking_steps": {
+      "scopes": ["product", "facet"],
+      "defaultScope": "product",
+      "label": "Cooking steps"
+    }
+  }
 }
 ```
 
@@ -187,6 +200,30 @@ See the [Deep Link Discovery guide](deep-link-discovery.md) for the full dual-so
 | `title` | string | ✅ | Human-readable label shown in menus and offered to AI agents |
 | `path` | string | ❌ | Hash route within the app (defaults to `"/"` if omitted) |
 | `params` | object | ❌ | App-specific query params appended to the URL — do **not** include platform params (`collectionId`, `productId`, etc.) |
+
+#### `records`
+
+Declares which `app.records` record types the app stores, and which scopes each type supports. Required for any app that follows the [Records-Based Admin Pattern](records-admin-pattern.md). Omit if the app does not use scoped records.
+
+The platform and the `<RecordsAdminShell>` from `@proveanything/ui-utils` read this block to render only the relevant tabs and affordances.
+
+```json
+"records": {
+  "<recordType>": {
+    "scopes": ["product", "facet", "batch"],
+    "defaultScope": "facet",
+    "label": "Human-readable label"
+  }
+}
+```
+
+| Field          | Type     | Required | Description |
+|----------------|----------|----------|-------------|
+| `scopes`       | string[] | ✅ | Allowed scope kinds in resolution order. Valid values: `"product"`, `"variant"`, `"batch"`, `"facet"`, `"proof"`, `"default"`. |
+| `defaultScope` | string   | ✅ | The scope the "Create new" button targets in the admin shell. Must be one of the declared `scopes`. |
+| `label`        | string   | ✅ | Human-readable label for the record type, used in headings and tabs. |
+
+An app may declare multiple record types under different keys (e.g. `"nutrition"` and `"cooking_steps"`).
 
 #### `executor`
 

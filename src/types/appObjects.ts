@@ -302,6 +302,182 @@ export interface ThreadListQueryParams extends ListQueryParams {
 // --- Records ---
 
 /**
+ * Facet clause within a RecordScope.
+ * Values within a single clause are ORed; multiple clauses are ANDed.
+ */
+export interface ScopeFacetClause {
+  /** Facet key, e.g. "tier", "region" */
+  key: string
+  /** One or more values that satisfy this clause (OR semantics) */
+  valueKeys: string[]
+}
+
+/**
+ * Structured scope definition for a record.
+ * Describes the audience/context the record applies to.
+ * An empty object `{}` means universal (no restrictions).
+ */
+export interface RecordScope {
+  productId?: string
+  variantId?: string
+  proofId?: string
+  batchId?: string
+  /**
+   * Arbitrary facet clauses.
+   * Clauses are ANDed together; valueKeys within a clause are ORed.
+   */
+  facets?: ScopeFacetClause[]
+}
+
+/**
+ * Runtime context passed to the match endpoint.
+ * Describes the caller or item being evaluated against record scopes.
+ */
+export interface RecordTarget {
+  productId?: string
+  variantId?: string
+  proofId?: string
+  batchId?: string
+  /**
+   * Facet values the caller possesses, keyed by facet key.
+   * A scope clause is satisfied if ANY of the clause's valueKeys appears here.
+   */
+  facets?: Record<string, string[]>
+}
+
+/**
+ * Request body for the bulk-upsert endpoint.
+ */
+export interface BulkUpsertItem {
+  /** Required — logical identifier used as the upsert key */
+  ref: string
+  recordType?: string
+  customId?: string
+  sourceSystem?: string
+  startsAt?: string | null
+  expiresAt?: string | null
+  status?: string | null
+  scope?: RecordScope
+  data?: Record<string, unknown> | null
+  metadata?: Record<string, unknown> | null
+}
+
+/**
+ * Response from the bulk-upsert endpoint.
+ */
+export interface BulkUpsertResult {
+  saved: number
+  failed: number
+  results: Array<
+    | { index: number; status: 'created'; id: string; ref: string; created: true }
+    | { index: number; status: 'updated'; id: string; ref: string; created: false }
+    | { index: number; status: 'error'; error: string }
+  >
+}
+
+/**
+ * Response from the bulk-delete endpoint.
+ */
+export interface BulkDeleteResult {
+  deleted: number
+}
+
+/**
+ * Input for the bulk-delete endpoint.
+ * Use **refs mode** to delete explicit records by ref,
+ * or **scope mode** to delete all records anchored to a scope.
+ */
+export type BulkDeleteInput =
+  | { refs: string[]; recordType?: string; scope?: never }
+  | { scope: Omit<RecordScope, 'facets'>; recordType?: string; refs?: never }
+
+/**
+ * Indicates which scope dimension caused a record to match during `match()`.
+ * Follows specificity order: proof > batch > variant > product > facet > universal.
+ */
+export type MatchedAtLevel =
+  | 'proof'
+  | 'batch'
+  | 'variant'
+  | 'product'
+  | 'facet'
+  | 'universal'
+
+/**
+ * An AppRecord augmented with `matchedAt` — present only on records returned
+ * by the `match` endpoint. Use this to display attribution such as
+ * "Inherited from product" or "Batch-specific" without inspecting scope fields.
+ */
+export interface MatchedRecord extends AppRecord {
+  /**
+   * The most specific scope dimension that caused this record to match.
+   * 'universal' means the record has an empty scope and matches all contexts.
+   */
+  matchedAt: MatchedAtLevel
+}
+
+/**
+ * Response from the match endpoint.
+ */
+export interface MatchResult {
+  /** Matched records ordered by specificity descending (most specific first) */
+  records: MatchedRecord[]
+  /**
+   * Only present when strategy is 'best'.
+   * The single highest-specificity record per recordType.
+   */
+  best?: Record<string, MatchedRecord>
+}
+
+/**
+ * Request body for the upsert endpoint.
+ */
+export interface UpsertRecordInput {
+  /** Required — used as the lookup key */
+  ref: string
+  recordType?: string
+  customId?: string
+  sourceSystem?: string
+  startsAt?: string | null
+  expiresAt?: string | null
+  status?: string | null
+  scope?: RecordScope
+  data?: Record<string, unknown> | null
+  metadata?: Record<string, unknown> | null
+}
+
+/**
+ * Response from the upsert endpoint — includes AppRecord plus a created flag.
+ */
+export interface UpsertRecordResponse extends AppRecord {
+  /** true if the record was newly created, false if updated */
+  created: boolean
+}
+
+/**
+ * Request body for the match endpoint.
+ */
+export interface MatchRecordsInput {
+  /** Required — describes the runtime context to match against */
+  target: RecordTarget
+  /**
+   * 'all'  — return all matching records (default)
+   * 'best' — return the highest-specificity record per recordType
+   */
+  strategy?: 'all' | 'best'
+  /** Limit to a specific recordType */
+  recordType?: string
+  /** Maximum records to return. Default 100, max 1000. */
+  limit?: number
+  /** Include records whose startsAt is in the future. Default false. */
+  includeScheduled?: boolean
+  /** Include records whose expiresAt is in the past. Default false. */
+  includeExpired?: boolean
+  /** Evaluate scheduling relative to this ISO 8601 timestamp. Defaults to now. */
+  at?: string
+}
+
+/**
  * App Record object
  */
 export interface AppRecord {
@@ -310,10 +486,14 @@ export interface AppRecord {
   collectionId: string
   appId: string
   visibility: Visibility
-  recordType: string
+  recordType: string | null
   ref: string | null
-  status: string // default 'active'
+  customId: string | null
+  sourceSystem: string | null
+  status: string | null
+  /** @deprecated use scope.productId instead */
   productId: string | null
+  /** @deprecated use scope.proofId instead */
   proofId: string | null
   contactId: string | null
   authorId: string | null
@@ -325,9 +505,20 @@ export interface AppRecord {
   startsAt: string | null
   expiresAt: string | null
   deletedAt: string | null // admin only
+  /**
+   * Structured scope definition. Empty object means universal.
+   * Platform-canonicalized on write (keys sorted, valueKeys deduplicated).
+   */
+  scope: RecordScope
+  /**
+   * Numeric specificity score computed from scope.
+   * Higher = more specific. 0 = universal scope.
+   */
+  specificity: number
   data: Record<string, unknown>
   owner: Record<string, unknown>
   admin: Record<string, unknown> // admin only
+  metadata: Record<string, unknown> | null
 }
 
 /**
@@ -336,7 +527,7 @@ export interface AppRecord {
 export interface CreateRecordInput {
   recordType: string
   visibility?: Visibility // default 'owner'
-  ref?: string
+  ref?: string             // derived from scope if omitted and scope provided
   status?: string // default 'active'
   productId?: string
   proofId?: string
@@ -347,9 +538,14 @@ export interface CreateRecordInput {
   parentId?: string
   startsAt?: string // ISO 8601
   expiresAt?: string
+  /** Structured scope. Canonicalized on write; ref derived if not supplied. */
+  scope?: RecordScope
+  customId?: string
+  sourceSystem?: string
   data?: Record<string, unknown>
   owner?: Record<string, unknown>
   admin?: Record<string, unknown> // admin only
+  metadata?: Record<string, unknown>
 }
 
 /**
@@ -367,6 +563,11 @@ export interface UpdateRecordInput {
   recordType?: string
   startsAt?: string
   expiresAt?: string
+  /** Updating scope recomputes specificity and ref. */
+  scope?: RecordScope
+  customId?: string
+  sourceSystem?: string
+  metadata?: Record<string, unknown>
 }
 
 /**
@@ -375,13 +576,34 @@ export interface UpdateRecordInput {
 export interface RecordListQueryParams extends ListQueryParams {
   recordType?: string
   ref?: string
+  /** Filter records whose ref starts with this value */
+  refPrefix?: string
+  customId?: string
+  sourceSystem?: string
   proofId?: string
+  /** Filter by scope.variantId (JSONB lookup) */
+  variantId?: string
+  /** Filter by scope.batchId (JSONB lookup) */
+  batchId?: string
+  /** Full-text filter on data.label (case-insensitive substring) */
+  q?: string
   authorId?: string
   parentType?: string
   parentId?: string
   startsAt?: string
   expiresAt?: string
+  /** Include records where startsAt is in the future. Default false. */
+  includeScheduled?: boolean
+  /** Include records where expiresAt is in the past. Default false. */
+  includeExpired?: boolean
+  /**
+   * Evaluate scheduling relative to this ISO 8601 timestamp.
+   * Defaults to now.
+   */
+  at?: string
   contactId?: string // admin only
+  /** Include soft-deleted records (non-null deletedAt). Admin only. Default false. */
+  includeDeleted?: boolean
 }
 
 // --- Related ---
