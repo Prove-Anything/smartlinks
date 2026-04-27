@@ -378,6 +378,29 @@ export var app;
             return post(path, input);
         }
         records_1.bulkDelete = bulkDelete;
+        /**
+         * Resolve every applicable record for a product context in one call.
+         * Returns records across all tiers (proof, batch, variant, product, rule, facet, collection)
+         * deduplicated and sorted by specificity descending.
+         * POST /records/resolve-all
+         *
+         * @param admin - false for public (visibility-filtered), true for admin (all records)
+         */
+        async function resolveAll(collectionId, appId, input, admin = false) {
+            const path = `${basePath(collectionId, appId, admin)}/resolve-all`;
+            return post(path, input);
+        }
+        records_1.resolveAll = resolveAll;
+        /**
+         * Preview which products in the collection match a given facetRule.
+         * Admin only. Use for live "matches N products" feedback while authoring a rule.
+         * POST /records/preview-rule
+         */
+        async function previewRule(collectionId, appId, input) {
+            const path = `${basePath(collectionId, appId, true)}/preview-rule`;
+            return post(path, input);
+        }
+        records_1.previewRule = previewRule;
     })(records = app.records || (app.records = {}));
 })(app || (app = {})); // end namespace app
 // ==================== HELPERS ====================

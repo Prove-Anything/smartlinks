@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.10.0  |  Generated: 2026-04-25T13:26:09.113Z
+Version: 1.10.1  |  Generated: 2026-04-25T15:35:27.893Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1880,6 +1880,27 @@ interface ReplyInput {
 }
 ```
 
+**FacetRuleClause** (interface)
+```typescript
+interface FacetRuleClause {
+  * Facet key this clause tests, e.g. "brand", "type", "bread-type".
+  * Must reference a defined facet on the collection.
+  facetKey: string
+  * One or more facet value keys that satisfy the clause (OR semantics).
+  * At least one value required. Server deduplicates and sorts.
+  anyOf: string[]
+}
+```
+
+**FacetRule** (interface)
+```typescript
+interface FacetRule {
+  * All clauses must be satisfied (AND semantics).
+  * Must be non-empty; no duplicate facetKey entries.
+  all: FacetRuleClause[]
+}
+```
+
 **ScopeFacetClause** (interface)
 ```typescript
 interface ScopeFacetClause {
@@ -1927,6 +1948,7 @@ interface BulkUpsertItem {
   scope?: RecordScope
   data?: Record<string, unknown> | null
   metadata?: Record<string, unknown> | null
+  facetRule?: FacetRule | null
 }
 ```
 
@@ -1950,13 +1972,26 @@ interface BulkDeleteResult {
 }
 ```
 
+**MatchEntry** (interface)
+```typescript
+interface MatchEntry {
+  record: AppRecord
+  matchedAt: MatchedAt
+  matchedRule?: FacetRule
+  * Number of clauses in the rule that fired.
+  * Present only when matchedAt === 'rule'.
+  matchedClauseCount?: number
+  specificity: number
+}
+```
+
 **MatchResult** (interface)
 ```typescript
 interface MatchResult {
-  records: MatchedRecord[]
+  records: MatchEntry[]
   * Only present when strategy is 'best'.
   * The single highest-specificity record per recordType.
-  best?: Record<string, MatchedRecord>
+  best?: Record<string, MatchEntry>
 }
 ```
 
@@ -1973,6 +2008,7 @@ interface UpsertRecordInput {
   scope?: RecordScope
   data?: Record<string, unknown> | null
   metadata?: Record<string, unknown> | null
+  facetRule?: FacetRule | null
 }
 ```
 
@@ -2022,6 +2058,10 @@ interface AppRecord {
   * Numeric specificity score computed from scope.
   * Higher = more specific. 0 = universal scope.
   specificity: number
+  * Facet rule for rule records (ref starts with "rule:").
+  * null on all other record types. Mutually exclusive with scope.
+  * SDK 1.10.
+  facetRule: FacetRule | null
   data: Record<string, unknown>
   owner: Record<string, unknown>
   admin: Record<string, unknown> // admin only
@@ -2052,6 +2092,7 @@ interface CreateRecordInput {
   owner?: Record<string, unknown>
   admin?: Record<string, unknown> // admin only
   metadata?: Record<string, unknown>
+  facetRule?: FacetRule | null
 }
 ```
 
@@ -2071,6 +2112,57 @@ interface UpdateRecordInput {
   customId?: string
   sourceSystem?: string
   metadata?: Record<string, unknown>
+  facetRule?: FacetRule | null
+}
+```
+
+**ResolveAllParams** (interface)
+```typescript
+interface ResolveAllParams {
+  context: {
+  productId?: string
+  variantId?: string
+  batchId?: string
+  proofId?: string
+  * Facet assignments for the product — used for both legacy facet-ref matching
+  * and facetRule evaluation.
+  * e.g. { "brand": "samsung", "type": ["tv", "laptop"] }
+  facets?: Record<string, string | string[]>
+  }
+  recordType?: string
+  tiers?: Array<'proof' | 'batch' | 'variant' | 'product' | 'rule' | 'facet' | 'collection'>
+  limit?: number
+  at?: string
+  includeScheduled?: boolean
+  includeExpired?: boolean
+}
+```
+
+**ResolveAllResult** (interface)
+```typescript
+interface ResolveAllResult {
+  * Every applicable record for the given product context, sorted by precedence
+  * (most-specific first). Each record appears at most once.
+  records: MatchEntry[]
+  * true if the result was truncated at the safety cap.
+  * Default cap: 500 records. Use `limit` to raise it (max 5000).
+  truncated?: boolean
+}
+```
+
+**PreviewRuleParams** (interface)
+```typescript
+interface PreviewRuleParams {
+  facetRule: FacetRule
+  limit?: number
+}
+```
+
+**PreviewRuleResult** (interface)
+```typescript
+interface PreviewRuleResult {
+  sampleProductIds: string[]
+  totalMatches: number
 }
 ```
 
@@ -2140,7 +2232,7 @@ interface PublicCreateBranch {
 
 **BulkDeleteInput** = ``
 
-**MatchedAtLevel** = ``
+**MatchedAt** = ``
 
 ### asset
 
@@ -7305,6 +7397,17 @@ Upsert up to 500 records in a single transaction. Each row is individually error
     appId: string,
     input: BulkDeleteInput) → `Promise<BulkDeleteResult>`
 Soft-delete records in bulk. Supports two modes: - **refs mode**: explicit list of refs (max 1000) - **scope mode**: delete by scope anchor (productId / variantId / etc.) POST /records/bulk-delete (admin only) ```ts // Refs mode await app.records.bulkDelete(collectionId, appId, { refs: ['product:prod_abc', 'product:prod_xyz'], recordType: 'nutrition', }); // Scope mode await app.records.bulkDelete(collectionId, appId, { scope: { productId: 'prod_abc' }, }); ```
+
+**resolveAll**(collectionId: string,
+    appId: string,
+    input: ResolveAllParams,
+    admin: boolean = false) → `Promise<ResolveAllResult>`
+Resolve every applicable record for a product context in one call. Returns records across all tiers (proof, batch, variant, product, rule, facet, collection) deduplicated and sorted by specificity descending. POST /records/resolve-all
+
+**previewRule**(collectionId: string,
+    appId: string,
+    input: PreviewRuleParams) → `Promise<PreviewRuleResult>`
+Preview which products in the collection match a given facetRule. Admin only. Use for live "matches N products" feedback while authoring a rule. POST /records/preview-rule
 
 ### app.threads
 

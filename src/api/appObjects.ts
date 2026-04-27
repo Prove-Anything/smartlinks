@@ -26,6 +26,10 @@ import type {
   BulkDeleteResult,
   BulkDeleteInput,
   RecordListQueryParams,
+  ResolveAllParams,
+  ResolveAllResult,
+  PreviewRuleParams,
+  PreviewRuleResult,
   PaginatedResponse,
   AggregateRequest,
   AggregateResponse,
@@ -551,6 +555,38 @@ export namespace records {
   ): Promise<BulkDeleteResult> {
     const path = `${basePath(collectionId, appId, true)}/bulk-delete`
     return post<BulkDeleteResult>(path, input)
+  }
+
+  /**
+   * Resolve every applicable record for a product context in one call.
+   * Returns records across all tiers (proof, batch, variant, product, rule, facet, collection)
+   * deduplicated and sorted by specificity descending.
+   * POST /records/resolve-all
+   *
+   * @param admin - false for public (visibility-filtered), true for admin (all records)
+   */
+  export async function resolveAll(
+    collectionId: string,
+    appId: string,
+    input: ResolveAllParams,
+    admin: boolean = false
+  ): Promise<ResolveAllResult> {
+    const path = `${basePath(collectionId, appId, admin)}/resolve-all`
+    return post<ResolveAllResult>(path, input)
+  }
+
+  /**
+   * Preview which products in the collection match a given facetRule.
+   * Admin only. Use for live "matches N products" feedback while authoring a rule.
+   * POST /records/preview-rule
+   */
+  export async function previewRule(
+    collectionId: string,
+    appId: string,
+    input: PreviewRuleParams
+  ): Promise<PreviewRuleResult> {
+    const path = `${basePath(collectionId, appId, true)}/preview-rule`
+    return post<PreviewRuleResult>(path, input)
   }
 }
 

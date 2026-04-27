@@ -545,23 +545,93 @@ Every record in the response includes a `matchedAt` field indicating **which sco
 ```typescript
 const { records } = await app.records.match(collectionId, appId, { target, recordType: 'nutrition' }, true);
 
-for (const record of records) {
-  switch (record.matchedAt) {
-    case 'proof':     /* "Scan-specific" */     break;
-    case 'batch':     /* "Batch-specific" */    break;
-    case 'variant':   /* "Size-specific" */     break;
-    case 'product':   /* "Inherited from product" */ break;
-    case 'facet':     /* "Tier-specific" */     break;
-    case 'universal': /* "Default" */           break;
+for (const entry of records) {
+  switch (entry.matchedAt) {
+    case 'proof':      /* "Scan-specific" */          break;
+    case 'batch':      /* "Batch-specific" */         break;
+    case 'variant':    /* "Size-specific" */          break;
+    case 'product':    /* "Inherited from product" */ break;
+    case 'rule':       /* "Matches rule" */           break;
+    case 'facet':      /* "Tier-specific" */          break;
+    case 'collection': /* "Collection default" */     break;
+    case 'universal':  /* "Default" */                break;
   }
 }
 ```
 
-Precedence follows specificity order: `proof > batch > variant > product > facet > universal`.
+Precedence follows: `proof > batch > variant > product > rule > facet > collection > universal`.
 
 #### React — `useResolvedRecord`
 
 For React consumers, the `useResolvedRecord` hook in `@proveanything/smartlinks-utils-ui` wraps `records.match()` and returns the best-matching record with loading and error states. The raw `records.match()` API exists for non-React consumers and custom resolution logic.
+
+### Facet-Rule Records
+
+A record can declare a **multi-clause boolean rule** (`facetRule`) describing which products it applies to, instead of a single `scope.facets` entry. The rule is AND across facet keys, OR within values of each key:
+
+```typescript
+// Create a record that matches all Samsung TVs and laptops
+await app.records.create(collectionId, appId, {
+  recordType: 'warranty',
+  facetRule: {
+    all: [
+      { facetKey: 'brand', anyOf: ['samsung'] },
+      { facetKey: 'type',  anyOf: ['tv', 'laptop'] },
+    ],
+  },
+  data: { warrantyYears: 2 },
+}, true);
+```
+
+`facetRule` is **mutually exclusive with `scope`**. A record has either a structured scope or a facetRule, never both. The server assigns `ref: 'rule:<ulid>'` automatically.
+
+Specificity for rule records: `Σ (50 + clause.anyOf.length)` across all clauses. A 2-clause rule with 1 value each scores `(50+1)+(50+1) = 102`, which ranks above a plain product-scoped record (100) in `resolveAll()` results.
+
+Use `records.previewRule()` to see which products a rule would match before creating it:
+
+```typescript
+const { sampleProductIds, totalMatches } = await app.records.previewRule(collectionId, appId, {
+  facetRule: {
+    all: [{ facetKey: 'brand', anyOf: ['samsung'] }],
+  },
+});
+// totalMatches: 42, sampleProductIds: ['prod_001', 'prod_002', ...]
+```
+
+### Resolve All
+
+Use `app.records.resolveAll()` to fetch **every applicable record for a product context** in one request—across all tiers (proof, batch, variant, product, rule, facet, collection defaults), deduplicated and sorted by specificity:
+
+```typescript
+// All records that apply to this product context (admin)
+const { records, truncated } = await app.records.resolveAll(collectionId, appId, {
+  context: {
+    productId: 'prod_001',
+    facets: { brand: 'samsung', type: 'tv' },
+  },
+  recordType: 'warranty',
+}, true);
+
+for (const entry of records) {
+  console.log(entry.matchedAt, entry.specificity, entry.record.id);
+  if (entry.matchedAt === 'rule') {
+    console.log('rule fired:', entry.matchedRule, 'clauses:', entry.matchedClauseCount);
+  }
+}
+
+// Public endpoint — visibility-filtered (admin records excluded)
+const { records: publicRecords } = await app.records.resolveAll(collectionId, appId, {
+  context: { productId: 'prod_001', facets: { brand: 'samsung' } },
+}, false);
+
+// Filter to specific tiers
+const { records: ruleRecords } = await app.records.resolveAll(collectionId, appId, {
+  context: { productId: 'prod_001', facets: { brand: 'samsung', type: 'tv' } },
+  tiers: ['product', 'rule', 'collection'],
+}, true);
+```
+
+`truncated: true` means the result hit the safety cap (default 500). Raise it with `limit` (max 5000).
 
 ### Upsert
 

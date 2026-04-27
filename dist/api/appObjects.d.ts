@@ -1,4 +1,4 @@
-import type { AppCase, CreateCaseInput, UpdateCaseInput, AppendHistoryInput, CaseSummaryRequest, CaseSummaryResponse, CaseListQueryParams, AppThread, CreateThreadInput, UpdateThreadInput, ReplyInput, ThreadListQueryParams, AppRecord, CreateRecordInput, CreateRecordResponse, UpdateRecordInput, UpsertRecordInput, UpsertRecordResponse, MatchRecordsInput, MatchResult, BulkUpsertItem, BulkUpsertResult, BulkDeleteResult, BulkDeleteInput, RecordListQueryParams, PaginatedResponse, AggregateRequest, AggregateResponse, RelatedResponse } from '../types/appObjects';
+import type { AppCase, CreateCaseInput, UpdateCaseInput, AppendHistoryInput, CaseSummaryRequest, CaseSummaryResponse, CaseListQueryParams, AppThread, CreateThreadInput, UpdateThreadInput, ReplyInput, ThreadListQueryParams, AppRecord, CreateRecordInput, CreateRecordResponse, UpdateRecordInput, UpsertRecordInput, UpsertRecordResponse, MatchRecordsInput, MatchResult, BulkUpsertItem, BulkUpsertResult, BulkDeleteResult, BulkDeleteInput, RecordListQueryParams, ResolveAllParams, ResolveAllResult, PreviewRuleParams, PreviewRuleResult, PaginatedResponse, AggregateRequest, AggregateResponse, RelatedResponse } from '../types/appObjects';
 export declare namespace app {
     namespace cases {
         /**
@@ -239,5 +239,20 @@ export declare namespace app {
          * ```
          */
         function bulkDelete(collectionId: string, appId: string, input: BulkDeleteInput): Promise<BulkDeleteResult>;
+        /**
+         * Resolve every applicable record for a product context in one call.
+         * Returns records across all tiers (proof, batch, variant, product, rule, facet, collection)
+         * deduplicated and sorted by specificity descending.
+         * POST /records/resolve-all
+         *
+         * @param admin - false for public (visibility-filtered), true for admin (all records)
+         */
+        function resolveAll(collectionId: string, appId: string, input: ResolveAllParams, admin?: boolean): Promise<ResolveAllResult>;
+        /**
+         * Preview which products in the collection match a given facetRule.
+         * Admin only. Use for live "matches N products" feedback while authoring a rule.
+         * POST /records/preview-rule
+         */
+        function previewRule(collectionId: string, appId: string, input: PreviewRuleParams): Promise<PreviewRuleResult>;
     }
 }

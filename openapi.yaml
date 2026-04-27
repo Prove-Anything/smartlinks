@@ -12404,6 +12404,90 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/MatchRecordsInput"
+  /{zone}/collection/{collectionId}/app/{appId}/records/preview-rule:
+    post:
+      tags:
+        - records
+      summary: Preview which products in the collection match a given facetRule.
+      operationId: records_previewRule
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PreviewRuleResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PreviewRuleParams"
+  /{zone}/collection/{collectionId}/app/{appId}/records/resolve-all:
+    post:
+      tags:
+        - records
+      summary: Resolve every applicable record for a product context in one call.
+      operationId: records_resolveAll
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResolveAllResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveAllParams"
   /{zone}/collection/{collectionId}/app/{appId}/records/upsert:
     post:
       tags:
@@ -15514,6 +15598,27 @@ components:
           type: string
         contactId:
           type: string
+    FacetRuleClause:
+      type: object
+      properties:
+        facetKey:
+          type: string
+        anyOf:
+          type: array
+          items:
+            type: string
+      required:
+        - facetKey
+        - anyOf
+    FacetRule:
+      type: object
+      properties:
+        all:
+          type: array
+          items:
+            $ref: "#/components/schemas/FacetRuleClause"
+      required:
+        - all
     ScopeFacetClause:
       type: object
       properties:
@@ -15583,6 +15688,8 @@ components:
         metadata:
           type: object
           additionalProperties: true
+        facetRule:
+          $ref: "#/components/schemas/FacetRule"
       required:
         - ref
     BulkUpsertResult:
@@ -15610,20 +15717,37 @@ components:
       type: object
       properties:
         matchedAt:
-          $ref: "#/components/schemas/MatchedAtLevel"
+          $ref: "#/components/schemas/MatchedAt"
       required:
         - matchedAt
+    MatchEntry:
+      type: object
+      properties:
+        record:
+          $ref: "#/components/schemas/AppRecord"
+        matchedAt:
+          $ref: "#/components/schemas/MatchedAt"
+        matchedRule:
+          $ref: "#/components/schemas/FacetRule"
+        matchedClauseCount:
+          type: number
+        specificity:
+          type: number
+      required:
+        - record
+        - matchedAt
+        - specificity
     MatchResult:
       type: object
       properties:
         records:
           type: array
           items:
-            $ref: "#/components/schemas/MatchedRecord"
+            $ref: "#/components/schemas/MatchEntry"
         best:
           type: object
           additionalProperties:
-            $ref: "#/components/schemas/MatchedRecord"
+            $ref: "#/components/schemas/MatchEntry"
       required:
         - records
     UpsertRecordInput:
@@ -15651,6 +15775,8 @@ components:
         metadata:
           type: object
           additionalProperties: true
+        facetRule:
+          $ref: "#/components/schemas/FacetRule"
       required:
         - ref
     UpsertRecordResponse:
@@ -15733,6 +15859,8 @@ components:
           $ref: "#/components/schemas/RecordScope"
         specificity:
           type: number
+        facetRule:
+          $ref: "#/components/schemas/FacetRule"
         data:
           type: object
           additionalProperties: true
@@ -15770,6 +15898,7 @@ components:
         - deletedAt
         - scope
         - specificity
+        - facetRule
         - data
         - owner
         - admin
@@ -15821,6 +15950,8 @@ components:
         metadata:
           type: object
           additionalProperties: true
+        facetRule:
+          $ref: "#/components/schemas/FacetRule"
       required:
         - recordType
     UpdateRecordInput:
@@ -15856,6 +15987,8 @@ components:
         metadata:
           type: object
           additionalProperties: true
+        facetRule:
+          $ref: "#/components/schemas/FacetRule"
     RecordListQueryParams:
       type: object
       properties:
@@ -15897,6 +16030,83 @@ components:
           type: string
         includeDeleted:
           type: boolean
+    ResolveAllParams:
+      type: object
+      properties:
+        context:
+          type: object
+          additionalProperties: true
+        productId:
+          type: string
+        variantId:
+          type: string
+        batchId:
+          type: string
+        proofId:
+          type: string
+        facets:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              additionalProperties: true
+        recordType:
+          type: string
+        tiers:
+          type: array
+          items:
+            type: string
+            enum:
+              - proof
+              - batch
+              - variant
+              - product
+              - rule
+              - facet
+              - collection
+        limit:
+          type: number
+        at:
+          type: string
+        includeScheduled:
+          type: boolean
+        includeExpired:
+          type: boolean
+      required:
+        - context
+    ResolveAllResult:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            $ref: "#/components/schemas/MatchEntry"
+        truncated:
+          type: boolean
+      required:
+        - records
+    PreviewRuleParams:
+      type: object
+      properties:
+        facetRule:
+          $ref: "#/components/schemas/FacetRule"
+        limit:
+          type: number
+      required:
+        - facetRule
+    PreviewRuleResult:
+      type: object
+      properties:
+        sampleProductIds:
+          type: array
+          items:
+            type: string
+        totalMatches:
+          type: number
+      required:
+        - sampleProductIds
+        - totalMatches
     RelatedResponse:
       type: object
       properties:
