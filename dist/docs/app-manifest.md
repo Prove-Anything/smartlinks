@@ -117,14 +117,18 @@ The manifest is loaded automatically by the platform for every collection page. 
 
   "records": {
     "nutrition": {
-      "scopes": ["product", "facet", "batch"],
-      "defaultScope": "facet",
-      "label": "Nutrition info"
+      "label": "Nutrition info",
+      "cardinality": "singleton",
+      "allowFacetRules": true,
+      "scopes": ["collection", "rule", "product", "facet", "batch"],
+      "defaultScope": "product"
     },
     "cooking_steps": {
-      "scopes": ["product", "facet"],
-      "defaultScope": "product",
-      "label": "Cooking steps"
+      "label": "Cooking steps",
+      "cardinality": "singleton",
+      "allowFacetRules": false,
+      "scopes": ["collection", "product"],
+      "defaultScope": "product"
     }
   }
 }
@@ -268,25 +272,29 @@ See the [Deep Link Discovery guide](deep-link-discovery.md) for the full dual-so
 
 Declares which `app.records` record types the app stores, and which scopes each type supports. Required for any app that follows the [Records-Based Admin Pattern](records-admin-pattern.md). Omit if the app does not use scoped records.
 
-The platform and the `<RecordsAdminShell>` from `@proveanything/ui-utils` read this block to render only the relevant tabs and affordances.
+The platform and the `<RecordsAdminShell>` from `@proveanything/smartlinks-utils-ui` read this block to render the right scope tabs, rule editor, and cardinality-appropriate right pane.
 
 ```json
 "records": {
   "<recordType>": {
-    "scopes": ["product", "facet", "batch"],
-    "defaultScope": "facet",
-    "label": "Human-readable label"
+    "label": "Human-readable label",
+    "cardinality": "singleton",
+    "allowFacetRules": false,
+    "scopes": ["collection", "product", "variant", "batch", "facet"],
+    "defaultScope": "product"
   }
 }
 ```
 
-| Field          | Type     | Required | Description |
-|----------------|----------|----------|-------------|
-| `scopes`       | string[] | ✅ | Allowed scope kinds in resolution order. Valid values: `"product"`, `"variant"`, `"batch"`, `"facet"`, `"proof"`, `"default"`. |
-| `defaultScope` | string   | ✅ | The scope the "Create new" button targets in the admin shell. Must be one of the declared `scopes`. |
-| `label`        | string   | ✅ | Human-readable label for the record type, used in headings and tabs. |
+| Field             | Type     | Default | Description |
+|-------------------|----------|---------|-------------|
+| `label`           | string   | — | Human-readable label for the record type, used in headings and tabs. |
+| `cardinality`     | string   | `'singleton'` | `'singleton'` — one record wins per scope (e.g. ingredients, nutrition). `'collection'` — every matching record is returned in resolution order (e.g. FAQs, recipes). Drives which hook to use on the public side (`useResolvedRecord` vs `useCollectedRecords`) and how the shell lays out the right pane. |
+| `allowFacetRules` | boolean  | `false` | When `true`, the shell renders a **Rule** scope tab and embeds `<FacetRuleEditor>`. Add `'rule'` to `scopes` when setting this. |
+| `scopes`          | string[] | — | Allowed scope kinds in resolution order. Valid values: `"collection"`, `"product"`, `"variant"`, `"batch"`, `"facet"`, `"proof"`, `"rule"`. `'rule'` is a synthetic scope holding `facetRule`-targeted records. `'collection'` replaces the legacy empty-ref catch-all — **there is no `'global'` scope**. |
+| `defaultScope`    | string   | — | The scope the "Create new" button targets in the admin shell. Must be one of the declared `scopes`. |
 
-An app may declare multiple record types under different keys (e.g. `"nutrition"` and `"cooking_steps"`).
+An app may declare multiple record types under different keys (e.g. `"nutrition"` and `"cooking_steps"`). See [records-admin-pattern.md](records-admin-pattern.md) for the full admin + public pattern.
 
 #### `executor`
 

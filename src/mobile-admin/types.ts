@@ -1,7 +1,7 @@
 /**
  * Hardware/software capability tokens a mobile admin host may advertise.
  * Passed to `AdminMobileHostContext.capabilities` and to
- * `MobileAdminComponentManifest.capabilities`.
+ * `AdminMobileComponentManifest.capabilities`.
  */
 export type AdminMobileCapability =
   | 'nfc'
@@ -12,6 +12,13 @@ export type AdminMobileCapability =
   | 'keyboard'
   | 'geolocation'
   | 'push';
+
+/**
+ * Subset of `AdminMobileCapability` that can be the subject of a structured
+ * error. `'keyboard'` is excluded — it is a passive event source with no
+ * request method that can fail.
+ */
+export type ActionableCapability = Exclude<AdminMobileCapability, 'keyboard'>;
 
 /**
  * Canonical identifiers for mobile admin host environments.
@@ -36,8 +43,21 @@ export type AdminMobileEvent =
   | { type: 'key-press'; keyCode: number }
   | { type: 'lifecycle'; phase: 'pause' | 'resume' | 'offline' | 'online' };
 
-/** Callback signature for `AdminMobileHostContext.events.subscribe`. */
-export type ScannerEventSubscriber = (event: AdminMobileEvent) => void;
+/** Callback invoked for every hardware event emitted by the host. */
+export type AdminMobileEventCallback = (event: AdminMobileEvent) => void;
+
+/**
+ * The full type of `AdminMobileHostContext.events.subscribe` —
+ * takes a callback and returns a cleanup function.
+ */
+export type AdminMobileEventSubscriber = (cb: AdminMobileEventCallback) => () => void;
+
+/**
+ * @deprecated Renamed to `AdminMobileEventCallback` in 1.12.
+ * Will be removed in a future minor release.
+ * @see AdminMobileEventCallback
+ */
+export type ScannerEventSubscriber = AdminMobileEventCallback;
 
 /**
  * The `host` prop passed to every mobile admin container component.
@@ -88,7 +108,7 @@ export interface AdminMobileHostContext {
      * @param cb - Called for every incoming `AdminMobileEvent`.
      * @returns Cleanup function — call inside `useEffect` return.
      */
-    subscribe: (cb: ScannerEventSubscriber) => () => void;
+    subscribe: (cb: AdminMobileEventCallback) => () => void;
   };
   /** Imperative hardware actions. */
   actions: {
@@ -136,8 +156,16 @@ export interface AdminMobileHostContext {
     }) => void;
     /** Trigger a haptic pulse. Optional — see interface note. */
     haptic?: (style?: 'light' | 'success' | 'error') => void;
-    setHeaderTitle: (title: string | null) => void;
-    navigateBack: () => void;
+    /**
+     * Optional — host shell may not provide a managed header
+     * (browser tabs, Storybook, desktop views). Guard with `?.`.
+     */
+    setHeaderTitle?: (title: string | null) => void;
+    /**
+     * Optional — host shell may not have a native back stack
+     * (browser tabs, Storybook, desktop views). Guard with `?.`.
+     */
+    navigateBack?: () => void;
   };
   /** Network connectivity helpers. */
   network: {
@@ -159,7 +187,7 @@ export interface AdminMobileHostContext {
 }
 
 /** Manifest metadata for a single mobile admin container component. */
-export interface MobileAdminComponentManifest {
+export interface AdminMobileComponentManifest {
   /** Component export name (matches the export in the bundle). */
   name: string;
   /** Human-readable description shown in the host launcher UI. */
@@ -182,7 +210,7 @@ export interface MobileAdminComponentManifest {
  * Shape of the `mobileAdmin` key inside `app.manifest.json`.
  * Describes the bundle files and the components it exports.
  */
-export interface MobileAdminBundleManifest {
+export interface AdminMobileBundleManifest {
   files: {
     js: {
       /** UMD bundle path (relative to dist root). Used by the custom-android host. */
@@ -193,5 +221,17 @@ export interface MobileAdminBundleManifest {
     /** CSS bundle path, or `null` if the component ships no styles. */
     css: string | null;
   };
-  components: MobileAdminComponentManifest[];
+  components: AdminMobileComponentManifest[];
 }
+
+/**
+ * @deprecated Renamed to `AdminMobileComponentManifest` in 1.12.
+ * @see AdminMobileComponentManifest
+ */
+export type MobileAdminComponentManifest = AdminMobileComponentManifest;
+
+/**
+ * @deprecated Renamed to `AdminMobileBundleManifest` in 1.12.
+ * @see AdminMobileBundleManifest
+ */
+export type MobileAdminBundleManifest = AdminMobileBundleManifest;

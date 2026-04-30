@@ -23,3 +23,7 @@ export type { Collection, CollectionResponse, CollectionCreateRequest, Collectio
 export type { Proof, ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofClaimRequest, } from "./types/proof";
 export type { QrShortCodeLookupResponse, } from "./types/qr";
 export type { ReverseTagLookupParams, ReverseTagLookupResponse, } from "./types/tags";
+export type { AdminMobileCapability, ActionableCapability, AdminMobileHostId, AdminMobileEvent, AdminMobileEventCallback, AdminMobileEventSubscriber, ScannerEventSubscriber, // @deprecated — use AdminMobileEventCallback
+AdminMobileHostContext, AdminMobileComponentManifest, AdminMobileBundleManifest, MobileAdminComponentManifest, // @deprecated — use AdminMobileComponentManifest
+MobileAdminBundleManifest, } from './mobile-admin/types';
+export { HostCapabilityUnavailableError, HostPermissionDeniedError, HostTimeoutError, } from './mobile-admin/errors';

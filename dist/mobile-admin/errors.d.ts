@@ -5,9 +5,7 @@
  * All three classes call `Object.setPrototypeOf(this, new.target.prototype)` so
  * `instanceof` works correctly when transpiled to ES5.
  */
-
 import type { ActionableCapability, AdminMobileHostId } from './types';
-
 /**
  * Thrown when a container requests a hardware action that the current host
  * does not support (e.g. calling `requestNfcTap` on a `'pwa'` host).
@@ -21,21 +19,13 @@ import type { ActionableCapability, AdminMobileHostId } from './types';
  *     }
  *   }
  */
-export class HostCapabilityUnavailableError extends Error {
-  /** The capability that was requested but is unavailable. */
-  capability: ActionableCapability;
-  /** The host on which the capability is unavailable. */
-  host: AdminMobileHostId;
-
-  constructor(capability: ActionableCapability, host: AdminMobileHostId) {
-    super(`Capability '${capability}' is unavailable on host '${host}'`);
-    this.name = 'HostCapabilityUnavailableError';
-    this.capability = capability;
-    this.host = host;
-    Object.setPrototypeOf(this, new.target.prototype);
-  }
+export declare class HostCapabilityUnavailableError extends Error {
+    /** The capability that was requested but is unavailable. */
+    capability: ActionableCapability;
+    /** The host on which the capability is unavailable. */
+    host: AdminMobileHostId;
+    constructor(capability: ActionableCapability, host: AdminMobileHostId);
 }
-
 /**
  * Thrown when the user denies a runtime permission request (e.g. camera or
  * NFC access) during a host action.
@@ -49,18 +39,11 @@ export class HostCapabilityUnavailableError extends Error {
  *     }
  *   }
  */
-export class HostPermissionDeniedError extends Error {
-  /** The capability for which permission was denied. */
-  capability: ActionableCapability;
-
-  constructor(capability: ActionableCapability) {
-    super(`Permission denied for capability '${capability}'`);
-    this.name = 'HostPermissionDeniedError';
-    this.capability = capability;
-    Object.setPrototypeOf(this, new.target.prototype);
-  }
+export declare class HostPermissionDeniedError extends Error {
+    /** The capability for which permission was denied. */
+    capability: ActionableCapability;
+    constructor(capability: ActionableCapability);
 }
-
 /**
  * Thrown when a time-bounded host action (NFC tap, QR scan) exceeds its
  * allowed duration.
@@ -74,17 +57,10 @@ export class HostPermissionDeniedError extends Error {
  *     }
  *   }
  */
-export class HostTimeoutError extends Error {
-  /** The capability that timed out. */
-  capability: Extract<ActionableCapability, 'nfc' | 'qr' | 'geolocation'>;
-  /** The timeout threshold in milliseconds. */
-  timeoutMs: number;
-
-  constructor(capability: HostTimeoutError['capability'], timeoutMs: number) {
-    super(`Capability '${capability}' timed out after ${timeoutMs}ms`);
-    this.name = 'HostTimeoutError';
-    this.capability = capability;
-    this.timeoutMs = timeoutMs;
-    Object.setPrototypeOf(this, new.target.prototype);
-  }
+export declare class HostTimeoutError extends Error {
+    /** The capability that timed out. */
+    capability: Extract<ActionableCapability, 'nfc' | 'qr' | 'geolocation'>;
+    /** The timeout threshold in milliseconds. */
+    timeoutMs: number;
+    constructor(capability: HostTimeoutError['capability'], timeoutMs: number);
 }

@@ -1,15 +1,21 @@
 # SmartLinks UI Utils (`@proveanything/smartlinks-utils-ui`)
 
-> Companion React component library for the SmartLinks SDK. Ships the heavy, opinionated admin UI pieces that almost every SmartLinks microapp ends up needing — built once, theme-able, tree-shakeable, and wired straight into the SmartLinks SDK.
+> Companion React component library for the SmartLinks SDK. Ships the heavy,
+> opinionated admin UI pieces that almost every SmartLinks microapp ends up
+> needing — built once, theme-able, tree-shakeable, and wired straight into
+> the SmartLinks SDK.
 >
-> Package: `@proveanything/smartlinks-utils-ui`  
-> Tracks: `@proveanything/smartlinks ≥ 1.9`
+> Package: `@proveanything/smartlinks-utils-ui`
+> Tracks: `@proveanything/smartlinks ≥ 1.9` (some hooks require ≥ 1.10)
 
 ---
 
 ## What is this module for?
 
-`@proveanything/smartlinks-utils-ui` sits on top of `@proveanything/smartlinks`. The core SDK handles data — records, configurations, interactions. This module handles **UI** — the shared React components, hooks, and admin shells that translate SDK data into consistent admin interfaces.
+`@proveanything/smartlinks-utils-ui` sits on top of `@proveanything/smartlinks`.
+The core SDK handles data — records, configurations, interactions. This module
+handles **UI** — the shared React components, hooks, and admin shells that
+translate SDK data into consistent admin interfaces.
 
 **When do you need it?**
 
@@ -17,11 +23,15 @@
 - You need a media asset picker, icon picker, or font picker in an admin panel
 - You need a recursive rule/conditions editor for targeting or audience logic
 - You want the standard inheritance/override editor for scoped records
-- You need the `useResolvedRecord` hook on the public widget side
+- You need the `useResolvedRecord` / `useCollectedRecords` hooks on the public widget side
 
-You do **not** need it for apps that only use `appConfiguration`, basic widgets without scoped data, or executor bundles.
+You do **not** need it for apps that only use `appConfiguration`, basic widgets
+without scoped data, or executor bundles.
 
-> **Admin-only**: all components call the SDK with `admin: true`. Do not render them in public-facing views.
+> **Admin components are admin-only**: `RecordsAdminShell`, `AssetPicker` upload,
+> `FacetRuleEditor`, etc. call the SDK with `admin: true`. Do not render them in
+> public-facing views. The public-side hooks (`useResolvedRecord`,
+> `useCollectedRecords`) are safe in widgets.
 
 ---
 
@@ -34,10 +44,12 @@ npm install @proveanything/smartlinks-utils-ui
 Peer dependencies (you already have these in a SmartLinks app):
 
 ```bash
-npm install react react-dom @proveanything/smartlinks
-# Recommended — enables caching and pagination in Records Admin Shell:
-npm install @tanstack/react-query
+npm install react react-dom @proveanything/smartlinks @tanstack/react-query
 ```
+
+`@tanstack/react-query` is required by every hook and by `RecordsAdminShell`
+(caching, pagination, optimistic save). Wrap your app in a
+`<QueryClientProvider>` somewhere up the tree.
 
 Import the compiled styles **once** in your app entry (e.g. `main.tsx`):
 
@@ -45,7 +57,8 @@ Import the compiled styles **once** in your app entry (e.g. `main.tsx`):
 import '@proveanything/smartlinks-utils-ui/styles.css';
 ```
 
-Components inherit your shadcn-compatible CSS variables (`--primary`, `--background`, `--border`, …) so they pick up your theme automatically.
+Components inherit your shadcn-compatible CSS variables (`--primary`,
+`--background`, `--border`, …) so they pick up your theme automatically.
 
 ---
 
@@ -64,7 +77,10 @@ Components inherit your shadcn-compatible CSS variables (`--primary`, `--backgro
 
 ## Records Admin Shell
 
-The primary export. A complete admin UI for managing `app.records` — typed JSON blobs attached to facets, products, variants, and batches — with scope inheritance built in. You provide the form for one record; the shell handles everything else.
+The primary export. A complete admin UI for managing `app.records` — typed
+JSON blobs attached to facets, products, variants, batches, the collection
+root, or matched via facet rules — with scope inheritance built in. You
+provide the form for one record; the shell handles everything else.
 
 ```tsx
 import {
@@ -83,25 +99,44 @@ import * as SL from '@proveanything/smartlinks';
   scopes={['facet', 'product', 'variant', 'batch']}
   contextScope={{ productId, variantId, batchId }}   // from iframe URL — optional
   defaultData={() => ({})}
-  csvSchema={{ columns: [/* ... */] }}  // optional — omit to disable CSV import/export
+  csvSchema={{ columns: [/* ... */] }}              // optional — omit to disable CSV
   renderEditor={(ctx) => <NutritionForm ctx={ctx} />}
-  renderPreview={({ resolved }) => <pre>{JSON.stringify(resolved, null, 2)}</pre>}
+  renderPreview={({ resolved }) => (
+    <pre>{JSON.stringify(resolved, null, 2)}</pre>
+  )}
 />
 ```
 
-**What it handles:**
+### Valid `ScopeKind` values
 
-- **Browser pane** with scope tabs (Facet / Product / Variant / Batch), search, and status filter pills (All / Configured / Partial / Empty)
-- **Editor pane** with sticky save / discard / delete footer
+```ts
+type ScopeKind = 'collection' | 'product' | 'facet' | 'variant' | 'batch' | 'rule';
+```
+
+- `'collection'` — terminal default (one record for the whole brand)
+- `'facet'` — anchored to a facet value (e.g. `bagel-type=white`)
+- `'product'` / `'variant'` / `'batch'` — anchored to that node
+- `'rule'` — synthetic UI scope: records targeted via a `facetRule`
+  (AND-of-OR over facets) rather than pinned to a node. Their refs start
+  with `rule:`, and the shell renders the `<FacetRuleEditor>` inline when the
+  user opens one of these records.
+
+### What it handles
+
+- **Browser pane** with scope tabs (Facet / Product / Variant / Batch / Rule), search, and status filter pills
+- **Editor pane** with sticky save / discard / delete footer, optimistic save, and an unsaved-drafts tray
 - **Per-field `<InheritanceMarker>`** showing whether a value is the record's own or inherited from a parent scope, with one-click revert-to-inherited
-- **Inheritance resolver** walks `batch → variant → product → facet` and returns both the resolved and parent values
+- **Inheritance resolver** walks `proof → batch → variant → product → rule → facet → collection` server-side via SDK 1.10 `match()`
 - **Collection-aware tabs**: calls `collection.get` and hides Variants / Batches tabs unless `collection.variants` / `collection.batches` are true — no flicker
 - **Server-side pagination** via `useInfiniteQuery` — handles thousands of products with a "Load more" button
 - **Context-aware**: pass `contextScope` from your iframe URL (`productId` / `variantId` / `batchId`) and the browser is constrained to that subtree with the right tab auto-selected
+- **Cardinality**: `cardinality="singleton"` (one record per scope) or `"collection"` (many — FAQs, recipes, SOPs). Collection mode adds an item-list view (`itemViews: ['table' | 'cards' | 'gallery']`) and Back / prev / next nav
+- **Multiple presentations** for the rail (`presentations: ['list' | 'compact']`) and right pane
 - **CSV import / export** (optional — provide `csvSchema` to enable); failed rows come back as an annotated CSV
 - **Bulk actions menu** (apply-to-many, copy-from, clear) via `bulkUpsert` / `bulkDelete`
+- **Clipboard** — copy a record's value, paste onto another scope
 - **Telemetry hook** (`onTelemetry`) emits typed events for save, delete, scope change, CSV import/export, bulk apply
-- **i18n strings** fully overridable
+- **i18n strings** fully overridable via the `i18n` prop
 
 > Requires a `<QueryClientProvider>` from `@tanstack/react-query` somewhere up the tree.
 
@@ -110,46 +145,69 @@ import * as SL from '@proveanything/smartlinks';
 ```tsx
 import {
   // Hooks
-  useRecordList, useRecordEditor, useResolvedRecord, useScopeProbe,
+  useRecordList, useRecordEditor, useResolvedRecord, useCollectedRecords,
+  useResolveAllRecords, useRulePreview, useScopeProbe,
   // Data helpers
   parseRef, buildRef, resolutionChain,
-  listRecords, getRecordByRef, upsertRecord, deleteRecord,
+  listRecords, getRecordById, createRecord, upsertRecord,
+  removeRecord, restoreRecord, matchRecords,
   bulkUpsert, bulkDelete,
   exportCsv, importCsv, downloadBlob,
   // UI pieces
   RecordBrowser, RecordEditor, ScopeBreadcrumb,
   InheritanceMarker, ResolvedPreview, BulkActionsMenu,
+  // Drafts / unsaved state
+  DirtyDraftProvider, useDirtyDrafts, useUnsavedGuard,
 } from '@proveanything/smartlinks-utils-ui/records-admin';
 ```
 
+Note the names: it's `getRecordById` (not `getRecordByRef`) and `removeRecord`
+(not `deleteRecord`). Records are addressed by UUID `id` internally; refs
+(`product:abc123`) are only used for display / breadcrumb / URL purposes.
+
 ### `useResolvedRecord` hook
 
-Use on the **public widget side** when the app shows one answer for the current product (singleton cardinality). Walks `proof → batch → variant → product → rule → facet → collection` server-side and returns the first match.
+Use on the **public widget side** when the app shows one answer for the
+current product (singleton cardinality). Walks the inheritance chain
+server-side and returns the first match.
 
 ```ts
 import { useResolvedRecord } from '@proveanything/smartlinks-utils-ui/records-admin';
 
-const { data, source, matchedAt, matchedRule, isLoading } = useResolvedRecord<NutritionData>({
-  SL,
-  appId,
-  recordType: 'nutrition',
-  collectionId,
-  productId,
-  variantId,   // optional
-  batchId,     // optional
-  proofId,     // optional
-});
-// matchedAt: 'proof' | 'batch' | 'variant' | 'product' | 'rule' | 'facet' | 'collection' | null
+const { data, source, sourceRef, recordId, facetRule, isLoading, error } =
+  useResolvedRecord<NutritionData>({
+    SL,
+    appId,
+    recordType: 'nutrition',
+    collectionId,
+    productId,
+    variantId,   // optional
+    batchId,     // optional
+    proofId,     // optional
+    // recordId,  // optional — direct UUID lookup, bypasses inheritance
+  });
+// source: 'self' | 'proof' | 'batch' | 'variant' | 'product' | 'facet' | 'universal' | 'empty'
 ```
+
+- `source` — which scope the winning record came from. `'self'` is returned
+  when you passed an explicit `recordId`; `'empty'` when nothing matched.
+- `sourceRef` — the ref of the matched record (e.g. `product:abc123`).
+- `recordId` — the UUID of the matched record.
+- `facetRule` — present when the match came from a rule-targeted record.
+
+Pass `recordId` directly when you already know the UUID (deep links, rule
+records) — the hook will skip the inheritance walk entirely.
 
 ### `useCollectedRecords` hook
 
-Use on the **public widget side** when the app shows many answers (collection cardinality — FAQs, recipes, care tips). Returns every matching record across the chain, most-specific first.
+Use on the **public widget side** when the app shows many answers
+(collection cardinality — FAQs, recipes, care tips). Returns every matching
+record across the chain, most-specific first.
 
 ```ts
 import { useCollectedRecords } from '@proveanything/smartlinks-utils-ui/records-admin';
 
-const { items, isLoading } = useCollectedRecords<FaqEntry>({
+const { items, isLoading, error } = useCollectedRecords<FaqEntry>({
   SL, appId, collectionId,
   recordType: 'faq',
   productId,
@@ -158,9 +216,14 @@ const { items, isLoading } = useCollectedRecords<FaqEntry>({
 // items: CollectedRecord<FaqEntry>[] — each has { data, scope, ref, depth }
 ```
 
+`depth: 0` is the most-specific match. Default sort is by specificity
+descending; pass `{ kind: 'field', field, direction }` to sort by a payload
+field instead (with specificity as a stable tiebreak).
+
 ### `useResolveAllRecords` hook
 
-When you need every record of every declared type that applies to a context — rare, mostly used in executors and SEO surfaces.
+When you need every record of every declared type that applies to a context —
+rare, mostly used in executors and SEO surfaces.
 
 ```ts
 import { useResolveAllRecords } from '@proveanything/smartlinks-utils-ui/records-admin';
@@ -173,29 +236,46 @@ const { entries, isLoading } = useResolveAllRecords({
 
 ### `useRulePreview` hook
 
-Wire into `<FacetRuleEditor>` (or any custom rule UI) to show a live "matches N products" count as the rule is edited. Debounced — safe to call on every keystroke.
+Wire into `<FacetRuleEditor>` (or any custom rule UI) to show a live
+"matches N products" count as the rule is edited. Debounced — safe to call
+on every keystroke.
 
 ```ts
 import { useRulePreview } from '@proveanything/smartlinks-utils-ui/records-admin';
 
-const preview = useRulePreview({ SL, collectionId, rule });
-// preview: { count: number; isLoading: boolean } | null
+const preview = useRulePreview({
+  SL, collectionId, appId,
+  rule,            // FacetRule | null
+  // limit: 20,
+  // debounceMs: 350,
+});
+// preview: {
+//   totalMatches: number | null;
+//   sampleProductIds: string[];
+//   isLoading: boolean;
+//   isStale: boolean;
+//   error: Error | null;
+// }
 ```
+
+Pass `preview` straight into `<FacetRuleEditor preview={preview} />`.
 
 ### `useScopeProbe` hook
 
-Checks what data exists at a given scope before loading the full editor — used by the shell's browser pane to power the `Configured / Partial / Empty` status pills.
+Reports whether a collection has variants/batches enabled, so the shell
+(or your own UI) can hide the corresponding tabs without flicker.
 
 ```ts
 import { useScopeProbe } from '@proveanything/smartlinks-utils-ui/records-admin';
 
-const { status } = useScopeProbe({
-  SL, appId, collectionId,
-  recordType: 'nutrition',
-  scope: { productId },
+const { hasVariants, hasBatches, isLoading } = useScopeProbe({
+  SL, collectionId,
 });
-// status: 'configured' | 'partial' | 'empty'
 ```
+
+It's a thin wrapper around `SL.collection.get(collectionId).variants /.batches`
+(SDK ≥ 1.9). It does **not** report per-scope record status — that's handled
+internally by the shell's status pills.
 
 ### `parseRef` / `buildRef` utilities
 
@@ -203,30 +283,50 @@ const { status } = useScopeProbe({
 import { parseRef, buildRef } from '@proveanything/smartlinks-utils-ui/records-admin';
 
 const parsed = parseRef('variant:prod_abc:var_500ml');
-// → { kind: 'variant', productId: 'prod_abc', variantId: 'var_500ml' }
+// → { kind: 'variant', productId: 'prod_abc', variantId: 'var_500ml', raw: '...' }
 
-const ref = buildRef({ kind: 'product', productId: 'prod_abc' });
+const ref = buildRef({ kind: 'product', productId: 'prod_abc', raw: '' });
 // → 'product:prod_abc'
 ```
+
+Refs are for display, breadcrumbs, and URLs. Records are addressed by UUID
+`id` everywhere internally.
 
 ---
 
 ## Facet Rule Editor
 
-A standalone facet-rule builder. The `<RecordsAdminShell>` embeds this automatically when `'rule'` is in `scopes` — reach for it directly only when you need rule editing elsewhere (e.g. a settings page, a conditions sidebar).
+A standalone facet-rule builder. The `<RecordsAdminShell>` embeds this
+automatically when `'rule'` is in `scopes` and the user opens a rule-targeted
+record — reach for it directly only when you need rule editing elsewhere
+(e.g. a settings page, a conditions sidebar).
 
 ```tsx
 import { FacetRuleEditor } from '@proveanything/smartlinks-utils-ui/facet-rule-editor';
+import { useRulePreview } from '@proveanything/smartlinks-utils-ui/records-admin';
+
+const preview = useRulePreview({ SL, collectionId, appId, rule });
 
 <FacetRuleEditor
   value={rule}
   onChange={setRule}
   collectionId={collectionId}   // lazy-fetches facet definitions via SL.facets.publicList
-  preview={rulePreview}          // optional — wire from useRulePreview
+  preview={preview}              // optional — wire from useRulePreview
+  onClear={() => setRule(null)}  // optional — renders a "Remove rule" affordance
 />
 ```
 
-See [records-admin-pattern.md §4](records-admin-pattern.md#4-admin-side----recordsadminshell-the-only-thing-you-should-be-writing) for the standalone usage example including `useRulePreview`.
+Props:
+
+- `value: FacetRule | null` / `onChange: (next: FacetRule | null) => void` — controlled
+- `facets?: FacetOption[]` — supply directly, **or** pass `collectionId` and the editor lazy-fetches via `SL.facets.publicList`
+- `getFacets?: (collectionId: string) => Promise<FacetOption[]>` — override the lazy-fetcher
+- `preview?` — `{ totalMatches, sampleProductIds?, isLoading?, isStale?, error? }` (matches the `useRulePreview` return shape)
+- `readOnly?`, `onClear?`, `title?`, `description?`, `className?`
+
+Free-text facet entry is **not** supported — admins must pick from defined facets.
+
+See [records-admin-pattern.md §4](records-admin-pattern.md#4-admin-side----recordsadminshell-the-only-thing-you-should-be-writing) for the standalone usage example.
 
 ---
 
@@ -245,8 +345,20 @@ import { AssetPicker } from '@proveanything/smartlinks-utils-ui/asset-picker';
 />
 ```
 
+Scope shape:
+
+```ts
+type AssetScope =
+  | { type: 'collection'; collectionId: string }
+  | { type: 'product'; collectionId: string; productId: string }
+  | { type: 'proof'; collectionId: string; productId: string; proofId: string };
+```
+
 **What it does:**
-- Browses assets at **collection** or **product** scope (dual-scope tabs)
+
+- Browses assets at **collection**, **product**, or **proof** scope
+- Optional `productScope` prop adds a second tab so users can pick from product-level assets while editing at collection scope (or vice versa)
+- Optional `appId` prop stamps every upload with the owning app and adds "This app" / "All in collection" pill tabs with provenance badges on assets owned by other apps
 - Four ingest paths: file upload, URL import, clipboard paste (with rename preview), and selection from existing assets
 - Inline mode for embedding in a panel; dialog mode for modal pickers
 - Double-click a tile to confirm instantly
@@ -266,8 +378,20 @@ import { IconPicker } from '@proveanything/smartlinks-utils-ui/icon-picker';
 />
 ```
 
+`onSelect` receives:
+
+```ts
+interface IconSelection {
+  name: string;                                  // full CSS class, e.g. 'fa-solid fa-heart'
+  family: 'classic' | 'duotone' | 'brands';
+  style: 'solid' | 'regular' | 'light' | null;   // null for brands
+  label?: string;
+}
+```
+
 **What it does:**
-- Searches **Font Awesome 7 Pro** (uses the shared kit `75493b59b3`)
+
+- Searches **Font Awesome 7 Pro** (uses the shared kit)
 - Family hierarchy: Classic (Solid / Regular / Light), Duotone, and Brands
 - Search-first with a background catalogue crawler — first results appear instantly, the full index fills in behind
 - Auto-switches families intelligently (e.g. brand searches surface brand icons even when "Classic" is selected)
@@ -302,6 +426,7 @@ import { FontPicker } from '@proveanything/smartlinks-utils-ui/font-picker';
 ```
 
 **What it does:**
+
 - Full **Google Fonts** catalogue plus any **custom fonts** uploaded for the brand (stored via `appConfiguration` under `customFonts`)
 - Upload zone auto-detects weight/style from the filename (e.g. `MyFont-BoldItalic.woff2`)
 - Returns a `FontSelection` with `family`, `cssFontFamily`, and a ready-to-inject `loadSnippet` (`<link>` for Google fonts, `@font-face` CSS for custom uploads)
@@ -324,11 +449,18 @@ import { ConditionsEditor } from '@proveanything/smartlinks-utils-ui/conditions-
 ```
 
 **What it does:**
+
 - Recursive AND / OR group builder — nest conditions to any depth
 - **12 condition types:** Version, Country, Value, User, Date, Device, Tag, Facet, Geofence, Product, Item Status, Condition Reference
 - **Facet condition** auto-fetches definitions from `facets.publicList(collectionId, { includeValues: true })` when only `collectionId` is passed (SDK ≥ 1.9.20)
 - **Country picker** is a searchable multi-select with removable ISO 3166-1 chips and a "Use regions" toggle
 - Renders correctly inside iframe contexts — avoids `overflow-hidden` so dropdowns escape their cards
+
+> `ConditionsEditor` and `FacetRuleEditor` solve different problems.
+> `FacetRuleEditor` is a focused AND-of-OR rule over facets only, used to
+> target which records apply to which products. `ConditionsEditor` is the
+> full recursive logical builder over 12 condition types, used for runtime
+> gating, audience segmentation, and version targeting.
 
 ---
 
@@ -344,13 +476,24 @@ import { AssetPicker } from '@proveanything/smartlinks-utils-ui/asset-picker';
 import { AssetPicker } from '@proveanything/smartlinks-utils-ui';
 ```
 
-If you use subpath imports, import `styles.css` separately — subpaths do not pull it in automatically.
+If you use subpath imports, import `styles.css` separately — subpaths do not
+pull it in automatically.
+
+Available subpaths:
+
+- `/records-admin`
+- `/facet-rule-editor`
+- `/asset-picker`
+- `/icon-picker`
+- `/font-picker`
+- `/conditions-editor`
+- `/styles.css`
 
 ---
 
 ## Relationship to the core SDK
 
-```
+```text
 @proveanything/smartlinks            ← data layer (records, config, interactions, …)
         ↑
 @proveanything/smartlinks-utils-ui   ← UI layer (components, hooks, admin shells)

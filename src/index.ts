@@ -229,15 +229,21 @@ export type {
   ReverseTagLookupParams,
   ReverseTagLookupResponse,
 } from "./types/tags"
+
 // Mobile Admin Container types & errors
 export type {
   AdminMobileCapability,
+  ActionableCapability,
   AdminMobileHostId,
   AdminMobileEvent,
-  ScannerEventSubscriber,
+  AdminMobileEventCallback,
+  AdminMobileEventSubscriber,
+  ScannerEventSubscriber, // @deprecated — use AdminMobileEventCallback
   AdminMobileHostContext,
-  MobileAdminComponentManifest,
-  MobileAdminBundleManifest,
+  AdminMobileComponentManifest,
+  AdminMobileBundleManifest,
+  MobileAdminComponentManifest, // @deprecated — use AdminMobileComponentManifest
+  MobileAdminBundleManifest, // @deprecated — use AdminMobileBundleManifest
 } from './mobile-admin/types';
 export {
   HostCapabilityUnavailableError,

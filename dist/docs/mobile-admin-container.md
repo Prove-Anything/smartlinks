@@ -58,6 +58,8 @@ Your container **never** detects the host directly. It receives a `host` prop fr
 
 Every container mounted by the SmartLinks Mobile launcher receives a single `host` prop — `AdminMobileHostContext`. Do not reach for `window.SmartlinksScanner` or `window.Capacitor` directly; both are wrapped here.
 
+> **SDK export** — `AdminMobileHostContext`, `AdminMobileCapability`, `ActionableCapability`, `AdminMobileHostId`, `AdminMobileEvent`, `AdminMobileEventCallback`, `AdminMobileEventSubscriber`, `AdminMobileComponentManifest`, and `AdminMobileBundleManifest` are all exported from `@proveanything/smartlinks`. Import via `import type { AdminMobileHostContext } from '@proveanything/smartlinks'` — no local mirror needed. `ScannerEventSubscriber`, `MobileAdminComponentManifest`, and `MobileAdminBundleManifest` still export as deprecated aliases.
+
 ```typescript
 interface AdminMobileHostContext {
   // Identity
@@ -80,8 +82,8 @@ interface AdminMobileHostContext {
     keyboard: boolean
   }
 
-  // Unified hardware event stream
-  events: { subscribe: ScannerEventSubscriber }
+  // Unified hardware event stream — callback type: AdminMobileEventCallback
+  events: { subscribe: (cb: AdminMobileEventCallback) => () => void }
 
   // Promise-based hardware actions — reject with a structured error when unavailable
   actions: {
@@ -95,12 +97,12 @@ interface AdminMobileHostContext {
     }
   }
 
-  // Host-provided UI helpers
+  // Host-provided UI helpers — all optional, see §3 note
   ui: {
-    toast: (opts: { title: string; description?: string; variant?: 'default' | 'destructive' }) => void
-    haptic: (style?: 'light' | 'success' | 'error') => void
-    setHeaderTitle: (title: string | null) => void
-    navigateBack: () => void
+    toast?: (opts: { title: string; description?: string; variant?: 'default' | 'destructive' }) => void
+    haptic?: (style?: 'light' | 'success' | 'error') => void
+    setHeaderTitle?: (title: string | null) => void
+    navigateBack?: () => void
   }
 
   // Network & device info
@@ -141,9 +143,10 @@ if (host.hardware.nfc) {
 
 ### `host.ui` — native helpers vs. your own components
 
-`host.ui.setHeaderTitle()` and `host.ui.navigateBack()` are **host-only** — there is no in-container equivalent. Call them via `host.ui` or omit them.
+All four `host.ui` methods are **optional by design**. A container may run in the Sidekick mobile shell, a standalone PWA or browser tab, Storybook, or a screenshot harness — none of those environments is guaranteed to have a native toast system, a managed header, or a back stack. Forcing every host implementer to provide them would exclude the web and desktop use-cases the rest of the contract explicitly supports. Always guard with `?.`:
 
-`host.ui.toast()` and `host.ui.haptic()` are **optional conveniences**. Use them when you want native system feedback. When rendering in Storybook, unit tests, or a plain browser tab, your own `<Toaster />` is a perfectly valid substitute — you do not need to stub the entire `host.ui` surface just to get toast notifications.
+- `host.ui.toast?.({...})` / `host.ui.haptic?.('success')` — optional native feedback. Fall back to your own `<Toaster />` when absent.
+- `host.ui.setHeaderTitle?.('Scanning…')` / `host.ui.navigateBack?.()` — host-shell integrations with no in-container equivalent. Silently no-op when the host doesn't implement them.
 
 **Stub pattern for testing and Storybook:**
 
@@ -220,11 +223,22 @@ The custom Kotlin shell and both Capacitor shells ship the same baseline plugin 
 | `@capacitor/device` | `host.device.info()` |
 | `@capacitor/share` | `host.actions.share()` |
 | `@capacitor/clipboard` | `host.actions.clipboard.*` |
-| `@capacitor/preferences` | `host.storage.*` *(planned)* |
+| `@capacitor/preferences` | `host.storage.*` *(planned — see note below)* |
 | `@capacitor/app` | host-managed (back button, deep links) |
 | `@capacitor/status-bar` | host-managed |
 | `@capacitor/keyboard` | host-managed |
 | `@capacitor/toast` | wired into `host.ui.toast()` |
+
+> **`host.storage` — planned shape.** Once released, the surface will wrap `@capacitor/preferences` directly:
+> ```ts
+> host.storage: {
+>   get(key: string): Promise<string | null>
+>   set(key: string, value: string): Promise<void>
+>   remove(key: string): Promise<void>
+>   keys(): Promise<string[]>
+> }
+> ```
+> Until then: `localStorage` works on web hosts; use `@capacitor/preferences` directly (bundle it in) on native.
 
 ### Tier 2 — capability-gated (declare in manifest)
 
@@ -383,7 +397,9 @@ try {
 | `lifecycle: 'pause'` | App backgrounded | Pause readers to save battery |
 | `lifecycle: 'resume'` | App foregrounded | Resubscribe; refresh stale data |
 
-Use `host.events.subscribe` for all lifecycle events — it fires identically on every host.
+Use `host.events.subscribe` for all lifecycle events — all five host types (`custom-android`, `capacitor-ios`, `capacitor-android`, `pwa`, `browser`) are guaranteed to emit every `'pause'`/`'resume'`/`'offline'`/`'online'` phase. No `window.addEventListener('online')` fallback is needed.
+
+> **Planned** — `phase: 'mount' | 'unmount'` events are on the roadmap. These will fire when the container becomes visible / is removed from the host view stack, enabling deferred reader start-up without a `useEffect` dependency.
 
 ---
 
@@ -460,7 +476,7 @@ vite build --config vite.config.mobile-admin.ts
 ```typescript
 // src/mobile-admin/WarehousePickContainer.tsx
 import { useEffect, useState } from 'react'
-import type { AdminMobileHostContext } from '@/lib/admin-mobile-host-context'
+import type { AdminMobileHostContext } from '@proveanything/smartlinks'
 
 interface Props {
   host: AdminMobileHostContext
@@ -519,8 +535,8 @@ export const MOBILE_ADMIN_MANIFEST = {
 
 - **Always check `host.hardware.X` before calling `host.actions.X`** — never assume a capability is available.
 - **Always wrap action calls in try/catch** — handle `HostPermissionDeniedError`, `HostTimeoutError`, and `HostCapabilityUnavailableError`.
-- **Use `host.ui.setHeaderTitle` and `host.ui.navigateBack`** for header integration — these are host-only and have no in-container equivalent.
-- **`host.ui.toast` and `host.ui.haptic` are optional** — use them for native feedback, or fall back to your own `<Toaster />` when testing in isolation.
+- **All four `host.ui` methods are optional** (`toast`, `haptic`, `setHeaderTitle`, `navigateBack`) — guard every call with `?.`. See the `host.ui` section above.
+- **`host.ui.setHeaderTitle` and `host.ui.navigateBack`** integrate with the host shell and have no in-container equivalent; call with `?.`.
 - **Use `host.events.subscribe` for lifecycle events** — `'offline'`/`'online'`/`'pause'`/`'resume'` fire consistently on every host.
 - **Never call `initializeApi`, never use top-level SDK imports for API calls** — `host.SL` is already configured. `SL.method()` instead of `host.SL.method()` silently uses the wrong baseURL.
 - **Bundle Capacitor plugins in** (do not externalise) — so the component degrades gracefully on PWA/browser without crashing.

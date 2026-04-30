@@ -11,3 +11,4 @@ export { cache_1 as cache };
 export { IframeResponder, isAdminFromRoles, buildIframeSrc, } from './iframeResponder';
 import * as utils_1 from './utils';
 export { utils_1 as utils };
+export { HostCapabilityUnavailableError, HostPermissionDeniedError, HostTimeoutError, } from './mobile-admin/errors';

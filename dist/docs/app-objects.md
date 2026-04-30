@@ -495,7 +495,7 @@ The `ref` field is derived automatically from anchor fields when omitted:
 ```
 productId: 'prod_abc'                               → ref: 'product:prod_abc'
 productId: 'prod_abc', variantId: 'var_x'          → ref: 'product:prod_abc/variant:var_x'
-(no anchor fields)                                  → ref: '' (universal)
+(no anchor fields)                                  → ref: '' (collection-level catch-all)
 facetRule: { ... }                                  → ref: 'rule:<ulid>'
 ```
 
@@ -512,6 +512,20 @@ When multiple scoped records match a context, they are ordered by `specificity`.
 | Per `facetRule` clause | +50 |
 | Per `anyOf` value | +1 |
 | No anchors / no rule | 0 |
+
+### Resolution order
+
+When the public side of a records-based app needs "the data that applies to this product context", the platform walks a canonical chain from most-specific to least-specific:
+
+```
+proof  →  batch  →  variant  →  product  →  rule(*)  →  facet(*)  →  collection
+```
+
+- `rule(*)` — `facetRule`-targeted records are scored by **specificity** (number of clauses + number of constrained values). The most specific rule wins at its tier.
+- `facet(*)` — legacy single-facet anchors, walked alphabetically. Prefer `facetRule` for new work.
+- `collection` — the top of the chain and the catch-all for any record with no anchor fields. **There is no `'global'` tier above collection.**
+
+For a **singleton** record type (one answer wins), use `useResolvedRecord` — it performs this walk server-side and returns the first match plus a `matchedAt` tag. For a **collection** record type (every match is shown), use `useCollectedRecords`. See [records-admin-pattern.md §2](records-admin-pattern.md#2-resolution-order-one-canonical-chain) for the full guide.
 
 ### Singleton Cardinality
 
@@ -592,12 +606,11 @@ for (const entry of data) {
     case 'product':    /* "Inherited from product" */ break;
     case 'facet':      /* "Tier-specific" */          break;
     case 'collection': /* "Collection default" */     break;
-    case 'universal':  /* "Default" */                break;
   }
 }
 ```
 
-Precedence follows: `rule > proof > batch > variant > product > facet > collection > universal`.
+Precedence follows: `proof > batch > variant > product > rule > facet > collection`. There is no scope above `collection` — a record with no anchor fields is a collection-level catch-all.
 
 #### React — `useResolvedRecord`
 
@@ -806,7 +819,7 @@ Examples:
 | `productId: 'prod_abc', variantId: 'var_500ml'` | `product:prod_abc/variant:var_500ml` |
 | `batchId: 'batch_q1'` | `batch:batch_q1` |
 | `facetRule: { ... }` | `rule:<ulid>` |
-| *(no anchor fields)* | `''` (universal) |
+| *(no anchor fields)* | `''` (collection-level catch-all) |
 
 `parseRef` / `buildRef` in `data/refs.ts` should be used for **display and URL round-tripping only**, never as upsert keys. For ETL use cases, set an explicit `ref` using a stable external key (see [External ID / ETL Workflow](#external-id--etl-workflow)).
 
