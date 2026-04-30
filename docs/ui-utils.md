@@ -53,7 +53,8 @@ Components inherit your shadcn-compatible CSS variables (`--primary`, `--backgro
 
 | Module | What it is | When to reach for it |
 |--------|------------|----------------------|
-| [Records Admin Shell](#records-admin-shell) | Full admin UI for `app.records` with scope inheritance | Per-product / per-variant / per-batch / per-facet config tools |
+| [Records Admin Shell](#records-admin-shell) | Full admin UI for `app.records` with scope inheritance, cardinality, and rule editing | Per-product / per-variant / per-batch / per-facet config tools |
+| [FacetRuleEditor](#facet-rule-editor) | Standalone facet-rule builder with live preview | When you need rule editing outside the admin shell |
 | [Asset Picker](#asset-picker) | Browse / upload / paste / URL-import images and files | Any time the admin needs to pick or upload media |
 | [Icon Picker](#icon-picker) | Searchable Font Awesome 7 Pro picker | Configurable buttons, badges, menus, tiles |
 | [Font Picker](#font-picker) | Google Fonts + custom uploaded fonts | Theme editors, brand customisation panels |
@@ -123,10 +124,12 @@ import {
 
 ### `useResolvedRecord` hook
 
+Use on the **public widget side** when the app shows one answer for the current product (singleton cardinality). Walks `proof → batch → variant → product → rule → facet → collection` server-side and returns the first match.
+
 ```ts
 import { useResolvedRecord } from '@proveanything/smartlinks-utils-ui/records-admin';
 
-const { data, source, isLoading } = useResolvedRecord({
+const { data, source, matchedAt, matchedRule, isLoading } = useResolvedRecord<NutritionData>({
   SL,
   appId,
   recordType: 'nutrition',
@@ -136,10 +139,63 @@ const { data, source, isLoading } = useResolvedRecord({
   batchId,     // optional
   proofId,     // optional
 });
-// source: 'proof' | 'batch' | 'variant' | 'product' | 'facet' | 'universal' | null
+// matchedAt: 'proof' | 'batch' | 'variant' | 'product' | 'rule' | 'facet' | 'collection' | null
 ```
 
-Walks the resolution chain defined in [records-admin-pattern.md §4](records-admin-pattern.md#4-resolution-order-required). Use this on the **public widget side** to read the correct value for a given context.
+### `useCollectedRecords` hook
+
+Use on the **public widget side** when the app shows many answers (collection cardinality — FAQs, recipes, care tips). Returns every matching record across the chain, most-specific first.
+
+```ts
+import { useCollectedRecords } from '@proveanything/smartlinks-utils-ui/records-admin';
+
+const { items, isLoading } = useCollectedRecords<FaqEntry>({
+  SL, appId, collectionId,
+  recordType: 'faq',
+  productId,
+  // sort: { kind: 'field', field: 'order', direction: 'asc' },
+});
+// items: CollectedRecord<FaqEntry>[] — each has { data, scope, ref, depth }
+```
+
+### `useResolveAllRecords` hook
+
+When you need every record of every declared type that applies to a context — rare, mostly used in executors and SEO surfaces.
+
+```ts
+import { useResolveAllRecords } from '@proveanything/smartlinks-utils-ui/records-admin';
+
+const { entries, isLoading } = useResolveAllRecords({
+  SL, collectionId, appId,
+  context: { productId, facets: { brand: 'acme' } },
+});
+```
+
+### `useRulePreview` hook
+
+Wire into `<FacetRuleEditor>` (or any custom rule UI) to show a live "matches N products" count as the rule is edited. Debounced — safe to call on every keystroke.
+
+```ts
+import { useRulePreview } from '@proveanything/smartlinks-utils-ui/records-admin';
+
+const preview = useRulePreview({ SL, collectionId, rule });
+// preview: { count: number; isLoading: boolean } | null
+```
+
+### `useScopeProbe` hook
+
+Checks what data exists at a given scope before loading the full editor — used by the shell's browser pane to power the `Configured / Partial / Empty` status pills.
+
+```ts
+import { useScopeProbe } from '@proveanything/smartlinks-utils-ui/records-admin';
+
+const { status } = useScopeProbe({
+  SL, appId, collectionId,
+  recordType: 'nutrition',
+  scope: { productId },
+});
+// status: 'configured' | 'partial' | 'empty'
+```
 
 ### `parseRef` / `buildRef` utilities
 
@@ -149,11 +205,28 @@ import { parseRef, buildRef } from '@proveanything/smartlinks-utils-ui/records-a
 const parsed = parseRef('variant:prod_abc:var_500ml');
 // → { kind: 'variant', productId: 'prod_abc', variantId: 'var_500ml' }
 
-const ref = buildRef({ kind: 'facet', facetKey: 'bread_type', valueKey: 'sourdough' });
-// → 'facet:bread_type:sourdough'
+const ref = buildRef({ kind: 'product', productId: 'prod_abc' });
+// → 'product:prod_abc'
 ```
 
-See [records-admin-pattern.md Appendix A](records-admin-pattern.md#appendix-a--ref-parser-reference) for the full `ParsedRef` type.
+---
+
+## Facet Rule Editor
+
+A standalone facet-rule builder. The `<RecordsAdminShell>` embeds this automatically when `'rule'` is in `scopes` — reach for it directly only when you need rule editing elsewhere (e.g. a settings page, a conditions sidebar).
+
+```tsx
+import { FacetRuleEditor } from '@proveanything/smartlinks-utils-ui/facet-rule-editor';
+
+<FacetRuleEditor
+  value={rule}
+  onChange={setRule}
+  collectionId={collectionId}   // lazy-fetches facet definitions via SL.facets.publicList
+  preview={rulePreview}          // optional — wire from useRulePreview
+/>
+```
+
+See [records-admin-pattern.md §4](records-admin-pattern.md#4-admin-side----recordsadminshell-the-only-thing-you-should-be-writing) for the standalone usage example including `useRulePreview`.
 
 ---
 

@@ -23,16 +23,19 @@ Microapps are the **extensibility layer** of this ecosystem. Rather than buildin
 
 ### Deployment Modes
 
-Each microapp can be consumed in up to four ways:
+Each microapp can be consumed in one or more of the following ways:
 
-| Mode | Embedding | Use Case |
-|------|-----------|---------|
-| **Iframe App** | Full React app in iframe | Complete experiences with routing, forms, complex UI |
-| **Widget** | React component in parent context | Lightweight previews, cards, summaries (~10 KB, loaded immediately) |
-| **Container** | Full app in parent React context | Complete experience without iframe (~150 KB+, lazy-loaded) |
-| **Executor** | JS library (no UI) | Programmatic config, SEO metadata, LLM content for AI/server |
+| Mode | Description |
+|------|-------------|
+| **Container** | Full app in parent React tree. ~150 KB+ lazy-loaded. The primary consumer surface. |
+| **Iframe App** | Full React app inside an iframe. Fallback when sandboxing is required; still the standard for setup admin screens. |
+| **Widget** | Lightweight React component in parent tree. ~10 KB, loaded immediately alongside the page. |
+| **Mobile Admin Container** | Separate bundle for in-the-field operator/admin workflows on mobile. Built independently; may use Capacitor, Preact, or any other runtime. |
+| **Executor** | JS library, no UI. Programmatic config, SEO metadata, LLM content for AI/server. |
 
-Widgets and containers both run in the parent's React tree (not iframes). Executors have no UI — they expose functions that AI orchestrators and the server call directly.
+Widgets and containers run in the parent's React tree (not iframes). Mobile Admin Containers are a separate bundle loaded by a dedicated mobile shell (Capacitor or PWA). Executors have no UI — they expose functions that AI orchestrators and the server call directly.
+
+> **Admin vs consumer:** Admin experiences always ship as a **separate bundle** (`mobileAdmin` or iframe). The `containers` bundle is for consumer-facing surfaces only.
 
 ---
 
@@ -55,6 +58,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Internationalization** | `docs/i18n.md` | Adding multi-language support, translation patterns |
 | **Widgets** | `docs/widgets.md` | Building widgets, shared deps contract, settings schema |
 | **Containers** | `docs/containers.md` | Building full-app embeddable containers (lazy-loaded) |
+| **Mobile Admin Container** | `docs/mobile-admin-container.md` | Building a separate Capacitor-aware mobile admin bundle for field operators |
 | **Executors** | `docs/executor.md` | Building executor bundles for SEO, LLM content, programmatic config |
 | **Deep Linking** | `docs/deep-link-discovery.md` | URL state management, navigable states, portal menus, AI nav |
 | **Interactions** | `docs/interactions.md` | Business events, outcomes, voting, competitions, and journey triggers |

@@ -446,3 +446,26 @@ src/containers/
 | Query cache conflicts      | Sharing parent's QueryClient             | Each container needs its own `QueryClient` instance  |
 | `cva.cva` runtime error    | Global set to lowercase `cva`            | Use uppercase `CVA` for the global name              |
 | Navigation does nothing    | Using legacy string with `onNavigate`    | Use structured `NavigationRequest` object instead    |
+
+---
+
+## Multiple Consumer Components
+
+A single `containers` bundle can export more than one component — useful when an app wants to offer different UX styles for different portal contexts (e.g. a portal card view vs a hub embed view). Each is a named export in the same bundle, declared as a separate entry in `components[]`:
+
+```json
+"containers": {
+  "components": [
+    {
+      "name": "PortalContainer",
+      "description": "Full consumer experience for the SmartLinks portal"
+    },
+    {
+      "name": "HubContainer",
+      "description": "Compact consumer embed for hub-style layouts"
+    }
+  ]
+}
+```
+
+All components in `containers` are consumer-facing. **Admin and operator surfaces always ship as a separate bundle** (`mobileAdmin` or via iframe). See [mobile-admin-container.md](mobile-admin-container.md) for the separate-bundle approach.

@@ -1,334 +1,305 @@
-# SmartLinks Records-Based Admin Pattern
+﻿# SmartLinks Records — Admin & Public Pattern
 
-> Canonical guide for building admin UIs in microapps that store **per-product**, **per-facet**, **per-variant** or **per-batch** data.
+> Canonical guide for microapps that store **per-product**, **per-facet**, **per-variant**, **per-batch**, or **rule-targeted** data.
 >
-> Audience: microapp developers (nutrition, allergy, ingredients, cooking-guide, warranty, provenance, …).
+> Audience: microapp developers (ingredients, nutrition, allergy, FAQs, recipes, warranty, provenance, …).
 >
-> Status: **standard** — new admin apps in this category MUST follow this contract. Existing apps SHOULD migrate.
+> Status: **standard**. New apps MUST follow this contract; existing apps SHOULD migrate.
+>
+> SDK: `@proveanything/smartlinks` ≥ **1.11**, `@proveanything/smartlinks-utils-ui` ≥ **0.7.6**.
 
 ---
 
-## 1. Why a shared pattern?
+## 0. TL;DR — pick your shape, then copy the snippet
 
-Many SmartLinks microapps store **structured data that varies along one or more product axes**:
+Every records-based app fits into a 2×2:
 
-| App              | Varies by                                      |
-|------------------|------------------------------------------------|
-| Nutrition        | product, facet (bread type, region), batch     |
-| Allergy          | product, facet (recipe family)                 |
-| Ingredients      | product, variant (size), batch (production run)|
-| Cooking guide    | product, facet (cut of meat)                   |
-| Warranty         | product, variant, batch                        |
-| Provenance       | batch                                          |
+|                          | **Singleton** (one record per scope)                 | **Collection** (many records per scope)                       |
+| ------------------------ | ---------------------------------------------------- | ------------------------------------------------------------- |
+| **Best-match (one wins)**| Ingredients, nutrition, washing instructions         | _(rare — usually you want all)_                               |
+| **All matches (aggregate)** | _(rare — usually you want best)_                  | FAQs, recipes, SOPs, care tips, story cards                   |
 
-Without a shared pattern, every app reinvents:
+That choice drives **three** things and nothing else:
 
-- the left-rail "browse + select" list
-- the per-axis precedence rules
-- the inheritance/override UI
-- the "no data yet" empty state
-- CSV import/export
-- bulk operations
+1. **Manifest:** `cardinality: 'singleton' | 'collection'` and `allowFacetRules: boolean`.
+2. **Admin (`<RecordsAdminShell>`):** pass `cardinality` + include `'rule'` in `scopes` if `allowFacetRules`.
+3. **Public hook:** `useResolvedRecord` (best match) **or** `useCollectedRecords` / `useResolveAllRecords` (all matches).
 
-The result is drift: each app feels different and admins have to re-learn the model. This guide locks the model down at the SDK level so the matching UI primitives in `@proveanything/smartlinks-utils-ui` (see the [companion guide](ui-utils.md)) can stay simple.
+If you only remember one rule: **never write your own resolver**. The shell, the hooks, and the SDK already agree on resolution order. Reimplementing it is how apps drift.
 
 ---
 
-## 2. Storage model: `app.records`
+## 1. The data model in one paragraph
 
-**Do not** stuff per-axis data into `appConfiguration.products[productId]`. Use `app.records` (recordType-keyed) so that data is queryable, paginatable and survives schema changes.
+A microapp owns a typed **records table** keyed by `(appId, recordType, id)`. Each `AppRecord` carries a `data` payload plus **either** a structured `scope` (anchored to a node in the chain) **or** a `facetRule` (matches products dynamically by their facets). The server resolves which record(s) apply to a given product context. There is no "global"; the top of the chain is **collection** — anything not explicitly scoped further applies to the whole collection.
 
 ```ts
-import { app } from '@proveanything/smartlinks';
+import * as SL from '@proveanything/smartlinks';
 
-await app.records.create(collectionId, appId, {
-  recordType: 'nutrition',          // app-defined, stable
-  ref: 'product:prod_abc',           // see §3
+await SL.app.records.upsert(collectionId, appId, {
+  recordType: 'ingredients',
+  scope: { productId: 'prod_abc', variantId: 'var_500ml' }, // server derives the ref
   data: { /* domain payload */ },
-}, /* admin= */ true);
+}, /* admin */ true);
 ```
 
-Each record has:
-
-| Field        | Purpose                                                     |
-|--------------|-------------------------------------------------------------|
-| `recordType` | Namespaces records inside the app. One app may have several (`nutrition`, `cooking_steps`). |
-| `ref`        | Encodes the **scope** of the record. See §3.                |
-| `data`       | The domain payload. Free-form per app.                      |
-| `meta`       | Reserved for system fields (timestamps, author).            |
-
-> **Rule:** `(appId, recordType, ref)` is unique. Treat it as the natural key.
-
----
-
-## 3. The `ref` convention (REQUIRED)
-
-`ref` is a colon-delimited string that encodes which scope a record applies to. Standardising it is what makes the shared admin shell possible.
-
-```
-product:<productId>
-variant:<productId>:<variantId>
-batch:<productId>:<batchId>
-proof:<proofId>
-facet:<facetKey>:<valueKey>
-''                             (universal / collection-wide fallback)
-```
-
-Notes:
-
-- Variants and batches are **always nested under a product** in the SDK, so their refs include `productId`.
-- `facet:` refs are **collection-wide** — facets cross products by design.
-- `''` (empty ref) is the **universal** record — one per `(app, recordType)` with no scope restrictions; the collection-wide fallback.
-- Refs are opaque to the SDK. Apps parse them. A helper module (`@proveanything/smartlinks-utils-ui/records-admin`) exports `parseRef`/`buildRef` so all apps agree on syntax. See Appendix A for the full implementation.
-
-### Adding scopes later
-
-If a new axis appears (e.g. `region:eu`), pick a new prefix and document it. Never reuse a prefix with different semantics.
-
-### Writing records
-
-When creating or upserting a record, send a structured **`RecordScope`** — the server derives `ref` from it:
+Or, for a rule-targeted record:
 
 ```ts
-await app.records.upsert(collectionId, appId, {
-  recordType: 'nutrition',
-  scope: { productId: 'prod_abc', variantId: 'var_500ml' }, // server → ref: 'product:prod_abc/variant:var_500ml'
-  data: { calories: 260 },
-});
+await SL.app.records.upsert(collectionId, appId, {
+  recordType: 'ingredients',
+  facetRule: {
+    all: [
+      { facetKey: 'brand',    anyOf: ['acme'] },
+      { facetKey: 'category', anyOf: ['bread', 'pastry'] },
+    ],
+  },
+  data: { /* domain payload */ },
+}, true);
 ```
 
-- `ref` is for **display, URL routing, and resolution output only** — never construct one to use as an upsert key.
-- `customId` / `sourceSystem` are for external references (filterable via `list()`) but are **not unique** — the same external ID can exist across `recordType` values. Do not upsert on `customId` either.
+`scope` and `facetRule` are **mutually exclusive on save**.
 
 ---
 
-## 4. Resolution order (REQUIRED)
+## 2. Resolution order (one canonical chain)
 
-When the **public** side of an app needs "the data that applies to this proof / product / context", it walks the chain from most-specific to least-specific and returns the first match:
+The server walks **most-specific → least-specific** and stops at the first match (for best-match) or collects every match (for aggregate):
 
 ```
-proof → batch → variant → product → facet(*) → universal
+proof  →  batch  →  variant  →  product  →  rule(*)  →  facet(*)  →  collection
 ```
 
-`facet(*)` means: walk every facet attached to the product in a deterministic order (alphabetical by `facetKey`, then `valueKey`) and use the first matching facet record.
+- `rule(*)` — facet-rule records are scored by **specificity** (number of clauses + number of constrained values). The most specific rule wins.
+- `facet(*)` — legacy single-facet anchors, walked deterministically (alphabetical).
+- `collection` — the top of the chain. **There is no "global" tier above collection.** A collection-level record is the catch-all for that collection.
 
-> **Rule:** Resolution is **first-match-wins, not merge**. If you need field-level merging, build it on top with explicit `inheritsFrom` markers in the payload — but the default for shared infra is whole-record replacement, because it is far easier to reason about.
+The resolved value comes back tagged with `matchedAt: 'product' | 'rule' | 'facet' | …` so the UI can say things like _"Matched by rule: brand=Acme AND category=bread"_.
 
-The canonical resolver lives in `@proveanything/smartlinks-utils-ui/records-admin` so every app behaves identically:
-
-```ts
-import { resolveRecord } from '@proveanything/smartlinks-utils-ui/records-admin';
-
-const resolved = await resolveRecord({
-  appId,
-  recordType: 'nutrition',
-  scope: { collectionId, productId, variantId, batchId, proofId },
-});
-// → { record, source: 'variant' | 'product' | 'facet' | … } | null
-```
-
-Apps that only support a subset of scopes pass `supportedScopes: ['product', 'facet']` and the resolver skips the rest.
+> ⚠️ Legacy `scope.facets[]` (colon-delimited single-facet refs) is deprecated and removed in SDK 1.12. Use `facetRule` for everything that isn't a one-off facet pin.
 
 ---
 
-## 5. Scope capabilities (declared per app)
+## 3. Manifest declaration
 
-An app declares which scopes it accepts records for in `app.manifest.json`. This drives the admin UI and avoids dead tabs:
+Declare each record type once in `app.admin.json`. The shell and the platform read this to render the right scope tabs and disable the wrong affordances.
 
 ```json
-// app.manifest.json (extension)
 {
   "records": {
-    "nutrition": {
-      "scopes": ["product", "facet", "batch"],
-      "defaultScope": "facet",
-      "label": "Nutrition info"
+    "ingredients": {
+      "label": "Ingredients",
+      "cardinality": "singleton",
+      "allowFacetRules": true,
+      "scopes": ["collection", "facet", "rule", "product", "variant", "batch"],
+      "defaultScope": "product"
+    },
+    "faq": {
+      "label": "FAQs",
+      "cardinality": "collection",
+      "allowFacetRules": true,
+      "scopes": ["collection", "rule", "product"],
+      "defaultScope": "collection"
     }
   }
 }
 ```
 
-| Field          | Meaning                                                        |
-|----------------|----------------------------------------------------------------|
-| `scopes`       | Allowed scope kinds, in **resolution order**.                  |
-| `defaultScope` | Where the "Create new" button lands in the admin shell.        |
-| `label`        | Human-readable label for the record type (used in headings).   |
-
-The shared admin shell reads this manifest entry and renders only the relevant tabs. Apps don't hard-code tab lists.
-
-See [app-manifest.md](app-manifest.md) for the full schema reference.
+| Field             | Meaning                                                                                                                              |
+| ----------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `cardinality`     | `'singleton'` (one per scope, e.g. ingredients) or `'collection'` (many per scope, e.g. FAQs). Default `'singleton'`.                |
+| `allowFacetRules` | `true` to enable the `rule` scope tab + `<FacetRuleEditor>` in the shell. Default `false`.                                           |
+| `scopes`          | Allowed scope kinds in **resolution order**. `'rule'` is a synthetic scope that holds rule-targeted records.                         |
+| `defaultScope`    | Where the "Create new" button lands.                                                                                                 |
+| `label`           | Human-readable label used in headings and toasts.                                                                                    |
 
 ---
 
-## 6. Discovering whether variants / batches are in use
+## 4. Admin side — `<RecordsAdminShell>` (the only thing you should be writing)
 
-The `Collection` object exposes top-level `variants: boolean` and `batches: boolean` flags that indicate whether the collection has these features enabled. Read them directly rather than probing by listing:
+The shell owns: scope tabs, browser pane, rule editor, save/discard, dirty navigation, inheritance markers, deletion, CSV, bulk apply, deep linking. **You only supply the editor for one record's `data`.**
 
-```ts
-import { appConfiguration } from '@proveanything/smartlinks';
+```tsx
+import * as SL from '@proveanything/smartlinks';
+import { RecordsAdminShell } from '@proveanything/smartlinks-utils-ui/records-admin';
 
-const collection = await appConfiguration.getCollection(collectionId);
-
-const showVariantTab = collection.variants && scopeConfig?.scopes.includes('variant') === true;
-const showBatchTab   = collection.batches  && scopeConfig?.scopes.includes('batch') === true;
+<RecordsAdminShell<IngredientsConfig>
+  SL={SL}
+  collectionId={collectionId}
+  appId={appId}
+  recordType="ingredients"
+  label="Ingredients"
+  cardinality="singleton"                              // ← from manifest
+  scopes={['collection', 'facet', 'rule', 'product', 'variant', 'batch']}
+  defaultScope="product"
+  defaultData={() => emptyConfig()}
+  renderEditor={(ctx) => (
+    <IngredientsEditor
+      value={ctx.value}
+      onChange={ctx.onChange}
+      // For rule-targeted records, the shell hands you the live rule + setter:
+      facetRule={ctx.facetRule}
+      onFacetRuleChange={ctx.onFacetRuleChange}
+    />
+  )}
+/>
 ```
 
-`scopeConfig` is the parsed manifest `records` entry for this `recordType` — e.g. `manifest.records?.nutrition`.
+### What the shell gives you for free
 
-Rules:
+- **Scope tabs** including a **`Rule`** tab when `'rule'` is in `scopes`. Selecting it opens `<FacetRuleEditor>` above your editor — no extra wiring.
+- **`EditorContext.facetRule` / `onFacetRuleChange`** for rule-scoped records, plus `canSave: false` until at least one clause has values (avoids server 500s).
+- **Inheritance markers** — when editing a variant, the product baseline is shown; per-field "↩ Inherited" / "● Override" is rendered by the inheritance helpers.
+- **Collection cardinality flow** — set `cardinality="collection"` and the shell turns the right pane into a list of items (table / cards / gallery) with `+ New` and per-item nav.
+- **Telemetry** — `record.save`, `record.delete`, `scope.change`, `csv.import`, `bulk.apply`, `item.create`, etc. via `onTelemetry`.
 
-1. If the collection has the feature **and** the app **declares** support for the scope, show the tab and offer "Add variant" / "Add batch" affordances.
-2. If the app does **not** declare support, hide the tab entirely even if `collection.variants` is true (another app created them).
-3. If the collection does not have the feature enabled, hide the tab even if the app declares support.
+### Standalone rule editor
 
----
+If you need a rule editor outside the shell (e.g. on a settings page):
 
-## 7. Inheritance & overrides
+```tsx
+import { FacetRuleEditor } from '@proveanything/smartlinks-utils-ui/facet-rule-editor';
 
-Because resolution is first-match-wins, the admin UI must make inheritance **visible**:
-
-- When editing a **variant** record, show the **product** record as the inherited baseline.
-- Each field in the editor displays a small **↩ "Inherited"** marker when its value matches the parent and **● "Override"** when it differs.
-- A row-level "Reset to inherited" action removes the override (deletes the record at the current scope if all overrides are reset).
-
-Apps don't have to implement this themselves — the `<RecordEditor>` primitive in `@proveanything/smartlinks-utils-ui` does it given the resolved parent payload.
-
----
-
-## 8. Bulk operations
-
-Standard verbs every shell should expose:
-
-| Verb              | Behaviour                                                            |
-|-------------------|----------------------------------------------------------------------|
-| **Apply to many** | Take the current record's payload, write it to N selected products / variants. |
-| **Copy from**     | Pick a source scope, copy its payload to the current scope.          |
-| **Clear**         | Delete records at the current scope (children unaffected).           |
-
-Use the `bulkUpsert` / `bulkDelete` helpers from `@proveanything/smartlinks-utils-ui/records-admin`, which handle batching and error collection for you:
-
-```ts
-import { bulkUpsert, bulkDelete } from '@proveanything/smartlinks-utils-ui/records-admin';
-
-// Apply current payload to many refs
-await bulkUpsert({ SL, collectionId, appId, recordType, refs: targetRefs, data: payload });
-
-// Clear records at selected refs
-await bulkDelete({ SL, collectionId, appId, recordType, refs: targetRefs });
+<FacetRuleEditor
+  value={rule}
+  onChange={setRule}
+  collectionId={collectionId}     // lazy-fetches facets via SL.facets.publicList
+  preview={rulePreview}            // optional — wire from useRulePreview
+/>
 ```
 
-If you are using `<RecordsAdminShell>`, the bulk actions menu is included and wired automatically via the `onTelemetry` hook — you don't call these directly unless you're building a custom shell.
-
 ---
 
-## 9. CSV import / export
+## 5. Public side — pick the right hook (this is where apps go wrong)
 
-If your app exposes CSV import/export, use this column shape so files round-trip across apps:
+There is exactly **one decision** to make on the public side, and it follows from the manifest's `cardinality`:
 
-```
-scope,scopeRef,<field1>,<field2>,...
-product,prod_abc,250,12.5,...
-variant,prod_abc/var_500ml,260,12.5,...
-batch,prod_abc/B-2024-03,255,12.5,...
-facet,bread_type/sourdough,240,11.0,...
-```
+### 5a. Singleton → `useResolvedRecord` (best match wins)
 
-- `scope` is the kind; `scopeRef` is the human-readable reference (the shell maps it to the canonical `ref`).
-- Validation errors return a downloadable annotated CSV with an `error` column appended.
+Use this when the app shows **one** answer for the current product (ingredients, nutrition, washing instructions, warranty terms).
 
-#### If you ship CSV
-
-- Round-tripping (export → reimport unchanged) must be a no-op.
-
----
-
-## 10. Public-side hook contract
-
-To keep widgets consistent across apps, expose one hook per record type (from `@proveanything/smartlinks-utils-ui`):
-
-```ts
+```tsx
+import * as SL from '@proveanything/smartlinks';
 import { useResolvedRecord } from '@proveanything/smartlinks-utils-ui/records-admin';
 
-const { data, source, isLoading } = useResolvedRecord({
+const { data, source, sourceRef, matchedAt, matchedRule, isLoading } =
+  useResolvedRecord<IngredientsConfig>({
+    SL,
+    appId,
+    collectionId,
+    recordType: 'ingredients',
+    productId,
+    variantId,   // optional
+    batchId,     // optional
+    proofId,     // optional
+  });
+```
+
+The resolver walks `proof → batch → variant → product → rule → facet → collection` and returns the **first match**, plus `matchedAt` so you can render _"From the product record"_ vs _"Matched by rule"_ badges if useful.
+
+> Wrap this once in your app (e.g. `useResolvedIngredientSet`) so the rest of the codebase reads `{ data, isLoading }` and never sees the resolver.
+
+### 5b. Collection → `useCollectedRecords` (every match, ordered)
+
+Use this when the app shows **many** answers aggregated across the chain (FAQs, recipes, SOPs, care tips). Most-specific first by default; pass `sort` to override.
+
+```tsx
+import { useCollectedRecords } from '@proveanything/smartlinks-utils-ui/records-admin';
+
+const { items, isLoading } = useCollectedRecords<FaqEntry>({
   SL,
   appId,
-  recordType: 'nutrition',
-  // any combination of these — the hook walks the chain:
-  collectionId, productId, variantId, batchId, proofId,
+  collectionId,
+  recordType: 'faq',
+  productId,
+  // sort: { kind: 'field', field: 'order', direction: 'asc' },
+});
+
+// items: CollectedRecord<FaqEntry>[] — each has { data, scope, ref, depth }
+```
+
+### 5c. Multi-type aggregate → `useResolveAllRecords`
+
+When you need every record of every type that applies to a context (rare; mostly executors and SEO surfaces).
+
+```tsx
+import { useResolveAllRecords } from '@proveanything/smartlinks-utils-ui/records-admin';
+
+const { entries, isLoading } = useResolveAllRecords({
+  SL, collectionId, appId,
+  context: { productId, facets: { brand: 'acme', category: ['bread'] } },
 });
 ```
 
-`source` is one of `'proof' | 'batch' | 'variant' | 'product' | 'facet' | 'universal' | null`. UI can show a badge ("Showing batch-specific values") when useful.
+### Common mistakes (do not do these)
+
+| ❌ Anti-pattern                                            | ✅ Do this instead                                                |
+| ---------------------------------------------------------- | ----------------------------------------------------------------- |
+| Calling `SL.app.records.list()` and filtering client-side  | `useResolvedRecord` (singleton) or `useCollectedRecords` (collection). The server already knows the chain. |
+| Walking the chain by hand with multiple `getConfig` calls  | One hook call. The resolver is tested, cached, and includes rules. |
+| Treating `facet:key:value` refs as the rule mechanism      | Use `facetRule` (`{ all: [{ facetKey, anyOf: [...] }] }`). Multi-condition, scored by specificity. |
+| Reading `matchedAt === 'global'`                           | There is no `'global'`. The top of the chain is `'collection'`.  |
+| Building your own `<FacetRuleEditor>`                      | Use the one from `@proveanything/smartlinks-utils-ui/facet-rule-editor`. |
 
 ---
 
-## 11. Telemetry
-
-All admin shells emit these events. The `<RecordsAdminShell>` from `@proveanything/smartlinks-utils-ui` wires them automatically using `interactions.appendEvent` from the SDK — apps don't call this themselves.
-
-| Event                  | Props                                                |
-|------------------------|------------------------------------------------------|
-| `record.opened`        | `appId, recordType, ref, source`                     |
-| `record.saved`         | `appId, recordType, ref, fieldsChanged`              |
-| `record.deleted`       | `appId, recordType, ref`                             |
-| `record.bulkApplied`   | `appId, recordType, sourceRef, targetCount`          |
-| `record.imported`      | `appId, recordType, rows, errors`                    |
-
----
-
-## 12. Required reading for app authors
-
-1. This document.
-2. The companion **[UI utils guide](ui-utils.md)** — explains the React primitives (`<RecordsAdminShell>`, `useResolvedRecord`, etc.) that implement this pattern.
-3. [PRODUCT_FACETS_SDK.md](PRODUCT_FACETS_SDK.md) — facet model.
-4. [app-data-storage.md](app-data-storage.md) — `app.records` surface.
-
-## 13. Migration checklist for existing apps
-
-- [ ] Stop writing per-product data into `appConfiguration`.
-- [ ] Move to `app.records` with `recordType` + `ref`.
-- [ ] Adopt the `ref` syntax in §3.
-- [ ] Add a `records` block to `app.manifest.json`.
-- [ ] Replace bespoke admin browser with `<RecordsAdminShell>` from `@proveanything/smartlinks-utils-ui`.
-- [ ] Replace bespoke public hook with `useResolvedRecord`.
-- [ ] Remove any "is variants enabled?" config — use `collection.variants` / `collection.batches` flags instead (§6).
-
----
-
-## Appendix A — `ref` parser reference
-
-This is the canonical implementation. Copy it into your app or import from `@proveanything/smartlinks-utils-ui/records-admin`.
+## 6. Reference: the `EditorContext` your `renderEditor` receives
 
 ```ts
-type ParsedRef =
-  | { kind: 'universal' }
-  | { kind: 'product'; productId: string }
-  | { kind: 'variant'; productId: string; variantId: string }
-  | { kind: 'batch';   productId: string; batchId: string }
-  | { kind: 'proof';   proofId: string }
-  | { kind: 'facet';   facetKey: string; valueKey: string };
+interface EditorContext<TData> {
+  value: TData;
+  onChange: (next: TData) => void;
+  source: 'self' | 'inherited' | 'empty';
+  recordId?: string;
+  parentValue?: TData | null;
+  scope: ParsedRef;                  // { kind: 'product' | 'rule' | …, productId?, … }
 
-export const buildRef = (p: ParsedRef): string => {
-  switch (p.kind) {
-    case 'universal': return '';
-    case 'product': return `product:${p.productId}`;
-    case 'variant': return `variant:${p.productId}:${p.variantId}`;
-    case 'batch':   return `batch:${p.productId}:${p.batchId}`;
-    case 'proof':   return `proof:${p.proofId}`;
-    case 'facet':   return `facet:${p.facetKey}:${p.valueKey}`;
-  }
-};
+  // Save lifecycle
+  isDirty: boolean;
+  isSaving?: boolean;
+  saveError?: unknown | null;
+  canSave?: boolean;                 // shell flips to false on empty rules
+  cannotSaveReason?: string;
+  save: () => Promise<void>;
+  reset: () => void;
 
-export const parseRef = (ref: string): ParsedRef | null => {
-  if (!ref) return { kind: 'universal' };
-  const [head, ...rest] = ref.split(':');
-  switch (head) {
-    case 'product': return rest.length === 1 ? { kind: 'product', productId: rest[0] } : null;
-    case 'variant': return rest.length === 2 ? { kind: 'variant', productId: rest[0], variantId: rest[1] } : null;
-    case 'batch':   return rest.length === 2 ? { kind: 'batch',   productId: rest[0], batchId:   rest[1] } : null;
-    case 'proof':   return rest.length === 1 ? { kind: 'proof',   proofId:   rest[0] } : null;
-    case 'facet':   return rest.length >= 2  ? { kind: 'facet',   facetKey:  rest[0], valueKey:  rest.slice(1).join(':') } : null;
-    default: return null;
-  }
-};
+  // Deletion
+  remove: () => Promise<void>;
+  canRemove: boolean;
+
+  // Rule scope only
+  facetRule?: FacetRule | null;
+  onFacetRuleChange?: (next: FacetRule | null) => void;
+}
 ```
+
+---
+
+## 7. Migration checklist (existing apps)
+
+1. **Update SDKs:** `@proveanything/smartlinks@^1.11`, `@proveanything/smartlinks-utils-ui@^0.7.6`.
+2. **Add `cardinality` and `allowFacetRules`** to every entry under `records` in `app.admin.json`.
+3. **Add `'rule'` (and `'collection'` if missing) to `scopes`** wherever `allowFacetRules: true`.
+4. **Pass `cardinality`** to `<RecordsAdminShell>`.
+5. **Replace any handwritten chain walking** with `useResolvedRecord` (singleton) or `useCollectedRecords` (collection).
+6. **Delete any code that constructs `facet:key:value` refs** for matching. Use `facetRule` via the shell or `<FacetRuleEditor>`.
+7. **Search for the word "global"** in your code/docs and rename to "collection" — this is the most common source of confusion.
+
+---
+
+## 8. Where the canonical exports live
+
+| Need                          | Import from                                                            |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| Admin shell                   | `@proveanything/smartlinks-utils-ui/records-admin` → `RecordsAdminShell` |
+| Standalone rule editor        | `@proveanything/smartlinks-utils-ui/facet-rule-editor` → `FacetRuleEditor` |
+| Conditions editor (non-facet) | `@proveanything/smartlinks-utils-ui/conditions-editor` → `ConditionsEditor` |
+| Best-match resolver hook      | `@proveanything/smartlinks-utils-ui/records-admin` → `useResolvedRecord` |
+| All-matches hook              | `@proveanything/smartlinks-utils-ui/records-admin` → `useCollectedRecords` |
+| Multi-type aggregate hook     | `@proveanything/smartlinks-utils-ui/records-admin` → `useResolveAllRecords` |
+| Rule preview ("matches N")    | `@proveanything/smartlinks-utils-ui/records-admin` → `useRulePreview`  |
+| Server-side record CRUD       | `@proveanything/smartlinks` → `SL.app.records.{upsert, list, remove, match, resolveAll}` |
+
+---
+
+_End of doc. If anything below the SDK contradicts this file, this file wins — open a PR against the SDK to bring the two back into sync._

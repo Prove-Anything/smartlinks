@@ -91,6 +91,24 @@ The manifest is loaded automatically by the platform for every collection page. 
     ]
   },
 
+  "mobileAdmin": {
+    "files": {
+      "js": {
+        "umd": "dist/mobile-admin.umd.js",
+        "esm": "dist/mobile-admin.es.js"
+      },
+      "css": null
+    },
+    "components": [
+      {
+        "name": "WarehousePickContainer",
+        "description": "In-field operator admin surface.",
+        "capabilities": ["nfc", "qr"],
+        "offline": true
+      }
+    ]
+  },
+
   "linkable": [
     { "title": "Home",     "path": "/" },
     { "title": "Gallery",  "path": "/gallery" },
@@ -188,7 +206,52 @@ This tells the platform and other apps that they can deep-link into a stored wid
 Same structure as `widgets` but declares the full-app container bundle. Lazy-loaded on demand.
 
 See the [Containers guide](containers.md) for details on the container component model.
+**Component fields** (same as widgets, plus):
 
+| Field | Type | Description |
+|-------|------|--------------|
+| `name` | string | Exported component name |
+| `description` | string | Human-readable description |
+| `props.required` / `props.optional` | string[] | Required and optional prop names |
+| `audience` | `"public"` \| `"admin"` \| `"both"` | Who can use/see this component. Defaults to `"public"`. |
+| `scope` | `"collection"` \| `"product"` | Data scope hint. `"product"` means the component always renders in the context of a specific product. |
+| `settings` | object | JSON Schema describing configurable settings |
+
+#### `mobileAdmin`
+
+Declares a **separate** mobile admin bundle — a sibling of `containers` with its own build output. Use this when the mobile admin surface needs a different runtime, native-only dependencies (Capacitor), or independent versioning. Omit if your app has no mobile admin surface.
+
+See [mobile-admin-container.md](mobile-admin-container.md) for the `AdminMobileHostContext` prop contract, the capability matrix, event stream, error types, and build setup.
+
+```json
+"mobileAdmin": {
+  "files": {
+    "js": {
+      "umd": "dist/mobile-admin.umd.js",
+      "esm": "dist/mobile-admin.es.js"
+    },
+    "css": null
+  },
+  "components": [
+    {
+      "name": "WarehousePickContainer",
+      "description": "Pick orders by scanning NFC tags",
+      "capabilities": ["nfc", "qr"],
+      "offline": true
+    }
+  ]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `files.js.umd` | UMD bundle path — used for dynamic `<script>` loading |
+| `files.js.esm` | ESM bundle path (optional but recommended) |
+| `files.css` | CSS bundle path — set to `null` if no styles |
+| `components[].name` | Exported component name (must match the UMD bundle export) |
+| `components[].description` | Shown in the mobile launcher's app picker |
+| `components[].capabilities` | Hardware capabilities this component needs or can use. See [capability list](mobile-admin-container.md#hardware-capabilities--the-capability-matrix). |
+| `components[].offline` | Set to `true` if this component queues writes locally and needs offline sync support. |
 #### `linkable`
 
 Static deep-linkable states built into the app — fixed routes that exist regardless of per-collection content. Declared once at build time.
