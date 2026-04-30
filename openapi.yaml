@@ -15619,33 +15619,6 @@ components:
             $ref: "#/components/schemas/FacetRuleClause"
       required:
         - all
-    ScopeFacetClause:
-      type: object
-      properties:
-        key:
-          type: string
-        valueKeys:
-          type: array
-          items:
-            type: string
-      required:
-        - key
-        - valueKeys
-    RecordScope:
-      type: object
-      properties:
-        productId:
-          type: string
-        variantId:
-          type: string
-        proofId:
-          type: string
-        batchId:
-          type: string
-        facets:
-          type: array
-          items:
-            $ref: "#/components/schemas/ScopeFacetClause"
     RecordTarget:
       type: object
       properties:
@@ -15670,6 +15643,14 @@ components:
           type: string
         recordType:
           type: string
+        productId:
+          type: string
+        variantId:
+          type: string
+        batchId:
+          type: string
+        proofId:
+          type: string
         customId:
           type: string
         sourceSystem:
@@ -15680,8 +15661,6 @@ components:
           type: string
         status:
           type: string
-        scope:
-          $ref: "#/components/schemas/RecordScope"
         data:
           type: object
           additionalProperties: true
@@ -15713,49 +15692,49 @@ components:
           type: number
       required:
         - deleted
-    MatchedRecord:
-      type: object
-      properties:
-        matchedAt:
-          $ref: "#/components/schemas/MatchedAt"
-      required:
-        - matchedAt
     MatchEntry:
       type: object
       properties:
-        record:
-          $ref: "#/components/schemas/AppRecord"
         matchedAt:
           $ref: "#/components/schemas/MatchedAt"
         matchedRule:
           $ref: "#/components/schemas/FacetRule"
         matchedClauseCount:
           type: number
-        specificity:
-          type: number
       required:
-        - record
         - matchedAt
-        - specificity
     MatchResult:
       type: object
       properties:
-        records:
+        data:
           type: array
           items:
             $ref: "#/components/schemas/MatchEntry"
-        best:
-          type: object
-          additionalProperties:
-            $ref: "#/components/schemas/MatchEntry"
+        total:
+          type: number
+        strategy:
+          type: string
+          enum:
+            - all
+            - best
       required:
-        - records
+        - data
+        - total
+        - strategy
     UpsertRecordInput:
       type: object
       properties:
         ref:
           type: string
         recordType:
+          type: string
+        productId:
+          type: string
+        variantId:
+          type: string
+        batchId:
+          type: string
+        proofId:
           type: string
         customId:
           type: string
@@ -15767,8 +15746,6 @@ components:
           type: string
         status:
           type: string
-        scope:
-          $ref: "#/components/schemas/RecordScope"
         data:
           type: object
           additionalProperties: true
@@ -15825,13 +15802,23 @@ components:
           type: string
         ref:
           type: string
+        scopeType:
+          type: string
+        scopeId:
+          type: string
         customId:
+          type: string
+        customIdNormalized:
           type: string
         sourceSystem:
           type: string
         status:
           type: string
         productId:
+          type: string
+        variantId:
+          type: string
+        batchId:
           type: string
         proofId:
           type: string
@@ -15855,12 +15842,12 @@ components:
           type: string
         deletedAt:
           type: string
-        scope:
-          $ref: "#/components/schemas/RecordScope"
         specificity:
           type: number
         facetRule:
           $ref: "#/components/schemas/FacetRule"
+        singletonKey:
+          type: string
         data:
           type: object
           additionalProperties: true
@@ -15881,10 +15868,15 @@ components:
         - visibility
         - recordType
         - ref
+        - scopeType
+        - scopeId
         - customId
+        - customIdNormalized
         - sourceSystem
         - status
         - productId
+        - variantId
+        - batchId
         - proofId
         - contactId
         - authorId
@@ -15896,9 +15888,9 @@ components:
         - startsAt
         - expiresAt
         - deletedAt
-        - scope
         - specificity
         - facetRule
+        - singletonKey
         - data
         - owner
         - admin
@@ -15916,6 +15908,10 @@ components:
           type: string
         productId:
           type: string
+        variantId:
+          type: string
+        batchId:
+          type: string
         proofId:
           type: string
         contactId:
@@ -15932,11 +15928,15 @@ components:
           type: string
         expiresAt:
           type: string
-        scope:
-          $ref: "#/components/schemas/RecordScope"
+        scopeType:
+          type: string
+        scopeId:
+          type: string
         customId:
           type: string
         sourceSystem:
+          type: string
+        singletonPer:
           type: string
         data:
           type: object
@@ -15952,8 +15952,6 @@ components:
           additionalProperties: true
         facetRule:
           $ref: "#/components/schemas/FacetRule"
-      required:
-        - recordType
     UpdateRecordInput:
       type: object
       properties:
@@ -15974,12 +15972,22 @@ components:
           type: string
         recordType:
           type: string
+        productId:
+          type: string
+        variantId:
+          type: string
+        batchId:
+          type: string
+        proofId:
+          type: string
         startsAt:
           type: string
         expiresAt:
           type: string
-        scope:
-          $ref: "#/components/schemas/RecordScope"
+        scopeType:
+          type: string
+        scopeId:
+          type: string
         customId:
           type: string
         sourceSystem:
@@ -16081,16 +16089,59 @@ components:
         records:
           type: array
           items:
-            $ref: "#/components/schemas/MatchEntry"
+            $ref: "#/components/schemas/ResolveAllEntry"
+        total:
+          type: number
+        context:
+          $ref: "#/components/schemas/ResolveAllContext"
         truncated:
           type: boolean
       required:
         - records
+        - total
+        - context
+        - truncated
+    ResolveAllEntry:
+      type: object
+      properties:
+        record:
+          $ref: "#/components/schemas/AppRecord"
+        matchedAt:
+          $ref: "#/components/schemas/MatchedAt"
+        specificity:
+          type: number
+        matchedRule:
+          $ref: "#/components/schemas/FacetRule"
+        matchedClauseCount:
+          type: number
+      required:
+        - record
+        - matchedAt
+        - specificity
+    ResolveAllContext:
+      type: object
+      properties:
+        productId:
+          type: string
+        variantId:
+          type: string
+        batchId:
+          type: string
+        proofId:
+          type: string
+        facets:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
     PreviewRuleParams:
       type: object
       properties:
         facetRule:
           $ref: "#/components/schemas/FacetRule"
+        recordType:
+          type: string
         limit:
           type: number
       required:
@@ -16098,15 +16149,19 @@ components:
     PreviewRuleResult:
       type: object
       properties:
-        sampleProductIds:
+        matchingProducts:
           type: array
           items:
-            type: string
-        totalMatches:
+            type: object
+            additionalProperties: true
+        total:
           type: number
+        rule:
+          $ref: "#/components/schemas/FacetRule"
       required:
-        - sampleProductIds
-        - totalMatches
+        - matchingProducts
+        - total
+        - rule
     RelatedResponse:
       type: object
       properties:

@@ -330,34 +330,6 @@ export interface FacetRule {
 }
 
 /**
- * Facet clause within a RecordScope.
- * Values within a single clause are ORed; multiple clauses are ANDed.
- */
-export interface ScopeFacetClause {
-  /** Facet key, e.g. "tier", "region" */
-  key: string
-  /** One or more values that satisfy this clause (OR semantics) */
-  valueKeys: string[]
-}
-
-/**
- * Structured scope definition for a record.
- * Describes the audience/context the record applies to.
- * An empty object `{}` means universal (no restrictions).
- */
-export interface RecordScope {
-  productId?: string
-  variantId?: string
-  proofId?: string
-  batchId?: string
-  /**
-   * Arbitrary facet clauses.
-   * Clauses are ANDed together; valueKeys within a clause are ORed.
-   */
-  facets?: ScopeFacetClause[]
-}
-
-/**
  * Runtime context passed to the match endpoint.
  * Describes the caller or item being evaluated against record scopes.
  */
@@ -367,8 +339,10 @@ export interface RecordTarget {
   proofId?: string
   batchId?: string
   /**
-   * Facet values the caller possesses, keyed by facet key.
-   * A scope clause is satisfied if ANY of the clause's valueKeys appears here.
+   * Facet assignments for the product (e.g. `{ brand: ['samsung'], type: ['tv'] }`).
+   * Used exclusively to match FacetRule records via GIN-indexed containment check.
+   * Does NOT filter legacy scope.facets arrays (that system is removed in SDK 1.12).
+   * Omit to exclude rule records from results.
    */
   facets?: Record<string, string[]>
 }
@@ -380,15 +354,18 @@ export interface BulkUpsertItem {
   /** Required — logical identifier used as the upsert key */
   ref: string
   recordType?: string
-  customId?: string
-  sourceSystem?: string
+  productId?: string | null
+  variantId?: string | null
+  batchId?: string | null
+  proofId?: string | null
+  customId?: string | null
+  sourceSystem?: string | null
   startsAt?: string | null
   expiresAt?: string | null
   status?: string | null
-  scope?: RecordScope
   data?: Record<string, unknown> | null
   metadata?: Record<string, unknown> | null
-  /** Facet rule (rule records only). Mutually exclusive with scope. */
+  /** Facet rule (rule records only). Mutually exclusive with anchor IDs. */
   facetRule?: FacetRule | null
 }
 
@@ -419,52 +396,33 @@ export interface BulkDeleteResult {
  */
 export type BulkDeleteInput =
   | { refs: string[]; recordType?: string; scope?: never }
-  | { scope: Omit<RecordScope, 'facets'>; recordType?: string; refs?: never }
+  | { scope: { productId?: string; variantId?: string; batchId?: string; proofId?: string }; recordType?: string; refs?: never }
 
 /**
  * Which resolution tier caused a record to be selected in `match()` or `resolveAll()`.
- * Precedence (highest first): proof > batch > variant > product > rule > facet > collection > universal.
+ * Precedence (highest first): rule > proof > batch > variant > product > facet > collection > universal.
  */
 export type MatchedAt =
+  | 'rule'        // matched via facetRule evaluation (highest precedence over anchors)
   | 'proof'
   | 'batch'
   | 'variant'
   | 'product'
-  | 'rule'        // SDK 1.10 — matched via facetRule evaluation
-  | 'facet'
-  | 'collection'  // SDK 1.10 — matched via ref = 'default'
-  | 'universal'
+  | 'facet'       // legacy: record has a ref starting with "facet:" (pre-1.10 data)
+  | 'collection'  // record has ref === 'default' (explicit collection default)
+  | 'universal'   // record has no anchors, no rule, no default ref
 
 /**
- * An AppRecord augmented with `matchedAt` — present only on records returned
- * by the `match` endpoint. Use this to display attribution such as
- * "Inherited from product" or "Batch-specific" without inspecting scope fields.
+ * Entry in `match()` results — the record fields plus resolution metadata.
+ * Extends AppRecord so all record fields are directly accessible.
  */
-export interface MatchedRecord extends AppRecord {
-  /**
-   * The most specific scope dimension that caused this record to match.
-   * 'universal' means the record has an empty scope and matches all contexts.
-   */
-  matchedAt: MatchedAt
-}
-
-/**
- * An entry in `match()` or `resolveAll()` results — the record plus resolution metadata.
- */
-export interface MatchEntry {
-  /** The matched record. */
-  record: AppRecord
+export interface MatchEntry extends AppRecord {
   /** Which resolution tier caused this record to be selected. */
   matchedAt: MatchedAt
   /** The rule that fired. Present only when matchedAt === 'rule'. */
   matchedRule?: FacetRule
-  /**
-   * Number of clauses in the rule that fired.
-   * Present only when matchedAt === 'rule'.
-   */
+  /** Number of clauses in the rule that fired. Present only when matchedAt === 'rule'. */
   matchedClauseCount?: number
-  /** Numeric specificity score. Higher = more specific. */
-  specificity: number
 }
 
 /**
@@ -472,12 +430,11 @@ export interface MatchEntry {
  */
 export interface MatchResult {
   /** Matched records ordered by specificity descending (most specific first) */
-  records: MatchEntry[]
-  /**
-   * Only present when strategy is 'best'.
-   * The single highest-specificity record per recordType.
-   */
-  best?: Record<string, MatchEntry>
+  data: MatchEntry[]
+  /** Total count of matched records */
+  total: number
+  /** Strategy used for this result */
+  strategy: 'all' | 'best'
 }
 
 /**
@@ -487,15 +444,18 @@ export interface UpsertRecordInput {
   /** Required — used as the lookup key */
   ref: string
   recordType?: string
-  customId?: string
-  sourceSystem?: string
+  productId?: string | null
+  variantId?: string | null
+  batchId?: string | null
+  proofId?: string | null
+  customId?: string | null
+  sourceSystem?: string | null
   startsAt?: string | null
   expiresAt?: string | null
   status?: string | null
-  scope?: RecordScope
   data?: Record<string, unknown> | null
   metadata?: Record<string, unknown> | null
-  /** Facet rule (rule records only). Mutually exclusive with scope. */
+  /** Facet rule (rule records only). Mutually exclusive with anchor IDs. */
   facetRule?: FacetRule | null
 }
 
@@ -541,12 +501,18 @@ export interface AppRecord {
   visibility: Visibility
   recordType: string | null
   ref: string | null
+  scopeType: string | null
+  scopeId: string | null
   customId: string | null
+  customIdNormalized: string | null
   sourceSystem: string | null
   status: string | null
-  /** @deprecated use scope.productId instead */
+  /** Flat anchor IDs. null = wildcard (matches any value). */
   productId: string | null
-  /** @deprecated use scope.proofId instead */
+  /** Flat anchor ID, promoted from scope.variantId in SDK 1.12. */
+  variantId: string | null
+  /** Flat anchor ID, promoted from scope.batchId in SDK 1.12. */
+  batchId: string | null
   proofId: string | null
   contactId: string | null
   authorId: string | null
@@ -559,21 +525,17 @@ export interface AppRecord {
   expiresAt: string | null
   deletedAt: string | null // admin only
   /**
-   * Structured scope definition. Empty object means universal.
-   * Platform-canonicalized on write (keys sorted, valueKeys deduplicated).
-   */
-  scope: RecordScope
-  /**
-   * Numeric specificity score computed from scope.
-   * Higher = more specific. 0 = universal scope.
+   * Numeric specificity score. Server-computed from anchor IDs and facetRule.
+   * Higher = more specific. 0 = universal (no anchors, no rule).
    */
   specificity: number
   /**
    * Facet rule for rule records (ref starts with "rule:").
-   * null on all other record types. Mutually exclusive with scope.
-   * SDK 1.10.
+   * null on all other record types. Mutually exclusive with anchor IDs.
    */
   facetRule: FacetRule | null
+  /** Singleton cardinality key. Server-assigned; opaque to clients. SDK 1.11. */
+  singletonKey: string | null
   data: Record<string, unknown>
   owner: Record<string, unknown>
   admin: Record<string, unknown> // admin only
@@ -584,28 +546,35 @@ export interface AppRecord {
  * Input for creating a new record
  */
 export interface CreateRecordInput {
-  recordType: string
-  visibility?: Visibility // default 'owner'
-  ref?: string             // derived from scope if omitted and scope provided
-  status?: string // default 'active'
-  productId?: string
-  proofId?: string
+  recordType?: string
+  visibility?: Visibility
+  ref?: string
+  status?: string
+  productId?: string | null
+  variantId?: string | null
+  batchId?: string | null
+  proofId?: string | null
   contactId?: string
   authorId?: string
   authorType?: string
   parentType?: string
   parentId?: string
-  startsAt?: string // ISO 8601
-  expiresAt?: string
-  /** Structured scope. Canonicalized on write; ref derived if not supplied. */
-  scope?: RecordScope
-  customId?: string
-  sourceSystem?: string
+  startsAt?: string | null
+  expiresAt?: string | null
+  scopeType?: string | null
+  scopeId?: string | null
+  customId?: string | null
+  sourceSystem?: string | null
+  /**
+   * Opt-in singleton cardinality. When set, the server upserts rather than
+   * inserting a duplicate. Values: 'collection' | 'product' | 'variant' | 'batch' | 'proof'
+   */
+  singletonPer?: string
   data?: Record<string, unknown>
   owner?: Record<string, unknown>
-  admin?: Record<string, unknown> // admin only
+  admin?: Record<string, unknown>
   metadata?: Record<string, unknown>
-  /** Facet rule (rule records only). Mutually exclusive with scope. */
+  /** Facet rule (rule records only). Mutually exclusive with anchor IDs. */
   facetRule?: FacetRule | null
 }
 
@@ -622,14 +591,18 @@ export interface UpdateRecordInput {
   visibility?: Visibility
   ref?: string
   recordType?: string
-  startsAt?: string
-  expiresAt?: string
-  /** Updating scope recomputes specificity and ref. */
-  scope?: RecordScope
-  customId?: string
-  sourceSystem?: string
+  productId?: string | null
+  variantId?: string | null
+  batchId?: string | null
+  proofId?: string | null
+  startsAt?: string | null
+  expiresAt?: string | null
+  scopeType?: string | null
+  scopeId?: string | null
+  customId?: string | null
+  sourceSystem?: string | null
   metadata?: Record<string, unknown>
-  /** Facet rule (rule records only). Mutually exclusive with scope. Send null to clear. */
+  /** Set/clear facet rule. Send null to remove. */
   facetRule?: FacetRule | null
 }
 
@@ -644,9 +617,9 @@ export interface RecordListQueryParams extends ListQueryParams {
   customId?: string
   sourceSystem?: string
   proofId?: string
-  /** Filter by scope.variantId (JSONB lookup) */
+  /** Filter by variantId (indexed flat column) */
   variantId?: string
-  /** Filter by scope.batchId (JSONB lookup) */
+  /** Filter by batchId (indexed flat column) */
   batchId?: string
   /** Full-text filter on data.label (case-insensitive substring) */
   q?: string
@@ -705,16 +678,30 @@ export interface ResolveAllParams {
  * Response from the resolve-all endpoint.
  */
 export interface ResolveAllResult {
-  /**
-   * Every applicable record for the given product context, sorted by precedence
-   * (most-specific first). Each record appears at most once.
-   */
-  records: MatchEntry[]
-  /**
-   * true if the result was truncated at the safety cap.
-   * Default cap: 500 records. Use `limit` to raise it (max 5000).
-   */
-  truncated?: boolean
+  /** Every applicable record sorted by precedence (most-specific first). Each appears at most once. */
+  records: ResolveAllEntry[]
+  /** Total count of returned records. */
+  total: number
+  /** The context echoed back from the request (for verification). */
+  context: ResolveAllContext
+  /** true if the result was capped at the safety limit. */
+  truncated: boolean
+}
+
+export interface ResolveAllEntry {
+  record: AppRecord
+  matchedAt: MatchedAt
+  specificity: number
+  matchedRule?: FacetRule
+  matchedClauseCount?: number
+}
+
+export interface ResolveAllContext {
+  productId?: string
+  variantId?: string
+  batchId?: string
+  proofId?: string
+  facets?: Record<string, string[]>
 }
 
 /**
@@ -723,7 +710,9 @@ export interface ResolveAllResult {
 export interface PreviewRuleParams {
   /** The facet rule to evaluate (same validation as on record create). */
   facetRule: FacetRule
-  /** Max product IDs to return. Default 20, max 200. */
+  /** Filter to a specific record type for context. */
+  recordType?: string
+  /** Max matching products to return in sample. Default 50, max 200. */
   limit?: number
 }
 
@@ -731,10 +720,12 @@ export interface PreviewRuleParams {
  * Response from the preview-rule endpoint.
  */
 export interface PreviewRuleResult {
-  /** A sample of product IDs whose facet assignments satisfy the rule. */
-  sampleProductIds: string[]
-  /** Total products in the collection matching the rule (may exceed sampleProductIds.length). */
-  totalMatches: number
+  /** Sample of products whose facet assignments satisfy the rule. */
+  matchingProducts: Array<{ productId: string; name?: string; facets: Record<string, string[]> }>
+  /** Total products in the collection matching the rule. */
+  total: number
+  /** Server-canonicalized rule (sorted keys, deduped values) — for display. */
+  rule: FacetRule
 }
 
 /**

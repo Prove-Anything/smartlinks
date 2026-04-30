@@ -432,7 +432,7 @@ const productComments = await app.threads.list(collectionId, appId, {
 
 ## Records
 
-**Records** are the most flexible object type — use them for structured data with time-based lifecycles, hierarchies, or custom schemas. Records also support **structured scoping** — each record can declare which products, variants, batches, proofs, or facet values it applies to, and the platform can match records against a runtime context.
+**Records** are the most flexible object type — use them for structured data with time-based lifecycles, hierarchies, or custom schemas. Records also support **structured targeting** — each record can declare which products, variants, batches, or proofs it applies to (via anchor fields), or which product attributes match (via `facetRule`), and the platform can match records against a runtime context.
 
 ### When to Use Records
 
@@ -450,64 +450,102 @@ const productComments = await app.threads.list(collectionId, appId, {
 
 - **Record types** — `recordType` field for categorization (required)
 - **Time windows** — `startsAt` and `expiresAt` for time-based data
-- **Scoped targeting** — `scope` object restricts which products/variants/facets the record applies to
-- **Specificity scoring** — `specificity` enables "best match" resolution across multiple scoped records
+- **Anchor fields** — `productId`, `variantId`, `batchId`, `proofId` restrict which context the record applies to
+- **Facet rules** — `facetRule` matches records to products based on attribute values
+- **Specificity scoring** — `specificity` enables "best match" resolution across multiple targeted records
 - **Parent linking** — attach to products, proofs, contacts, etc.
 - **Author tracking** — `authorId` + `authorType`
 - **Status lifecycle** — custom statuses (default `'active'`)
-- **References** — optional `ref` field for external IDs; auto-derived from scope if omitted
+- **References** — optional `ref` field for external IDs; auto-derived from anchor fields if omitted
 
-### Scoped Records
+### Targeted Records
 
-Every record has a `scope` object. An empty scope (`{}`) means the record is universal — it applies everywhere. A populated scope restricts which context the record applies to.
+Records use flat anchor fields to declare what context they apply to. A record with no anchor fields is universal — it applies everywhere. Populated anchor fields restrict the context to a specific product, variant, batch, or proof.
 
 ```typescript
 import { app } from '@proveanything/smartlinks';
 
-// A nutrition record scoped to a specific product
+// A nutrition record anchored to a specific product
 await app.records.create(collectionId, appId, {
   recordType: 'nutrition',
-  scope: { productId: 'prod_abc' },
+  productId: 'prod_abc',
   data: { calories: 250, protein: 12.5 },
 }, true);
 
 // A nutrition record for a specific variant, overriding the product-level record
 await app.records.create(collectionId, appId, {
   recordType: 'nutrition',
-  scope: { productId: 'prod_abc', variantId: 'var_500ml' },
+  productId: 'prod_abc',
+  variantId: 'var_500ml',
   data: { calories: 260, protein: 12.5 },
 }, true);
 
-// A record scoped to a facet value (applies to all products with tier=gold)
+// A record matching products by facet rule (applies to all products with tier=gold)
 await app.records.create(collectionId, appId, {
   recordType: 'loyalty_promo',
-  scope: {
-    facets: [{ key: 'tier', valueKeys: ['gold', 'platinum'] }]
+  facetRule: {
+    all: [{ facetKey: 'tier', anyOf: ['gold', 'platinum'] }],
   },
   data: { discountPercent: 15 },
 }, true);
 ```
 
-The `ref` field is derived automatically when `scope` is provided and `ref` is omitted:
+The `ref` field is derived automatically from anchor fields when omitted:
 
 ```
-scope: { productId: 'prod_abc' }           → ref: 'product:prod_abc'
-scope: { productId: 'prod_abc', variantId: 'var_x' } → ref: 'product:prod_abc/variant:var_x'
-scope: {}                                  → ref: '' (universal)
+productId: 'prod_abc'                               → ref: 'product:prod_abc'
+productId: 'prod_abc', variantId: 'var_x'          → ref: 'product:prod_abc/variant:var_x'
+(no anchor fields)                                  → ref: '' (universal)
+facetRule: { ... }                                  → ref: 'rule:<ulid>'
 ```
 
 #### Specificity scores
 
 When multiple scoped records match a context, they are ordered by `specificity`. Higher = more specific:
 
-| Scope element | Points |
-|---------------|--------|
+| Field / element | Points |
+|-----------------|--------|
 | `proofId` | +1000 |
 | `batchId` | +500 |
 | `variantId` | +250 |
 | `productId` | +100 |
-| Per facet clause | +10 |
-| Per facet value key | +1 |
+| Per `facetRule` clause | +50 |
+| Per `anyOf` value | +1 |
+| No anchors / no rule | 0 |
+
+### Singleton Cardinality
+
+By default, `create` always inserts a new row — calling it twice produces two records with identical anchor fields. **Singleton cardinality** changes that: pass `singletonPer` on creation and the server will **upsert** instead, ensuring at most one record of a given `recordType` exists per scope boundary.
+
+```typescript
+// Ensure only one active registration record per product per contact
+await app.records.create(collectionId, appId, {
+  recordType: 'product_registration',
+  visibility: 'owner',
+  contactId: user.contactId,
+  productId: product.id,
+  singletonPer: 'product',   // one per (appId + recordType + contactId + productId)
+  data: { registeredAt: new Date().toISOString() },
+});
+```
+
+`singletonPer` values and the scope they enforce:
+
+| Value | De-duplicates across |
+|-------|---------------------|
+| `'collection'` | entire app (one record of this type per app) |
+| `'product'` | `productId` |
+| `'variant'` | `variantId` |
+| `'batch'` | `batchId` |
+| `'proof'` | `proofId` |
+
+The server assigns a **`singletonKey`** to each record that is governed by this rule — an opaque, stable string that acts as the upsert key. If a record with the same key already exists the server updates it in place (clearing `deletedAt` if it was soft-deleted) and returns the existing `id`. `singletonKey` is read-only and exposed on `AppRecord` for debugging but has no meaning to clients.
+
+**When to use `singletonPer`:**
+- One loyalty card per contact per product
+- One registration per proof scan
+- One active subscription record per variant
+- Any "find-or-create" pattern where calling `create` twice should be idempotent
 
 ### Matching Records Against a Context
 
@@ -515,22 +553,22 @@ Use `app.records.match()` to find records whose scope is satisfied by a runtime 
 
 ```typescript
 // Find all nutrition records that apply for this product + facet context
-const { records } = await app.records.match(collectionId, appId, {
+const { data } = await app.records.match(collectionId, appId, {
   target: {
     productId: 'prod_abc',
     facets: { tier: ['gold'] },
   },
   recordType: 'nutrition',
 }, true);
-// records is ordered by specificity descending — most specific first
-// each record carries a `matchedAt` field indicating which scope dimension matched
+// data is ordered by specificity descending — most specific first
+// each entry carries a `matchedAt` field indicating which dimension matched
 
-// Or use strategy: 'best' to get the single winner per recordType
-const { best } = await app.records.match(collectionId, appId, {
+// Use strategy: 'best' to get only the single winner per recordType
+const { data: best } = await app.records.match(collectionId, appId, {
   target: { productId: 'prod_abc', variantId: 'var_500ml' },
   strategy: 'best',
 }, true);
-// best.nutrition → the highest-specificity nutrition record for this context
+// best[0] → the highest-specificity record for this context
 ```
 
 Facet matching rules:
@@ -540,18 +578,18 @@ Facet matching rules:
 
 #### `matchedAt` — match attribution
 
-Every record in the response includes a `matchedAt` field indicating **which scope dimension caused the match**. Use it to render attribution labels without inspecting scope fields:
+Every record in the response includes a `matchedAt` field indicating **which matching dimension caused the match**. Use it to render attribution labels:
 
 ```typescript
-const { records } = await app.records.match(collectionId, appId, { target, recordType: 'nutrition' }, true);
+const { data } = await app.records.match(collectionId, appId, { target, recordType: 'nutrition' }, true);
 
-for (const entry of records) {
+for (const entry of data) {
   switch (entry.matchedAt) {
+    case 'rule':       /* "Matches rule" */           break;
     case 'proof':      /* "Scan-specific" */          break;
     case 'batch':      /* "Batch-specific" */         break;
     case 'variant':    /* "Size-specific" */          break;
     case 'product':    /* "Inherited from product" */ break;
-    case 'rule':       /* "Matches rule" */           break;
     case 'facet':      /* "Tier-specific" */          break;
     case 'collection': /* "Collection default" */     break;
     case 'universal':  /* "Default" */                break;
@@ -559,7 +597,7 @@ for (const entry of records) {
 }
 ```
 
-Precedence follows: `proof > batch > variant > product > rule > facet > collection > universal`.
+Precedence follows: `rule > proof > batch > variant > product > facet > collection > universal`.
 
 #### React — `useResolvedRecord`
 
@@ -583,19 +621,19 @@ await app.records.create(collectionId, appId, {
 }, true);
 ```
 
-`facetRule` is **mutually exclusive with `scope`**. A record has either a structured scope or a facetRule, never both. The server assigns `ref: 'rule:<ulid>'` automatically.
+`facetRule` and anchor fields (`productId`, `variantId`, etc.) are mutually exclusive. A record uses either anchor-based targeting or a facetRule, never both. The server assigns `ref: 'rule:<ulid>'` automatically.
 
 Specificity for rule records: `Σ (50 + clause.anyOf.length)` across all clauses. A 2-clause rule with 1 value each scores `(50+1)+(50+1) = 102`, which ranks above a plain product-scoped record (100) in `resolveAll()` results.
 
 Use `records.previewRule()` to see which products a rule would match before creating it:
 
 ```typescript
-const { sampleProductIds, totalMatches } = await app.records.previewRule(collectionId, appId, {
+const { matchingProducts, total } = await app.records.previewRule(collectionId, appId, {
   facetRule: {
     all: [{ facetKey: 'brand', anyOf: ['samsung'] }],
   },
 });
-// totalMatches: 42, sampleProductIds: ['prod_001', 'prod_002', ...]
+// total: 42, matchingProducts: [{ productId: 'prod_001', facets: {...} }, ...]
 ```
 
 ### Resolve All
@@ -604,7 +642,7 @@ Use `app.records.resolveAll()` to fetch **every applicable record for a product 
 
 ```typescript
 // All records that apply to this product context (admin)
-const { records, truncated } = await app.records.resolveAll(collectionId, appId, {
+const { records, total, truncated } = await app.records.resolveAll(collectionId, appId, {
   context: {
     productId: 'prod_001',
     facets: { brand: 'samsung', type: 'tv' },
@@ -641,7 +679,7 @@ Create-or-update a record by `ref` in a single call:
 const { created } = await app.records.upsert(collectionId, appId, {
   ref: 'product:prod_abc',
   recordType: 'nutrition',
-  scope: { productId: 'prod_abc' },
+  productId: 'prod_abc',
   data: { calories: 250, protein: 12.5 },
 });
 // created: true if new, false if updated
@@ -654,8 +692,8 @@ Upsert or delete large sets of records efficiently:
 ```typescript
 // Bulk upsert up to 500 records in one transaction
 const result = await app.records.bulkUpsert(collectionId, appId, [
-  { ref: 'product:prod_abc', recordType: 'nutrition', scope: { productId: 'prod_abc' }, data: { calories: 250 } },
-  { ref: 'product:prod_xyz', recordType: 'nutrition', scope: { productId: 'prod_xyz' }, data: { calories: 180 } },
+  { ref: 'product:prod_abc', recordType: 'nutrition', productId: 'prod_abc', data: { calories: 250 } },
+  { ref: 'product:prod_xyz', recordType: 'nutrition', productId: 'prod_xyz', data: { calories: 180 } },
 ]);
 // result: { saved: 2, failed: 0, results: [...] }
 
@@ -665,7 +703,7 @@ await app.records.bulkDelete(collectionId, appId, {
   recordType: 'nutrition',
 });
 
-// Bulk delete by scope anchor (all records under a product)
+// Bulk delete by anchor (all records under a product)
 await app.records.bulkDelete(collectionId, appId, {
   scope: { productId: 'prod_abc' },
 });
@@ -719,7 +757,7 @@ await app.records.upsert(collectionId, appId, {
   customId: slug,
   sourceSystem: 'contentful',
   recordType: 'content_page',
-  scope: { productId },
+  productId,
   data: { title, body },
 });
 // upsert finds-or-creates by ref deterministically,
@@ -754,21 +792,21 @@ await app.records.aggregate(collectionId, appId, {
 
 ### Canonical Ref Format
 
-The `ref` field is **server-derived** when you provide a `scope` and omit `ref`. Clients should never construct ref strings manually. The authoritative grammar is slash-joined:
+The `ref` field is **server-derived** when anchor fields are provided and `ref` is omitted. Clients should never construct ref strings manually. The authoritative grammar is slash-joined:
 
 ```
-[facet:{key}={val1}+{val2}/][product:{productId}/][variant:{variantId}/][batch:{batchId}/][proof:{proofId}]
+[product:{productId}/][variant:{variantId}/][batch:{batchId}/][proof:{proofId}]
 ```
 
 Examples:
 
-| Scope | Derived ref |
-|-------|-------------|
-| `{ productId: 'prod_abc' }` | `product:prod_abc` |
-| `{ productId: 'prod_abc', variantId: 'var_500ml' }` | `product:prod_abc/variant:var_500ml` |
-| `{ batchId: 'batch_q1' }` | `batch:batch_q1` |
-| `{ facets: [{ key: 'tier', valueKeys: ['gold'] }] }` | `facet:tier=gold` |
-| `{}` | `''` (universal) |
+| Anchor fields | Derived ref |
+|---------------|-------------|
+| `productId: 'prod_abc'` | `product:prod_abc` |
+| `productId: 'prod_abc', variantId: 'var_500ml'` | `product:prod_abc/variant:var_500ml` |
+| `batchId: 'batch_q1'` | `batch:batch_q1` |
+| `facetRule: { ... }` | `rule:<ulid>` |
+| *(no anchor fields)* | `''` (universal) |
 
 `parseRef` / `buildRef` in `data/refs.ts` should be used for **display and URL round-tripping only**, never as upsert keys. For ETL use cases, set an explicit `ref` using a stable external key (see [External ID / ETL Workflow](#external-id--etl-workflow)).
 

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.10.1  |  Generated: 2026-04-25T15:35:27.893Z
+Version: 1.10.3  |  Generated: 2026-04-27T10:04:40.477Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1901,27 +1901,6 @@ interface FacetRule {
 }
 ```
 
-**ScopeFacetClause** (interface)
-```typescript
-interface ScopeFacetClause {
-  key: string
-  valueKeys: string[]
-}
-```
-
-**RecordScope** (interface)
-```typescript
-interface RecordScope {
-  productId?: string
-  variantId?: string
-  proofId?: string
-  batchId?: string
-  * Arbitrary facet clauses.
-  * Clauses are ANDed together; valueKeys within a clause are ORed.
-  facets?: ScopeFacetClause[]
-}
-```
-
 **RecordTarget** (interface)
 ```typescript
 interface RecordTarget {
@@ -1929,8 +1908,10 @@ interface RecordTarget {
   variantId?: string
   proofId?: string
   batchId?: string
-  * Facet values the caller possesses, keyed by facet key.
-  * A scope clause is satisfied if ANY of the clause's valueKeys appears here.
+  * Facet assignments for the product (e.g. `{ brand: ['samsung'], type: ['tv'] }`).
+  * Used exclusively to match FacetRule records via GIN-indexed containment check.
+  * Does NOT filter legacy scope.facets arrays (that system is removed in SDK 1.12).
+  * Omit to exclude rule records from results.
   facets?: Record<string, string[]>
 }
 ```
@@ -1940,12 +1921,15 @@ interface RecordTarget {
 interface BulkUpsertItem {
   ref: string
   recordType?: string
-  customId?: string
-  sourceSystem?: string
+  productId?: string | null
+  variantId?: string | null
+  batchId?: string | null
+  proofId?: string | null
+  customId?: string | null
+  sourceSystem?: string | null
   startsAt?: string | null
   expiresAt?: string | null
   status?: string | null
-  scope?: RecordScope
   data?: Record<string, unknown> | null
   metadata?: Record<string, unknown> | null
   facetRule?: FacetRule | null
@@ -1972,26 +1956,12 @@ interface BulkDeleteResult {
 }
 ```
 
-**MatchEntry** (interface)
-```typescript
-interface MatchEntry {
-  record: AppRecord
-  matchedAt: MatchedAt
-  matchedRule?: FacetRule
-  * Number of clauses in the rule that fired.
-  * Present only when matchedAt === 'rule'.
-  matchedClauseCount?: number
-  specificity: number
-}
-```
-
 **MatchResult** (interface)
 ```typescript
 interface MatchResult {
-  records: MatchEntry[]
-  * Only present when strategy is 'best'.
-  * The single highest-specificity record per recordType.
-  best?: Record<string, MatchEntry>
+  data: MatchEntry[]
+  total: number
+  strategy: 'all' | 'best'
 }
 ```
 
@@ -2000,12 +1970,15 @@ interface MatchResult {
 interface UpsertRecordInput {
   ref: string
   recordType?: string
-  customId?: string
-  sourceSystem?: string
+  productId?: string | null
+  variantId?: string | null
+  batchId?: string | null
+  proofId?: string | null
+  customId?: string | null
+  sourceSystem?: string | null
   startsAt?: string | null
   expiresAt?: string | null
   status?: string | null
-  scope?: RecordScope
   data?: Record<string, unknown> | null
   metadata?: Record<string, unknown> | null
   facetRule?: FacetRule | null
@@ -2037,10 +2010,15 @@ interface AppRecord {
   visibility: Visibility
   recordType: string | null
   ref: string | null
+  scopeType: string | null
+  scopeId: string | null
   customId: string | null
+  customIdNormalized: string | null
   sourceSystem: string | null
   status: string | null
   productId: string | null
+  variantId: string | null
+  batchId: string | null
   proofId: string | null
   contactId: string | null
   authorId: string | null
@@ -2052,16 +2030,13 @@ interface AppRecord {
   startsAt: string | null
   expiresAt: string | null
   deletedAt: string | null // admin only
-  * Structured scope definition. Empty object means universal.
-  * Platform-canonicalized on write (keys sorted, valueKeys deduplicated).
-  scope: RecordScope
-  * Numeric specificity score computed from scope.
-  * Higher = more specific. 0 = universal scope.
+  * Numeric specificity score. Server-computed from anchor IDs and facetRule.
+  * Higher = more specific. 0 = universal (no anchors, no rule).
   specificity: number
   * Facet rule for rule records (ref starts with "rule:").
-  * null on all other record types. Mutually exclusive with scope.
-  * SDK 1.10.
+  * null on all other record types. Mutually exclusive with anchor IDs.
   facetRule: FacetRule | null
+  singletonKey: string | null
   data: Record<string, unknown>
   owner: Record<string, unknown>
   admin: Record<string, unknown> // admin only
@@ -2072,25 +2047,31 @@ interface AppRecord {
 **CreateRecordInput** (interface)
 ```typescript
 interface CreateRecordInput {
-  recordType: string
-  visibility?: Visibility // default 'owner'
-  ref?: string             // derived from scope if omitted and scope provided
-  status?: string // default 'active'
-  productId?: string
-  proofId?: string
+  recordType?: string
+  visibility?: Visibility
+  ref?: string
+  status?: string
+  productId?: string | null
+  variantId?: string | null
+  batchId?: string | null
+  proofId?: string | null
   contactId?: string
   authorId?: string
   authorType?: string
   parentType?: string
   parentId?: string
-  startsAt?: string // ISO 8601
-  expiresAt?: string
-  scope?: RecordScope
-  customId?: string
-  sourceSystem?: string
+  startsAt?: string | null
+  expiresAt?: string | null
+  scopeType?: string | null
+  scopeId?: string | null
+  customId?: string | null
+  sourceSystem?: string | null
+  * Opt-in singleton cardinality. When set, the server upserts rather than
+  * inserting a duplicate. Values: 'collection' | 'product' | 'variant' | 'batch' | 'proof'
+  singletonPer?: string
   data?: Record<string, unknown>
   owner?: Record<string, unknown>
-  admin?: Record<string, unknown> // admin only
+  admin?: Record<string, unknown>
   metadata?: Record<string, unknown>
   facetRule?: FacetRule | null
 }
@@ -2106,11 +2087,16 @@ interface UpdateRecordInput {
   visibility?: Visibility
   ref?: string
   recordType?: string
-  startsAt?: string
-  expiresAt?: string
-  scope?: RecordScope
-  customId?: string
-  sourceSystem?: string
+  productId?: string | null
+  variantId?: string | null
+  batchId?: string | null
+  proofId?: string | null
+  startsAt?: string | null
+  expiresAt?: string | null
+  scopeType?: string | null
+  scopeId?: string | null
+  customId?: string | null
+  sourceSystem?: string | null
   metadata?: Record<string, unknown>
   facetRule?: FacetRule | null
 }
@@ -2141,12 +2127,32 @@ interface ResolveAllParams {
 **ResolveAllResult** (interface)
 ```typescript
 interface ResolveAllResult {
-  * Every applicable record for the given product context, sorted by precedence
-  * (most-specific first). Each record appears at most once.
-  records: MatchEntry[]
-  * true if the result was truncated at the safety cap.
-  * Default cap: 500 records. Use `limit` to raise it (max 5000).
-  truncated?: boolean
+  records: ResolveAllEntry[]
+  total: number
+  context: ResolveAllContext
+  truncated: boolean
+}
+```
+
+**ResolveAllEntry** (interface)
+```typescript
+interface ResolveAllEntry {
+  record: AppRecord
+  matchedAt: MatchedAt
+  specificity: number
+  matchedRule?: FacetRule
+  matchedClauseCount?: number
+}
+```
+
+**ResolveAllContext** (interface)
+```typescript
+interface ResolveAllContext {
+  productId?: string
+  variantId?: string
+  batchId?: string
+  proofId?: string
+  facets?: Record<string, string[]>
 }
 ```
 
@@ -2154,6 +2160,7 @@ interface ResolveAllResult {
 ```typescript
 interface PreviewRuleParams {
   facetRule: FacetRule
+  recordType?: string
   limit?: number
 }
 ```
@@ -2161,8 +2168,9 @@ interface PreviewRuleParams {
 **PreviewRuleResult** (interface)
 ```typescript
 interface PreviewRuleResult {
-  sampleProductIds: string[]
-  totalMatches: number
+  matchingProducts: Array<{ productId: string; name?: string; facets: Record<string, string[]> }>
+  total: number
+  rule: FacetRule
 }
 ```
 
