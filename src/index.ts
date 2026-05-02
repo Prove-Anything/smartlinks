@@ -250,3 +250,30 @@ export {
   HostPermissionDeniedError,
   HostTimeoutError,
 } from './mobile-admin/errors';
+
+// Native capability facade — contract types only (implementations are host-side)
+export type {
+  NativeCapability,
+  NativeFacade,
+  ShareFacade,
+  ClipboardFacade,
+  HapticImpactStyle,
+  HapticNotificationStyle,
+  HapticsFacade,
+  NetworkStatus,
+  NetworkFacade,
+  DeviceInfo,
+  DeviceFacade,
+  StorageFacade,
+  QrScanOptions,
+  QrFacade,
+  AuthFacade,
+  NfcReadResult,
+  NfcFacade,
+  RfidScanOptions,
+  RfidFacade,
+  EventsFacade,
+  WebSourceMode,
+  WebSourceConfig,
+  WebSourceFacade,
+} from './native/types';

@@ -4,7 +4,7 @@
 
 This document describes how to build a **Mobile Admin Container** — a SmartLinks microapp that provides an in-the-field operator/admin surface optimised for mobile devices. These containers ship as a **separate `mobileAdmin` bundle** (not inside the `containers` bundle) so that Capacitor plugins, offline helpers, and operator-only code never reach the public consumer bundle.
 
-> **See also:** [containers.md](containers.md) covers the public consumer container. The [Multiple Consumer Components](containers.md#multiple-consumer-components) section explains the consumer vs. admin bundle split.
+> **See also:** [containers.md](containers.md) covers the public consumer container. The [Multiple Consumer Components](containers.md#multiple-consumer-components) section explains the consumer vs. admin bundle split. For the full `host.native` facade contract (share, clipboard, haptics, NFC, RFID, storage, etc.) see [native-facade.md](native-facade.md).
 
 ---
 
@@ -23,6 +23,7 @@ This document describes how to build a **Mobile Admin Container** — a SmartLin
 11. [Build & Bundle Requirements](#build--bundle-requirements)
 12. [Example: Minimal Mobile Admin Container](#example-minimal-mobile-admin-container)
 13. [Best Practices](#best-practices)
+14. [Native Capability Facade](#native-capability-facade)
 
 ---
 
@@ -58,7 +59,7 @@ Your container **never** detects the host directly. It receives a `host` prop fr
 
 Every container mounted by the SmartLinks Mobile launcher receives a single `host` prop — `AdminMobileHostContext`. Do not reach for `window.SmartlinksScanner` or `window.Capacitor` directly; both are wrapped here.
 
-> **SDK export** — `AdminMobileHostContext`, `AdminMobileCapability`, `ActionableCapability`, `AdminMobileHostId`, `AdminMobileEvent`, `AdminMobileEventCallback`, `AdminMobileEventSubscriber`, `AdminMobileComponentManifest`, and `AdminMobileBundleManifest` are all exported from `@proveanything/smartlinks`. Import via `import type { AdminMobileHostContext } from '@proveanything/smartlinks'` — no local mirror needed. `ScannerEventSubscriber`, `MobileAdminComponentManifest`, and `MobileAdminBundleManifest` still export as deprecated aliases.
+> **SDK export** — `AdminMobileHostContext`, `AdminMobileCapability`, `ActionableCapability`, `AdminMobileHostId`, `AdminMobileEvent`, `AdminMobileEventCallback`, `AdminMobileEventSubscriber`, `AdminMobileComponentManifest`, `AdminMobileBundleManifest`, and `NativeFacade` (plus all sub-facade interfaces) are exported from `@proveanything/smartlinks`. Import via `import type { AdminMobileHostContext } from '@proveanything/smartlinks'` — no local mirror needed. `ScannerEventSubscriber`, `MobileAdminComponentManifest`, and `MobileAdminBundleManifest` still export as deprecated aliases.
 
 ```typescript
 interface AdminMobileHostContext {
@@ -112,6 +113,10 @@ interface AdminMobileHostContext {
   // Informational host version — use for logging/diagnostics, not feature detection.
   // For feature detection prefer existence checks: 'requestNfcTap' in host.actions
   _version: number
+
+  // Full native capability facade — share, clipboard, haptics, NFC, RFID, storage, etc.
+  // Optional: not every host stub populates it. See native-facade.md.
+  native?: NativeFacade
 }
 ```
 
@@ -542,3 +547,26 @@ export const MOBILE_ADMIN_MANIFEST = {
 - **Bundle Capacitor plugins in** (do not externalise) — so the component degrades gracefully on PWA/browser without crashing.
 - **Declare `offline: true`** on a component if it queues writes locally — this signals the launcher to provision offline sync support.
 - **Use `'methodName' in host.actions`** to feature-detect new host capabilities rather than comparing `host._version`. The version is informational only.
+
+---
+
+## Native Capability Facade
+
+`host.native` gives containers access to a broader set of device capabilities — share sheet, clipboard, full haptics API, storage, QR, NFC, RFID (Kotlin only), auth, and cross-shell events — through a single interface that falls back gracefully across all host environments.
+
+```typescript
+// Check host.hardware.* for physical availability, then call via host.native
+if (host.hardware.nfc && host.native?.nfc) {
+  const { uid } = await host.native.nfc.read({ timeoutMs: 10_000 })
+}
+
+// Storage always available (Preferences → localStorage → in-memory Map)
+await host.native?.storage.set('lastScan', uid)
+
+// Share sheet with web fallback
+await host.native?.share.share({ title: 'Found tag', url: `https://app.example/tags/${uid}` })
+```
+
+`host.native` is optional on `AdminMobileHostContext` — host stubs (Storybook, unit tests) need not implement it. `native.rfid` is additionally optional within `NativeFacade` itself, as it only exists on `custom-android`.
+
+For the full sub-facade table, fallback chains, and what's intentionally not wrapped, see **[native-facade.md](native-facade.md)**.

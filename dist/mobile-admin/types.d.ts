@@ -1,3 +1,4 @@
+import type { NativeFacade } from '../native/types';
 /**
  * Hardware/software capability tokens a mobile admin host may advertise.
  * Passed to `AdminMobileHostContext.capabilities` and to
@@ -185,6 +186,16 @@ export interface AdminMobileHostContext {
      *   if ('requestNfcTap' in host.actions) { ... }
      */
     _version: number;
+    /**
+     * Full native capability facade populated by the host at mount time.
+     * Not all sub-facades are present on every host — check before calling:
+     * @example
+     *   const code = await host.native?.qr.scan();
+     *   const { identifier } = await host.native?.device.getId() ?? {};
+     * For UMD microapps that do not receive a `host` prop, the same object
+     * is available at `window.SL.native` (host concern, not SDK).
+     */
+    native?: NativeFacade;
 }
 /** Manifest metadata for a single mobile admin container component. */
 export interface AdminMobileComponentManifest {

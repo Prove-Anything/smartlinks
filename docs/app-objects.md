@@ -85,6 +85,7 @@ Zones are **automatically filtered** based on the caller's role:
 ### Zone Writing Rules
 
 - **Non-admin callers** attempting to write to the `admin` zone are silently ignored
+- **Authenticated record owners** can write to `data` and `owner` by default; individual keys can be restricted via the `ownerEdit` app config policy (see [Owner Edit Policy](#owner-edit-policy) below)
 - **Public callers** can write to `data` and `owner` (if visibility allows)
 - **Admins** can write to all three zones
 
@@ -1095,6 +1096,61 @@ These guards exist because anonymous callers have no identity to own a record, a
 ```
 
 The `enforce` values are **merged over** the caller's request body, so you can lock down fields like `visibility` and `status` regardless of what clients send.
+
+---
+
+## Owner Edit Policy
+
+Gives per-zone, field-level control over what an **authenticated record owner** can update via `PATCH /api/v1/public/collection/:collectionId/app/:appId/records/:recordId`.
+
+Set the policy in the same app config document used for `publicCreate` (stored at `sites/{collectionId}/apps/{appId}`):
+
+```json
+{
+  "ownerEdit": {
+    "records": {
+      "data":  { "allow": ["paypalEmail"] },
+      "owner": { "allow": ["paypalEmail", "paypalEmailUpdatedAt"] }
+    }
+  }
+}
+```
+
+### Zone visibility and write access
+
+| Zone    | Who can read           | Who can write (owner)                                    |
+|---------|------------------------|----------------------------------------------------------|
+| `data`  | public                 | Allow-listed keys only (if policy set); all keys if not  |
+| `owner` | owner + admin          | Allow-listed keys only (if policy set); all keys if not  |
+| `admin` | admin                  | Never — admin zone is always immutable to owners         |
+
+### Allow-list semantics
+
+| Config                     | Behaviour                                                                     |
+|----------------------------|-------------------------------------------------------------------------------|
+| No `ownerEdit` key         | Default-allow — both zones fully writable (no change to existing behaviour)   |
+| `allow` array with keys    | Only the listed keys are accepted from the PATCH body; the rest are silently ignored and their existing values preserved |
+| `allow: []` (empty array)  | Zone is effectively read-only for the owner                                   |
+
+Accepted keys are **merged** onto the existing zone blob — you do not need to re-send unchanged values.
+
+### Example: commission record with protected fields
+
+An app that lets owners update their payout email but not their commission total:
+
+```json
+{
+  "ownerEdit": {
+    "records": {
+      "owner": { "allow": ["paypalEmail", "paypalEmailUpdatedAt"] }
+    }
+  }
+}
+```
+
+A PATCH body of `{ "owner": { "paypalEmail": "x@y.com", "totalCommission": 99 } }` will update `paypalEmail` only. `totalCommission` is silently ignored and its existing value is preserved.
+
+> **App design note:** If your app creates records with sensitive fields that owners should never modify (e.g. computed totals, server-assigned fields), add an `ownerEdit` policy from the start. It is significantly easier to relax restrictions later than to tighten them after data has been mutated.
 
 ---
 
