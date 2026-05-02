@@ -194,6 +194,15 @@ export interface InteractionPermissions {
 
   /** Allow an authenticated user to read their own interaction history via the public API. */
   allowOwnRead?: boolean
+
+  /** Reject a second submission that carries the same `anonId` in metadata. */
+  uniquePerAnonId?: boolean
+
+  /**
+   * Time window in seconds for `uniquePerAnonId` enforcement.
+   * `0` or omitted means all-time deduplication.
+   */
+  uniquePerAnonIdWindowSeconds?: number
 }
 
 export interface InteractionDisplay {
@@ -240,4 +249,22 @@ export interface ListInteractionTypesQuery {
   appId?: string
   limit?: number
   offset?: number
+}
+
+export interface SubmitInteractionResponse {
+  success: true
+  eventId: string
+}
+
+export interface SubmitInteractionError {
+  error: 'FORBIDDEN'
+  reason:
+    | 'not_public'
+    | 'auth_required'
+    | 'duplicate'
+    | 'duplicate_anon'
+    | 'disabled'
+    | 'before_start'
+    | 'after_end'
+    | 'origin_forbidden'
 }

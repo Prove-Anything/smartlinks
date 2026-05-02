@@ -73,12 +73,14 @@ export var interactions;
     }
     interactions.updateEvent = updateEvent;
     /**
-       * Appends one interaction event from a public source.
+       * POST /api/v1/public/collection/:collectionId/interactions/submit
+       *
+       * Submits an interaction event from a public/client-side context.
+       * When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor
+       * `contactId` is required. Pass `anonId` inside `metadata` to enable
+       * device-level deduplication via `uniquePerAnonId`.
        */
     async function submitPublicEvent(collectionId, body) {
-        if (!body.userId && !body.contactId) {
-            throw new Error("AppendInteractionBody must include one of userId or contactId");
-        }
         const path = `/public/collection/${encodeURIComponent(collectionId)}/interactions/submit`;
         return post(path, body);
     }

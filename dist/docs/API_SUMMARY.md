@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.11.6  |  Generated: 2026-05-01T13:42:06.488Z
+Version: 1.11.7  |  Generated: 2026-05-02T09:06:52.034Z
 
 This is a concise summary of all available API functions and types.
 
@@ -5153,6 +5153,10 @@ interface InteractionPermissions {
   * Authenticated summary visibility (counts, aggregates) when user is signed in.
   allowAuthenticatedSummary?: boolean
   allowOwnRead?: boolean
+  uniquePerAnonId?: boolean
+  * Time window in seconds for `uniquePerAnonId` enforcement.
+  * `0` or omitted means all-time deduplication.
+  uniquePerAnonIdWindowSeconds?: number
 }
 ```
 
@@ -5217,6 +5221,30 @@ interface ListInteractionTypesQuery {
   appId?: string
   limit?: number
   offset?: number
+}
+```
+
+**SubmitInteractionResponse** (interface)
+```typescript
+interface SubmitInteractionResponse {
+  success: true
+  eventId: string
+}
+```
+
+**SubmitInteractionError** (interface)
+```typescript
+interface SubmitInteractionError {
+  error: 'FORBIDDEN'
+  reason:
+  | 'not_public'
+  | 'auth_required'
+  | 'duplicate'
+  | 'duplicate_anon'
+  | 'disabled'
+  | 'before_start'
+  | 'after_end'
+  | 'origin_forbidden'
 }
 ```
 
@@ -8333,47 +8361,47 @@ POST /admin/collection/:collectionId/interactions/append Appends one interaction
 POST /admin/collection/:collectionId/interactions/append Appends one interaction event.
 
 **submitPublicEvent**(collectionId: string,
-    body: AppendInteractionBody) → `Promise<`
-Appends one interaction event from a public source.
+    body: AppendInteractionBody) → `Promise<SubmitInteractionResponse | SubmitInteractionError>`
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **create**(collectionId: string,
     body: CreateInteractionTypeBody) → `Promise<InteractionTypeRecord>`
-Appends one interaction event from a public source.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **list**(collectionId: string,
     query: ListInteractionTypesQuery = {}) → `Promise<InteractionTypeList>`
-Appends one interaction event from a public source.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **get**(collectionId: string,
     id: string) → `Promise<InteractionTypeRecord>`
-Appends one interaction event from a public source.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **update**(collectionId: string,
     id: string,
     patchBody: UpdateInteractionTypeBody) → `Promise<InteractionTypeRecord>`
-Appends one interaction event from a public source.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **remove**(collectionId: string,
     id: string) → `Promise<void>`
-Appends one interaction event from a public source.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **publicCountsByOutcome**(collectionId: string,
     body: PublicInteractionsCountsByOutcomeRequest,
     authToken?: string) → `Promise<OutcomeCount[]>`
-Appends one interaction event from a public source.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **publicMyInteractions**(collectionId: string,
     body: PublicInteractionsByUserRequest,
     authToken?: string) → `Promise<InteractionEventRow[]>`
-Appends one interaction event from a public source.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **publicList**(collectionId: string,
     query: ListInteractionTypesQuery = {}) → `Promise<InteractionTypeList>`
-Appends one interaction event from a public source.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **publicGet**(collectionId: string,
     id: string) → `Promise<InteractionTypeRecord>`
-Appends one interaction event from a public source.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 ### jobs
 

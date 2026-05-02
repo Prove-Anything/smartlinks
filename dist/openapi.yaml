@@ -10355,6 +10355,40 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/PublicInteractionsCountsByOutcomeRequest"
+  /public/collection/{collectionId}/interactions/submit:
+    post:
+      tags:
+        - interactions
+      summary: "POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context."
+      operationId: interactions_submitPublicEvent
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                oneOf:
+                  - $ref: "#/components/schemas/SubmitInteractionResponse"
+                  - $ref: "#/components/schemas/SubmitInteractionError"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppendInteractionBody"
   /public/collection/{collectionId}/interactions/{id}:
     get:
       tags:
@@ -20187,6 +20221,10 @@ components:
           type: boolean
         allowOwnRead:
           type: boolean
+        uniquePerAnonId:
+          type: boolean
+        uniquePerAnonIdWindowSeconds:
+          type: number
     InteractionDisplay:
       type: object
       properties:
@@ -20275,6 +20313,26 @@ components:
           type: number
         offset:
           type: number
+    SubmitInteractionResponse:
+      type: object
+      properties:
+        success:
+          type: object
+          additionalProperties: true
+        eventId:
+          type: string
+      required:
+        - success
+        - eventId
+    SubmitInteractionError:
+      type: object
+      properties:
+        error:
+          type: string
+          enum:
+            - FORBIDDEN
+      required:
+        - error
     Job:
       type: object
       properties:

@@ -1,4 +1,4 @@
-import type { AdminInteractionsCountsByOutcomeRequest, AdminInteractionsQueryRequest, AdminInteractionsAggregateRequest, AdminInteractionsAggregateResponse, AppendInteractionBody, UpdateInteractionBody, OutcomeCount, InteractionEventRow, PublicInteractionsCountsByOutcomeRequest, PublicInteractionsByUserRequest, CreateInteractionTypeBody, UpdateInteractionTypeBody, ListInteractionTypesQuery, InteractionTypeRecord, InteractionTypeList } from "../types/interaction";
+import type { AdminInteractionsCountsByOutcomeRequest, AdminInteractionsQueryRequest, AdminInteractionsAggregateRequest, AdminInteractionsAggregateResponse, AppendInteractionBody, UpdateInteractionBody, OutcomeCount, InteractionEventRow, PublicInteractionsCountsByOutcomeRequest, PublicInteractionsByUserRequest, SubmitInteractionResponse, SubmitInteractionError, CreateInteractionTypeBody, UpdateInteractionTypeBody, ListInteractionTypesQuery, InteractionTypeRecord, InteractionTypeList } from "../types/interaction";
 export declare namespace interactions {
     /**
      * POST /admin/collection/:collectionId/interactions/query
@@ -30,11 +30,14 @@ export declare namespace interactions {
         success: true;
     }>;
     /**
-       * Appends one interaction event from a public source.
+       * POST /api/v1/public/collection/:collectionId/interactions/submit
+       *
+       * Submits an interaction event from a public/client-side context.
+       * When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor
+       * `contactId` is required. Pass `anonId` inside `metadata` to enable
+       * device-level deduplication via `uniquePerAnonId`.
        */
-    function submitPublicEvent(collectionId: string, body: AppendInteractionBody): Promise<{
-        success: true;
-    }>;
+    function submitPublicEvent(collectionId: string, body: AppendInteractionBody): Promise<SubmitInteractionResponse | SubmitInteractionError>;
     function create(collectionId: string, body: CreateInteractionTypeBody): Promise<InteractionTypeRecord>;
     function list(collectionId: string, query?: ListInteractionTypesQuery): Promise<InteractionTypeList>;
     function get(collectionId: string, id: string): Promise<InteractionTypeRecord>;

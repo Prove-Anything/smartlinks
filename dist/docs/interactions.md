@@ -119,17 +119,36 @@ await SL.interactions.appendEvent(collectionId, {
 
 ### Public Event Submit
 
-Use in client-side app code. Same body shape as `appendEvent` but hits the public endpoint (respects interaction permissions like `allowPublicSubmit`, `requireAuth`).
+Use in client-side app code. Hits the public endpoint and respects interaction permissions (`allowPublicSubmit`, `allowAnonymousSubmit`, `requireAuth`, etc.).
 
 ```typescript
+// Authenticated submission
 await SL.interactions.submitPublicEvent(collectionId, {
   appId: 'my-app',
   interactionId: 'competition-entry',
   outcome: 'entered',
-  userId: currentUser.id,
+  contactId: currentUser.contactId,
   metadata: { answer: 'Paris' },
 });
+
+// Anonymous submission (interaction must have allowAnonymousSubmit: true)
+const response = await SL.interactions.submitPublicEvent(collectionId, {
+  appId: 'my-app',
+  interactionId: 'nps-score',
+  outcome: '9',
+  metadata: {
+    anonId: SL.utils.getAnonId(),  // device-level dedup signal
+  },
+});
+
+if (!response.success) {
+  if (response.reason === 'duplicate_anon') {
+    // this device has already submitted
+  }
+}
 ```
+
+> **Anonymous submissions** — when `allowAnonymousSubmit: true` is set on the interaction, neither `userId` nor `contactId` is required. Use `utils.getAnonId()` to generate a stable browser-local UUID and pass it as `metadata.anonId`; the server will enforce `uniquePerAnonId` if configured.
 
 ### Update an Existing Event
 
@@ -237,6 +256,8 @@ Set on the interaction type definition via `permissions`:
 | `uniquePerUser` | boolean | Prevent duplicate submissions per user |
 | `uniquePerUserWindowSeconds` | number | Time window for uniqueness (e.g., `86400` = 1 day) |
 | `uniqueOutcome` | string | Outcome tag to check for duplicates (e.g., `"submitted"`) |
+| `uniquePerAnonId` | boolean | Reject a second submission that carries the same `anonId` in metadata |
+| `uniquePerAnonIdWindowSeconds` | number | Time window for `uniquePerAnonId` enforcement; `0` or omitted = all-time |
 | `allowPublicSummary` | boolean | Show counts/aggregates to unauthenticated users |
 | `allowAuthenticatedSummary` | boolean | Show counts/aggregates to authenticated users |
 | `allowOwnRead` | boolean | Let users read their own event history via public API |
@@ -263,8 +284,10 @@ When defining a journey trigger, reference the `interactionId` that should fire 
 
 ```typescript
 import type {
-  AppendInteractionBody,          // Event body for appendEvent / submitPublicEvent
+  AppendInteractionBody,          // Event body for appendEvent and submitPublicEvent
   UpdateInteractionBody,          // Event body for updateEvent
+  SubmitInteractionResponse,      // { success: true; eventId: string }
+  SubmitInteractionError,         // { error: 'FORBIDDEN'; reason: string }
   InteractionEventRow,            // Raw event record returned by query()
   OutcomeCount,                   // { outcome: string | null; count: number }
   InteractionPermissions,         // Full permissions config shape
