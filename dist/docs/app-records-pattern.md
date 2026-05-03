@@ -6,7 +6,8 @@
 >
 > Status: **standard**. New apps MUST follow this contract; existing apps SHOULD migrate.
 >
-> SDK: `@proveanything/smartlinks` ≥ **1.11**, `@proveanything/smartlinks-utils-ui` ≥ **0.7.6**.
+> SDK: `@proveanything/smartlinks` ≥ **1.11**.
+> Admin shell (React only): `@proveanything/smartlinks-utils-ui` ≥ **0.7.6** — required for the admin side if using the React shell; not needed in public widgets.
 
 ---
 
@@ -22,10 +23,10 @@ Every records-based app fits into a 2×2:
 That choice drives **three** things and nothing else:
 
 1. **Manifest:** `cardinality: 'singleton' | 'collection'` and `allowFacetRules: boolean`.
-2. **Admin (`<RecordsAdminShell>`):** pass `cardinality` + include `'rule'` in `scopes` if `allowFacetRules`.
-3. **Public hook:** `useResolvedRecord` (best match) **or** `useCollectedRecords` / `useResolveAllRecords` (all matches).
+2. **Admin:** use `<RecordsAdminShell>` (React) or call the admin SDK functions directly. Pass `cardinality` + include `'rule'` in `scopes` if `allowFacetRules`.
+3. **Public widget:** call `app.records.match()` (best match / singleton) or `app.records.resolveAll()` (all matches / collection). These are plain SDK calls with no framework dependency.
 
-If you only remember one rule: **never write your own resolver**. The shell, the hooks, and the SDK already agree on resolution order. Reimplementing it is how apps drift.
+If you only remember one rule: **never write your own resolution loop**. The server already walks the chain correctly — calling `match()` or `resolveAll()` is the entire public-side implementation.
 
 ---
 
@@ -115,7 +116,11 @@ Declare each record type once in `app.admin.json`. The shell and the platform re
 
 ---
 
-## 4. Admin side — `<RecordsAdminShell>` (the only thing you should be writing)
+## 4. Admin side
+
+> The admin shell and rule editor are part of `@proveanything/smartlinks-utils-ui`, which is a **React-only library**. It is only needed in admin dashboards — never import it in a public widget.
+
+### `<RecordsAdminShell>` (React)
 
 The shell owns: scope tabs, browser pane, rule editor, save/discard, dirty navigation, inheritance markers, deletion, CSV, bulk apply, deep linking. **You only supply the editor for one record's `data`.**
 
@@ -170,7 +175,18 @@ import { FacetRuleEditor } from '@proveanything/smartlinks-utils-ui/facet-rule-e
 
 ---
 
-## 5. Public side — pick the right hook (this is where apps go wrong)
+## 5. Public side
+
+> **Do not import `@proveanything/smartlinks-utils-ui` in a public widget.** It is a React admin library. Public widgets only need `@proveanything/smartlinks`.
+
+The SDK is framework-agnostic. Public widgets call two endpoints depending on cardinality:
+
+| Cardinality | Call | What it does |
+|---|---|---|
+| **Singleton** (one answer) | `app.records.match()` | Server walks the chain, returns the best-matching record |
+| **Collection** (all answers) | `app.records.resolveAll()` | Server walks the chain, returns every matching record |
+
+Neither call requires React or any other framework — wrap them in whatever async pattern your widget uses.
 
 > **Admin vs public — the rule is simple:**
 >
@@ -189,65 +205,48 @@ import { FacetRuleEditor } from '@proveanything/smartlinks-utils-ui/facet-rule-e
 > | `app.records.bulkDelete()` | ❌ admin only — no public path | ✅ |
 > | `app.records.restore()` | ❌ admin only — no public path | ✅ |
 > | `app.records.previewRule()` | ❌ admin only — no public path | ✅ |
->
-> The `admin` parameter on `match()` and `resolveAll()` defaults to `false`, so public widgets that omit it are fine. **Never hardcode `true` in a public widget.** The hooks below always use the public path and are the recommended approach — prefer them over raw SDK calls in widget code.
 
-There is exactly **one decision** to make on the public side, and it follows from the manifest's `cardinality`:
+### 5a. Singleton — `app.records.match()` (best match wins)
 
-### 5a. Singleton → `useResolvedRecord` (best match wins)
+Use when the widget shows **one** answer for the current product (ingredients, nutrition, warranty terms, washing instructions).
 
-Use this when the app shows **one** answer for the current product (ingredients, nutrition, washing instructions, warranty terms).
-
-```tsx
+```ts
 import * as SL from '@proveanything/smartlinks';
-import { useResolvedRecord } from '@proveanything/smartlinks-utils-ui/records-admin';
 
-const { data, source, sourceRef, matchedAt, matchedRule, isLoading } =
-  useResolvedRecord<IngredientsConfig>({
-    SL,
-    appId,
-    collectionId,
-    recordType: 'ingredients',
-    productId,
-    variantId,   // optional
-    batchId,     // optional
-    proofId,     // optional
-  });
-```
-
-The resolver walks `proof → batch → variant → product → rule → facet → collection` and returns the **first match**, plus `matchedAt` so you can render _"From the product record"_ vs _"Matched by rule"_ badges if useful.
-
-> Wrap this once in your app (e.g. `useResolvedIngredientSet`) so the rest of the codebase reads `{ data, isLoading }` and never sees the resolver.
-
-### 5b. Collection → `useCollectedRecords` (every match, ordered)
-
-Use this when the app shows **many** answers aggregated across the chain (FAQs, recipes, SOPs, care tips). Most-specific first by default; pass `sort` to override.
-
-```tsx
-import { useCollectedRecords } from '@proveanything/smartlinks-utils-ui/records-admin';
-
-const { items, isLoading } = useCollectedRecords<FaqEntry>({
-  SL,
-  appId,
-  collectionId,
-  recordType: 'faq',
-  productId,
-  // sort: { kind: 'field', field: 'order', direction: 'asc' },
+const result = await SL.app.records.match(collectionId, appId, {
+  target: { productId, variantId, batchId },  // pass whatever context you have
+  strategy: 'best',
+  recordType: 'ingredients',
 });
 
-// items: CollectedRecord<FaqEntry>[] — each has { data, scope, ref, depth }
+// result.best.ingredients → the single highest-specificity record
+// result.best.ingredients.matchedAt → 'product' | 'rule' | 'facet' | 'collection' | …
 ```
 
-### 5c. Multi-type aggregate → `useResolveAllRecords`
+The server walks `proof → batch → variant → product → rule → facet → collection` and returns the first match.
 
-When you need every record of every type that applies to a context (rare; mostly executors and SEO surfaces).
+### 5b. Collection — `app.records.resolveAll()` (every match, ordered)
 
-```tsx
-import { useResolveAllRecords } from '@proveanything/smartlinks-utils-ui/records-admin';
+Use when the widget shows **many** answers across the chain (FAQs, recipes, care tips, SOPs).
 
-const { entries, isLoading } = useResolveAllRecords({
-  SL, collectionId, appId,
-  context: { productId, facets: { brand: 'acme', category: ['bread'] } },
+```ts
+const result = await SL.app.records.resolveAll(collectionId, appId, {
+  target: { productId },
+  recordTypes: ['faq'],
+});
+
+// result.records → AppRecord[] sorted most-specific first
+// each record has .matchedAt, .data, .scope
+```
+
+### 5c. Multi-type — `app.records.resolveAll()` with multiple record types
+
+When you need records of several types in one call (rare; executors, SEO surfaces):
+
+```ts
+const result = await SL.app.records.resolveAll(collectionId, appId, {
+  target: { productId, facets: { brand: 'acme' } },
+  recordTypes: ['ingredients', 'nutrition', 'allergens'],
 });
 ```
 
@@ -255,15 +254,15 @@ const { entries, isLoading } = useResolveAllRecords({
 
 | ❌ Anti-pattern                                            | ✅ Do this instead                                                |
 | ---------------------------------------------------------- | ----------------------------------------------------------------- |
-| Calling `SL.app.records.list()` and filtering client-side  | `useResolvedRecord` (singleton) or `useCollectedRecords` (collection). The server already knows the chain. |
-| Calling `SL.app.records.list(…, true)` from a public widget | Omit the `admin` flag (defaults to `false`). `list()` has a public path — just don't pass `true`. |
-| Calling `SL.app.records.match(…, true)` from a public widget | Omit the `admin` flag (defaults to `false`) or use `useResolvedRecord` / `useCollectedRecords`. |
-| Calling `SL.app.records.resolveAll(…, true)` from a public widget | Omit the `admin` flag (defaults to `false`) or use `useResolveAllRecords`. |
-| Calling `upsert`, `bulkUpsert`, `bulkDelete`, or `previewRule` from widget code | Those are admin-only. Widget code reads data — it never writes records directly. |
-| Walking the chain by hand with multiple `getConfig` calls  | One hook call. The resolver is tested, cached, and includes rules. |
+| Importing anything from `@proveanything/smartlinks-utils-ui` in a public widget | That package is React-only and admin-only. Public widgets only use `@proveanything/smartlinks`. |
+| Calling `SL.app.records.list()` and filtering client-side  | `app.records.match()` (singleton) or `app.records.resolveAll()` (collection). The server walks the chain. |
+| Calling `SL.app.records.list(…, true)` from a public widget | Omit the `admin` flag — it defaults to `false`. |
+| Calling `SL.app.records.match(…, true)` from a public widget | Omit the `admin` flag — it defaults to `false`. |
+| Calling `SL.app.records.resolveAll(…, true)` from a public widget | Omit the `admin` flag — it defaults to `false`. |
+| Calling `upsert`, `bulkUpsert`, `bulkDelete`, or `previewRule` from widget code | Those are admin-only. Widget code reads data; it never writes records. |
+| Walking the chain by hand with multiple `get` / `list` calls | One `match()` or `resolveAll()` call. The server handles the resolution order including rules. |
 | Treating `facet:key:value` refs as the rule mechanism      | Use `facetRule` (`{ all: [{ facetKey, anyOf: [...] }] }`). Multi-condition, scored by specificity. |
 | Reading `matchedAt === 'global'`                           | There is no `'global'`. The top of the chain is `'collection'`.  |
-| Building your own `<FacetRuleEditor>`                      | Use the one from `@proveanything/smartlinks-utils-ui/facet-rule-editor`. |
 
 ---
 
@@ -305,24 +304,36 @@ interface EditorContext<TData> {
 2. **Add `cardinality` and `allowFacetRules`** to every entry under `records` in `app.admin.json`.
 3. **Add `'rule'` (and `'collection'` if missing) to `scopes`** wherever `allowFacetRules: true`.
 4. **Pass `cardinality`** to `<RecordsAdminShell>`.
-5. **Replace any handwritten chain walking** with `useResolvedRecord` (singleton) or `useCollectedRecords` (collection).
-6. **Delete any code that constructs `facet:key:value` refs** for matching. Use `facetRule` via the shell or `<FacetRuleEditor>`.
+5. **Replace any handwritten chain walking** with `app.records.match()` (singleton) or `app.records.resolveAll()` (collection). If you are using React, the `useResolvedRecord` / `useCollectedRecords` hooks from `@proveanything/smartlinks-utils-ui` wrap these calls — but they are **admin-side React helpers**, not for public widgets.
+6. **Delete any code that constructs `facet:key:value` refs** for matching. Use `facetRule` via the shell or `<FacetRuleEditor>` (React admin) or pass `facetRule` directly in `upsert()` calls.
 7. **Search for the word "global"** in your code/docs and rename to "collection" — this is the most common source of confusion.
 
 ---
 
 ## 8. Where the canonical exports live
 
-| Need                          | Import from                                                            |
-| ----------------------------- | ---------------------------------------------------------------------- |
-| Admin shell                   | `@proveanything/smartlinks-utils-ui/records-admin` → `RecordsAdminShell` |
-| Standalone rule editor        | `@proveanything/smartlinks-utils-ui/facet-rule-editor` → `FacetRuleEditor` |
+### Public widgets (any framework)
+
+| Need | Import from |
+| ---- | ----------- |
+| Best-match resolution (singleton) | `@proveanything/smartlinks` → `SL.app.records.match()` |
+| All-matches resolution (collection) | `@proveanything/smartlinks` → `SL.app.records.resolveAll()` |
+| Record CRUD (public path) | `@proveanything/smartlinks` → `SL.app.records.{list, get, create, update, remove, aggregate}` |
+
+### Admin dashboards (React)
+
+> All of the following are from `@proveanything/smartlinks-utils-ui`, a **React-only** package. Do not use in public widgets.
+
+| Need | Import from |
+| ---- | ----------- |
+| Admin shell | `@proveanything/smartlinks-utils-ui/records-admin` → `RecordsAdminShell` |
+| Standalone rule editor | `@proveanything/smartlinks-utils-ui/facet-rule-editor` → `FacetRuleEditor` |
 | Conditions editor (non-facet) | `@proveanything/smartlinks-utils-ui/conditions-editor` → `ConditionsEditor` |
-| Best-match resolver hook      | `@proveanything/smartlinks-utils-ui/records-admin` → `useResolvedRecord` |
-| All-matches hook              | `@proveanything/smartlinks-utils-ui/records-admin` → `useCollectedRecords` |
-| Multi-type aggregate hook     | `@proveanything/smartlinks-utils-ui/records-admin` → `useResolveAllRecords` |
-| Rule preview ("matches N")    | `@proveanything/smartlinks-utils-ui/records-admin` → `useRulePreview`  |
-| Server-side record CRUD       | `@proveanything/smartlinks` → `SL.app.records.{upsert, list, remove, match, resolveAll}` |
+| Best-match hook (React convenience wrapper) | `@proveanything/smartlinks-utils-ui/records-admin` → `useResolvedRecord` |
+| All-matches hook (React convenience wrapper) | `@proveanything/smartlinks-utils-ui/records-admin` → `useCollectedRecords` |
+| Multi-type hook (React convenience wrapper) | `@proveanything/smartlinks-utils-ui/records-admin` → `useResolveAllRecords` |
+| Rule preview hook | `@proveanything/smartlinks-utils-ui/records-admin` → `useRulePreview` |
+| Admin record CRUD (admin path) | `@proveanything/smartlinks` → `SL.app.records.{upsert, bulkUpsert, bulkDelete, restore, previewRule}` |
 
 ---
 
