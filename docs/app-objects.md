@@ -445,7 +445,7 @@ const productComments = await app.threads.list(collectionId, appId, {
 - **Usage logs** — record product usage metrics
 - **Audit trails** — immutable logs of actions
 - **Loyalty points** — track points earned/redeemed
-- **Per-product / per-facet configuration** — scoped data that varies by product axis (see [records-admin-pattern.md](records-admin-pattern.md))
+- **Per-product / per-facet configuration** — scoped data that varies by product axis (see [app-records-pattern.md](app-records-pattern.md))
 
 ### Key Features
 
@@ -526,7 +526,7 @@ proof  →  batch  →  variant  →  product  →  rule(*)  →  facet(*)  → 
 - `facet(*)` — legacy single-facet anchors, walked alphabetically. Prefer `facetRule` for new work.
 - `collection` — the top of the chain and the catch-all for any record with no anchor fields. **There is no `'global'` tier above collection.**
 
-For a **singleton** record type (one answer wins), use `useResolvedRecord` — it performs this walk server-side and returns the first match plus a `matchedAt` tag. For a **collection** record type (every match is shown), use `useCollectedRecords`. See [records-admin-pattern.md §2](records-admin-pattern.md#2-resolution-order-one-canonical-chain) for the full guide.
+For a **singleton** record type (one answer wins), use `useResolvedRecord` — it performs this walk server-side and returns the first match plus a `matchedAt` tag. For a **collection** record type (every match is shown), use `useCollectedRecords`. See [app-records-pattern.md §2](app-records-pattern.md#2-resolution-order-one-canonical-chain) for the full guide.
 
 ### Singleton Cardinality
 

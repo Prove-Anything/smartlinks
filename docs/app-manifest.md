@@ -270,7 +270,7 @@ See the [Deep Link Discovery guide](deep-link-discovery.md) for the full dual-so
 
 #### `records`
 
-Declares which `app.records` record types the app stores, and which scopes each type supports. Required for any app that follows the [Records-Based Admin Pattern](records-admin-pattern.md). Omit if the app does not use scoped records.
+Declares which `app.records` record types the app stores, and which scopes each type supports. Required for any app that follows the [App Records Pattern](app-records-pattern.md). Omit if the app does not use scoped records.
 
 The platform and the `<RecordsAdminShell>` from `@proveanything/smartlinks-utils-ui` read this block to render the right scope tabs, rule editor, and cardinality-appropriate right pane.
 
@@ -294,7 +294,7 @@ The platform and the `<RecordsAdminShell>` from `@proveanything/smartlinks-utils
 | `scopes`          | string[] | — | Allowed scope kinds in resolution order. Valid values: `"collection"`, `"product"`, `"variant"`, `"batch"`, `"facet"`, `"proof"`, `"rule"`. `'rule'` is a synthetic scope holding `facetRule`-targeted records. `'collection'` replaces the legacy empty-ref catch-all — **there is no `'global'` scope**. |
 | `defaultScope`    | string   | — | The scope the "Create new" button targets in the admin shell. Must be one of the declared `scopes`. |
 
-An app may declare multiple record types under different keys (e.g. `"nutrition"` and `"cooking_steps"`). See [records-admin-pattern.md](records-admin-pattern.md) for the full admin + public pattern.
+An app may declare multiple record types under different keys (e.g. `"nutrition"` and `"cooking_steps"`). See [app-records-pattern.md](app-records-pattern.md) for the full admin + public pattern.
 
 #### `executor`
 

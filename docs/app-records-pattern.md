@@ -1,4 +1,4 @@
-﻿# SmartLinks Records — Admin & Public Pattern
+﻿# SmartLinks App Records Pattern
 
 > Canonical guide for microapps that store **per-product**, **per-facet**, **per-variant**, **per-batch**, or **rule-targeted** data.
 >
@@ -172,6 +172,26 @@ import { FacetRuleEditor } from '@proveanything/smartlinks-utils-ui/facet-rule-e
 
 ## 5. Public side — pick the right hook (this is where apps go wrong)
 
+> **Admin vs public — the rule is simple:**
+>
+> | Function | Public widget | Admin dashboard |
+> |---|---|---|
+> | `app.records.create(…, false)` | ✅ default — omit the flag | ✅ pass `true` |
+> | `app.records.list(…, false)` | ✅ default — omit the flag | ✅ pass `true` |
+> | `app.records.get(…, false)` | ✅ default — omit the flag | ✅ pass `true` |
+> | `app.records.update(…, false)` | ✅ default — omit the flag | ✅ pass `true` |
+> | `app.records.remove(…, false)` | ✅ default — omit the flag | ✅ pass `true` |
+> | `app.records.aggregate(…, false)` | ✅ default — omit the flag | ✅ pass `true` |
+> | `app.records.match(…, false)` | ✅ default — omit the flag | ✅ pass `true` |
+> | `app.records.resolveAll(…, false)` | ✅ default — omit the flag | ✅ pass `true` |
+> | `app.records.upsert()` | ❌ admin only — no public path | ✅ |
+> | `app.records.bulkUpsert()` | ❌ admin only — no public path | ✅ |
+> | `app.records.bulkDelete()` | ❌ admin only — no public path | ✅ |
+> | `app.records.restore()` | ❌ admin only — no public path | ✅ |
+> | `app.records.previewRule()` | ❌ admin only — no public path | ✅ |
+>
+> The `admin` parameter on `match()` and `resolveAll()` defaults to `false`, so public widgets that omit it are fine. **Never hardcode `true` in a public widget.** The hooks below always use the public path and are the recommended approach — prefer them over raw SDK calls in widget code.
+
 There is exactly **one decision** to make on the public side, and it follows from the manifest's `cardinality`:
 
 ### 5a. Singleton → `useResolvedRecord` (best match wins)
@@ -236,6 +256,10 @@ const { entries, isLoading } = useResolveAllRecords({
 | ❌ Anti-pattern                                            | ✅ Do this instead                                                |
 | ---------------------------------------------------------- | ----------------------------------------------------------------- |
 | Calling `SL.app.records.list()` and filtering client-side  | `useResolvedRecord` (singleton) or `useCollectedRecords` (collection). The server already knows the chain. |
+| Calling `SL.app.records.list(…, true)` from a public widget | Omit the `admin` flag (defaults to `false`). `list()` has a public path — just don't pass `true`. |
+| Calling `SL.app.records.match(…, true)` from a public widget | Omit the `admin` flag (defaults to `false`) or use `useResolvedRecord` / `useCollectedRecords`. |
+| Calling `SL.app.records.resolveAll(…, true)` from a public widget | Omit the `admin` flag (defaults to `false`) or use `useResolveAllRecords`. |
+| Calling `upsert`, `bulkUpsert`, `bulkDelete`, or `previewRule` from widget code | Those are admin-only. Widget code reads data — it never writes records directly. |
 | Walking the chain by hand with multiple `getConfig` calls  | One hook call. The resolver is tested, cached, and includes rules. |
 | Treating `facet:key:value` refs as the rule mechanism      | Use `facetRule` (`{ all: [{ facetKey, anyOf: [...] }] }`). Multi-condition, scored by specificity. |
 | Reading `matchedAt === 'global'`                           | There is no `'global'`. The top of the chain is `'collection'`.  |

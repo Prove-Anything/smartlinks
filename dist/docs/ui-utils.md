@@ -19,7 +19,7 @@ translate SDK data into consistent admin interfaces.
 
 **When do you need it?**
 
-- You are building an admin UI for a records-based microapp (see [records-admin-pattern.md](records-admin-pattern.md))
+- You are building an admin UI for a records-based microapp (see [app-records-pattern.md](app-records-pattern.md))
 - You need a media asset picker, icon picker, or font picker in an admin panel
 - You need a recursive rule/conditions editor for targeting or audience logic
 - You want the standard inheritance/override editor for scoped records
@@ -326,7 +326,7 @@ Props:
 
 Free-text facet entry is **not** supported — admins must pick from defined facets.
 
-See [records-admin-pattern.md §4](records-admin-pattern.md#4-admin-side----recordsadminshell-the-only-thing-you-should-be-writing) for the standalone usage example.
+See [app-records-pattern.md §4](app-records-pattern.md#4-admin-side----recordsadminshell-the-only-thing-you-should-be-writing) for the standalone usage example.
 
 ---
 
@@ -505,6 +505,6 @@ your microapp                        ← domain logic and custom forms
 
 ## Further reading
 
-- [records-admin-pattern.md](records-admin-pattern.md) — the data contract that `RecordsAdminShell` implements
+- [app-records-pattern.md](app-records-pattern.md) — the data contract that `RecordsAdminShell` implements
 - [building-react-components.md](building-react-components.md) — dual-mode rendering rules that apply to all components
 - [app-manifest.md](app-manifest.md) — the `records` manifest block that drives tab generation
