@@ -32,7 +32,7 @@ If you only remember one rule: **never write your own resolution loop**. The ser
 
 ## 1. The data model in one paragraph
 
-A microapp owns a typed **records table** keyed by `(appId, recordType, id)`. Each `AppRecord` carries a `data` payload plus **either** a structured `scope` (anchored to a node in the chain) **or** a `facetRule` (matches products dynamically by their facets). The server resolves which record(s) apply to a given product context. There is no "global"; the top of the chain is **collection** — anything not explicitly scoped further applies to the whole collection.
+A microapp owns a typed **records table** keyed by `(appId, recordType, id)`. Each `AppRecord` carries a `data` payload plus **either** a structured `scope` (anchored to a node in the chain) **or** a `facetRule` (matches products dynamically by their facets). Records also carry a `status` (`'active'` | `'draft'` | `'archived'`) and optional `startsAt` / `expiresAt` timestamps. The server resolves which record(s) apply to a given product context. There is no "global"; the top of the chain is **collection** — anything not explicitly scoped further applies to the whole collection.
 
 ```ts
 import * as SL from '@proveanything/smartlinks';
@@ -219,11 +219,12 @@ const result = await SL.app.records.match(collectionId, appId, {
   recordType: 'ingredients',
 });
 
-// result.best.ingredients → the single highest-specificity record
-// result.best.ingredients.matchedAt → 'product' | 'rule' | 'facet' | 'collection' | …
+// result.data[0] → the single highest-specificity MatchEntry (when strategy: 'best')
+// result.data[0].matchedAt → 'product' | 'rule' | 'facet' | 'collection' | …
+// result.data[0].data → your record payload
 ```
 
-The server walks `proof → batch → variant → product → rule → facet → collection` and returns the first match.
+The server walks `proof → batch → variant → product → rule → facet → collection` and returns the first match. `result.data` will have at most one entry when `strategy: 'best'`.
 
 ### 5b. Collection — `app.records.resolveAll()` (every match, ordered)
 
@@ -231,24 +232,68 @@ Use when the widget shows **many** answers across the chain (FAQs, recipes, care
 
 ```ts
 const result = await SL.app.records.resolveAll(collectionId, appId, {
-  target: { productId },
-  recordTypes: ['faq'],
+  context: { productId },   // note: resolveAll uses 'context', not 'target'
+  recordType: 'faq',        // singular — omit to return all record types
 });
 
-// result.records → AppRecord[] sorted most-specific first
-// each record has .matchedAt, .data, .scope
+// result.records → ResolveAllEntry[] sorted most-specific first
+// each entry: { record: AppRecord, matchedAt, specificity, matchedRule? }
 ```
 
-### 5c. Multi-type — `app.records.resolveAll()` with multiple record types
+### 5c. Multi-type — `app.records.resolveAll()` without a recordType filter
 
-When you need records of several types in one call (rare; executors, SEO surfaces):
+When you need records of all types for a context in one call (rare; executors, SEO surfaces), omit `recordType`:
 
 ```ts
 const result = await SL.app.records.resolveAll(collectionId, appId, {
-  target: { productId, facets: { brand: 'acme' } },
-  recordTypes: ['ingredients', 'nutrition', 'allergens'],
+  context: {
+    productId,
+    facets: { brand: ['acme'] },  // include facets to match rule records
+  },
+  // no recordType → returns all declared types
 });
+
+// result.records → one ResolveAllEntry per matched record, all types interleaved
+// filter client-side by entry.record.recordType if you need to separate them
 ```
+
+### 5d. Status filtering and the draft → active lifecycle
+
+Every record has a `status` field with three canonical values:
+
+| Value | Meaning | Returned to public/owner callers? |
+|---|---|---|
+| `active` | Live and current | ✅ Yes |
+| `draft` | Being prepared, not yet published | ❌ No |
+| `archived` | Previously live, retained for history | ❌ No |
+
+**Enforcement:** `match()`, `resolveAll()`, and `GET /records` (query) now only return `status: "active"` records to public and owner callers. Admin callers receive all statuses as before; use explicit `status` filters (`status=draft`, `status=archived`) to narrow results.
+
+**`active` is the default** when no `status` is supplied on creation, so existing records and simple creation flows are unaffected.
+
+**Draft → publish workflow:** create the record with `status: 'draft'` so it is invisible to public widgets, then update it to `status: 'active'` when ready to publish.
+
+```ts
+// Create a record that is not yet publicly visible
+await SL.app.records.upsert(collectionId, appId, {
+  recordType: 'ingredients',
+  scope: { productId },
+  data: { /* draft payload */ },
+  status: 'draft',
+}, /* admin */ true);
+
+// Publish it
+await SL.app.records.upsert(collectionId, appId, {
+  recordType: 'ingredients',
+  scope: { productId },
+  data: { /* final payload */ },
+  status: 'active',
+}, true);
+```
+
+**Composes with `startsAt` / `expiresAt`:** a record must satisfy **both** the status check and the time window to be returned to public callers. A record that is `active` but whose `startsAt` is in the future, or whose `expiresAt` has passed, is excluded.
+
+---
 
 ### Common mistakes (do not do these)
 
@@ -263,6 +308,8 @@ const result = await SL.app.records.resolveAll(collectionId, appId, {
 | Walking the chain by hand with multiple `get` / `list` calls | One `match()` or `resolveAll()` call. The server handles the resolution order including rules. |
 | Treating `facet:key:value` refs as the rule mechanism      | Use `facetRule` (`{ all: [{ facetKey, anyOf: [...] }] }`). Multi-condition, scored by specificity. |
 | Reading `matchedAt === 'global'`                           | There is no `'global'`. The top of the chain is `'collection'`.  |
+| Expecting `draft` or `archived` records to appear in public widget results | Public/owner callers only receive `status: "active"` records from `match()`, `resolveAll()`, and `GET /records`. Use admin calls to query by other statuses. |
+| Setting `status: 'active'` and wondering why a record is still hidden | Check `startsAt` / `expiresAt` — a record must satisfy both the status check and the time window. |
 
 ---
 
@@ -307,6 +354,7 @@ interface EditorContext<TData> {
 5. **Replace any handwritten chain walking** with `app.records.match()` (singleton) or `app.records.resolveAll()` (collection). If you are using React, the `useResolvedRecord` / `useCollectedRecords` hooks from `@proveanything/smartlinks-utils-ui` wrap these calls — but they are **admin-side React helpers**, not for public widgets.
 6. **Delete any code that constructs `facet:key:value` refs** for matching. Use `facetRule` via the shell or `<FacetRuleEditor>` (React admin) or pass `facetRule` directly in `upsert()` calls.
 7. **Search for the word "global"** in your code/docs and rename to "collection" — this is the most common source of confusion.
+8. **Audit records that should not be public yet:** any record that previously relied on obscurity (e.g. not linked in the widget, no active product) is now filtered by `status`. Set `status: 'draft'` on records that are not ready and `status: 'active'` when publishing. Records without an explicit status were created as `active` and are unaffected.
 
 ---
 
