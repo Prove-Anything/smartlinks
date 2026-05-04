@@ -16919,6 +16919,9 @@ components:
           additionalProperties: true
         location:
           $ref: "#/components/schemas/AuthLocation"
+        prefs:
+          type: object
+          additionalProperties: true
       required:
         - id
         - uid

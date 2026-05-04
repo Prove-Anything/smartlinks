@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.11.9  |  Generated: 2026-05-03T09:07:00.199Z
+Version: 1.11.10  |  Generated: 2026-05-03T11:56:35.287Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2695,6 +2695,7 @@ interface AccountInfoResponse {
   sites?: Record<string, boolean>
   whitelabel?: Record<string, any>
   location?: AuthLocation | null
+  prefs?: Record<string, any>
   [key: string]: any
 }
 ```

@@ -219,11 +219,12 @@ const result = await SL.app.records.match(collectionId, appId, {
   recordType: 'ingredients',
 });
 
-// result.best.ingredients → the single highest-specificity record
-// result.best.ingredients.matchedAt → 'product' | 'rule' | 'facet' | 'collection' | …
+// result.data[0] → the single highest-specificity MatchEntry (when strategy: 'best')
+// result.data[0].matchedAt → 'product' | 'rule' | 'facet' | 'collection' | …
+// result.data[0].data → your record payload
 ```
 
-The server walks `proof → batch → variant → product → rule → facet → collection` and returns the first match.
+The server walks `proof → batch → variant → product → rule → facet → collection` and returns the first match. `result.data` will have at most one entry when `strategy: 'best'`.
 
 ### 5b. Collection — `app.records.resolveAll()` (every match, ordered)
 
@@ -231,23 +232,29 @@ Use when the widget shows **many** answers across the chain (FAQs, recipes, care
 
 ```ts
 const result = await SL.app.records.resolveAll(collectionId, appId, {
-  target: { productId },
-  recordTypes: ['faq'],
+  context: { productId },   // note: resolveAll uses 'context', not 'target'
+  recordType: 'faq',        // singular — omit to return all record types
 });
 
-// result.records → AppRecord[] sorted most-specific first
-// each record has .matchedAt, .data, .scope
+// result.records → ResolveAllEntry[] sorted most-specific first
+// each entry: { record: AppRecord, matchedAt, specificity, matchedRule? }
 ```
 
-### 5c. Multi-type — `app.records.resolveAll()` with multiple record types
+### 5c. Multi-type — `app.records.resolveAll()` without a recordType filter
 
-When you need records of several types in one call (rare; executors, SEO surfaces):
+When you need records of all types for a context in one call (rare; executors, SEO surfaces), omit `recordType`:
 
 ```ts
 const result = await SL.app.records.resolveAll(collectionId, appId, {
-  target: { productId, facets: { brand: 'acme' } },
-  recordTypes: ['ingredients', 'nutrition', 'allergens'],
+  context: {
+    productId,
+    facets: { brand: ['acme'] },  // include facets to match rule records
+  },
+  // no recordType → returns all declared types
 });
+
+// result.records → one ResolveAllEntry per matched record, all types interleaved
+// filter client-side by entry.record.recordType if you need to separate them
 ```
 
 ### Common mistakes (do not do these)

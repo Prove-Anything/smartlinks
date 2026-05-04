@@ -79,5 +79,6 @@ export interface AccountInfoResponse {
     sites?: Record<string, boolean>;
     whitelabel?: Record<string, any>;
     location?: AuthLocation | null;
+    prefs?: Record<string, any>;
     [key: string]: any;
 }
