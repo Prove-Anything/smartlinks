@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.11.11  |  Generated: 2026-05-04T14:03:01.290Z
+Version: 1.11.13  |  Generated: 2026-05-05T09:55:20.018Z
 
 This is a concise summary of all available API functions and types.
 
@@ -110,6 +110,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **jobs** - Functions for jobs operations
 - **journeysAnalytics** - Functions for journeysAnalytics operations
 - **location** - Functions for location operations
+- **navigation** - Functions for navigation operations
 - **order** - Functions for order operations
 - **products** - Functions for products operations
 - **realtime** - Functions for realtime operations
@@ -5669,6 +5670,57 @@ interface RecordLoyaltyTransactionBody {
 
 **DataBlock** = `Record<string, unknown>`
 
+### navigation
+
+**ResolveLinkContext** (interface)
+```typescript
+interface ResolveLinkContext {
+  * True when running inside a SmartLinks container, widget, or iframe.
+  * Defaults to auto-detection via `window.parent !== window`.
+  embedded?: boolean;
+  * Override for the `postMessage` target window.
+  * Defaults to `window.parent`. Useful in tests and hosts that proxy messages.
+  postTarget?: Window | null;
+  * Override for the navigation window.
+  * Defaults to `window`. Useful in tests.
+  win?: Window;
+  * When provided, `resolveLink` automatically fires a `click_link` analytics
+  * event via `SL.analytics.browser.trackLinkClick` immediately before
+  * navigating. Supply at minimum `collectionId`; add `productId`, `proofId`,
+  * or any other `CollectionAnalyticsEvent` fields you want on the event.
+  *
+  * The resolver derives `isExternal`, `destinationAppId`, `linkTitle`, and
+  * `href` from the `LinkTarget` automatically. Fields you supply here take
+  * precedence over the derived values if there is a conflict.
+  *
+  * Called synchronously so the event fires even for external `_blank` links
+  * that unload the page immediately after.
+  *
+  * @example
+  *   SL.navigation.resolveLink(link, {
+  *     track: { collectionId, productId },
+  *   });
+  track?: LinkTrackingContext;
+}
+```
+
+**ResolvedLink** (interface)
+```typescript
+interface ResolvedLink {
+  navigate(): void;
+  describe(): string;
+}
+```
+
+**LinkOpenTarget** = `'_self' | '_blank'`
+
+**LinkTarget** = ``
+
+**LinkTrackingContext** (type)
+```typescript
+type LinkTrackingContext = { collectionId: string }
+```
+
 ### nfc
 
 **NfcTagInfo** (interface)
@@ -8559,6 +8611,11 @@ List available AI models
 
 **get**(collectionId: string, modelId: string) → `Promise<AIModel>`
 Get specific model information
+
+### navigation
+
+**resolveLink**(link: LinkTarget, ctx: ResolveLinkContext = {}) → `ResolvedLink`
+Resolve a stored `LinkTarget` into an executable navigation action. The resolver handles the embedded/standalone distinction automatically: | Kind              | Embedded (container/widget/iframe)                            | Standalone        | |-------------------|---------------------------------------------------------------|-------------------| | `external _blank` | `window.open(url, '_blank', 'noopener,noreferrer')`           | same              | | `external _self`  | `window.location.assign(url)`                                 | same              | | `app` / `deep`    | `postMessage` to parent shell; shell appends context params   | hash-route assign | Context params (`collectionId`, `productId`, `proofId`, etc.) are **not** included in the message payload — the parent SmartLinks shell owns them and appends them before broadcasting the navigation event. const r = SL.navigation.resolveLink(config.ctaLink); r.navigate();                // perform navigation button.ariaLabel = r.describe();  // human-readable label
 
 ### nfc
 

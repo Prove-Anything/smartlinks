@@ -21044,6 +21044,28 @@ components:
           type: string
       required:
         - points
+    ResolveLinkContext:
+      type: object
+      properties:
+        embedded:
+          type: boolean
+        postTarget:
+          $ref: "#/components/schemas/Window"
+        win:
+          $ref: "#/components/schemas/Window"
+        track:
+          $ref: "#/components/schemas/LinkTrackingContext"
+    ResolvedLink:
+      type: object
+      properties: {}
+    LinkOpenTarget:
+      type: string
+      enum:
+        - _self
+        - _blank
+    LinkTrackingContext:
+      type: object
+      properties: {}
     NfcTagInfo:
       type: object
       properties:

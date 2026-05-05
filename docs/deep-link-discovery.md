@@ -2,6 +2,8 @@
 
 Complete guide to registering and discovering navigable states in SmartLinks apps, enabling portal menus, AI orchestrators, and other apps to deep-link directly into specific views.
 
+This doc covers both sides of the contract: **suppliers** declare their navigable states in the manifest and app config; **consumers** discover those states at runtime, present them in a `LinkPicker` (admin), and resolve them with `SL.navigation.resolveLink` (public widgets and executors). External URLs and in-platform deep links are both first-class `LinkTarget` variants — a single type persisted, a single resolver called at the point of navigation.
+
 ---
 
 ## Table of Contents
@@ -19,7 +21,8 @@ Complete guide to registering and discovering navigable states in SmartLinks app
   - [Portal Navigation Menu](#portal-navigation-menu)
   - [AI Orchestration](#ai-orchestration)
   - [Cross-App Navigation](#cross-app-navigation)
-  - [Building a Cross-App Deep-Link Picker](#building-a-cross-app-deep-link-picker)
+  - [Link Picker — Admin Configuration](#link-picker--admin-configuration)
+  - [Rendering Links at Runtime](#rendering-links-at-runtime)
 - [TypeScript Types](#typescript-types)
 - [Supplier Responsibilities](#supplier-responsibilities)
 - [Consumer Responsibilities](#consumer-responsibilities)
@@ -95,10 +98,11 @@ Both roles are required for end-to-end cross-app linking to work. An app that on
 ### Consumer checklist
 
 - [ ] Uses `SL.collection.getAppsConfig(collectionId)` to discover installed apps — never hard-codes `appId`s
-- [ ] Merges `manifest.linkable` + `config.linkable` to present the full set of navigable states
-- [ ] Persists chosen links as `AppDeepLink` (never a raw URL)
-- [ ] Navigates with `onNavigate({ appId, deepLink, params })` — never `window.open` or `<a href>`
-- [ ] Shows a picker UI in admin — never a free-text field for app IDs or URLs
+- [ ] Merges `manifest.linkable` + `config.linkable` to present navigable states in the picker
+- [ ] Persists the admin's choice as a `LinkTarget` discriminated union — never a raw URL string
+- [ ] Renders / navigates using `SL.navigation.resolveLink(link)` — never `window.open` or `<a href>` directly
+- [ ] Uses `<LinkPicker />` from `@proveanything/smartlinks-utils-ui` in admin — never a free-text field for app IDs or URLs
+- [ ] External URLs are configured through `LinkPicker` too (kind: `'external'`), not a separate field
 
 ---
 
@@ -496,25 +500,37 @@ if (entry) {
 
 ---
 
-### Building a Cross-App Deep-Link Picker
+### Link Picker — Admin Configuration
 
-When an admin needs to configure which app and page to link to, **never use a free-text field**. Use `SL.collection.getAppsConfig` to discover what's installed, present a two-step picker (App → Page), and persist the result as `AppDeepLink`.
+When an admin needs to configure any outbound link — to another installed app, a specific page within an app, or an external URL — **never use a bare text input**. Use `<LinkPicker />` from `@proveanything/smartlinks-utils-ui`. It handles all three `LinkTarget` kinds and produces a single `LinkTarget` value to persist.
 
-#### Why not a free-text URL?
+```tsx
+import { LinkPicker, type LinkTarget } from '@proveanything/smartlinks-utils-ui';
 
-Hard-coded URLs break when:
-- The target app is re-deployed on a new domain.
-- The user is inside a container and full-page navigation would destroy their session.
-- Platform context (`collectionId`, `productId`, `proofId`) needs to flow to the destination — URLs lose it, deep links keep it.
-
-#### Step 1 — Discover installed apps
-
-```typescript
-const apps = await SL.collection.getAppsConfig(collectionId, { admin: true });
-// Returns all installed apps, each with its manifest and saved config
+<LinkPicker
+  collectionId={collectionId}
+  currentAppId={appId}          // include self in the app list
+  value={config.ctaLink}        // LinkTarget | null
+  onChange={(next) => setConfig({ ...config, ctaLink: next })}
+  label="Button destination"
+  helpText="Choose an installed app, a specific page, or an external URL."
+/>
 ```
 
-#### Step 2 — Merge linkable entries for the chosen app
+`LinkPicker` internally calls `SL.collection.getAppsConfig`, merges `manifest.linkable` + `config.linkable` for whichever app is selected, and lets the admin pick the link kind (external / app / deep link). You never need to build this UI yourself.
+
+#### What `LinkPicker` produces
+
+| Admin selects | `LinkTarget` stored |
+|---------------|---------------------|
+| External URL (opens in new tab) | `{ kind: 'external', url: '…', target: '_blank', rel: 'noopener noreferrer' }` |
+| External URL (same tab) | `{ kind: 'external', url: '…', target: '_self' }` |
+| An installed app, no specific page | `{ kind: 'app', appId: '…' }` |
+| An installed app + specific page | `{ kind: 'deep', appId: '…', deepLinkId: '…', params: {…} }` |
+
+#### How app/deep links are discovered inside the picker
+
+The picker calls `SL.collection.getAppsConfig` and for the chosen app merges:
 
 ```typescript
 const entries: DeepLinkEntry[] = [
@@ -523,94 +539,99 @@ const entries: DeepLinkEntry[] = [
 ];
 ```
 
-If an app has no entries, show a single "Default route only" option that resolves to `path: '/'`. This signals to admins that the app exists but hasn't declared any specific deep links yet.
+If an app has no declared entries, the picker offers the `app` kind ("Open app — default route") so the admin can still configure a link to it.
 
-#### Step 3 — Persist as `AppDeepLink`, never as a URL
+> **`kind: 'app'` and discoverability:** An app linked via `kind: 'app'` opens to its default route. If you want that default landing to have a meaningful title in the picker and in AI orchestration, declare a `linkable` entry for `"/"` in your manifest — it will appear as an explicit option rather than the fallback.
 
-```typescript
-// Correct — portable, context-preserving
-const link: AppDeepLink = {
-  appId: app.appId,
-  path: entry.path ?? '/',
-  params: entry.params,
-  label: entry.title,   // cache for display; re-resolve at render time
-};
-```
+#### Persisting the value
 
-The `label` field is a display-only cache. At render time, re-resolve the entry via `getAppsConfig` to detect renamed or removed pages and surface a warning if the stored path no longer exists.
-
-#### Step 4 — Navigate at runtime
+`LinkTarget` is the persistence type. Store it as-is in your app config — never convert to a URL string before saving.
 
 ```typescript
-const { onNavigate } = useAppContext();
+// ✅ Correct
+await SL.appConfiguration.setConfig({
+  collectionId, appId,
+  config: { ...config, ctaLink: linkTarget },
+  admin: true,
+});
 
-onNavigate({
-  appId: link.appId,
-  deepLink: link.path,
-  params: link.params,
+// ❌ Wrong — you've thrown away the kind, params, and context-injection
+await SL.appConfiguration.setConfig({
+  collectionId, appId,
+  config: { ...config, ctaUrl: resolvedUrl },
+  admin: true,
 });
 ```
 
-#### Worked example — Raffle "See the prizes" button
+---
 
-```tsx
-// --- Admin side ---
-function PrizesLinkField({ collectionId, value, onChange }) {
-  const [apps, setApps] = useState([]);
+### Rendering Links at Runtime
 
-  useEffect(() => {
-    SL.collection.getAppsConfig(collectionId, { admin: true }).then(setApps);
-  }, [collectionId]);
+In public widgets, executors, and any non-admin context, resolve a stored `LinkTarget` with `SL.navigation.resolveLink`. This is pure SDK — no React, no admin package dependency.
 
-  return (
-    <>
-      {/* App dropdown */}
-      <select onChange={e => onChange({ appId: e.target.value, path: '/', label: '' })}>
-        <option value="">— Choose an app —</option>
-        {apps.map(a => (
-          <option key={a.appId} value={a.appId}>{a.manifest?.meta?.name ?? a.appId}</option>
-        ))}
-      </select>
+```typescript
+import * as SL from '@proveanything/smartlinks';
+import type { LinkTarget } from '@proveanything/smartlinks';
 
-      {/* Page dropdown for chosen app */}
-      {value?.appId && (() => {
-        const app = apps.find(a => a.appId === value.appId);
-        const entries = [
-          ...(app?.manifest?.linkable ?? []),
-          ...(app?.config?.linkable ?? []),
-        ];
-        if (entries.length === 0) {
-          return <select disabled><option>Default route only</option></select>;
-        }
-        return (
-          <select onChange={e => {
-            const entry = entries[+e.target.value];
-            onChange({ appId: value.appId, path: entry.path ?? '/', params: entry.params, label: entry.title });
-          }}>
-            {entries.map((entry, i) => (
-              <option key={i} value={i}>{entry.title}</option>
-            ))}
-          </select>
-        );
-      })()}
-    </>
-  );
-}
+const resolved = SL.navigation.resolveLink(link);
 
-// --- Public side ---
-const { onNavigate } = useAppContext();
-{prizesLink && (
-  <button onClick={() => onNavigate({
-    appId: prizesLink.appId,
-    deepLink: prizesLink.path,
-    params: prizesLink.params,
-  })}>
-    See {prizesLink.label ?? 'the prizes'}
-  </button>
-)}
+resolved.navigate();   // executes the navigation (postMessage, location.assign, or window.open)
+resolved.describe();   // plain-text label for aria-label, logging, AI agent descriptions
 ```
 
-> **Tip:** Most consumer apps should use a shared `<DeepLinkPicker />` component from their UI library rather than re-implementing two-stage picker logic. The pattern above illustrates what it must do internally.
+`resolveLink` handles the embedded/standalone distinction automatically:
+
+| `LinkTarget.kind` | Inside container / iframe | Standalone (direct URL) |
+|-------------------|--------------------------|-------------------------|
+| `external` + `_blank` | `window.open(url, '_blank', 'noopener,noreferrer')` | same |
+| `external` + `_self` | `window.location.assign(url)` | same |
+| `app` / `deep` | `postMessage` to parent shell — shell appends `collectionId`, `productId`, `proofId`, etc. | constructs hash route locally and assigns/opens |
+
+You never need to branch on `embedded` yourself — `resolveLink` reads the execution context.
+
+#### React component pattern
+
+```tsx
+import * as SL from '@proveanything/smartlinks';
+import type { LinkTarget } from '@proveanything/smartlinks';
+
+function CTAButton({ link, label }: { link: LinkTarget; label: string }) {
+  const resolved = SL.navigation.resolveLink(link);
+  return (
+    <button type="button" onClick={() => resolved.navigate()} aria-label={resolved.describe()}>
+      {label}
+    </button>
+  );
+}
+```
+
+#### Worked example — Raffle "See the prizes" button (full round-trip)
+
+```tsx
+// --- Admin app (uses LinkPicker from smartlinks-utils-ui) ---
+import { LinkPicker, type LinkTarget } from '@proveanything/smartlinks-utils-ui';
+
+<LinkPicker
+  collectionId={collectionId}
+  currentAppId={appId}
+  value={config.prizesLink}
+  onChange={(prizesLink) => setConfig({ ...config, prizesLink })}
+  label="Prizes page"
+  helpText="Link to a content app describing this raffle's prizes."
+/>
+
+// --- Public widget (uses SL.navigation.resolveLink from @proveanything/smartlinks) ---
+import * as SL from '@proveanything/smartlinks';
+
+function PrizesButton({ link }: { link: LinkTarget }) {
+  const r = SL.navigation.resolveLink(link);
+  return (
+    <button type="button" onClick={() => r.navigate()} aria-label={r.describe()}>
+      See the prizes
+    </button>
+  );
+}
+```
 
 ---
 
@@ -640,25 +661,32 @@ export interface DeepLinkEntry {
 /** Convenience alias for an array of DeepLinkEntry */
 export type DeepLinkRegistry = DeepLinkEntry[];
 
+/** Where the link opens once resolved */
+export type LinkOpenTarget = '_self' | '_blank';
+
 /**
- * A cross-app deep link persisted by a consumer app's config.
- * Never store a raw URL — store this instead.
+ * Discriminated union representing any link a `LinkPicker` can produce.
+ * This is the persistence type — store it as-is in app config; never convert to a URL.
  *
- * At render time, re-resolve via SL.collection.getAppsConfig to detect
- * renamed or removed pages.
+ * Resolved at render time with `SL.navigation.resolveLink(link)`.
  */
-export interface AppDeepLink {
-  /** The target app's appId */
-  appId: string;
-  /** Hash route path within the target app (e.g. "/prizes/2026") */
-  path: string;
-  /** App-specific query params (platform context is injected automatically) */
-  params?: Record<string, string>;
-  /**
-   * Cached display label from the time of selection.
-   * For display only — do not use for navigation decisions.
-   */
-  label?: string;
+export type LinkTarget =
+  /** A URL outside the SmartLinks platform */
+  | { kind: 'external'; url: string; target: LinkOpenTarget; rel?: string }
+  /** Open an installed app at its default route */
+  | { kind: 'app';  appId: string; target?: LinkOpenTarget }
+  /** Open a specific deep-linkable page within an installed app */
+  | { kind: 'deep'; appId: string; deepLinkId: string;
+      params?: Record<string, string>; target?: LinkOpenTarget };
+
+/**
+ * The object returned by `SL.navigation.resolveLink`.
+ * `navigate()` performs the navigation; `describe()` returns a plain-text label
+ * suitable for aria-label attributes and AI agent descriptions.
+ */
+export interface ResolvedLink {
+  navigate(): void;
+  describe(): string;
 }
 ```
 
@@ -681,16 +709,16 @@ Rules for apps that **expose** navigable states to the platform:
 
 ## Consumer Responsibilities
 
-Rules for apps that **navigate to** states in other installed apps:
+Rules for apps that **navigate to** states in other installed apps or external URLs:
 
 1. **Never hard-code `appId`s or URLs** — always discover installed apps via `SL.collection.getAppsConfig(collectionId)`.
 2. **Merge both sources** — always combine `manifest.linkable` and `config.linkable`; never assume all links come from either source alone.
-3. **Persist as `AppDeepLink`** — store `{ appId, path, params, label }`, never a raw URL.
-4. **Navigate with `onNavigate`** — use `useAppContext().onNavigate({ appId, deepLink, params })` for all in-platform navigation; never `window.open` or `<a href>` between apps in the same collection.
-5. **Re-resolve at render time** — cached `label` is for display only; re-resolve via `getAppsConfig` to surface renamed or removed pages.
-6. **Use a picker UI** — admin forms that configure a cross-app link must use a two-stage dropdown (App → Page), never a free-text field.
+3. **Persist as `LinkTarget`** — store the discriminated union `{ kind, … }` as-is in your app config; never convert to a raw URL string before saving.
+4. **Navigate with `SL.navigation.resolveLink`** — call `resolveLink(link).navigate()` for all outbound navigation; never call `window.open`, `window.location.assign`, or `<a href>` directly from app logic.
+5. **Use `<LinkPicker />` in admin** — admin forms that configure any outbound link (internal or external) must use `LinkPicker` from `@proveanything/smartlinks-utils-ui`, never a free-text field.
+6. **External URLs belong in `LinkPicker` too** — `kind: 'external'` is a first-class option, not a separate field. One picker, one stored shape, one resolver.
 7. **Handle missing entries gracefully** — older apps won't have manifest `linkable` entries or `appConfig.linkable`. Always use `?? []` on both sources.
-8. **Show "Default route only" when empty** — if an app has no declared entries, still list it with a single disabled "Default route only" option so admins know it's installed.
+8. **Show fallback for apps with no declared entries** — `LinkPicker` uses `kind: 'app'` (default route) so admins can still link to an app that hasn't declared any deep-linkable pages.
 
 ---
 
@@ -698,13 +726,14 @@ Rules for apps that **navigate to** states in other installed apps:
 
 | ❌ Anti-pattern | ✅ Correct approach |
 |----------------|---------------------|
-| Free-text "Target app ID" field in admin UI | Two-stage picker using `getAppsConfig` |
-| Free-text "URL" field for cross-app links | Persist as `AppDeepLink`; navigate with `onNavigate` |
-| Hard-coded `https://…` links between apps in the same collection | `onNavigate({ appId, deepLink, params })` |
-| `window.open()` / `<a target="_blank">` for in-platform navigation | `onNavigate` from `useAppContext` |
+| Free-text "Target app ID" field in admin UI | `<LinkPicker />` from `smartlinks-utils-ui` |
+| Separate "URL" field next to internal link field | `LinkPicker` handles both; `kind: 'external'` is a first-class option |
+| Hard-coded `https://…` links between apps in the same collection | `kind: 'deep'` / `kind: 'app'` resolved with `SL.navigation.resolveLink` |
+| `window.open()` / `<a target="_blank">` called directly from app logic | `SL.navigation.resolveLink(link).navigate()` |
+| Converting a `LinkTarget` to a URL string before saving | Persist the `LinkTarget` union; resolve at navigation time |
 | Writing static routes to `appConfig.linkable` on install | Declare them in `app.manifest.json` once, at build time |
 | Putting `collectionId` / `productId` in `DeepLinkEntry.params` | Platform injects context automatically — omit them |
 | Patching individual entries in `appConfig.linkable` | Full-replace the array on every sync |
-| Storing a resolved URL when the admin picks a link | Store `AppDeepLink`; resolve the URL only at navigation time |
-| Re-implementing picker logic per app | Share a canonical picker component across your app suite |
+| Importing `LinkPicker` in a public widget or executor | `LinkPicker` is admin-only; use `SL.navigation.resolveLink` in public code |
+| Re-implementing picker logic per app | Use `<LinkPicker />` from `@proveanything/smartlinks-utils-ui` |
 
