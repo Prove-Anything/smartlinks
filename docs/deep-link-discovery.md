@@ -19,8 +19,11 @@ Complete guide to registering and discovering navigable states in SmartLinks app
   - [Portal Navigation Menu](#portal-navigation-menu)
   - [AI Orchestration](#ai-orchestration)
   - [Cross-App Navigation](#cross-app-navigation)
+  - [Building a Cross-App Deep-Link Picker](#building-a-cross-app-deep-link-picker)
 - [TypeScript Types](#typescript-types)
-- [Rules & Best Practices](#rules--best-practices)
+- [Supplier Responsibilities](#supplier-responsibilities)
+- [Consumer Responsibilities](#consumer-responsibilities)
+- [Anti-Patterns](#anti-patterns)
 
 ---
 
@@ -69,6 +72,33 @@ Consumers merge both sources to get the full set of navigable states for an app.
 - ✅ **Dynamic** — content-driven entries update automatically when data changes
 - ✅ **AI-friendly** — machine-readable titles make states naturally addressable by LLMs
 - ✅ **No extra endpoints** — built on top of the existing `appConfiguration` API and the app manifest
+
+---
+
+## Two Roles: Suppliers and Consumers
+
+Deep link discovery is a **two-sided contract**. Every app that participates plays at least one of two roles — often both:
+
+| Role | What you do | Primary surface |
+|------|-------------|-----------------|
+| **Supplier** | Declare your navigable states so other apps and platform features can discover them | `app.manifest.json` and `appConfig.linkable` |
+| **Consumer** | Discover and navigate to states in other installed apps without hard-coding IDs or URLs | Admin picker UI and `onNavigate()` at runtime |
+
+Both roles are required for end-to-end cross-app linking to work. An app that only declares links but never consumes them is incomplete; an app that hard-codes target IDs instead of discovering them is fragile.
+
+### Supplier checklist
+
+- [ ] Static navigable views declared in `app.manifest.json#linkable`
+- [ ] Dynamic content pages synced to `appConfig.linkable` on every create/rename/delete
+- [ ] Every entry has a concise, human-readable `title`
+
+### Consumer checklist
+
+- [ ] Uses `SL.collection.getAppsConfig(collectionId)` to discover installed apps — never hard-codes `appId`s
+- [ ] Merges `manifest.linkable` + `config.linkable` to present the full set of navigable states
+- [ ] Persists chosen links as `AppDeepLink` (never a raw URL)
+- [ ] Navigates with `onNavigate({ appId, deepLink, params })` — never `window.open` or `<a href>`
+- [ ] Shows a picker UI in admin — never a free-text field for app IDs or URLs
 
 ---
 
@@ -462,6 +492,126 @@ if (entry) {
 }
 ```
 
+`onNavigate` automatically forwards `collectionId`, `productId`, `proofId`, and theme — you do not need to pass them.
+
+---
+
+### Building a Cross-App Deep-Link Picker
+
+When an admin needs to configure which app and page to link to, **never use a free-text field**. Use `SL.collection.getAppsConfig` to discover what's installed, present a two-step picker (App → Page), and persist the result as `AppDeepLink`.
+
+#### Why not a free-text URL?
+
+Hard-coded URLs break when:
+- The target app is re-deployed on a new domain.
+- The user is inside a container and full-page navigation would destroy their session.
+- Platform context (`collectionId`, `productId`, `proofId`) needs to flow to the destination — URLs lose it, deep links keep it.
+
+#### Step 1 — Discover installed apps
+
+```typescript
+const apps = await SL.collection.getAppsConfig(collectionId, { admin: true });
+// Returns all installed apps, each with its manifest and saved config
+```
+
+#### Step 2 — Merge linkable entries for the chosen app
+
+```typescript
+const entries: DeepLinkEntry[] = [
+  ...(app.manifest?.linkable ?? []),
+  ...(app.config?.linkable ?? []),
+];
+```
+
+If an app has no entries, show a single "Default route only" option that resolves to `path: '/'`. This signals to admins that the app exists but hasn't declared any specific deep links yet.
+
+#### Step 3 — Persist as `AppDeepLink`, never as a URL
+
+```typescript
+// Correct — portable, context-preserving
+const link: AppDeepLink = {
+  appId: app.appId,
+  path: entry.path ?? '/',
+  params: entry.params,
+  label: entry.title,   // cache for display; re-resolve at render time
+};
+```
+
+The `label` field is a display-only cache. At render time, re-resolve the entry via `getAppsConfig` to detect renamed or removed pages and surface a warning if the stored path no longer exists.
+
+#### Step 4 — Navigate at runtime
+
+```typescript
+const { onNavigate } = useAppContext();
+
+onNavigate({
+  appId: link.appId,
+  deepLink: link.path,
+  params: link.params,
+});
+```
+
+#### Worked example — Raffle "See the prizes" button
+
+```tsx
+// --- Admin side ---
+function PrizesLinkField({ collectionId, value, onChange }) {
+  const [apps, setApps] = useState([]);
+
+  useEffect(() => {
+    SL.collection.getAppsConfig(collectionId, { admin: true }).then(setApps);
+  }, [collectionId]);
+
+  return (
+    <>
+      {/* App dropdown */}
+      <select onChange={e => onChange({ appId: e.target.value, path: '/', label: '' })}>
+        <option value="">— Choose an app —</option>
+        {apps.map(a => (
+          <option key={a.appId} value={a.appId}>{a.manifest?.meta?.name ?? a.appId}</option>
+        ))}
+      </select>
+
+      {/* Page dropdown for chosen app */}
+      {value?.appId && (() => {
+        const app = apps.find(a => a.appId === value.appId);
+        const entries = [
+          ...(app?.manifest?.linkable ?? []),
+          ...(app?.config?.linkable ?? []),
+        ];
+        if (entries.length === 0) {
+          return <select disabled><option>Default route only</option></select>;
+        }
+        return (
+          <select onChange={e => {
+            const entry = entries[+e.target.value];
+            onChange({ appId: value.appId, path: entry.path ?? '/', params: entry.params, label: entry.title });
+          }}>
+            {entries.map((entry, i) => (
+              <option key={i} value={i}>{entry.title}</option>
+            ))}
+          </select>
+        );
+      })()}
+    </>
+  );
+}
+
+// --- Public side ---
+const { onNavigate } = useAppContext();
+{prizesLink && (
+  <button onClick={() => onNavigate({
+    appId: prizesLink.appId,
+    deepLink: prizesLink.path,
+    params: prizesLink.params,
+  })}>
+    See {prizesLink.label ?? 'the prizes'}
+  </button>
+)}
+```
+
+> **Tip:** Most consumer apps should use a shared `<DeepLinkPicker />` component from their UI library rather than re-implementing two-stage picker logic. The pattern above illustrates what it must do internally.
+
 ---
 
 ## TypeScript Types
@@ -489,28 +639,72 @@ export interface DeepLinkEntry {
 
 /** Convenience alias for an array of DeepLinkEntry */
 export type DeepLinkRegistry = DeepLinkEntry[];
+
+/**
+ * A cross-app deep link persisted by a consumer app's config.
+ * Never store a raw URL — store this instead.
+ *
+ * At render time, re-resolve via SL.collection.getAppsConfig to detect
+ * renamed or removed pages.
+ */
+export interface AppDeepLink {
+  /** The target app's appId */
+  appId: string;
+  /** Hash route path within the target app (e.g. "/prizes/2026") */
+  path: string;
+  /** App-specific query params (platform context is injected automatically) */
+  params?: Record<string, string>;
+  /**
+   * Cached display label from the time of selection.
+   * For display only — do not use for navigation decisions.
+   */
+  label?: string;
+}
 ```
 
 ---
 
-## Rules & Best Practices
+## Supplier Responsibilities
 
-### Rules
+Rules for apps that **expose** navigable states to the platform:
 
 1. **Static routes belong in the manifest** — if a route exists regardless of content, declare it in `app.manifest.json`. Do not write it to `appConfig` on first run.
 2. **`appConfig.linkable` is for dynamic content only** — it should contain entries generated from, and varying with, the app's data.
 3. **`linkable` is reserved** — do not use this key for other purposes in either the manifest or `appConfig`.
 4. **No platform context params in entries** — `collectionId`, `appId`, `productId`, `proofId`, `lang`, `theme` are injected by the platform automatically.
 5. **`title` is required** — every entry must have a human-readable label.
-6. **Consumers must merge both sources** — never assume all links come from `appConfig` alone.
-7. **Sync from server** — when updating `appConfig.linkable`, always fetch the latest content state; never rely on a local cache.
-8. **Full replace** — always overwrite the entire `appConfig.linkable` array; never diff or patch individual entries.
+6. **Sync dynamic links eagerly** — trigger a sync immediately after any content change rather than on a schedule. The operation is cheap and idempotent.
+7. **Full replace** — always overwrite the entire `appConfig.linkable` array; never diff or patch individual entries.
+8. **Keep titles short and scannable** — they appear in navigation menus and AI prompts. Prefer "About Us" over "Our Company Story & Mission".
 
-### Best Practices
+---
 
-- **Keep titles short and scannable** — they appear in navigation menus and AI prompts. Prefer "About Us" over "Our Company Story & Mission".
-- **Static first, dynamic second** — when rendering merged links, show static (structural) entries before dynamic (content) entries. This provides a consistent layout even while content is loading.
-- **Sync dynamic links eagerly** — trigger a sync immediately after any content change rather than on a schedule. The operation is cheap and idempotent.
-- **Handle missing entries gracefully** — older apps won't have manifest `linkable` entries or `appConfig.linkable`. Always use `?? []` on both sources.
-- **Don't duplicate the default route** — if your app has only one view, neither source needs a `linkable` entry for it. The app can always be opened to its default state without a deep link.
-- **Test URL resolution** — confirm that your entries produce the correct URLs. Check that params are correctly appended and that platform context params are not doubled up.
+## Consumer Responsibilities
+
+Rules for apps that **navigate to** states in other installed apps:
+
+1. **Never hard-code `appId`s or URLs** — always discover installed apps via `SL.collection.getAppsConfig(collectionId)`.
+2. **Merge both sources** — always combine `manifest.linkable` and `config.linkable`; never assume all links come from either source alone.
+3. **Persist as `AppDeepLink`** — store `{ appId, path, params, label }`, never a raw URL.
+4. **Navigate with `onNavigate`** — use `useAppContext().onNavigate({ appId, deepLink, params })` for all in-platform navigation; never `window.open` or `<a href>` between apps in the same collection.
+5. **Re-resolve at render time** — cached `label` is for display only; re-resolve via `getAppsConfig` to surface renamed or removed pages.
+6. **Use a picker UI** — admin forms that configure a cross-app link must use a two-stage dropdown (App → Page), never a free-text field.
+7. **Handle missing entries gracefully** — older apps won't have manifest `linkable` entries or `appConfig.linkable`. Always use `?? []` on both sources.
+8. **Show "Default route only" when empty** — if an app has no declared entries, still list it with a single disabled "Default route only" option so admins know it's installed.
+
+---
+
+## Anti-Patterns
+
+| ❌ Anti-pattern | ✅ Correct approach |
+|----------------|---------------------|
+| Free-text "Target app ID" field in admin UI | Two-stage picker using `getAppsConfig` |
+| Free-text "URL" field for cross-app links | Persist as `AppDeepLink`; navigate with `onNavigate` |
+| Hard-coded `https://…` links between apps in the same collection | `onNavigate({ appId, deepLink, params })` |
+| `window.open()` / `<a target="_blank">` for in-platform navigation | `onNavigate` from `useAppContext` |
+| Writing static routes to `appConfig.linkable` on install | Declare them in `app.manifest.json` once, at build time |
+| Putting `collectionId` / `productId` in `DeepLinkEntry.params` | Platform injects context automatically — omit them |
+| Patching individual entries in `appConfig.linkable` | Full-replace the array on every sync |
+| Storing a resolved URL when the admin picks a link | Store `AppDeepLink`; resolve the URL only at navigation time |
+| Re-implementing picker logic per app | Share a canonical picker component across your app suite |
+
