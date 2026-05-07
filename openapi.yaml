@@ -16539,7 +16539,7 @@ components:
           type: string
         proofId:
           type: string
-        app:
+        appId:
           type: string
         url:
           type: string
@@ -16618,7 +16618,7 @@ components:
         - site
         - productId
         - proofId
-        - app
+        - appId
         - url
         - thumbnail
         - name
@@ -16769,7 +16769,7 @@ components:
           type: string
         name:
           type: string
-        app:
+        appId:
           type: string
         labels:
           type: array

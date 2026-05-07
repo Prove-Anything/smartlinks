@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.13.0  |  Generated: 2026-05-06T20:31:38.856Z
+Version: 1.13.1  |  Generated: 2026-05-07T10:59:17.642Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2291,7 +2291,7 @@ interface Asset {
   site: string
   productId: string | null
   proofId: string | null
-  app: string | null
+  appId: string | null
   url: string
   * CDN URL of the WebP thumbnail (max 512px longest edge, no crop).
   * Always .webp — null until thumbnail generation has run.
@@ -2427,7 +2427,7 @@ interface UpdateAssetOptions {
   collectionId: string
   assetId: string
   name?: string
-  app?: string
+  appId?: string
   labels?: string[]
   metadata?: Record<string, any>
   thumbnail?: string

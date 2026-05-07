@@ -14,7 +14,7 @@ interface Asset {
   site:         string            // alias for collectionId (compat)
   productId:    string | null     // set when scoped to a product
   proofId:      string | null     // set when scoped to a proof (ledger entry)
-  app:          string | null     // app that owns this asset, e.g. 'homepage'
+  appId:        string | null     // app that owns this asset, e.g. 'homepage'
 
   // File
   url:          string            // CDN URL of the original file

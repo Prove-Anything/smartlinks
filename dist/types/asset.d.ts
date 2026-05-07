@@ -38,7 +38,7 @@ export interface Asset {
     /** Set when scoped to a proof (ledger entry) */
     proofId: string | null;
     /** App that owns this asset, e.g. 'homepage' */
-    app: string | null;
+    appId: string | null;
     /** CDN URL of the original file */
     url: string;
     /**
@@ -230,7 +230,7 @@ export interface UpdateAssetOptions {
     collectionId: string;
     assetId: string;
     name?: string;
-    app?: string;
+    appId?: string;
     labels?: string[];
     metadata?: Record<string, any>;
     /** Manually override the thumbnail URL */

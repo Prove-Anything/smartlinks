@@ -368,7 +368,7 @@ await asset.remove({
   "site": "acme-demo",
   "productId": null,
   "proofId": null,
-  "app": null,
+  "appId": null,
   "name": "product-hero-shot",
   "cleanName": "product-hero-shot",
   "assetType": "Image",
