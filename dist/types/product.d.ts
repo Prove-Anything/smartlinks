@@ -1,3 +1,4 @@
+import { AssetRef } from "./asset";
 export type JsonPrimitive = string | number | boolean | null;
 export type JsonValue = JsonPrimitive | JsonValue[] | {
     [key: string]: JsonValue;
@@ -6,29 +7,6 @@ export type ISODateString = string;
 export interface ProductKey {
     collectionId: string;
     id: string;
-}
-export interface ProductImageThumbnails {
-    x100?: string;
-    x200?: string;
-    x512?: string;
-}
-export interface ProductImage {
-    id?: string;
-    collectionId?: string;
-    productId?: string;
-    site?: string;
-    name?: string;
-    cleanName?: string;
-    assetType?: string;
-    type?: string;
-    url?: string;
-    thumbnails?: ProductImageThumbnails;
-    contentType?: string;
-    size?: string | number;
-    hash?: string;
-    createdAt?: ISODateString | null;
-    updatedAt?: ISODateString | null;
-    deletedAt?: ISODateString | null;
 }
 export interface ProductImageUrlInput {
     url: string;
@@ -79,19 +57,31 @@ export interface Product extends ProductKey {
     name: string;
     description?: string | null;
     gtin?: string | null;
-    ownGtin?: boolean | null;
-    additionalGtins?: AdditionalGtin[];
+    ownGtin?: string | null;
+    additionalGtins?: AdditionalGtin[] | null;
     sku?: string | null;
+    /** Canonical type key, e.g. 'ownable-product' */
+    schemaType?: string | null;
+    /** Alias for schemaType (compat) */
+    type?: string | null;
+    /** First segment of schemaType, e.g. 'ownable' */
+    category?: string | null;
     label?: string | null;
-    status?: string | null;
+    status?: 'active' | 'deleted' | null;
     sortOrder?: number | null;
-    heroImage?: ProductImage | null;
+    /** Slim image reference — use `id` to fetch the full Asset record */
+    heroImage?: AssetRef | null;
+    /** Ordered array of additional image references */
+    additionalImages?: AssetRef[];
     facets?: ProductFacetMap;
+    /** Tag keys where value is true */
+    tags?: Record<string, boolean>;
     data?: Record<string, JsonValue>;
     admin?: Record<string, JsonValue>;
     extra?: Record<string, JsonValue>;
-    validCollections?: string[];
+    validCollections?: string[] | null;
     group?: boolean | null;
+    groupKey?: string | null;
     createdAt?: ISODateString | null;
     updatedAt?: ISODateString | null;
     deletedAt?: ISODateString | null;
@@ -104,14 +94,25 @@ export interface ProductWriteInput {
     name: string;
     description?: string | null;
     gtin?: string | null;
-    ownGtin?: boolean | null;
+    ownGtin?: string | null;
     additionalGtins?: AdditionalGtin[];
     sku?: string | null;
+    schemaType?: string | null;
     label?: string | null;
     status?: string | null;
     sortOrder?: number | null;
-    heroImage?: ProductImage | ProductImageUrlInput | string | null;
+    /**
+     * Pass the existing `AssetRef` unchanged to keep the current image,
+     * or a URL string / `{ url }` object to import a new file.
+     */
+    heroImage?: AssetRef | ProductImageUrlInput | string | null;
+    /**
+     * Pass existing `AssetRef` entries unchanged; replace entries with a URL string
+     * or `{ url }` object to import new files.
+     */
+    additionalImages?: Array<AssetRef | ProductImageUrlInput | string>;
     facets?: ProductFacetMap;
+    tags?: Record<string, boolean>;
     data?: Record<string, JsonValue>;
     admin?: Record<string, JsonValue>;
     extra?: Record<string, JsonValue>;

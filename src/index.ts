@@ -149,8 +149,6 @@ export type {
   ProductClaimLookupInput,
   ProductFacetMap,
   ProductFacetValue,
-  ProductImage,
-  ProductImageThumbnails,
   ProductImageUrlInput,
   ProductKey,
   ProductQueryRequest,

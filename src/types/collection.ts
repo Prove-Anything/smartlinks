@@ -1,4 +1,6 @@
 // src/types/collection.ts
+import { AssetRef } from "./asset"
+
 /**
  * Represents a Collection object.
  */
@@ -10,28 +12,10 @@ export interface Collection {
   /** Description of collection */
   description: string
 
-  /** URL to the collection's larger header/hero image */
-  headerImage?: {
-    /** URL to the asset */
-    url: string
-    /** Thumbnail URLs in different sizes */
-    thumbnails: {
-      x100: string
-      x200: string
-      x512: string
-    }
-  }
-  /** URL to the collection's logo image */
-  logoImage?: {
-    /** URL to the asset */
-    url: string
-    /** Thumbnail URLs in different sizes */
-    thumbnails: {
-      x100: string
-      x200: string
-      x512: string
-    }
-  }
+  /** Slim reference to the collection's header/hero image */
+  headerImage?: AssetRef | null
+  /** Slim reference to the collection's logo image */
+  logoImage?: AssetRef | null
   /** Collection's loader image */
   loaderImage?: {
     /** Override name for the file */

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.12.0  |  Generated: 2026-05-05T10:17:03.386Z
+Version: 1.13.0  |  Generated: 2026-05-06T20:31:38.856Z
 
 This is a concise summary of all available API functions and types.
 
@@ -9,26 +9,41 @@ This is a concise summary of all available API functions and types.
 For detailed guides on specific features:
 
 - **[SmartLinks Microapp Overview](overview.md)** - Platform architecture, data model, auth patterns, storage, anti-patterns, and quick-reference for all SDK docs
+- **[Assets](assets.md)** - Asset object, AssetRef, upload, replace, soft-delete, restore, bulk-delete, and public token-based uploads
 - **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation
 - **[Translations](translations.md)** - Runtime translation lookup, browser-side IndexedDB caching, and admin translation management
 - **[Widgets](widgets.md)** - Embeddable React components for parent applications
-- **[Containers](containers.md)** - Building full-app embeddable containers (lazy-loaded) 
+- **[Building React Components](building-react-components.md)** - Foundational guide to building React widgets and containers for SmartLinks
+- **[Containers](containers.md)** - Building full-app embeddable containers (lazy-loaded)
+- **[Mobile Admin Container](mobile-admin-container.md)** - Building mobile-optimised operator/admin containers as a separate bundle
+- **[Container Tracking](container-tracking.md)** - Hierarchical physical/logical container groupings with item membership
 - **[Scanner Containers](scanner-container.md)** - Building scanner microapps for the SmartLinks Scanner Android host (RFID, NFC, QR, key events)
 - **[Multi-Page App Architecture](mpa.md)** - Vite MPA build pipeline: public/admin entry points, widget/container/executor bundles, content-hashed CDN assets
 - **[App Configuration Files](app-manifest.md)** - `app.manifest.json` and `app.admin.json` reference — bundles, components, setup questions, import schemas, tunable fields, and metrics
 - **[Executor Model](executor.md)** - Programmatic JS bundles for AI-driven setup, server-side SEO metadata generation, and LLM content for AI crawlers
 - **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections
 - **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication
+- **[iframe Streaming Parent Changes](iframe-streaming-parent-changes.md)** - Parent-side changes required to support AI streaming in iframe proxy mode
 - **[Utilities](utils.md)** - Helper functions for building portal paths, URLs, and common tasks
+- **[UI Utils](ui-utils.md)** - Reusable, themeable admin UI React component library for microapps
+- **[Caching](caching.md)** - Multi-tier caching strategy (in-memory, SessionStorage, IndexedDB) used by the SDK
+- **[Native Facade](native-facade.md)** - Contract layer for accessing device capabilities (share, NFC, haptics) across host shells
 - **[i18n](i18n.md)** - Internationalization and localization
 - **[Liquid Templates](liquid-templates.md)** - Dynamic templating for content generation
 - **[Theme System](theme.system.md)** - Theme configuration and customization
 - **[Theme Defaults](theme-defaults.md)** - Default theme values and presets
 - **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)
+- **[Product Facets SDK](PRODUCT_FACETS_SDK.md)** - Admin and public product facet endpoints and TypeScript interfaces
+- **[Attestations](attestations.md)** - Append-only fact log with cryptographic chain integrity, time-series analytics, and public/owner/admin visibility
+- **[Auth Kit](auth-kit.md)** - End-user authentication flows (email/password, magic link, OTP, OAuth) for microapps
 - **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage
+- **[Forms](forms.md)** - Platform-managed form definitions, submissions, and schema-driven React form UI
 - **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more
+- **[App Records Pattern](app-records-pattern.md)** - Canonical pattern for storing per-product, per-facet, or rule-targeted app data
 - **[Communications](comms.md)** - Transactional sends, multi-channel broadcasts, consent management, push registration, and analytics
 - **[Interactions & Event Tracking](interactions.md)** - Log user events, count outcomes, query history, and define interaction types with permissions
+- **[Analytics](analytics.md)** - Web analytics, link-click tracking, QR/tag scan telemetry, and event reporting
+- **[Analytics Metadata Conventions](analytics-metadata-conventions.md)** - Standard recommended keys and conventions for analytics metadata fields
 - **[Loyalty: Points, Members & Earning Rules](loyalty.md)** - Loyalty schemes, automatic point earning via interaction rules, member balances, transaction history, and manual adjustments
 - **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration
 - **[AI-Native App Manifests](manifests.md)** - How AI workflows discover, configure, and import apps via structured manifests and prose guides
@@ -2245,28 +2260,71 @@ interface PublicCreateBranch {
 
 ### asset
 
+**AssetRef** (interface)
+```typescript
+interface AssetRef {
+  id: string
+  url: string
+  thumbnail: string | null
+}
+```
+
+**AssetVersion** (interface)
+```typescript
+interface AssetVersion {
+  url: string
+  mimeType: string | null
+  fileType: string | null
+  size: number | null
+  hash: string | null
+  thumbnail: string | null
+  replacedAt: string
+  replacedBy: string | null
+}
+```
+
 **Asset** (interface)
 ```typescript
 interface Asset {
   id: string
+  collectionId: string
+  site: string
+  productId: string | null
+  proofId: string | null
+  app: string | null
   url: string
+  * CDN URL of the WebP thumbnail (max 512px longest edge, no crop).
+  * Always .webp — null until thumbnail generation has run.
+  thumbnail: string | null
   name: string
-  mimeType?: string
-  size?: number
-  createdAt?: string
-  metadata?: Record<string, any>
-  assetType?: string
-  type?: string
-  collectionId?: string
-  hash?: string
+  cleanName: string | null
+  assetType: 'Image' | 'Video' | 'Audio' | 'Document'
+  fileType: string | null
+  type: string | null
+  mimeType: string | null
+  contentType: string | null
+  size: number | null
+  width: number | null
+  height: number | null
+  hash: string | null
+  labels: string[]
+  metadata: Record<string, any>
+  versions: AssetVersion[]
+  uploadedBy: string | null
+  uploaderContactId: string | null
+  uploadTokenId: string | null
+  uploaderIp: string | null
+  status: 'active' | 'pending_review' | 'deleted'
+  createdAt: string
+  updatedAt: string
+  deletedAt: string | null
+  * @deprecated Use `thumbnail` instead. Legacy multi-size thumbnail map.
   thumbnails?: {
   x100?: string
   x200?: string
   x512?: string
   [key: string]: string | undefined
   }
-  site?: string
-  cleanName?: string
 }
 ```
 
@@ -2334,6 +2392,117 @@ interface RemoveAssetOptions {
   | { type: 'collection'; collectionId: string }
   | { type: 'product'; collectionId: string; productId: string }
   | { type: 'proof'; collectionId: string; productId: string; proofId: string }
+}
+```
+
+**AdminListAssetsOptions** (interface)
+```typescript
+interface AdminListAssetsOptions {
+  collectionId: string
+  productId?: string
+  proofId?: string
+  appId?: string
+  assetType?: 'Image' | 'Video' | 'Audio' | 'Document'
+  labels?: string
+  sort?: 'createdAt' | 'name' | 'size' | 'assetType'
+  order?: 'asc' | 'desc'
+  limit?: number
+  offset?: number
+}
+```
+
+**AdminListAssetsResponse** (interface)
+```typescript
+interface AdminListAssetsResponse {
+  data: Asset[]
+  total: number
+  limit: number
+  offset: number
+}
+```
+
+**UpdateAssetOptions** (interface)
+```typescript
+interface UpdateAssetOptions {
+  collectionId: string
+  assetId: string
+  name?: string
+  app?: string
+  labels?: string[]
+  metadata?: Record<string, any>
+  thumbnail?: string
+}
+```
+
+**ReplaceAssetFileOptions** (interface)
+```typescript
+interface ReplaceAssetFileOptions {
+  collectionId: string
+  assetId: string
+  file: File
+  onProgress?: (percent: number) => void
+}
+```
+
+**DeleteAssetOptions** (interface)
+```typescript
+interface DeleteAssetOptions {
+  collectionId: string
+  assetId: string
+  graceDays?: number
+}
+```
+
+**BulkDeleteAssetsOptions** (interface)
+```typescript
+interface BulkDeleteAssetsOptions {
+  collectionId: string
+  assetIds: string[]
+  graceDays?: number
+}
+```
+
+**RequestUploadTokenOptions** (interface)
+```typescript
+interface RequestUploadTokenOptions {
+  collectionId: string
+  appId: string
+  contactId?: string
+  productId?: string
+  proofId?: string
+}
+```
+
+**UploadTokenPolicy** (interface)
+```typescript
+interface UploadTokenPolicy {
+  requireLevel: 'anonymous' | 'contact' | 'owner'
+  allowedMimeTypes: string[]
+  maxFileSizeBytes: number
+  reviewRequired: boolean
+  productId: string | null
+  proofId: string | null
+}
+```
+
+**UploadTokenResponse** (interface)
+```typescript
+interface UploadTokenResponse {
+  tokenId: string
+  expiresAt: string
+  policy: UploadTokenPolicy
+}
+```
+
+**PublicTokenUploadOptions** (interface)
+```typescript
+interface PublicTokenUploadOptions {
+  collectionId: string
+  tokenId: string
+  file: File
+  name?: string
+  metadata?: Record<string, any>
+  onProgress?: (percent: number) => void
 }
 ```
 
@@ -3190,22 +3359,8 @@ interface Collection {
   id: string
   title: string
   description: string
-  headerImage?: {
-  url: string
-  thumbnails: {
-  x100: string
-  x200: string
-  x512: string
-  }
-  }
-  logoImage?: {
-  url: string
-  thumbnails: {
-  x100: string
-  x200: string
-  x512: string
-  }
-  }
+  headerImage?: AssetRef | null
+  logoImage?: AssetRef | null
   loaderImage?: {
   overwriteName: string
   name: string
@@ -6276,37 +6431,6 @@ interface ProductKey {
 }
 ```
 
-**ProductImageThumbnails** (interface)
-```typescript
-interface ProductImageThumbnails {
-  x100?: string
-  x200?: string
-  x512?: string
-}
-```
-
-**ProductImage** (interface)
-```typescript
-interface ProductImage {
-  id?: string
-  collectionId?: string
-  productId?: string
-  site?: string
-  name?: string
-  cleanName?: string
-  assetType?: string
-  type?: string
-  url?: string
-  thumbnails?: ProductImageThumbnails
-  contentType?: string
-  size?: string | number
-  hash?: string
-  createdAt?: ISODateString | null
-  updatedAt?: ISODateString | null
-  deletedAt?: ISODateString | null
-}
-```
-
 **ProductImageUrlInput** (interface)
 ```typescript
 interface ProductImageUrlInput {
@@ -6378,14 +6502,21 @@ interface ProductWriteInput {
   name: string
   description?: string | null
   gtin?: string | null
-  ownGtin?: boolean | null
+  ownGtin?: string | null
   additionalGtins?: AdditionalGtin[]
   sku?: string | null
+  schemaType?: string | null
   label?: string | null
   status?: string | null
   sortOrder?: number | null
-  heroImage?: ProductImage | ProductImageUrlInput | string | null
+  * Pass the existing `AssetRef` unchanged to keep the current image,
+  * or a URL string / `{ url }` object to import a new file.
+  heroImage?: AssetRef | ProductImageUrlInput | string | null
+  * Pass existing `AssetRef` entries unchanged; replace entries with a URL string
+  * or `{ url }` object to import new files.
+  additionalImages?: Array<AssetRef | ProductImageUrlInput | string>
   facets?: ProductFacetMap
+  tags?: Record<string, boolean>
   data?: Record<string, JsonValue>
   admin?: Record<string, JsonValue>
   extra?: Record<string, JsonValue>
@@ -7633,6 +7764,33 @@ Get an asset by id within a scope (public)
 
 **remove**(options: RemoveAssetOptions) → `Promise<void>`
 Remove an asset by id within a scope (admin)
+
+**listAdmin**(options: AdminListAssetsOptions) → `Promise<AdminListAssetsResponse>`
+List assets for a collection with full filtering options.
+
+**getAdmin**(collectionId: string, assetId: string) → `Promise<Asset>`
+Get a single asset by ID (admin).
+
+**updateAdmin**(options: UpdateAssetOptions) → `Promise<Asset>`
+Update asset metadata (admin). Use `replaceFile` to swap the file.
+
+**replaceFile**(options: ReplaceAssetFileOptions) → `Promise<Asset>`
+Replace the file of an existing asset. The previous file URL is snapshotted into `versions[]` on the asset.
+
+**deleteAdmin**(options: DeleteAssetOptions) → `Promise<`
+Soft-delete an asset. Schedules CDN purge after `graceDays` (default 30). Recoverable via `restoreAdmin` until purge runs.
+
+**restoreAdmin**(collectionId: string, assetId: string) → `Promise<Asset>`
+Restore a soft-deleted asset (clears `deletedAt`).
+
+**bulkDelete**(options: BulkDeleteAssetsOptions) → `Promise<`
+Soft-delete multiple assets in one request.
+
+**requestUploadToken**(options: RequestUploadTokenOptions) → `Promise<UploadTokenResponse>`
+Request a single-use upload token for a public (unauthenticated) upload. The token encodes the upload policy (allowed types, max size, review requirement). ```typescript const { tokenId, policy } = await asset.requestUploadToken({ collectionId: 'my-collection', appId: 'user-gallery', contactId: contact.id, }) const uploaded = await asset.publicUploadWithToken({ collectionId: 'my-collection', tokenId, file: selectedFile, }) ```
+
+**publicUploadWithToken**(options: PublicTokenUploadOptions) → `Promise<Asset>`
+Upload a file using a single-use upload token (no admin auth required). Assets are created with `status: 'pending_review'` when the token policy has `reviewRequired: true`.
 
 ### async
 

@@ -1,5 +1,22 @@
-import { request, post, del, getApiHeaders, isProxyEnabled, proxyUploadFormData } from "../http"
-import { Asset, AssetResponse, UploadAssetOptions, UploadFromUrlOptions, ListAssetsOptions, GetAssetOptions, RemoveAssetOptions } from "../types/asset"
+import { request, post, put, del, getApiHeaders, isProxyEnabled, proxyUploadFormData } from "../http"
+import {
+  Asset,
+  AssetResponse,
+  UploadAssetOptions,
+  UploadFromUrlOptions,
+  ListAssetsOptions,
+  GetAssetOptions,
+  RemoveAssetOptions,
+  AdminListAssetsOptions,
+  AdminListAssetsResponse,
+  UpdateAssetOptions,
+  ReplaceAssetFileOptions,
+  DeleteAssetOptions,
+  BulkDeleteAssetsOptions,
+  RequestUploadTokenOptions,
+  UploadTokenResponse,
+  PublicTokenUploadOptions,
+} from "../types/asset"
 
 export namespace asset {
   /**
@@ -304,5 +321,204 @@ export namespace asset {
       path = `/admin/collection/${encodeURIComponent(scope.collectionId)}/product/${encodeURIComponent(scope.productId)}/proof/${encodeURIComponent(scope.proofId)}/asset/${encodeURIComponent(options.assetId)}`
     }
     return del<void>(path)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Admin asset management — flat collection-scoped endpoints
+  // Base: /api/admin/collection/:collectionId/assets
+  // ---------------------------------------------------------------------------
+
+  /**
+   * List assets for a collection with full filtering options.
+   */
+  export async function listAdmin(options: AdminListAssetsOptions): Promise<AdminListAssetsResponse> {
+    const params = new URLSearchParams()
+    if (options.productId) params.set('productId', options.productId)
+    if (options.proofId) params.set('proofId', options.proofId)
+    if (options.appId) params.set('appId', options.appId)
+    if (options.assetType) params.set('assetType', options.assetType)
+    if (options.labels) params.set('labels', options.labels)
+    if (options.sort) params.set('sort', options.sort)
+    if (options.order) params.set('order', options.order)
+    if (typeof options.limit === 'number') params.set('limit', String(options.limit))
+    if (typeof options.offset === 'number') params.set('offset', String(options.offset))
+    const qs = params.toString()
+    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets${qs ? `?${qs}` : ''}`
+    return request<AdminListAssetsResponse>(path)
+  }
+
+  /**
+   * Get a single asset by ID (admin).
+   */
+  export async function getAdmin(collectionId: string, assetId: string): Promise<Asset> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/assets/${encodeURIComponent(assetId)}`
+    return request<Asset>(path)
+  }
+
+  /**
+   * Update asset metadata (admin). Use `replaceFile` to swap the file.
+   */
+  export async function updateAdmin(options: UpdateAssetOptions): Promise<Asset> {
+    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets/${encodeURIComponent(options.assetId)}`
+    const { collectionId: _c, assetId: _a, ...body } = options
+    return put<Asset>(path, body)
+  }
+
+  /**
+   * Replace the file of an existing asset. The previous file URL is snapshotted
+   * into `versions[]` on the asset.
+   */
+  export async function replaceFile(options: ReplaceAssetFileOptions): Promise<Asset> {
+    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets/${encodeURIComponent(options.assetId)}/replace`
+    const formData = new FormData()
+    formData.append('file', options.file)
+
+    if (options.onProgress && typeof window !== 'undefined' && !isProxyEnabled()) {
+      const url = (typeof window !== 'undefined' && (window as any).SMARTLINKS_API_BASEURL)
+        ? (window as any).SMARTLINKS_API_BASEURL + path
+        : path
+      const headers = getApiHeaders ? getApiHeaders() : {}
+      return new Promise<Asset>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', url)
+        for (const [key, value] of Object.entries(headers)) xhr.setRequestHeader(key, value)
+        xhr.upload.onprogress = (event) => {
+          if (options.onProgress && event.lengthComputable) {
+            options.onProgress(Math.round((event.loaded / event.total) * 100))
+          }
+        }
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try { resolve(JSON.parse(xhr.responseText) as Asset) } catch { reject(new AssetUploadError('Failed to parse server response', 'UNKNOWN')) }
+          } else {
+            try { const e = JSON.parse(xhr.responseText); reject(new AssetUploadError(e?.message || `Replace failed (${xhr.status})`, mapStatusToUploadErrorCode(xhr.status, e?.code), e)) }
+            catch { reject(new AssetUploadError(`Replace failed with status ${xhr.status}`, mapStatusToUploadErrorCode(xhr.status))) }
+          }
+        }
+        xhr.onerror = () => reject(new AssetUploadError('Network error during file replace', 'NETWORK_ERROR'))
+        xhr.send(formData)
+      })
+    }
+
+    return post<Asset>(path, formData)
+  }
+
+  /**
+   * Soft-delete an asset. Schedules CDN purge after `graceDays` (default 30).
+   * Recoverable via `restoreAdmin` until purge runs.
+   */
+  export async function deleteAdmin(options: DeleteAssetOptions): Promise<{ deleted: true }> {
+    const params = new URLSearchParams()
+    if (typeof options.graceDays === 'number') params.set('graceDays', String(options.graceDays))
+    const qs = params.toString()
+    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets/${encodeURIComponent(options.assetId)}${qs ? `?${qs}` : ''}`
+    return del<{ deleted: true }>(path)
+  }
+
+  /**
+   * Restore a soft-deleted asset (clears `deletedAt`).
+   */
+  export async function restoreAdmin(collectionId: string, assetId: string): Promise<Asset> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/assets/${encodeURIComponent(assetId)}/restore`
+    return post<Asset>(path, {})
+  }
+
+  /**
+   * Soft-delete multiple assets in one request.
+   */
+  export async function bulkDelete(options: BulkDeleteAssetsOptions): Promise<{ deleted: number }> {
+    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets/bulk-delete`
+    const body: Record<string, any> = { assetIds: options.assetIds }
+    if (typeof options.graceDays === 'number') body.graceDays = options.graceDays
+    return post<{ deleted: number }>(path, body)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Public (token-based) uploads
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Request a single-use upload token for a public (unauthenticated) upload.
+   * The token encodes the upload policy (allowed types, max size, review requirement).
+   *
+   * @example
+   * ```typescript
+   * const { tokenId, policy } = await asset.requestUploadToken({
+   *   collectionId: 'my-collection',
+   *   appId: 'user-gallery',
+   *   contactId: contact.id,
+   * })
+   * const uploaded = await asset.publicUploadWithToken({
+   *   collectionId: 'my-collection',
+   *   tokenId,
+   *   file: selectedFile,
+   * })
+   * ```
+   */
+  export async function requestUploadToken(options: RequestUploadTokenOptions): Promise<UploadTokenResponse> {
+    const path = `/public/collection/${encodeURIComponent(options.collectionId)}/asset/token`
+    const body: Record<string, any> = { appId: options.appId }
+    if (options.contactId) body.contactId = options.contactId
+    if (options.productId) body.productId = options.productId
+    if (options.proofId) body.proofId = options.proofId
+    return post<UploadTokenResponse>(path, body)
+  }
+
+  /**
+   * Upload a file using a single-use upload token (no admin auth required).
+   * Assets are created with `status: 'pending_review'` when the token policy
+   * has `reviewRequired: true`.
+   */
+  export async function publicUploadWithToken(options: PublicTokenUploadOptions): Promise<Asset> {
+    const path = `/public/collection/${encodeURIComponent(options.collectionId)}/asset`
+    const formData = new FormData()
+    formData.append('file', options.file)
+    if (options.name) formData.append('name', options.name)
+    if (options.metadata) formData.append('metadata', JSON.stringify(options.metadata))
+
+    if (options.onProgress && typeof window !== 'undefined' && !isProxyEnabled()) {
+      const baseUrl = (typeof window !== 'undefined' && (window as any).SMARTLINKS_API_BASEURL)
+        ? (window as any).SMARTLINKS_API_BASEURL + path
+        : path
+      const headers = { ...getApiHeaders(), 'X-Upload-Token': options.tokenId }
+      return new Promise<Asset>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', baseUrl)
+        for (const [key, value] of Object.entries(headers)) xhr.setRequestHeader(key, value)
+        xhr.upload.onprogress = (event) => {
+          if (options.onProgress && event.lengthComputable) {
+            options.onProgress(Math.round((event.loaded / event.total) * 100))
+          }
+        }
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try { resolve(JSON.parse(xhr.responseText) as Asset) } catch { reject(new AssetUploadError('Failed to parse server response', 'UNKNOWN')) }
+          } else {
+            try { const e = JSON.parse(xhr.responseText); reject(new AssetUploadError(e?.message || `Upload failed (${xhr.status})`, mapStatusToUploadErrorCode(xhr.status, e?.code), e)) }
+            catch { reject(new AssetUploadError(`Upload failed with status ${xhr.status}`, mapStatusToUploadErrorCode(xhr.status))) }
+          }
+        }
+        xhr.onerror = () => reject(new AssetUploadError('Network error during public upload', 'NETWORK_ERROR'))
+        xhr.send(formData)
+      })
+    }
+
+    // Pass the token as a header via a custom fetch; post() doesn't accept extra headers,
+    // so we build the request manually using the same base URL resolution.
+    const baseUrl = (typeof window !== 'undefined' && (window as any).SMARTLINKS_API_BASEURL)
+      ? (window as any).SMARTLINKS_API_BASEURL + path
+      : path
+    const headers = { ...getApiHeaders(), 'X-Upload-Token': options.tokenId }
+    const response = await fetch(baseUrl, { method: 'POST', headers, body: formData })
+    if (!response.ok) {
+      let errBody: any
+      try { errBody = await response.json() } catch { /* ignore */ }
+      throw new AssetUploadError(
+        errBody?.message || `Public upload failed (${response.status})`,
+        mapStatusToUploadErrorCode(response.status, errBody?.code),
+        errBody
+      )
+    }
+    return response.json() as Promise<Asset>
   }
 }

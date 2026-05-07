@@ -1,4 +1,4 @@
-import { Asset, AssetResponse, UploadAssetOptions, UploadFromUrlOptions, ListAssetsOptions, GetAssetOptions, RemoveAssetOptions } from "../types/asset";
+import { Asset, AssetResponse, UploadAssetOptions, UploadFromUrlOptions, ListAssetsOptions, GetAssetOptions, RemoveAssetOptions, AdminListAssetsOptions, AdminListAssetsResponse, UpdateAssetOptions, ReplaceAssetFileOptions, DeleteAssetOptions, BulkDeleteAssetsOptions, RequestUploadTokenOptions, UploadTokenResponse, PublicTokenUploadOptions } from "../types/asset";
 export declare namespace asset {
     /**
      * Error type for asset uploads
@@ -73,4 +73,63 @@ export declare namespace asset {
      * Remove an asset by id within a scope (admin)
      */
     function remove(options: RemoveAssetOptions): Promise<void>;
+    /**
+     * List assets for a collection with full filtering options.
+     */
+    function listAdmin(options: AdminListAssetsOptions): Promise<AdminListAssetsResponse>;
+    /**
+     * Get a single asset by ID (admin).
+     */
+    function getAdmin(collectionId: string, assetId: string): Promise<Asset>;
+    /**
+     * Update asset metadata (admin). Use `replaceFile` to swap the file.
+     */
+    function updateAdmin(options: UpdateAssetOptions): Promise<Asset>;
+    /**
+     * Replace the file of an existing asset. The previous file URL is snapshotted
+     * into `versions[]` on the asset.
+     */
+    function replaceFile(options: ReplaceAssetFileOptions): Promise<Asset>;
+    /**
+     * Soft-delete an asset. Schedules CDN purge after `graceDays` (default 30).
+     * Recoverable via `restoreAdmin` until purge runs.
+     */
+    function deleteAdmin(options: DeleteAssetOptions): Promise<{
+        deleted: true;
+    }>;
+    /**
+     * Restore a soft-deleted asset (clears `deletedAt`).
+     */
+    function restoreAdmin(collectionId: string, assetId: string): Promise<Asset>;
+    /**
+     * Soft-delete multiple assets in one request.
+     */
+    function bulkDelete(options: BulkDeleteAssetsOptions): Promise<{
+        deleted: number;
+    }>;
+    /**
+     * Request a single-use upload token for a public (unauthenticated) upload.
+     * The token encodes the upload policy (allowed types, max size, review requirement).
+     *
+     * @example
+     * ```typescript
+     * const { tokenId, policy } = await asset.requestUploadToken({
+     *   collectionId: 'my-collection',
+     *   appId: 'user-gallery',
+     *   contactId: contact.id,
+     * })
+     * const uploaded = await asset.publicUploadWithToken({
+     *   collectionId: 'my-collection',
+     *   tokenId,
+     *   file: selectedFile,
+     * })
+     * ```
+     */
+    function requestUploadToken(options: RequestUploadTokenOptions): Promise<UploadTokenResponse>;
+    /**
+     * Upload a file using a single-use upload token (no admin auth required).
+     * Assets are created with `status: 'pending_review'` when the token policy
+     * has `reviewRequired: true`.
+     */
+    function publicUploadWithToken(options: PublicTokenUploadOptions): Promise<Asset>;
 }

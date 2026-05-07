@@ -95,9 +95,7 @@ A **Product** represents a type or definition of a physical or digital item. Pro
 | `product.gtin` | string | Global Trade Item Number |
 | `product.type` | string | Product type from standard types |
 | `product.heroImage.url` | string | Primary product image URL |
-| `product.heroImage.thumbnails.x100` | string | 100px thumbnail |
-| `product.heroImage.thumbnails.x200` | string | 200px thumbnail |
-| `product.heroImage.thumbnails.x512` | string | 512px thumbnail |
+| `product.heroImage.thumbnail` | string | WebP thumbnail URL (max 512px longest edge), or null if not yet generated |
 | `product.tags` | object | Tag map with boolean values |
 | `product.data` | object | Flexible key-value data map |
 | `product.admin` | object | Admin-only configuration |

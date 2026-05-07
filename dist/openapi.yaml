@@ -105,6 +105,144 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CollectionCreateRequest"
+  /admin/collection/assets:
+    get:
+      tags:
+        - asset
+      summary: List assets for a collection with full filtering options.
+      operationId: asset_listAdmin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: productId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: proofId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: appId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: assetType
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - Image
+              - Video
+              - Audio
+              - Document
+        - name: labels
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - createdAt
+              - name
+              - size
+              - assetType
+        - name: order
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: collectionId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminListAssetsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    put:
+      tags:
+        - asset
+      summary: Update asset metadata (admin).
+      operationId: asset_updateAdmin
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAssetOptions"
+  /admin/collection/assets/replace:
+    post:
+      tags:
+        - asset
+      summary: Replace the file of an existing asset.
+      operationId: asset_replaceFile
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReplaceAssetFileOptions"
   /admin/collection/product/batch/{batchId}:
     get:
       tags:
@@ -912,6 +1050,70 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ResponsesRequest"
+  /admin/collection/{collectionId}/assets/{assetId}:
+    get:
+      tags:
+        - asset
+      summary: Get a single asset by ID (admin).
+      operationId: asset_getAdmin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/assets/{assetId}/restore:
+    post:
+      tags:
+        - asset
+      summary: "Restore a soft-deleted asset (clears `deletedAt`)."
+      operationId: asset_restoreAdmin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/assignSN/{codeId}:
     post:
       tags:
@@ -8623,6 +8825,32 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/collection/asset/token:
+    post:
+      tags:
+        - asset
+      summary: Request a single-use upload token for a public (unauthenticated) upload.
+      operationId: asset_requestUploadToken
+      security: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadTokenResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RequestUploadTokenOptions"
   /public/collection/getShortId/{shortId}:
     get:
       tags:
@@ -16257,31 +16485,123 @@ components:
       properties:
         editToken:
           type: string
-    Asset:
+    AssetRef:
       type: object
       properties:
         id:
           type: string
         url:
           type: string
-        name:
+        thumbnail:
+          type: string
+      required:
+        - id
+        - url
+        - thumbnail
+    AssetVersion:
+      type: object
+      properties:
+        url:
           type: string
         mimeType:
           type: string
+        fileType:
+          type: string
         size:
           type: number
-        createdAt:
+        hash:
           type: string
-        metadata:
-          type: object
-          additionalProperties: true
-        assetType:
+        thumbnail:
           type: string
-        type:
+        replacedAt:
+          type: string
+        replacedBy:
+          type: string
+      required:
+        - url
+        - mimeType
+        - fileType
+        - size
+        - hash
+        - thumbnail
+        - replacedAt
+        - replacedBy
+    Asset:
+      type: object
+      properties:
+        id:
           type: string
         collectionId:
           type: string
+        site:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        app:
+          type: string
+        url:
+          type: string
+        thumbnail:
+          type: string
+        name:
+          type: string
+        cleanName:
+          type: string
+        assetType:
+          type: string
+          enum:
+            - Image
+            - Video
+            - Audio
+            - Document
+        fileType:
+          type: string
+        type:
+          type: string
+        mimeType:
+          type: string
+        contentType:
+          type: string
+        size:
+          type: number
+        width:
+          type: number
+        height:
+          type: number
         hash:
+          type: string
+        labels:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        versions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssetVersion"
+        uploadedBy:
+          type: string
+        uploaderContactId:
+          type: string
+        uploadTokenId:
+          type: string
+        uploaderIp:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - pending_review
+            - deleted
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
           type: string
         thumbnails:
           type: object
@@ -16292,14 +16612,37 @@ components:
           type: string
         x512:
           type: string
-        site:
-          type: string
-        cleanName:
-          type: string
       required:
         - id
+        - collectionId
+        - site
+        - productId
+        - proofId
+        - app
         - url
+        - thumbnail
         - name
+        - cleanName
+        - assetType
+        - fileType
+        - type
+        - mimeType
+        - contentType
+        - size
+        - width
+        - height
+        - hash
+        - labels
+        - metadata
+        - versions
+        - uploadedBy
+        - uploaderContactId
+        - uploadTokenId
+        - uploaderIp
+        - status
+        - createdAt
+        - updatedAt
+        - deletedAt
     UploadAssetOptions:
       type: object
       properties:
@@ -16361,6 +16704,199 @@ components:
           type: string
       required:
         - assetId
+    AdminListAssetsOptions:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        appId:
+          type: string
+        assetType:
+          type: string
+          enum:
+            - Image
+            - Video
+            - Audio
+            - Document
+        labels:
+          type: string
+        sort:
+          type: string
+          enum:
+            - createdAt
+            - name
+            - size
+            - assetType
+        order:
+          type: string
+          enum:
+            - asc
+            - desc
+        limit:
+          type: number
+        offset:
+          type: number
+      required:
+        - collectionId
+    AdminListAssetsResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: "#/components/schemas/Asset"
+        total:
+          type: number
+        limit:
+          type: number
+        offset:
+          type: number
+      required:
+        - data
+        - total
+        - limit
+        - offset
+    UpdateAssetOptions:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        assetId:
+          type: string
+        name:
+          type: string
+        app:
+          type: string
+        labels:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        thumbnail:
+          type: string
+      required:
+        - collectionId
+        - assetId
+    ReplaceAssetFileOptions:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        assetId:
+          type: string
+        file:
+          $ref: "#/components/schemas/File"
+      required:
+        - collectionId
+        - assetId
+        - file
+    DeleteAssetOptions:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        assetId:
+          type: string
+        graceDays:
+          type: number
+      required:
+        - collectionId
+        - assetId
+    BulkDeleteAssetsOptions:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        assetIds:
+          type: array
+          items:
+            type: string
+        graceDays:
+          type: number
+      required:
+        - collectionId
+        - assetIds
+    RequestUploadTokenOptions:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        appId:
+          type: string
+        contactId:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+      required:
+        - collectionId
+        - appId
+    UploadTokenPolicy:
+      type: object
+      properties:
+        requireLevel:
+          type: string
+          enum:
+            - anonymous
+            - contact
+            - owner
+        allowedMimeTypes:
+          type: array
+          items:
+            type: string
+        maxFileSizeBytes:
+          type: number
+        reviewRequired:
+          type: boolean
+        productId:
+          type: string
+        proofId:
+          type: string
+      required:
+        - requireLevel
+        - allowedMimeTypes
+        - maxFileSizeBytes
+        - reviewRequired
+        - productId
+        - proofId
+    UploadTokenResponse:
+      type: object
+      properties:
+        tokenId:
+          type: string
+        expiresAt:
+          type: string
+        policy:
+          $ref: "#/components/schemas/UploadTokenPolicy"
+      required:
+        - tokenId
+        - expiresAt
+        - policy
+    PublicTokenUploadOptions:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        tokenId:
+          type: string
+        file:
+          $ref: "#/components/schemas/File"
+        name:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - collectionId
+        - tokenId
+        - file
     AttestationResponse:
       type: object
       properties:
@@ -17646,22 +18182,9 @@ components:
         description:
           type: string
         headerImage:
-          type: object
-          additionalProperties: true
-        url:
-          type: string
-        thumbnails:
-          type: object
-          additionalProperties: true
-        x100:
-          type: string
-        x200:
-          type: string
-        x512:
-          type: string
+          $ref: "#/components/schemas/AssetRef"
         logoImage:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/AssetRef"
         loaderImage:
           type: object
           additionalProperties: true
@@ -17670,6 +18193,8 @@ components:
         name:
           type: string
         type:
+          type: string
+        url:
           type: string
         languages:
           type: object
@@ -17711,16 +18236,6 @@ components:
         - id
         - title
         - description
-        - url
-        - thumbnails
-        - x100
-        - x200
-        - x512
-        - url
-        - thumbnails
-        - x100
-        - x200
-        - x512
         - overwriteName
         - name
         - type
@@ -22029,51 +22544,6 @@ components:
       required:
         - collectionId
         - id
-    ProductImageThumbnails:
-      type: object
-      properties:
-        x100:
-          type: string
-        x200:
-          type: string
-        x512:
-          type: string
-    ProductImage:
-      type: object
-      properties:
-        id:
-          type: string
-        collectionId:
-          type: string
-        productId:
-          type: string
-        site:
-          type: string
-        name:
-          type: string
-        cleanName:
-          type: string
-        assetType:
-          type: string
-        type:
-          type: string
-        url:
-          type: string
-        thumbnails:
-          $ref: "#/components/schemas/ProductImageThumbnails"
-        contentType:
-          type: string
-        size:
-          type: object
-          additionalProperties: true
-        hash:
-          type: string
-        createdAt:
-          $ref: "#/components/schemas/ISODateString"
-        updatedAt:
-          $ref: "#/components/schemas/ISODateString"
-        deletedAt:
-          $ref: "#/components/schemas/ISODateString"
     ProductImageUrlInput:
       type: object
       properties:
@@ -22183,23 +22653,40 @@ components:
         gtin:
           type: string
         ownGtin:
-          type: boolean
+          type: string
         additionalGtins:
           type: array
           items:
             $ref: "#/components/schemas/AdditionalGtin"
         sku:
           type: string
+        schemaType:
+          type: string
+        type:
+          type: string
+        category:
+          type: string
         label:
           type: string
         status:
           type: string
+          enum:
+            - active
+            - deleted
         sortOrder:
           type: number
         heroImage:
-          $ref: "#/components/schemas/ProductImage"
+          $ref: "#/components/schemas/AssetRef"
+        additionalImages:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssetRef"
         facets:
           $ref: "#/components/schemas/ProductFacetMap"
+        tags:
+          type: object
+          additionalProperties:
+            type: boolean
         data:
           type: object
           additionalProperties:
@@ -22218,6 +22705,8 @@ components:
             type: string
         group:
           type: boolean
+        groupKey:
+          type: string
         createdAt:
           $ref: "#/components/schemas/ISODateString"
         updatedAt:
@@ -22242,12 +22731,14 @@ components:
         gtin:
           type: string
         ownGtin:
-          type: boolean
+          type: string
         additionalGtins:
           type: array
           items:
             $ref: "#/components/schemas/AdditionalGtin"
         sku:
+          type: string
+        schemaType:
           type: string
         label:
           type: string
@@ -22258,8 +22749,17 @@ components:
         heroImage:
           type: object
           additionalProperties: true
+        additionalImages:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
         facets:
           $ref: "#/components/schemas/ProductFacetMap"
+        tags:
+          type: object
+          additionalProperties:
+            type: boolean
         data:
           type: object
           additionalProperties:

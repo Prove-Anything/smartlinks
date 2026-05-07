@@ -48,6 +48,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | Topic | File | When to Use |
 |-------|------|-------------|
 | **API Reference** | `docs/API_SUMMARY.md` | Complete SDK function reference, types, error handling |
+| **Assets** | `docs/assets.md` | Asset object, AssetRef, upload, replace, soft-delete, restore, bulk-delete, public token-based uploads |
 | **Building React Components** | `docs/building-react-components.md` | **READ THIS FIRST** — Dual-mode rendering, router rules, useAppContext pattern |
 | **Multi-Page Architecture** | `docs/mpa.md` | Build pipeline, entry points, multi-page setup, content hashing |
 | **AI & Chat** | `docs/ai.md` | Chat completions, RAG, streaming, tool calling, voice, podcasts, TTS |

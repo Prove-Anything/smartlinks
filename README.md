@@ -363,21 +363,36 @@ await asset.remove({
 
 ```json
 {
-  "name": "Screenshot 2025-09-15 at 15.21.14",
+  "id": "aBcDeFgHiJkLmNoPqRsT",
+  "collectionId": "acme-demo",
+  "site": "acme-demo",
+  "productId": null,
+  "proofId": null,
+  "app": null,
+  "name": "product-hero-shot",
+  "cleanName": "product-hero-shot",
   "assetType": "Image",
+  "fileType": "png",
   "type": "png",
-  "collectionId": "ChaseAtlantic",
-  "url": "https://cdn.smartlinks.app/sites%2FChaseAtlantic%2Fimages%2F2025%2F9%2FScreenshot%202025-09-15%20at%2015%2C21%2C14-1757946214537.png",
-  "createdAt": "2005-10-10T23:15:03",
-  "hash": "fb98140a6b41ee69b824f29cc8b6795444246f871e4ab2379528b34a4d16284e",
-  "thumbnails": {
-    "x100": "https://cdn.smartlinks.app/..._100x100.png",
-    "x200": "https://cdn.smartlinks.app/..._200x200.png",
-    "x512": "https://cdn.smartlinks.app/..._512x512.png"
-  },
-  "id": "7k1cGErrlmQ94J8yDlVj",
-  "site": "ChaseAtlantic",
-  "cleanName": "Screenshot 2025-09-15 at 15.21"
+  "url": "https://cdn.smartlinks.app/sites%2Facme-demo%2Fimages%2F2025%2F1%2Fproduct-hero-shot-1234567890123.png",
+  "thumbnail": "https://cdn.smartlinks.app/sites%2Facme-demo%2Fimages%2F2025%2F1%2Fproduct-hero-shot-1234567890123_thumb.webp",
+  "mimeType": "image/png",
+  "contentType": "image/png",
+  "size": 204800,
+  "width": 1440,
+  "height": 900,
+  "hash": "a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2",
+  "labels": [],
+  "metadata": {},
+  "versions": [],
+  "uploadedBy": "uid_mock0001",
+  "uploaderContactId": null,
+  "uploadTokenId": null,
+  "uploaderIp": null,
+  "status": "active",
+  "createdAt": "2025-01-15T10:00:00Z",
+  "updatedAt": "2025-01-15T10:00:00Z",
+  "deletedAt": null
 }
 ```
 
