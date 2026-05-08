@@ -105,7 +105,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CollectionCreateRequest"
-  /admin/collection/assets:
+  /admin/collection/asset:
     get:
       tags:
         - asset
@@ -216,7 +216,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/UpdateAssetOptions"
-  /admin/collection/assets/replace:
+  /admin/collection/asset/replace:
     post:
       tags:
         - asset
@@ -1050,7 +1050,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ResponsesRequest"
-  /admin/collection/{collectionId}/assets/{assetId}:
+  /admin/collection/{collectionId}/asset/{assetId}:
     get:
       tags:
         - asset
@@ -1082,7 +1082,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/assets/{assetId}/restore:
+  /admin/collection/{collectionId}/asset/{assetId}/restore:
     post:
       tags:
         - asset
@@ -15058,6 +15058,9 @@ components:
           type: object
           additionalProperties:
             type: string
+        widget:
+          type: object
+          additionalProperties: true
       required:
         - title
     ExecutorContext:

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.13.1  |  Generated: 2026-05-07T10:59:17.642Z
+Version: 1.13.3  |  Generated: 2026-05-08T10:30:25.776Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1439,6 +1439,16 @@ interface DeepLinkEntry {
   * Do NOT include platform context params (collectionId, appId, productId, etc.) —
   * those are injected by the platform automatically.
   params?: Record<string, string>;
+  * When `true`, this entry is also available as a dynamic data context for widgets
+  * (in addition to being a navigable page / container route).
+  *
+  * Entries with `widget: true` appear in the widget config picker so an admin can
+  * select this dataset to drive how the widget renders. The widget receives `params`
+  * and decides its own presentation — no separate rendering contract is required.
+  *
+  * Omit (or `false`) for entries that are only meaningful as full-page navigation
+  * (e.g. multi-step forms, settings pages, checkout flows).
+  widget?: true;
 }
 ```
 

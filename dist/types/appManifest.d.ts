@@ -96,6 +96,18 @@ export interface DeepLinkEntry {
      * those are injected by the platform automatically.
      */
     params?: Record<string, string>;
+    /**
+     * When `true`, this entry is also available as a dynamic data context for widgets
+     * (in addition to being a navigable page / container route).
+     *
+     * Entries with `widget: true` appear in the widget config picker so an admin can
+     * select this dataset to drive how the widget renders. The widget receives `params`
+     * and decides its own presentation — no separate rendering contract is required.
+     *
+     * Omit (or `false`) for entries that are only meaningful as full-page navigation
+     * (e.g. multi-step forms, settings pages, checkout flows).
+     */
+    widget?: true;
 }
 /**
  * Context object passed to every executor factory function.

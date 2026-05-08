@@ -316,7 +316,7 @@ export var asset;
         if (typeof options.offset === 'number')
             params.set('offset', String(options.offset));
         const qs = params.toString();
-        const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets${qs ? `?${qs}` : ''}`;
+        const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/asset${qs ? `?${qs}` : ''}`;
         return request(path);
     }
     asset.listAdmin = listAdmin;
@@ -324,7 +324,7 @@ export var asset;
      * Get a single asset by ID (admin).
      */
     async function getAdmin(collectionId, assetId) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/assets/${encodeURIComponent(assetId)}`;
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/asset/${encodeURIComponent(assetId)}`;
         return request(path);
     }
     asset.getAdmin = getAdmin;
@@ -332,7 +332,7 @@ export var asset;
      * Update asset metadata (admin). Use `replaceFile` to swap the file.
      */
     async function updateAdmin(options) {
-        const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets/${encodeURIComponent(options.assetId)}`;
+        const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/asset/${encodeURIComponent(options.assetId)}`;
         const { collectionId: _c, assetId: _a } = options, body = __rest(options, ["collectionId", "assetId"]);
         return put(path, body);
     }
@@ -342,7 +342,7 @@ export var asset;
      * into `versions[]` on the asset.
      */
     async function replaceFile(options) {
-        const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets/${encodeURIComponent(options.assetId)}/replace`;
+        const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/asset/${encodeURIComponent(options.assetId)}/replace`;
         const formData = new FormData();
         formData.append('file', options.file);
         if (options.onProgress && typeof window !== 'undefined' && !isProxyEnabled()) {
@@ -395,7 +395,7 @@ export var asset;
         if (typeof options.graceDays === 'number')
             params.set('graceDays', String(options.graceDays));
         const qs = params.toString();
-        const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets/${encodeURIComponent(options.assetId)}${qs ? `?${qs}` : ''}`;
+        const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/asset/${encodeURIComponent(options.assetId)}${qs ? `?${qs}` : ''}`;
         return del(path);
     }
     asset.deleteAdmin = deleteAdmin;
@@ -403,7 +403,7 @@ export var asset;
      * Restore a soft-deleted asset (clears `deletedAt`).
      */
     async function restoreAdmin(collectionId, assetId) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/assets/${encodeURIComponent(assetId)}/restore`;
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/asset/${encodeURIComponent(assetId)}/restore`;
         return post(path, {});
     }
     asset.restoreAdmin = restoreAdmin;
@@ -411,7 +411,7 @@ export var asset;
      * Soft-delete multiple assets in one request.
      */
     async function bulkDelete(options) {
-        const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets/bulk-delete`;
+        const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/asset/bulk-delete`;
         const body = { assetIds: options.assetIds };
         if (typeof options.graceDays === 'number')
             body.graceDays = options.graceDays;

@@ -21,6 +21,7 @@ This doc covers both sides of the contract: **suppliers** declare their navigabl
   - [Portal Navigation Menu](#portal-navigation-menu)
   - [AI Orchestration](#ai-orchestration)
   - [Cross-App Navigation](#cross-app-navigation)
+  - [Widget Config Picker — Dynamic Data Context](#widget-config-picker--dynamic-data-context)
   - [Link Picker — Admin Configuration](#link-picker--admin-configuration)
   - [Rendering Links at Runtime](#rendering-links-at-runtime)
 - [TypeScript Types](#typescript-types)
@@ -191,6 +192,18 @@ interface DeepLinkEntry {
    * are injected automatically — do NOT include them here.
    */
   params?: Record<string, string>;
+
+  /**
+   * When `true`, this entry is also available as a dynamic data context for widgets.
+   *
+   * Entries with `widget: true` appear in the widget config picker so an admin can
+   * select this dataset to drive how the widget renders. The widget receives `params`
+   * and decides its own presentation — no additional contract is required.
+   *
+   * Omit for entries that are only meaningful as full-page navigation
+   * (e.g. multi-step forms, settings pages, checkout flows).
+   */
+  widget?: true;
 }
 ```
 
@@ -199,8 +212,11 @@ interface DeepLinkEntry {
 | `title` | ✅ | Displayed in menus and offered to AI agents. Should be concise and human-readable. |
 | `path` | ❌ | Hash route within the app. Defaults to `/` if omitted. |
 | `params` | ❌ | App-specific query params only. Platform params are injected automatically. |
+| `widget` | ❌ | Set to `true` to make this entry selectable in the widget config picker as a dynamic data context. |
 
 > **Tip:** Different entries can share the same `path` if they differ by `params` — for example, two entries pointing at `/settings` with different `tab` params.
+
+> **Container vs widget:** All entries are navigable via a container (full-page render). `widget: true` additionally opts the entry into the widget picker — use it for datasets that make sense as a compact card, e.g. a specific gallery view or a named product showcase. Don't set it on management/settings pages.
 
 ---
 
@@ -500,6 +516,58 @@ if (entry) {
 
 ---
 
+### Widget Config Picker — Dynamic Data Context
+
+When a widget's admin settings include a "which view/dataset to show" picker, use the `widget: true` entries from `appConfig.linkable` as the source. Filter to entries with `widget: true` across all installed apps (or just the widget's own app) and let the admin select one. Persist only the `params` — the title is ephemeral display.
+
+```typescript
+// Fetch linkable entries for a specific app and filter to widget-eligible ones
+const config = await SL.appConfiguration.getConfig({ collectionId, appId: 'media-gallery' });
+const widgetViews = (config?.linkable ?? []).filter(e => e.widget === true);
+
+// widgetViews might be:
+// [
+//   { title: "Gallery: Summer 2026", params: { viewId: "sum26" }, widget: true },
+//   { title: "Gallery: Archive",     params: { viewId: "archive" }, widget: true },
+// ]
+```
+
+```tsx
+// Widget admin settings — view picker
+<select
+  value={JSON.stringify(settings.viewParams ?? {})}
+  onChange={e => saveSettings({ ...settings, viewParams: JSON.parse(e.target.value) })}
+>
+  <option value="{}">— Default view —</option>
+  {widgetViews.map(entry => (
+    <option key={entry.title} value={JSON.stringify(entry.params)}>
+      {entry.title}
+    </option>
+  ))}
+</select>
+```
+
+The widget then reads `settings.viewParams` at render time and uses it to fetch or filter its data. The widget owns all rendering decisions — `params` is just a key.
+
+**Supply side** — when the media gallery creates or renames a gallery view, it syncs `appConfig.linkable` as usual, marking card-appropriate views with `widget: true`:
+
+```typescript
+const linkable = galleryViews.map(view => ({
+  title: view.name,
+  params: { viewId: view.id },
+  widget: view.isCardReady ? true : undefined,   // only opt in views that make sense as cards
+}));
+
+await SL.appConfiguration.setConfig({
+  collectionId, appId: 'media-gallery', admin: true,
+  config: { ...current, linkable },
+});
+```
+
+> **Rule of thumb:** set `widget: true` on dataset entries (gallery views, product showcases, named feeds). Leave it off on management/utility pages (settings, upload config, multi-step forms).
+
+---
+
 ### Link Picker — Admin Configuration
 
 When an admin needs to configure any outbound link — to another installed app, a specific page within an app, or an external URL — **never use a bare text input**. Use `<LinkPicker />` from `@proveanything/smartlinks-utils-ui`. It handles all three `LinkTarget` kinds and produces a single `LinkTarget` value to persist.
@@ -656,6 +724,12 @@ export interface DeepLinkEntry {
    * Do NOT include platform context params (collectionId, appId, etc.).
    */
   params?: Record<string, string>;
+  /**
+   * When `true`, this entry is also available as a dynamic data context for widgets
+   * (in addition to being a navigable page / container route).
+   * Omit for entries that are only meaningful as full-page navigation.
+   */
+  widget?: true;
 }
 
 /** Convenience alias for an array of DeepLinkEntry */

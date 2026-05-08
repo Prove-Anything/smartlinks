@@ -103,7 +103,7 @@ All admin endpoints require authentication. Base path: `/api/admin/collection/:c
 ### List assets
 
 ```
-GET /assets
+GET /asset
 ```
 
 | Parameter   | Type   | Description |
@@ -140,7 +140,7 @@ const { data, total } = await Api.asset.listAdmin({
 ### Get asset
 
 ```
-GET /assets/:assetId
+GET /asset/:assetId
 ```
 
 Returns `Asset` or `404`.
@@ -152,7 +152,7 @@ Returns `Asset` or `404`.
 ### Upload asset
 
 ```
-POST /assets
+POST /asset
 ```
 
 Use the existing `Api.asset.upload()` method (file) or `Api.asset.uploadFromUrl()` (URL import).
@@ -162,7 +162,7 @@ Use the existing `Api.asset.upload()` method (file) or `Api.asset.uploadFromUrl(
 ### Update asset metadata
 
 ```
-PUT /assets/:assetId
+PUT /asset/:assetId
 ```
 
 Updates metadata only. Use `/replace` to swap the file.
@@ -182,7 +182,7 @@ await Api.asset.updateAdmin({
 ### Replace file
 
 ```
-POST /assets/:assetId/replace
+POST /asset/:assetId/replace
 ```
 
 Replaces the file; the previous URL is snapshotted into `versions[]`.
@@ -201,7 +201,7 @@ await Api.asset.replaceFile({
 ### Delete asset (soft)
 
 ```
-DELETE /assets/:assetId?graceDays=30
+DELETE /asset/:assetId?graceDays=30
 ```
 
 Sets `deletedAt` and schedules CDN purge after `graceDays` (default 30). Recoverable until purge.
@@ -215,7 +215,7 @@ await Api.asset.deleteAdmin({ collectionId: 'my-collection', assetId: 'abc123', 
 ### Restore asset
 
 ```
-POST /assets/:assetId/restore
+POST /asset/:assetId/restore
 ```
 
 Clears `deletedAt`. Asset becomes active again.
@@ -229,7 +229,7 @@ await Api.asset.restoreAdmin('my-collection', 'abc123')
 ### Bulk delete
 
 ```
-POST /assets/bulk-delete
+POST /asset/bulk-delete
 ```
 
 ```typescript

@@ -343,7 +343,7 @@ export namespace asset {
     if (typeof options.limit === 'number') params.set('limit', String(options.limit))
     if (typeof options.offset === 'number') params.set('offset', String(options.offset))
     const qs = params.toString()
-    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets${qs ? `?${qs}` : ''}`
+    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/asset${qs ? `?${qs}` : ''}`
     return request<AdminListAssetsResponse>(path)
   }
 
@@ -351,7 +351,7 @@ export namespace asset {
    * Get a single asset by ID (admin).
    */
   export async function getAdmin(collectionId: string, assetId: string): Promise<Asset> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/assets/${encodeURIComponent(assetId)}`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/asset/${encodeURIComponent(assetId)}`
     return request<Asset>(path)
   }
 
@@ -359,7 +359,7 @@ export namespace asset {
    * Update asset metadata (admin). Use `replaceFile` to swap the file.
    */
   export async function updateAdmin(options: UpdateAssetOptions): Promise<Asset> {
-    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets/${encodeURIComponent(options.assetId)}`
+    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/asset/${encodeURIComponent(options.assetId)}`
     const { collectionId: _c, assetId: _a, ...body } = options
     return put<Asset>(path, body)
   }
@@ -369,7 +369,7 @@ export namespace asset {
    * into `versions[]` on the asset.
    */
   export async function replaceFile(options: ReplaceAssetFileOptions): Promise<Asset> {
-    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets/${encodeURIComponent(options.assetId)}/replace`
+    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/asset/${encodeURIComponent(options.assetId)}/replace`
     const formData = new FormData()
     formData.append('file', options.file)
 
@@ -411,7 +411,7 @@ export namespace asset {
     const params = new URLSearchParams()
     if (typeof options.graceDays === 'number') params.set('graceDays', String(options.graceDays))
     const qs = params.toString()
-    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets/${encodeURIComponent(options.assetId)}${qs ? `?${qs}` : ''}`
+    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/asset/${encodeURIComponent(options.assetId)}${qs ? `?${qs}` : ''}`
     return del<{ deleted: true }>(path)
   }
 
@@ -419,7 +419,7 @@ export namespace asset {
    * Restore a soft-deleted asset (clears `deletedAt`).
    */
   export async function restoreAdmin(collectionId: string, assetId: string): Promise<Asset> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/assets/${encodeURIComponent(assetId)}/restore`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/asset/${encodeURIComponent(assetId)}/restore`
     return post<Asset>(path, {})
   }
 
@@ -427,7 +427,7 @@ export namespace asset {
    * Soft-delete multiple assets in one request.
    */
   export async function bulkDelete(options: BulkDeleteAssetsOptions): Promise<{ deleted: number }> {
-    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/assets/bulk-delete`
+    const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/asset/bulk-delete`
     const body: Record<string, any> = { assetIds: options.assetIds }
     if (typeof options.graceDays === 'number') body.graceDays = options.graceDays
     return post<{ deleted: number }>(path, body)
