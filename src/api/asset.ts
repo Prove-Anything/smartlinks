@@ -1,4 +1,4 @@
-import { request, post, put, del, getApiHeaders, isProxyEnabled, proxyUploadFormData } from "../http"
+import { request, post, put, del, getApiHeaders, getBaseURL, isProxyEnabled, proxyUploadFormData } from "../http"
 import {
   Asset,
   AssetResponse,
@@ -19,6 +19,20 @@ import {
 } from "../types/asset"
 
 export namespace asset {
+  function resolveApiUrl(path: string): string {
+    const configuredBase = getBaseURL()
+    if (configuredBase) {
+      return `${configuredBase}${path}`
+    }
+
+    // Backward compatibility for legacy browser integrations that set a global base URL.
+    if (typeof window !== 'undefined' && (window as any).SMARTLINKS_API_BASEURL) {
+      return `${(window as any).SMARTLINKS_API_BASEURL}${path}`
+    }
+
+    throw new Error('HTTP client is not initialized. Call initializeApi(...) first.')
+  }
+
   /**
    * Error type for asset uploads
    */
@@ -68,9 +82,7 @@ export namespace asset {
 
     // If progress callback provided and NOT in proxy mode, use XHR for progress events (browser-only)
     if (options.onProgress && typeof window !== "undefined" && !isProxyEnabled()) {
-      const url = (typeof window !== "undefined" && (window as any).SMARTLINKS_API_BASEURL)
-        ? (window as any).SMARTLINKS_API_BASEURL + path
-        : path
+      const url = resolveApiUrl(path)
 
       const headers = getApiHeaders ? getApiHeaders() : {}
       return new Promise<Asset>((resolve, reject) => {
@@ -374,9 +386,7 @@ export namespace asset {
     formData.append('file', options.file)
 
     if (options.onProgress && typeof window !== 'undefined' && !isProxyEnabled()) {
-      const url = (typeof window !== 'undefined' && (window as any).SMARTLINKS_API_BASEURL)
-        ? (window as any).SMARTLINKS_API_BASEURL + path
-        : path
+      const url = resolveApiUrl(path)
       const headers = getApiHeaders ? getApiHeaders() : {}
       return new Promise<Asset>((resolve, reject) => {
         const xhr = new XMLHttpRequest()
@@ -440,6 +450,10 @@ export namespace asset {
   /**
    * Request a single-use upload token for a public (unauthenticated) upload.
    * The token encodes the upload policy (allowed types, max size, review requirement).
+    *
+    * Policy source: collection-scoped app config at
+    * `sites/{collectionId}/apps/{appId}` (`uploadPolicy` key).
+    * Global `apps/{appId}` config is not used for this endpoint.
    *
    * @example
    * ```typescript
@@ -477,9 +491,7 @@ export namespace asset {
     if (options.metadata) formData.append('metadata', JSON.stringify(options.metadata))
 
     if (options.onProgress && typeof window !== 'undefined' && !isProxyEnabled()) {
-      const baseUrl = (typeof window !== 'undefined' && (window as any).SMARTLINKS_API_BASEURL)
-        ? (window as any).SMARTLINKS_API_BASEURL + path
-        : path
+      const baseUrl = resolveApiUrl(path)
       const headers = { ...getApiHeaders(), 'X-Upload-Token': options.tokenId }
       return new Promise<Asset>((resolve, reject) => {
         const xhr = new XMLHttpRequest()
@@ -505,9 +517,7 @@ export namespace asset {
 
     // Pass the token as a header via a custom fetch; post() doesn't accept extra headers,
     // so we build the request manually using the same base URL resolution.
-    const baseUrl = (typeof window !== 'undefined' && (window as any).SMARTLINKS_API_BASEURL)
-      ? (window as any).SMARTLINKS_API_BASEURL + path
-      : path
+    const baseUrl = resolveApiUrl(path)
     const headers = { ...getApiHeaders(), 'X-Upload-Token': options.tokenId }
     const response = await fetch(baseUrl, { method: 'POST', headers, body: formData })
     if (!response.ok) {

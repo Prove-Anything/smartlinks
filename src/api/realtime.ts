@@ -79,7 +79,7 @@ export async function getPublicToken(params: RealtimeTokenRequest): Promise<Ably
     queryParams.append('appId', params.appId)
   }
   
-  return request<AblyTokenRequest>(`/api/public/push/token?${queryParams.toString()}`)
+  return request<AblyTokenRequest>(`/public/push/token?${queryParams.toString()}`)
 }
 
 /**
@@ -114,5 +114,5 @@ export async function getPublicToken(params: RealtimeTokenRequest): Promise<Ably
  * ```
  */
 export async function getAdminToken(): Promise<AblyTokenRequest> {
-  return request<AblyTokenRequest>('/api/admin/auth/push')
+  return request<AblyTokenRequest>('/admin/auth/push')
 }

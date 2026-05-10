@@ -329,6 +329,9 @@ export namespace records {
   /**
    * List records with optional query parameters
    * GET /records
+    *
+    * Public/owner callers only receive records with `status: "active"`.
+    * Admin callers can query all statuses (for example `draft`/`archived`).
    */
   export async function list(
     collectionId: string,
@@ -489,7 +492,7 @@ export namespace records {
    * ordered by specificity descending (most specific first).
    * POST /records/match
    *
-   * @param admin - false for public endpoint (visibility-filtered), true for admin
+  * @param admin - false for public endpoint (visibility-filtered, active-only), true for admin
    *
    * @example
    * ```ts
@@ -563,7 +566,7 @@ export namespace records {
    * deduplicated and sorted by specificity descending.
    * POST /records/resolve-all
    *
-   * @param admin - false for public (visibility-filtered), true for admin (all records)
+    * @param admin - false for public (visibility-filtered, active-only), true for admin (all statuses)
    */
   export async function resolveAll(
     collectionId: string,

@@ -107,6 +107,9 @@ export declare namespace app {
         /**
          * List records with optional query parameters
          * GET /records
+          *
+          * Public/owner callers only receive records with `status: "active"`.
+          * Admin callers can query all statuses (for example `draft`/`archived`).
          */
         function list(collectionId: string, appId: string, params?: RecordListQueryParams, admin?: boolean): Promise<PaginatedResponse<AppRecord>>;
         /**
@@ -196,7 +199,7 @@ export declare namespace app {
          * ordered by specificity descending (most specific first).
          * POST /records/match
          *
-         * @param admin - false for public endpoint (visibility-filtered), true for admin
+        * @param admin - false for public endpoint (visibility-filtered, active-only), true for admin
          *
          * @example
          * ```ts
@@ -245,7 +248,7 @@ export declare namespace app {
          * deduplicated and sorted by specificity descending.
          * POST /records/resolve-all
          *
-         * @param admin - false for public (visibility-filtered), true for admin (all records)
+          * @param admin - false for public (visibility-filtered, active-only), true for admin (all statuses)
          */
         function resolveAll(collectionId: string, appId: string, input: ResolveAllParams, admin?: boolean): Promise<ResolveAllResult>;
         /**

@@ -75,7 +75,7 @@ export async function getPublicToken(params) {
     if (params.appId) {
         queryParams.append('appId', params.appId);
     }
-    return request(`/api/public/push/token?${queryParams.toString()}`);
+    return request(`/public/push/token?${queryParams.toString()}`);
 }
 /**
  * Get an Ably token for admin real-time communication.
@@ -109,5 +109,5 @@ export async function getPublicToken(params) {
  * ```
  */
 export async function getAdminToken() {
-    return request('/api/admin/auth/push');
+    return request('/admin/auth/push');
 }

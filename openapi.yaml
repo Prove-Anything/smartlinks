@@ -57,6 +57,27 @@ tags:
 security:
   - bearerAuth: []
 paths:
+  /admin/auth/push:
+    get:
+      tags:
+        - realtime
+      summary: Get an Ably token for admin real-time communication.
+      operationId: realtime_getAdminToken
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AblyTokenRequest"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/auth/requestJWT:
     post:
       tags:
@@ -7835,57 +7856,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TranslationUpdateRequest"
-  /api/admin/auth/push:
-    get:
-      tags:
-        - realtime
-      summary: Get an Ably token for admin real-time communication.
-      operationId: realtime_getAdminToken
-      security: []
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AblyTokenRequest"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /api/public/push/token:
-    get:
-      tags:
-        - realtime
-      summary: realtime.getPublicToken
-      operationId: realtime_getPublicToken
-      security: []
-      parameters:
-        - name: collectionId
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: appId
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AblyTokenRequest"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /authKit/{authKitId}/config:
     get:
       tags:
@@ -11840,6 +11810,37 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/NfcValidateRequest"
+  /public/push/token:
+    get:
+      tags:
+        - realtime
+      summary: realtime.getPublicToken
+      operationId: realtime_getPublicToken
+      security: []
+      parameters:
+        - name: collectionId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: appId
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AblyTokenRequest"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/qr/lookupShortCode/{shortId}/{code}:
     get:
       tags:
@@ -12327,7 +12328,7 @@ paths:
     get:
       tags:
         - records
-      summary: List records with optional query parameters GET /records
+      summary: "List records with optional query parameters GET /records Public/owner callers only receive records with `status: \"active\"`."
       operationId: records_list
       security: []
       parameters:
@@ -12344,6 +12345,11 @@ paths:
         - name: appId
           in: path
           required: true
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
           schema:
             type: string
         - name: recordType
@@ -16265,6 +16271,8 @@ components:
     RecordListQueryParams:
       type: object
       properties:
+        status:
+          type: string
         recordType:
           type: string
         ref:
@@ -16825,6 +16833,31 @@ components:
       required:
         - collectionId
         - assetIds
+    UploadPolicyConfig:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        requireLevel:
+          type: string
+          enum:
+            - anonymous
+            - contact
+            - owner
+        allowedMimeTypes:
+          type: array
+          items:
+            type: string
+        maxFileSizeBytes:
+          type: number
+        reviewRequired:
+          type: boolean
+        tokenTtlSeconds:
+          type: number
+        maxUsesPerToken:
+          type: number
+      required:
+        - enabled
     RequestUploadTokenOptions:
       type: object
       properties:

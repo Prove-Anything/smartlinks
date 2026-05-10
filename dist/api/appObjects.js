@@ -203,6 +203,9 @@ export var app;
         /**
          * List records with optional query parameters
          * GET /records
+          *
+          * Public/owner callers only receive records with `status: "active"`.
+          * Admin callers can query all statuses (for example `draft`/`archived`).
          */
         async function list(collectionId, appId, params, admin = false) {
             const path = basePath(collectionId, appId, admin);
@@ -323,7 +326,7 @@ export var app;
          * ordered by specificity descending (most specific first).
          * POST /records/match
          *
-         * @param admin - false for public endpoint (visibility-filtered), true for admin
+        * @param admin - false for public endpoint (visibility-filtered, active-only), true for admin
          *
          * @example
          * ```ts
@@ -384,7 +387,7 @@ export var app;
          * deduplicated and sorted by specificity descending.
          * POST /records/resolve-all
          *
-         * @param admin - false for public (visibility-filtered), true for admin (all records)
+          * @param admin - false for public (visibility-filtered, active-only), true for admin (all statuses)
          */
         async function resolveAll(collectionId, appId, input, admin = false) {
             const path = `${basePath(collectionId, appId, admin)}/resolve-all`;

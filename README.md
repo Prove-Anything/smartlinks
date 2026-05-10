@@ -75,13 +75,13 @@ initializeApi({
 List public collections and fetch products:
 
 ```ts
-import { collection, product } from '@proveanything/smartlinks'
+import { collection, products } from '@proveanything/smartlinks'
 
 const collections = await collection.list(false) // public endpoint
 const first = collections[0]
 if (first) {
-  const products = await product.list(first.id, false) // public endpoint
-  console.log('First product:', products[0])
+  const items = await products.list(first.id, false) // public endpoint
+  console.log('First product:', items[0])
 }
 ```
 
@@ -90,27 +90,50 @@ if (first) {
 **Public storefront or portal experience**
 
 ```ts
-import { initializeApi, collection, product } from '@proveanything/smartlinks'
+import { initializeApi, collection, products } from '@proveanything/smartlinks'
 
 initializeApi({ baseURL: 'https://smartlinks.app/api/v1' })
 
 const collections = await collection.list(false)
-const products = await product.list('collectionId', false)
+const items = await products.list('collectionId', false)
 ```
 
 **Server-side admin scripts or back office tools**
 
 ```ts
-import { initializeApi, product } from '@proveanything/smartlinks'
+import { initializeApi, products } from '@proveanything/smartlinks'
 
 initializeApi({
   baseURL: 'https://smartlinks.app/api/v1',
   apiKey: process.env.SMARTLINKS_API_KEY,
 })
 
-const created = await product.create('collectionId', { name: 'New product' })
+const created = await products.create('collectionId', { name: 'New product' })
 console.log(created.id)
 ```
+
+### Product API migration: use products (plural)
+
+The SDK keeps `product` (singular) for backward compatibility, but it is deprecated.
+For all new integrations, use `products` (plural).
+
+```ts
+// Preferred
+import { products } from '@proveanything/smartlinks'
+
+await products.get(collectionId, productId, false)
+await products.list(collectionId, false)
+await products.query(collectionId, { query: { search: 'cabernet' } })
+```
+
+Quick mapping:
+
+- `product.get` -> `products.get`
+- `product.list` -> `products.list`
+- `product.create` -> `products.create`
+- `product.update` -> `products.update`
+- `product.remove` -> `products.remove`
+- `product.find` / `product.publicFind` -> `products.query` / `products.get`
 
 **AI-powered assistant or setup flow**
 
@@ -181,10 +204,10 @@ The SDK automatically normalizes various server error response formats into a co
 // { error: "..." }
 
 // All are normalized to SmartlinksApiError with consistent access:
-import { SmartlinksApiError, product } from '@proveanything/smartlinks'
+import { SmartlinksApiError, products } from '@proveanything/smartlinks'
 
 try {
-  const item = await product.get('collectionId', 'productId', false)
+  const item = await products.get('collectionId', 'productId', false)
 } catch (error) {
   if (error instanceof SmartlinksApiError) {
     console.error({
@@ -286,15 +309,15 @@ For complete documentation, see [docs/utils.md](docs/utils.md).
 ### Products
 
 ```ts
-import { product } from '@proveanything/smartlinks'
+import { products } from '@proveanything/smartlinks'
 
 // Public fetch
-const item = await product.get('collectionId', 'productId', false)
+const item = await products.get('collectionId', 'productId', false)
 
 // Admin create/update/delete (requires auth)
-await product.create('collectionId', { name: 'New product' })
-await product.update('collectionId', 'productId', { description: 'Updated' })
-await product.remove('collectionId', 'productId')
+await products.create('collectionId', { name: 'New product' })
+await products.update('collectionId', 'productId', { description: 'Updated' })
+await products.remove('collectionId', 'productId')
 ```
 
 ### Assets

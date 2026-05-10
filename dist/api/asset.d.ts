@@ -110,6 +110,10 @@ export declare namespace asset {
     /**
      * Request a single-use upload token for a public (unauthenticated) upload.
      * The token encodes the upload policy (allowed types, max size, review requirement).
+      *
+      * Policy source: collection-scoped app config at
+      * `sites/{collectionId}/apps/{appId}` (`uploadPolicy` key).
+      * Global `apps/{appId}` config is not used for this endpoint.
      *
      * @example
      * ```typescript

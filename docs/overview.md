@@ -43,6 +43,8 @@ Widgets and containers run in the parent's React tree (not iframes). Mobile Admi
 
 The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive documentation in `node_modules/@proveanything/smartlinks/docs/`. **Always read these files for detailed implementation guidance.**
 
+> Product endpoints: use `products` (plural) for new integrations. The older `product` (singular) namespace remains for backward compatibility and is deprecated.
+
 > **Minimum SDK version: `1.4.1`** — Ensure `@proveanything/smartlinks` is at least this version. If not, update with `npm install @proveanything/smartlinks@latest`.
 
 | Topic | File | When to Use |

@@ -86,7 +86,7 @@ export interface ListQueryParams {
   offset?: number // default 0
   sort?: string // field:asc or field:desc
   includeDeleted?: boolean // admin only
-  status?: string // exact or in:a,b,c
+  status?: string // exact or in:a,b,c. For app.records on public/owner endpoints, only active records are returned.
   productId?: string
   createdAt?: string // gte:2024-01-01, lte:2024-12-31, or ISO date string
   updatedAt?: string // same format
@@ -610,6 +610,11 @@ export interface UpdateRecordInput {
  * Query parameters for listing records
  */
 export interface RecordListQueryParams extends ListQueryParams {
+  /**
+   * Admin: any status or `in:a,b,c` filter is allowed.
+   * Public/owner: results are restricted to active records.
+   */
+  status?: string
   recordType?: string
   ref?: string
   /** Filter records whose ref starts with this value */

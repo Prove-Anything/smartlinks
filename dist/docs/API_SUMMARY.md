@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.13.3  |  Generated: 2026-05-08T10:30:25.776Z
+Version: 1.13.6  |  Generated: 2026-05-09T14:50:38.786Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1725,7 +1725,7 @@ interface ListQueryParams {
   offset?: number // default 0
   sort?: string // field:asc or field:desc
   includeDeleted?: boolean // admin only
-  status?: string // exact or in:a,b,c
+  status?: string // exact or in:a,b,c. For app.records on public/owner endpoints, only active records are returned.
   productId?: string
   createdAt?: string // gte:2024-01-01, lte:2024-12-31, or ISO date string
   updatedAt?: string // same format
@@ -2472,10 +2472,25 @@ interface BulkDeleteAssetsOptions {
 }
 ```
 
+**UploadPolicyConfig** (interface)
+```typescript
+interface UploadPolicyConfig {
+  enabled: boolean
+  requireLevel?: 'anonymous' | 'contact' | 'owner'
+  allowedMimeTypes?: string[]
+  maxFileSizeBytes?: number
+  reviewRequired?: boolean
+  tokenTtlSeconds?: number
+  maxUsesPerToken?: number
+}
+```
+
 **RequestUploadTokenOptions** (interface)
 ```typescript
 interface RequestUploadTokenOptions {
   collectionId: string
+  * App ID whose collection-scoped config provides `uploadPolicy`.
+  * Resolved from `sites/{collectionId}/apps/{appId}`.
   appId: string
   contactId?: string
   productId?: string
@@ -7568,7 +7583,7 @@ Create a new record POST /records When called on the public endpoint (admin = fa
     appId: string,
     params?: RecordListQueryParams,
     admin: boolean = false) → `Promise<PaginatedResponse<AppRecord>>`
-List records with optional query parameters GET /records
+List records with optional query parameters GET /records Public/owner callers only receive records with `status: "active"`. Admin callers can query all statuses (for example `draft`/`archived`).
 
 **get**(collectionId: string,
     appId: string,
@@ -7797,7 +7812,7 @@ Restore a soft-deleted asset (clears `deletedAt`).
 Soft-delete multiple assets in one request.
 
 **requestUploadToken**(options: RequestUploadTokenOptions) → `Promise<UploadTokenResponse>`
-Request a single-use upload token for a public (unauthenticated) upload. The token encodes the upload policy (allowed types, max size, review requirement). ```typescript const { tokenId, policy } = await asset.requestUploadToken({ collectionId: 'my-collection', appId: 'user-gallery', contactId: contact.id, }) const uploaded = await asset.publicUploadWithToken({ collectionId: 'my-collection', tokenId, file: selectedFile, }) ```
+Request a single-use upload token for a public (unauthenticated) upload. The token encodes the upload policy (allowed types, max size, review requirement). Policy source: collection-scoped app config at `sites/{collectionId}/apps/{appId}` (`uploadPolicy` key). Global `apps/{appId}` config is not used for this endpoint. ```typescript const { tokenId, policy } = await asset.requestUploadToken({ collectionId: 'my-collection', appId: 'user-gallery', contactId: contact.id, }) const uploaded = await asset.publicUploadWithToken({ collectionId: 'my-collection', tokenId, file: selectedFile, }) ```
 
 **publicUploadWithToken**(options: PublicTokenUploadOptions) → `Promise<Asset>`
 Upload a file using a single-use upload token (no admin auth required). Assets are created with `status: 'pending_review'` when the token policy has `reviewRequired: true`.

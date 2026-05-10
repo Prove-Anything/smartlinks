@@ -253,8 +253,27 @@ export interface BulkDeleteAssetsOptions {
     assetIds: string[];
     graceDays?: number;
 }
+/**
+ * Collection-scoped app config policy used by `requestUploadToken`.
+ *
+ * Important: this policy is read from `sites/{collectionId}/apps/{appId}`
+ * (collection app config), not from global `apps/{appId}` config.
+ */
+export interface UploadPolicyConfig {
+    enabled: boolean;
+    requireLevel?: 'anonymous' | 'contact' | 'owner';
+    allowedMimeTypes?: string[];
+    maxFileSizeBytes?: number;
+    reviewRequired?: boolean;
+    tokenTtlSeconds?: number;
+    maxUsesPerToken?: number;
+}
 export interface RequestUploadTokenOptions {
     collectionId: string;
+    /**
+     * App ID whose collection-scoped config provides `uploadPolicy`.
+     * Resolved from `sites/{collectionId}/apps/{appId}`.
+     */
     appId: string;
     /** Required when the app policy requireLevel is 'contact' */
     contactId?: string;

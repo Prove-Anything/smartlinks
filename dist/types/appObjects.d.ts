@@ -590,6 +590,11 @@ export interface UpdateRecordInput {
  * Query parameters for listing records
  */
 export interface RecordListQueryParams extends ListQueryParams {
+    /**
+     * Admin: any status or `in:a,b,c` filter is allowed.
+     * Public/owner: results are restricted to active records.
+     */
+    status?: string;
     recordType?: string;
     ref?: string;
     /** Filter records whose ref starts with this value */

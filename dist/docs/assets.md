@@ -249,6 +249,32 @@ For anonymous or contact-initiated uploads from the portal — no admin auth req
 
 ### 1. Request an upload token
 
+```
+POST /api/public/collection/:collectionId/asset/token
+```
+
+Policy source (important):
+
+- Public upload policy is resolved from the collection-scoped app config at `sites/{collectionId}/apps/{appId}`.
+- Global app config (`apps/{appId}`) is not used for this endpoint.
+- SDKs/clients that provision app config should save `uploadPolicy` on the collection app document.
+
+Expected app config shape:
+
+```typescript
+{
+  uploadPolicy: {
+    enabled: boolean
+    requireLevel?: 'anonymous' | 'contact' | 'owner'
+    allowedMimeTypes?: string[]
+    maxFileSizeBytes?: number
+    reviewRequired?: boolean
+    tokenTtlSeconds?: number
+    maxUsesPerToken?: number
+  }
+}
+```
+
 ```typescript
 const { tokenId, expiresAt, policy } = await Api.asset.requestUploadToken({
   collectionId: 'my-collection',
