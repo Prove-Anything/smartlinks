@@ -78,6 +78,61 @@ await authKit.sendPhoneCode(clientId, '+61400000000');
 const session = await authKit.verifyPhoneCode(clientId, '+61400000000', '123456');
 ```
 
+### Lightweight verification (WhatsApp + SMS)
+
+Use these flows when you want low-friction verification before or without full account sign-in.
+
+```ts
+import { authKit } from '@proveanything/smartlinks';
+
+// 1) Send WhatsApp verification deep link
+const wa = await authKit.sendWhatsApp(clientId, {
+  phoneNumber: '+447911123456',
+  redirectUrl: 'https://app.example.com/checkout/continue',
+});
+
+// wa.waLink can be opened directly by the app/browser
+// Poll status while user switches to WhatsApp and back
+const status = await authKit.getWhatsAppStatus(clientId, wa.token);
+
+// Optional fallback path if webhook confirmation is unavailable
+await authKit.verifyWhatsApp(clientId, wa.token, '+447911123456');
+
+// 2) Or send SMS click-to-verify link
+await authKit.sendSmsVerify(clientId, {
+  phoneNumber: '+447911123456',
+  redirectUrl: 'https://app.example.com/raffle/checkout',
+  ctaText: 'Tap to continue',
+});
+
+// Optional API verification path
+await authKit.verifySms(clientId, '<token>', '+447911123456');
+```
+
+### Contact bootstrap / durable identity
+
+After verification, upsert contact identity and store `contactId` on downstream records (raffle ticket, bid, claim intent).
+
+```ts
+const contact = await authKit.upsertContact(clientId, {
+  phone: '+447911123456',
+  name: 'Jane Doe',
+  source: 'raffle-checkout',
+  customFields: { channelVerified: 'whatsapp' },
+  externalIds: { raffleSessionId: 'rfl_123' },
+});
+
+// Persist these on your business record
+// contact.contactId, contact.collectionId, verified channel, verifiedAt
+```
+
+Verification status values returned by `authKit.getWhatsAppStatus` are:
+- `pending`
+- `verified`
+- `failed`
+- `expired`
+- `unknown`
+
 ### Google OAuth
 
 ```ts

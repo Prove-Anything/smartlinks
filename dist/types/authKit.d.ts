@@ -75,6 +75,63 @@ export interface EmailVerifyTokenResponse {
     accountData?: Record<string, any>;
     emailVerificationMode?: 'immediate' | 'verify-auto-login' | 'verify-manual-login';
 }
+export type VerifyStatus = 'pending' | 'verified' | 'failed' | 'expired' | 'unknown';
+export interface SendWhatsAppRequest {
+    phoneNumber: string;
+    redirectUrl: string;
+}
+export interface SendWhatsAppResponse {
+    waLink: string;
+    code: string;
+    token: string;
+    expiresAt: string;
+}
+export interface VerifyWhatsAppResponse {
+    success: boolean;
+    verified: boolean;
+    redirectUrl?: string | null;
+}
+export interface WhatsAppStatusResponse {
+    ok: boolean;
+    status: VerifyStatus;
+    verified: boolean;
+    redirectUrl?: string | null;
+    phoneNumber?: string | null;
+    updatedAt?: unknown;
+}
+export interface SendSmsVerifyRequest {
+    phoneNumber: string;
+    redirectUrl: string;
+    ctaText?: string;
+}
+export interface SendSmsVerifyResponse {
+    success: boolean;
+    expiresAt: string;
+}
+export interface VerifySmsResponse {
+    verified: boolean;
+    redirectUrl?: string | null;
+    phoneNumber?: string | null;
+}
+export interface UpsertContactRequest {
+    collectionId?: string;
+    phone?: string;
+    email?: string;
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    displayName?: string;
+    source?: string;
+    customFields?: Record<string, unknown>;
+    externalIds?: Record<string, unknown>;
+}
+export interface UpsertContactResponse {
+    ok: boolean;
+    collectionId: string;
+    contactId: string;
+    userId: string | null;
+    created: boolean;
+}
 export interface AuthKitBrandingConfig {
     logoUrl?: string;
     title?: string;

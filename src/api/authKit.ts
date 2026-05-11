@@ -14,6 +14,15 @@ import type {
   UserProfile,
   ProfileUpdateData,
   SuccessResponse,
+  SendWhatsAppRequest,
+  SendWhatsAppResponse,
+  VerifyWhatsAppResponse,
+  WhatsAppStatusResponse,
+  SendSmsVerifyRequest,
+  SendSmsVerifyResponse,
+  VerifySmsResponse,
+  UpsertContactRequest,
+  UpsertContactResponse,
 } from "../types/authKit"
 
 /**
@@ -62,6 +71,39 @@ export namespace authKit {
   /** Verify phone verification code (public). */
   export async function verifyPhoneCode(clientId: string, phoneNumber: string, code: string): Promise<PhoneVerifyResponse> {
     return post<PhoneVerifyResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/phone/verify`, { phoneNumber, code })
+  }
+
+  /** Send a WhatsApp verification deep-link (public). */
+  export async function sendWhatsApp(clientId: string, body: SendWhatsAppRequest): Promise<SendWhatsAppResponse> {
+    return post<SendWhatsAppResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/send`, body)
+  }
+
+  /** Manually verify WhatsApp token if inbound webhook path is unavailable (public). */
+  export async function verifyWhatsApp(clientId: string, token: string, phoneNumber: string): Promise<VerifyWhatsAppResponse> {
+    return post<VerifyWhatsAppResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/verify`, { token, phoneNumber })
+  }
+
+  /** Poll WhatsApp verification status for a token (public). */
+  export async function getWhatsAppStatus(clientId: string, token: string): Promise<WhatsAppStatusResponse> {
+    const encodedToken = encodeURIComponent(token)
+    return request<WhatsAppStatusResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/status?token=${encodedToken}`)
+  }
+
+  /** Send an SMS click-to-verify link (public). */
+  export async function sendSmsVerify(clientId: string, body: SendSmsVerifyRequest): Promise<SendSmsVerifyResponse> {
+    return post<SendSmsVerifyResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/sms/send`, body)
+  }
+
+  /** Verify an SMS click-to-verify token via API (public). */
+  export async function verifySms(clientId: string, token: string, phoneNumber?: string): Promise<VerifySmsResponse> {
+    const payload: { token: string; phoneNumber?: string } = { token }
+    if (phoneNumber) payload.phoneNumber = phoneNumber
+    return post<VerifySmsResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/sms/verify`, payload)
+  }
+
+  /** Upsert contact identity after lightweight verification (public). */
+  export async function upsertContact(clientId: string, body: UpsertContactRequest): Promise<UpsertContactResponse> {
+    return post<UpsertContactResponse>(`/authkit/${encodeURIComponent(clientId)}/contact/upsert`, body)
   }
 
   /* ===================================

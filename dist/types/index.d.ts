@@ -28,6 +28,7 @@ export * from "./tags";
 export * from "./navigation";
 export * from "./order";
 export * from "./crate";
+export * from "./authKit";
 export * from "./iframeResponder";
 export * from "./ai";
 export * from "./appManifest";

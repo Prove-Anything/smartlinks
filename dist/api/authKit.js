@@ -46,6 +46,40 @@ export var authKit;
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/phone/verify`, { phoneNumber, code });
     }
     authKit.verifyPhoneCode = verifyPhoneCode;
+    /** Send a WhatsApp verification deep-link (public). */
+    async function sendWhatsApp(clientId, body) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/send`, body);
+    }
+    authKit.sendWhatsApp = sendWhatsApp;
+    /** Manually verify WhatsApp token if inbound webhook path is unavailable (public). */
+    async function verifyWhatsApp(clientId, token, phoneNumber) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/verify`, { token, phoneNumber });
+    }
+    authKit.verifyWhatsApp = verifyWhatsApp;
+    /** Poll WhatsApp verification status for a token (public). */
+    async function getWhatsAppStatus(clientId, token) {
+        const encodedToken = encodeURIComponent(token);
+        return request(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/status?token=${encodedToken}`);
+    }
+    authKit.getWhatsAppStatus = getWhatsAppStatus;
+    /** Send an SMS click-to-verify link (public). */
+    async function sendSmsVerify(clientId, body) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/auth/sms/send`, body);
+    }
+    authKit.sendSmsVerify = sendSmsVerify;
+    /** Verify an SMS click-to-verify token via API (public). */
+    async function verifySms(clientId, token, phoneNumber) {
+        const payload = { token };
+        if (phoneNumber)
+            payload.phoneNumber = phoneNumber;
+        return post(`/authkit/${encodeURIComponent(clientId)}/auth/sms/verify`, payload);
+    }
+    authKit.verifySms = verifySms;
+    /** Upsert contact identity after lightweight verification (public). */
+    async function upsertContact(clientId, body) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/contact/upsert`, body);
+    }
+    authKit.upsertContact = upsertContact;
     /* ===================================
      * Password Reset (Public flows)
      * =================================== */

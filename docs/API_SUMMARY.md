@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.13.6  |  Generated: 2026-05-10T07:17:24.644Z
+Version: 1.13.7  |  Generated: 2026-05-11T10:48:51.951Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3024,6 +3024,98 @@ interface EmailVerifyTokenResponse {
 }
 ```
 
+**SendWhatsAppRequest** (interface)
+```typescript
+interface SendWhatsAppRequest {
+  phoneNumber: string
+  redirectUrl: string
+}
+```
+
+**SendWhatsAppResponse** (interface)
+```typescript
+interface SendWhatsAppResponse {
+  waLink: string
+  code: string
+  token: string
+  expiresAt: string
+}
+```
+
+**VerifyWhatsAppResponse** (interface)
+```typescript
+interface VerifyWhatsAppResponse {
+  success: boolean
+  verified: boolean
+  redirectUrl?: string | null
+}
+```
+
+**WhatsAppStatusResponse** (interface)
+```typescript
+interface WhatsAppStatusResponse {
+  ok: boolean
+  status: VerifyStatus
+  verified: boolean
+  redirectUrl?: string | null
+  phoneNumber?: string | null
+  updatedAt?: unknown
+}
+```
+
+**SendSmsVerifyRequest** (interface)
+```typescript
+interface SendSmsVerifyRequest {
+  phoneNumber: string
+  redirectUrl: string
+  ctaText?: string
+}
+```
+
+**SendSmsVerifyResponse** (interface)
+```typescript
+interface SendSmsVerifyResponse {
+  success: boolean
+  expiresAt: string
+}
+```
+
+**VerifySmsResponse** (interface)
+```typescript
+interface VerifySmsResponse {
+  verified: boolean
+  redirectUrl?: string | null
+  phoneNumber?: string | null
+}
+```
+
+**UpsertContactRequest** (interface)
+```typescript
+interface UpsertContactRequest {
+  collectionId?: string
+  phone?: string
+  email?: string
+  name?: string
+  firstName?: string
+  lastName?: string
+  displayName?: string
+  source?: string
+  customFields?: Record<string, unknown>
+  externalIds?: Record<string, unknown>
+}
+```
+
+**UpsertContactResponse** (interface)
+```typescript
+interface UpsertContactResponse {
+  ok: boolean
+  collectionId: string
+  contactId: string
+  userId: string | null
+  created: boolean
+}
+```
+
 **AuthKitBrandingConfig** (interface)
 ```typescript
 interface AuthKitBrandingConfig {
@@ -3052,6 +3144,8 @@ interface AuthKitConfig {
   updatedAt?: string
 }
 ```
+
+**VerifyStatus** = `'pending' | 'verified' | 'failed' | 'expired' | 'unknown'`
 
 ### batch
 
@@ -3820,8 +3914,8 @@ interface TransactionalSendRequest {
   templateId: string
   * Channel to send on. Defaults to 'preferred', which auto-selects the
   * contact's best available channel respecting consent, suppression, and
-  * template availability (priority: email → push → sms → wallet).
-  channel?: 'email' | 'sms' | 'push' | 'wallet' | 'preferred'
+  * template availability.
+  channel?: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet' | 'preferred'
   props?: Record<string, unknown>
   include?: {
   collection?: boolean
@@ -3841,7 +3935,7 @@ interface TransactionalSendRequest {
 ```typescript
 interface TransactionalSendResponse {
   ok: true
-  channel: 'email' | 'sms' | 'push' | 'wallet'
+  channel: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet'
   messageId?: string
 }
 ```
@@ -3856,6 +3950,7 @@ interface TransactionalSendError {
   * - `transactional.no_channel_available`
   * - `transactional.email_missing`
   * - `transactional.phone_missing`
+  * - `transactional.whatsapp_missing`
   * - `transactional.no_push_methods`
   * - `transactional.no_wallet_methods`
   error: string
@@ -4129,7 +4224,7 @@ export interface SubscriptionsResolveResponse {
  * No broadcast record is created; the send is logged directly to the
  * contact's communication history with sourceType: 'transactional'.
  *
- * POST /admin/collection/:collectionId/comm.send
+ * POST /admin/collection/:collectionId/comm/send
  */
 export interface TransactionalSendRequest {
   /** CRM contact UUID */
@@ -4139,9 +4234,9 @@ export interface TransactionalSendRequest {
   /**
    * Channel to send on. Defaults to 'preferred', which auto-selects the
    * contact's best available channel respecting consent, suppression, and
-   * template availability (priority: email → push → sms → wallet).
+    * template availability.
    */
-  channel?: 'email' | 'sms' | 'push' | 'wallet' | 'preferred'
+    channel?: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet' | 'preferred'
   /** Extra Liquid variables merged into the top-level render context */
   props?: Record<string, unknown>
   /** Context objects to hydrate into the Liquid template */
@@ -4170,8 +4265,8 @@ export interface TransactionalSendRequest {
 export interface TransactionalSendResponse {
   ok: true
   /** The channel the message was actually sent on */
-  channel: 'email' | 'sms' | 'push' | 'wallet'
-  /** Provider message ID (email/SMS); absent for push/wallet */
+  channel: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet'
+  /** Provider message ID (email/SMS/WhatsApp); absent for push/wallet */
   messageId?: string
 }
 
@@ -4184,6 +4279,7 @@ export interface TransactionalSendError {
    * - `transactional.no_channel_available`
    * - `transactional.email_missing`
    * - `transactional.phone_missing`
+   * - `transactional.whatsapp_missing`
    * - `transactional.no_push_methods`
    * - `transactional.no_wallet_methods`
    */
@@ -7997,62 +8093,80 @@ Send phone verification code (public).
 **verifyPhoneCode**(clientId: string, phoneNumber: string, code: string) → `Promise<PhoneVerifyResponse>`
 Verify phone verification code (public).
 
+**sendWhatsApp**(clientId: string, body: SendWhatsAppRequest) → `Promise<SendWhatsAppResponse>`
+Send a WhatsApp verification deep-link (public).
+
+**verifyWhatsApp**(clientId: string, token: string, phoneNumber: string) → `Promise<VerifyWhatsAppResponse>`
+Manually verify WhatsApp token if inbound webhook path is unavailable (public).
+
+**getWhatsAppStatus**(clientId: string, token: string) → `Promise<WhatsAppStatusResponse>`
+Poll WhatsApp verification status for a token (public).
+
+**sendSmsVerify**(clientId: string, body: SendSmsVerifyRequest) → `Promise<SendSmsVerifyResponse>`
+Send an SMS click-to-verify link (public).
+
+**verifySms**(clientId: string, token: string, phoneNumber?: string) → `Promise<VerifySmsResponse>`
+Verify an SMS click-to-verify token via API (public).
+
+**upsertContact**(clientId: string, body: UpsertContactRequest) → `Promise<UpsertContactResponse>`
+Upsert contact identity after lightweight verification (public).
+
 **requestPasswordReset**(clientId: string, data: { email: string; redirectUrl?: string; clientName?: string }) → `Promise<PasswordResetRequestResponse>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **verifyResetToken**(clientId: string, token: string) → `Promise<VerifyResetTokenResponse>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **completePasswordReset**(clientId: string, token: string, newPassword: string) → `Promise<PasswordResetCompleteResponse>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **sendEmailVerification**(clientId: string, data: { userId: string; email: string; redirectUrl?: string; clientName?: string }) → `Promise<EmailVerificationActionResponse>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **verifyEmail**(clientId: string, token: string) → `Promise<EmailVerifyTokenResponse>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **resendEmailVerification**(clientId: string, data: { userId: string; email: string; redirectUrl?: string; clientName?: string }) → `Promise<EmailVerificationActionResponse>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **getProfile**(clientId: string) → `Promise<UserProfile>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **updateProfile**(clientId: string, data: ProfileUpdateData) → `Promise<UserProfile>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **changePassword**(clientId: string, currentPassword: string, newPassword: string) → `Promise<SuccessResponse>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **changeEmail**(clientId: string, newEmail: string, password: string, redirectUrl: string) → `Promise<SuccessResponse>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **verifyEmailChange**(clientId: string, token: string) → `Promise<SuccessResponse>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **updatePhone**(clientId: string, phoneNumber: string, verificationCode: string) → `Promise<SuccessResponse>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **deleteAccount**(clientId: string, password: string, confirmText: string) → `Promise<SuccessResponse>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **load**(authKitId: string) → `Promise<AuthKitConfig>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **get**(collectionId: string, authKitId: string) → `Promise<AuthKitConfig>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **list**(collectionId: string, admin?: boolean) → `Promise<AuthKitConfig[]>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **create**(collectionId: string, data: any) → `Promise<AuthKitConfig>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **update**(collectionId: string, authKitId: string, data: any) → `Promise<AuthKitConfig>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 **remove**(collectionId: string, authKitId: string) → `Promise<void>`
-Verify phone verification code (public).
+Upsert contact identity after lightweight verification (public).
 
 ### batch
 
@@ -8336,7 +8450,7 @@ Analytics: Recipients who performed an action, optionally with outcome. POST /ad
 
 **sendTransactional**(collectionId: string,
     body: TransactionalSendRequest) → `Promise<TransactionalSendResult>`
-Send a single transactional message to one contact using a template. No broadcast record is created. The send is logged to the contact's communication history with sourceType: 'transactional'. POST /admin/collection/:collectionId/comm.send ```typescript const result = await comms.sendTransactional(collectionId, { contactId:  'e4f2a1b0-...', templateId: 'warranty-update', channel:    'preferred', props:      { claimRef: 'CLM-0042', decision: 'approved' }, include:    { productId: 'prod-abc123', appCase: 'c9d1e2f3-...' }, ref:        'warranty-decision-notification', appId:      'warrantyApp', }) if (result.ok) { console.log(`Sent via ${result.channel}`, result.messageId) } else { console.error('Send failed:', result.error) } ```
+Send a single transactional message to one contact using a template. No broadcast record is created. The send is logged to the contact's communication history with sourceType: 'transactional'. POST /admin/collection/:collectionId/comm/send ```typescript const result = await comms.sendTransactional(collectionId, { contactId:  'e4f2a1b0-...', templateId: 'warranty-update', channel:    'preferred', props:      { claimRef: 'CLM-0042', decision: 'approved' }, include:    { productId: 'prod-abc123', appCase: 'c9d1e2f3-...' }, ref:        'warranty-decision-notification', appId:      'warrantyApp', }) if (result.ok) { console.log(`Sent via ${result.channel}`, result.messageId) } else { console.error('Send failed:', result.error) } ```
 
 **logCommunicationEvent**(collectionId: string,
     body: LogCommunicationEventBody) → `Promise<AppendResult>`

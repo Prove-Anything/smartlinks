@@ -257,7 +257,7 @@ export interface SubscriptionsResolveResponse {
  * No broadcast record is created; the send is logged directly to the
  * contact's communication history with sourceType: 'transactional'.
  *
- * POST /admin/collection/:collectionId/comm.send
+ * POST /admin/collection/:collectionId/comm/send
  */
 export interface TransactionalSendRequest {
   /** CRM contact UUID */
@@ -267,9 +267,9 @@ export interface TransactionalSendRequest {
   /**
    * Channel to send on. Defaults to 'preferred', which auto-selects the
    * contact's best available channel respecting consent, suppression, and
-   * template availability (priority: email → push → sms → wallet).
+    * template availability.
    */
-  channel?: 'email' | 'sms' | 'push' | 'wallet' | 'preferred'
+    channel?: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet' | 'preferred'
   /** Extra Liquid variables merged into the top-level render context */
   props?: Record<string, unknown>
   /** Context objects to hydrate into the Liquid template */
@@ -298,8 +298,8 @@ export interface TransactionalSendRequest {
 export interface TransactionalSendResponse {
   ok: true
   /** The channel the message was actually sent on */
-  channel: 'email' | 'sms' | 'push' | 'wallet'
-  /** Provider message ID (email/SMS); absent for push/wallet */
+  channel: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet'
+  /** Provider message ID (email/SMS/WhatsApp); absent for push/wallet */
   messageId?: string
 }
 
@@ -312,6 +312,7 @@ export interface TransactionalSendError {
    * - `transactional.no_channel_available`
    * - `transactional.email_missing`
    * - `transactional.phone_missing`
+   * - `transactional.whatsapp_missing`
    * - `transactional.no_push_methods`
    * - `transactional.no_wallet_methods`
    */

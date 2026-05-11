@@ -1,4 +1,4 @@
-import type { AuthLoginResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, ProfileUpdateData, SuccessResponse } from "../types/authKit";
+import type { AuthLoginResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse } from "../types/authKit";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
@@ -27,6 +27,18 @@ export declare namespace authKit {
     function sendPhoneCode(clientId: string, phoneNumber: string): Promise<PhoneSendCodeResponse>;
     /** Verify phone verification code (public). */
     function verifyPhoneCode(clientId: string, phoneNumber: string, code: string): Promise<PhoneVerifyResponse>;
+    /** Send a WhatsApp verification deep-link (public). */
+    function sendWhatsApp(clientId: string, body: SendWhatsAppRequest): Promise<SendWhatsAppResponse>;
+    /** Manually verify WhatsApp token if inbound webhook path is unavailable (public). */
+    function verifyWhatsApp(clientId: string, token: string, phoneNumber: string): Promise<VerifyWhatsAppResponse>;
+    /** Poll WhatsApp verification status for a token (public). */
+    function getWhatsAppStatus(clientId: string, token: string): Promise<WhatsAppStatusResponse>;
+    /** Send an SMS click-to-verify link (public). */
+    function sendSmsVerify(clientId: string, body: SendSmsVerifyRequest): Promise<SendSmsVerifyResponse>;
+    /** Verify an SMS click-to-verify token via API (public). */
+    function verifySms(clientId: string, token: string, phoneNumber?: string): Promise<VerifySmsResponse>;
+    /** Upsert contact identity after lightweight verification (public). */
+    function upsertContact(clientId: string, body: UpsertContactRequest): Promise<UpsertContactResponse>;
     function requestPasswordReset(clientId: string, data: {
         email: string;
         redirectUrl?: string;

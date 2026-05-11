@@ -265,7 +265,7 @@ export namespace comms {
    * No broadcast record is created. The send is logged to the contact's
    * communication history with sourceType: 'transactional'.
    *
-    * POST /admin/collection/:collectionId/comm.send
+    * POST /admin/collection/:collectionId/comm/send
    *
    * @example
    * ```typescript
@@ -289,8 +289,18 @@ export namespace comms {
     collectionId: string,
     body: TransactionalSendRequest
   ): Promise<TransactionalSendResult> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm.send`
-    return post<TransactionalSendResult>(path, body)
+    const encodedCollectionId = encodeURIComponent(collectionId)
+    const path = `/admin/collection/${encodedCollectionId}/comm/send`
+    try {
+      return await post<TransactionalSendResult>(path, body)
+    } catch (error: any) {
+      // Backward compatibility for deployments still serving the legacy route.
+      if (error?.statusCode === 404 || error?.code === 404) {
+        const legacyPath = `/admin/collection/${encodedCollectionId}/comm.send`
+        return post<TransactionalSendResult>(legacyPath, body)
+      }
+      throw error
+    }
   }
 
   /**

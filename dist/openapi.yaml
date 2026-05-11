@@ -2198,39 +2198,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/BroadcastSendTestRequest"
-  /admin/collection/{collectionId}/comm.send:
-    post:
-      tags:
-        - comms
-      summary: Send a single transactional message to one contact using a template.
-      operationId: comms_sendTransactional
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TransactionalSendResult"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TransactionalSendRequest"
   /admin/collection/{collectionId}/comm.settings:
     get:
       tags:
@@ -7856,6 +7823,39 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TranslationUpdateRequest"
+  /admin/collection/{encodedCollectionId}/comm/send:
+    post:
+      tags:
+        - comms
+      summary: Send a single transactional message to one contact using a template.
+      operationId: comms_sendTransactional
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: encodedCollectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TransactionalSendResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionalSendRequest"
   /authKit/{authKitId}/config:
     get:
       tags:
@@ -8329,7 +8329,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: Verify phone verification code (public).
+      summary: Upsert contact identity after lightweight verification (public).
       operationId: authKit_requestPasswordReset
       security: []
       parameters:
@@ -8391,6 +8391,64 @@ paths:
             schema:
               type: object
               additionalProperties: true
+  /authkit/{clientId}/auth/sms/send:
+    post:
+      tags:
+        - authKit
+      summary: Send an SMS click-to-verify link (public).
+      operationId: authKit_sendSmsVerify
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendSmsVerifyResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendSmsVerifyRequest"
+  /authkit/{clientId}/auth/sms/verify:
+    post:
+      tags:
+        - authKit
+      summary: Verify an SMS click-to-verify token via API (public).
+      operationId: authKit_verifySms
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifySmsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /authkit/{clientId}/auth/verify-email:
     post:
       tags:
@@ -8443,6 +8501,122 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /authkit/{clientId}/auth/whatsapp/send:
+    post:
+      tags:
+        - authKit
+      summary: Send a WhatsApp verification deep-link (public).
+      operationId: authKit_sendWhatsApp
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendWhatsAppResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendWhatsAppRequest"
+  /authkit/{clientId}/auth/whatsapp/status:
+    get:
+      tags:
+        - authKit
+      summary: Poll WhatsApp verification status for a token (public).
+      operationId: authKit_getWhatsAppStatus
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WhatsAppStatusResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /authkit/{clientId}/auth/whatsapp/verify:
+    post:
+      tags:
+        - authKit
+      summary: Manually verify WhatsApp token if inbound webhook path is unavailable (public).
+      operationId: authKit_verifyWhatsApp
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VerifyWhatsAppResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /authkit/{clientId}/contact/upsert:
+    post:
+      tags:
+        - authKit
+      summary: Upsert contact identity after lightweight verification (public).
+      operationId: authKit_upsertContact
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UpsertContactResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpsertContactRequest"
   /platform/location:
     post:
       tags:
@@ -17690,6 +17864,139 @@ components:
       required:
         - success
         - message
+    SendWhatsAppRequest:
+      type: object
+      properties:
+        phoneNumber:
+          type: string
+        redirectUrl:
+          type: string
+      required:
+        - phoneNumber
+        - redirectUrl
+    SendWhatsAppResponse:
+      type: object
+      properties:
+        waLink:
+          type: string
+        code:
+          type: string
+        token:
+          type: string
+        expiresAt:
+          type: string
+      required:
+        - waLink
+        - code
+        - token
+        - expiresAt
+    VerifyWhatsAppResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        verified:
+          type: boolean
+        redirectUrl:
+          type: string
+      required:
+        - success
+        - verified
+    WhatsAppStatusResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        status:
+          $ref: "#/components/schemas/VerifyStatus"
+        verified:
+          type: boolean
+        redirectUrl:
+          type: string
+        phoneNumber:
+          type: string
+        updatedAt: {}
+      required:
+        - ok
+        - status
+        - verified
+    SendSmsVerifyRequest:
+      type: object
+      properties:
+        phoneNumber:
+          type: string
+        redirectUrl:
+          type: string
+        ctaText:
+          type: string
+      required:
+        - phoneNumber
+        - redirectUrl
+    SendSmsVerifyResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        expiresAt:
+          type: string
+      required:
+        - success
+        - expiresAt
+    VerifySmsResponse:
+      type: object
+      properties:
+        verified:
+          type: boolean
+        redirectUrl:
+          type: string
+        phoneNumber:
+          type: string
+      required:
+        - verified
+    UpsertContactRequest:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        phone:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        displayName:
+          type: string
+        source:
+          type: string
+        customFields:
+          type: object
+          additionalProperties: true
+        externalIds:
+          type: object
+          additionalProperties: true
+    UpsertContactResponse:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        collectionId:
+          type: string
+        contactId:
+          type: string
+        userId:
+          type: string
+        created:
+          type: boolean
+      required:
+        - ok
+        - collectionId
+        - contactId
+        - userId
+        - created
     AuthKitBrandingConfig:
       type: object
       properties:
@@ -18872,6 +19179,7 @@ components:
           enum:
             - email
             - sms
+            - whatsapp
             - push
             - wallet
             - preferred
@@ -18913,6 +19221,7 @@ components:
           enum:
             - email
             - sms
+            - whatsapp
             - push
             - wallet
         messageId:

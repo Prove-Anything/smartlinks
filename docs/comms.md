@@ -19,7 +19,7 @@ This guide covers the full communications surface of the SDK: transactional send
 
 Sends a single message to one contact using a template. No broadcast record is created. The send is logged to the contact's communication history with `sourceType: 'transactional'`.
 
-**Endpoint:** `POST /admin/collection/:collectionId/comm.send`
+**Endpoint:** `POST /admin/collection/:collectionId/comm/send`
 
 ```typescript
 import { comms } from '@proveanything/smartlinks'
@@ -28,7 +28,7 @@ import type { TransactionalSendRequest } from '@proveanything/smartlinks'
 const result = await comms.sendTransactional('collectionId', {
   contactId:  'e4f2a1b0-...',
   templateId: 'warranty-update',
-  channel:    'preferred',          // 'email' | 'sms' | 'push' | 'wallet' | 'preferred' (default)
+  channel:    'preferred',          // 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet' | 'preferred' (default)
   props:      { claimRef: 'CLM-0042', decision: 'approved' },
   include: {
     productId: 'prod-abc123',       // hydrate product context into template
@@ -51,7 +51,7 @@ if (result.ok) {
 |-------|------|-------------|
 | `contactId` | `string` | **Required.** Contact to send to. |
 | `templateId` | `string` | **Required.** Template to render. |
-| `channel` | `'email' \| 'sms' \| 'push' \| 'wallet' \| 'preferred'` | Channel to send on. `'preferred'` (default) picks the contact's best available channel. |
+| `channel` | `'email' \| 'sms' \| 'whatsapp' \| 'push' \| 'wallet' \| 'preferred'` | Channel to send on. `'preferred'` (default) picks the contact's best available channel. |
 | `props` | `Record<string, unknown>` | Extra variables merged into template rendering. |
 | `include` | object | Hydration flags — see table below. |
 | `ref` | `string` | Arbitrary reference string stored with the event. |
@@ -73,7 +73,7 @@ if (result.ok) {
 
 ```typescript
 // Success
-{ ok: true; channel: 'email' | 'sms' | 'push' | 'wallet'; messageId?: string }
+{ ok: true; channel: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet'; messageId?: string }
 
 // Failure
 { ok: false; error: string }

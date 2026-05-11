@@ -201,7 +201,7 @@ export var comms;
      * No broadcast record is created. The send is logged to the contact's
      * communication history with sourceType: 'transactional'.
      *
-      * POST /admin/collection/:collectionId/comm.send
+      * POST /admin/collection/:collectionId/comm/send
      *
      * @example
      * ```typescript
@@ -222,8 +222,19 @@ export var comms;
      * ```
      */
     async function sendTransactional(collectionId, body) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm.send`;
-        return post(path, body);
+        const encodedCollectionId = encodeURIComponent(collectionId);
+        const path = `/admin/collection/${encodedCollectionId}/comm/send`;
+        try {
+            return await post(path, body);
+        }
+        catch (error) {
+            // Backward compatibility for deployments still serving the legacy route.
+            if ((error === null || error === void 0 ? void 0 : error.statusCode) === 404 || (error === null || error === void 0 ? void 0 : error.code) === 404) {
+                const legacyPath = `/admin/collection/${encodedCollectionId}/comm.send`;
+                return post(legacyPath, body);
+            }
+            throw error;
+        }
     }
     comms.sendTransactional = sendTransactional;
     /**
