@@ -392,7 +392,7 @@ function queueAnalytics(path: string, body: unknown, options?: AnalyticsTrackOpt
 
   if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function' && preferBeacon) {
     try {
-      const blob = new Blob([payload], { type: 'application/json' })
+      const blob = new Blob([payload], { type: 'text/plain;charset=UTF-8' })
       const queued = navigator.sendBeacon(url, blob)
       if (queued) return { queued: true, transport: 'beacon' }
     } catch {
@@ -402,12 +402,12 @@ function queueAnalytics(path: string, body: unknown, options?: AnalyticsTrackOpt
   if (typeof fetch === 'function') {
     void fetch(url, {
       method: 'POST',
+      mode: 'cors',
+      keepalive: true,
       headers: {
-        'Content-Type': 'application/json',
-        ...headers,
+        'Content-Type': 'text/plain;charset=UTF-8',
       },
       body: payload,
-      keepalive: true,
     }).catch(() => {})
 
     return { queued: true, transport: 'fetch' }
