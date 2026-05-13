@@ -74,7 +74,7 @@ export namespace authKit {
   }
 
   /** Send a WhatsApp verification deep-link (public). */
-  export async function sendWhatsApp(clientId: string, body: SendWhatsAppRequest): Promise<SendWhatsAppResponse> {
+  export async function sendWhatsApp(clientId: string, body: SendWhatsAppRequest = {}): Promise<SendWhatsAppResponse> {
     return post<SendWhatsAppResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/send`, body)
   }
 

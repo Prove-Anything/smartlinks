@@ -15,21 +15,33 @@ Interactions have two distinct layers:
 | **Interaction Types** | Definitions stored in the database — configure an interaction's ID, permissions, and display metadata once per collection |
 | **Interaction Events** | Individual event records logged each time a user performs that interaction |
 
+Critical rule: event `interactionId` values must reference an existing interaction type definition in that collection. Do not generate random IDs in app code and submit events against them.
+
 ```text
 ┌──────────────────────────────────────────────────────────────────┐
 │ Your App                                                         │
 │                                                                  │
 │  1. Create type once:  interactions.create(collectionId, {       │
 │       id: 'vote', permissions: { uniquePerUser: true } })        │
+│       -> definition exists in platform                           │
 │                                                                  │
 │  2. Log events:        interactions.appendEvent(collectionId, {  │
 │       interactionId: 'vote', outcome: 'option-a', userId })      │
+│       (must match the created definition ID)                     │
 │                                                                  │
 │  3. Read results:      interactions.countsByOutcome(collectionId, │
 │       { interactionId: 'vote' })                                 │
 │       → [{ outcome: 'option-a', count: 42 }, ...]               │
 └──────────────────────────────────────────────────────────────────┘
 ```
+
+### Required Workflow (Do Not Invent IDs)
+
+1. Create an interaction type definition (admin endpoint) before recording any events.
+2. Reuse that same definition ID for every `appendEvent` / `submitPublicEvent` call.
+3. Treat unknown IDs as configuration errors, not as values your app should auto-create.
+
+If your app currently hardcodes strings like `"poll"` or `"entry"`, make sure those IDs are actually created as interaction types during setup.
 
 ---
 
@@ -101,6 +113,8 @@ const { items } = await SL.interactions.publicList(collectionId, { appId: 'my-ap
 
 ## Logging Events
 
+Before logging events, ensure the referenced interaction type already exists. Event ingestion is not intended to create new interaction definitions.
+
 ### Admin Event Append
 
 Use on the server side or in admin flows. Requires `userId` **or** `contactId`.
@@ -166,7 +180,7 @@ await SL.interactions.updateEvent(collectionId, {
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `interactionId` | string | ✅ | Which interaction type this event belongs to |
+| `interactionId` | string | ✅ | Existing interaction type ID (must already be defined in this collection) |
 | `userId` or `contactId` | string | ✅ (one of) | The actor. `appendEvent` / `updateEvent` require one of these |
 | `appId` | string | ❌ | Scopes the event to your app |
 | `outcome` | string | ❌ | The result or choice — what `countsByOutcome()` aggregates |
@@ -280,6 +294,195 @@ When defining a journey trigger, reference the `interactionId` that should fire 
 
 ---
 
+## Interaction Effects
+
+**Interaction effects** are automatic side-effects that fire immediately after an interaction event is recorded. They are defined directly on the interaction definition (`data.effects`) and run inline, fire-and-forget — they never block or fail the interaction response.
+
+Common use cases: send a confirmation email, post a webhook to a CRM, tag the contact, award loyalty points, create an app record, or add the contact to a segment.
+
+### How It Works
+
+1. Event is logged to BigQuery
+2. Interaction definition is loaded
+3. Each configured effect runs **in order**, fire-and-forget
+4. Response is returned to the caller immediately
+
+A failure in one effect is logged and swallowed; subsequent effects still run.
+
+> **Note:** `transactional` and `webhook` effects currently run inline. They are planned to move to background jobs for retry-on-failure support once the jobs infrastructure is fully operational.
+
+### Configuring Effects
+
+Pass `data.effects` when creating or updating an interaction type:
+
+```typescript
+await SL.interactions.create(collectionId, {
+  id: 'donation',
+  appId: 'my-app',
+  permissions: { allowPublicSubmit: true },
+  data: {
+    effects: [
+      {
+        type: 'transactional',
+        config: {
+          templateId: 'tmpl_donation_receipt',
+          channel: 'email',
+          props: {
+            donationAmount: '{{metadata.amount}}',
+            campaignName: '{{metadata.campaign}}',
+          },
+        },
+      },
+      {
+        type: 'tag',
+        config: { tags: ['donor'] },
+      },
+    ],
+  },
+});
+```
+
+### Token Interpolation
+
+All effect `config` values support `{{token}}` interpolation resolved from the event context at runtime. Nested paths using dot notation are supported (e.g. `{{metadata.amount}}`).
+
+| Token | Description |
+|---|---|
+| `{{eventId}}` | BigQuery event UUID |
+| `{{collectionId}}` | Collection / brand ID |
+| `{{appId}}` | App ID that submitted the event |
+| `{{interactionId}}` | Interaction definition ID |
+| `{{contactId}}` | Contact UUID (if resolved) |
+| `{{userId}}` | Firebase UID (if authenticated) |
+| `{{productId}}` | Product ID (if provided with event) |
+| `{{proofId}}` | Proof ID (if provided with event) |
+| `{{variantId}}` | Variant ID (if provided with event) |
+| `{{batchId}}` | Batch ID (if provided with event) |
+| `{{outcome}}` | Event outcome (e.g. `"submitted"`) |
+| `{{eventType}}` | Event type string |
+| `{{source}}` | Event source string |
+| `{{timestamp}}` | ISO 8601 event timestamp |
+| `{{metadata.*}}` | Any key from the event `metadata` object |
+
+Tokens that resolve to `null` or `undefined` become an empty string.
+
+### Effect Types
+
+#### `loyalty`
+
+Awards loyalty points by evaluating `LoyaltyEarningRule` records configured against this interaction. Earning rules are managed separately via the Loyalty API. If no rules are configured, this effect is a no-op.
+
+```json
+{ "type": "loyalty", "config": {} }
+```
+
+#### `transactional`
+
+Sends a message to the contact using a comms template. Supports all channels with full Liquid template hydration.
+
+```json
+{
+  "type": "transactional",
+  "config": {
+    "templateId": "tmpl_donation_receipt",
+    "channel": "email",
+    "props": {
+      "donationAmount": "{{metadata.amount}}"
+    }
+  }
+}
+```
+
+`channel` defaults to `"preferred"` — auto-selects the contact's best available channel respecting consent, suppression, and template availability. Optionally pass `include` to hydrate product/proof/user context, and `props` for additional Liquid variables.
+
+#### `webhook`
+
+Posts a JSON payload to an HTTP endpoint. All config values support `{{token}}` interpolation.
+
+```json
+{
+  "type": "webhook",
+  "config": {
+    "url": "https://crm.example.com/api/events",
+    "headers": { "Authorization": "Bearer sk_live_abc123" },
+    "body": {
+      "contactId": "{{contactId}}",
+      "amount": "{{metadata.amount}}"
+    },
+    "timeout": 8000
+  }
+}
+```
+
+When `body` is omitted, a standard payload is sent containing `eventId`, `collectionId`, `appId`, `interactionId`, `contactId`, `userId`, `productId`, `proofId`, `outcome`, `eventType`, `metadata`, and `timestamp`.
+
+#### `tag`
+
+Adds or removes string tags on the contact record. Skipped if there is no `contactId` on the event.
+
+```json
+{
+  "type": "tag",
+  "config": {
+    "tags": ["donor", "tier-{{metadata.tier}}"],
+    "action": "add"
+  }
+}
+```
+
+`action` defaults to `"add"`. Duplicate adds are no-ops; removing a tag not present is a no-op.
+
+#### `appRecord`
+
+Creates or upserts an app record scoped to the event context. Use `singletonPer` for cardinality control — if a matching singleton already exists it is updated rather than duplicated.
+
+```json
+{
+  "type": "appRecord",
+  "config": {
+    "recordType": "participation",
+    "singletonPer": "contact",
+    "data": {
+      "participatedAt": "{{timestamp}}",
+      "outcome": "{{outcome}}"
+    }
+  }
+}
+```
+
+Common `singletonPer` values: `"contact"`, `"product"`, `"proof"`, `"global"`.
+
+#### `segment`
+
+Adds or removes the contact from a **static** segment. Skipped if there is no `contactId` on the event.
+
+```json
+{
+  "type": "segment",
+  "config": {
+    "segmentId": "seg_donors_2026",
+    "action": "add"
+  }
+}
+```
+
+The segment must already exist and be of `filterType: 'static'`.
+
+### Effects Error Handling
+
+| Scenario | Behaviour |
+|---|---|
+| Effect throws (e.g. template not found, webhook 500) | Error logged server-side; next effect continues |
+| Contact has no email, `transactional` channel = `email` | Effect throws, logged, skipped |
+| `contactId` absent on anonymous event | `tag`, `appRecord`, `segment` log a warning and skip |
+| Unknown `type` value | Warning logged, effect skipped |
+| `loyalty` — no earning rules configured | Silent no-op |
+| Interaction has no `data.effects` | No effects run, no overhead |
+
+Effects do **not** propagate errors back to the API caller.
+
+---
+
 ## TypeScript Types
 
 ```typescript
@@ -299,6 +502,17 @@ import type {
   AdminInteractionsCountsByOutcomeRequest,
   PublicInteractionsCountsByOutcomeRequest,
   PublicInteractionsByUserRequest,
+  // Effects
+  InteractionEffect,              // Single effect entry { type, config? }
+  EffectType,                     // 'loyalty' | 'transactional' | 'webhook' | 'tag' | 'appRecord' | 'segment'
+  EffectConfig,                   // Union of all effect config shapes
+  LoyaltyEffectConfig,
+  TransactionalEffectConfig,
+  WebhookEffectConfig,
+  TagEffectConfig,
+  AppRecordEffectConfig,
+  SegmentEffectConfig,
+  InteractionEventContext,        // Token interpolation context shape
 } from '@proveanything/smartlinks';
 ```
 

@@ -47,7 +47,7 @@ export var authKit;
     }
     authKit.verifyPhoneCode = verifyPhoneCode;
     /** Send a WhatsApp verification deep-link (public). */
-    async function sendWhatsApp(clientId, body) {
+    async function sendWhatsApp(clientId, body = {}) {
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/send`, body);
     }
     authKit.sendWhatsApp = sendWhatsApp;

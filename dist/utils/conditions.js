@@ -753,20 +753,19 @@ async function validateFacet(condition, params) {
             context: { facetKey, matchMode },
         };
     }
-    const assigned = (_c = facets === null || facets === void 0 ? void 0 : facets[facetKey]) !== null && _c !== void 0 ? _c : [];
-    const assignedKeys = assigned.map(v => v.key);
+    const assignedKeys = (_c = facets === null || facets === void 0 ? void 0 : facets[facetKey]) !== null && _c !== void 0 ? _c : [];
     // Presence-only modes — ignore `values`
     if (matchMode === 'hasFacet') {
         return {
             passed: assignedKeys.length > 0,
-            detail: `Product ${assigned.length > 0 ? 'has' : 'does not have'} values on facet '${facetKey}'.`,
+            detail: `Product ${assignedKeys.length > 0 ? 'has' : 'does not have'} values on facet '${facetKey}'.`,
             context: { facetKey, assignedKeys },
         };
     }
     if (matchMode === 'notHasFacet') {
         return {
             passed: assignedKeys.length === 0,
-            detail: `Product ${assigned.length === 0 ? 'has no' : 'has'} values on facet '${facetKey}'.`,
+            detail: `Product ${assignedKeys.length === 0 ? 'has no' : 'has'} values on facet '${facetKey}'.`,
             context: { facetKey, assignedKeys },
         };
     }

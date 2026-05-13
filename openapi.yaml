@@ -17871,9 +17871,6 @@ components:
           type: string
         redirectUrl:
           type: string
-      required:
-        - phoneNumber
-        - redirectUrl
     SendWhatsAppResponse:
       type: object
       properties:
@@ -21121,6 +21118,10 @@ components:
             $ref: "#/components/schemas/InteractionDisplay"
         interactionType:
           type: string
+        effects:
+          type: array
+          items:
+            $ref: "#/components/schemas/InteractionEffect"
         createdAt:
           type: string
       required:
@@ -21196,6 +21197,183 @@ components:
             - FORBIDDEN
       required:
         - error
+    InteractionEffect:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/EffectType"
+        config:
+          $ref: "#/components/schemas/EffectConfig"
+      required:
+        - type
+    LoyaltyEffectConfig:
+      type: object
+      properties: {}
+    TransactionalEffectConfig:
+      type: object
+      properties:
+        templateId:
+          type: string
+        channel:
+          type: string
+          enum:
+            - email
+            - sms
+            - push
+            - whatsapp
+            - wallet
+            - preferred
+        props:
+          type: object
+          additionalProperties: true
+        include:
+          type: object
+          additionalProperties: true
+        productId:
+          type: string
+        proofId:
+          type: string
+        user:
+          type: boolean
+        appCase:
+          type: string
+        appThread:
+          type: string
+        appRecord:
+          type: string
+        appId:
+          type: string
+      required:
+        - templateId
+    WebhookEffectConfig:
+      type: object
+      properties:
+        url:
+          type: string
+        method:
+          type: string
+          enum:
+            - GET
+            - POST
+            - PUT
+            - PATCH
+            - DELETE
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        body:
+          type: object
+          additionalProperties: true
+        timeout:
+          type: number
+      required:
+        - url
+    TagEffectConfig:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            type: string
+        action:
+          type: string
+          enum:
+            - add
+            - remove
+      required:
+        - tags
+    AppRecordEffectConfig:
+      type: object
+      properties:
+        appId:
+          type: string
+        recordType:
+          type: string
+        singletonPer:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        anchors:
+          type: object
+          additionalProperties: true
+        productId:
+          type: string
+        proofId:
+          type: string
+        variantId:
+          type: string
+        batchId:
+          type: string
+    SegmentEffectConfig:
+      type: object
+      properties:
+        segmentId:
+          type: string
+        action:
+          type: string
+          enum:
+            - add
+            - remove
+      required:
+        - segmentId
+    InteractionEventContext:
+      type: object
+      properties:
+        eventId:
+          type: string
+        collectionId:
+          type: string
+        appId:
+          type: string
+        interactionId:
+          type: string
+        contactId:
+          type: string
+        userId:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        variantId:
+          type: string
+        batchId:
+          type: string
+        outcome:
+          type: string
+        eventType:
+          type: string
+        source:
+          type: string
+        timestamp:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        broadcastId:
+          type: string
+        journeyId:
+          type: string
+      required:
+        - eventId
+        - collectionId
+        - appId
+        - interactionId
+        - contactId
+        - userId
+        - productId
+        - proofId
+        - variantId
+        - batchId
+        - outcome
+        - eventType
+        - source
+        - timestamp
+        - metadata
+        - broadcastId
+        - journeyId
     Job:
       type: object
       properties:
@@ -22927,9 +23105,6 @@ components:
       required:
         - key
         - name
-    ProductFacetMap:
-      type: object
-      properties: {}
     ProductQueryRequest:
       type: object
       properties:

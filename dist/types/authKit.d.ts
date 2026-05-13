@@ -77,8 +77,8 @@ export interface EmailVerifyTokenResponse {
 }
 export type VerifyStatus = 'pending' | 'verified' | 'failed' | 'expired' | 'unknown';
 export interface SendWhatsAppRequest {
-    phoneNumber: string;
-    redirectUrl: string;
+    phoneNumber?: string;
+    redirectUrl?: string;
 }
 export interface SendWhatsAppResponse {
     waLink: string;

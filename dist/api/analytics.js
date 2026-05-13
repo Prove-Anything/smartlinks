@@ -276,7 +276,7 @@ function queueAnalytics(path, body, options) {
     const preferBeacon = (options === null || options === void 0 ? void 0 : options.preferBeacon) !== false;
     if (typeof navigator !== 'undefined' && typeof navigator.sendBeacon === 'function' && preferBeacon) {
         try {
-            const blob = new Blob([payload], { type: 'application/json' });
+            const blob = new Blob([payload], { type: 'text/plain;charset=UTF-8' });
             const queued = navigator.sendBeacon(url, blob);
             if (queued)
                 return { queued: true, transport: 'beacon' };
@@ -287,9 +287,12 @@ function queueAnalytics(path, body, options) {
     if (typeof fetch === 'function') {
         void fetch(url, {
             method: 'POST',
-            headers: Object.assign({ 'Content-Type': 'application/json' }, headers),
-            body: payload,
+            mode: 'cors',
             keepalive: true,
+            headers: {
+                'Content-Type': 'text/plain;charset=UTF-8',
+            },
+            body: payload,
         }).catch(() => { });
         return { queued: true, transport: 'fetch' };
     }

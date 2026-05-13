@@ -86,10 +86,12 @@ Use these flows when you want low-friction verification before or without full a
 import { authKit } from '@proveanything/smartlinks';
 
 // 1) Send WhatsApp verification deep link
-const wa = await authKit.sendWhatsApp(clientId, {
-  phoneNumber: '+447911123456',
-  redirectUrl: 'https://app.example.com/checkout/continue',
-});
+const wa = await authKit.sendWhatsApp(clientId);
+
+// Optional: pass redirect context only
+// const wa = await authKit.sendWhatsApp(clientId, {
+//   redirectUrl: 'https://app.example.com/checkout/continue',
+// });
 
 // wa.waLink can be opened directly by the app/browser
 // Poll status while user switches to WhatsApp and back

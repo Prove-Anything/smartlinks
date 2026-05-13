@@ -219,22 +219,15 @@ export interface ProductInfo {
     id: string;
     tags?: Record<string, any>;
     /**
-     * Facet values assigned to this product.
-     * Shape mirrors `ProductFacetMap`: a map of facet key → array of value objects.
-     * Each value object must have at minimum a `key` string property.
+     * Facet assignments on this product: maps each facet key to an array of assigned
+     * value slugs/keys. Matches the slim shape returned by the Products API.
      *
      * @example
      * ```ts
-     * {
-     *   material: [{ key: 'cotton', name: 'Cotton' }],
-     *   certifications: [{ key: 'organic', name: 'Organic' }, { key: 'recycled', name: 'Recycled' }]
-     * }
+     * { material: ['cotton'], certifications: ['organic', 'recycled'] }
      * ```
      */
-    facets?: Record<string, Array<{
-        key: string;
-        [k: string]: unknown;
-    }>>;
+    facets?: Record<string, string[]>;
 }
 /**
  * Proof information for condition validation

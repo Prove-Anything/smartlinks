@@ -1,6 +1,6 @@
 {
   "name": "@proveanything/smartlinks",
-  "version": "1.13.8",
+  "version": "1.13.11",
   "description": "Official JavaScript/TypeScript SDK for the Smartlinks API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

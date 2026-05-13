@@ -263,19 +263,15 @@ export interface ProductInfo {
   id: string
   tags?: Record<string, any>
   /**
-   * Facet values assigned to this product.
-   * Shape mirrors `ProductFacetMap`: a map of facet key → array of value objects.
-   * Each value object must have at minimum a `key` string property.
+   * Facet assignments on this product: maps each facet key to an array of assigned
+   * value slugs/keys. Matches the slim shape returned by the Products API.
    *
    * @example
    * ```ts
-   * {
-   *   material: [{ key: 'cotton', name: 'Cotton' }],
-   *   certifications: [{ key: 'organic', name: 'Organic' }, { key: 'recycled', name: 'Recycled' }]
-   * }
+   * { material: ['cotton'], certifications: ['organic', 'recycled'] }
    * ```
    */
-  facets?: Record<string, Array<{ key: string; [k: string]: unknown }>>
+  facets?: Record<string, string[]>
 }
 
 /**
@@ -1173,14 +1169,13 @@ async function validateFacet(condition: FacetCondition, params: ConditionParams)
     }
   }
 
-  const assigned: Array<{ key: string; [k: string]: unknown }> = facets?.[facetKey] ?? []
-  const assignedKeys = assigned.map(v => v.key)
+  const assignedKeys: string[] = facets?.[facetKey] ?? []
 
   // Presence-only modes — ignore `values`
   if (matchMode === 'hasFacet') {
     return {
       passed: assignedKeys.length > 0,
-      detail: `Product ${assigned.length > 0 ? 'has' : 'does not have'} values on facet '${facetKey}'.`,
+      detail: `Product ${assignedKeys.length > 0 ? 'has' : 'does not have'} values on facet '${facetKey}'.`,
       context: { facetKey, assignedKeys },
     }
   }
@@ -1188,7 +1183,7 @@ async function validateFacet(condition: FacetCondition, params: ConditionParams)
   if (matchMode === 'notHasFacet') {
     return {
       passed: assignedKeys.length === 0,
-      detail: `Product ${assigned.length === 0 ? 'has no' : 'has'} values on facet '${facetKey}'.`,
+      detail: `Product ${assignedKeys.length === 0 ? 'has no' : 'has'} values on facet '${facetKey}'.`,
       context: { facetKey, assignedKeys },
     }
   }

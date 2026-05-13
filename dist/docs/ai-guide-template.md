@@ -225,6 +225,8 @@ await SL.appConfiguration.setConfig({
 
 ### Tracked Interactions
 
+Use interaction IDs that are defined via `SL.interactions.create(...)` for the collection. Do not invent ad-hoc IDs in app code.
+
 | Interaction ID | Description                                   |
 | -------------- | --------------------------------------------- |
 | `page-view`    | Tracks each time a user views the public page |

@@ -24,6 +24,10 @@ export interface AdditionalGtin {
   owner?: boolean | null
 }
 
+/**
+ * Full facet value definition — returned by the Facets API.
+ * Not embedded in product responses; use ProductFacetMap for product-level assignments.
+ */
 export interface ProductFacetValue {
   id?: string
   key: string
@@ -35,9 +39,14 @@ export interface ProductFacetValue {
   icon?: string
 }
 
-export interface ProductFacetMap {
-  [facetKey: string]: ProductFacetValue[]
-}
+/**
+ * Slim facet assignments on a product: maps each facet key to an array of assigned
+ * value slugs/keys. Full value metadata lives in the Facets API.
+ *
+ * @example
+ * { type: ['website'], certifications: ['organic', 'recycled'] }
+ */
+export type ProductFacetMap = Record<string, string[]>
 
 export interface ProductQueryRequest {
   query?: {

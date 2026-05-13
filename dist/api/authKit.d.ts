@@ -28,7 +28,7 @@ export declare namespace authKit {
     /** Verify phone verification code (public). */
     function verifyPhoneCode(clientId: string, phoneNumber: string, code: string): Promise<PhoneVerifyResponse>;
     /** Send a WhatsApp verification deep-link (public). */
-    function sendWhatsApp(clientId: string, body: SendWhatsAppRequest): Promise<SendWhatsAppResponse>;
+    function sendWhatsApp(clientId: string, body?: SendWhatsAppRequest): Promise<SendWhatsAppResponse>;
     /** Manually verify WhatsApp token if inbound webhook path is unavailable (public). */
     function verifyWhatsApp(clientId: string, token: string, phoneNumber: string): Promise<VerifyWhatsAppResponse>;
     /** Poll WhatsApp verification status for a token (public). */

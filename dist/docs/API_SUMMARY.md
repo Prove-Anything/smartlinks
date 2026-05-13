@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.13.8  |  Generated: 2026-05-11T11:54:06.578Z
+Version: 1.13.11  |  Generated: 2026-05-13T07:57:31.015Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3027,8 +3027,8 @@ interface EmailVerifyTokenResponse {
 **SendWhatsAppRequest** (interface)
 ```typescript
 interface SendWhatsAppRequest {
-  phoneNumber: string
-  redirectUrl: string
+  phoneNumber?: string
+  redirectUrl?: string
 }
 ```
 
@@ -5457,8 +5457,9 @@ interface InteractionTypeRecord {
   permissions?: InteractionPermissions
   data?: {
   display?: InteractionDisplay
-  scopes?: Record<string, InteractionDisplay>;
+  scopes?: Record<string, InteractionDisplay>
   interactionType?: string
+  effects?: InteractionEffect[]
   [key: string]: unknown
   }
   createdAt: string
@@ -5525,6 +5526,113 @@ interface SubmitInteractionError {
   | 'origin_forbidden'
 }
 ```
+
+**InteractionEffect** (interface)
+```typescript
+interface InteractionEffect {
+  type: EffectType
+  config?: EffectConfig
+}
+```
+
+**LoyaltyEffectConfig** (interface)
+```typescript
+interface LoyaltyEffectConfig {
+  [key: string]: never
+}
+```
+
+**TransactionalEffectConfig** (interface)
+```typescript
+interface TransactionalEffectConfig {
+  templateId: string
+  * Channel to use.
+  * Default: 'preferred' — auto-selects the contact's best available channel.
+  channel?: 'email' | 'sms' | 'push' | 'whatsapp' | 'wallet' | 'preferred'
+  props?: Record<string, unknown>
+  include?: {
+  productId?: string
+  proofId?:   string
+  user?:      boolean
+  appCase?:   string
+  appThread?: string
+  appRecord?: string
+  }
+  appId?: string
+}
+```
+
+**WebhookEffectConfig** (interface)
+```typescript
+interface WebhookEffectConfig {
+  url: string
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+  headers?: Record<string, string>
+  body?: Record<string, unknown>
+  timeout?: number
+}
+```
+
+**TagEffectConfig** (interface)
+```typescript
+interface TagEffectConfig {
+  tags: string[]
+  action?: 'add' | 'remove'
+}
+```
+
+**AppRecordEffectConfig** (interface)
+```typescript
+interface AppRecordEffectConfig {
+  appId?: string
+  recordType?: string
+  * Singleton cardinality key. At most one record per recordType+singletonPer will
+  * exist per scope. Common values: 'contact', 'product', 'proof', 'global'
+  singletonPer?: string
+  data?: Record<string, unknown>
+  anchors?: {
+  productId?: string
+  proofId?:   string
+  variantId?: string
+  batchId?:   string
+  }
+}
+```
+
+**SegmentEffectConfig** (interface)
+```typescript
+interface SegmentEffectConfig {
+  segmentId: string
+  action?: 'add' | 'remove'
+}
+```
+
+**InteractionEventContext** (interface)
+```typescript
+interface InteractionEventContext {
+  eventId:       string | null
+  collectionId:  string
+  appId:         string | null
+  interactionId: string | null
+  contactId:     string | null
+  userId:        string | null
+  productId:     string | null
+  proofId:       string | null
+  variantId:     string | null
+  batchId:       string | null
+  outcome:       string | null
+  eventType:     string | null
+  source:        string | null
+  timestamp:     string | null
+  metadata:      Record<string, unknown>
+  broadcastId:   string | null
+  journeyId:     string | null
+}
+```
+
+**EffectType** = ``
+
+**EffectConfig** = ``
 
 ### jobs
 
@@ -6581,13 +6689,6 @@ interface ProductFacetValue {
 }
 ```
 
-**ProductFacetMap** (interface)
-```typescript
-interface ProductFacetMap {
-  [facetKey: string]: ProductFacetValue[]
-}
-```
-
 **ProductQueryRequest** (interface)
 ```typescript
 interface ProductQueryRequest {
@@ -6673,6 +6774,8 @@ interface ProductQueryResponse {
 **JsonValue** = ``
 
 **ISODateString** = `string`
+
+**ProductFacetMap** = `Record<string, string[]>`
 
 **ProductClaimCreateRequestBody** = `Omit<ProductClaimCreateInput, 'collectionId' | 'id'>`
 
@@ -7414,18 +7517,14 @@ interface UserInfo {
 interface ProductInfo {
   id: string
   tags?: Record<string, any>
-  * Facet values assigned to this product.
-  * Shape mirrors `ProductFacetMap`: a map of facet key → array of value objects.
-  * Each value object must have at minimum a `key` string property.
+  * Facet assignments on this product: maps each facet key to an array of assigned
+  * value slugs/keys. Matches the slim shape returned by the Products API.
   *
   * @example
   * ```ts
-  * {
-  *   material: [{ key: 'cotton', name: 'Cotton' }],
-  *   certifications: [{ key: 'organic', name: 'Organic' }, { key: 'recycled', name: 'Recycled' }]
-  * }
+  * { material: ['cotton'], certifications: ['organic', 'recycled'] }
   * ```
-  facets?: Record<string, Array<{ key: string; [k: string]: unknown }>>
+  facets?: Record<string, string[]>
 }
 ```
 
@@ -8093,7 +8192,7 @@ Send phone verification code (public).
 **verifyPhoneCode**(clientId: string, phoneNumber: string, code: string) → `Promise<PhoneVerifyResponse>`
 Verify phone verification code (public).
 
-**sendWhatsApp**(clientId: string, body: SendWhatsAppRequest) → `Promise<SendWhatsAppResponse>`
+**sendWhatsApp**(clientId: string, body: SendWhatsAppRequest = {}) → `Promise<SendWhatsAppResponse>`
 Send a WhatsApp verification deep-link (public).
 
 **verifyWhatsApp**(clientId: string, token: string, phoneNumber: string) → `Promise<VerifyWhatsAppResponse>`
@@ -8704,54 +8803,54 @@ Legacy-friendly alias for aggregate().
 
 **appendEvent**(collectionId: string,
     body: AppendInteractionBody) → `Promise<`
-POST /admin/collection/:collectionId/interactions/append Appends one interaction event.
+POST /admin/collection/:collectionId/interactions/append Appends one interaction event. `interactionId` must reference an existing interaction type definition. This endpoint does not create interaction definitions.
 
 **updateEvent**(collectionId: string,
     body: UpdateInteractionBody) → `Promise<`
-POST /admin/collection/:collectionId/interactions/append Appends one interaction event.
+POST /admin/collection/:collectionId/interactions/append Appends one interaction event. `interactionId` must reference an existing interaction type definition. This endpoint does not create interaction definitions.
 
 **submitPublicEvent**(collectionId: string,
     body: AppendInteractionBody) → `Promise<SubmitInteractionResponse | SubmitInteractionError>`
-POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. `interactionId` must reference an existing interaction type definition. This endpoint does not create interaction definitions. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **create**(collectionId: string,
     body: CreateInteractionTypeBody) → `Promise<InteractionTypeRecord>`
-POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. `interactionId` must reference an existing interaction type definition. This endpoint does not create interaction definitions. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **list**(collectionId: string,
     query: ListInteractionTypesQuery = {}) → `Promise<InteractionTypeList>`
-POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. `interactionId` must reference an existing interaction type definition. This endpoint does not create interaction definitions. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **get**(collectionId: string,
     id: string) → `Promise<InteractionTypeRecord>`
-POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. `interactionId` must reference an existing interaction type definition. This endpoint does not create interaction definitions. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **update**(collectionId: string,
     id: string,
     patchBody: UpdateInteractionTypeBody) → `Promise<InteractionTypeRecord>`
-POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. `interactionId` must reference an existing interaction type definition. This endpoint does not create interaction definitions. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **remove**(collectionId: string,
     id: string) → `Promise<void>`
-POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. `interactionId` must reference an existing interaction type definition. This endpoint does not create interaction definitions. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **publicCountsByOutcome**(collectionId: string,
     body: PublicInteractionsCountsByOutcomeRequest,
     authToken?: string) → `Promise<OutcomeCount[]>`
-POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. `interactionId` must reference an existing interaction type definition. This endpoint does not create interaction definitions. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **publicMyInteractions**(collectionId: string,
     body: PublicInteractionsByUserRequest,
     authToken?: string) → `Promise<InteractionEventRow[]>`
-POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. `interactionId` must reference an existing interaction type definition. This endpoint does not create interaction definitions. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **publicList**(collectionId: string,
     query: ListInteractionTypesQuery = {}) → `Promise<InteractionTypeList>`
-POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. `interactionId` must reference an existing interaction type definition. This endpoint does not create interaction definitions. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 **publicGet**(collectionId: string,
     id: string) → `Promise<InteractionTypeRecord>`
-POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
+POST /api/v1/public/collection/:collectionId/interactions/submit Submits an interaction event from a public/client-side context. `interactionId` must reference an existing interaction type definition. This endpoint does not create interaction definitions. When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor `contactId` is required. Pass `anonId` inside `metadata` to enable device-level deduplication via `uniquePerAnonId`.
 
 ### jobs
 

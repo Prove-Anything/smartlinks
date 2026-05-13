@@ -590,6 +590,7 @@ When a user votes, publish to the channel:
 ```typescript
 const submitVote = async (option: string) => {
   // Record in SmartLinks
+  // 'poll' must already exist as an interaction type definition for this collection.
   await SL.interactions.submitPublicEvent(collectionId, {
     appId,
     interactionId: 'poll',

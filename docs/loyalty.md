@@ -120,6 +120,8 @@ const { items } = await SL.loyalty.publicGetMineHistory(collectionId, schemeId, 
 
 Earning rules are the control plane that connects interactions to point awards. The server evaluates them automatically — your app never sets a point value directly.
 
+Every `interactionId` in a loyalty rule must reference an existing interaction type definition in the same collection.
+
 ### Create a Rule
 
 ```typescript

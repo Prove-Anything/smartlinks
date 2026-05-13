@@ -219,8 +219,9 @@ export interface InteractionTypeRecord {
   permissions?: InteractionPermissions
   data?: {
     display?: InteractionDisplay
-    scopes?: Record<string, InteractionDisplay>;
+    scopes?: Record<string, InteractionDisplay>
     interactionType?: string
+    effects?: InteractionEffect[]
     [key: string]: unknown
   }
   createdAt: string
@@ -267,4 +268,126 @@ export interface SubmitInteractionError {
     | 'before_start'
     | 'after_end'
     | 'origin_forbidden'
+}
+
+// ---------------------------------------------------------------------------
+// Interaction Effects
+// ---------------------------------------------------------------------------
+
+export type EffectType =
+  | 'loyalty'
+  | 'transactional'
+  | 'webhook'
+  | 'tag'
+  | 'appRecord'
+  | 'segment'
+
+export interface InteractionEffect {
+  type: EffectType
+  config?: EffectConfig
+}
+
+export type EffectConfig =
+  | LoyaltyEffectConfig
+  | TransactionalEffectConfig
+  | WebhookEffectConfig
+  | TagEffectConfig
+  | AppRecordEffectConfig
+  | SegmentEffectConfig
+
+/** No config required — earning rules are driven by the interactionId */
+export interface LoyaltyEffectConfig {
+  [key: string]: never
+}
+
+export interface TransactionalEffectConfig {
+  /** Required. Firestore template ID */
+  templateId: string
+  /**
+   * Channel to use.
+   * Default: 'preferred' — auto-selects the contact's best available channel.
+   */
+  channel?: 'email' | 'sms' | 'push' | 'whatsapp' | 'wallet' | 'preferred'
+  /** Additional Liquid variables. Supports {{token}} interpolation. */
+  props?: Record<string, unknown>
+  /** Hydration directives. productId/proofId default to the event's own values. */
+  include?: {
+    productId?: string
+    proofId?:   string
+    user?:      boolean
+    appCase?:   string
+    appThread?: string
+    appRecord?: string
+  }
+  /** Override the appId logged on the comms event row. */
+  appId?: string
+}
+
+export interface WebhookEffectConfig {
+  /** Required. Target URL. Supports {{token}} interpolation. */
+  url: string
+  /** HTTP verb. Default: 'POST' */
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
+  /** Additional HTTP headers. Supports {{token}} interpolation on values. */
+  headers?: Record<string, string>
+  /** JSON body template. Supports {{token}} interpolation on string values. */
+  body?: Record<string, unknown>
+  /** Request timeout in milliseconds. Default: 10000 */
+  timeout?: number
+}
+
+export interface TagEffectConfig {
+  /** One or more tag strings to add or remove. Supports {{token}} interpolation. */
+  tags: string[]
+  /** Default: 'add' */
+  action?: 'add' | 'remove'
+}
+
+export interface AppRecordEffectConfig {
+  /** Override the appId for the created record. */
+  appId?: string
+  /** Record type identifier. Default: 'default' */
+  recordType?: string
+  /**
+   * Singleton cardinality key. At most one record per recordType+singletonPer will
+   * exist per scope. Common values: 'contact', 'product', 'proof', 'global'
+   */
+  singletonPer?: string
+  /** Data object stored on the record. Supports {{token}} interpolation. */
+  data?: Record<string, unknown>
+  /** Override scope anchors. Defaults to the event's own ids. */
+  anchors?: {
+    productId?: string
+    proofId?:   string
+    variantId?: string
+    batchId?:   string
+  }
+}
+
+export interface SegmentEffectConfig {
+  /** Required. UUID of the static segment to modify */
+  segmentId: string
+  /** Default: 'add' */
+  action?: 'add' | 'remove'
+}
+
+/** Shape of the event context used for {{token}} interpolation in effect configs */
+export interface InteractionEventContext {
+  eventId:       string | null
+  collectionId:  string
+  appId:         string | null
+  interactionId: string | null
+  contactId:     string | null
+  userId:        string | null
+  productId:     string | null
+  proofId:       string | null
+  variantId:     string | null
+  batchId:       string | null
+  outcome:       string | null
+  eventType:     string | null
+  source:        string | null
+  timestamp:     string | null
+  metadata:      Record<string, unknown>
+  broadcastId:   string | null
+  journeyId:     string | null
 }

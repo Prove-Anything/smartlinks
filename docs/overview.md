@@ -227,6 +227,8 @@ See `docs/ai.md` for complete documentation.
 
 The `SL.interactions` namespace tracks user engagement — competition entries, votes, form submissions, warranty registrations. Events can trigger automated journeys and communications.
 
+Important: create interaction type definitions first, then submit events using those existing IDs. Do not invent `interactionId` values in client code.
+
 Key functions: `submitPublicEvent()`, `appendEvent()` (admin), `countsByOutcome()`, `query()`.
 
 See `docs/interactions.md` for complete documentation.

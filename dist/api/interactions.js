@@ -54,7 +54,10 @@ export var interactions;
     // Deprecated endpoint removed: actorIdsByInteraction
     /**
      * POST /admin/collection/:collectionId/interactions/append
-     * Appends one interaction event.
+      * Appends one interaction event.
+      *
+      * `interactionId` must reference an existing interaction type definition.
+      * This endpoint does not create interaction definitions.
      */
     async function appendEvent(collectionId, body) {
         if (!body.userId && !body.contactId) {
@@ -73,13 +76,15 @@ export var interactions;
     }
     interactions.updateEvent = updateEvent;
     /**
-       * POST /api/v1/public/collection/:collectionId/interactions/submit
-       *
-       * Submits an interaction event from a public/client-side context.
-       * When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor
-       * `contactId` is required. Pass `anonId` inside `metadata` to enable
-       * device-level deduplication via `uniquePerAnonId`.
-       */
+     * POST /api/v1/public/collection/:collectionId/interactions/submit
+     *
+     * Submits an interaction event from a public/client-side context.
+    * `interactionId` must reference an existing interaction type definition.
+    * This endpoint does not create interaction definitions.
+     * When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor
+     * `contactId` is required. Pass `anonId` inside `metadata` to enable
+     * device-level deduplication via `uniquePerAnonId`.
+     */
     async function submitPublicEvent(collectionId, body) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/interactions/submit`;
         return post(path, body);

@@ -21,7 +21,10 @@ export declare namespace interactions {
     function aggregateByOutcome(collectionId: string, body: AdminInteractionsAggregateRequest): Promise<AdminInteractionsAggregateResponse>;
     /**
      * POST /admin/collection/:collectionId/interactions/append
-     * Appends one interaction event.
+      * Appends one interaction event.
+      *
+      * `interactionId` must reference an existing interaction type definition.
+      * This endpoint does not create interaction definitions.
      */
     function appendEvent(collectionId: string, body: AppendInteractionBody): Promise<{
         success: true;
@@ -30,13 +33,15 @@ export declare namespace interactions {
         success: true;
     }>;
     /**
-       * POST /api/v1/public/collection/:collectionId/interactions/submit
-       *
-       * Submits an interaction event from a public/client-side context.
-       * When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor
-       * `contactId` is required. Pass `anonId` inside `metadata` to enable
-       * device-level deduplication via `uniquePerAnonId`.
-       */
+     * POST /api/v1/public/collection/:collectionId/interactions/submit
+     *
+     * Submits an interaction event from a public/client-side context.
+    * `interactionId` must reference an existing interaction type definition.
+    * This endpoint does not create interaction definitions.
+     * When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor
+     * `contactId` is required. Pass `anonId` inside `metadata` to enable
+     * device-level deduplication via `uniquePerAnonId`.
+     */
     function submitPublicEvent(collectionId: string, body: AppendInteractionBody): Promise<SubmitInteractionResponse | SubmitInteractionError>;
     function create(collectionId: string, body: CreateInteractionTypeBody): Promise<InteractionTypeRecord>;
     function list(collectionId: string, query?: ListInteractionTypesQuery): Promise<InteractionTypeList>;

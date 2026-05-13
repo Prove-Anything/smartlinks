@@ -88,7 +88,10 @@ export namespace interactions {
 
   /**
    * POST /admin/collection/:collectionId/interactions/append
-   * Appends one interaction event.
+    * Appends one interaction event.
+    *
+    * `interactionId` must reference an existing interaction type definition.
+    * This endpoint does not create interaction definitions.
    */
   export async function appendEvent(
     collectionId: string,
@@ -112,10 +115,12 @@ export namespace interactions {
     return post<{ success: true }>(path, body)
   }
 
-/**
+  /**
    * POST /api/v1/public/collection/:collectionId/interactions/submit
    *
    * Submits an interaction event from a public/client-side context.
+  * `interactionId` must reference an existing interaction type definition.
+  * This endpoint does not create interaction definitions.
    * When the interaction has `allowAnonymousSubmit: true`, neither `userId` nor
    * `contactId` is required. Pass `anonId` inside `metadata` to enable
    * device-level deduplication via `uniquePerAnonId`.
