@@ -21,6 +21,9 @@ export interface ProfileUpdateData {
     photoURL?: string;
     accountData?: Record<string, any>;
 }
+export interface UpdateProfileResponse extends UserProfile {
+    token: string;
+}
 export interface SuccessResponse {
     success: boolean;
     message?: string;
@@ -80,6 +83,7 @@ export interface WhatsAppReplyCta {
     body: string;
     buttonLabel: string;
     buttonUrl: string;
+    mediaUrl?: string;
 }
 export interface WhatsAppReplyOptions {
     /** Option A: explicit Twilio Content SID */
@@ -90,10 +94,21 @@ export interface WhatsAppReplyOptions {
     /** Option C: plain-text fallback */
     text?: string;
 }
+export interface WhatsAppContactData {
+    name?: string;
+    firstName?: string;
+    lastName?: string;
+    displayName?: string;
+    email?: string;
+    source?: string;
+    customFields?: Record<string, unknown>;
+    externalIds?: Record<string, unknown>;
+}
 export interface SendWhatsAppRequest {
     redirectUrl?: string;
     prefillMessage?: string;
     reply?: WhatsAppReplyOptions;
+    contactData?: WhatsAppContactData;
 }
 export interface SendWhatsAppResponse {
     waLink: string;

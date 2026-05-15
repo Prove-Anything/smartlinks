@@ -51,7 +51,7 @@ export var authKit;
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/send`, body);
     }
     authKit.sendWhatsApp = sendWhatsApp;
-    /** Manually verify WhatsApp token if inbound webhook path is unavailable (public). */
+    /** Manually verify WhatsApp token if inbound webhook path is unavailable (legacy/public fallback). */
     async function verifyWhatsApp(clientId, token, phoneNumber) {
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/verify`, { token, phoneNumber });
     }
@@ -122,8 +122,12 @@ export var authKit;
         return request(`/authkit/${encodeURIComponent(clientId)}/account/profile`);
     }
     authKit.getProfile = getProfile;
+    /** Update the authenticated user's profile and replace the bearer token when refreshed claims are returned. */
     async function updateProfile(clientId, data) {
-        return post(`/authkit/${encodeURIComponent(clientId)}/account/update-profile`, data);
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/account/update-profile`, data);
+        if (res.token)
+            setBearerToken(res.token);
+        return res;
     }
     authKit.updateProfile = updateProfile;
     async function changePassword(clientId, currentPassword, newPassword) {

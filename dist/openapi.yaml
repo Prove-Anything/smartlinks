@@ -8016,7 +8016,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: authKit.updateProfile
+      summary: "Update the authenticated user's profile and replace the bearer token when refreshed claims are returned."
       operationId: authKit_updateProfile
       security: []
       parameters:
@@ -8031,7 +8031,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/UserProfile"
+                $ref: "#/components/schemas/UpdateProfileResponse"
         400:
           description: Bad request
         401:
@@ -8589,7 +8589,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: Manually verify WhatsApp token if inbound webhook path is unavailable (public).
+      summary: Manually verify WhatsApp token if inbound webhook path is unavailable (legacy/public fallback).
       operationId: authKit_verifyWhatsApp
       security: []
       parameters:
@@ -17756,6 +17756,13 @@ components:
         accountData:
           type: object
           additionalProperties: true
+    UpdateProfileResponse:
+      type: object
+      properties:
+        token:
+          type: string
+      required:
+        - token
     SuccessResponse:
       type: object
       properties:
@@ -17899,6 +17906,8 @@ components:
           type: string
         buttonUrl:
           type: string
+        mediaUrl:
+          type: string
       required:
         - body
         - buttonLabel
@@ -17915,6 +17924,27 @@ components:
           $ref: "#/components/schemas/WhatsAppReplyCta"
         text:
           type: string
+    WhatsAppContactData:
+      type: object
+      properties:
+        name:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+        source:
+          type: string
+        customFields:
+          type: object
+          additionalProperties: true
+        externalIds:
+          type: object
+          additionalProperties: true
     SendWhatsAppRequest:
       type: object
       properties:
@@ -17924,6 +17954,8 @@ components:
           type: string
         reply:
           $ref: "#/components/schemas/WhatsAppReplyOptions"
+        contactData:
+          $ref: "#/components/schemas/WhatsAppContactData"
     SendWhatsAppResponse:
       type: object
       properties:

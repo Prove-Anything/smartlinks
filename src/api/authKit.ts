@@ -12,6 +12,7 @@ import type {
   MagicLinkSendResponse,
   MagicLinkVerifyResponse,
   UserProfile,
+  UpdateProfileResponse,
   ProfileUpdateData,
   SuccessResponse,
   SendWhatsAppRequest,
@@ -79,7 +80,7 @@ export namespace authKit {
     return post<SendWhatsAppResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/send`, body)
   }
 
-  /** Manually verify WhatsApp token if inbound webhook path is unavailable (public). */
+  /** Manually verify WhatsApp token if inbound webhook path is unavailable (legacy/public fallback). */
   export async function verifyWhatsApp(clientId: string, token: string, phoneNumber: string): Promise<VerifyWhatsAppResponse> {
     return post<VerifyWhatsAppResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/verify`, { token, phoneNumber })
   }
@@ -149,8 +150,11 @@ export namespace authKit {
     return request<UserProfile>(`/authkit/${encodeURIComponent(clientId)}/account/profile`)
   }
 
-  export async function updateProfile(clientId: string, data: ProfileUpdateData): Promise<UserProfile> {
-    return post<UserProfile>(`/authkit/${encodeURIComponent(clientId)}/account/update-profile`, data)
+  /** Update the authenticated user's profile and replace the bearer token when refreshed claims are returned. */
+  export async function updateProfile(clientId: string, data: ProfileUpdateData): Promise<UpdateProfileResponse> {
+    const res = await post<UpdateProfileResponse>(`/authkit/${encodeURIComponent(clientId)}/account/update-profile`, data)
+    if (res.token) setBearerToken(res.token)
+    return res
   }
 
   export async function changePassword(clientId: string, currentPassword: string, newPassword: string): Promise<SuccessResponse> {

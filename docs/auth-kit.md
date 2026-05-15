@@ -82,6 +82,8 @@ const session = await authKit.verifyPhoneCode(clientId, '+61400000000', '123456'
 
 Use these flows when you want low-friction verification before or without full account sign-in.
 
+WhatsApp verification is token-first. The user does not type their phone number in your app for this flow; phone ownership is proven by the inbound WhatsApp sender number.
+
 ```ts
 import { authKit } from '@proveanything/smartlinks';
 
@@ -92,11 +94,18 @@ const wa = await authKit.sendWhatsApp(clientId);
 // const wa = await authKit.sendWhatsApp(clientId, {
 //   redirectUrl: 'https://app.example.com/checkout/continue',
 //   prefillMessage: 'Please let me bid in this auction. Code: {{token}}',
+//   contactData: {
+//     name: 'Jane Doe',
+//     email: 'jane@example.com',
+//     source: 'auction-checkout',
+//     customFields: { agreedToTerms: true },
+//   },
 //   reply: {
 //     cta: {
 //       body: "You're verified and ready to bid.",
 //       buttonLabel: 'Back to Auction',
 //       buttonUrl: '{{returnUrl}}',
+//       // mediaUrl: 'https://cdn.example.com/bid-confirmed.jpg',  // optional: include to use image card template
 //     },
 //     text: "You're verified. Return to the app to continue.",
 //   },
@@ -112,7 +121,7 @@ if (status.status === 'verified' && wa.sessionKey) {
   // session.token can be used as the authenticated bearer token
 }
 
-// Optional fallback path if webhook confirmation is unavailable
+// Optional legacy fallback path if webhook confirmation is unavailable
 await authKit.verifyWhatsApp(clientId, wa.token, '+447911123456');
 
 // 2) Or send SMS click-to-verify link
@@ -125,6 +134,13 @@ await authKit.sendSmsVerify(clientId, {
 // Optional API verification path
 await authKit.verifySms(clientId, '<token>', '+447911123456');
 ```
+
+`contactData` is optional and is useful when you collect name/email before the customer switches to WhatsApp.
+
+- Auth Kit stores `contactData` on the verification token metadata first.
+- Contact details are written to durable contact storage only after WhatsApp verification succeeds.
+- If the user abandons before verification, no contact is created.
+- `contactData` must not include phone; the verified inbound WhatsApp sender number is always authoritative.
 
 ### Contact bootstrap / durable identity
 
@@ -155,10 +171,14 @@ Verification status values returned by `authKit.getWhatsAppStatus` are:
 Pass a `reply` object in `sendWhatsApp` to send a message back to the user after they confirm `CONFIRM <token>`. Reply resolution order:
 
 1. `reply.contentSid` — explicit Twilio Content SID
-2. `reply.cta` — CTA shorthand using the shared generic Twilio Content template SID (`TWILIO_WHATSAPP_GENERIC_CTA_SID`)
+2. `reply.cta` — CTA shorthand:
+   - If `cta.mediaUrl` is present (valid public `https://` URL), uses the **image card** Twilio Content template (`TWILIO_WHATSAPP_IMAGE_CTA_SID`)
+   - Otherwise uses the **text CTA** template (`TWILIO_WHATSAPP_GENERIC_CTA_SID`)
 3. `reply.text` — plain-text fallback
 4. Per-client default (`authKit/{clientId}.whatsapp` config)
 5. Built-in default text
+
+> **Important:** Only pass `mediaUrl` when you have a valid, publicly reachable `https://` JPEG or PNG. If the field is absent or blank, the text-only CTA template is selected automatically. Never pass an empty string — omit the field entirely to avoid Twilio rejecting the send.
 
 The following template placeholders are available in `reply.text`, `reply.cta` fields, and `reply.contentVariables` values:
 
@@ -182,7 +202,11 @@ const session = await authKit.exchangeWhatsAppSession(clientId, wa.token, wa.ses
 
 `sessionKey` is returned by `sendWhatsApp` and is used to mitigate token replay from contexts that did not initiate the browser flow.
 
+When `contactData.name` or explicit name parts were supplied on the original `sendWhatsApp` call, `session.user.displayName` and the returned bearer token claims are now seeded from the verified contact record instead of staying `null`.
+
 > **Note:** `redirectUrl` is optional. WhatsApp tokens are short hex strings (16 chars) for better UX.
+>
+> **Legacy note:** `verifyWhatsApp` is for older phone-bound token flows. Prefer inbound WhatsApp token confirmation plus status polling for new implementations.
 
 ### Google OAuth
 
@@ -202,7 +226,13 @@ import { authKit } from '@proveanything/smartlinks';
 const profile = await authKit.getProfile(clientId);
 
 // Update profile
-await authKit.updateProfile(clientId, { displayName: 'Alice B.', avatarUrl: '...' });
+const updatedProfile = await authKit.updateProfile(clientId, {
+  displayName: 'Alice B.',
+  avatarUrl: '...'
+});
+
+// The SDK automatically swaps in updatedProfile.token so future auth.verify()
+// and authenticated calls use fresh displayName/photoURL claims immediately.
 
 // Change password
 await authKit.changePassword(clientId, 'currentPass', 'newPass');
@@ -213,6 +243,8 @@ await authKit.changeEmail(clientId, 'newemail@example.com', 'password', redirect
 // Delete account
 await authKit.deleteAccount(clientId, 'password', 'DELETE');
 ```
+
+`updateProfile` now returns a fresh bearer token together with the updated profile fields. The SDK replaces the in-memory bearer token automatically so token-backed identity reads stay current without an extra refresh step.
 
 ---
 

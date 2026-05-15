@@ -1,4 +1,4 @@
-import type { AuthLoginResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse } from "../types/authKit";
+import type { AuthLoginResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse } from "../types/authKit";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
@@ -29,7 +29,7 @@ export declare namespace authKit {
     function verifyPhoneCode(clientId: string, phoneNumber: string, code: string): Promise<PhoneVerifyResponse>;
     /** Send a WhatsApp verification deep-link (public). */
     function sendWhatsApp(clientId: string, body?: SendWhatsAppRequest): Promise<SendWhatsAppResponse>;
-    /** Manually verify WhatsApp token if inbound webhook path is unavailable (public). */
+    /** Manually verify WhatsApp token if inbound webhook path is unavailable (legacy/public fallback). */
     function verifyWhatsApp(clientId: string, token: string, phoneNumber: string): Promise<VerifyWhatsAppResponse>;
     /** Poll WhatsApp verification status for a token (public). */
     function getWhatsAppStatus(clientId: string, token: string): Promise<WhatsAppStatusResponse>;
@@ -62,7 +62,8 @@ export declare namespace authKit {
         clientName?: string;
     }): Promise<EmailVerificationActionResponse>;
     function getProfile(clientId: string): Promise<UserProfile>;
-    function updateProfile(clientId: string, data: ProfileUpdateData): Promise<UserProfile>;
+    /** Update the authenticated user's profile and replace the bearer token when refreshed claims are returned. */
+    function updateProfile(clientId: string, data: ProfileUpdateData): Promise<UpdateProfileResponse>;
     function changePassword(clientId: string, currentPassword: string, newPassword: string): Promise<SuccessResponse>;
     function changeEmail(clientId: string, newEmail: string, password: string, redirectUrl: string): Promise<SuccessResponse>;
     function verifyEmailChange(clientId: string, token: string): Promise<SuccessResponse>;

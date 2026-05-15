@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.13.15  |  Generated: 2026-05-15T14:02:11.202Z
+Version: 1.13.18  |  Generated: 2026-05-15T21:59:57.655Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3030,6 +3030,7 @@ interface WhatsAppReplyCta {
   body: string
   buttonLabel: string
   buttonUrl: string
+  mediaUrl?: string  // optional image (JPEG/PNG, public https) — selects image card template
 }
 ```
 
@@ -3043,12 +3044,27 @@ interface WhatsAppReplyOptions {
 }
 ```
 
+**WhatsAppContactData** (interface)
+```typescript
+interface WhatsAppContactData {
+  name?: string
+  firstName?: string
+  lastName?: string
+  displayName?: string
+  email?: string
+  source?: string
+  customFields?: Record<string, unknown>
+  externalIds?: Record<string, unknown>
+}
+```
+
 **SendWhatsAppRequest** (interface)
 ```typescript
 interface SendWhatsAppRequest {
   redirectUrl?: string
   prefillMessage?: string
   reply?: WhatsAppReplyOptions
+  contactData?: WhatsAppContactData
 }
 ```
 
@@ -8229,7 +8245,7 @@ Verify phone verification code (public).
 Send a WhatsApp verification deep-link (public).
 
 **verifyWhatsApp**(clientId: string, token: string, phoneNumber: string) → `Promise<VerifyWhatsAppResponse>`
-Manually verify WhatsApp token if inbound webhook path is unavailable (public).
+Manually verify WhatsApp token if inbound webhook path is unavailable (legacy/public fallback).
 
 **getWhatsAppStatus**(clientId: string, token: string) → `Promise<WhatsAppStatusResponse>`
 Poll WhatsApp verification status for a token (public).
@@ -8267,41 +8283,41 @@ Upsert contact identity after lightweight verification (public).
 **getProfile**(clientId: string) → `Promise<UserProfile>`
 Upsert contact identity after lightweight verification (public).
 
-**updateProfile**(clientId: string, data: ProfileUpdateData) → `Promise<UserProfile>`
-Upsert contact identity after lightweight verification (public).
+**updateProfile**(clientId: string, data: ProfileUpdateData) → `Promise<UpdateProfileResponse>`
+Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
 
 **changePassword**(clientId: string, currentPassword: string, newPassword: string) → `Promise<SuccessResponse>`
-Upsert contact identity after lightweight verification (public).
+Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
 
 **changeEmail**(clientId: string, newEmail: string, password: string, redirectUrl: string) → `Promise<SuccessResponse>`
-Upsert contact identity after lightweight verification (public).
+Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
 
 **verifyEmailChange**(clientId: string, token: string) → `Promise<SuccessResponse>`
-Upsert contact identity after lightweight verification (public).
+Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
 
 **updatePhone**(clientId: string, phoneNumber: string, verificationCode: string) → `Promise<SuccessResponse>`
-Upsert contact identity after lightweight verification (public).
+Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
 
 **deleteAccount**(clientId: string, password: string, confirmText: string) → `Promise<SuccessResponse>`
-Upsert contact identity after lightweight verification (public).
+Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
 
 **load**(authKitId: string) → `Promise<AuthKitConfig>`
-Upsert contact identity after lightweight verification (public).
+Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
 
 **get**(collectionId: string, authKitId: string) → `Promise<AuthKitConfig>`
-Upsert contact identity after lightweight verification (public).
+Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
 
 **list**(collectionId: string, admin?: boolean) → `Promise<AuthKitConfig[]>`
-Upsert contact identity after lightweight verification (public).
+Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
 
 **create**(collectionId: string, data: any) → `Promise<AuthKitConfig>`
-Upsert contact identity after lightweight verification (public).
+Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
 
 **update**(collectionId: string, authKitId: string, data: any) → `Promise<AuthKitConfig>`
-Upsert contact identity after lightweight verification (public).
+Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
 
 **remove**(collectionId: string, authKitId: string) → `Promise<void>`
-Upsert contact identity after lightweight verification (public).
+Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
 
 ### batch
 
