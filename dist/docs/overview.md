@@ -64,6 +64,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Mobile Admin Container** | `docs/mobile-admin-container.md` | Building a separate Capacitor-aware mobile admin bundle for field operators |
 | **Executors** | `docs/executor.md` | Building executor bundles for SEO, LLM content, programmatic config |
 | **Deep Linking** | `docs/deep-link-discovery.md` | URL state management, navigable states, portal menus, AI nav |
+| **Portal Back Button** | `docs/portal-back-button.md` | Hierarchy-aware "up" navigation inside embedded apps |
 | **Interactions** | `docs/interactions.md` | Business events, outcomes, voting, competitions, and journey triggers |
 | **AI-Native Manifests** | `docs/manifests.md` | `app.manifest.json`, `app.admin.json`, `ai-guide.md` structure |
 | **App Config Files** | `docs/app-manifest.md` | Full field-by-field reference for both JSON config files |
@@ -73,6 +74,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **AI Guide Template** | `docs/ai-guide-template.md` | Template for creating `public/ai-guide.md` — customise per app |
 | **Forms** | `docs/forms.md` | Form definitions, schema-driven rendering, submission patterns |
 | **Auth Kit** | `docs/auth-kit.md` | End-user sign-in: email/password, magic links, phone OTP, Google OAuth |
+| **Portal Auth Broadcast** | `docs/portal-auth-broadcast.md` | Publishing custom auth flows to the portal; syncing sessions across containers and iframes |
 | **App Records Pattern** | `docs/app-records-pattern.md` | Standard pattern for per-product/facet/variant/batch admin + public widget UIs |
 | **UI Utils** | `docs/ui-utils.md` | `@proveanything/smartlinks-utils-ui` — React shells, hooks, and primitives for records-based apps |
 
@@ -86,6 +88,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 - **SmartLinks NPM module** — All data access and platform interaction goes through `@proveanything/smartlinks`
 - **No standalone auth** — Authentication is handled by the parent SmartLinks platform
 - **Multi-page build** — Separate bundles for public and admin — see `docs/mpa.md`
+- **Embedded back navigation** — Use `docs/portal-back-button.md` when a sub-app has a real content hierarchy
 
 ---
 

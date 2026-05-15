@@ -141,6 +141,8 @@ const responder = new smartlinks.IframeResponder({
 });
 ```
 
+If your app has hierarchical screens, include `state.parentPath` in each `smartlinks-route-change` message so the portal shell can treat its top back button as "up" navigation instead of exiting the embed. See the [Portal Back Button guide](portal-back-button.md) for the contract and recommended router pattern.
+
 ### Local Development Override
 
 ```typescript
@@ -377,7 +379,7 @@ The responder handles these message types from the iframe:
   type: 'smartlinks-route-change',
   path: '/products/wine-123',
   context: { collectionId: 'acme-wines', appId: 'warranty' },
-  state: { tab: 'details' }
+  state: { tab: 'details', parentPath: '/products' }
 }
 ```
 
@@ -439,6 +441,7 @@ import type {
 5. **Validate tokens** server-side for security
 6. **Set height dynamically** based on content using `onResize`
 7. **Sync routes** with parent navigation for better UX
+8. **Set `parentPath`** for routes that have a meaningful parent screen in the app hierarchy
 
 ## Troubleshooting
 
@@ -461,3 +464,7 @@ import type {
 - Verify cache storage option is supported (sessionStorage/localStorage)
 - Check browser storage isn't disabled
 - Clear cache and retry with `smartlinks.cache.clear()`
+
+### Portal back exits the app too early
+- Set `state.parentPath` on route changes for screens that should navigate "up" inside the app.
+- Make sure the receiving app listens for `smartlinks-navigate` if the SDK version in use does not already handle it.

@@ -38,7 +38,9 @@ export interface RouteChangeMessage {
     type: 'smartlinks-route-change';
     path: string;
     context: Record<string, string>;
-    state: Record<string, string>;
+    state: Record<string, string> & {
+        parentPath?: string;
+    };
     appId?: string;
 }
 export interface SmartlinksIframeMessage {

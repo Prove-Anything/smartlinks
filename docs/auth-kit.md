@@ -88,14 +88,29 @@ import { authKit } from '@proveanything/smartlinks';
 // 1) Send WhatsApp verification deep link
 const wa = await authKit.sendWhatsApp(clientId);
 
-// Optional: pass redirect context only
+// Optional: pass redirect context and/or a post-verification reply
 // const wa = await authKit.sendWhatsApp(clientId, {
 //   redirectUrl: 'https://app.example.com/checkout/continue',
+//   prefillMessage: 'Please let me bid in this auction. Code: {{token}}',
+//   reply: {
+//     cta: {
+//       body: "You're verified and ready to bid.",
+//       buttonLabel: 'Back to Auction',
+//       buttonUrl: '{{returnUrl}}',
+//     },
+//     text: "You're verified. Return to the app to continue.",
+//   },
 // });
 
 // wa.waLink can be opened directly by the app/browser
 // Poll status while user switches to WhatsApp and back
 const status = await authKit.getWhatsAppStatus(clientId, wa.token);
+
+// Optional: exchange verified WhatsApp proof for an Auth Kit session
+if (status.status === 'verified' && wa.sessionKey) {
+  const session = await authKit.exchangeWhatsAppSession(clientId, wa.token, wa.sessionKey);
+  // session.token can be used as the authenticated bearer token
+}
 
 // Optional fallback path if webhook confirmation is unavailable
 await authKit.verifyWhatsApp(clientId, wa.token, '+447911123456');
@@ -134,6 +149,40 @@ Verification status values returned by `authKit.getWhatsAppStatus` are:
 - `failed`
 - `expired`
 - `unknown`
+
+#### Post-verification reply
+
+Pass a `reply` object in `sendWhatsApp` to send a message back to the user after they confirm `CONFIRM <token>`. Reply resolution order:
+
+1. `reply.contentSid` — explicit Twilio Content SID
+2. `reply.cta` — CTA shorthand using the shared generic Twilio Content template SID (`TWILIO_WHATSAPP_GENERIC_CTA_SID`)
+3. `reply.text` — plain-text fallback
+4. Per-client default (`authKit/{clientId}.whatsapp` config)
+5. Built-in default text
+
+The following template placeholders are available in `reply.text`, `reply.cta` fields, and `reply.contentVariables` values:
+
+| Placeholder | Description |
+|---|---|
+| `{{returnUrl}}` | The resolved redirect URL |
+| `{{phoneNumber}}` | The verified phone number |
+| `{{clientId}}` | The Auth Kit client ID |
+| `{{token}}` | The verification token |
+
+You can also set `prefillMessage` on `sendWhatsApp` to customize the text pre-filled in the `wa.me` deep link. If `{{token}}` is not present, the token is appended to the message.
+
+#### Session exchange after verification
+
+After polling returns `status === 'verified'`, exchange the verification proof for an Auth Kit login session:
+
+```ts
+const session = await authKit.exchangeWhatsAppSession(clientId, wa.token, wa.sessionKey!);
+// session: { success, token, user, accountData? }
+```
+
+`sessionKey` is returned by `sendWhatsApp` and is used to mitigate token replay from contexts that did not initiate the browser flow.
+
+> **Note:** `redirectUrl` is optional. WhatsApp tokens are short hex strings (16 chars) for better UX.
 
 ### Google OAuth
 

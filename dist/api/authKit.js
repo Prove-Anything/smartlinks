@@ -62,6 +62,11 @@ export var authKit;
         return request(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/status?token=${encodedToken}`);
     }
     authKit.getWhatsAppStatus = getWhatsAppStatus;
+    /** Exchange a verified WhatsApp token for an Auth Kit session (public). */
+    async function exchangeWhatsAppSession(clientId, token, sessionKey) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/exchange-session`, { token, sessionKey });
+    }
+    authKit.exchangeWhatsAppSession = exchangeWhatsAppSession;
     /** Send an SMS click-to-verify link (public). */
     async function sendSmsVerify(clientId, body) {
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/sms/send`, body);

@@ -94,16 +94,43 @@ export interface EmailVerifyTokenResponse {
 
 export type VerifyStatus = 'pending' | 'verified' | 'failed' | 'expired' | 'unknown'
 
+export interface WhatsAppReplyCta {
+  body: string
+  buttonLabel: string
+  buttonUrl: string
+}
+
+export interface WhatsAppReplyOptions {
+  /** Option A: explicit Twilio Content SID */
+  contentSid?: string
+  contentVariables?: Record<string, unknown>
+
+  /** Option B: CTA shorthand (uses shared generic CTA content SID) */
+  cta?: WhatsAppReplyCta
+
+  /** Option C: plain-text fallback */
+  text?: string
+}
+
 export interface SendWhatsAppRequest {
-  phoneNumber?: string
   redirectUrl?: string
+  prefillMessage?: string
+  reply?: WhatsAppReplyOptions
 }
 
 export interface SendWhatsAppResponse {
   waLink: string
   code: string
   token: string
+  sessionKey?: string
   expiresAt: string
+}
+
+export interface ExchangeWhatsAppSessionResponse {
+  success: boolean
+  token: string
+  user: AuthKitUser
+  accountData?: Record<string, any>
 }
 
 export interface VerifyWhatsAppResponse {

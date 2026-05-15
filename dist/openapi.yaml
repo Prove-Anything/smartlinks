@@ -8501,6 +8501,32 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /authkit/{clientId}/auth/whatsapp/exchange-session:
+    post:
+      tags:
+        - authKit
+      summary: Exchange a verified WhatsApp token for an Auth Kit session (public).
+      operationId: authKit_exchangeWhatsAppSession
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ExchangeWhatsAppSessionResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /authkit/{clientId}/auth/whatsapp/send:
     post:
       tags:
@@ -17864,13 +17890,40 @@ components:
       required:
         - success
         - message
+    WhatsAppReplyCta:
+      type: object
+      properties:
+        body:
+          type: string
+        buttonLabel:
+          type: string
+        buttonUrl:
+          type: string
+      required:
+        - body
+        - buttonLabel
+        - buttonUrl
+    WhatsAppReplyOptions:
+      type: object
+      properties:
+        contentSid:
+          type: string
+        contentVariables:
+          type: object
+          additionalProperties: true
+        cta:
+          $ref: "#/components/schemas/WhatsAppReplyCta"
+        text:
+          type: string
     SendWhatsAppRequest:
       type: object
       properties:
-        phoneNumber:
-          type: string
         redirectUrl:
           type: string
+        prefillMessage:
+          type: string
+        reply:
+          $ref: "#/components/schemas/WhatsAppReplyOptions"
     SendWhatsAppResponse:
       type: object
       properties:
@@ -17880,6 +17933,8 @@ components:
           type: string
         token:
           type: string
+        sessionKey:
+          type: string
         expiresAt:
           type: string
       required:
@@ -17887,6 +17942,22 @@ components:
         - code
         - token
         - expiresAt
+    ExchangeWhatsAppSessionResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/AuthKitUser"
+        accountData:
+          type: object
+          additionalProperties: true
+      required:
+        - success
+        - token
+        - user
     VerifyWhatsAppResponse:
       type: object
       properties:
@@ -20493,8 +20564,9 @@ components:
             type: string
         state:
           type: object
-          additionalProperties:
-            type: string
+          additionalProperties: true
+        parentPath:
+          type: string
         appId:
           type: string
       required:

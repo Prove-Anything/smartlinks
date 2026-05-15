@@ -122,6 +122,8 @@ The parent SmartLinks platform embeds apps via iframe:
 
 Context parameters (`collectionId`, `appId`, `productId`, `proofId`) are passed as URL query params and read via the iframe responder. See the [iframe Responder guide](iframe-responder.md) for the full context injection API.
 
+If the embedded app exposes nested screens, document its "up" navigation path with the [Portal Back Button guide](portal-back-button.md) so the shell's back button stays inside the app when appropriate.
+
 ---
 
 ## Related Guides
@@ -133,3 +135,4 @@ Context parameters (`collectionId`, `appId`, `productId`, `proofId`) are passed 
 | [Executor Model](executor.md) | Executor bundle: SEO, LLM content, config mutations |
 | [AI-Native App Manifests](manifests.md) | How manifests wire all bundles together for AI discovery |
 | [iframe Responder](iframe-responder.md) | Reading context params inside the iframe |
+| [Portal Back Button](portal-back-button.md) | Hierarchy-aware back navigation for embedded apps |

@@ -16,6 +16,7 @@ import type {
   SuccessResponse,
   SendWhatsAppRequest,
   SendWhatsAppResponse,
+  ExchangeWhatsAppSessionResponse,
   VerifyWhatsAppResponse,
   WhatsAppStatusResponse,
   SendSmsVerifyRequest,
@@ -87,6 +88,11 @@ export namespace authKit {
   export async function getWhatsAppStatus(clientId: string, token: string): Promise<WhatsAppStatusResponse> {
     const encodedToken = encodeURIComponent(token)
     return request<WhatsAppStatusResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/status?token=${encodedToken}`)
+  }
+
+  /** Exchange a verified WhatsApp token for an Auth Kit session (public). */
+  export async function exchangeWhatsAppSession(clientId: string, token: string, sessionKey: string): Promise<ExchangeWhatsAppSessionResponse> {
+    return post<ExchangeWhatsAppSessionResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/exchange-session`, { token, sessionKey })
   }
 
   /** Send an SMS click-to-verify link (public). */

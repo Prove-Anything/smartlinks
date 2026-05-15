@@ -308,6 +308,8 @@ Now that you understand the core concepts, see the implementation guides:
 - **[containers.md](./containers.md)** — Build full-page embedded experiences
 - **[mpa.md](./mpa.md)** — Multi-page app architecture (optional)
 - **[iframe-responder.md](./iframe-responder.md)** — Parent-side iframe integration
+- **[portal-back-button.md](./portal-back-button.md)** — Embedded-app "up" navigation and portal back-button behaviour
+- **[portal-auth-broadcast.md](./portal-auth-broadcast.md)** — Publishing custom auth flows to the portal
 
 ---
 
@@ -316,4 +318,6 @@ Now that you understand the core concepts, see the implementation guides:
 - [theme.system.md](./theme.system.md) — Theming and CSS variables
 - [ai.md](./ai.md) — AI assistant integration
 - [deep-link-discovery.md](./deep-link-discovery.md) — Deep linking patterns
+- [portal-back-button.md](./portal-back-button.md) — Portal shell back-button behavior for hierarchical embeds
+- [portal-auth-broadcast.md](./portal-auth-broadcast.md) — Custom authentication and session broadcast
 - [manifests.md](./manifests.md) — App manifest configuration

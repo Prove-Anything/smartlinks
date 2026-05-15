@@ -360,4 +360,5 @@ export const PublicContainer = (props) => (
 - [containers.md](../containers.md) — Container architecture, props reference, and build config
 - [building-react-components.md](../building-react-components.md) — Dual-mode rendering contract, `useAppContext` pattern
 - [deep-link-discovery.md](../deep-link-discovery.md) — Registering linkable app states; `dlParams` schema
+- [portal-back-button.md](../../../docs/portal-back-button.md) — Portal shell back-button behaviour for embedded apps with hierarchy
 - [mpa.md](../mpa.md) — Multi-page app structure; `PublicPage` entry point location

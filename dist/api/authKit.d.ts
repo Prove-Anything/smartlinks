@@ -1,4 +1,4 @@
-import type { AuthLoginResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse } from "../types/authKit";
+import type { AuthLoginResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse } from "../types/authKit";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
@@ -33,6 +33,8 @@ export declare namespace authKit {
     function verifyWhatsApp(clientId: string, token: string, phoneNumber: string): Promise<VerifyWhatsAppResponse>;
     /** Poll WhatsApp verification status for a token (public). */
     function getWhatsAppStatus(clientId: string, token: string): Promise<WhatsAppStatusResponse>;
+    /** Exchange a verified WhatsApp token for an Auth Kit session (public). */
+    function exchangeWhatsAppSession(clientId: string, token: string, sessionKey: string): Promise<ExchangeWhatsAppSessionResponse>;
     /** Send an SMS click-to-verify link (public). */
     function sendSmsVerify(clientId: string, body: SendSmsVerifyRequest): Promise<SendSmsVerifyResponse>;
     /** Verify an SMS click-to-verify token via API (public). */

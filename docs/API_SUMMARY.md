@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.13.11  |  Generated: 2026-05-13T07:57:31.015Z
+Version: 1.13.15  |  Generated: 2026-05-15T14:02:11.202Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3024,11 +3024,31 @@ interface EmailVerifyTokenResponse {
 }
 ```
 
+**WhatsAppReplyCta** (interface)
+```typescript
+interface WhatsAppReplyCta {
+  body: string
+  buttonLabel: string
+  buttonUrl: string
+}
+```
+
+**WhatsAppReplyOptions** (interface)
+```typescript
+interface WhatsAppReplyOptions {
+  contentSid?: string
+  contentVariables?: Record<string, unknown>
+  cta?: WhatsAppReplyCta
+  text?: string
+}
+```
+
 **SendWhatsAppRequest** (interface)
 ```typescript
 interface SendWhatsAppRequest {
-  phoneNumber?: string
   redirectUrl?: string
+  prefillMessage?: string
+  reply?: WhatsAppReplyOptions
 }
 ```
 
@@ -3038,7 +3058,18 @@ interface SendWhatsAppResponse {
   waLink: string
   code: string
   token: string
+  sessionKey?: string
   expiresAt: string
+}
+```
+
+**ExchangeWhatsAppSessionResponse** (interface)
+```typescript
+interface ExchangeWhatsAppSessionResponse {
+  success: boolean
+  token: string
+  user: AuthKitUser
+  accountData?: Record<string, any>
 }
 ```
 
@@ -5109,7 +5140,9 @@ interface RouteChangeMessage {
   type: 'smartlinks-route-change';
   path: string;
   context: Record<string, string>;
-  state: Record<string, string>;
+  state: Record<string, string> & {
+  parentPath?: string;
+  };
   appId?: string;
 }
 ```
@@ -8200,6 +8233,9 @@ Manually verify WhatsApp token if inbound webhook path is unavailable (public).
 
 **getWhatsAppStatus**(clientId: string, token: string) → `Promise<WhatsAppStatusResponse>`
 Poll WhatsApp verification status for a token (public).
+
+**exchangeWhatsAppSession**(clientId: string, token: string, sessionKey: string) → `Promise<ExchangeWhatsAppSessionResponse>`
+Exchange a verified WhatsApp token for an Auth Kit session (public).
 
 **sendSmsVerify**(clientId: string, body: SendSmsVerifyRequest) → `Promise<SendSmsVerifyResponse>`
 Send an SMS click-to-verify link (public).
