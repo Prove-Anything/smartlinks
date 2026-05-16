@@ -102,7 +102,7 @@ function shouldSkipCache(path) {
     if (!cacheEnabled)
         return true;
     // Never cache auth or account endpoints — they deal with tokens and session state.
-    if (/(\/(auth|account)\//i).test(path))
+    if (/\/(auth|account)\//i.test(path))
         return true;
     return false;
 }
