@@ -389,6 +389,7 @@ The host exposes these libraries on `window` — your container build **must ext
 | `react-dom`                   | `window.ReactDOM`       |
 | `react/jsx-runtime`           | `window.jsxRuntime`     |
 | `@proveanything/smartlinks`   | `window.SL`             |
+| `@proveanything/smartlinks-auth-ui` | `window.SmartlinksAuthUI` |
 | `class-variance-authority`    | `window.CVA`            |
 | `react-router-dom`            | `window.ReactRouterDOM` |
 | `@tanstack/react-query`       | `window.ReactQuery`     |

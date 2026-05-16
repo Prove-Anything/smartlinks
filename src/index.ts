@@ -1,7 +1,7 @@
 // src/index.ts
 // Top-level entrypoint of the npm package. Re-export initializeApi + all namespaces.
 
-export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, isProxyEnabled } from "./http"
+export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, isProxyEnabled, setBearerToken } from "./http"
 export * from "./api"
 export * from "./types"
 // Iframe namespace
@@ -74,58 +74,6 @@ export type {
   SubscriptionsResolveRequest,
   SubscriptionsResolveResponse,
 } from "./types/comms"
-export type {
-  AttestationResponse,
-  AttestationCreateRequest,
-  AttestationUpdateRequest,
-} from "./types/attestation"
-export type {
-  Attestation,
-  LatestAttestation,
-  AttestationSummaryBucket,
-  ChainVerifyResult,
-  CreateAttestationInput,
-  AttestationSubjectType,
-  AttestationVisibility,
-  AttestationAudience,
-  AttestationGroupBy,
-  ListAttestationsParams,
-  AttestationSummaryParams,
-  AttestationLatestParams,
-  AttestationVerifyParams,
-  AttestationTreeSummaryParams,
-  AttestationTreeLatestParams,
-  ListAttestationsResponse,
-  PublicListAttestationsResponse,
-  AttestationSummaryResponse,
-  PublicAttestationSummaryResponse,
-  AttestationLatestResponse,
-  PublicAttestationLatestResponse,
-  AttestationTreeSummaryResponse,
-  PublicAttestationTreeSummaryResponse,
-  AttestationTreeLatestResponse,
-  PublicAttestationTreeLatestResponse,
-} from "./types/attestations"
-export type {
-  Container,
-  ContainerItem,
-  ContainerStatus,
-  ContainerItemType,
-  CreateContainerInput,
-  UpdateContainerInput,
-  AddContainerItemsInput,
-  RemoveContainerItemsInput,
-  ListContainersParams,
-  GetContainerParams,
-  ListContainerItemsParams,
-  FindContainersForItemParams,
-  ListContainersResponse,
-  PublicListContainersResponse,
-  FindContainersForItemResponse,
-  ContainerItemsResponse,
-  AddContainerItemsResponse,
-  RemoveContainerItemsResponse,
-} from "./types/containers"
 export type {
   BatchResponse,
   BatchCreateRequest,

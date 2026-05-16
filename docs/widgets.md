@@ -581,6 +581,7 @@ The widget bundle does **not** include these libraries—the parent app must pro
 |---------|------------------|
 | `react`, `react-dom` | Parent's React context |
 | `@proveanything/smartlinks` | Passed via props as `SL` |
+| `@proveanything/smartlinks-auth-ui` | Auth UI components (also available globally as `window.SmartlinksAuthUI`) |
 | `tailwind-merge` | Utility for merging Tailwind classes |
 | `clsx` | Utility for conditional class names |
 | `class-variance-authority` | Utility for component variants |

@@ -1,4 +1,4 @@
-export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, isProxyEnabled } from "./http";
+export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, isProxyEnabled, setBearerToken } from "./http";
 export * from "./api";
 export * from "./types";
 export { iframe } from "./iframe";
@@ -9,9 +9,6 @@ export type { PortalPathParams, ConditionParams, ConditionDebugOptions, Conditio
 export type { LoginResponse, VerifyTokenResponse, AccountInfoResponse, AuthLocation, } from "./api/auth";
 export type { UserAccountRegistrationRequest, } from "./types/auth";
 export type { CommunicationEvent, CommsQueryByUser, CommsRecipientIdsQuery, CommsRecipientsWithoutActionQuery, CommsRecipientsWithActionQuery, RecipientId, RecipientWithOutcome, LogCommunicationEventBody, LogBulkCommunicationEventsBody, AppendResult, AppendBulkResult, CommsSettings, TopicConfig, CommsSettingsGetResponse, CommsSettingsPatchBody, CommsPublicTopicsResponse, UnsubscribeQuery, UnsubscribeResponse, CommsConsentUpsertRequest, CommsPreferencesUpsertRequest, CommsSubscribeRequest, CommsSubscribeResponse, CommsSubscriptionCheckQuery, CommsSubscriptionCheckResponse, CommsListMethodsQuery, CommsListMethodsResponse, RegisterEmailMethodRequest, RegisterSmsMethodRequest, RegisterMethodResponse, SubscriptionsResolveRequest, SubscriptionsResolveResponse, } from "./types/comms";
-export type { AttestationResponse, AttestationCreateRequest, AttestationUpdateRequest, } from "./types/attestation";
-export type { Attestation, LatestAttestation, AttestationSummaryBucket, ChainVerifyResult, CreateAttestationInput, AttestationSubjectType, AttestationVisibility, AttestationAudience, AttestationGroupBy, ListAttestationsParams, AttestationSummaryParams, AttestationLatestParams, AttestationVerifyParams, AttestationTreeSummaryParams, AttestationTreeLatestParams, ListAttestationsResponse, PublicListAttestationsResponse, AttestationSummaryResponse, PublicAttestationSummaryResponse, AttestationLatestResponse, PublicAttestationLatestResponse, AttestationTreeSummaryResponse, PublicAttestationTreeSummaryResponse, AttestationTreeLatestResponse, PublicAttestationTreeLatestResponse, } from "./types/attestations";
-export type { Container, ContainerItem, ContainerStatus, ContainerItemType, CreateContainerInput, UpdateContainerInput, AddContainerItemsInput, RemoveContainerItemsInput, ListContainersParams, GetContainerParams, ListContainerItemsParams, FindContainersForItemParams, ListContainersResponse, PublicListContainersResponse, FindContainersForItemResponse, ContainerItemsResponse, AddContainerItemsResponse, RemoveContainerItemsResponse, } from "./types/containers";
 export type { BatchResponse, BatchCreateRequest, BatchUpdateRequest, } from "./types/batch";
 export type { VariantResponse, VariantCreateRequest, VariantUpdateRequest, } from "./types/variant";
 export type { BroadcastSendRequest } from "./types/broadcasts";

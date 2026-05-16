@@ -1,4 +1,4 @@
-import { request, post, put, del, setBearerToken } from "../http"
+import { request, post, put, del, setBearerToken, invalidateCache } from "../http"
 import type {
   AuthLoginResponse,
   PhoneSendCodeResponse,
@@ -41,7 +41,7 @@ export namespace authKit {
   /** Login with email + password (public). */
   export async function login(clientId: string, email: string, password: string): Promise<AuthLoginResponse> {
     const res = await post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/login`, { email, password })
-    if (res.token) setBearerToken(res.token)
+    if (res.token) { setBearerToken(res.token); invalidateCache() }
     return res
   }
 
@@ -53,14 +53,14 @@ export namespace authKit {
   /** Google OAuth login via ID token (public). */
   export async function googleLogin(clientId: string, idToken: string): Promise<AuthLoginResponse> {
     const res = await post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/google`, { idToken })
-    if (res.token) setBearerToken(res.token)
+    if (res.token) { setBearerToken(res.token); invalidateCache() }
     return res
   }
 
   /** Google OAuth login via server-side authorization code (public). */
   export async function googleCodeLogin(clientId: string, code: string, redirectUri: string): Promise<AuthLoginResponse> {
     const res = await post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/google-code`, { code, redirectUri })
-    if (res.token) setBearerToken(res.token)
+    if (res.token) { setBearerToken(res.token); invalidateCache() }
     return res
   }
 
@@ -72,7 +72,7 @@ export namespace authKit {
   /** Verify a magic link token and authenticate/create the user (public). */
   export async function verifyMagicLink(clientId: string, token: string): Promise<MagicLinkVerifyResponse> {
     const res = await post<MagicLinkVerifyResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/magic-link/verify`, { token })
-    if (res.token) setBearerToken(res.token)
+    if (res.token) { setBearerToken(res.token); invalidateCache() }
     return res
   }
 
@@ -85,6 +85,7 @@ export namespace authKit {
   export async function verifyPhoneCode(clientId: string, phoneNumber: string, code: string): Promise<PhoneVerifyResponse> {
     const res = await post<PhoneVerifyResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/phone/verify`, { phoneNumber, code })
     setBearerToken(res.token)
+    invalidateCache()
     return res
   }
 
@@ -108,6 +109,7 @@ export namespace authKit {
   export async function exchangeWhatsAppSession(clientId: string, token: string, sessionKey: string): Promise<ExchangeWhatsAppSessionResponse> {
     const res = await post<ExchangeWhatsAppSessionResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/exchange-session`, { token, sessionKey })
     setBearerToken(res.token)
+    invalidateCache()
     return res
   }
 
@@ -168,7 +170,7 @@ export namespace authKit {
   /** Update the authenticated user's profile and replace the bearer token when refreshed claims are returned. */
   export async function updateProfile(clientId: string, data: ProfileUpdateData): Promise<UpdateProfileResponse> {
     const res = await post<UpdateProfileResponse>(`/authkit/${encodeURIComponent(clientId)}/account/update-profile`, data)
-    if (res.token) setBearerToken(res.token)
+    if (res.token) { setBearerToken(res.token); invalidateCache() }
     return res
   }
 
@@ -182,7 +184,7 @@ export namespace authKit {
 
   export async function verifyEmailChange(clientId: string, token: string): Promise<SuccessResponse> {
     const res = await post<SuccessResponse>(`/authkit/${encodeURIComponent(clientId)}/account/verify-email-change`, { token })
-    if (res.token) setBearerToken(res.token)
+    if (res.token) { setBearerToken(res.token); invalidateCache() }
     return res
   }
 

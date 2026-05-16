@@ -40,7 +40,7 @@ const httpCache = new Map<string, HttpCacheEntry>()
 
 let cacheEnabled: boolean = true
 /** Default TTL used when no per-resource rule matches (milliseconds). */
-let cacheDefaultTtlMs: number = 60_000 // 60 seconds
+let cacheDefaultTtlMs: number = 15_000 // 15 seconds
 /** Maximum number of entries before the oldest (LRU) entry is evicted. */
 let cacheMaxEntries: number = 200
 /** Persistence backend for the L2 cache. 'none' (default) disables IndexedDB persistence. */
@@ -130,6 +130,10 @@ function clearSessionCachesOnPageLoad(): void {
 // Auto-clear session caches on page load (browser only)
 if (typeof window !== 'undefined' && cacheClearOnPageLoad) {
   clearSessionCachesOnPageLoad()
+  // Also clear on bfcache restoration (mobile browsers restore JS context without reloading)
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) clearSessionCachesOnPageLoad()
+  })
 }
 
 /**

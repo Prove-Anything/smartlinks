@@ -1,4 +1,4 @@
-import { post, request, setBearerToken, getApiHeaders, hasAuthCredentials, isProxyEnabled } from "../http";
+import { post, request, setBearerToken, getApiHeaders, hasAuthCredentials, isProxyEnabled, invalidateCache } from "../http";
 import { SmartlinksApiError } from "../types/error";
 const DEFAULT_AUTH_LOCATION_CACHE_KEY = 'smartlinks.auth.location';
 const DEFAULT_AUTH_LOCATION_TTL_MS = 30 * 60 * 1000;
@@ -80,6 +80,7 @@ export var auth;
     async function login(email, password) {
         const res = await post("/public/auth/login", { email, password });
         setBearerToken(res.bearerToken);
+        invalidateCache();
         return res;
     }
     auth.login = login;
@@ -88,6 +89,7 @@ export var auth;
      */
     function logout() {
         setBearerToken(undefined);
+        invalidateCache();
     }
     auth.logout = logout;
     /**
@@ -103,6 +105,7 @@ export var auth;
         const result = await post("/public/auth/verify", {}, headers);
         if (token && result.valid) {
             setBearerToken(token);
+            invalidateCache();
         }
         return result;
     }
@@ -131,8 +134,10 @@ export var auth;
     async function registerUser(user) {
         // Use the provided token, or the one from getApiHeaders
         const res = await post("/public/auth/register", user);
-        if (res.bearerToken)
+        if (res.bearerToken) {
             setBearerToken(res.bearerToken);
+            invalidateCache();
+        }
         return res;
     }
     auth.registerUser = registerUser;

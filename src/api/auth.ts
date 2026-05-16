@@ -1,4 +1,4 @@
-import { post, request, setBearerToken, getApiHeaders, hasAuthCredentials, isProxyEnabled } from "../http"
+import { post, request, setBearerToken, getApiHeaders, hasAuthCredentials, isProxyEnabled, invalidateCache } from "../http"
 import { SmartlinksApiError } from "../types/error"
 import type { UserAccountRegistrationRequest, AccountInfoResponse, AuthLocation, AuthLocationCacheOptions } from "../types/auth"
 
@@ -112,6 +112,7 @@ export namespace auth {
   export async function login(email: string, password: string): Promise<LoginResponse> {
     const res = await post<LoginResponse>("/public/auth/login", { email, password })
     setBearerToken(res.bearerToken)
+    invalidateCache()
     return res
   }
 
@@ -120,6 +121,7 @@ export namespace auth {
    */
   export function logout(): void {
     setBearerToken(undefined)
+    invalidateCache()
   }
 
   /**
@@ -135,6 +137,7 @@ export namespace auth {
     const result = await post<VerifyTokenResponse>("/public/auth/verify", {}, headers)
     if (token && result.valid) {
       setBearerToken(token)
+      invalidateCache()
     }
     return result
   }
@@ -165,8 +168,10 @@ export namespace auth {
   export async function registerUser(user: UserAccountRegistrationRequest): Promise<LoginResponse> {
     // Use the provided token, or the one from getApiHeaders
     const res = await post<LoginResponse>("/public/auth/register", user)
-    if (res.bearerToken)
+    if (res.bearerToken) {
       setBearerToken(res.bearerToken)
+      invalidateCache()
+    }
     return res
   }
 

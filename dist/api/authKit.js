@@ -1,4 +1,4 @@
-import { request, post, put, del, setBearerToken } from "../http";
+import { request, post, put, del, setBearerToken, invalidateCache } from "../http";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
@@ -11,8 +11,10 @@ export var authKit;
     /** Login with email + password (public). */
     async function login(clientId, email, password) {
         const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/login`, { email, password });
-        if (res.token)
+        if (res.token) {
             setBearerToken(res.token);
+            invalidateCache();
+        }
         return res;
     }
     authKit.login = login;
@@ -24,16 +26,20 @@ export var authKit;
     /** Google OAuth login via ID token (public). */
     async function googleLogin(clientId, idToken) {
         const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/google`, { idToken });
-        if (res.token)
+        if (res.token) {
             setBearerToken(res.token);
+            invalidateCache();
+        }
         return res;
     }
     authKit.googleLogin = googleLogin;
     /** Google OAuth login via server-side authorization code (public). */
     async function googleCodeLogin(clientId, code, redirectUri) {
         const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/google-code`, { code, redirectUri });
-        if (res.token)
+        if (res.token) {
             setBearerToken(res.token);
+            invalidateCache();
+        }
         return res;
     }
     authKit.googleCodeLogin = googleCodeLogin;
@@ -45,8 +51,10 @@ export var authKit;
     /** Verify a magic link token and authenticate/create the user (public). */
     async function verifyMagicLink(clientId, token) {
         const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/magic-link/verify`, { token });
-        if (res.token)
+        if (res.token) {
             setBearerToken(res.token);
+            invalidateCache();
+        }
         return res;
     }
     authKit.verifyMagicLink = verifyMagicLink;
@@ -59,6 +67,7 @@ export var authKit;
     async function verifyPhoneCode(clientId, phoneNumber, code) {
         const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/phone/verify`, { phoneNumber, code });
         setBearerToken(res.token);
+        invalidateCache();
         return res;
     }
     authKit.verifyPhoneCode = verifyPhoneCode;
@@ -82,6 +91,7 @@ export var authKit;
     async function exchangeWhatsAppSession(clientId, token, sessionKey) {
         const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/exchange-session`, { token, sessionKey });
         setBearerToken(res.token);
+        invalidateCache();
         return res;
     }
     authKit.exchangeWhatsAppSession = exchangeWhatsAppSession;
@@ -143,8 +153,10 @@ export var authKit;
     /** Update the authenticated user's profile and replace the bearer token when refreshed claims are returned. */
     async function updateProfile(clientId, data) {
         const res = await post(`/authkit/${encodeURIComponent(clientId)}/account/update-profile`, data);
-        if (res.token)
+        if (res.token) {
             setBearerToken(res.token);
+            invalidateCache();
+        }
         return res;
     }
     authKit.updateProfile = updateProfile;
@@ -158,8 +170,10 @@ export var authKit;
     authKit.changeEmail = changeEmail;
     async function verifyEmailChange(clientId, token) {
         const res = await post(`/authkit/${encodeURIComponent(clientId)}/account/verify-email-change`, { token });
-        if (res.token)
+        if (res.token) {
             setBearerToken(res.token);
+            invalidateCache();
+        }
         return res;
     }
     authKit.verifyEmailChange = verifyEmailChange;
