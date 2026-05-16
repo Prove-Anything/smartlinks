@@ -13,8 +13,10 @@ export declare namespace authKit {
         displayName?: string;
         accountData?: Record<string, any>;
     }): Promise<AuthLoginResponse>;
-    /** Google OAuth login (public). */
+    /** Google OAuth login via ID token (public). */
     function googleLogin(clientId: string, idToken: string): Promise<AuthLoginResponse>;
+    /** Google OAuth login via server-side authorization code (public). */
+    function googleCodeLogin(clientId: string, code: string, redirectUri: string): Promise<AuthLoginResponse>;
     /** Send a magic link email to the user (public). */
     function sendMagicLink(clientId: string, data: {
         email: string;

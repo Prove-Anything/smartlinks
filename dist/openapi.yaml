@@ -8100,8 +8100,34 @@ paths:
     post:
       tags:
         - authKit
-      summary: Google OAuth login (public).
+      summary: Google OAuth login via ID token (public).
       operationId: authKit_googleLogin
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthLoginResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /authkit/{clientId}/auth/google-code:
+    post:
+      tags:
+        - authKit
+      summary: Google OAuth login via server-side authorization code (public).
+      operationId: authKit_googleCodeLogin
       security: []
       parameters:
         - name: clientId

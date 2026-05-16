@@ -30,6 +30,9 @@ export declare function setNgrokSkipBrowserWarning(flag: boolean): void;
 export declare function setExtraHeaders(headers: Record<string, string>): void;
 /**
  * Allows setting the bearerToken at runtime (e.g. after login/logout).
+ * Clears the HTTP cache whenever the token actually changes so that stale
+ * user-scoped responses (e.g. /account/profile) are not served after a
+ * login or logout event.
  */
 export declare function setBearerToken(token: string | undefined): void;
 /**

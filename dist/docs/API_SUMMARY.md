@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.13.18  |  Generated: 2026-05-15T21:59:57.655Z
+Version: 1.14.0  |  Generated: 2026-05-16T07:56:03.075Z
 
 This is a concise summary of all available API functions and types.
 
@@ -162,7 +162,7 @@ Enable/disable automatic "ngrok-skip-browser-warning" header.
 Replace or augment globally applied custom headers.
 
 **setBearerToken**(token: string | undefined) → `void`
-Allows setting the bearerToken at runtime (e.g. after login/logout).
+Allows setting the bearerToken at runtime (e.g. after login/logout). Clears the HTTP cache whenever the token actually changes so that stale user-scoped responses (e.g. /account/profile) are not served after a login or logout event.
 
 **getBaseURL**() → `string | null`
 Get the currently configured API base URL. Returns null if initializeApi() has not been called yet.
@@ -8227,7 +8227,10 @@ Login with email + password (public).
 Register a new user (public).
 
 **googleLogin**(clientId: string, idToken: string) → `Promise<AuthLoginResponse>`
-Google OAuth login (public).
+Google OAuth login via ID token (public).
+
+**googleCodeLogin**(clientId: string, code: string, redirectUri: string) → `Promise<AuthLoginResponse>`
+Google OAuth login via server-side authorization code (public).
 
 **sendMagicLink**(clientId: string, data: { email: string; redirectUrl: string; accountData?: Record<string, any> }) → `Promise<MagicLinkSendResponse>`
 Send a magic link email to the user (public).

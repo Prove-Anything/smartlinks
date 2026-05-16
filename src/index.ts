@@ -1,7 +1,7 @@
 // src/index.ts
 // Top-level entrypoint of the npm package. Re-export initializeApi + all namespaces.
 
-export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, request, sendCustomProxyMessage } from "./http"
+export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, isProxyEnabled } from "./http"
 export * from "./api"
 export * from "./types"
 // Iframe namespace
@@ -275,3 +275,39 @@ export type {
   WebSourceConfig,
   WebSourceFacade,
 } from './native/types';
+
+// AuthKit — explicit root-level exports so consumers can import these types
+// directly from '@proveanything/smartlinks' without relying on export* chain resolution.
+export type {
+  AuthKitUser,
+  UserProfile,
+  ProfileUpdateData,
+  UpdateProfileResponse,
+  SuccessResponse,
+  AuthLoginResponse,
+  MagicLinkSendResponse,
+  MagicLinkVerifyResponse,
+  PhoneSendCodeResponse,
+  PhoneVerifyResponse,
+  PasswordResetRequestResponse,
+  VerifyResetTokenResponse,
+  PasswordResetCompleteResponse,
+  EmailVerificationActionResponse,
+  EmailVerifyTokenResponse,
+  VerifyStatus,
+  WhatsAppReplyCta,
+  WhatsAppReplyOptions,
+  WhatsAppContactData,
+  SendWhatsAppRequest,
+  SendWhatsAppResponse,
+  ExchangeWhatsAppSessionResponse,
+  VerifyWhatsAppResponse,
+  WhatsAppStatusResponse,
+  SendSmsVerifyRequest,
+  SendSmsVerifyResponse,
+  VerifySmsResponse,
+  UpsertContactRequest,
+  UpsertContactResponse,
+  AuthKitBrandingConfig,
+  AuthKitConfig,
+} from './types/authKit';

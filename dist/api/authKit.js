@@ -10,7 +10,10 @@ export var authKit;
      * =================================== */
     /** Login with email + password (public). */
     async function login(clientId, email, password) {
-        return post(`/authkit/${encodeURIComponent(clientId)}/auth/login`, { email, password });
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/login`, { email, password });
+        if (res.token)
+            setBearerToken(res.token);
+        return res;
     }
     authKit.login = login;
     /** Register a new user (public). */
@@ -18,11 +21,22 @@ export var authKit;
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/register`, data);
     }
     authKit.register = register;
-    /** Google OAuth login (public). */
+    /** Google OAuth login via ID token (public). */
     async function googleLogin(clientId, idToken) {
-        return post(`/authkit/${encodeURIComponent(clientId)}/auth/google`, { idToken });
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/google`, { idToken });
+        if (res.token)
+            setBearerToken(res.token);
+        return res;
     }
     authKit.googleLogin = googleLogin;
+    /** Google OAuth login via server-side authorization code (public). */
+    async function googleCodeLogin(clientId, code, redirectUri) {
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/google-code`, { code, redirectUri });
+        if (res.token)
+            setBearerToken(res.token);
+        return res;
+    }
+    authKit.googleCodeLogin = googleCodeLogin;
     /** Send a magic link email to the user (public). */
     async function sendMagicLink(clientId, data) {
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/magic-link/send`, data);
@@ -43,7 +57,9 @@ export var authKit;
     authKit.sendPhoneCode = sendPhoneCode;
     /** Verify phone verification code (public). */
     async function verifyPhoneCode(clientId, phoneNumber, code) {
-        return post(`/authkit/${encodeURIComponent(clientId)}/auth/phone/verify`, { phoneNumber, code });
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/phone/verify`, { phoneNumber, code });
+        setBearerToken(res.token);
+        return res;
     }
     authKit.verifyPhoneCode = verifyPhoneCode;
     /** Send a WhatsApp verification deep-link (public). */
@@ -64,7 +80,9 @@ export var authKit;
     authKit.getWhatsAppStatus = getWhatsAppStatus;
     /** Exchange a verified WhatsApp token for an Auth Kit session (public). */
     async function exchangeWhatsAppSession(clientId, token, sessionKey) {
-        return post(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/exchange-session`, { token, sessionKey });
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/exchange-session`, { token, sessionKey });
+        setBearerToken(res.token);
+        return res;
     }
     authKit.exchangeWhatsAppSession = exchangeWhatsAppSession;
     /** Send an SMS click-to-verify link (public). */

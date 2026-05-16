@@ -405,9 +405,17 @@ export function setExtraHeaders(headers) {
 }
 /**
  * Allows setting the bearerToken at runtime (e.g. after login/logout).
+ * Clears the HTTP cache whenever the token actually changes so that stale
+ * user-scoped responses (e.g. /account/profile) are not served after a
+ * login or logout event.
  */
 export function setBearerToken(token) {
+    if (token === bearerToken)
+        return;
     bearerToken = token;
+    httpCache.clear();
+    if (cachePersistence !== 'none')
+        idbClear().catch(() => { });
 }
 /**
  * Get the currently configured API base URL.

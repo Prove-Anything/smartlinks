@@ -52,32 +52,8 @@ function BidButton() {
 
 ## Iframe Apps (Cross-Origin)
 
-Iframe apps don't share React context. Use the SDK's `authKit` helper —
-it posts the framework-recognised messages on `window.parent`:
-
-```ts
-import { authKit } from '@proveanything/smartlinks';
-
-// After your custom flow succeeds:
-await authKit.publishLogin({
-  token,                // string — your API's bearer token
-  user: {               // mirrors AuthUser
-    uid: 'usr_123',
-    email: 'bidder@example.com',
-    displayName: 'Jane Bidder',
-  },
-  accountData: { tier: 'gold' }, // optional, free-form
-});
-
-// On sign-out:
-await authKit.publishLogout();
-```
-
-### Raw postMessage (fallback)
-
-If you can't use the helper (e.g. you're outside the SDK), post the raw
-messages from the iframe to its parent. The portal's `IframeResponder`
-listens for these:
+Iframe apps don't share React context. Post messages directly from the
+iframe to its parent — the portal's `IframeResponder` listens for these:
 
 ```ts
 // LOGIN
@@ -138,7 +114,7 @@ through the standard portal UI.
    wiped.
 
 ❌ Implementing logout by just clearing your own state. Always call
-   `useAuth().logout()` (container/widget) or `authKit.publishLogout()`
+   `useAuth().logout()` (container/widget) or post `smartlinks:authkit:logout`
    (iframe) so the whole portal session ends cleanly.
 
 ---

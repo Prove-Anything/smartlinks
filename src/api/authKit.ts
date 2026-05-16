@@ -40,7 +40,9 @@ export namespace authKit {
 
   /** Login with email + password (public). */
   export async function login(clientId: string, email: string, password: string): Promise<AuthLoginResponse> {
-    return post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/login`, { email, password })
+    const res = await post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/login`, { email, password })
+    if (res.token) setBearerToken(res.token)
+    return res
   }
 
   /** Register a new user (public). */
@@ -48,9 +50,18 @@ export namespace authKit {
     return post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/register`, data)
   }
 
-  /** Google OAuth login (public). */
+  /** Google OAuth login via ID token (public). */
   export async function googleLogin(clientId: string, idToken: string): Promise<AuthLoginResponse> {
-    return post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/google`, { idToken })
+    const res = await post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/google`, { idToken })
+    if (res.token) setBearerToken(res.token)
+    return res
+  }
+
+  /** Google OAuth login via server-side authorization code (public). */
+  export async function googleCodeLogin(clientId: string, code: string, redirectUri: string): Promise<AuthLoginResponse> {
+    const res = await post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/google-code`, { code, redirectUri })
+    if (res.token) setBearerToken(res.token)
+    return res
   }
 
   /** Send a magic link email to the user (public). */
@@ -72,7 +83,9 @@ export namespace authKit {
 
   /** Verify phone verification code (public). */
   export async function verifyPhoneCode(clientId: string, phoneNumber: string, code: string): Promise<PhoneVerifyResponse> {
-    return post<PhoneVerifyResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/phone/verify`, { phoneNumber, code })
+    const res = await post<PhoneVerifyResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/phone/verify`, { phoneNumber, code })
+    setBearerToken(res.token)
+    return res
   }
 
   /** Send a WhatsApp verification deep-link (public). */
@@ -93,7 +106,9 @@ export namespace authKit {
 
   /** Exchange a verified WhatsApp token for an Auth Kit session (public). */
   export async function exchangeWhatsAppSession(clientId: string, token: string, sessionKey: string): Promise<ExchangeWhatsAppSessionResponse> {
-    return post<ExchangeWhatsAppSessionResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/exchange-session`, { token, sessionKey })
+    const res = await post<ExchangeWhatsAppSessionResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/exchange-session`, { token, sessionKey })
+    setBearerToken(res.token)
+    return res
   }
 
   /** Send an SMS click-to-verify link (public). */

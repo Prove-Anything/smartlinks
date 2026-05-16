@@ -1,9 +1,15 @@
 {
   "name": "@proveanything/smartlinks",
-  "version": "1.13.18",
+  "version": "1.14.1",
   "description": "Official JavaScript/TypeScript SDK for the Smartlinks API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
   "files": [
     "dist/",
     "docs/",
