@@ -55,6 +55,9 @@ let cacheMaxEntries = 200;
 let cachePersistence = 'none';
 /** When true (default), clear in-memory and sessionStorage caches on page load/refresh. */
 let cacheClearOnPageLoad = true;
+/** When true, the bearer token is saved to localStorage and restored automatically on init. */
+let tokenPersistenceEnabled = false;
+const TOKEN_STORAGE_KEY = 'sl:token';
 /**
  * How long L2 (IndexedDB) entries are considered valid as an offline stale fallback,
  * measured from the original network fetch time (default: 7 days).
@@ -139,7 +142,8 @@ if (typeof window !== 'undefined' && cacheClearOnPageLoad) {
     clearSessionCachesOnPageLoad();
     // Also clear on bfcache restoration (mobile browsers restore JS context without reloading)
     window.addEventListener('pageshow', (e) => {
-        if (e.persisted) clearSessionCachesOnPageLoad();
+        if (e.persisted)
+            clearSessionCachesOnPageLoad();
     });
 }
 /**
@@ -343,6 +347,7 @@ function normalizeErrorResponse(responseBody, statusCode) {
  */
 import { iframe } from './iframe';
 export function initializeApi(options) {
+    var _a;
     // Normalize baseURL by removing trailing slashes.
     const normalizedBaseURL = options.baseURL.replace(/\/+$/g, "");
     // ------------------------------------------------------------------
@@ -359,6 +364,9 @@ export function initializeApi(options) {
     }
     baseURL = normalizedBaseURL;
     apiKey = options.apiKey;
+    // Enable token persistence before restoring the token.
+    if (options.persistToken !== undefined)
+        tokenPersistenceEnabled = options.persistToken;
     // Only overwrite bearerToken when the caller explicitly supplies one,
     // OR when this is the very first initialization (start with a clean slate).
     // Re-initialization calls that omit bearerToken must NOT clear a token that
@@ -367,7 +375,13 @@ export function initializeApi(options) {
         bearerToken = options.bearerToken;
     }
     else if (!initialized) {
-        bearerToken = undefined;
+        // On first init with no explicit token, restore from localStorage if persistence is on.
+        if (tokenPersistenceEnabled && typeof localStorage !== 'undefined') {
+            bearerToken = (_a = localStorage.getItem(TOKEN_STORAGE_KEY)) !== null && _a !== void 0 ? _a : undefined;
+        }
+        else {
+            bearerToken = undefined;
+        }
     }
     // else: preserve the existing runtime bearerToken.
     proxyMode = !!options.proxyMode;
@@ -417,6 +431,21 @@ export function setBearerToken(token) {
     if (token === bearerToken)
         return;
     bearerToken = token;
+    // Persist or clear from localStorage when token persistence is enabled.
+    if (tokenPersistenceEnabled && typeof localStorage !== 'undefined') {
+        if (token) {
+            try {
+                localStorage.setItem(TOKEN_STORAGE_KEY, token);
+            }
+            catch (_a) { }
+        }
+        else {
+            try {
+                localStorage.removeItem(TOKEN_STORAGE_KEY);
+            }
+            catch (_b) { }
+        }
+    }
     httpCache.clear();
     if (cachePersistence !== 'none')
         idbClear().catch(() => { });

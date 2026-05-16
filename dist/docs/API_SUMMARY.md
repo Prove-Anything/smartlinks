@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.14.5  |  Generated: 2026-05-16T12:39:31.377Z
+Version: 1.14.7  |  Generated: 2026-05-16T13:30:13.413Z
 
 This is a concise summary of all available API functions and types.
 
@@ -150,9 +150,9 @@ Return whether proxy mode is currently enabled.
   iframeAutoResize?: boolean // default true when in iframe
   logger?: Logger // optional console-like or function to enable verbose logging
   /**
-   * When true, bypasses the idempotency guard and forces a full re-initialization.
-   * Use only when you intentionally need to reset all SDK state (e.g. in tests or
-   * when switching accounts) → `void`
+   * When true, the bearer token is automatically saved to localStorage after login
+   * and restored on the next page load. Eliminates the need to manually persist
+   * the token across refreshes. Clear it by calling setBearerToken(undefined) → `void`
 Call this once (e.g. at app startup) to configure baseURL/auth.
 
 **setNgrokSkipBrowserWarning**(flag: boolean) → `void`

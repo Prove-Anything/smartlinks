@@ -47,6 +47,9 @@ let cacheMaxEntries: number = 200
 let cachePersistence: 'none' | 'indexeddb' = 'none'
 /** When true (default), clear in-memory and sessionStorage caches on page load/refresh. */
 let cacheClearOnPageLoad: boolean = true
+/** When true, the bearer token is saved to localStorage and restored automatically on init. */
+let tokenPersistenceEnabled: boolean = false
+const TOKEN_STORAGE_KEY = 'sl:token'
 /**
  * How long L2 (IndexedDB) entries are considered valid as an offline stale fallback,
  * measured from the original network fetch time (default: 7 days).
@@ -354,6 +357,12 @@ export function initializeApi(options: {
   iframeAutoResize?: boolean // default true when in iframe
   logger?: Logger // optional console-like or function to enable verbose logging
   /**
+   * When true, the bearer token is automatically saved to localStorage after login
+   * and restored on the next page load. Eliminates the need to manually persist
+   * the token across refreshes. Clear it by calling setBearerToken(undefined) or logout().
+   */
+  persistToken?: boolean
+  /**
    * When true, bypasses the idempotency guard and forces a full re-initialization.
    * Use only when you intentionally need to reset all SDK state (e.g. in tests or
    * when switching accounts). In normal application code, prefer letting the guard
@@ -380,6 +389,9 @@ export function initializeApi(options: {
   baseURL = normalizedBaseURL
   apiKey = options.apiKey
 
+  // Enable token persistence before restoring the token.
+  if (options.persistToken !== undefined) tokenPersistenceEnabled = options.persistToken
+
   // Only overwrite bearerToken when the caller explicitly supplies one,
   // OR when this is the very first initialization (start with a clean slate).
   // Re-initialization calls that omit bearerToken must NOT clear a token that
@@ -387,7 +399,12 @@ export function initializeApi(options: {
   if (options.bearerToken !== undefined) {
     bearerToken = options.bearerToken
   } else if (!initialized) {
-    bearerToken = undefined
+    // On first init with no explicit token, restore from localStorage if persistence is on.
+    if (tokenPersistenceEnabled && typeof localStorage !== 'undefined') {
+      bearerToken = localStorage.getItem(TOKEN_STORAGE_KEY) ?? undefined
+    } else {
+      bearerToken = undefined
+    }
   }
   // else: preserve the existing runtime bearerToken.
 
@@ -443,6 +460,14 @@ export function setExtraHeaders(headers: Record<string, string>) {
 export function setBearerToken(token: string | undefined) {
   if (token === bearerToken) return
   bearerToken = token
+  // Persist or clear from localStorage when token persistence is enabled.
+  if (tokenPersistenceEnabled && typeof localStorage !== 'undefined') {
+    if (token) {
+      try { localStorage.setItem(TOKEN_STORAGE_KEY, token) } catch {}
+    } else {
+      try { localStorage.removeItem(TOKEN_STORAGE_KEY) } catch {}
+    }
+  }
   httpCache.clear()
   if (cachePersistence !== 'none') idbClear().catch(() => {})
 }

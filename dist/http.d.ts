@@ -17,6 +17,12 @@ export declare function initializeApi(options: {
     iframeAutoResize?: boolean;
     logger?: Logger;
     /**
+     * When true, the bearer token is automatically saved to localStorage after login
+     * and restored on the next page load. Eliminates the need to manually persist
+     * the token across refreshes. Clear it by calling setBearerToken(undefined) or logout().
+     */
+    persistToken?: boolean;
+    /**
      * When true, bypasses the idempotency guard and forces a full re-initialization.
      * Use only when you intentionally need to reset all SDK state (e.g. in tests or
      * when switching accounts). In normal application code, prefer letting the guard
