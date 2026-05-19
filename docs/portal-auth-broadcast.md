@@ -1,6 +1,12 @@
 # Publishing Auth State to the Portal
 
-> **For sub-app authors.** This guide explains how to broadcast authentication state changes to the portal so the header, account UI, and sibling apps stay in sync.
+> **⚠️ Read [`portal-request-login.md`](./portal-request-login.md) first.**
+> The recommended pattern for "I need a logged-in user before I continue"
+> is `requestLogin` — the sub-app asks the portal to run its standard
+> AuthKit flow and awaits a result. This doc covers the *other* case:
+> a sub-app that runs its **own** authentication flow and needs to
+> publish the resulting session up to the portal so the header, account
+> UI, and sibling apps stay in sync.
 
 A SmartLinks micro-app may need to run its own custom authentication flow —
 typical cases: an auction app that calls a bidder API, a competition app
@@ -10,6 +16,7 @@ needs to know about it so the header, the account UI, and every sibling
 app pick up the new session.
 
 This doc describes the contract the portal framework already implements.
+
 
 ---
 
@@ -52,18 +59,28 @@ function BidButton() {
 
 ## Iframe Apps (Cross-Origin)
 
-Iframe apps don't share React context. Post messages directly from the
-iframe to its parent — the portal's `IframeResponder` listens for these:
+Iframe apps don't share React context with the portal. They publish their
+session by posting framework-recognised messages on `window.parent`. The
+portal's `IframeResponder` listens for these and routes them into the same
+`login` / `logout` calls the built-in `AuthModal` makes.
+
+> **Note:** There is no `authKit.publishLogin` / `publishLogout` helper in
+> the SmartLinks SDK today. Use the raw `postMessage` calls below. If a
+> helper ships later it will wrap exactly these payloads.
 
 ```ts
-// LOGIN
+// LOGIN — after your custom auth flow returns a token + user
 window.parent.postMessage({
   _smartlinksIframeMessage: true,
   type: 'smartlinks:authkit:login',
   payload: {
     token: '<bearer>',
-    user: { uid: 'usr_123', email: 'bidder@example.com', displayName: 'Jane' },
-    accountData: { /* optional */ },
+    user: {
+      uid: 'usr_123',
+      email: 'bidder@example.com',
+      displayName: 'Jane Bidder',
+    },
+    accountData: { tier: 'gold' }, // optional, free-form
   },
 }, '*');
 
@@ -114,8 +131,9 @@ through the standard portal UI.
    wiped.
 
 ❌ Implementing logout by just clearing your own state. Always call
-   `useAuth().logout()` (container/widget) or post `smartlinks:authkit:logout`
-   (iframe) so the whole portal session ends cleanly.
+   `useAuth().logout()` (container/widget) or post the
+   `smartlinks:authkit:logout` message (iframe) so the whole portal
+   session ends cleanly.
 
 ---
 

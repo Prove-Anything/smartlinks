@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.14.11  |  Generated: 2026-05-19T10:35:51.071Z
+Version: 1.14.13  |  Generated: 2026-05-19T11:49:34.090Z
 
 This is a concise summary of all available API functions and types.
 
@@ -36,6 +36,11 @@ For detailed guides on specific features:
 - **[Product Facets SDK](PRODUCT_FACETS_SDK.md)** - Admin and public product facet endpoints and TypeScript interfaces
 - **[Attestations](attestations.md)** - Append-only fact log with cryptographic chain integrity, time-series analytics, and public/owner/admin visibility
 - **[Auth Kit](auth-kit.md)** - End-user authentication flows (email/password, magic link, OTP, OAuth) for microapps
+- **[Portal Request Login](portal-request-login.md)** - Sub-apps delegate user authentication to the portal; `useSafeAuth().requestLogin` hook and iframe postMessage contract, redirect-bounce handling
+- **[Portal Auth Broadcast](portal-auth-broadcast.md)** - Publishing a custom-flow session to the portal so the header, sibling apps, and SDK all stay in sync
+- **[Portal Request Action](portal-request-action.md)** - Invoking portal built-in actions (`__qrScanner`, `__share`, `__logout`, etc.) from containers, widgets, and iframes
+- **[Portal Back Button](portal-back-button.md)** - `parentPath` contract for hierarchy-aware "up" navigation; `useDeepLinkSync` integration
+- **[Contact Search](contact-search.md)** - Admin contact search: free-text, typeahead, identity/tag/JSONB filters, and pagination
 - **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage
 - **[Forms](forms.md)** - Platform-managed form definitions, submissions, and schema-driven React form UI
 - **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more
@@ -89,7 +94,7 @@ The Smartlinks SDK is organized into the following namespaces:
 — Identity & Access —
 - **auth** - Admin authentication and account ops: login/logout, tokens, account info.
 - **authKit** - End‑user auth flows (email/password, OAuth, phone); profiles and verification.
-- **contact** - Manage customer contacts; CRUD, lookup, upsert, erase.
+- **contact** - Manage customer contacts; CRUD, lookup, upsert, erase, and admin search. → [Guide](contact-search.md)
 
 — Messaging & Audience —
 - **comms** - Send notifications (push, email, wallet); templating, severity, delivery status. → [Guide](comms.md)
