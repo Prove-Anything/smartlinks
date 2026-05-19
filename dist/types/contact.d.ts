@@ -34,6 +34,32 @@ export interface ContactListResponse {
     limit: number;
     offset: number;
 }
+export interface ContactSearchParams {
+    collectionId: string;
+    q?: string;
+    typeahead?: boolean;
+    email?: string;
+    phone?: string;
+    id?: string;
+    userId?: string;
+    tags?: string | string[];
+    tagsAll?: string | string[];
+    source?: string;
+    locale?: string;
+    createdFrom?: string;
+    createdTo?: string;
+    externalIdKey?: string;
+    externalIdValue?: string;
+    customFieldKey?: string;
+    customFieldValue?: string;
+    limit?: number;
+    offset?: number;
+}
+export interface ContactSearchResponse {
+    items: Contact[];
+    limit: number;
+    offset: number;
+}
 export type PublicContactUpsertRequest = Partial<Pick<Contact, "email" | "phone" | "userId" | "firstName" | "lastName" | "displayName" | "company" | "tags" | "source" | "notes" | "avatarUrl" | "locale" | "timezone" | "externalIds">> & {
     customFields?: ContactCustomFields;
 };

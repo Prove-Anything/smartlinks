@@ -19,6 +19,52 @@ export var contact;
         return request(path);
     }
     contact.list = list;
+    async function search({ collectionId, q, typeahead, email, phone, id, userId, tags, tagsAll, source, locale, createdFrom, createdTo, externalIdKey, externalIdValue, customFieldKey, customFieldValue, limit, offset, }) {
+        const query = new URLSearchParams();
+        if (q !== undefined)
+            query.set("q", q);
+        if (typeahead !== undefined)
+            query.set("typeahead", String(typeahead));
+        if (email !== undefined)
+            query.set("email", email);
+        if (phone !== undefined)
+            query.set("phone", phone);
+        if (id !== undefined)
+            query.set("id", id);
+        if (userId !== undefined)
+            query.set("userId", userId);
+        if (tags !== undefined) {
+            const arr = Array.isArray(tags) ? tags : tags.split(",").map(t => t.trim());
+            arr.forEach(t => query.append("tags", t));
+        }
+        if (tagsAll !== undefined) {
+            const arr = Array.isArray(tagsAll) ? tagsAll : tagsAll.split(",").map(t => t.trim());
+            arr.forEach(t => query.append("tagsAll", t));
+        }
+        if (source !== undefined)
+            query.set("source", source);
+        if (locale !== undefined)
+            query.set("locale", locale);
+        if (createdFrom !== undefined)
+            query.set("createdFrom", createdFrom);
+        if (createdTo !== undefined)
+            query.set("createdTo", createdTo);
+        if (externalIdKey !== undefined)
+            query.set("externalIdKey", externalIdKey);
+        if (externalIdValue !== undefined)
+            query.set("externalIdValue", externalIdValue);
+        if (customFieldKey !== undefined)
+            query.set("customFieldKey", customFieldKey);
+        if (customFieldValue !== undefined)
+            query.set("customFieldValue", customFieldValue);
+        if (limit !== undefined)
+            query.set("limit", String(limit));
+        if (offset !== undefined)
+            query.set("offset", String(offset));
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/search?${query.toString()}`;
+        return request(path);
+    }
+    contact.search = search;
     async function get(collectionId, contactId, params) {
         const query = new URLSearchParams();
         if ((params === null || params === void 0 ? void 0 : params.includeDeleted) !== undefined)

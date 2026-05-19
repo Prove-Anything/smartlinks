@@ -1,5 +1,5 @@
 import { request, post, del, patch } from "../http"
-import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse, ContactPublic, ContactPatch, PublicGetMyContactResponse, PublicUpdateMyContactResponse, ContactSchemaResponse } from "../types"
+import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, ContactSearchParams, ContactSearchResponse, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse, ContactPublic, ContactPatch, PublicGetMyContactResponse, PublicUpdateMyContactResponse, ContactSchemaResponse } from "../types"
 
 export namespace contact {
   export async function create(collectionId: string, data: ContactCreateRequest): Promise<ContactResponse> {
@@ -18,6 +18,56 @@ export namespace contact {
     const qs = query.toString()
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts${qs ? `?${qs}` : ""}`
     return request<ContactListResponse>(path)
+  }
+
+  export async function search({
+    collectionId,
+    q,
+    typeahead,
+    email,
+    phone,
+    id,
+    userId,
+    tags,
+    tagsAll,
+    source,
+    locale,
+    createdFrom,
+    createdTo,
+    externalIdKey,
+    externalIdValue,
+    customFieldKey,
+    customFieldValue,
+    limit,
+    offset,
+  }: ContactSearchParams): Promise<ContactSearchResponse> {
+    const query = new URLSearchParams()
+    if (q !== undefined) query.set("q", q)
+    if (typeahead !== undefined) query.set("typeahead", String(typeahead))
+    if (email !== undefined) query.set("email", email)
+    if (phone !== undefined) query.set("phone", phone)
+    if (id !== undefined) query.set("id", id)
+    if (userId !== undefined) query.set("userId", userId)
+    if (tags !== undefined) {
+      const arr = Array.isArray(tags) ? tags : tags.split(",").map(t => t.trim())
+      arr.forEach(t => query.append("tags", t))
+    }
+    if (tagsAll !== undefined) {
+      const arr = Array.isArray(tagsAll) ? tagsAll : tagsAll.split(",").map(t => t.trim())
+      arr.forEach(t => query.append("tagsAll", t))
+    }
+    if (source !== undefined) query.set("source", source)
+    if (locale !== undefined) query.set("locale", locale)
+    if (createdFrom !== undefined) query.set("createdFrom", createdFrom)
+    if (createdTo !== undefined) query.set("createdTo", createdTo)
+    if (externalIdKey !== undefined) query.set("externalIdKey", externalIdKey)
+    if (externalIdValue !== undefined) query.set("externalIdValue", externalIdValue)
+    if (customFieldKey !== undefined) query.set("customFieldKey", customFieldKey)
+    if (customFieldValue !== undefined) query.set("customFieldValue", customFieldValue)
+    if (limit !== undefined) query.set("limit", String(limit))
+    if (offset !== undefined) query.set("offset", String(offset))
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/search?${query.toString()}`
+    return request<ContactSearchResponse>(path)
   }
 
   export async function get(

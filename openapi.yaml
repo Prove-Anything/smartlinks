@@ -2586,6 +2586,113 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/contacts/search:
+    get:
+      tags:
+        - contact
+      summary: contact.search
+      operationId: contact_search
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: typeahead
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: email
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: phone
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: id
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: userId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: source
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: locale
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: createdFrom
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: createdTo
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: externalIdKey
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: externalIdValue
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: customFieldKey
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: customFieldValue
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactSearchResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/contacts/upsert:
     post:
       tags:
@@ -19566,6 +19673,70 @@ components:
         - deletedAt
         - erasedAt
     ContactListResponse:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Contact"
+        limit:
+          type: number
+        offset:
+          type: number
+      required:
+        - items
+        - limit
+        - offset
+    ContactSearchParams:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        q:
+          type: string
+        typeahead:
+          type: boolean
+        email:
+          type: string
+        phone:
+          type: string
+        id:
+          type: string
+        userId:
+          type: string
+        tags:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        tagsAll:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        source:
+          type: string
+        locale:
+          type: string
+        createdFrom:
+          type: string
+        createdTo:
+          type: string
+        externalIdKey:
+          type: string
+        externalIdValue:
+          type: string
+        customFieldKey:
+          type: string
+        customFieldValue:
+          type: string
+        limit:
+          type: number
+        offset:
+          type: number
+      required:
+        - collectionId
+    ContactSearchResponse:
       type: object
       properties:
         items:

@@ -101,8 +101,11 @@ function getTtlForPath(path) {
 function shouldSkipCache(path) {
     if (!cacheEnabled)
         return true;
-    // Never cache auth or account endpoints — they deal with tokens and session state.
+    // Never cache auth, account, or user-identity endpoints — they depend on session state.
     if (/\/(auth|account)\//i.test(path))
+        return true;
+    // Never cache /me endpoints (contact/me, loyalty/me, etc.) — always user-specific.
+    if (/\/me(\?|$)/i.test(path))
         return true;
     return false;
 }

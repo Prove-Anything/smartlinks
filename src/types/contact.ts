@@ -57,6 +57,40 @@ export interface ContactListResponse {
   offset: number
 }
 
+export interface ContactSearchParams {
+  collectionId: string
+  // Free-text
+  q?: string
+  typeahead?: boolean
+  // Identity filters
+  email?: string
+  phone?: string
+  // Exact lookups
+  id?: string
+  userId?: string
+  // Structured filters
+  tags?: string | string[]
+  tagsAll?: string | string[]
+  source?: string
+  locale?: string
+  createdFrom?: string
+  createdTo?: string
+  // JSONB field filters
+  externalIdKey?: string
+  externalIdValue?: string
+  customFieldKey?: string
+  customFieldValue?: string
+  // Pagination
+  limit?: number
+  offset?: number
+}
+
+export interface ContactSearchResponse {
+  items: Contact[]
+  limit: number
+  offset: number
+}
+
 // Public contact upsert (privacy-safe) derived from Contact
 export type PublicContactUpsertRequest = Partial<
   Pick<

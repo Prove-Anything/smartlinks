@@ -1,4 +1,4 @@
-import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse, ContactPatch, PublicGetMyContactResponse, PublicUpdateMyContactResponse, ContactSchemaResponse } from "../types";
+import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, ContactSearchParams, ContactSearchResponse, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse, ContactPatch, PublicGetMyContactResponse, PublicUpdateMyContactResponse, ContactSchemaResponse } from "../types";
 export declare namespace contact {
     function create(collectionId: string, data: ContactCreateRequest): Promise<ContactResponse>;
     function list(collectionId: string, params?: {
@@ -6,6 +6,7 @@ export declare namespace contact {
         offset?: number;
         includeDeleted?: boolean;
     }): Promise<ContactListResponse>;
+    function search({ collectionId, q, typeahead, email, phone, id, userId, tags, tagsAll, source, locale, createdFrom, createdTo, externalIdKey, externalIdValue, customFieldKey, customFieldValue, limit, offset, }: ContactSearchParams): Promise<ContactSearchResponse>;
     function get(collectionId: string, contactId: string, params?: {
         includeDeleted?: boolean;
     }): Promise<ContactResponse>;

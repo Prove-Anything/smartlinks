@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.14.8  |  Generated: 2026-05-16T13:39:00.789Z
+Version: 1.14.11  |  Generated: 2026-05-19T10:35:51.071Z
 
 This is a concise summary of all available API functions and types.
 
@@ -4460,6 +4460,40 @@ interface ContactListResponse {
 }
 ```
 
+**ContactSearchParams** (interface)
+```typescript
+interface ContactSearchParams {
+  collectionId: string
+  q?: string
+  typeahead?: boolean
+  email?: string
+  phone?: string
+  id?: string
+  userId?: string
+  tags?: string | string[]
+  tagsAll?: string | string[]
+  source?: string
+  locale?: string
+  createdFrom?: string
+  createdTo?: string
+  externalIdKey?: string
+  externalIdValue?: string
+  customFieldKey?: string
+  customFieldValue?: string
+  limit?: number
+  offset?: number
+}
+```
+
+**ContactSearchResponse** (interface)
+```typescript
+interface ContactSearchResponse {
+  items: Contact[]
+  limit: number
+  offset: number
+}
+```
+
 **PublicContactUpsertResponse** (interface)
 ```typescript
 interface PublicContactUpsertResponse {
@@ -8628,6 +8662,28 @@ Returns all proof type definitions. Proof types are templates that specify which
 
 **list**(collectionId: string,
     params?: { limit?: number; offset?: number; includeDeleted?: boolean }) → `Promise<ContactListResponse>`
+
+**search**({
+    collectionId,
+    q,
+    typeahead,
+    email,
+    phone,
+    id,
+    userId,
+    tags,
+    tagsAll,
+    source,
+    locale,
+    createdFrom,
+    createdTo,
+    externalIdKey,
+    externalIdValue,
+    customFieldKey,
+    customFieldValue,
+    limit,
+    offset,
+  }: ContactSearchParams) → `Promise<ContactSearchResponse>`
 
 **get**(collectionId: string,
     contactId: string,
