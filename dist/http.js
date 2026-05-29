@@ -757,7 +757,7 @@ function ensureProxyListener() {
                 const errorBody = (_d = (_c = msg.errorBody) !== null && _c !== void 0 ? _c : errObj) !== null && _d !== void 0 ? _d : msg.error;
                 if (statusCode) {
                     const errBody = normalizeErrorResponse(errorBody, statusCode);
-                    pending.reject(new SmartlinksApiError(message, statusCode, errBody));
+                    pending.reject(new SmartlinksApiError(errBody.message, statusCode, errBody));
                 }
                 else {
                     pending.reject(new Error(message));

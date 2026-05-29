@@ -1,4 +1,5 @@
 import { request, post, put, del, getApiHeaders, getBaseURL, isProxyEnabled, proxyUploadFormData } from "../http"
+import { SmartlinksApiError } from "../types/error"
 import {
   Asset,
   AssetResponse,
@@ -194,7 +195,8 @@ export namespace asset {
       return await post<Asset>(path, body)
     } catch (e: any) {
       const msg = e?.message || 'URL upload failed'
-      throw new AssetUploadError(msg, 'UNKNOWN')
+      const details = e instanceof SmartlinksApiError ? e.errorResponse as Record<string, any> : undefined
+      throw new AssetUploadError(msg, 'UNKNOWN', details)
     }
   }
 

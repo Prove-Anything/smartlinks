@@ -531,7 +531,7 @@ export class IframeResponder {
       const responseData = await fetchResponse.json().catch(() => null);
 
       if (!fetchResponse.ok) {
-        response.error = responseData?.message || `Request failed with status ${fetchResponse.status}`;
+        response.error = responseData?.message || responseData?.errorText || `Request failed with status ${fetchResponse.status}`;
         response.statusCode = fetchResponse.status;
         response.errorBody = responseData;
       } else {

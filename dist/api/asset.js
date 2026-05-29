@@ -10,6 +10,7 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 import { request, post, put, del, getApiHeaders, getBaseURL, isProxyEnabled, proxyUploadFormData } from "../http";
+import { SmartlinksApiError } from "../types/error";
 export var asset;
 (function (asset) {
     function resolveApiUrl(path) {
@@ -175,7 +176,8 @@ export var asset;
         }
         catch (e) {
             const msg = (e === null || e === void 0 ? void 0 : e.message) || 'URL upload failed';
-            throw new AssetUploadError(msg, 'UNKNOWN');
+            const details = e instanceof SmartlinksApiError ? e.errorResponse : undefined;
+            throw new AssetUploadError(msg, 'UNKNOWN', details);
         }
     }
     asset.uploadFromUrl = uploadFromUrl;
