@@ -33,6 +33,12 @@ let bearerToken = undefined;
 let proxyMode = false;
 let ngrokSkipBrowserWarning = false;
 let extraHeadersGlobal = {};
+/**
+ * Client platform opt-in. When set to 'native', every request carries the
+ * `X-Client-Platform: native` header, which tells AuthKit login endpoints to
+ * issue refresh tokens and short-lived access tokens. Undefined → web behaviour.
+ */
+let clientPlatform = undefined;
 /** Whether initializeApi has been successfully called at least once. */
 let initialized = false;
 /** Safely returns the current browser hostname, or an empty string in non-browser / Node environments. */
@@ -395,6 +401,11 @@ export function initializeApi(options) {
         ? !!options.ngrokSkipBrowserWarning
         : inferredNgrok;
     extraHeadersGlobal = options.extraHeaders ? Object.assign({}, options.extraHeaders) : {};
+    // Platform opt-in (native refresh tokens). Preserve an earlier value when a
+    // re-init call omits it, so long-lived native sessions aren't downgraded by a
+    // later bootstrap that forgot to pass platform.
+    if (options.platform !== undefined)
+        clientPlatform = options.platform;
     // Auto-enable iframe resize unless explicitly disabled
     if (iframe.isIframe() && options.iframeAutoResize !== false) {
         iframe.enableAutoIframeResize();
@@ -1084,6 +1095,8 @@ export async function request(path) {
                     headers["X-API-Key"] = apiKey;
                 if (bearerToken)
                     headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
+                if (clientPlatform)
+                    headers["X-Client-Platform"] = clientPlatform;
                 if (ngrokSkipBrowserWarning)
                     headers["ngrok-skip-browser-warning"] = "true";
                 const _getDomain = getSourceDomain();
@@ -1157,6 +1170,8 @@ export async function post(path, body, extraHeaders) {
         headers["X-API-Key"] = apiKey;
     if (bearerToken)
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
+    if (clientPlatform)
+        headers["X-Client-Platform"] = clientPlatform;
     if (ngrokSkipBrowserWarning)
         headers["ngrok-skip-browser-warning"] = "true";
     const _postDomain = getSourceDomain();
@@ -1214,6 +1229,8 @@ export async function put(path, body, extraHeaders) {
         headers["X-API-Key"] = apiKey;
     if (bearerToken)
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
+    if (clientPlatform)
+        headers["X-Client-Platform"] = clientPlatform;
     if (ngrokSkipBrowserWarning)
         headers["ngrok-skip-browser-warning"] = "true";
     const _putDomain = getSourceDomain();
@@ -1271,6 +1288,8 @@ export async function patch(path, body, extraHeaders) {
         headers["X-API-Key"] = apiKey;
     if (bearerToken)
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
+    if (clientPlatform)
+        headers["X-Client-Platform"] = clientPlatform;
     if (ngrokSkipBrowserWarning)
         headers["ngrok-skip-browser-warning"] = "true";
     const _patchDomain = getSourceDomain();
@@ -1375,7 +1394,7 @@ export async function requestWithOptions(path, options) {
                 }
             }
             const _rwoDomain = getSourceDomain();
-            const headers = Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({ "Content-Type": "application/json" }, (apiKey ? { "X-API-Key": apiKey } : {})), (bearerToken ? { "AUTHORIZATION": `Bearer ${bearerToken}` } : {})), (ngrokSkipBrowserWarning ? { "ngrok-skip-browser-warning": "true" } : {})), (_rwoDomain ? { "X-Source-Domain": _rwoDomain } : {})), extraHeaders);
+            const headers = Object.assign(Object.assign(Object.assign(Object.assign(Object.assign(Object.assign({ "Content-Type": "application/json" }, (apiKey ? { "X-API-Key": apiKey } : {})), (bearerToken ? { "AUTHORIZATION": `Bearer ${bearerToken}` } : {})), (clientPlatform ? { "X-Client-Platform": clientPlatform } : {})), (ngrokSkipBrowserWarning ? { "ngrok-skip-browser-warning": "true" } : {})), (_rwoDomain ? { "X-Source-Domain": _rwoDomain } : {})), extraHeaders);
             // Merge global custom headers (do not override existing keys from options.headers)
             for (const [k, v] of Object.entries(extraHeadersGlobal))
                 if (!(k in headers))
@@ -1479,6 +1498,8 @@ export async function del(path, extraHeaders) {
         headers["X-API-Key"] = apiKey;
     if (bearerToken)
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
+    if (clientPlatform)
+        headers["X-Client-Platform"] = clientPlatform;
     if (ngrokSkipBrowserWarning)
         headers["ngrok-skip-browser-warning"] = "true";
     const _delDomain = getSourceDomain();
@@ -1519,6 +1540,8 @@ export function getApiHeaders() {
         headers["X-API-Key"] = apiKey;
     if (bearerToken)
         headers["AUTHORIZATION"] = `Bearer ${bearerToken}`;
+    if (clientPlatform)
+        headers["X-Client-Platform"] = clientPlatform;
     if (ngrokSkipBrowserWarning)
         headers["ngrok-skip-browser-warning"] = "true";
     const sourceDomain = getSourceDomain();

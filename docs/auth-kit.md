@@ -215,6 +215,93 @@ When `contactData.name` or explicit name parts were supplied on the original `se
 const session = await authKit.googleLogin(clientId, googleIdToken);
 ```
 
+### Sign in with Apple
+
+Pass the Apple **identity token** (a JWT). On iOS/native it's
+`ASAuthorizationAppleIDCredential.identityToken` (UTF-8 decoded); on web it's
+`response.authorization.id_token` from Apple JS.
+
+```ts
+const session = await authKit.appleLogin(clientId, appleIdentityToken, {
+  // All optional:
+  nonce,                                  // raw nonce, if you used nonce binding
+  userInfo: { name, email },              // first authorization callback ONLY — Apple never resends it
+});
+// session.isNewUser and session.expiresAt (ms epoch) are populated by this endpoint.
+```
+
+Apple returns the user's name/email **only on the very first authorization, ever**, and
+never inside the token. Capture it from that first callback and forward it via `userInfo`
+so the server can seed the display name — it's treated as untrusted and never used for identity.
+
+Apple login requires the client's AuthKit config to list allowed audiences in
+`appleClientIds`; until then the endpoint returns `400 APPLE_AUTH_NOT_CONFIGURED`.
+
+#### Verified-to-verified account linking (affects Google too)
+
+Both `appleLogin` and `googleLogin` now refuse to silently merge a federated login into a
+pre-existing account whose email is **unverified**. Instead they throw
+`SmartlinksApiError` with `errorCode === 'ACCOUNT_EXISTS_UNVERIFIED'` (409) and
+`err.details?.requiresEmailVerification === true`. Treat this as recoverable, not fatal:
+
+```ts
+try {
+  const session = await authKit.appleLogin(clientId, appleIdentityToken);
+} catch (err) {
+  if (err instanceof SmartlinksApiError && err.errorCode === 'ACCOUNT_EXISTS_UNVERIFIED') {
+    // "An account with this email exists but isn't verified. Sign in with your
+    //  password (or reset it), then link Apple/Google from settings."
+  }
+}
+```
+
+> ⚠️ This is a behaviour change for `googleLogin`, which previously merged silently in
+> this case. Handle the 409 for both methods.
+
+### Refresh tokens (native sessions)
+
+Native/Capacitor hosts can hold long-lived sessions via refresh tokens. Opt in **once**
+at startup so every request carries `X-Client-Platform: native`:
+
+```ts
+initializeApi({ baseURL, platform: 'native' });
+```
+
+With the opt-in active, the login endpoints (`login`, `register` in immediate mode,
+`googleLogin`, `appleLogin`, `verifyPhoneCode`, `verifyMagicLink`,
+`exchangeWhatsAppSession`) additionally return `refreshToken`, `refreshTokenExpiresAt`
+(absolute, fixed, ms epoch), and a **short-lived** access `token`. Web clients are
+unaffected and receive the unchanged response.
+
+```ts
+// Later — exchange the refresh token for a fresh access token.
+const r = await authKit.refreshToken(clientId, storedRefreshToken);
+// r.refreshToken is ROTATED — persist it and discard the old one BEFORE the next call.
+// The SDK already swapped in r.token as the active bearer for you.
+persist(r.refreshToken, r.refreshTokenExpiresAt);
+
+// On explicit sign-out — revokes the whole device family server-side + clears the bearer.
+await authKit.logout(clientId, storedRefreshToken);
+clearPersistedTokens();
+```
+
+**Rotation rules the host MUST respect:**
+
+1. **Single-use + rotation.** Every `refreshToken()` returns a new token. Persist it and
+   overwrite the old one *before* the next call.
+2. **Serialize refreshes.** Fire a single in-flight refresh and queue callers behind it —
+   the SDK does **not** serialize for you, and racing two refreshes spends the same token.
+3. **Reuse = family death.** Replaying a consumed token throws
+   `SmartlinksApiError` with `errorCode === 'REFRESH_TOKEN_REUSE_DETECTED'`; treat as a
+   hard logout (clear storage, force re-login). `INVALID_REFRESH_TOKEN` (expired/revoked)
+   is handled the same way.
+4. **Absolute expiry is fixed.** `refreshTokenExpiresAt` never moves on rotation; once it
+   passes (default 90 days) the user must log in again.
+
+> Resume-refresh scheduling and transparent refresh-on-401 are the responsibility of the
+> host/auth-ui layer, not this SDK — the SDK only exposes the `refreshToken()` / `logout()`
+> primitives and the `platform` opt-in.
+
 ---
 
 ## Profile management

@@ -12,6 +12,12 @@ let bearerToken: string | undefined = undefined
 let proxyMode: boolean = false
 let ngrokSkipBrowserWarning: boolean = false
 let extraHeadersGlobal: Record<string, string> = {}
+/**
+ * Client platform opt-in. When set to 'native', every request carries the
+ * `X-Client-Platform: native` header, which tells AuthKit login endpoints to
+ * issue refresh tokens and short-lived access tokens. Undefined → web behaviour.
+ */
+let clientPlatform: 'native' | 'web' | undefined = undefined
 /** Whether initializeApi has been successfully called at least once. */
 let initialized: boolean = false
 
@@ -356,6 +362,14 @@ export function initializeApi(options: {
   proxyMode?: boolean
   ngrokSkipBrowserWarning?: boolean
   extraHeaders?: Record<string, string>
+  /**
+   * Declares the host platform. Set to `'native'` on native/Capacitor hosts to opt into
+   * AuthKit refresh tokens — the SDK then sends `X-Client-Platform: native` on every
+   * request, so login endpoints return `refreshToken`/`refreshTokenExpiresAt` and a
+   * short-lived access token. Omit (or `'web'`) for standard web behaviour. Preserved
+   * across re-initialization when not supplied.
+   */
+  platform?: 'native' | 'web'
   iframeAutoResize?: boolean // default true when in iframe
   logger?: Logger // optional console-like or function to enable verbose logging
   /**
@@ -419,6 +433,10 @@ export function initializeApi(options: {
     ? !!options.ngrokSkipBrowserWarning
     : inferredNgrok
   extraHeadersGlobal = options.extraHeaders ? { ...options.extraHeaders } : {}
+  // Platform opt-in (native refresh tokens). Preserve an earlier value when a
+  // re-init call omits it, so long-lived native sessions aren't downgraded by a
+  // later bootstrap that forgot to pass platform.
+  if (options.platform !== undefined) clientPlatform = options.platform
   // Auto-enable iframe resize unless explicitly disabled
   if (iframe.isIframe() && options.iframeAutoResize !== false) {
     iframe.enableAutoIframeResize()
@@ -1170,6 +1188,7 @@ export async function request<T>(path: string): Promise<T> {
         const headers: Record<string, string> = { "Content-Type": "application/json" }
         if (apiKey) headers["X-API-Key"] = apiKey
         if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
+        if (clientPlatform) headers["X-Client-Platform"] = clientPlatform
         if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
         const _getDomain = getSourceDomain(); if (_getDomain) headers["X-Source-Domain"] = _getDomain
         for (const [k, v] of Object.entries(extraHeadersGlobal)) headers[k] = v
@@ -1251,6 +1270,7 @@ export async function post<T>(
   const headers: Record<string, string> = extraHeaders ? { ...extraHeaders } : {}
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
+  if (clientPlatform) headers["X-Client-Platform"] = clientPlatform
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const _postDomain = getSourceDomain(); if (_postDomain) headers["X-Source-Domain"] = _postDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
@@ -1311,6 +1331,7 @@ export async function put<T>(
   const headers: Record<string, string> = extraHeaders ? { ...extraHeaders } : {}
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
+  if (clientPlatform) headers["X-Client-Platform"] = clientPlatform
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const _putDomain = getSourceDomain(); if (_putDomain) headers["X-Source-Domain"] = _putDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
@@ -1371,6 +1392,7 @@ export async function patch<T>(
   const headers: Record<string, string> = extraHeaders ? { ...extraHeaders } : {}
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
+  if (clientPlatform) headers["X-Client-Platform"] = clientPlatform
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const _patchDomain = getSourceDomain(); if (_patchDomain) headers["X-Source-Domain"] = _patchDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
@@ -1484,6 +1506,7 @@ export async function requestWithOptions<T>(
         "Content-Type": "application/json",
         ...(apiKey ? { "X-API-Key": apiKey } : {}),
         ...(bearerToken ? { "AUTHORIZATION": `Bearer ${bearerToken}` } : {}),
+        ...(clientPlatform ? { "X-Client-Platform": clientPlatform } : {}),
         ...(ngrokSkipBrowserWarning ? { "ngrok-skip-browser-warning": "true" } : {}),
         ...(_rwoDomain ? { "X-Source-Domain": _rwoDomain } : {}),
         ...extraHeaders,
@@ -1618,6 +1641,7 @@ export async function del<T>(
   const headers: Record<string, string> = extraHeaders ? { ...extraHeaders } : {}
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
+  if (clientPlatform) headers["X-Client-Platform"] = clientPlatform
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const _delDomain = getSourceDomain(); if (_delDomain) headers["X-Source-Domain"] = _delDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
@@ -1654,6 +1678,7 @@ export function getApiHeaders(): Record<string, string> {
   const headers: Record<string, string> = {}
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
+  if (clientPlatform) headers["X-Client-Platform"] = clientPlatform
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const sourceDomain = getSourceDomain(); if (sourceDomain) headers["X-Source-Domain"] = sourceDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v

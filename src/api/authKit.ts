@@ -1,6 +1,9 @@
 import { request, post, put, del, setBearerToken, invalidateCache } from "../http"
 import type {
   AuthLoginResponse,
+  AppleLoginOptions,
+  RefreshResponse,
+  LogoutResponse,
   PhoneSendCodeResponse,
   PhoneVerifyResponse,
   PasswordResetRequestResponse,
@@ -61,6 +64,74 @@ export namespace authKit {
   export async function googleCodeLogin(clientId: string, code: string, redirectUri: string): Promise<AuthLoginResponse> {
     const res = await post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/google-code`, { code, redirectUri })
     if (res.token) { setBearerToken(res.token); invalidateCache() }
+    return res
+  }
+
+  /**
+   * Sign in with Apple via an Apple identity token (public).
+   *
+   * Mirrors {@link googleLogin}. On success the returned bearer token is stored
+   * automatically and the cache is invalidated.
+   *
+   * Notable error codes (thrown as `SmartlinksApiError`, read via `err.errorCode`):
+   * - `MISSING_APPLE_TOKEN` (400), `APPLE_AUTH_NOT_CONFIGURED` (400),
+   *   `INVALID_APPLE_TOKEN` (401), `APPLE_AUTH_FAILED` (500)
+   * - `ACCOUNT_EXISTS_UNVERIFIED` (409) — an unverified account already owns this
+   *   email; the server refuses to silently link. `err.details.requiresEmailVerification`
+   *   is `true`. Recoverable: the user should sign in with their password (or reset it),
+   *   then link Apple from settings. **The same 409 can now come back from
+   *   {@link googleLogin}** under the shared verified-to-verified linking policy.
+   *
+   * @see AppleLoginOptions
+   */
+  export async function appleLogin(clientId: string, identityToken: string, opts?: AppleLoginOptions): Promise<AuthLoginResponse> {
+    const body: { identityToken: string } & AppleLoginOptions = { identityToken, ...opts }
+    const res = await post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/apple`, body)
+    if (res.token) { setBearerToken(res.token); invalidateCache() }
+    return res
+  }
+
+  /* ===================================
+   * Native session refresh (public)
+   * =================================== */
+
+  /**
+   * Exchange a refresh token for a fresh access token (public — the refresh token IS
+   * the credential). **Native sessions only**; refresh tokens are issued only when the
+   * host opted in via `initializeApi({ platform: 'native' })`.
+   *
+   * On success the new access token is stored automatically (`setBearerToken`). The
+   * returned `refreshToken` is **rotated** — the caller must persist it and discard the
+   * old one before refreshing again.
+   *
+   * ⚠️ **Single-use, no retry, serialize calls.** This method issues exactly one request
+   * and never retries: replaying a consumed refresh token triggers
+   * `REFRESH_TOKEN_REUSE_DETECTED` (the whole session family is revoked). The caller is
+   * responsible for ensuring only one refresh is in flight at a time (e.g. across tabs or
+   * resume events).
+   *
+   * Errors (thrown as `SmartlinksApiError`, read via `err.errorCode`):
+   * `MISSING_REFRESH_TOKEN` (400), `INVALID_REFRESH_TOKEN` (401),
+   * `REFRESH_TOKEN_REUSE_DETECTED` (401) — the last two mean a hard logout.
+   *
+   * @see RefreshErrorCode
+   */
+  export async function refreshToken(clientId: string, refreshToken: string): Promise<RefreshResponse> {
+    const res = await post<RefreshResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/refresh`, { refreshToken })
+    if (res.token) { setBearerToken(res.token); invalidateCache() }
+    return res
+  }
+
+  /**
+   * Revoke a refresh token's entire family server-side (that device's whole rotation
+   * chain) and clear the in-memory bearer token. Idempotent — always resolves to
+   * `{ success: true }`, never revealing whether the token existed. Call on explicit
+   * sign-out. Persisted tokens in the host's own storage must be cleared separately.
+   */
+  export async function logout(clientId: string, refreshToken: string): Promise<LogoutResponse> {
+    const res = await post<LogoutResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/logout`, { refreshToken })
+    setBearerToken(undefined)
+    invalidateCache()
     return res
   }
 

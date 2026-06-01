@@ -8177,6 +8177,38 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /authkit/{clientId}/auth/apple:
+    post:
+      tags:
+        - authKit
+      summary: Sign in with Apple via an Apple identity token (public).
+      operationId: authKit_appleLogin
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthLoginResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppleLoginOptions"
   /authkit/{clientId}/auth/complete-reset:
     post:
       tags:
@@ -8275,6 +8307,32 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AuthLoginResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /authkit/{clientId}/auth/logout:
+    post:
+      tags:
+        - authKit
+      summary: "Revoke a refresh token's entire family server-side (that device's whole rotation chain) and clear the in-memory bearer token."
+      operationId: authKit_logout
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LogoutResponse"
         400:
           description: Bad request
         401:
@@ -8386,6 +8444,32 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PhoneVerifyResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /authkit/{clientId}/auth/refresh:
+    post:
+      tags:
+        - authKit
+      summary: authKit.refreshToken
+      operationId: authKit_refreshToken
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RefreshResponse"
         400:
           description: Bad request
         401:
@@ -17929,8 +18013,56 @@ components:
           type: number
         accountLocked:
           type: boolean
+        isNewUser:
+          type: boolean
+        expiresAt:
+          type: number
+        refreshToken:
+          type: string
+        refreshTokenExpiresAt:
+          type: number
       required:
         - user
+    RefreshResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        refreshToken:
+          type: string
+        refreshTokenExpiresAt:
+          type: number
+        expiresAt:
+          type: number
+        user:
+          $ref: "#/components/schemas/AuthKitUser"
+        accountData:
+          type: object
+          additionalProperties: true
+      required:
+        - token
+        - refreshToken
+        - refreshTokenExpiresAt
+        - expiresAt
+        - user
+    LogoutResponse:
+      type: object
+      properties:
+        success:
+          type: object
+          additionalProperties: true
+      required:
+        - success
+    AppleLoginOptions:
+      type: object
+      properties:
+        authorizationCode:
+          type: string
+        nonce:
+          type: string
+        userInfo:
+          type: object
+          additionalProperties: true
     MagicLinkSendResponse:
       type: object
       properties:

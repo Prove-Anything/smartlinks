@@ -14,6 +14,14 @@ export declare function initializeApi(options: {
     proxyMode?: boolean;
     ngrokSkipBrowserWarning?: boolean;
     extraHeaders?: Record<string, string>;
+    /**
+     * Declares the host platform. Set to `'native'` on native/Capacitor hosts to opt into
+     * AuthKit refresh tokens — the SDK then sends `X-Client-Platform: native` on every
+     * request, so login endpoints return `refreshToken`/`refreshTokenExpiresAt` and a
+     * short-lived access token. Omit (or `'web'`) for standard web behaviour. Preserved
+     * across re-initialization when not supplied.
+     */
+    platform?: 'native' | 'web';
     iframeAutoResize?: boolean;
     logger?: Logger;
     /**

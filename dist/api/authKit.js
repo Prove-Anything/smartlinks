@@ -43,6 +43,79 @@ export var authKit;
         return res;
     }
     authKit.googleCodeLogin = googleCodeLogin;
+    /**
+     * Sign in with Apple via an Apple identity token (public).
+     *
+     * Mirrors {@link googleLogin}. On success the returned bearer token is stored
+     * automatically and the cache is invalidated.
+     *
+     * Notable error codes (thrown as `SmartlinksApiError`, read via `err.errorCode`):
+     * - `MISSING_APPLE_TOKEN` (400), `APPLE_AUTH_NOT_CONFIGURED` (400),
+     *   `INVALID_APPLE_TOKEN` (401), `APPLE_AUTH_FAILED` (500)
+     * - `ACCOUNT_EXISTS_UNVERIFIED` (409) — an unverified account already owns this
+     *   email; the server refuses to silently link. `err.details.requiresEmailVerification`
+     *   is `true`. Recoverable: the user should sign in with their password (or reset it),
+     *   then link Apple from settings. **The same 409 can now come back from
+     *   {@link googleLogin}** under the shared verified-to-verified linking policy.
+     *
+     * @see AppleLoginOptions
+     */
+    async function appleLogin(clientId, identityToken, opts) {
+        const body = Object.assign({ identityToken }, opts);
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/apple`, body);
+        if (res.token) {
+            setBearerToken(res.token);
+            invalidateCache();
+        }
+        return res;
+    }
+    authKit.appleLogin = appleLogin;
+    /* ===================================
+     * Native session refresh (public)
+     * =================================== */
+    /**
+     * Exchange a refresh token for a fresh access token (public — the refresh token IS
+     * the credential). **Native sessions only**; refresh tokens are issued only when the
+     * host opted in via `initializeApi({ platform: 'native' })`.
+     *
+     * On success the new access token is stored automatically (`setBearerToken`). The
+     * returned `refreshToken` is **rotated** — the caller must persist it and discard the
+     * old one before refreshing again.
+     *
+     * ⚠️ **Single-use, no retry, serialize calls.** This method issues exactly one request
+     * and never retries: replaying a consumed refresh token triggers
+     * `REFRESH_TOKEN_REUSE_DETECTED` (the whole session family is revoked). The caller is
+     * responsible for ensuring only one refresh is in flight at a time (e.g. across tabs or
+     * resume events).
+     *
+     * Errors (thrown as `SmartlinksApiError`, read via `err.errorCode`):
+     * `MISSING_REFRESH_TOKEN` (400), `INVALID_REFRESH_TOKEN` (401),
+     * `REFRESH_TOKEN_REUSE_DETECTED` (401) — the last two mean a hard logout.
+     *
+     * @see RefreshErrorCode
+     */
+    async function refreshToken(clientId, refreshToken) {
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/refresh`, { refreshToken });
+        if (res.token) {
+            setBearerToken(res.token);
+            invalidateCache();
+        }
+        return res;
+    }
+    authKit.refreshToken = refreshToken;
+    /**
+     * Revoke a refresh token's entire family server-side (that device's whole rotation
+     * chain) and clear the in-memory bearer token. Idempotent — always resolves to
+     * `{ success: true }`, never revealing whether the token existed. Call on explicit
+     * sign-out. Persisted tokens in the host's own storage must be cleared separately.
+     */
+    async function logout(clientId, refreshToken) {
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/logout`, { refreshToken });
+        setBearerToken(undefined);
+        invalidateCache();
+        return res;
+    }
+    authKit.logout = logout;
     /** Send a magic link email to the user (public). */
     async function sendMagicLink(clientId, data) {
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/magic-link/send`, data);

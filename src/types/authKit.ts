@@ -46,7 +46,99 @@ export interface AuthLoginResponse {
   requiresEmailVerification?: boolean  // True if email verification is required but not yet completed
   emailVerificationDeadline?: number   // Unix timestamp - for 'immediate' mode grace period deadline
   accountLocked?: boolean              // True if account is locked due to expired verification deadline
+  /**
+   * True when this login created a brand-new account. Currently only populated by
+   * the Apple login endpoint; left undefined by the other AuthKit login endpoints.
+   */
+  isNewUser?: boolean
+  /**
+   * Session token expiry, in **milliseconds since epoch** (not seconds, not a duration),
+   * or null when the server could not decode it. Currently only populated by the Apple
+   * login endpoint.
+   */
+  expiresAt?: number | null
+  /**
+   * Opaque, single-use refresh token. **Native clients only** — present only when the
+   * request opted in via `initializeApi({ platform: 'native' })` (or the
+   * `X-Client-Platform: native` header). For native logins, `token` above is the
+   * short-lived access token; pair it with this refresh token. Undefined for web.
+   */
+  refreshToken?: string
+  /**
+   * Absolute expiry of the refresh-token family, in **milliseconds since epoch**.
+   * Fixed at login — it does **not** move when the token is rotated. Native only.
+   */
+  refreshTokenExpiresAt?: number
 }
+
+/**
+ * Response from {@link authKit.refreshToken}. The `refreshToken` is **rotated** on every
+ * call — persist the new value and discard the old one before refreshing again.
+ */
+export interface RefreshResponse {
+  /** New short-lived access token (a `SL.` bearer JWT). */
+  token: string
+  /** Rotated refresh token — replace the stored value with this. */
+  refreshToken: string
+  /** Absolute family expiry (ms epoch). Unchanged across rotations. */
+  refreshTokenExpiresAt: number
+  /** New access-token expiry (ms epoch). */
+  expiresAt: number
+  user: AuthKitUser
+  accountData?: Record<string, any>
+}
+
+/** Response from {@link authKit.logout}. Idempotent — always `{ success: true }`. */
+export interface LogoutResponse {
+  success: true
+}
+
+/**
+ * Server-defined error codes for the refresh/logout flow, surfaced via
+ * `SmartlinksApiError.errorCode`.
+ *
+ * - `MISSING_REFRESH_TOKEN` (400) — programming error; no token sent.
+ * - `INVALID_REFRESH_TOKEN` (401) — unknown / expired / revoked / wrong client → `logout()` + route to login.
+ * - `REFRESH_TOKEN_REUSE_DETECTED` (401) — a consumed token was replayed; the **entire session
+ *   family was revoked server-side**. Hard logout: clear storage, force re-login.
+ */
+export type RefreshErrorCode =
+  | 'MISSING_REFRESH_TOKEN'
+  | 'INVALID_REFRESH_TOKEN'
+  | 'REFRESH_TOKEN_REUSE_DETECTED'
+
+/**
+ * Options for {@link authKit.appleLogin}. All fields are optional — only the
+ * `identityToken` (passed as a positional argument) is required by the server.
+ */
+export interface AppleLoginOptions {
+  /** Apple authorization code. Accepted but ignored by the server for now (reserved for future server-side token exchange). */
+  authorizationCode?: string
+  /**
+   * The **raw** nonce the client generated, if nonce binding was used. The server
+   * accepts either `token.nonce === nonce` (native) or `token.nonce === sha256hex(nonce)` (web).
+   */
+  nonce?: string
+  /**
+   * Name/email from Apple's **first** authorization callback only — Apple never returns
+   * these again, and never inside the token. Forwarded so the server can persist the
+   * display name on first account creation. Treated as untrusted (never used for identity).
+   */
+  userInfo?: { email?: string; name?: string }
+}
+
+/**
+ * Server-defined error codes returned by AuthKit federated-login endpoints
+ * (Apple + Google). Surfaced via `SmartlinksApiError.errorCode`. The
+ * `ACCOUNT_EXISTS_UNVERIFIED` case also carries `requiresEmailVerification: true`
+ * in `SmartlinksApiError.details`.
+ */
+export type AuthKitErrorCode =
+  | 'MISSING_APPLE_TOKEN'         // 400 — identityToken absent from the body
+  | 'APPLE_AUTH_NOT_CONFIGURED'   // 400 — client has no appleClientIds configured
+  | 'INVALID_APPLE_TOKEN'         // 401 — signature / issuer / audience / expiry / nonce check failed
+  | 'ACCOUNT_EXISTS_UNVERIFIED'   // 409 — an unverified account already owns this email (Apple OR Google)
+  | 'APPLE_AUTH_FAILED'           // 500 — unexpected server error
 
 export interface MagicLinkSendResponse {
   success: boolean
