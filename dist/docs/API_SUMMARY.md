@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.14.16  |  Generated: 2026-06-01T09:33:51.336Z
+Version: 1.14.17  |  Generated: 2026-06-02T16:17:46.100Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3053,6 +3053,13 @@ interface VerifyResetTokenResponse {
 interface PasswordResetCompleteResponse {
   success: boolean
   message: string
+  token?: string
+  user?: AuthKitUser
+  accountData?: Record<string, any> | null
+  emailVerificationMode?: 'immediate' | 'verify-auto-login' | 'verify-manual-login'
+  refreshToken?: string
+  refreshTokenExpiresAt?: number
+  expiresAt?: number
 }
 ```
 
@@ -8371,19 +8378,19 @@ Upsert contact identity after lightweight verification (public).
 Upsert contact identity after lightweight verification (public).
 
 **completePasswordReset**(clientId: string, token: string, newPassword: string) → `Promise<PasswordResetCompleteResponse>`
-Upsert contact identity after lightweight verification (public).
+Complete a password reset / invite acceptance. On invite acceptance under `verify-auto-login` the server returns a session — adopt it so the caller is logged straight in (plain resets return no token and leave the bearer untouched).
 
 **sendEmailVerification**(clientId: string, data: { userId: string; email: string; redirectUrl?: string; clientName?: string }) → `Promise<EmailVerificationActionResponse>`
-Upsert contact identity after lightweight verification (public).
+Complete a password reset / invite acceptance. On invite acceptance under `verify-auto-login` the server returns a session — adopt it so the caller is logged straight in (plain resets return no token and leave the bearer untouched).
 
 **verifyEmail**(clientId: string, token: string) → `Promise<EmailVerifyTokenResponse>`
-Upsert contact identity after lightweight verification (public).
+Verify an email token; under `verify-auto-login` the server returns a session — adopt it.
 
 **resendEmailVerification**(clientId: string, data: { userId: string; email: string; redirectUrl?: string; clientName?: string }) → `Promise<EmailVerificationActionResponse>`
-Upsert contact identity after lightweight verification (public).
+Verify an email token; under `verify-auto-login` the server returns a session — adopt it.
 
 **getProfile**(clientId: string) → `Promise<UserProfile>`
-Upsert contact identity after lightweight verification (public).
+Verify an email token; under `verify-auto-login` the server returns a session — adopt it.
 
 **updateProfile**(clientId: string, data: ProfileUpdateData) → `Promise<UpdateProfileResponse>`
 Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.

@@ -96,6 +96,11 @@ export declare namespace authKit {
         clientName?: string;
     }): Promise<PasswordResetRequestResponse>;
     function verifyResetToken(clientId: string, token: string): Promise<VerifyResetTokenResponse>;
+    /**
+     * Complete a password reset / invite acceptance. On invite acceptance under
+     * `verify-auto-login` the server returns a session — adopt it so the caller is logged
+     * straight in (plain resets return no token and leave the bearer untouched).
+     */
     function completePasswordReset(clientId: string, token: string, newPassword: string): Promise<PasswordResetCompleteResponse>;
     function sendEmailVerification(clientId: string, data: {
         userId: string;
@@ -103,6 +108,7 @@ export declare namespace authKit {
         redirectUrl?: string;
         clientName?: string;
     }): Promise<EmailVerificationActionResponse>;
+    /** Verify an email token; under `verify-auto-login` the server returns a session — adopt it. */
     function verifyEmail(clientId: string, token: string): Promise<EmailVerifyTokenResponse>;
     function resendEmailVerification(clientId: string, data: {
         userId: string;

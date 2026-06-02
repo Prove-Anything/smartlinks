@@ -8071,7 +8071,7 @@ paths:
     get:
       tags:
         - authKit
-      summary: authKit.getProfile
+      summary: "Verify an email token; under `verify-auto-login` the server returns a session — adopt it."
       operationId: authKit_getProfile
       security: []
       parameters:
@@ -8213,7 +8213,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: authKit.completePasswordReset
+      summary: Complete a password reset / invite acceptance.
       operationId: authKit_completePasswordReset
       security: []
       parameters:
@@ -8579,7 +8579,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: authKit.sendEmailVerification
+      summary: Complete a password reset / invite acceptance.
       operationId: authKit_sendEmailVerification
       security: []
       parameters:
@@ -8670,7 +8670,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: authKit.verifyEmail
+      summary: "Verify an email token; under `verify-auto-login` the server returns a session — adopt it."
       operationId: authKit_verifyEmail
       security: []
       parameters:
@@ -18126,6 +18126,25 @@ components:
           type: boolean
         message:
           type: string
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/AuthKitUser"
+        accountData:
+          type: object
+          additionalProperties: true
+        emailVerificationMode:
+          type: string
+          enum:
+            - immediate
+            - verify-auto-login
+            - verify-manual-login
+        refreshToken:
+          type: string
+        refreshTokenExpiresAt:
+          type: number
+        expiresAt:
+          type: number
       required:
         - success
         - message

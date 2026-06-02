@@ -197,8 +197,18 @@ export var authKit;
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/verify-reset-token`, { token });
     }
     authKit.verifyResetToken = verifyResetToken;
+    /**
+     * Complete a password reset / invite acceptance. On invite acceptance under
+     * `verify-auto-login` the server returns a session — adopt it so the caller is logged
+     * straight in (plain resets return no token and leave the bearer untouched).
+     */
     async function completePasswordReset(clientId, token, newPassword) {
-        return post(`/authkit/${encodeURIComponent(clientId)}/auth/complete-reset`, { token, newPassword });
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/complete-reset`, { token, newPassword });
+        if (res.token) {
+            setBearerToken(res.token);
+            invalidateCache();
+        }
+        return res;
     }
     authKit.completePasswordReset = completePasswordReset;
     /* ===================================
@@ -208,8 +218,14 @@ export var authKit;
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/send-verification`, data);
     }
     authKit.sendEmailVerification = sendEmailVerification;
+    /** Verify an email token; under `verify-auto-login` the server returns a session — adopt it. */
     async function verifyEmail(clientId, token) {
-        return post(`/authkit/${encodeURIComponent(clientId)}/auth/verify-email`, { token });
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/verify-email`, { token });
+        if (res.token) {
+            setBearerToken(res.token);
+            invalidateCache();
+        }
+        return res;
     }
     authKit.verifyEmail = verifyEmail;
     async function resendEmailVerification(clientId, data) {
