@@ -18126,6 +18126,26 @@ components:
           type: boolean
         message:
           type: string
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/AuthKitUser"
+        accountData:
+          type: object
+          additionalProperties: true
+          nullable: true
+        emailVerificationMode:
+          type: string
+          enum:
+            - immediate
+            - verify-auto-login
+            - verify-manual-login
+        refreshToken:
+          type: string
+        refreshTokenExpiresAt:
+          type: number
+        expiresAt:
+          type: number
       required:
         - success
         - message

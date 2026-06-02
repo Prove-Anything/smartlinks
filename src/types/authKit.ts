@@ -169,9 +169,36 @@ export interface VerifyResetTokenResponse {
   message?: string
 }
 
+/**
+ * Response from {@link authKit.completePasswordReset}.
+ *
+ * For a **plain password reset**, or an invite accepted under `verify-manual-login`,
+ * the server returns only `success` + `message` and the user is sent to the login screen.
+ *
+ * For **invite acceptance under `verify-auto-login`** (the default), the server also
+ * completes email verification and returns a full session — `token`, `user`, and
+ * `accountData` — so the user can be logged straight in, mirroring
+ * {@link EmailVerifyTokenResponse}. The native-only fields are populated when the request
+ * opted in via `initializeApi({ platform: 'native' })` (the `X-Client-Platform: native`
+ * header). Every session field is therefore optional.
+ */
 export interface PasswordResetCompleteResponse {
   success: boolean
   message: string
+  /** Session token (a `SL.` bearer JWT). Present only on invite auto-login. Adopt it and skip the login screen. */
+  token?: string
+  /** The authenticated user. Present only when a `token` is returned. `emailVerified` is `true` once completion verifies the invite. */
+  user?: AuthKitUser
+  /** The `clients[clientId]` account-data slice, or `null`. Present only when a `token` is returned. */
+  accountData?: Record<string, any> | null
+  /** Configured verification mode echoed back; auto-login only occurs for `verify-auto-login`. */
+  emailVerificationMode?: 'immediate' | 'verify-auto-login' | 'verify-manual-login'
+  /** Opaque, single-use refresh token. **Native clients only** — pairs with the short-lived `token`. */
+  refreshToken?: string
+  /** Absolute expiry of the refresh-token family, in **ms since epoch**. Native only. */
+  refreshTokenExpiresAt?: number
+  /** Access-token expiry, in **ms since epoch**. Native only. */
+  expiresAt?: number
 }
 
 export interface EmailVerificationActionResponse {

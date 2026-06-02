@@ -212,8 +212,15 @@ export namespace authKit {
     return post<VerifyResetTokenResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/verify-reset-token`, { token })
   }
 
+  /**
+   * Complete a password reset / invite acceptance. On invite acceptance under
+   * `verify-auto-login` the server returns a session — adopt it so the caller is logged
+   * straight in (plain resets return no token and leave the bearer untouched).
+   */
   export async function completePasswordReset(clientId: string, token: string, newPassword: string): Promise<PasswordResetCompleteResponse> {
-    return post<PasswordResetCompleteResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/complete-reset`, { token, newPassword })
+    const res = await post<PasswordResetCompleteResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/complete-reset`, { token, newPassword })
+    if (res.token) { setBearerToken(res.token); invalidateCache() }
+    return res
   }
 
   /* ===================================
@@ -223,8 +230,11 @@ export namespace authKit {
     return post<EmailVerificationActionResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/send-verification`, data)
   }
 
+  /** Verify an email token; under `verify-auto-login` the server returns a session — adopt it. */
   export async function verifyEmail(clientId: string, token: string): Promise<EmailVerifyTokenResponse> {
-    return post<EmailVerifyTokenResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/verify-email`, { token })
+    const res = await post<EmailVerifyTokenResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/verify-email`, { token })
+    if (res.token) { setBearerToken(res.token); invalidateCache() }
+    return res
   }
 
   export async function resendEmailVerification(clientId: string, data: { userId: string; email: string; redirectUrl?: string; clientName?: string }): Promise<EmailVerificationActionResponse> {
