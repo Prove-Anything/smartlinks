@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.14.17  |  Generated: 2026-06-02T16:17:46.100Z
+Version: 1.15.0  |  Generated: 2026-06-03T10:03:05.999Z
 
 This is a concise summary of all available API functions and types.
 
@@ -9399,44 +9399,55 @@ Look up a serial number by code for a product (admin only).
     productId: string) → `Promise<void>`
 
 **query**(collectionId: string,
-    body: ProductQueryRequest) → `Promise<ProductQueryResponse>`
+    body: ProductQueryRequest,
+    admin?: boolean) → `Promise<ProductQueryResponse>`
+Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
 
 **clone**(collectionId: string,
     productId: string,
     body: Record<string, JsonValue> = {}) → `Promise<ProductResponse>`
+Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
 
 **listAssets**(collectionId: string,
     productId: string,
     admin?: boolean) → `Promise<unknown>`
+Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
 
 **createClaimWindow**(collectionId: string,
     productId: string,
     body: Record<string, JsonValue>) → `Promise<unknown>`
+Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
 
 **updateClaimWindow**(collectionId: string,
     productId: string,
     claimId: string,
     body: Record<string, JsonValue>) → `Promise<unknown>`
+Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
 
 **refresh**(collectionId: string,
     productId: string) → `Promise<ProductResponse>`
+Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
 
 **getSN**(collectionId: string,
     productId: string,
     startIndex: number = 0,
     count: number = 10) → `Promise<unknown>`
+Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
 
 **lookupSN**(collectionId: string,
     productId: string,
     codeId: string) → `Promise<unknown>`
+Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
 
 **publicLookupClaim**(collectionId: string,
     productId: string,
     claimId: string) → `Promise<unknown>`
+Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
 
 **publicCreateClaim**(collectionId: string,
     productId: string,
     body: ProductClaimCreateRequestBody) → `Promise<unknown>`
+Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
 
 ### proof
 

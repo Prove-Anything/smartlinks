@@ -5,7 +5,26 @@ export declare namespace products {
     function create(collectionId: string, data: ProductCreateRequest): Promise<ProductResponse>;
     function update(collectionId: string, productId: string, data: ProductUpdateRequest): Promise<ProductResponse>;
     function remove(collectionId: string, productId: string): Promise<void>;
-    function query(collectionId: string, body: ProductQueryRequest): Promise<ProductQueryResponse>;
+    /**
+     * Query products in a collection with filtering, sorting, and pagination.
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param body - Query parameters with filters, sorting, and pagination
+     * @param admin - When `true`, targets the `/admin` endpoint (requires an
+     *   authenticated admin context). Defaults to `false`, which targets the
+     *   `/public` endpoint — consistent with `get`, `list`, and `listAssets`.
+     * @returns Promise resolving to a ProductQueryResponse
+     *
+     * @example
+     * ```typescript
+     * // Public query (default)
+     * await products.query(collectionId, { query: { search: 'cabernet' } })
+     *
+     * // Admin query (authenticated)
+     * await products.query(collectionId, { query: { search: 'cabernet' } }, true)
+     * ```
+     */
+    function query(collectionId: string, body: ProductQueryRequest, admin?: boolean): Promise<ProductQueryResponse>;
     function clone(collectionId: string, productId: string, body?: Record<string, JsonValue>): Promise<ProductResponse>;
     function listAssets(collectionId: string, productId: string, admin?: boolean): Promise<unknown>;
     function createClaimWindow(collectionId: string, productId: string, body: Record<string, JsonValue>): Promise<unknown>;

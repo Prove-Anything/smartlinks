@@ -54,11 +54,32 @@ export namespace products {
     return del<void>(path)
   }
 
+  /**
+   * Query products in a collection with filtering, sorting, and pagination.
+   *
+   * @param collectionId - Identifier of the parent collection
+   * @param body - Query parameters with filters, sorting, and pagination
+   * @param admin - When `true`, targets the `/admin` endpoint (requires an
+   *   authenticated admin context). Defaults to `false`, which targets the
+   *   `/public` endpoint — consistent with `get`, `list`, and `listAssets`.
+   * @returns Promise resolving to a ProductQueryResponse
+   *
+   * @example
+   * ```typescript
+   * // Public query (default)
+   * await products.query(collectionId, { query: { search: 'cabernet' } })
+   *
+   * // Admin query (authenticated)
+   * await products.query(collectionId, { query: { search: 'cabernet' } }, true)
+   * ```
+   */
   export async function query(
     collectionId: string,
-    body: ProductQueryRequest
+    body: ProductQueryRequest,
+    admin?: boolean
   ): Promise<ProductQueryResponse> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/products/query`
+    const base = admin ? '/admin' : '/public'
+    const path = `${base}/collection/${encodeURIComponent(collectionId)}/products/query`
     return post<ProductQueryResponse>(path, body)
   }
 

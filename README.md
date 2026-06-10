@@ -123,7 +123,8 @@ import { products } from '@proveanything/smartlinks'
 
 await products.get(collectionId, productId, false)
 await products.list(collectionId, false)
-await products.query(collectionId, { query: { search: 'cabernet' } })
+await products.query(collectionId, { query: { search: 'cabernet' } }) // public
+await products.query(collectionId, { query: { search: 'cabernet' } }, true) // admin
 ```
 
 Quick mapping:
