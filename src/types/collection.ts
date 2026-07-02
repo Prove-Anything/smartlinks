@@ -44,6 +44,10 @@ export interface Collection {
   groupTags?: string[] // Array of group tag names
   /** Whether the collection has a custom domain */
   redirectUrl?: string // Whether the collection has a custom domain
+  /** The claimed Hub subdomain prefix (e.g. "acme" → acme.mysmartlinks.app) */
+  hubName?: string
+  /** The collection's bring-your-own custom Hub domain (e.g. "hub.acme.com") */
+  hubCustomDomain?: string
   /** The shortId of this collection */
   shortId: string, // The shortId of this collection
   /** if dark mode is enabled for this collection */
@@ -68,6 +72,23 @@ export type CollectionResponse = Collection
 // Derived request types
 export type CollectionCreateRequest = Omit<Collection, 'id' | 'shortId'>
 export type CollectionUpdateRequest = Partial<Omit<Collection, 'id' | 'shortId'>>
+
+/**
+ * Which load balancer / certificate map a custom domain registration targets.
+ * - `"smartlinks"` (default): the id.smartlinks.app load balancer (legacy behaviour)
+ * - `"hub"`: the SmartLinks Hub load balancer
+ */
+export type DomainTarget = "smartlinks" | "hub"
+
+/**
+ * Response from checking whether a Hub subdomain name is available.
+ */
+export interface HubAvailabilityResponse {
+  /** Whether the name can be claimed by this collection */
+  available: boolean
+  /** The full domain that was checked (e.g. "acme.mysmartlinks.app") */
+  domain: string
+}
 
 /**
  * Configuration for an app module within a collection.

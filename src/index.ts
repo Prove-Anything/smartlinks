@@ -156,6 +156,8 @@ export type {
   CollectionResponse,
   CollectionCreateRequest,
   CollectionUpdateRequest,
+  DomainTarget,
+  HubAvailabilityResponse,
 } from "./types/collection"
 export type {
   Proof,

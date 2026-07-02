@@ -84,7 +84,9 @@ const CACHE_TTL_RULES: Array<{ pattern: RegExp; ttlMs: number }> = [
   // Sub-resources that change frequently — short TTLs, listed first
   { pattern: /\/proof\/[^/]*(\?.*)?$/i,       ttlMs: 30_000 },      // 30 seconds
   { pattern: /\/attestation\/[^/]*(\?.*)?$/i, ttlMs: 2 * 60_000 },  // 2 minutes
-  // Slow-changing top-level resources — long TTLs, matched only when path ends at the ID
+  // Slow-changing top-level resources — long TTLs, matched only when path ends at the ID.
+  // getByHub maps a stable Hub domain → collection and matches the /collection rule below,
+  // so it inherits the same 1h caching as a collection detail.
   { pattern: /\/products?\/[^/]*(\?.*)?$/i,   ttlMs: 60 * 60_000 }, // 1 hour
   { pattern: /\/variant\/[^/]*(\?.*)?$/i,     ttlMs: 60 * 60_000 }, // 1 hour
   { pattern: /\/collection\/[^/]*(\?.*)?$/i,  ttlMs: 60 * 60_000 }, // 1 hour

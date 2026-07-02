@@ -1,10 +1,12 @@
 // src/api/collection.ts
 import { request, post, put, del } from "../http"
-import { 
-  CollectionResponse, 
-  CollectionCreateRequest, 
-  CollectionUpdateRequest, 
-  AppsConfigResponse 
+import {
+  CollectionResponse,
+  CollectionCreateRequest,
+  CollectionUpdateRequest,
+  AppsConfigResponse,
+  DomainTarget,
+  HubAvailabilityResponse
 } from "../types/collection"
 
 export namespace collection {
@@ -41,6 +43,100 @@ export namespace collection {
   export async function getShortId(shortId: string): Promise<CollectionResponse> {
     const path = `/public/collection/getShortId/${encodeURIComponent(shortId)}`
     return request<CollectionResponse>(path)
+  }
+
+  /**
+   * Resolve the collection for the current Hub domain (public endpoint).
+   *
+   * The server derives the requesting domain from the request headers
+   * (`X-Source-Domain` / `X-Forwarded-Host` / `Host`), so no identifier is
+   * passed — this is the call a Hub frontend makes on load to find out which
+   * collection it is serving, whether it's reached via `{brand}.mysmartlinks.app`
+   * or a bring-your-own custom domain (e.g. `hub.acme.com`).
+   *
+   * @returns Promise resolving to the CollectionResponse mapped to the domain
+   * @throws ErrorResponse (404) if no collection is mapped to the domain
+   */
+  export async function getByHub(): Promise<CollectionResponse> {
+    const path = `/public/collection/getByHub`
+    return request<CollectionResponse>(path)
+  }
+
+  /**
+   * Resolve the collection for an explicit Hub domain (public endpoint).
+   *
+   * Unlike {@link getByHub}, the domain is passed explicitly rather than derived
+   * from request headers — use this for raw/cross-origin calls where the Hub
+   * frontend knows its own hostname (e.g. "erbauer.mysmartlinks.app").
+   *
+   * @param domain – The Hub domain to resolve (custom domain or {brand}.mysmartlinks.app)
+   * @returns Promise resolving to the CollectionResponse mapped to the domain
+   * @throws ErrorResponse (404) if no collection is mapped to the domain
+   */
+  export async function getByDomain(domain: string): Promise<CollectionResponse> {
+    const path = `/public/collection/by-domain/${encodeURIComponent(domain)}`
+    return request<CollectionResponse>(path)
+  }
+
+  /**
+   * Check whether a Hub subdomain name is available to claim (admin only).
+   * @param collectionId – Identifier of the collection making the request
+   * @param name – Proposed subdomain prefix (lowercase letters, numbers, hyphens; max 63 chars)
+   * @returns Promise resolving to { available, domain }
+   * @throws ErrorResponse (400) if the name fails validation or is reserved
+   */
+  export async function checkHubAvailability(collectionId: string, name: string): Promise<HubAvailabilityResponse> {
+    const queryParams = new URLSearchParams({ name })
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/hub/available?${queryParams}`
+    return request<HubAvailabilityResponse>(path)
+  }
+
+  /**
+   * Claim or rename the Hub subdomain for a collection (admin only).
+   *
+   * Maps `{hubName}.mysmartlinks.app` to the collection. If the collection
+   * already had a different hub name, the previous subdomain is released
+   * automatically.
+   *
+   * @param collectionId – Identifier of the collection
+   * @param hubName – The subdomain prefix to claim (e.g. "acme")
+   * @returns Promise resolving to the updated CollectionResponse (with hubName set)
+   * @throws ErrorResponse (400) on invalid/reserved name, (409) if already taken by another collection
+   */
+  export async function claimHub(collectionId: string, hubName: string): Promise<CollectionResponse> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/hub`
+    return post<CollectionResponse>(path, { hubName })
+  }
+
+  /**
+   * Register a custom domain for a collection and provision its managed
+   * certificate (admin only).
+   *
+   * @param collectionId – Identifier of the collection
+   * @param domain – The fully-qualified domain to register (e.g. "hub.acme.com")
+   * @param target – Which load balancer / certificate map to use. Defaults to
+   *   `"smartlinks"` (the id.smartlinks.app load balancer). Pass `"hub"` to
+   *   register a bring-your-own Hub domain.
+   * @returns Promise resolving when registration has been initiated
+   * @throws ErrorResponse if the request fails
+   */
+  export async function registerDomain(collectionId: string, domain: string, target: DomainTarget = "smartlinks"): Promise<any> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/domain`
+    return post<any>(path, { domain, target })
+  }
+
+  /**
+   * Get the managed-certificate status for a collection's custom domain (admin only).
+   * @param collectionId – Identifier of the collection
+   * @param target – Which domain to check: `"smartlinks"` (default, uses `redirectUrl`)
+   *   or `"hub"` (uses `hubCustomDomain`)
+   * @returns Promise resolving to the certificate details
+   * @throws ErrorResponse (404) if the relevant domain is not set
+   */
+  export async function getDomainStatus(collectionId: string, target: DomainTarget = "smartlinks"): Promise<any> {
+    const queryParams = new URLSearchParams({ target })
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/domain?${queryParams}`
+    return request<any>(path)
   }
 
   /**

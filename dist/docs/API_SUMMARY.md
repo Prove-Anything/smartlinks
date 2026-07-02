@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.0  |  Generated: 2026-06-03T10:03:05.999Z
+Version: 1.15.1  |  Generated: 2026-06-13T08:46:42.914Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3606,6 +3606,8 @@ interface Collection {
   } // User roles mapping with user IDs as keys and role names as values
   groupTags?: string[] // Array of group tag names
   redirectUrl?: string // Whether the collection has a custom domain
+  hubName?: string
+  hubCustomDomain?: string
   shortId: string, // The shortId of this collection
   dark?: boolean // if dark mode is enabled for this collection
   primaryColor?: string
@@ -3615,6 +3617,14 @@ interface Collection {
   variants: boolean // does this collection support variants?
   batches: boolean // does this collection support batches?
   defaultAuthKitId: string // default auth kit for this collection, used for auth
+}
+```
+
+**HubAvailabilityResponse** (interface)
+```typescript
+interface HubAvailabilityResponse {
+  available: boolean
+  domain: string
 }
 ```
 
@@ -3656,6 +3666,8 @@ interface AppsConfigResponse {
 **CollectionCreateRequest** = `Omit<Collection, 'id' | 'shortId'>`
 
 **CollectionUpdateRequest** = `Partial<Omit<Collection, 'id' | 'shortId'>>`
+
+**DomainTarget** = `"smartlinks" | "hub"`
 
 ### common
 
@@ -8603,6 +8615,21 @@ Retrieves all Collections.
 
 **getShortId**(shortId: string) → `Promise<CollectionResponse>`
 Retrieve a collection by its shortId (public endpoint).
+
+**getByHub**() → `Promise<CollectionResponse>`
+Resolve the collection for the current Hub domain (public endpoint). The server derives the requesting domain from the request headers (`X-Source-Domain` / `X-Forwarded-Host` / `Host`), so no identifier is passed — this is the call a Hub frontend makes on load to find out which collection it is serving, whether it's reached via `{brand}.mysmartlinks.app` or a bring-your-own custom domain (e.g. `hub.acme.com`).
+
+**checkHubAvailability**(collectionId: string, name: string) → `Promise<HubAvailabilityResponse>`
+Check whether a Hub subdomain name is available to claim (admin only).
+
+**claimHub**(collectionId: string, hubName: string) → `Promise<CollectionResponse>`
+Claim or rename the Hub subdomain for a collection (admin only). Maps `{hubName}.mysmartlinks.app` to the collection. If the collection already had a different hub name, the previous subdomain is released automatically.
+
+**registerDomain**(collectionId: string, domain: string, target: DomainTarget = "smartlinks") → `Promise<any>`
+Register a custom domain for a collection and provision its managed certificate (admin only). `"smartlinks"` (the id.smartlinks.app load balancer). Pass `"hub"` to register a bring-your-own Hub domain.
+
+**getDomainStatus**(collectionId: string, target: DomainTarget = "smartlinks") → `Promise<any>`
+Get the managed-certificate status for a collection's custom domain (admin only). or `"hub"` (uses `hubCustomDomain`)
 
 **getSettings**(collectionId: string, settingGroup: string, admin?: boolean) → `Promise<any>`
 Retrieve a specific settings group for a collection. Public reads return the public view of the settings group. If the stored payload contains a top-level `admin` object, that block is omitted from public responses and included when `admin === true`.

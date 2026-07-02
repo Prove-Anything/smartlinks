@@ -1,4 +1,4 @@
-import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest, AppsConfigResponse } from "../types/collection";
+import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest, AppsConfigResponse, DomainTarget, HubAvailabilityResponse } from "../types/collection";
 export declare namespace collection {
     /**
      * Retrieves a single Collection by its ID.
@@ -21,6 +21,62 @@ export declare namespace collection {
      * @returns Promise resolving to a CollectionResponse object
      */
     function getShortId(shortId: string): Promise<CollectionResponse>;
+    /**
+     * Resolve the collection for the current Hub domain (public endpoint).
+     *
+     * The server derives the requesting domain from the request headers
+     * (`X-Source-Domain` / `X-Forwarded-Host` / `Host`), so no identifier is
+     * passed — this is the call a Hub frontend makes on load to find out which
+     * collection it is serving, whether it's reached via `{brand}.mysmartlinks.app`
+     * or a bring-your-own custom domain (e.g. `hub.acme.com`).
+     *
+     * @returns Promise resolving to the CollectionResponse mapped to the domain
+     * @throws ErrorResponse (404) if no collection is mapped to the domain
+     */
+    function getByHub(): Promise<CollectionResponse>;
+    /**
+     * Check whether a Hub subdomain name is available to claim (admin only).
+     * @param collectionId – Identifier of the collection making the request
+     * @param name – Proposed subdomain prefix (lowercase letters, numbers, hyphens; max 63 chars)
+     * @returns Promise resolving to { available, domain }
+     * @throws ErrorResponse (400) if the name fails validation or is reserved
+     */
+    function checkHubAvailability(collectionId: string, name: string): Promise<HubAvailabilityResponse>;
+    /**
+     * Claim or rename the Hub subdomain for a collection (admin only).
+     *
+     * Maps `{hubName}.mysmartlinks.app` to the collection. If the collection
+     * already had a different hub name, the previous subdomain is released
+     * automatically.
+     *
+     * @param collectionId – Identifier of the collection
+     * @param hubName – The subdomain prefix to claim (e.g. "acme")
+     * @returns Promise resolving to the updated CollectionResponse (with hubName set)
+     * @throws ErrorResponse (400) on invalid/reserved name, (409) if already taken by another collection
+     */
+    function claimHub(collectionId: string, hubName: string): Promise<CollectionResponse>;
+    /**
+     * Register a custom domain for a collection and provision its managed
+     * certificate (admin only).
+     *
+     * @param collectionId – Identifier of the collection
+     * @param domain – The fully-qualified domain to register (e.g. "hub.acme.com")
+     * @param target – Which load balancer / certificate map to use. Defaults to
+     *   `"smartlinks"` (the id.smartlinks.app load balancer). Pass `"hub"` to
+     *   register a bring-your-own Hub domain.
+     * @returns Promise resolving when registration has been initiated
+     * @throws ErrorResponse if the request fails
+     */
+    function registerDomain(collectionId: string, domain: string, target?: DomainTarget): Promise<any>;
+    /**
+     * Get the managed-certificate status for a collection's custom domain (admin only).
+     * @param collectionId – Identifier of the collection
+     * @param target – Which domain to check: `"smartlinks"` (default, uses `redirectUrl`)
+     *   or `"hub"` (uses `hubCustomDomain`)
+     * @returns Promise resolving to the certificate details
+     * @throws ErrorResponse (404) if the relevant domain is not set
+     */
+    function getDomainStatus(collectionId: string, target?: DomainTarget): Promise<any>;
     /**
      * Retrieve a specific settings group for a collection.
      * Public reads return the public view of the settings group. If the stored payload contains
