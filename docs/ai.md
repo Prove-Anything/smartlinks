@@ -251,6 +251,100 @@ const response = await ai.chat.responses.create('my-collection', {
 console.log(response.output);
 ```
 
+### Recommended Models
+
+For agentic workflows on `v1/responses`, GPT-5.6 ships in three tiers. Pass either the full model
+id (`openai/gpt-5.6-sol`) or the shorthand tier alias (`'cheap'`, `'balanced'`, `'premium'`) as
+`model` — both resolve through the same server-side model registry.
+
+| Tier | Model | Alias | Use for |
+|------|-------|-------|---------|
+| Cheapest (default) | `openai/gpt-5.6-luna` | `'cheap'` / omit `model` | Everyday chat, high-volume/simple turns |
+| Balanced | `openai/gpt-5.6-terra` | `'balanced'` | Admin agent / tool-heavy setup workflows (route default) |
+| Flagship | `openai/gpt-5.6-sol` | `'premium'` | Most demanding reasoning, coding, and multi-step tool use |
+
+Every tier supports function/tool calling, Programmatic Tool Calling, and Multi-agent (see below), and all
+three accept `service_tier: 'flex'` (≈50% cheaper, Batch-API rates, slower) or `'priority'` (premium, guaranteed
+throughput) alongside the default `'standard'` tier. Pass it straight through in the request body:
+
+```typescript
+const response = await ai.chat.responses.create('my-collection', {
+  model: 'balanced',
+  input: 'Summarize this week\'s ingested documents.',
+  service_tier: 'flex' // non-interactive/background work: cheaper, but can take minutes
+});
+```
+
+Flex requests run noticeably slower — reserve `flex` for non-production/background work (batch enrichment,
+evaluations, async jobs), not user-facing chat turns. The server already raises its own timeout to 15
+minutes for any request with `service_tier: 'flex'`, matching OpenAI's guidance — nothing to configure on
+the client. On a `429` ("resource unavailable") the request wasn't charged; retry with backoff or drop
+`service_tier` (or set it to `'auto'`) to fall back to standard processing.
+
+### Programmatic Tool Calling
+
+Lets the model write a short in-memory program that orchestrates several tool calls (filtering,
+looping, aggregating) before handing back one result, instead of a full message round-trip per
+call. Add the hosted `programmatic_tool_calling` tool, and mark each function tool the program is
+allowed to invoke with `allowed_callers: ['programmatic']`:
+
+```typescript
+const response = await ai.chat.responses.create('my-collection', {
+  model: 'balanced',
+  input: 'Compare inventory with demand for every SKU in this collection.',
+  tools: [
+    {
+      type: 'function',
+      name: 'get_inventory',
+      description: 'Return available_units for a sku',
+      parameters: { type: 'object', properties: { sku: { type: 'string' } }, required: ['sku'] },
+      output_schema: { type: 'object', properties: { sku: { type: 'string' }, available_units: { type: 'number' } } },
+      allowed_callers: ['programmatic']
+    },
+    {
+      type: 'function',
+      name: 'get_demand',
+      description: 'Return requested_units for a sku',
+      parameters: { type: 'object', properties: { sku: { type: 'string' } }, required: ['sku'] },
+      output_schema: { type: 'object', properties: { sku: { type: 'string' }, requested_units: { type: 'number' } } },
+      allowed_callers: ['programmatic']
+    },
+    { type: 'programmatic_tool_calling' }
+  ]
+});
+```
+
+The response's `output` array can include a `program` item (the generated code), one
+`function_call` item per program-issued call (tagged with `caller: { type: 'program', caller_id }`),
+and a `program_output` item with the program's final `result`/`status`. Execute the `function_call`
+items as normal and send results back keyed by their `call_id` on the next turn.
+
+### Multi-agent (subagents)
+
+Lets the root agent spawn a tree of subagents that run in parallel and get synthesized back into
+one response — useful for tasks that split cleanly into independent workstreams (e.g. research +
+draft + review). Enable it by setting `multi_agent.enabled: true` — that's the entire contract on
+your end; nothing else to configure or pass.
+
+This is upstream beta functionality (OpenAI may still be limiting it to certain accounts/rollout),
+so treat behavior and availability as subject to change until it's GA.
+
+```typescript
+const response = await ai.chat.responses.create('my-collection', {
+  model: 'premium', // Sol recommended for the root agent when spawning subagents
+  input: 'Research three competitor loyalty programs, then draft a comparison summary.',
+  multi_agent: { enabled: true, max_concurrent_subagents: 3 }
+});
+```
+
+Subagent output arrives as additional items in `output`, each tagged `agent: { agent_name: '/root/<name>' }`
+(root agent output uses `/root`). Notes/limits carried over from OpenAI's beta:
+
+- `max_concurrent_subagents` defaults to `3`
+- `reasoning.summary` and `max_tool_calls` are not supported while multi-agent is enabled
+- Streaming is not supported while multi-agent is enabled — the SDK throws if you pass both
+  `stream: true` and `multi_agent.enabled: true`
+
 ---
 
 ## Chat Completions

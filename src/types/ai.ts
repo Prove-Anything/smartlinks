@@ -67,6 +67,10 @@ export interface ResponseTool {
   name?: string
   description?: string
   parameters?: Record<string, any>
+  /** Expected shape of this tool's output, used by Programmatic Tool Calling. */
+  output_schema?: Record<string, any>
+  /** Restricts which callers may invoke this tool (e.g. `['programmatic']` for Programmatic Tool Calling). */
+  allowed_callers?: Array<'assistant' | 'programmatic'>
   [key: string]: any
 }
 
@@ -108,6 +112,13 @@ export interface ResponsesRequest {
   text?: Record<string, any>
   metadata?: Record<string, string>
   prompt_cache_key?: string
+  /** Enables multi-agent (subagent) orchestration. Not supported together with `stream: true`. */
+  multi_agent?: {
+    enabled: boolean
+    max_concurrent_subagents?: number
+  }
+  /** `'flex'` is ~50% cheaper at Batch-API rates but slower; reserve for non-interactive/background work. */
+  service_tier?: 'auto' | 'standard' | 'flex' | 'priority'
 }
 
 /** Response from the Responses API. */

@@ -125,6 +125,10 @@ namespace aiInternal {
       ): Promise<ResponsesResult | AsyncIterable<ResponsesStreamEvent>> {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/v1/responses`
 
+        if (request.multi_agent?.enabled && request.stream) {
+          throw new Error('Streaming is not supported when multi_agent.enabled is true')
+        }
+
         if (request.stream) {
           return requestStream<ResponsesStreamEvent>(path, { method: 'POST', body: request })
         }

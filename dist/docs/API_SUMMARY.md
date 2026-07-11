@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.1  |  Generated: 2026-06-13T08:46:42.914Z
+Version: 1.15.3  |  Generated: 2026-07-11T13:25:50.969Z
 
 This is a concise summary of all available API functions and types.
 
@@ -499,6 +499,8 @@ interface ResponseTool {
   name?: string
   description?: string
   parameters?: Record<string, any>
+  output_schema?: Record<string, any>
+  allowed_callers?: Array<'assistant' | 'programmatic'>
   [key: string]: any
 }
 ```
@@ -544,6 +546,11 @@ interface ResponsesRequest {
   text?: Record<string, any>
   metadata?: Record<string, string>
   prompt_cache_key?: string
+  multi_agent?: {
+  enabled: boolean
+  max_concurrent_subagents?: number
+  }
+  service_tier?: 'auto' | 'standard' | 'flex' | 'priority'
 }
 ```
 
@@ -5039,6 +5046,7 @@ interface FacetDefinition {
   key: string
   name: string
   description?: string | null
+  namespace?: string | null
   cardinality?: "single" | "multi"
   kind?: "system" | "custom"
   hierarchical?: boolean
@@ -5087,6 +5095,7 @@ interface FacetDefinitionWriteInput {
   key?: string
   name: string
   description?: string | null
+  namespace?: string | null
   cardinality?: "single" | "multi"
   kind?: "system" | "custom"
   hierarchical?: boolean
@@ -5144,6 +5153,7 @@ interface FacetQueryRequest {
   facetKeys?: string[]
   includeEmpty?: boolean
   includeDeleted?: boolean
+  namespace?: string | null
   query?: ProductQueryRequest["query"] & {
   facetEquals?: Record<string, JsonValue | JsonValue[]>
   }
@@ -5182,6 +5192,7 @@ interface FacetListParams {
   includeDeleted?: boolean
   kind?: "system" | "custom"
   reserved?: boolean
+  namespace?: string
 }
 ```
 
@@ -5189,6 +5200,14 @@ interface FacetListParams {
 ```typescript
 interface PublicFacetListParams {
   includeValues?: boolean
+  namespace?: string
+}
+```
+
+**FacetNamespaceListResponse** (interface)
+```typescript
+interface FacetNamespaceListResponse {
+  namespaces: string[]
 }
 ```
 
@@ -8619,6 +8638,9 @@ Retrieve a collection by its shortId (public endpoint).
 **getByHub**() → `Promise<CollectionResponse>`
 Resolve the collection for the current Hub domain (public endpoint). The server derives the requesting domain from the request headers (`X-Source-Domain` / `X-Forwarded-Host` / `Host`), so no identifier is passed — this is the call a Hub frontend makes on load to find out which collection it is serving, whether it's reached via `{brand}.mysmartlinks.app` or a bring-your-own custom domain (e.g. `hub.acme.com`).
 
+**getByDomain**(domain: string) → `Promise<CollectionResponse>`
+Resolve the collection for an explicit Hub domain (public endpoint). Unlike {@link getByHub}, the domain is passed explicitly rather than derived from request headers — use this for raw/cross-origin calls where the Hub frontend knows its own hostname (e.g. "erbauer.mysmartlinks.app").
+
 **checkHubAvailability**(collectionId: string, name: string) → `Promise<HubAvailabilityResponse>`
 Check whether a Hub subdomain name is available to claim (admin only).
 
@@ -8942,6 +8964,8 @@ Delete a crate for a collection (admin only). This performs a soft delete. ```ty
 **query**(collectionId: string,
     body: FacetQueryRequest) → `Promise<FacetQueryResponse>`
 
+**namespaces**(collectionId: string) → `Promise<FacetNamespaceListResponse>`
+
 **publicList**(collectionId: string,
     params?: PublicFacetListParams) → `Promise<FacetListResponse>`
 
@@ -8958,6 +8982,8 @@ Delete a crate for a collection (admin only). This performs a soft delete. ```ty
 
 **publicQuery**(collectionId: string,
     body: FacetQueryRequest) → `Promise<FacetQueryResponse>`
+
+**publicNamespaces**(collectionId: string) → `Promise<FacetNamespaceListResponse>`
 
 ### form
 

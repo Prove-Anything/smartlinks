@@ -3429,6 +3429,11 @@ paths:
           required: false
           schema:
             type: boolean
+        - name: namespace
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         200:
           description: Success
@@ -3474,6 +3479,33 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/FacetDefinitionWriteInput"
+  /admin/collection/{collectionId}/facets/namespaces:
+    get:
+      tags:
+        - facets
+      summary: facets.namespaces
+      operationId: facets_namespaces
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetNamespaceListResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/facets/query:
     post:
       tags:
@@ -9316,6 +9348,32 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/RequestUploadTokenOptions"
+  /public/collection/by-domain/{domain}:
+    get:
+      tags:
+        - collection
+      summary: Resolve the collection for an explicit Hub domain (public endpoint).
+      operationId: collection_getByDomain
+      security: []
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/collection/getByHub:
     get:
       tags:
@@ -10811,6 +10869,11 @@ paths:
           required: false
           schema:
             type: boolean
+        - name: namespace
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         200:
           description: Success
@@ -10818,6 +10881,32 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FacetListResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/facets/namespaces:
+    get:
+      tags:
+        - facets
+      summary: facets.publicNamespaces
+      operationId: facets_publicNamespaces
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FacetNamespaceListResponse"
         400:
           description: Bad request
         401:
@@ -10879,6 +10968,11 @@ paths:
           required: false
           schema:
             type: boolean
+        - name: namespace
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         200:
           description: Success
@@ -13870,6 +13964,16 @@ components:
         parameters:
           type: object
           additionalProperties: true
+        output_schema:
+          type: object
+          additionalProperties: true
+        allowed_callers:
+          type: array
+          items:
+            type: string
+            enum:
+              - assistant
+              - programmatic
       required:
         - type
     ResponseInputItem:
@@ -13958,6 +14062,22 @@ components:
             type: string
         prompt_cache_key:
           type: string
+        multi_agent:
+          type: object
+          additionalProperties: true
+        enabled:
+          type: boolean
+        max_concurrent_subagents:
+          type: number
+        service_tier:
+          type: string
+          enum:
+            - auto
+            - standard
+            - flex
+            - priority
+      required:
+        - enabled
     ResponsesResult:
       type: object
       properties:
@@ -20697,6 +20817,8 @@ components:
           type: string
         description:
           type: string
+        namespace:
+          type: string
         cardinality:
           type: object
           additionalProperties: true
@@ -20791,6 +20913,8 @@ components:
         name:
           type: string
         description:
+          type: string
+        namespace:
           type: string
         cardinality:
           type: object
@@ -20887,6 +21011,8 @@ components:
           type: boolean
         includeDeleted:
           type: boolean
+        namespace:
+          type: string
         query:
           type: object
           additionalProperties: true
@@ -20954,11 +21080,24 @@ components:
           additionalProperties: true
         reserved:
           type: boolean
+        namespace:
+          type: string
     PublicFacetListParams:
       type: object
       properties:
         includeValues:
           type: boolean
+        namespace:
+          type: string
+    FacetNamespaceListResponse:
+      type: object
+      properties:
+        namespaces:
+          type: array
+          items:
+            type: string
+      required:
+        - namespaces
     FacetGetParams:
       type: object
       properties:

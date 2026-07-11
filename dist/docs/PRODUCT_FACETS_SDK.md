@@ -42,6 +42,21 @@ includeValues?: boolean
 includeDeleted?: boolean
 kind?: 'system' | 'custom'
 reserved?: boolean
+namespace?: string
+```
+
+When `namespace` is provided, returns facets matching that namespace plus global facets (`namespace: null`). Omit the param to return all facets.
+
+### List namespaces
+
+```ts
+GET /api/v1/admin/collection/:collectionId/facets/namespaces
+```
+
+Returns all distinct namespaces in use for the collection (excludes globals).
+
+```ts
+{ namespaces: string[] }
 ```
 
 ### Create facet definition
@@ -49,6 +64,8 @@ reserved?: boolean
 ```ts
 POST /api/v1/admin/collection/:collectionId/facets
 ```
+
+Pass `namespace` in the body to scope the facet to a domain (e.g. `"dpp"`, `"nutrition"`). Omit it to create a global facet.
 
 ### Get facet definition
 
@@ -146,6 +163,8 @@ Supported query filters now:
 - `tags`
 - `facetEquals`
 
+Body also accepts `namespace` (optional) to scope aggregation to a namespace plus global facets.
+
 ## Public endpoints
 
 ### List facet definitions
@@ -158,6 +177,21 @@ Optional query params:
 
 ```ts
 includeValues?: boolean
+namespace?: string
+```
+
+When `namespace` is provided, returns facets matching that namespace plus global facets (`namespace: null`). Omit the param to return all facets.
+
+### List namespaces
+
+```ts
+GET /api/v1/public/collection/:collectionId/facets/namespaces
+```
+
+Returns all distinct namespaces in use for the collection (excludes globals).
+
+```ts
+{ namespaces: string[] }
 ```
 
 ### Get facet definition
@@ -215,6 +249,7 @@ export interface FacetDefinition {
   key: string
   name: string
   description?: string | null
+  namespace?: string | null
   cardinality: 'single' | 'multi'
   kind: 'system' | 'custom'
   hierarchical: boolean
@@ -230,6 +265,7 @@ export interface FacetDefinitionWriteInput {
   key?: string
   name: string
   description?: string | null
+  namespace?: string | null
   cardinality?: 'single' | 'multi'
   kind?: 'system' | 'custom'
   hierarchical?: boolean
@@ -305,6 +341,7 @@ export interface FacetQueryRequest {
   facetKeys?: string[]
   includeEmpty?: boolean
   includeDeleted?: boolean
+  namespace?: string | null
   query?: {
     search?: string
     status?: string[]
@@ -326,6 +363,10 @@ export interface FacetBucket {
   count: number
 }
 
+export interface FacetNamespaceListResponse {
+  namespaces: string[]
+}
+
 export interface FacetQueryResponse {
   items: Array<{
     facet: FacetDefinition
@@ -345,3 +386,4 @@ export interface FacetQueryResponse {
 - use the facet API to manage definitions and values
 - use product read/write routes to assign facet data onto products
 - treat `label` and `category` as reserved system facets when present
+- facets with `namespace: null` are global and appear in all contexts; namespaced facets belong to a specific domain (e.g. `"dpp"`, `"nutrition"`)

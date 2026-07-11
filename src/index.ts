@@ -137,6 +137,7 @@ export type {
   FacetGetParams,
   FacetListParams,
   FacetListResponse,
+  FacetNamespaceListResponse,
   FacetQueryRequest,
   FacetQueryResponse,
   FacetValue,

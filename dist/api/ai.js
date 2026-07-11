@@ -28,7 +28,11 @@ var aiInternal;
              * @returns Responses API result or async iterable for streaming events
              */
             async function create(collectionId, request) {
+                var _a;
                 const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/v1/responses`;
+                if (((_a = request.multi_agent) === null || _a === void 0 ? void 0 : _a.enabled) && request.stream) {
+                    throw new Error('Streaming is not supported when multi_agent.enabled is true');
+                }
                 if (request.stream) {
                     return requestStream(path, { method: 'POST', body: request });
                 }
