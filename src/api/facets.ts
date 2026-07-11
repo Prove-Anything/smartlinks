@@ -5,6 +5,7 @@ import type {
   FacetGetParams,
   FacetListParams,
   FacetListResponse,
+  FacetNamespaceListResponse,
   FacetQueryRequest,
   FacetQueryResponse,
   FacetValueGetParams,
@@ -138,6 +139,13 @@ export namespace facets {
     return post<FacetQueryResponse>(path, body)
   }
 
+  export async function namespaces(
+    collectionId: string
+  ): Promise<FacetNamespaceListResponse> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/facets/namespaces`
+    return request<FacetNamespaceListResponse>(path)
+  }
+
   export async function publicList(
     collectionId: string,
     params?: PublicFacetListParams
@@ -178,5 +186,12 @@ export namespace facets {
   ): Promise<FacetQueryResponse> {
     const path = `/public/collection/${encodeURIComponent(collectionId)}/facets/query`
     return post<FacetQueryResponse>(path, body)
+  }
+
+  export async function publicNamespaces(
+    collectionId: string
+  ): Promise<FacetNamespaceListResponse> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/facets/namespaces`
+    return request<FacetNamespaceListResponse>(path)
   }
 }

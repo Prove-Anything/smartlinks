@@ -55,6 +55,22 @@ export var collection;
     }
     collection.getByHub = getByHub;
     /**
+     * Resolve the collection for an explicit Hub domain (public endpoint).
+     *
+     * Unlike {@link getByHub}, the domain is passed explicitly rather than derived
+     * from request headers — use this for raw/cross-origin calls where the Hub
+     * frontend knows its own hostname (e.g. "erbauer.mysmartlinks.app").
+     *
+     * @param domain – The Hub domain to resolve (custom domain or {brand}.mysmartlinks.app)
+     * @returns Promise resolving to the CollectionResponse mapped to the domain
+     * @throws ErrorResponse (404) if no collection is mapped to the domain
+     */
+    async function getByDomain(domain) {
+        const path = `/public/collection/by-domain/${encodeURIComponent(domain)}`;
+        return request(path);
+    }
+    collection.getByDomain = getByDomain;
+    /**
      * Check whether a Hub subdomain name is available to claim (admin only).
      * @param collectionId – Identifier of the collection making the request
      * @param name – Proposed subdomain prefix (lowercase letters, numbers, hyphens; max 63 chars)

@@ -6,6 +6,7 @@ export interface FacetDefinition {
     key: string;
     name: string;
     description?: string | null;
+    namespace?: string | null;
     cardinality?: "single" | "multi";
     kind?: "system" | "custom";
     hierarchical?: boolean;
@@ -46,6 +47,7 @@ export interface FacetDefinitionWriteInput {
     key?: string;
     name: string;
     description?: string | null;
+    namespace?: string | null;
     cardinality?: "single" | "multi";
     kind?: "system" | "custom";
     hierarchical?: boolean;
@@ -83,6 +85,7 @@ export interface FacetQueryRequest {
     facetKeys?: string[];
     includeEmpty?: boolean;
     includeDeleted?: boolean;
+    namespace?: string | null;
     query?: ProductQueryRequest["query"] & {
         facetEquals?: Record<string, JsonValue | JsonValue[]>;
     };
@@ -109,9 +112,14 @@ export interface FacetListParams {
     includeDeleted?: boolean;
     kind?: "system" | "custom";
     reserved?: boolean;
+    namespace?: string;
 }
 export interface PublicFacetListParams {
     includeValues?: boolean;
+    namespace?: string;
+}
+export interface FacetNamespaceListResponse {
+    namespaces: string[];
 }
 export interface FacetGetParams {
     includeValues?: boolean;

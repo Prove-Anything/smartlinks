@@ -78,6 +78,11 @@ export var facets;
         return post(path, body);
     }
     facets.query = query;
+    async function namespaces(collectionId) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/facets/namespaces`;
+        return request(path);
+    }
+    facets.namespaces = namespaces;
     async function publicList(collectionId, params) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/facets${buildQueryString(params)}`;
         return request(path);
@@ -103,4 +108,9 @@ export var facets;
         return post(path, body);
     }
     facets.publicQuery = publicQuery;
+    async function publicNamespaces(collectionId) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/facets/namespaces`;
+        return request(path);
+    }
+    facets.publicNamespaces = publicNamespaces;
 })(facets || (facets = {}));

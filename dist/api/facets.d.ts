@@ -1,4 +1,4 @@
-import type { FacetDefinition, FacetDefinitionWriteInput, FacetGetParams, FacetListParams, FacetListResponse, FacetQueryRequest, FacetQueryResponse, FacetValueGetParams, FacetValueListParams, FacetValueListResponse, FacetValueResponse, FacetValueWriteInput, PublicFacetListParams } from "../types/facets";
+import type { FacetDefinition, FacetDefinitionWriteInput, FacetGetParams, FacetListParams, FacetListResponse, FacetNamespaceListResponse, FacetQueryRequest, FacetQueryResponse, FacetValueGetParams, FacetValueListParams, FacetValueListResponse, FacetValueResponse, FacetValueWriteInput, PublicFacetListParams } from "../types/facets";
 /**
  * Facet management and aggregation endpoints.
  *
@@ -18,9 +18,11 @@ export declare namespace facets {
     function updateValue(collectionId: string, facetKey: string, valueKey: string, data: FacetValueWriteInput): Promise<FacetValueResponse>;
     function removeValue(collectionId: string, facetKey: string, valueKey: string): Promise<void>;
     function query(collectionId: string, body: FacetQueryRequest): Promise<FacetQueryResponse>;
+    function namespaces(collectionId: string): Promise<FacetNamespaceListResponse>;
     function publicList(collectionId: string, params?: PublicFacetListParams): Promise<FacetListResponse>;
     function publicGet(collectionId: string, facetKey: string, params?: PublicFacetListParams): Promise<FacetDefinition>;
     function publicListValues(collectionId: string, facetKey: string): Promise<FacetValueListResponse>;
     function publicGetValue(collectionId: string, facetKey: string, valueKey: string): Promise<FacetValueResponse>;
     function publicQuery(collectionId: string, body: FacetQueryRequest): Promise<FacetQueryResponse>;
+    function publicNamespaces(collectionId: string): Promise<FacetNamespaceListResponse>;
 }
