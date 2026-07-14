@@ -2,6 +2,8 @@
 
 The SmartLinks platform provides two distinct types of data storage for apps:
 
+> **Not what you're looking for?** This guide covers app-owned config/records scoped to a collection or product. For the core product/proof documents themselves — `product.data`/`.admin`, `proof.data`/`.admin`/`.values` (owner/personal) — see [proof-product-data-scoping.md](proof-product-data-scoping.md).
+
 ## Choose the Right Model First
 
 There are now two different families of flexible app data in SmartLinks, and they solve different problems:

@@ -85,7 +85,9 @@ export interface Product extends ProductKey {
     facets?: ProductFacetMap;
     /** Tag keys where value is true */
     tags?: Record<string, boolean>;
+    /** Public custom data — readable by everyone, writable by business admins only. */
     data?: Record<string, JsonValue>;
+    /** Business-only custom data — stripped from public/non-admin reads. See docs/proof-product-data-scoping.md. */
     admin?: Record<string, JsonValue>;
     extra?: Record<string, JsonValue>;
     validCollections?: string[] | null;
@@ -161,3 +163,38 @@ export type ProductClaimCreateRequestBody = Omit<ProductClaimCreateInput, 'colle
 export type ProductResponse = Product;
 export type ProductCreateRequest = ProductWriteInput;
 export type ProductUpdateRequest = Partial<Omit<ProductWriteInput, 'id'>>;
+export type ScopedFieldType = 'text' | 'textarea' | 'number' | 'date' | 'select' | 'switch' | 'url';
+export interface ScopedFieldOption {
+    value: string;
+    label: string;
+}
+export interface ScopedFieldDef {
+    /** Stable key. Written into the resolved bag at this name. */
+    key: string;
+    /** Human label for editors and read-only renderers. */
+    label: string;
+    type: ScopedFieldType;
+    required?: boolean;
+    placeholder?: string;
+    help?: string;
+    /** Required when type === 'select'. */
+    options?: ScopedFieldOption[];
+    /** Default value applied when creating a new record. */
+    defaultValue?: JsonValue;
+    /** Show as a column in the default items table. */
+    showInTable?: boolean;
+    /** Show on the inline detail / edit view. */
+    showInDetail?: boolean;
+}
+/**
+ * `'public'` (default, omitted) reads/writes `product.data[key]`.
+ * `'admin'` reads/writes `product.admin[key]` (admin only).
+ */
+export type ProductFieldScope = 'public' | 'admin';
+export type ProductFieldDef = ScopedFieldDef & {
+    scope?: ProductFieldScope;
+};
+/** Shape of the `productFields` collection settings group. */
+export interface ProductFieldsConfig {
+    fields: ProductFieldDef[];
+}

@@ -24084,6 +24084,67 @@ components:
             $ref: "#/components/schemas/JsonValue"
       required:
         - claimId
+    ScopedFieldOption:
+      type: object
+      properties:
+        value:
+          type: string
+        label:
+          type: string
+      required:
+        - value
+        - label
+    ScopedFieldDef:
+      type: object
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        type:
+          $ref: "#/components/schemas/ScopedFieldType"
+        required:
+          type: boolean
+        placeholder:
+          type: string
+        help:
+          type: string
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScopedFieldOption"
+        defaultValue:
+          $ref: "#/components/schemas/JsonValue"
+        showInTable:
+          type: boolean
+        showInDetail:
+          type: boolean
+      required:
+        - key
+        - label
+        - type
+    ProductFieldsConfig:
+      type: object
+      properties:
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProductFieldDef"
+      required:
+        - fields
+    ProofValues:
+      type: object
+      properties:
+        owner:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        personal:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties:
+              $ref: "#/components/schemas/JsonValue"
     Proof:
       type: object
       properties:
@@ -24103,9 +24164,16 @@ components:
           type: boolean
         virtual:
           type: boolean
-        values:
+        data:
           type: object
-          additionalProperties: true
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        admin:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        values:
+          $ref: "#/components/schemas/ProofValues"
       required:
         - collectionId
         - createdAt
@@ -24118,14 +24186,30 @@ components:
       type: object
       properties:
         values:
+          $ref: "#/components/schemas/ProofValues"
+        data:
           type: object
-          additionalProperties: true
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        admin:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
         claimable:
           type: boolean
         virtual:
           type: boolean
       required:
         - values
+    ProofFieldsConfig:
+      type: object
+      properties:
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProofFieldDef"
+      required:
+        - fields
     ProofResponse:
       type: object
       additionalProperties: true

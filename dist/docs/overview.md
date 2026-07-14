@@ -80,6 +80,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Contact Search** | `docs/contact-search.md` | Admin contact search: free-text, typeahead, identity/tag/JSONB filters, and pagination |
 | **App Records Pattern** | `docs/app-records-pattern.md` | Standard pattern for per-product/facet/variant/batch admin + public widget UIs |
 | **UI Utils** | `docs/ui-utils.md` | `@proveanything/smartlinks-utils-ui` — React shells, hooks, and primitives for records-based apps |
+| **Product/Proof Data Scoping** | `docs/proof-product-data-scoping.md` | Canonical spec for `product.data`/`.admin` and `proof.data`/`.admin`/`.values` (owner/personal) — who can read and write each bucket |
 
 ---
 
@@ -203,6 +204,12 @@ Prefer `app.records` over `setDataItem` when the data is becoming a real entity 
 ### Attestations (Proof-level data)
 
 For data attached to specific proof instances, use `SL.attestation.create()` and `SL.attestation.list()`.
+
+### Custom Data Scoping (Product & Proof)
+
+`product.data`/`product.admin` and `proof.data`/`proof.admin`/`proof.values` are the canonical buckets for custom fields on products and proofs — `data` is public and business-writable, `admin` is business-only, and `proof.values` additionally supports owner-scoped (`values.owner`) and per-user (`values.personal[userId]`) sub-keys. This is a different mechanism from the app-scoped storage in `docs/app-data-storage.md` (which is for app-owned config/records, not the product/proof documents themselves).
+
+See `docs/proof-product-data-scoping.md` for the full read/write authority matrix, worked examples, and the `productFields`/`proofFields` collection-settings schemas that drive field-config editors.
 
 ---
 

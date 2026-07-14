@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.3  |  Generated: 2026-07-11T13:25:50.969Z
+Version: 1.15.4  |  Generated: 2026-07-14T15:01:53.978Z
 
 This is a concise summary of all available API functions and types.
 
@@ -42,6 +42,7 @@ For detailed guides on specific features:
 - **[Portal Back Button](portal-back-button.md)** - `parentPath` contract for hierarchy-aware "up" navigation; `useDeepLinkSync` integration
 - **[Contact Search](contact-search.md)** - Admin contact search: free-text, typeahead, identity/tag/JSONB filters, and pagination
 - **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage
+- **[Product/Proof Data Scoping](proof-product-data-scoping.md)** - Canonical spec for `product.data`/`.admin` and `proof.data`/`.admin`/`.values` (owner/personal) buckets, read/write authority, and the `productFields`/`proofFields` collection-settings schemas
 - **[Forms](forms.md)** - Platform-managed form definitions, submissions, and schema-driven React form UI
 - **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more
 - **[App Records Pattern](app-records-pattern.md)** - Canonical pattern for storing per-product, per-facet, or rule-targeted app data
@@ -6946,6 +6947,37 @@ interface ProductQueryResponse {
 }
 ```
 
+**ScopedFieldOption** (interface)
+```typescript
+interface ScopedFieldOption {
+  value: string
+  label: string
+}
+```
+
+**ScopedFieldDef** (interface)
+```typescript
+interface ScopedFieldDef {
+  key: string
+  label: string
+  type: ScopedFieldType
+  required?: boolean
+  placeholder?: string
+  help?: string
+  options?: ScopedFieldOption[]
+  defaultValue?: JsonValue
+  showInTable?: boolean
+  showInDetail?: boolean
+}
+```
+
+**ProductFieldsConfig** (interface)
+```typescript
+interface ProductFieldsConfig {
+  fields: ProductFieldDef[]
+}
+```
+
 **JsonPrimitive** = `string | number | boolean | null`
 
 **JsonValue** = ``
@@ -6962,7 +6994,22 @@ interface ProductQueryResponse {
 
 **ProductUpdateRequest** = `Partial<Omit<ProductWriteInput, 'id'>>`
 
+**ScopedFieldType** = ``
+
+**ProductFieldScope** = `'public' | 'admin'`
+
+**ProductFieldDef** = `ScopedFieldDef & { scope?: ProductFieldScope }`
+
 ### proof
+
+**ProofValues** (interface)
+```typescript
+interface ProofValues {
+  [key: string]: JsonValue | Record<string, JsonValue> | Record<string, Record<string, JsonValue>> | undefined
+  owner?: Record<string, JsonValue>
+  personal?: Record<string, Record<string, JsonValue>>
+}
+```
 
 **Proof** (interface)
 ```typescript
@@ -6975,16 +7022,27 @@ interface Proof {
   userId: string
   claimable?: boolean
   virtual?: boolean
-  values: Record<string, any>
+  data?: Record<string, JsonValue>
+  admin?: Record<string, JsonValue>
+  values: ProofValues
 }
 ```
 
 **ProofCreateRequest** (interface)
 ```typescript
 interface ProofCreateRequest {
-  values: Record<string, any>
+  values: ProofValues
+  data?: Record<string, JsonValue>
+  admin?: Record<string, JsonValue>
   claimable?: boolean
   virtual?: boolean
+}
+```
+
+**ProofFieldsConfig** (interface)
+```typescript
+interface ProofFieldsConfig {
+  fields: ProofFieldDef[]
 }
 ```
 
@@ -6993,6 +7051,10 @@ interface ProofCreateRequest {
 **ProofUpdateRequest** = `Partial<ProofCreateRequest>`
 
 **ProofClaimRequest** = `Record<string, any>`
+
+**ProofFieldScope** = `'public' | 'owner' | 'personal' | 'admin'`
+
+**ProofFieldDef** = `ScopedFieldDef & { scope?: ProofFieldScope }`
 
 ### qr
 
