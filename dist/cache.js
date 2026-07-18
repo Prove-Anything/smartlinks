@@ -60,6 +60,31 @@ export async function getOrFetch(key, fetcher, options = {}) {
     return value;
 }
 /**
+ * Synchronously read a cached value without fetching. Returns `undefined` if
+ * the key was never cached, or if its TTL has expired.
+ *
+ * Every write also mirrors into the in-memory store regardless of its
+ * `storage` backend, so the default `storage: 'memory'` here finds entries
+ * cached via `getOrFetch(..., { storage: 'session' | 'local' })` too, as
+ * long as it's the same page load.
+ *
+ * @example
+ * ```typescript
+ * // After warming the cache once with getOrFetch(...):
+ * const cached = cache.peek<AppConfig>(`appConfig:${collectionId}:public`);
+ * if (cached) {
+ *   // render synchronously — no await needed
+ * }
+ * ```
+ */
+export function peek(key, storage = 'memory') {
+    const cached = getFromStorage(key, storage);
+    if (cached && cached.expiresAt > Date.now()) {
+        return cached.value;
+    }
+    return undefined;
+}
+/**
  * Invalidate a cached key.
  */
 export function invalidate(key) {

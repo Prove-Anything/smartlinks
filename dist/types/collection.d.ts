@@ -1,4 +1,5 @@
 import { AssetRef } from "./asset";
+import type { AppConfigSettings } from "./appConfiguration";
 /**
  * Represents a Collection object.
  */
@@ -118,8 +119,16 @@ export interface AppConfig {
 }
 /**
  * Response containing app configurations for a collection.
+ *
+ * As of 2026-07-18 this endpoint (`/public/collection/:id/app/config`) also
+ * carries the `appConfig` settings-group entitlements data (`system`,
+ * `addOns`, `itemRecordMode`, etc.) alongside the app catalog — the same
+ * dataset documented in docs/appConfig.md, delivered by this endpoint
+ * instead of a separate `appConfiguration.getConfig({ appId: 'appConfig' })`
+ * call. Admin-only overrides are never included here since this is a
+ * public-only endpoint.
  */
-export interface AppsConfigResponse {
-    /** Array of app configurations */
+export interface AppsConfigResponse extends Omit<AppConfigSettings, 'id' | 'apps'> {
+    /** Array of app catalog definitions for this collection. */
     apps: AppConfig[];
 }

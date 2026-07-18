@@ -81,6 +81,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **App Records Pattern** | `docs/app-records-pattern.md` | Standard pattern for per-product/facet/variant/batch admin + public widget UIs |
 | **UI Utils** | `docs/ui-utils.md` | `@proveanything/smartlinks-utils-ui` — React shells, hooks, and primitives for records-based apps |
 | **Product/Proof Data Scoping** | `docs/proof-product-data-scoping.md` | Canonical spec for `product.data`/`.admin` and `proof.data`/`.admin`/`.values` (owner/personal) — who can read and write each bucket |
+| **appConfig / Feature Flags** | `docs/appConfig.md` | `appConfig` settings contract — installed apps, `system.features`/`entitledAppGroups`/`meters`, `isFeatureEnabled()` helper |
 
 ---
 
@@ -200,6 +201,18 @@ Both can be scoped to **collection level** or **product level** by including `pr
 For config/settings visibility, remember: root fields are the normal shared payload, while a reserved top-level `admin` object is the place for admin-only values.
 
 Prefer `app.records` over `setDataItem` when the data is becoming a real entity that needs lifecycle, ownership, visibility, relationships, or filtering. Keep `setDataItem` for simple keyed scoped documents and config-adjacent content.
+
+### Feature Flags & Entitlements (`appConfig`)
+
+The platform-owned `appConfig` settings group (`system.features`, `system.meters`, `system.entitledAppGroups`, installed `apps[]`) tells a microapp what's installed and entitled for a collection. Use `SL.appConfiguration.isFeatureEnabled(collectionId, flag)` to gate a feature — it's the standard, cache-backed way to do this rather than hand-rolling a `getConfig` call:
+
+```ts
+if (await SL.appConfiguration.isFeatureEnabled(collectionId, 'custom_domain')) {
+  enableCustomDomainUI();
+}
+```
+
+It's async (the first check for a collection has nothing cached yet); `SL.appConfiguration.isFeatureEnabledSync()` gives a synchronous, cache-only read (`boolean | undefined`) for callers that warmed the cache earlier and can't await. See `docs/appConfig.md` for the full contract, including `systemPrivate` (admin-only overrides, always stripped for non-admin reads).
 
 ### Attestations (Proof-level data)
 

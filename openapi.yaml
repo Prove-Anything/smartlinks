@@ -9602,7 +9602,7 @@ paths:
     get:
       tags:
         - collection
-      summary: Retrieve all configured app module definitions for a collection (public endpoint).
+      summary: "Retrieve all configured app module definitions for a collection (public endpoint), plus the collection's `appConfig` entitlements data (`system.features`, `system.meters`, `entitledAppGroups`, `itemRecordMode`, etc.) in the same response."
       operationId: collection_getAppsConfig
       security: []
       parameters:
@@ -15592,6 +15592,140 @@ components:
       required:
         - id
         - name
+    AppEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        uniqueName:
+          type: string
+        customName:
+          type: string
+        active:
+          type: boolean
+        all:
+          type: boolean
+        live:
+          type: boolean
+        faIcon:
+          type: string
+        versionChannel:
+          type: string
+          enum:
+            - stable
+            - beta
+            - dev
+        reason:
+          type: string
+          enum:
+            - not_entitled
+      required:
+        - id
+        - uniqueName
+        - active
+    MeterEntry:
+      type: object
+      properties:
+        included:
+          type: number
+        stripePriceId:
+          type: string
+        stripeMeterId:
+          type: string
+      required:
+        - included
+    AppliedOverridesSummary:
+      type: object
+      properties:
+        features:
+          type: array
+          items:
+            type: string
+        meters:
+          type: array
+          items:
+            type: string
+        entitledAppGroups:
+          type: array
+          items:
+            type: string
+        addOnKeys:
+          type: array
+          items:
+            type: string
+        apps:
+          type: array
+          items:
+            type: string
+        accountType:
+          type: boolean
+        note:
+          type: string
+    SystemBlock:
+      type: object
+      properties:
+        basePlanId:
+          type: string
+        addOnKeys:
+          type: array
+          items:
+            type: string
+        apps:
+          type: array
+          items:
+            type: string
+        features:
+          type: object
+          additionalProperties:
+            type: boolean
+        meters:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/MeterEntry"
+        entitledAppGroups:
+          type: array
+          items:
+            type: string
+        accountType:
+          type: string
+          enum:
+            - enterprise
+            - standard
+        syncedAt:
+          type: string
+        syncedFromSubscriptionId:
+          type: string
+        appliedOverrides:
+          $ref: "#/components/schemas/AppliedOverridesSummary"
+    AppConfigSettings:
+      type: object
+      properties:
+        id:
+          type: string
+          enum:
+            - appConfig
+        apps:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppEntry"
+        addOns:
+          type: array
+          items:
+            type: string
+        requestedBasePlanId:
+          type: string
+        itemRecordMode:
+          type: string
+          enum:
+            - registered
+            - owned
+        virtualItemsEnabled:
+          type: boolean
+        system:
+          $ref: "#/components/schemas/SystemBlock"
+      required:
+        - id
+        - apps
     AppBundle:
       type: object
       properties:

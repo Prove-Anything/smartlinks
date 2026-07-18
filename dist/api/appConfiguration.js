@@ -11,6 +11,8 @@ var __rest = (this && this.__rest) || function (s, e) {
 };
 // src/api/appConfiguration.ts
 import { request, post, del } from "../http";
+import * as cache from "../cache";
+import { collection as collectionApi } from "./collection";
 function getWidgetsMap(config) {
     if (!config || typeof config !== 'object' || Array.isArray(config))
         return {};
@@ -508,4 +510,119 @@ export var appConfiguration;
         return request(path);
     }
     appConfiguration.getWidgets = getWidgets;
+    const APP_CONFIG_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    function appConfigCacheKey(collectionId) {
+        // Same key IframeResponder uses for this endpoint — sharing the cache
+        // entry means whichever caller hits it first warms it for the other.
+        return `apps:${collectionId}`;
+    }
+    /**
+     * Resolve whether a feature flag is on, applying the `accountType` default:
+     * `enterprise` accounts default every flag to **on** unless `features[flag]`
+     * is explicitly `false`; `standard` accounts (or missing `accountType`)
+     * default every flag to **off** unless `features[flag]` is explicitly `true`.
+     * An explicit value always wins over the default either way.
+     *
+     * This is the same logic `isFeatureEnabled()` / `isFeatureEnabledSync()` use
+     * internally — call those instead in normal code. `system.features` and
+     * `accountType` are public data (no admin-only feature-check path exists),
+     * so there's no reason to fetch differently for an admin surface. This is
+     * exposed separately only for the rare case where you already have a
+     * `system` block in hand from somewhere other than `getAppConfig()` (e.g.
+     * server-rendered props) and want to resolve a flag from it directly.
+     *
+     * @example
+     * ```typescript
+     * const enabled = appConfiguration.resolveFeature(someSystemBlock, 'custom_domain');
+     * ```
+     */
+    function resolveFeature(system, flag) {
+        var _a;
+        const value = (_a = system === null || system === void 0 ? void 0 : system.features) === null || _a === void 0 ? void 0 : _a[flag];
+        if (value === true)
+            return true;
+        if (value === false)
+            return false;
+        return (system === null || system === void 0 ? void 0 : system.accountType) === 'enterprise';
+    }
+    appConfiguration.resolveFeature = resolveFeature;
+    /**
+     * Fetch the collection's app catalog + `appConfig` entitlements data in one
+     * call — installed modules (`apps`), resolved entitlements (`system.features`,
+     * `system.meters`, etc.), and item-handling settings. This is `/public/collection/:id/app/config`
+     * (`collection.getAppsConfig()`), which now carries both; there's no need to
+     * separately call `appConfiguration.getConfig({ appId: 'appConfig' })` for
+     * public reads. Cached in-memory (and sessionStorage) for `ttl` so repeated
+     * calls across a page/session are cheap; pass `force` to bypass the cache
+     * after a mutation (e.g. after `entitlements-reconcile`).
+     *
+     * For admin-only data (`systemPrivate`), use
+     * `appConfiguration.getConfig({ collectionId, appId: 'appConfig', admin: true })`
+     * directly — this endpoint is public-only and never returns it.
+     *
+     * See docs/appConfig.md for the full contract.
+     *
+     * @example
+     * ```typescript
+     * const cfg = await appConfiguration.getAppConfig(collectionId);
+     * console.log(cfg.system?.features);
+     * ```
+     */
+    async function getAppConfig(collectionId, options) {
+        const key = appConfigCacheKey(collectionId);
+        if (options === null || options === void 0 ? void 0 : options.force)
+            cache.invalidate(key);
+        return cache.getOrFetch(key, () => collectionApi.getAppsConfig(collectionId), { ttl: APP_CONFIG_CACHE_TTL, storage: 'session' });
+    }
+    appConfiguration.getAppConfig = getAppConfig;
+    /**
+     * Check whether a feature flag is enabled for a collection, per
+     * `appConfig.system.features` — applying the `accountType` default (see
+     * `resolveFeature()`): enterprise accounts default every flag to on unless
+     * explicitly set to `false`. This is the standard way for subapps to gate
+     * features — it reads through the same cache as `getAppConfig`, so calling
+     * it repeatedly (e.g. once per component) does not re-fetch on every call.
+     *
+     * This is always async because the very first call for a collection has
+     * nothing to read yet. If you need a synchronous check (e.g. inside a
+     * render function), call this once during app init to warm the cache,
+     * then use `isFeatureEnabledSync()` afterwards.
+     *
+     * @example
+     * ```typescript
+     * if (await appConfiguration.isFeatureEnabled(collectionId, 'custom_domain')) {
+     *   enableCustomDomainUI();
+     * }
+     * ```
+     */
+    async function isFeatureEnabled(collectionId, flag, options) {
+        const cfg = await getAppConfig(collectionId, options);
+        return resolveFeature(cfg === null || cfg === void 0 ? void 0 : cfg.system, flag);
+    }
+    appConfiguration.isFeatureEnabled = isFeatureEnabled;
+    /**
+     * Synchronous, cache-only check for a feature flag. Returns `undefined` if
+     * `getAppConfig()` / `isFeatureEnabled()` hasn't been called yet for this
+     * collection this page load (i.e. nothing to read without an await) — treat
+     * `undefined` as "not yet known", not as "disabled".
+     *
+     * @example
+     * ```typescript
+     * // Warm the cache once, e.g. in a top-level effect:
+     * useEffect(() => { appConfiguration.isFeatureEnabled(collectionId, 'custom_domain') }, [collectionId]);
+     *
+     * // Elsewhere, read synchronously without an await:
+     * const enabled = appConfiguration.isFeatureEnabledSync(collectionId, 'custom_domain');
+     * if (enabled === undefined) {
+     *   // not warmed yet — fall back to a loading state or the async version
+     * }
+     * ```
+     */
+    function isFeatureEnabledSync(collectionId, flag) {
+        const cfg = cache.peek(appConfigCacheKey(collectionId));
+        if (!cfg)
+            return undefined;
+        return resolveFeature(cfg.system, flag);
+    }
+    appConfiguration.isFeatureEnabledSync = isFeatureEnabledSync;
 })(appConfiguration || (appConfiguration = {}));

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.4  |  Generated: 2026-07-14T15:01:53.978Z
+Version: 1.15.5  |  Generated: 2026-07-18T14:07:37.915Z
 
 This is a concise summary of all available API functions and types.
 
@@ -43,6 +43,7 @@ For detailed guides on specific features:
 - **[Contact Search](contact-search.md)** - Admin contact search: free-text, typeahead, identity/tag/JSONB filters, and pagination
 - **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage
 - **[Product/Proof Data Scoping](proof-product-data-scoping.md)** - Canonical spec for `product.data`/`.admin` and `proof.data`/`.admin`/`.values` (owner/personal) buckets, read/write authority, and the `productFields`/`proofFields` collection-settings schemas
+- **[appConfig / Feature Flags](appConfig.md)** - `appConfig` settings contract, entitlements (`system.features`/`entitledAppGroups`/`meters`), and the `isFeatureEnabled()` / `isFeatureEnabledSync()` SDK helpers
 - **[Forms](forms.md)** - Platform-managed form definitions, submissions, and schema-driven React form UI
 - **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more
 - **[App Records Pattern](app-records-pattern.md)** - Canonical pattern for storing per-product, per-facet, or rule-targeted app data
@@ -1373,6 +1374,81 @@ interface WidgetInstanceSummary {
   name: string
   type?: string
   [key: string]: any
+}
+```
+
+**AppEntry** (interface)
+```typescript
+interface AppEntry {
+  id: string
+  uniqueName: string
+  customName?: string
+  active: boolean
+  all?: boolean
+  live?: boolean
+  faIcon?: string
+  versionChannel?: 'stable' | 'beta' | 'dev'
+  reason?: 'not_entitled'
+  [key: string]: unknown
+}
+```
+
+**MeterEntry** (interface)
+```typescript
+interface MeterEntry {
+  included: number
+  stripePriceId?: string
+  stripeMeterId?: string
+}
+```
+
+**AppliedOverridesSummary** (interface)
+```typescript
+interface AppliedOverridesSummary {
+  features?: string[]
+  meters?: string[]
+  entitledAppGroups?: string[]
+  addOnKeys?: string[]
+  apps?: string[]
+  accountType?: boolean
+  note?: string
+}
+```
+
+**SystemBlock** (interface)
+```typescript
+interface SystemBlock {
+  basePlanId?: string
+  addOnKeys?: string[]
+  apps?: string[]
+  * Explicit overrides only — an absent key is NOT "off". Resolve with
+  * `resolveFeature()` / `isFeatureEnabled()`, which apply the accountType
+  * default: `enterprise` defaults every flag to on unless explicitly
+  * `false` here; `standard` defaults every flag to off unless explicitly
+  * `true` here.
+  features?: Record<string, boolean>
+  meters?: Record<string, MeterEntry>
+  entitledAppGroups?: string[]
+  * Explicit account tier. `'enterprise'` flips the default for every
+  * feature flag to on (see `features`), not just an "unlimited baseline" —
+  * absence of a flag no longer means disabled for enterprise accounts.
+  accountType?: 'enterprise' | 'standard'
+  syncedAt?: string
+  syncedFromSubscriptionId?: string
+  appliedOverrides?: AppliedOverridesSummary
+}
+```
+
+**AppConfigSettings** (interface)
+```typescript
+interface AppConfigSettings {
+  id: 'appConfig'
+  apps: AppEntry[]
+  addOns?: string[]
+  requestedBasePlanId?: string
+  itemRecordMode?: 'registered' | 'owned' | null
+  virtualItemsEnabled?: boolean
+  system?: SystemBlock
 }
 ```
 
@@ -3659,13 +3735,6 @@ interface AppConfig {
   }
   directComponent: boolean; // Whether the app provides a direct React component for embedding (instead of using an iframe)
   [key: string]: any
-}
-```
-
-**AppsConfigResponse** (interface)
-```typescript
-interface AppsConfigResponse {
-  apps: AppConfig[]
 }
 ```
 
@@ -8171,6 +8240,21 @@ Delete a keyed data item by ID within a scope. Requires admin authentication. ``
     options?: GetCollectionWidgetsOptions) → `Promise<CollectionWidgetsResponse>`
 Fetches ALL widget data (manifests + bundle files) for a collection in one call. Returns everything needed to render widgets with zero additional requests. This solves N+1 query problems by fetching manifests, JavaScript bundles, and CSS files in parallel on the server. ```typescript // Fetch all widget data for a collection const { apps } = await Api.AppConfiguration.getWidgets(collectionId); // Returns: [{ appId, manifestUrl, manifest, bundleSource, bundleCss }, ...] // Convert bundle source to dynamic imports for (const app of apps) { const blob = new Blob([app.bundleSource], { type: 'application/javascript' }); const blobUrl = URL.createObjectURL(blob); const widgetModule = await import(blobUrl); // Inject CSS if present if (app.bundleCss) { const styleTag = document.createElement('style'); styleTag.textContent = app.bundleCss; document.head.appendChild(styleTag); } } // Force refresh all widgets const { apps } = await Api.AppConfiguration.getWidgets(collectionId, { force: true }); ```
 
+**resolveFeature**(system: SystemBlock | undefined, flag: string) → `boolean`
+Resolve whether a feature flag is on, applying the `accountType` default: `enterprise` accounts default every flag to **on** unless `features[flag]` is explicitly `false`; `standard` accounts (or missing `accountType`) default every flag to **off** unless `features[flag]` is explicitly `true`. An explicit value always wins over the default either way. This is the same logic `isFeatureEnabled()` / `isFeatureEnabledSync()` use internally — call those instead in normal code. `system.features` and `accountType` are public data (no admin-only feature-check path exists), so there's no reason to fetch differently for an admin surface. This is exposed separately only for the rare case where you already have a `system` block in hand from somewhere other than `getAppConfig()` (e.g. server-rendered props) and want to resolve a flag from it directly. ```typescript const enabled = appConfiguration.resolveFeature(someSystemBlock, 'custom_domain'); ```
+
+**getAppConfig**(collectionId: string,
+    options?: { force?: boolean }) → `Promise<AppsConfigResponse>`
+Fetch the collection's app catalog + `appConfig` entitlements data in one call — installed modules (`apps`), resolved entitlements (`system.features`, `system.meters`, etc.), and item-handling settings. This is `/public/collection/:id/app/config` (`collection.getAppsConfig()`), which now carries both; there's no need to separately call `appConfiguration.getConfig({ appId: 'appConfig' })` for public reads. Cached in-memory (and sessionStorage) for `ttl` so repeated calls across a page/session are cheap; pass `force` to bypass the cache after a mutation (e.g. after `entitlements-reconcile`). For admin-only data (`systemPrivate`), use `appConfiguration.getConfig({ collectionId, appId: 'appConfig', admin: true })` directly — this endpoint is public-only and never returns it. See docs/appConfig.md for the full contract. ```typescript const cfg = await appConfiguration.getAppConfig(collectionId); console.log(cfg.system?.features); ```
+
+**isFeatureEnabled**(collectionId: string,
+    flag: string,
+    options?: { force?: boolean }) → `Promise<boolean>`
+Check whether a feature flag is enabled for a collection, per `appConfig.system.features` — applying the `accountType` default (see `resolveFeature()`): enterprise accounts default every flag to on unless explicitly set to `false`. This is the standard way for subapps to gate features — it reads through the same cache as `getAppConfig`, so calling it repeatedly (e.g. once per component) does not re-fetch on every call. This is always async because the very first call for a collection has nothing to read yet. If you need a synchronous check (e.g. inside a render function), call this once during app init to warm the cache, then use `isFeatureEnabledSync()` afterwards. ```typescript if (await appConfiguration.isFeatureEnabled(collectionId, 'custom_domain')) { enableCustomDomainUI(); } ```
+
+**isFeatureEnabledSync**(collectionId: string, flag: string) → `boolean | undefined`
+Synchronous, cache-only check for a feature flag. Returns `undefined` if `getAppConfig()` / `isFeatureEnabled()` hasn't been called yet for this collection this page load (i.e. nothing to read without an await) — treat `undefined` as "not yet known", not as "disabled". ```typescript // Warm the cache once, e.g. in a top-level effect: useEffect(() => { appConfiguration.isFeatureEnabled(collectionId, 'custom_domain') }, [collectionId]); // Elsewhere, read synchronously without an await: const enabled = appConfiguration.isFeatureEnabledSync(collectionId, 'custom_domain'); if (enabled === undefined) { // not warmed yet — fall back to a loading state or the async version } ```
+
 ### asset
 
 **upload**(options: UploadAssetOptions) → `Promise<Asset>`
@@ -8719,7 +8803,7 @@ Get the managed-certificate status for a collection's custom domain (admin only)
 Retrieve a specific settings group for a collection. Public reads return the public view of the settings group. If the stored payload contains a top-level `admin` object, that block is omitted from public responses and included when `admin === true`.
 
 **getAppsConfig**(collectionId: string) → `Promise<AppsConfigResponse>`
-Retrieve all configured app module definitions for a collection (public endpoint).
+Retrieve all configured app module definitions for a collection (public endpoint), plus the collection's `appConfig` entitlements data (`system.features`, `system.meters`, `entitledAppGroups`, `itemRecordMode`, etc.) in the same response. See docs/appConfig.md. Prefer `appConfiguration.getAppConfig()` / `isFeatureEnabled()` for entitlement reads — they call this endpoint under the hood and cache the result.
 
 **updateSettings**(collectionId: string, settingGroup: string, settings: any) → `Promise<any>`
 Update a specific settings group for a collection (admin endpoint). This writes through the admin endpoint, but root-level fields are still part of the public settings payload. Put confidential values under `settings.admin` if they should only be returned on admin reads.

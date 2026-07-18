@@ -259,6 +259,7 @@ function generateAPISummary() {
   summary += '- **[Contact Search](contact-search.md)** - Admin contact search: free-text, typeahead, identity/tag/JSONB filters, and pagination\n';
   summary += '- **[App Data Storage](app-data-storage.md)** - User-specific and collection-scoped app data storage\n';
   summary += '- **[Product/Proof Data Scoping](proof-product-data-scoping.md)** - Canonical spec for `product.data`/`.admin` and `proof.data`/`.admin`/`.values` (owner/personal) buckets, read/write authority, and the `productFields`/`proofFields` collection-settings schemas\n';
+  summary += '- **[appConfig / Feature Flags](appConfig.md)** - `appConfig` settings contract, entitlements (`system.features`/`entitledAppGroups`/`meters`), and the `isFeatureEnabled()` / `isFeatureEnabledSync()` SDK helpers\n';
   summary += '- **[Forms](forms.md)** - Platform-managed form definitions, submissions, and schema-driven React form UI\n';
   summary += '- **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more\n';
   summary += '- **[App Records Pattern](app-records-pattern.md)** - Canonical pattern for storing per-product, per-facet, or rule-targeted app data\n';

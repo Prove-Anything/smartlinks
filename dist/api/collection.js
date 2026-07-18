@@ -148,9 +148,13 @@ export var collection;
     }
     collection.getSettings = getSettings;
     /**
-     * Retrieve all configured app module definitions for a collection (public endpoint).
+     * Retrieve all configured app module definitions for a collection (public endpoint),
+     * plus the collection's `appConfig` entitlements data (`system.features`, `system.meters`,
+     * `entitledAppGroups`, `itemRecordMode`, etc.) in the same response. See docs/appConfig.md.
+     * Prefer `appConfiguration.getAppConfig()` / `isFeatureEnabled()` for entitlement reads —
+     * they call this endpoint under the hood and cache the result.
      * @param collectionId – Identifier of the collection
-     * @returns Promise resolving to an AppsConfigResponse containing all app configurations
+     * @returns Promise resolving to an AppsConfigResponse containing the app catalog and entitlements
      * @throws ErrorResponse if the request fails
      */
     async function getAppsConfig(collectionId) {
