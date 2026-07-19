@@ -15719,8 +15719,6 @@ components:
           enum:
             - registered
             - owned
-        virtualItemsEnabled:
-          type: boolean
         system:
           $ref: "#/components/schemas/SystemBlock"
       required:
@@ -19309,10 +19307,6 @@ components:
           type: string
         allowAutoGenerateClaims:
           type: boolean
-        variants:
-          type: boolean
-        batches:
-          type: boolean
         defaultAuthKitId:
           type: string
       required:
@@ -19328,8 +19322,6 @@ components:
         - supported
         - roles
         - shortId
-        - variants
-        - batches
         - defaultAuthKitId
     HubAvailabilityResponse:
       type: object

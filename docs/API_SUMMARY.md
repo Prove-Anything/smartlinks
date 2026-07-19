@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.5  |  Generated: 2026-07-18T14:07:37.915Z
+Version: 1.15.8  |  Generated: 2026-07-19T09:55:23.623Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1447,7 +1447,6 @@ interface AppConfigSettings {
   addOns?: string[]
   requestedBasePlanId?: string
   itemRecordMode?: 'registered' | 'owned' | null
-  virtualItemsEnabled?: boolean
   system?: SystemBlock
 }
 ```
@@ -3698,8 +3697,6 @@ interface Collection {
   secondaryColor?: string
   portalUrl?: string // URL for the collection's portal (if applicable)
   allowAutoGenerateClaims?: boolean
-  variants: boolean // does this collection support variants?
-  batches: boolean // does this collection support batches?
   defaultAuthKitId: string // default auth kit for this collection, used for auth
 }
 ```

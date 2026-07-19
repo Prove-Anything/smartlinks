@@ -129,7 +129,6 @@ export interface AppConfigSettings {
 
   /** How the account handles individual physical items. */
   itemRecordMode?: 'registered' | 'owned' | null
-  virtualItemsEnabled?: boolean
 
   // ─── SYSTEM-OWNED, PUBLIC (reconcile writes; client read-only) ───────
   /** Resolved entitlement truth. Read this to gate features. */

@@ -36,7 +36,6 @@ export interface AppConfigSettings {
 
   /** How the account handles individual physical items. */
   itemRecordMode?: 'registered' | 'owned' | null;
-  virtualItemsEnabled?: boolean;
 
   // ── SYSTEM-OWNED, PUBLIC (reconcile writes; client read-only) ─────
   /** Resolved entitlement truth. Read this to gate features. */
@@ -220,25 +219,49 @@ Resolution rule (see `resolveFeature()` / `isFeatureEnabled()`, §6.0):
 | `false` (explicit) | **off**                       | off                                     |
 | absent             | **on** (enterprise default)    | off (standard default)                 |
 
-This is why reading `cfg.system.features.custom_domain` directly is wrong
+This is why reading `cfg.system.features.customDomain` directly is wrong
 for enterprise accounts — an absent key there does NOT mean disabled:
 
 ```ts
 // ❌ WRONG for enterprise accounts — absent key silently reads as "off"
-if (cfg.system.features.custom_domain) enableCustomDomainUI();
+if (cfg.system.features.customDomain) enableCustomDomainUI();
 
 // ✅ CORRECT — applies the enterprise default
-if (await appConfiguration.isFeatureEnabled(collectionId, 'custom_domain')) {
+if (await appConfiguration.isFeatureEnabled(collectionId, 'customDomain')) {
   enableCustomDomainUI();
 }
 ```
 
-Feature flag naming: bare snake_case, no `feature_` prefix.
+Feature flag naming: camelCase, no `feature`/`is`/`has` prefix (e.g.
+`customDomain`, not `feature_custom_domain` or `isCustomDomainEnabled`).
+Flags belonging to the same topic/module may use a dotted grouping prefix,
+e.g. `crm.broadcasts`, `crm.segments` — this is a plain string key in
+`features`, not a nested object, so resolve it the same way:
+`isFeatureEnabled(collectionId, 'crm.broadcasts')`.
 
 Always resolve flags through `appConfiguration.isFeatureEnabled(collectionId, flag)`
 / `isFeatureEnabledSync()` (§6.0), or `appConfiguration.resolveFeature(cfg.system, flag)`
 if you already have a `system` block from elsewhere — never read
 `cfg.system.features[flag]` directly.
+
+#### 4.4.1 Common feature flags
+
+`features` is an open map — any microapp can define its own key — but
+these are the major, cross-cutting flags most integrations will care
+about:
+
+| Flag           | Gates                                                                 |
+| -------------- | ---------------------------------------------------------------------- |
+| `analytics`    | Analytics surfaces (dashboards, reporting, event exploration).       |
+| `crm`          | Customer interaction / CRM — contact records, broadcasts, segments. Sub-features hang off the `crm.*` dotted prefix, e.g. `crm.broadcasts`, `crm.segments`. |
+| `hub`          | The Hub module.                                                      |
+| `portal`       | QR code scan portals.                                                |
+| `virtualItems` | Virtual items — algorithmic per-item IDs with no persistent row (battery serials, scan-to-collect points, bulk QR sheets). Replaces the old root-level `virtualItemsEnabled` boolean, which has been removed (§8) — resolve this like any other feature flag, not as a separate config key. Independent of `itemRecordMode`. |
+| `batches`      | Batch support. Used to be the `Collection.batches` boolean; that field has been removed — this flag is now the only source of truth. |
+| `variants`     | Variant support. Used to be the `Collection.variants` boolean; that field has been removed — this flag is now the only source of truth. |
+
+Same resolution rule as any flag (§4.4) — don't read these off
+`cfg.system.features` directly, always go through `isFeatureEnabled()`.
 
 ### 4.5 `meters`
 
@@ -308,7 +331,7 @@ every subsequent call — so calling it once per component, or once per
 render, doesn't cause repeat network requests.
 
 ```ts
-if (await SL.appConfiguration.isFeatureEnabled(collectionId, 'custom_domain')) {
+if (await SL.appConfiguration.isFeatureEnabled(collectionId, 'customDomain')) {
   enableCustomDomainUI();
 }
 ```
@@ -321,11 +344,11 @@ cache once during app init and use the sync variant afterwards:
 ```ts
 // Once, e.g. in a top-level effect or before first render:
 useEffect(() => {
-  SL.appConfiguration.isFeatureEnabled(collectionId, 'custom_domain')
+  SL.appConfiguration.isFeatureEnabled(collectionId, 'customDomain')
 }, [collectionId]);
 
 // Anywhere else, read synchronously — no await:
-const enabled = SL.appConfiguration.isFeatureEnabledSync(collectionId, 'custom_domain');
+const enabled = SL.appConfiguration.isFeatureEnabledSync(collectionId, 'customDomain');
 if (enabled === undefined) {
   // not warmed yet this page load — treat as "not yet known", not "off"
 }
@@ -341,7 +364,7 @@ to bypass it — e.g. immediately after your own code calls
 `entitlements-reconcile` and the flags may have changed:
 
 ```ts
-await SL.appConfiguration.isFeatureEnabled(collectionId, 'custom_domain', { force: true });
+await SL.appConfiguration.isFeatureEnabled(collectionId, 'customDomain', { force: true });
 ```
 
 ### 6.1 Reading the raw config
@@ -402,18 +425,14 @@ with a stale local copy.
 Clients MUST NOT write directly to `system` or `systemPrivate`.
 `entitlements-reconcile` merges user-owned fields through untouched.
 
-## 8. Item handling (`itemRecordMode`, `virtualItemsEnabled`)
+## 8. Item handling (`itemRecordMode`)
 
-Two **independent** root-level, user-owned keys describing how the
-account treats individual physical items. Reconcile never touches
-them.
+A root-level, user-owned key describing how the account treats
+individual physical items. Reconcile never touches it.
 
-Three axes (do NOT conflate):
+Two axes (do NOT conflate):
 
-1. **Virtual items** — `virtualItemsEnabled: boolean`. Algorithmic
-   IDs, no per-item row. Battery serials, scan-to-collect points,
-   bulk QR sheets. Can be on with `itemRecordMode` off.
-2. **Item records** — `itemRecordMode`. Materialise a persistent row
+1. **Item records** — `itemRecordMode`. Materialise a persistent row
    per physical item. `null` / missing = **disabled** (no separate
    `"none"` enum — reads collapse to `mode === "off"` via the
    `useItemRecordMode()` hook).
@@ -421,7 +440,15 @@ Three axes (do NOT conflate):
      provenance without a customer relationship.
    - `"owned"` — tag row + owner + interaction history. Requires
      `basePlanId >= "engage"`. Enables claim / transfer / CRM.
-3. **CRM** — downstream consequence of `owned`; not a peer flag.
+2. **CRM** — downstream consequence of `owned`; not a peer flag.
+
+**Virtual items are not part of this key.** Algorithmic IDs with no
+per-item row (battery serials, scan-to-collect points, bulk QR sheets)
+used to be a separate root-level `virtualItemsEnabled: boolean` — that
+field has been removed. Virtual items are now gated by the `virtualItems`
+feature flag under `system.features` (§4.4.1), same as every other
+feature — resolve it with `isFeatureEnabled(collectionId, 'virtualItems')`.
+It's independent of `itemRecordMode` and can be on with item records off.
 
 **Billing:** the usage ledger stamps `tier` at event time from
 `itemRecordMode`. Writes with `mode === null` MUST be rejected. Mode
@@ -442,42 +469,3 @@ CRM visibility), not just a capability flag.
   features yet.
 - `systemOverrides` (old root-level key) → `systemPrivate.overrides`.
   One-off backfill moves the block and re-runs reconcile.
-
-## 10. Change log
-
-- **2026-07-17**: Initial contract published; `appConfig.system` becomes
-  canonical entitlements source of truth. `entitlements` group deprecated.
-- **2026-07-17**: Added `systemOverrides` for additive comps; reconcile
-  records `system.appliedOverrides`.
-- **2026-07-18**: Renamed `systemOverrides` → `systemPrivate.overrides`
-  and formalised the three-tier access model (user / system /
-  systemPrivate). API strips `systemPrivate` for non-admin readers.
-  Added `system.accountType` derived from
-  `systemPrivate.overrides.accountType`. Added top-of-doc TypeScript
-  definition.
-- **2026-07-18**: Added SDK helpers `appConfiguration.getAppConfig()`
-  (typed + cached), `isFeatureEnabled()` (async, cache-backed feature
-  gate), and `isFeatureEnabledSync()` (cache-only, for callers that can't
-  await). Renamed the exported TypeScript type to `AppConfigSettings`
-  to avoid a name collision with the existing per-module `AppConfig`
-  type in `src/types/collection.ts`.
-- **2026-07-18**: `/public/collection/:id/app/config` (`collection.getAppsConfig()`)
-  now returns the `appConfig` entitlements data (`system`, `addOns`,
-  `requestedBasePlanId`, `itemRecordMode`, `virtualItemsEnabled`) merged
-  alongside its existing app-catalog `apps[]`. `appConfiguration.getAppConfig()`
-  was repointed at this endpoint (dropping its `admin` option — this endpoint
-  is public-only); the settings-group endpoint (`appConfiguration.getConfig({ appId: 'appConfig' })`)
-  is still the only way to reach `systemPrivate`. See §3.1 for why the two
-  endpoints' `apps[]` fields are shaped differently and shouldn't be conflated.
-- **2026-07-18**: `system.features` changed from "only truthy flags appear"
-  to explicit `Record<string, boolean>` overrides. Added the `accountType`
-  default rule (§4.4): enterprise accounts default every flag to on unless
-  explicitly `false`; standard accounts default off unless explicitly `true`.
-  Added `appConfiguration.resolveFeature(system, flag)` — the pure resolver
-  behind `isFeatureEnabled()`/`isFeatureEnabledSync()`, exposed only for the
-  rare case of already holding a `system` block from somewhere other than
-  `getAppConfig()`. There is no separate admin feature-check path — `system`
-  is public data on every read, so admin surfaces should call
-  `isFeatureEnabled()` like everything else. Reading `cfg.system.features[flag]`
-  directly is no longer correct for enterprise accounts — always resolve
-  through one of these three.

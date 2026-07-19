@@ -112,7 +112,6 @@ export interface AppConfigSettings {
     requestedBasePlanId?: string;
     /** How the account handles individual physical items. */
     itemRecordMode?: 'registered' | 'owned' | null;
-    virtualItemsEnabled?: boolean;
     /** Resolved entitlement truth. Read this to gate features. */
     system?: SystemBlock;
 }
