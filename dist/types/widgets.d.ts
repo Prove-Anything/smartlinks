@@ -1,3 +1,5 @@
+import type { TagContext } from './nfc';
+import type { ItemContext } from './itemContext';
 /**
  * Structured navigation request emitted via the `onNavigate` prop when a
  * widget or container needs to navigate the parent platform shell to another
@@ -62,6 +64,19 @@ export interface SmartLinksWidgetProps {
     onNavigate?: (request: NavigationRequest | string) => void;
     /** Base URL of the full public portal, used for constructing deep links */
     publicPortalUrl?: string;
+    /**
+     * Authenticity context for the specific item (proof) the URL points at,
+     * resolved via an NFC tap or a serial proof URL. `undefined` for
+     * collection- and product-only URLs, where there's no item to verify.
+     * See docs/item-context.md.
+     */
+    itemContext?: ItemContext;
+    /**
+     * @deprecated Use `itemContext.tag` instead. Kept for one release for
+     * backward compatibility with scanner-aware apps that read raw NFC/SUN
+     * data directly. See docs/item-context.md.
+     */
+    tag?: TagContext;
     /** Responsive size hint */
     size?: 'compact' | 'standard' | 'large';
     /** BCP-47 language code (e.g. `'en'`, `'fr'`) */

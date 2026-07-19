@@ -1,3 +1,4 @@
+import type { ItemContext } from '../types/itemContext';
 /**
  * Geographic region definitions for country-based conditions
  */
@@ -108,11 +109,36 @@ export interface ValueCondition extends BaseCondition {
     value: string | number | boolean;
 }
 /**
- * Item status condition
+ * Item status condition — one condition type for everything conditions
+ * need to know about "the item," so sub-apps don't have to juggle a
+ * separate authenticity condition alongside this one.
+ *
+ * Two families of `statusType`, kept in one enum on purpose:
+ * - **Claim/ownership** (unchanged): `isClaimable`, `notClaimable`,
+ *   `isVirtual`, `notVirtual`, `hasProof`, `noProof`. These read
+ *   `params.proof` — whether a resolved proof record was supplied at all,
+ *   and its claim/virtual flags. `noProof` only means "nothing was even
+ *   attempted"; it does NOT distinguish that from "an identifier was
+ *   passed but didn't resolve" — see `invalidProof` below for that case.
+ * - **Authenticity** (reads `params.itemContext` — see `ItemContext`,
+ *   docs/item-context.md): `isAuthentic`, `notAuthentic`, `invalidProof`,
+ *   `isFirstScan`, `isRescan`.
+ *   - `invalidProof` is specifically "an identifier was passed and resolution
+ *     was attempted, but it came back invalid or not-found" — the "someone
+ *     scanned a fake tag / typed a bad serial" case, as opposed to `noProof`
+ *     ("nothing was on the URL to check at all").
+ *   - `isAuthentic` is true for both a fresh tap and a rescan — use
+ *     `isFirstScan` / `isRescan` when the fresh-vs-duplicate distinction
+ *     matters. `isFirstScan` is the common "this is good, show the full
+ *     experience" check (authentic AND not seen before, `status === 'valid'`).
+ *     `isRescan` is authentic but a duplicate/replayed tap
+ *     (`status === 'rescan'`) — e.g. a page refresh or the back button —
+ *     for suppressing "first scan" celebration UX without treating the tag
+ *     as fake.
  */
 export interface ItemStatusCondition extends BaseCondition {
     type: 'itemStatus';
-    statusType: 'isClaimable' | 'notClaimable' | 'noProof' | 'hasProof' | 'isVirtual' | 'notVirtual';
+    statusType: 'isClaimable' | 'notClaimable' | 'noProof' | 'hasProof' | 'isVirtual' | 'notVirtual' | 'isAuthentic' | 'notAuthentic' | 'invalidProof' | 'isFirstScan' | 'isRescan';
 }
 /**
  * Facet-based condition — gates on the facet values assigned to the current product.
@@ -263,6 +289,8 @@ export interface ConditionParams {
     proof?: ProofInfo;
     /** Collection information */
     collection?: CollectionInfo;
+    /** Authenticity context for the item (proof) the URL points at, if any */
+    itemContext?: ItemContext;
     /** Statistics/tracking information */
     stats?: StatsInfo;
     /** Function to fetch conditions by ID (optional) */
@@ -300,7 +328,9 @@ export interface ConditionDebugOptions {
  * - **date** - Time-based conditions (before, after, between dates)
  * - **geofence** - Location-based restrictions
  * - **value** - Custom field comparisons
- * - **itemStatus** - Proof/item status checks (claimable, virtual, etc.)
+ * - **itemStatus** - Proof/item status checks: claimable, virtual, presence
+ *   (`hasProof`/`noProof`), and authenticity (`isAuthentic`/`notAuthentic`/
+ *   `invalidProof`/`isFirstScan`/`isRescan`)
  * - **condition** - Nested condition references
  *
  * Conditions can be combined with AND or OR logic.

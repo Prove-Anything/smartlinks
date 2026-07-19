@@ -159,6 +159,13 @@ interface SmartLinksWidgetProps {
   // Base URL to the full public portal for deep linking
   publicPortalUrl?: string;
   
+  // Authenticity context for the specific item (proof) the URL points at.
+  // undefined for collection- and product-only URLs.
+  itemContext?: ItemContext;
+  
+  // @deprecated Use itemContext.tag instead — kept for one release
+  tag?: TagContext;
+  
   // Size hint for responsive rendering
   size?: 'compact' | 'standard' | 'large';
   
@@ -180,6 +187,8 @@ interface SmartLinksWidgetProps {
 | `SL` | `typeof SL` | Pre-initialized SmartLinks SDK |
 | `onNavigate` | `function?` | Callback to navigate within parent app (accepts `NavigationRequest` or legacy string) |
 | `publicPortalUrl` | `string?` | Base URL to full portal for deep links |
+| `itemContext` | `ItemContext?` | Authenticity context for the specific item (proof) the URL points at; `undefined` for collection/product-only URLs — see [item-context.md](item-context.md) |
+| `tag` | `TagContext?` | **Deprecated** — use `itemContext.tag` instead. Kept for one release. |
 | `size` | `string?` | Size hint: 'compact', 'standard', or 'large' |
 | `lang` | `string?` | Language code (e.g., 'en', 'de', 'fr') |
 | `translations` | `object?` | Translation overrides |

@@ -173,7 +173,9 @@ async function evaluateConditionEntry(condition, params) {
  * - **date** - Time-based conditions (before, after, between dates)
  * - **geofence** - Location-based restrictions
  * - **value** - Custom field comparisons
- * - **itemStatus** - Proof/item status checks (claimable, virtual, etc.)
+ * - **itemStatus** - Proof/item status checks: claimable, virtual, presence
+ *   (`hasProof`/`noProof`), and authenticity (`isAuthentic`/`notAuthentic`/
+ *   `invalidProof`/`isFirstScan`/`isRescan`)
  * - **condition** - Nested condition references
  *
  * Conditions can be combined with AND or OR logic.
@@ -817,6 +819,7 @@ async function validateFacet(condition, params) {
  * Validate item status condition
  */
 async function validateItemStatus(condition, params) {
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
     switch (condition.statusType) {
         case 'isClaimable':
             return {
@@ -847,6 +850,36 @@ async function validateItemStatus(condition, params) {
             return {
                 passed: !!(params.proof && !params.proof.virtual),
                 detail: 'Checked proof.virtual for falsiness.',
+            };
+        case 'isAuthentic':
+            return {
+                passed: !!((_a = params.itemContext) === null || _a === void 0 ? void 0 : _a.isAuthentic),
+                detail: 'Checked itemContext.isAuthentic for truthiness.',
+                context: { itemContextStatus: (_b = params.itemContext) === null || _b === void 0 ? void 0 : _b.status },
+            };
+        case 'notAuthentic':
+            return {
+                passed: !!(params.itemContext && !params.itemContext.isAuthentic),
+                detail: 'Checked that an itemContext was resolved and isAuthentic is false.',
+                context: { itemContextStatus: (_c = params.itemContext) === null || _c === void 0 ? void 0 : _c.status },
+            };
+        case 'invalidProof':
+            return {
+                passed: ((_d = params.itemContext) === null || _d === void 0 ? void 0 : _d.status) === 'invalid' || ((_e = params.itemContext) === null || _e === void 0 ? void 0 : _e.status) === 'not-found',
+                detail: 'Checked that resolution was attempted and came back invalid or not-found (as opposed to noProof, where nothing was attempted at all).',
+                context: { itemContextStatus: (_f = params.itemContext) === null || _f === void 0 ? void 0 : _f.status },
+            };
+        case 'isFirstScan':
+            return {
+                passed: ((_g = params.itemContext) === null || _g === void 0 ? void 0 : _g.status) === 'valid',
+                detail: 'Checked that itemContext is authentic and this is the first time it has been seen (status === valid, not rescan).',
+                context: { itemContextStatus: (_h = params.itemContext) === null || _h === void 0 ? void 0 : _h.status },
+            };
+        case 'isRescan':
+            return {
+                passed: ((_j = params.itemContext) === null || _j === void 0 ? void 0 : _j.status) === 'rescan' || !!((_k = params.itemContext) === null || _k === void 0 ? void 0 : _k.isRescan),
+                detail: 'Checked that itemContext is authentic but a duplicate/replayed tap (status === rescan).',
+                context: { itemContextStatus: (_l = params.itemContext) === null || _l === void 0 ? void 0 : _l.status },
             };
         default:
             return {

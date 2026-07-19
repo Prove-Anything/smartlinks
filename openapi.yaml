@@ -22203,6 +22203,31 @@ components:
         - metadata
         - broadcastId
         - journeyId
+    ItemContext:
+      type: object
+      properties:
+        isAuthentic:
+          type: boolean
+        status:
+          $ref: "#/components/schemas/ItemContextStatus"
+        source:
+          type: string
+          enum:
+            - nfc
+            - serial
+        errorMessage:
+          type: string
+        isRescan:
+          type: boolean
+        tag:
+          $ref: "#/components/schemas/TagContext"
+        checkedAt:
+          type: number
+      required:
+        - isAuthentic
+        - status
+        - source
+        - checkedAt
     Job:
       type: object
       properties:
@@ -23034,6 +23059,39 @@ components:
         - claimSetId
         - codeId
         - data
+    TagContext:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/TagStatus"
+        tagId:
+          type: string
+        claimSetId:
+          type: string
+        codeId:
+          type: string
+        count:
+          type: number
+        previousCount:
+          type: number
+        data:
+          type: object
+          additionalProperties: true
+        source:
+          type: string
+          enum:
+            - nfc-validate
+            - nfc-lookup
+            - tag-index
+            - none
+        validatedAt:
+          type: number
+        errorMessage:
+          type: string
+      required:
+        - status
+        - source
+        - validatedAt
     OrderItem:
       type: object
       properties:
@@ -25211,6 +25269,10 @@ components:
           additionalProperties: true
         publicPortalUrl:
           type: string
+        itemContext:
+          $ref: "#/components/schemas/ItemContext"
+        tag:
+          $ref: "#/components/schemas/TagContext"
         size:
           type: string
           enum:

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.8  |  Generated: 2026-07-19T09:55:23.623Z
+Version: 1.15.10  |  Generated: 2026-07-19T13:35:07.171Z
 
 This is a concise summary of all available API functions and types.
 
@@ -5878,6 +5878,23 @@ interface InteractionEventContext {
 
 **EffectConfig** = ``
 
+### itemContext
+
+**ItemContext** (interface)
+```typescript
+interface ItemContext {
+  isAuthentic: boolean
+  status: ItemContextStatus
+  source: 'nfc' | 'serial'
+  errorMessage?: string
+  isRescan?: boolean
+  tag?: TagContext
+  checkedAt: number
+}
+```
+
+**ItemContextStatus** = ``
+
 ### jobs
 
 **Job** (interface)
@@ -6407,6 +6424,24 @@ interface NfcClaimTagRequest {
   data: Record<string, any>
 }
 ```
+
+**TagContext** (interface)
+```typescript
+interface TagContext {
+  status: TagStatus
+  tagId?: string
+  claimSetId?: string
+  codeId?: string
+  count?: number
+  previousCount?: number
+  data?: Record<string, unknown>
+  source: 'nfc-validate' | 'nfc-lookup' | 'tag-index' | 'none'
+  validatedAt: number
+  errorMessage?: string
+}
+```
+
+**TagStatus** = `'valid' | 'rescan' | 'invalid' | 'error'`
 
 ### order
 
@@ -7692,6 +7727,15 @@ interface SmartLinksWidgetProps {
   * accepted for backward compatibility.
   onNavigate?: (request: NavigationRequest | string) => void
   publicPortalUrl?: string
+  * Authenticity context for the specific item (proof) the URL points at,
+  * resolved via an NFC tap or a serial proof URL. `undefined` for
+  * collection- and product-only URLs, where there's no item to verify.
+  * See docs/item-context.md.
+  itemContext?: ItemContext
+  * @deprecated Use `itemContext.tag` instead. Kept for one release for
+  * backward compatibility with scanner-aware apps that read raw NFC/SUN
+  * data directly. See docs/item-context.md.
+  tag?: TagContext
   size?: 'compact' | 'standard' | 'large'
   lang?: string
   translations?: Record<string, string>
@@ -7861,6 +7905,7 @@ interface ConditionParams {
   product?: ProductInfo
   proof?: ProofInfo
   collection?: CollectionInfo
+  itemContext?: ItemContext
   stats?: StatsInfo
   fetchCondition?: (collectionId: string, conditionId: string) => Promise<ConditionSet | null>
   getLocation?: () => Promise<{ latitude: number; longitude: number }>

@@ -11,6 +11,7 @@ export * from "./claimSet";
 export * from "./auth";
 export * from "./comms";
 export * from "./nfc";
+export * from "./itemContext";
 export * from "./contact";
 export * from "./broadcasts";
 export * from "./segments";

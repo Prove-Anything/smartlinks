@@ -1,5 +1,7 @@
 // src/utils/conditions.ts
 
+import type { ItemContext } from '../types/itemContext'
+
 /**
  * Geographic region definitions for country-based conditions
  */
@@ -132,11 +134,47 @@ export interface ValueCondition extends BaseCondition {
 }
 
 /**
- * Item status condition
+ * Item status condition — one condition type for everything conditions
+ * need to know about "the item," so sub-apps don't have to juggle a
+ * separate authenticity condition alongside this one.
+ *
+ * Two families of `statusType`, kept in one enum on purpose:
+ * - **Claim/ownership** (unchanged): `isClaimable`, `notClaimable`,
+ *   `isVirtual`, `notVirtual`, `hasProof`, `noProof`. These read
+ *   `params.proof` — whether a resolved proof record was supplied at all,
+ *   and its claim/virtual flags. `noProof` only means "nothing was even
+ *   attempted"; it does NOT distinguish that from "an identifier was
+ *   passed but didn't resolve" — see `invalidProof` below for that case.
+ * - **Authenticity** (reads `params.itemContext` — see `ItemContext`,
+ *   docs/item-context.md): `isAuthentic`, `notAuthentic`, `invalidProof`,
+ *   `isFirstScan`, `isRescan`.
+ *   - `invalidProof` is specifically "an identifier was passed and resolution
+ *     was attempted, but it came back invalid or not-found" — the "someone
+ *     scanned a fake tag / typed a bad serial" case, as opposed to `noProof`
+ *     ("nothing was on the URL to check at all").
+ *   - `isAuthentic` is true for both a fresh tap and a rescan — use
+ *     `isFirstScan` / `isRescan` when the fresh-vs-duplicate distinction
+ *     matters. `isFirstScan` is the common "this is good, show the full
+ *     experience" check (authentic AND not seen before, `status === 'valid'`).
+ *     `isRescan` is authentic but a duplicate/replayed tap
+ *     (`status === 'rescan'`) — e.g. a page refresh or the back button —
+ *     for suppressing "first scan" celebration UX without treating the tag
+ *     as fake.
  */
 export interface ItemStatusCondition extends BaseCondition {
   type: 'itemStatus'
-  statusType: 'isClaimable' | 'notClaimable' | 'noProof' | 'hasProof' | 'isVirtual' | 'notVirtual'
+  statusType:
+    | 'isClaimable'
+    | 'notClaimable'
+    | 'noProof'
+    | 'hasProof'
+    | 'isVirtual'
+    | 'notVirtual'
+    | 'isAuthentic'
+    | 'notAuthentic'
+    | 'invalidProof'
+    | 'isFirstScan'
+    | 'isRescan'
 }
 
 /**
@@ -310,6 +348,8 @@ export interface ConditionParams {
   proof?: ProofInfo
   /** Collection information */
   collection?: CollectionInfo
+  /** Authenticity context for the item (proof) the URL points at, if any */
+  itemContext?: ItemContext
   /** Statistics/tracking information */
   stats?: StatsInfo
   /** Function to fetch conditions by ID (optional) */
@@ -523,7 +563,9 @@ async function evaluateConditionEntry(condition: Condition, params: InternalCond
  * - **date** - Time-based conditions (before, after, between dates)
  * - **geofence** - Location-based restrictions
  * - **value** - Custom field comparisons
- * - **itemStatus** - Proof/item status checks (claimable, virtual, etc.)
+ * - **itemStatus** - Proof/item status checks: claimable, virtual, presence
+ *   (`hasProof`/`noProof`), and authenticity (`isAuthentic`/`notAuthentic`/
+ *   `invalidProof`/`isFirstScan`/`isRescan`)
  * - **condition** - Nested condition references
  * 
  * Conditions can be combined with AND or OR logic.
@@ -1276,6 +1318,41 @@ async function validateItemStatus(condition: ItemStatusCondition, params: Condit
       return {
         passed: !!(params.proof && !params.proof.virtual),
         detail: 'Checked proof.virtual for falsiness.',
+      }
+
+    case 'isAuthentic':
+      return {
+        passed: !!params.itemContext?.isAuthentic,
+        detail: 'Checked itemContext.isAuthentic for truthiness.',
+        context: { itemContextStatus: params.itemContext?.status },
+      }
+
+    case 'notAuthentic':
+      return {
+        passed: !!(params.itemContext && !params.itemContext.isAuthentic),
+        detail: 'Checked that an itemContext was resolved and isAuthentic is false.',
+        context: { itemContextStatus: params.itemContext?.status },
+      }
+
+    case 'invalidProof':
+      return {
+        passed: params.itemContext?.status === 'invalid' || params.itemContext?.status === 'not-found',
+        detail: 'Checked that resolution was attempted and came back invalid or not-found (as opposed to noProof, where nothing was attempted at all).',
+        context: { itemContextStatus: params.itemContext?.status },
+      }
+
+    case 'isFirstScan':
+      return {
+        passed: params.itemContext?.status === 'valid',
+        detail: 'Checked that itemContext is authentic and this is the first time it has been seen (status === valid, not rescan).',
+        context: { itemContextStatus: params.itemContext?.status },
+      }
+
+    case 'isRescan':
+      return {
+        passed: params.itemContext?.status === 'rescan' || !!params.itemContext?.isRescan,
+        detail: 'Checked that itemContext is authentic but a duplicate/replayed tap (status === rescan).',
+        context: { itemContextStatus: params.itemContext?.status },
       }
 
     default:

@@ -485,9 +485,12 @@ await utils.validateCondition({
 ```
 
 #### Item Status Conditions
-Check proof/item status:
+Check proof/item status — claim/ownership state, and authenticity of the
+item (proof) the URL points at (via NFC tap or serial proof URL — see
+[item-context.md](item-context.md)):
 
 ```typescript
+// Claim/ownership — unchanged, reads `proof`
 await utils.validateCondition({
   condition: {
     type: 'and',
@@ -498,9 +501,38 @@ await utils.validateCondition({
   },
   proof: { claimable: true }
 })
+
+// Authenticity — reads `itemContext`
+await utils.validateCondition({
+  condition: {
+    type: 'and',
+    conditions: [{
+      type: 'itemStatus',
+      statusType: 'invalidProof'
+    }]
+  },
+  itemContext: { isAuthentic: false, status: 'invalid', source: 'nfc', checkedAt: Date.now() }
+})
+
+// Fresh scan vs. duplicate/replayed scan — both authentic, different UX
+await utils.validateCondition({
+  condition: {
+    type: 'and',
+    conditions: [{
+      type: 'itemStatus',
+      statusType: 'isRescan'
+    }]
+  },
+  itemContext: { isAuthentic: true, status: 'rescan', source: 'nfc', checkedAt: Date.now() }
+})
 ```
 
-Status types: `'isClaimable'`, `'notClaimable'`, `'noProof'`, `'hasProof'`, `'isVirtual'`, `'notVirtual'`
+Status types:
+- Claim/ownership (reads `proof`): `'isClaimable'`, `'notClaimable'`, `'isVirtual'`, `'notVirtual'`
+- Presence (reads `proof`): `'hasProof'`, `'noProof'` — `noProof` only means *nothing was attempted*, not that an attempt failed
+- Authenticity (reads `itemContext`): `'isAuthentic'`, `'notAuthentic'`, `'invalidProof'`, `'isFirstScan'`, `'isRescan'`
+  - `invalidProof` is specifically "an identifier was passed and resolution came back `invalid`/`not-found`", distinct from `noProof`'s "nothing on the URL to check at all"
+  - `isAuthentic` is true for both a fresh tap and a rescan. Use `isFirstScan` (authentic AND `status === 'valid'`) as the single "this is good, show the full experience" check, and `isRescan` (authentic but `status === 'rescan'`) to suppress "first scan" celebration UX without treating the tag as fake
 
 #### Version Conditions
 For A/B testing or versioned content:
@@ -720,6 +752,7 @@ See [examples/utils-demo.ts](../examples/utils-demo.ts) for comprehensive exampl
 - **[API Summary](API_SUMMARY.md)** - Complete SDK reference with all namespaces and functions
 - **[QR Codes](API_SUMMARY.md#qr)** - QR code lookup functions that work with generated paths
 - **[NFC](API_SUMMARY.md#nfc)** - NFC tag claiming and validation
+- **[Item Context](item-context.md)** - `itemContext` prop delivered to containers describing the item (proof) the URL points at and whether it's authentic
 - **[Collections](API_SUMMARY.md#collection)** - Collection management functions
 - **[Products](API_SUMMARY.md#product)** - Product CRUD operations
 - **[Batches](API_SUMMARY.md#batch)** - Batch management
