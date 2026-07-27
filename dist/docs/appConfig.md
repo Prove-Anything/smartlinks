@@ -63,6 +63,8 @@ export interface AppEntry {
 /** Resolved entitlements — safe for every client to read. */
 export interface SystemBlock {
   basePlanId?: string;
+  /** Stable capability tier — see §4.1a. Prefer this over basePlanId. */
+  productMode?: string;
   addOnKeys?: string[];
   apps?: string[];                       // apps unlocked by add-ons
   features?: Record<string, boolean>;    // explicit overrides only — see §4.4 for absent-key resolution
@@ -190,6 +192,27 @@ String id of the tier. Sourced from Stripe subscription metadata
 (`basePlanId` or legacy `planId`). Examples: `simple_redirect`,
 `rich_redirect`, `inform`, `enrich`, `engage`, `hub_inform`,
 `hub_enrich`, `hub_engage`.
+
+### 4.1a `productMode`
+
+Stable capability tier the app should branch on instead of `basePlanId`
+(a billing identity that can change). Written by `entitlements-reconcile`
+on every sync.
+
+Current ladder, low → high: `simple_redirect` → `rich_redirect` →
+`inform` → `engage`. Treat it as an open/extensible string — unknown
+values (future tiers) should fail closed to the tier below what you need.
+
+```ts
+const mode = cfg.system?.productMode;
+if (mode === 'simple_redirect' || mode === 'rich_redirect') {
+  // redirect-only surface — hide catalog UI
+}
+```
+
+Not a feature flag and not a billing key — per-capability gating still
+goes through `features` (§4.4); Stripe price selection still goes
+through `basePlanId` + add-ons.
 
 ### 4.2 `addOnKeys[]`
 

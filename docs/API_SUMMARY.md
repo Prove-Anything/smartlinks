@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.10  |  Generated: 2026-07-19T13:35:07.171Z
+Version: 1.15.10  |  Generated: 2026-07-20T13:41:22.371Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1419,6 +1419,11 @@ interface AppliedOverridesSummary {
 ```typescript
 interface SystemBlock {
   basePlanId?: string
+  * Stable capability tier microapps should branch on instead of
+  * `basePlanId` — see docs/appConfig.md §4.1. Known tiers are `ProductMode`;
+  * an unrecognised value is a future tier your code doesn't know about yet
+  * — fail closed to the nearest tier you do understand rather than erroring.
+  productMode?: ProductMode | (string & {})
   addOnKeys?: string[]
   apps?: string[]
   * Explicit overrides only — an absent key is NOT "off". Resolve with
@@ -1450,6 +1455,8 @@ interface AppConfigSettings {
   system?: SystemBlock
 }
 ```
+
+**ProductMode** = `'simple_redirect' | 'rich_redirect' | 'inform' | 'engage'`
 
 ### appManifest
 

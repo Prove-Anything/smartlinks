@@ -175,7 +175,7 @@ async function evaluateConditionEntry(condition, params) {
  * - **value** - Custom field comparisons
  * - **itemStatus** - Proof/item status checks: claimable, virtual, presence
  *   (`hasProof`/`noProof`), and authenticity (`isAuthentic`/`notAuthentic`/
- *   `invalidProof`/`isFirstScan`/`isRescan`)
+ *   `invalidProof`/`isRescan`)
  * - **condition** - Nested condition references
  *
  * Conditions can be combined with AND or OR logic.
@@ -819,7 +819,7 @@ async function validateFacet(condition, params) {
  * Validate item status condition
  */
 async function validateItemStatus(condition, params) {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+    var _a, _b, _c, _d, _e, _f, _g, _h, _j;
     switch (condition.statusType) {
         case 'isClaimable':
             return {
@@ -869,17 +869,11 @@ async function validateItemStatus(condition, params) {
                 detail: 'Checked that resolution was attempted and came back invalid or not-found (as opposed to noProof, where nothing was attempted at all).',
                 context: { itemContextStatus: (_f = params.itemContext) === null || _f === void 0 ? void 0 : _f.status },
             };
-        case 'isFirstScan':
-            return {
-                passed: ((_g = params.itemContext) === null || _g === void 0 ? void 0 : _g.status) === 'valid',
-                detail: 'Checked that itemContext is authentic and this is the first time it has been seen (status === valid, not rescan).',
-                context: { itemContextStatus: (_h = params.itemContext) === null || _h === void 0 ? void 0 : _h.status },
-            };
         case 'isRescan':
             return {
-                passed: ((_j = params.itemContext) === null || _j === void 0 ? void 0 : _j.status) === 'rescan' || !!((_k = params.itemContext) === null || _k === void 0 ? void 0 : _k.isRescan),
+                passed: ((_g = params.itemContext) === null || _g === void 0 ? void 0 : _g.status) === 'rescan' || !!((_h = params.itemContext) === null || _h === void 0 ? void 0 : _h.isRescan),
                 detail: 'Checked that itemContext is authentic but a duplicate/replayed tap (status === rescan).',
-                context: { itemContextStatus: (_l = params.itemContext) === null || _l === void 0 ? void 0 : _l.status },
+                context: { itemContextStatus: (_j = params.itemContext) === null || _j === void 0 ? void 0 : _j.status },
             };
         default:
             return {

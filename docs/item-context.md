@@ -163,8 +163,7 @@ const showFakeWarning = await validateCondition({
 - `isAuthentic` — passes when `itemContext.isAuthentic` is true (`valid`/`rescan`)
 - `notAuthentic` — passes when an `itemContext` was resolved but isn't authentic (`invalid`/`not-found`/`error`)
 - `invalidProof` — passes specifically when resolution was attempted and came back `invalid` or `not-found` — the "someone scanned a fake tag / typed a bad serial" case, as distinct from `noProof` ("nothing was on the URL to check at all")
-- `isFirstScan` — the single "this is good, show the full experience" check: authentic AND this is the first time it's been seen (`status === 'valid'`)
-- `isRescan` — authentic but a duplicate/replayed tap (`status === 'rescan'`) — use this to suppress "first scan" celebration UX without treating the tag as fake; `isAuthentic` alone is true for both `isFirstScan` and `isRescan` cases
+- `isRescan` — authentic but a duplicate/replayed tap (`status === 'rescan'`) — use this to suppress "first scan" celebration UX without treating the tag as fake; `isAuthentic` alone is true for both a fresh tap and a rescan
 
 ## Deprecated
 

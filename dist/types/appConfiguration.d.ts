@@ -72,6 +72,14 @@ export interface AppliedOverridesSummary {
 /** Resolved entitlements — written only by `entitlements-reconcile`, safe for every client to read. */
 export interface SystemBlock {
     basePlanId?: string;
+    /**
+     * Stable capability tier microapps should branch on instead of
+     * `basePlanId` — see docs/appConfig.md §4.1a. One of
+     * `'simple_redirect' | 'rich_redirect' | 'inform' | 'engage'`, but treat
+     * it as an open string: unknown values should fail closed to the next
+     * tier down.
+     */
+    productMode?: string;
     addOnKeys?: string[];
     /** Apps unlocked by add-ons. */
     apps?: string[];

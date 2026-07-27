@@ -122,23 +122,19 @@ export interface ValueCondition extends BaseCondition {
  *   passed but didn't resolve" — see `invalidProof` below for that case.
  * - **Authenticity** (reads `params.itemContext` — see `ItemContext`,
  *   docs/item-context.md): `isAuthentic`, `notAuthentic`, `invalidProof`,
- *   `isFirstScan`, `isRescan`.
+ *   `isRescan`.
  *   - `invalidProof` is specifically "an identifier was passed and resolution
  *     was attempted, but it came back invalid or not-found" — the "someone
  *     scanned a fake tag / typed a bad serial" case, as opposed to `noProof`
  *     ("nothing was on the URL to check at all").
- *   - `isAuthentic` is true for both a fresh tap and a rescan — use
- *     `isFirstScan` / `isRescan` when the fresh-vs-duplicate distinction
- *     matters. `isFirstScan` is the common "this is good, show the full
- *     experience" check (authentic AND not seen before, `status === 'valid'`).
- *     `isRescan` is authentic but a duplicate/replayed tap
- *     (`status === 'rescan'`) — e.g. a page refresh or the back button —
- *     for suppressing "first scan" celebration UX without treating the tag
- *     as fake.
+ *   - `isAuthentic` is true for both a fresh tap and a rescan. `isRescan` is
+ *     authentic but a duplicate/replayed tap (`status === 'rescan'`) — e.g.
+ *     a page refresh or the back button — for suppressing "first scan"
+ *     celebration UX without treating the tag as fake.
  */
 export interface ItemStatusCondition extends BaseCondition {
     type: 'itemStatus';
-    statusType: 'isClaimable' | 'notClaimable' | 'noProof' | 'hasProof' | 'isVirtual' | 'notVirtual' | 'isAuthentic' | 'notAuthentic' | 'invalidProof' | 'isFirstScan' | 'isRescan';
+    statusType: 'isClaimable' | 'notClaimable' | 'noProof' | 'hasProof' | 'isVirtual' | 'notVirtual' | 'isAuthentic' | 'notAuthentic' | 'invalidProof' | 'isRescan';
 }
 /**
  * Facet-based condition — gates on the facet values assigned to the current product.
@@ -330,7 +326,7 @@ export interface ConditionDebugOptions {
  * - **value** - Custom field comparisons
  * - **itemStatus** - Proof/item status checks: claimable, virtual, presence
  *   (`hasProof`/`noProof`), and authenticity (`isAuthentic`/`notAuthentic`/
- *   `invalidProof`/`isFirstScan`/`isRescan`)
+ *   `invalidProof`/`isRescan`)
  * - **condition** - Nested condition references
  *
  * Conditions can be combined with AND or OR logic.

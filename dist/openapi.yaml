@@ -15666,6 +15666,8 @@ components:
       properties:
         basePlanId:
           type: string
+        productMode:
+          type: string
         addOnKeys:
           type: array
           items:

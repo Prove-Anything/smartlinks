@@ -530,9 +530,9 @@ await utils.validateCondition({
 Status types:
 - Claim/ownership (reads `proof`): `'isClaimable'`, `'notClaimable'`, `'isVirtual'`, `'notVirtual'`
 - Presence (reads `proof`): `'hasProof'`, `'noProof'` — `noProof` only means *nothing was attempted*, not that an attempt failed
-- Authenticity (reads `itemContext`): `'isAuthentic'`, `'notAuthentic'`, `'invalidProof'`, `'isFirstScan'`, `'isRescan'`
+- Authenticity (reads `itemContext`): `'isAuthentic'`, `'notAuthentic'`, `'invalidProof'`, `'isRescan'`
   - `invalidProof` is specifically "an identifier was passed and resolution came back `invalid`/`not-found`", distinct from `noProof`'s "nothing on the URL to check at all"
-  - `isAuthentic` is true for both a fresh tap and a rescan. Use `isFirstScan` (authentic AND `status === 'valid'`) as the single "this is good, show the full experience" check, and `isRescan` (authentic but `status === 'rescan'`) to suppress "first scan" celebration UX without treating the tag as fake
+  - `isAuthentic` is true for both a fresh tap and a rescan. Use `isRescan` (authentic but `status === 'rescan'`) to suppress "first scan" celebration UX without treating the tag as fake
 
 #### Version Conditions
 For A/B testing or versioned content:
