@@ -48,6 +48,12 @@ The backend stores custom analytics dimensions in `metadata`, but promoted analy
 
 See [docs/analytics-metadata-conventions.md](analytics-metadata-conventions.md) for the recommended key set.
 
+### A note on server-written events
+
+Not every row in these tables is written by your app. As of 2026-07-23, the server itself logs a `scan_redirect` event on the tag-events table at the moment a GS1 digital-link scan, claim short-link scan, or NFC tap decides on a redirect destination - before the client ever loads anything. This is separate from `scan_tag`, which your app still writes on landing exactly as before. `scan_blank_tag` remains excluded from the analytics pipeline.
+
+Server-issued redirects also append `?sid=<value>` to the destination URL. If your landing page reads `sid` off the URL and reuses it as its own `sessionId` on the next `analytics.collection.track(...)` or `analytics.tag.track(...)` call, "did the redirect actually land" becomes a free `sessionId` join - nothing new to send, just reuse the value if it's present.
+
 ---
 
 ## Quick Start
@@ -67,6 +73,7 @@ analytics.collection.track({
   appId: 'homepage',
   path: '/c/demo-collection',
   deviceType: 'mobile',
+  source: 'portal',
 })
 ```
 
@@ -298,7 +305,9 @@ Tracks generic collection analytics events such as:
 - internal navigation
 - outbound link activity
 
-Supported top-level fields include the core event fields plus promoted analytics columns such as `visitorId`, `referrerHost`, `pageId`, and `entryType`, along with custom metadata dimensions like `group`, `placement`, `pagePath`, and `qrCodeId`.
+Supported top-level fields include the core event fields plus promoted analytics columns such as `visitorId`, `referrerHost`, `pageId`, `entryType`, and `source`, along with custom metadata dimensions like `group`, `placement`, `pagePath`, and `qrCodeId`.
+
+`source` is a free-form string identifying which client app logged the event, e.g. `'portal'`, `'hub'` - there's no enum or whitelist, send whatever identifies your app. It's web-events only; there is no equivalent field on tag events (see the `analytics.tag.track(event)` section below for why).
 
 Example:
 
@@ -321,6 +330,7 @@ analytics.collection.track({
   group: 'summer-launch',
   placement: 'hero',
   pageId: 'QR123',
+  source: 'portal',
   metadata: { pagePath: '/c/demo-collection?pageId=QR123' },
 })
 ```
@@ -334,7 +344,11 @@ Tracks physical scan analytics such as:
 - claim/code activity
 - admin vs customer scan behavior
 
-Supported top-level fields include the core scan fields plus promoted analytics columns such as `visitorId`, `entryType`, and `scanMethod`, along with custom metadata dimensions like `group`, `tag`, and campaign extras.
+Supported top-level fields include the core scan fields plus promoted analytics columns such as `visitorId`, `entryType`, `scanMethod`, and `redirectMode`, along with custom metadata dimensions like `group`, `tag`, and campaign extras.
+
+`redirectMode` is only relevant if you're logging a redirect-style event yourself - in practice it's mostly written by the server automatically (see [A note on server-written events](#a-note-on-server-written-events) above).
+
+There is deliberately no `source` field on tag events, even though one exists on collection events. `eventType` already tells you who wrote a tag-events row - `scan_redirect` is always server-written, `scan_tag`/`scan_blank_tag` are always client-written - so a `source` column here would just duplicate that. To segment tag scans by NFC vs. QR, use `entryType`/`scanMethod` instead.
 
 Example:
 
@@ -541,6 +555,24 @@ const countries = await analytics.admin.breakdown('demo-collection', {
 })
 ```
 
+Breaking down or filtering by the new `source` *column* (web-events only) works the same way, just watch the naming: the request's own top-level `source: 'events'` is the pre-existing table selector, and it sits alongside a `sources` array that filters by the column's value. They are unrelated fields that happen to share a name.
+
+```typescript
+const appSources = await analytics.admin.breakdown('demo-collection', {
+  source: 'events',       // table selector: query web-events
+  dimension: 'source',    // break down by the `source` column
+  metric: 'count',
+})
+
+const portalOnly = await analytics.admin.events('demo-collection', {
+  source: 'events',       // table selector
+  sources: ['portal'],    // column filter - single-element array for exact match
+  limit: 100,
+})
+```
+
+There is no singular `source` filter field for this reason - use `sources: ['portal']` for an exact match.
+
 ### Raw events
 
 ```typescript
@@ -588,7 +620,7 @@ For metrics, generic queries support:
 - `uniqueSessions`
 - `uniqueVisitors`
 
-Extra collection-event filters include:
+Extra collection-event (web-events) filters include:
 
 - `appId`, `appIds[]`
 - `destinationAppId`, `destinationAppIds[]`
@@ -596,6 +628,7 @@ Extra collection-event filters include:
 - `href`, `path`
 - `hrefContains`, `pathContains`
 - `isExternal`
+- `sources[]` - filter by the `source` column (list-match only, no singular form - see [Breakdown](#breakdown))
 
 Extra tag-event filters include:
 
@@ -603,6 +636,7 @@ Extra tag-event filters include:
 - `claimId`, `claimIds[]`
 - `isAdmin`
 - `hasLocation`
+- `redirectMode`, `redirectModes[]`
 
 ---
 

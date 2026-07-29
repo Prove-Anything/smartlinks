@@ -1,20 +1,47 @@
-import type { AuthLoginResponse, AppleLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse } from "../types/authKit";
+import type { AuthLoginResponse, AppleLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse, MfaChallengeSendResponse, MfaFinalizeResponse, MfaEnrollSendResponse, MfaEnrolledResponse, MfaFactorsResponse, TrustedDevice } from "../types/authKit";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
  */
 export declare namespace authKit {
-    /** Login with email + password (public). */
-    function login(clientId: string, email: string, password: string): Promise<AuthLoginResponse>;
-    /** Register a new user (public). */
+    /**
+     * Login with email + password (public).
+     *
+     * When the client's MFA policy requires a step-up, the server returns **403
+     * `MFA_REQUIRED`** instead of a session — `login()` throws a `SmartlinksApiError` with
+     * `err.errorResponse?.errorCode === 'MFA_REQUIRED'` and the challenge details in
+     * `err.details` (see {@link MfaRequiredDetails}). Route the caller to
+     * {@link mfaChallengeSend} on that error; this method's return type is unchanged.
+     *
+     * @param trustedDeviceToken - Optional. If a previous MFA challenge on this device
+     *   returned one (via {@link mfaChallengeVerify}/{@link mfaRecoveryCode} with
+     *   `trustDevice: true`), pass it here to skip the challenge entirely as long as it's
+     *   still valid. If it's revoked/expired, the server silently falls back to requiring a
+     *   fresh challenge — `login()` just returns `MFA_REQUIRED` again, no special handling.
+     */
+    function login(clientId: string, email: string, password: string, trustedDeviceToken?: string): Promise<AuthLoginResponse>;
+    /**
+     * Register a new user (public).
+     *
+     * Not gated by step-up MFA — a brand-new user has no enrolled factors yet, so there's
+     * nothing to challenge against.
+     */
     function register(clientId: string, data: {
         email: string;
         password: string;
         displayName?: string;
         accountData?: Record<string, any>;
     }): Promise<AuthLoginResponse>;
-    /** Google OAuth login via ID token (public). */
-    function googleLogin(clientId: string, idToken: string): Promise<AuthLoginResponse>;
+    /**
+     * Google OAuth login via ID token (public).
+     *
+     * Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape.
+     *
+     * @param trustedDeviceToken - Optional. Pass a token previously returned by
+     *   {@link mfaChallengeVerify}/{@link mfaRecoveryCode} (with `trustDevice: true`) to skip
+     *   the challenge on this device, same as {@link login}.
+     */
+    function googleLogin(clientId: string, idToken: string, trustedDeviceToken?: string): Promise<AuthLoginResponse>;
     /** Google OAuth login via server-side authorization code (public). */
     function googleCodeLogin(clientId: string, code: string, redirectUri: string): Promise<AuthLoginResponse>;
     /**
@@ -31,6 +58,9 @@ export declare namespace authKit {
      *   is `true`. Recoverable: the user should sign in with their password (or reset it),
      *   then link Apple from settings. **The same 409 can now come back from
      *   {@link googleLogin}** under the shared verified-to-verified linking policy.
+     *
+     * Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape. Pass
+     * `opts.trustedDeviceToken` to skip the challenge on a recognized device.
      *
      * @see AppleLoginOptions
      */
@@ -70,20 +100,46 @@ export declare namespace authKit {
         redirectUrl: string;
         accountData?: Record<string, any>;
     }): Promise<MagicLinkSendResponse>;
-    /** Verify a magic link token and authenticate/create the user (public). */
-    function verifyMagicLink(clientId: string, token: string): Promise<MagicLinkVerifyResponse>;
+    /**
+     * Verify a magic link token and authenticate/create the user (public).
+     *
+     * Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape.
+     *
+     * @param trustedDeviceToken - Optional. See {@link login}.
+     */
+    function verifyMagicLink(clientId: string, token: string, trustedDeviceToken?: string): Promise<MagicLinkVerifyResponse>;
     /** Send phone verification code (public). */
     function sendPhoneCode(clientId: string, phoneNumber: string): Promise<PhoneSendCodeResponse>;
-    /** Verify phone verification code (public). */
-    function verifyPhoneCode(clientId: string, phoneNumber: string, code: string): Promise<PhoneVerifyResponse>;
+    /**
+     * Verify phone verification code (public).
+     *
+     * Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape.
+     *
+     * @param trustedDeviceToken - Optional. See {@link login}.
+     */
+    function verifyPhoneCode(clientId: string, phoneNumber: string, code: string, trustedDeviceToken?: string): Promise<PhoneVerifyResponse>;
     /** Send a WhatsApp verification deep-link (public). */
     function sendWhatsApp(clientId: string, body?: SendWhatsAppRequest): Promise<SendWhatsAppResponse>;
-    /** Manually verify WhatsApp token if inbound webhook path is unavailable (legacy/public fallback). */
+    /**
+     * Manually verify WhatsApp token if inbound webhook path is unavailable (legacy/public fallback).
+     *
+     * Not gated by step-up MFA — this endpoint only confirms the code, it never issues a
+     * session/bearer token, so there is nothing to challenge. {@link exchangeWhatsAppSession}
+     * is the WhatsApp method that's gated.
+     */
     function verifyWhatsApp(clientId: string, token: string, phoneNumber: string): Promise<VerifyWhatsAppResponse>;
     /** Poll WhatsApp verification status for a token (public). */
     function getWhatsAppStatus(clientId: string, token: string): Promise<WhatsAppStatusResponse>;
-    /** Exchange a verified WhatsApp token for an Auth Kit session (public). */
-    function exchangeWhatsAppSession(clientId: string, token: string, sessionKey: string): Promise<ExchangeWhatsAppSessionResponse>;
+    /**
+     * Exchange a verified WhatsApp token for an Auth Kit session (public).
+     *
+     * Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape. This is
+     * the WhatsApp method that needs `trustedDeviceToken`, not {@link verifyWhatsApp} (which
+     * never issues a session).
+     *
+     * @param trustedDeviceToken - Optional. See {@link login}.
+     */
+    function exchangeWhatsAppSession(clientId: string, token: string, sessionKey: string, trustedDeviceToken?: string): Promise<ExchangeWhatsAppSessionResponse>;
     /** Send an SMS click-to-verify link (public). */
     function sendSmsVerify(clientId: string, body: SendSmsVerifyRequest): Promise<SendSmsVerifyResponse>;
     /** Verify an SMS click-to-verify token via API (public). */
@@ -124,6 +180,47 @@ export declare namespace authKit {
     function verifyEmailChange(clientId: string, token: string): Promise<SuccessResponse>;
     function updatePhone(clientId: string, phoneNumber: string, verificationCode: string): Promise<SuccessResponse>;
     function deleteAccount(clientId: string, password: string, confirmText: string): Promise<SuccessResponse>;
+    /** Send (or resend) an MFA challenge code to the given factor (public). */
+    function mfaChallengeSend(clientId: string, mfaSessionToken: string, factor: 'email' | 'sms'): Promise<MfaChallengeSendResponse>;
+    /**
+     * Verify an MFA challenge code and finalize the login (public). On success this behaves
+     * like {@link login} — the bearer token is adopted and the cache invalidated.
+     *
+     * @param trustDevice - When `true`, the response includes `trustedDeviceToken` — persist
+     *   it and pass it to future {@link login} calls to skip the challenge on this device.
+     */
+    function mfaChallengeVerify(clientId: string, mfaSessionToken: string, code: string, trustDevice?: boolean, deviceLabel?: string): Promise<MfaFinalizeResponse>;
+    /**
+     * Finalize a challenged login using a single-use recovery code instead of a sent code
+     * (public). Same finalize-session behaviour as {@link mfaChallengeVerify}.
+     */
+    function mfaRecoveryCode(clientId: string, mfaSessionToken: string, code: string, trustDevice?: boolean, deviceLabel?: string): Promise<MfaFinalizeResponse>;
+    /** List enrolled factors and recovery-code count for the current user (authenticated). */
+    function getMfaFactors(clientId: string): Promise<MfaFactorsResponse>;
+    /** Begin email-factor enrollment; sends a code to the account's existing email (authenticated). */
+    function enrollEmailMfa(clientId: string): Promise<MfaEnrollSendResponse>;
+    /** Confirm email-factor enrollment with the code sent by {@link enrollEmailMfa} (authenticated). */
+    function confirmEmailMfa(clientId: string, mfaSessionToken: string, code: string): Promise<MfaEnrolledResponse>;
+    /** Begin SMS-factor enrollment; sends a code to the given phone number (authenticated). */
+    function enrollSmsMfa(clientId: string, phoneNumber: string): Promise<MfaEnrollSendResponse>;
+    /** Confirm SMS-factor enrollment with the code sent by {@link enrollSmsMfa} (authenticated). */
+    function confirmSmsMfa(clientId: string, mfaSessionToken: string, code: string): Promise<MfaEnrolledResponse>;
+    /**
+     * Generate a fresh set of recovery codes, invalidating any previous set (authenticated).
+     * Returned **in plaintext, exactly once** — nothing else in the API ever returns them
+     * again, so the caller must display/export them immediately.
+     */
+    function generateMfaRecoveryCodes(clientId: string, password: string): Promise<{
+        recoveryCodes: string[];
+    }>;
+    /** Remove an enrolled MFA factor (authenticated). Server route is DELETE with a body. */
+    function removeMfaFactor(clientId: string, factor: 'email' | 'sms', password: string): Promise<SuccessResponse>;
+    /** List devices trusted to skip MFA challenges for the current user (authenticated). */
+    function listTrustedDevices(clientId: string): Promise<{
+        devices: TrustedDevice[];
+    }>;
+    /** Revoke a single trusted device by id (authenticated). */
+    function revokeTrustedDevice(clientId: string, id: string): Promise<SuccessResponse>;
     function load(authKitId: string): Promise<AuthKitConfig>;
     function get(collectionId: string, authKitId: string): Promise<AuthKitConfig>;
     function list(collectionId: string, admin?: boolean): Promise<AuthKitConfig[]>;

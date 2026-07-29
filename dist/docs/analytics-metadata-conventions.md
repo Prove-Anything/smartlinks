@@ -15,6 +15,8 @@ Some of these are now promoted top-level analytics fields. Others remain good me
 - `entryType`
 - `pageId`
 - `scanMethod`
+- `source` - collection/web-events only. Free-form client app identifier, e.g. `'portal'`, `'hub'`. No enum/whitelist. Not available on tag events - see the `analytics.tag.track(event)` section in [docs/analytics.md](analytics.md) for why.
+- `redirectMode` - tag-events only. Usually server-written; only set this yourself if you're logging a redirect-style event.
 
 These should be sent as top-level analytics fields, not inside `metadata`.
 
@@ -59,6 +61,7 @@ These keys give teams a shared vocabulary for:
 - Send promoted fields at top level.
 - Keep values flat and scalar where possible so they are easier to filter and break down later.
 - Promote a field to a first-class backend column only when it becomes a hot platform-wide dimension.
+- Note: `source` (the event column) and the query-time `source` parameter (`'events' | 'tag'`, which table to query) are unrelated fields that happen to share a name. When filtering by the `source` column, use the plural `sources` array - there is no singular `source` filter, precisely to avoid colliding with the table selector.
 
 ---
 
@@ -77,6 +80,7 @@ analytics.collection.track({
   campaign: 'summer-launch',
   utmSource: 'email',
   pageId: 'QR123',
+  source: 'portal',
   metadata: {
     pagePath: '/c/demo-collection',
   },

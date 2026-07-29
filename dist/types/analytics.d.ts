@@ -5,6 +5,13 @@
  * analytics, click tracking, and tag scan analytics for collection dashboards.
  */
 export type AnalyticsSource = 'events' | 'tag';
+/**
+ * Includes `scan_redirect` - logged automatically by the server (not the
+ * client) at the moment a GS1 digital-link scan, claim short-link scan, or
+ * NFC tap decides on a redirect destination, before the client ever loads
+ * anything. Distinct from `scan_tag`, which the client still writes on
+ * landing exactly as before.
+ */
 export type AnalyticsEventType = string;
 export type AnalyticsGranularity = 'hour' | 'day' | 'week' | 'month';
 export type AnalyticsMetric = 'count' | 'uniqueSessions' | 'uniqueVisitors';
@@ -59,6 +66,12 @@ export interface CollectionAnalyticsEvent extends AnalyticsStandardEventFields {
     path?: string;
     isExternal?: boolean;
     location?: AnalyticsLocation;
+    /**
+     * Free-form identifier for which client app logged the event, e.g.
+     * `'portal'`, `'hub'`. No enum/whitelist - send whatever string identifies
+     * your app. Web-events only; not recorded on tag events.
+     */
+    source?: string;
     metadata?: Record<string, any>;
 }
 export interface TagAnalyticsEvent extends AnalyticsStandardEventFields {
@@ -75,6 +88,13 @@ export interface TagAnalyticsEvent extends AnalyticsStandardEventFields {
     path?: string;
     location?: AnalyticsLocation;
     isAdmin?: boolean;
+    /**
+     * Only relevant if you're logging a redirect-style event yourself. In
+     * practice this is mostly written by the server automatically at the
+     * moment a GS1 digital-link scan, claim short-link scan, or NFC tap
+     * decides on a redirect destination - see the `scan_redirect` eventType.
+     */
+    redirectMode?: string;
     metadata?: Record<string, any>;
 }
 export interface AnalyticsTrackOptions {
@@ -171,6 +191,21 @@ export interface AnalyticsFilterRequest {
     claimIds?: string[];
     isAdmin?: boolean;
     hasLocation?: boolean;
+    /**
+     * Filter web-events rows by the `source` column (list-match). Web-events
+     * only - has no effect on `source: 'tag'` queries.
+     *
+     * There is deliberately no singular `source` filter: the request's own
+     * top-level `source` field (`'events'` vs `'tag'`) already owns that name
+     * as the table selector and predates this column - same word, two
+     * different things. Use a single-element array (`sources: ['portal']`)
+     * for an exact-match filter.
+     */
+    sources?: string[];
+    /** Filter tag-events rows by `redirectMode`. Tag-events only. */
+    redirectMode?: string;
+    /** Filter tag-events rows by `redirectMode` (list-match). Tag-events only. */
+    redirectModes?: string[];
 }
 export interface AnalyticsSummaryRequest extends AnalyticsFilterRequest {
     source: AnalyticsSource;
@@ -215,8 +250,8 @@ export interface AnalyticsTimeseriesResponse {
     metric: AnalyticsMetric;
     rows: AnalyticsTimeseriesRow[];
 }
-export type EventAnalyticsDimension = 'eventType' | 'country' | 'linkId' | 'href' | 'path' | 'appId' | 'destinationAppId' | 'deviceType' | 'isExternal' | 'productId' | 'proofId' | 'batchId' | 'variantId' | 'sessionId' | 'metadata';
-export type TagAnalyticsDimension = 'eventType' | 'country' | 'codeId' | 'claimId' | 'proofId' | 'productId' | 'batchId' | 'variantId' | 'deviceType' | 'sessionId' | 'isAdmin' | 'location' | 'metadata';
+export type EventAnalyticsDimension = 'eventType' | 'country' | 'linkId' | 'href' | 'path' | 'appId' | 'destinationAppId' | 'deviceType' | 'isExternal' | 'productId' | 'proofId' | 'batchId' | 'variantId' | 'sessionId' | 'metadata' | 'source';
+export type TagAnalyticsDimension = 'eventType' | 'country' | 'codeId' | 'claimId' | 'proofId' | 'productId' | 'batchId' | 'variantId' | 'deviceType' | 'sessionId' | 'isAdmin' | 'location' | 'metadata' | 'redirectMode';
 export interface AnalyticsBreakdownRequest extends AnalyticsFilterRequest {
     source: AnalyticsSource;
     dimension: EventAnalyticsDimension | TagAnalyticsDimension;

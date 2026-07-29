@@ -112,6 +112,12 @@ export interface AppleLoginOptions {
         email?: string;
         name?: string;
     };
+    /**
+     * A previously-issued trusted-device token (from a prior MFA `challenge/verify`
+     * or `challenge/recovery-code` response). If still valid, the server skips any
+     * step-up challenge for this login. See `SDK_AUTHKIT_MFA_UPDATE.md` §3.
+     */
+    trustedDeviceToken?: string;
 }
 /**
  * Server-defined error codes returned by AuthKit federated-login endpoints
@@ -120,6 +126,99 @@ export interface AppleLoginOptions {
  * in `SmartlinksApiError.details`.
  */
 export type AuthKitErrorCode = 'MISSING_APPLE_TOKEN' | 'APPLE_AUTH_NOT_CONFIGURED' | 'INVALID_APPLE_TOKEN' | 'ACCOUNT_EXISTS_UNVERIFIED' | 'APPLE_AUTH_FAILED';
+/**
+ * Details carried on the `MFA_REQUIRED` error thrown by any session-issuing login method
+ * (see the gate list above) when the client's MFA policy requires a step-up. Surfaced as
+ * `err.details` (or `err.errorResponse.details`) on the `SmartlinksApiError` — the login
+ * method never resolves in this case, it throws a 403 instead.
+ */
+export interface MfaRequiredDetails {
+    /** Short-lived (10 min) and single-use. Pass it to every challenge/finalize call below. */
+    mfaSessionToken: string;
+    /** Only factors the user actually enrolled. */
+    availableFactors: Array<'email' | 'sms'>;
+    /** `sms` is preferred over `email` when both are enrolled. */
+    preferredFactor: 'email' | 'sms';
+    maskedDestinations: {
+        email?: string;
+        sms?: string;
+    };
+}
+/** Response from {@link authKit.mfaChallengeSend}. */
+export interface MfaChallengeSendResponse {
+    success: true;
+    factor: 'email' | 'sms';
+    /** Masked, e.g. `"j***@x.com"` or `"+1******1234"`. */
+    destination: string;
+    /** ISO timestamp, 10 minutes from send. */
+    expiresAt: string;
+}
+/**
+ * Response from {@link authKit.mfaChallengeVerify} / {@link authKit.mfaRecoveryCode}.
+ * Same shape as a normal login response, plus trusted-device fields when the caller sent
+ * `trustDevice: true`.
+ */
+export interface MfaFinalizeResponse extends AuthLoginResponse {
+    /**
+     * Present only when the challenge was completed with `trustDevice: true`. Persist it
+     * alongside the refresh token (same secure storage) and send it as `trustedDeviceToken`
+     * on future calls to any gated login method ({@link authKit.login},
+     * {@link authKit.googleLogin}, {@link authKit.appleLogin}, {@link authKit.verifyPhoneCode},
+     * {@link authKit.verifyMagicLink}, {@link authKit.exchangeWhatsAppSession}) to skip the
+     * challenge on this device — it isn't tied to which method the user challenged through.
+     */
+    trustedDeviceToken?: string;
+    trustedDeviceExpiresAt?: string;
+}
+/** Response from {@link authKit.enrollEmailMfa} / {@link authKit.enrollSmsMfa}. */
+export interface MfaEnrollSendResponse {
+    mfaSessionToken: string;
+    destination: string;
+    expiresAt: string;
+}
+/** Response from {@link authKit.confirmEmailMfa} / {@link authKit.confirmSmsMfa}. */
+export interface MfaEnrolledResponse {
+    enrolled: true;
+    factor: 'email' | 'sms';
+}
+/** Response from {@link authKit.getMfaFactors}. */
+export interface MfaFactorsResponse {
+    enrolledFactors: {
+        email?: {
+            enrolledAt: string;
+            destination: string;
+        };
+        sms?: {
+            enrolledAt: string;
+            destination: string;
+        };
+    };
+    recoveryCodesRemaining: number;
+    mfaEnabledForClient: boolean;
+}
+/** One entry from {@link authKit.listTrustedDevices}. */
+export interface TrustedDevice {
+    id: string;
+    label: string | null;
+    createdAtMs: number;
+    lastUsedAtMs: number;
+    expiresAtMs: number;
+}
+/**
+ * Server-defined error codes for the step-up MFA flow, surfaced via
+ * `SmartlinksApiError.errorCode`.
+ *
+ * - `MFA_REQUIRED` (403) — from any session-issuing login method; see {@link MfaRequiredDetails}.
+ * - `INVALID_MFA_CODE` (401) — wrong code; let the user retry (attempts are capped, see next).
+ * - `MFA_TOO_MANY_ATTEMPTS` (429) — 5 wrong attempts; the challenge is burned, restart from `login()`.
+ * - `MFA_FACTOR_NOT_ENROLLED` (400) — requested factor isn't enrolled (or disabled for the
+ *   client) — a programming error if the UI only offers `availableFactors`.
+ * - `MFA_SESSION_EXPIRED` (401) — `mfaSessionToken` past its 10-minute TTL; restart from `login()`.
+ * - `MFA_SESSION_INVALID` (401) — unknown/wrong-client/already-consumed token, or (on enroll
+ *   confirm) mismatched user; restart the enroll/challenge flow.
+ * - `RECOVERY_CODE_INVALID` (401) — wrong or already-used recovery code.
+ */
+export type MfaErrorCode = 'MFA_REQUIRED' | 'INVALID_MFA_CODE' | 'MFA_TOO_MANY_ATTEMPTS' | 'MFA_FACTOR_NOT_ENROLLED' | 'MFA_SESSION_EXPIRED' | 'MFA_SESSION_INVALID' | 'RECOVERY_CODE_INVALID';
 export interface MagicLinkSendResponse {
     success: boolean;
     message: string;

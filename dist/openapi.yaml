@@ -8077,7 +8077,7 @@ paths:
     get:
       tags:
         - authKit
-      summary: authKit.load
+      summary: Revoke a single trusted device by id (authenticated).
       operationId: authKit_load
       security: []
       parameters:
@@ -8291,7 +8291,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: Sign in with Apple via an Apple identity token (public).
+      summary: authKit.appleLogin
       operationId: authKit_appleLogin
       security: []
       parameters:
@@ -8970,6 +8970,285 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/UpsertContactRequest"
+  /authkit/{clientId}/mfa/challenge/recovery-code:
+    post:
+      tags:
+        - authKit
+      summary: Finalize a challenged login using a single-use recovery code instead of a sent code (public).
+      operationId: authKit_mfaRecoveryCode
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaFinalizeResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /authkit/{clientId}/mfa/challenge/send:
+    post:
+      tags:
+        - authKit
+      summary: Send (or resend) an MFA challenge code to the given factor (public).
+      operationId: authKit_mfaChallengeSend
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaChallengeSendResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: string
+              enum:
+                - email
+                - sms
+  /authkit/{clientId}/mfa/challenge/verify:
+    post:
+      tags:
+        - authKit
+      summary: Verify an MFA challenge code and finalize the login (public).
+      operationId: authKit_mfaChallengeVerify
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaFinalizeResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /authkit/{clientId}/mfa/factors:
+    get:
+      tags:
+        - authKit
+      summary: List enrolled factors and recovery-code count for the current user (authenticated).
+      operationId: authKit_getMfaFactors
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaFactorsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /authkit/{clientId}/mfa/factors/email/confirm:
+    post:
+      tags:
+        - authKit
+      summary: "Confirm email-factor enrollment with the code sent by {@link enrollEmailMfa} (authenticated)."
+      operationId: authKit_confirmEmailMfa
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaEnrolledResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /authkit/{clientId}/mfa/factors/email/enroll:
+    post:
+      tags:
+        - authKit
+      summary: "Begin email-factor enrollment; sends a code to the account's existing email (authenticated)."
+      operationId: authKit_enrollEmailMfa
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaEnrollSendResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /authkit/{clientId}/mfa/factors/sms/confirm:
+    post:
+      tags:
+        - authKit
+      summary: "Confirm SMS-factor enrollment with the code sent by {@link enrollSmsMfa} (authenticated)."
+      operationId: authKit_confirmSmsMfa
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaEnrolledResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /authkit/{clientId}/mfa/factors/sms/enroll:
+    post:
+      tags:
+        - authKit
+      summary: Begin SMS-factor enrollment; sends a code to the given phone number (authenticated).
+      operationId: authKit_enrollSmsMfa
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaEnrollSendResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /authkit/{clientId}/mfa/factors/{factor}:
+    get:
+      tags:
+        - authKit
+      summary: Remove an enrolled MFA factor (authenticated).
+      operationId: authKit_removeMfaFactor
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: factor
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /authkit/{clientId}/mfa/trusted-devices/{id}:
+    delete:
+      tags:
+        - authKit
+      summary: Revoke a single trusted device by id (authenticated).
+      operationId: authKit_revokeTrustedDevice
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /platform/location:
     post:
       tags:
@@ -14979,6 +15258,8 @@ components:
           type: boolean
         location:
           $ref: "#/components/schemas/AnalyticsLocation"
+        source:
+          type: string
         metadata:
           type: object
           additionalProperties: true
@@ -15014,6 +15295,8 @@ components:
           $ref: "#/components/schemas/AnalyticsLocation"
         isAdmin:
           type: boolean
+        redirectMode:
+          type: string
         metadata:
           type: object
           additionalProperties: true
@@ -15222,6 +15505,16 @@ components:
           type: boolean
         hasLocation:
           type: boolean
+        sources:
+          type: array
+          items:
+            type: string
+        redirectMode:
+          type: string
+        redirectModes:
+          type: array
+          items:
+            type: string
     AnalyticsSummaryRequest:
       type: object
       properties:
@@ -15667,7 +15960,8 @@ components:
         basePlanId:
           type: string
         productMode:
-          type: string
+          type: object
+          additionalProperties: true
         addOnKeys:
           type: array
           items:
@@ -18415,6 +18709,126 @@ components:
         userInfo:
           type: object
           additionalProperties: true
+        trustedDeviceToken:
+          type: string
+    MfaRequiredDetails:
+      type: object
+      properties:
+        mfaSessionToken:
+          type: string
+        availableFactors:
+          type: array
+          items:
+            type: string
+            enum:
+              - email
+              - sms
+        preferredFactor:
+          type: string
+          enum:
+            - email
+            - sms
+        maskedDestinations:
+          type: object
+          additionalProperties: true
+      required:
+        - mfaSessionToken
+        - availableFactors
+        - preferredFactor
+        - maskedDestinations
+    MfaChallengeSendResponse:
+      type: object
+      properties:
+        success:
+          type: object
+          additionalProperties: true
+        factor:
+          type: string
+          enum:
+            - email
+            - sms
+        destination:
+          type: string
+        expiresAt:
+          type: string
+      required:
+        - success
+        - factor
+        - destination
+        - expiresAt
+    MfaFinalizeResponse:
+      type: object
+      properties:
+        trustedDeviceToken:
+          type: string
+        trustedDeviceExpiresAt:
+          type: string
+    MfaEnrollSendResponse:
+      type: object
+      properties:
+        mfaSessionToken:
+          type: string
+        destination:
+          type: string
+        expiresAt:
+          type: string
+      required:
+        - mfaSessionToken
+        - destination
+        - expiresAt
+    MfaEnrolledResponse:
+      type: object
+      properties:
+        enrolled:
+          type: object
+          additionalProperties: true
+        factor:
+          type: string
+          enum:
+            - email
+            - sms
+      required:
+        - enrolled
+        - factor
+    MfaFactorsResponse:
+      type: object
+      properties:
+        enrolledFactors:
+          type: object
+          additionalProperties: true
+        email:
+          type: object
+          additionalProperties: true
+        sms:
+          type: object
+          additionalProperties: true
+        recoveryCodesRemaining:
+          type: number
+        mfaEnabledForClient:
+          type: boolean
+      required:
+        - enrolledFactors
+        - recoveryCodesRemaining
+        - mfaEnabledForClient
+    TrustedDevice:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        createdAtMs:
+          type: number
+        lastUsedAtMs:
+          type: number
+        expiresAtMs:
+          type: number
+      required:
+        - id
+        - label
+        - createdAtMs
+        - lastUsedAtMs
+        - expiresAtMs
     MagicLinkSendResponse:
       type: object
       properties:
@@ -19311,6 +19725,11 @@ components:
           type: boolean
         defaultAuthKitId:
           type: string
+        admin:
+          type: object
+          additionalProperties: true
+        redirect:
+          $ref: "#/components/schemas/CollectionRedirectConfig"
       required:
         - id
         - title
@@ -19325,6 +19744,21 @@ components:
         - roles
         - shortId
         - defaultAuthKitId
+    CollectionRedirectConfig:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum:
+            - fixed
+            - dynamic
+            - deep
+        url:
+          type: string
+        template:
+          type: string
+      required:
+        - mode
     HubAvailabilityResponse:
       type: object
       properties:

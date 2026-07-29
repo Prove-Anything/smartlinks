@@ -226,6 +226,7 @@ const session = await authKit.appleLogin(clientId, appleIdentityToken, {
   // All optional:
   nonce,                                  // raw nonce, if you used nonce binding
   userInfo: { name, email },              // first authorization callback ONLY — Apple never resends it
+  trustedDeviceToken,                     // skip an MFA step-up challenge on a recognized device — see "Step-up MFA" below
 });
 // session.isNewUser and session.expiresAt (ms epoch) are populated by this endpoint.
 ```
@@ -301,6 +302,137 @@ clearPersistedTokens();
 > Resume-refresh scheduling and transparent refresh-on-401 are the responsibility of the
 > host/auth-ui layer, not this SDK — the SDK only exposes the `refreshToken()` / `logout()`
 > primitives and the `platform` opt-in.
+
+---
+
+## Step-up MFA (Phase 1)
+
+Backend-only for now — **no admin-console UI and no challenge UI ship with this pass.**
+Factors: **email OTP, SMS OTP, recovery codes**. WhatsApp OTP, TOTP, and passkeys as
+*factors* are deferred to a later phase; don't build against them yet.
+
+The step-up gate applies to **every login method that issues a session**:
+
+| Method | Gated? |
+|---|---|
+| `login()` | ✅ |
+| `googleLogin()` | ✅ |
+| `appleLogin()` | ✅ — pass `opts.trustedDeviceToken` |
+| `verifyPhoneCode()` | ✅ |
+| `verifyMagicLink()` | ✅ |
+| `exchangeWhatsAppSession()` | ✅ — **this is the WhatsApp method that needs a trusted-device token, not `verifyWhatsApp()`** |
+| `verifyWhatsApp()` | ❌ — only confirms the code, never issues a session, so there's nothing to gate |
+| `register()` | ❌ — a brand-new user has no enrolled factors to challenge against |
+| `googleCodeLogin()` | ❌ — no `/auth/google-code` route exists server-side |
+
+All six gated methods accept an optional `trustedDeviceToken` param (the last positional
+argument, or `opts.trustedDeviceToken` for `appleLogin()`) — same purpose everywhere: skip
+the challenge on a device the user already verified.
+
+### Handling `MFA_REQUIRED`
+
+Every gated method's return type is unchanged. When the client's MFA policy requires a
+step-up, the server returns 403 instead of a session, and the method throws — identically
+for all six:
+
+```ts
+import { authKit, SmartlinksApiError } from '@proveanything/smartlinks';
+
+try {
+  const session = await authKit.login(clientId, email, password);
+  // logged in, no MFA required
+} catch (err) {
+  if (err instanceof SmartlinksApiError && err.errorCode === 'MFA_REQUIRED') {
+    const { mfaSessionToken, availableFactors, preferredFactor, maskedDestinations } = err.details!;
+    // → route to a challenge UI; call authKit.mfaChallengeSend(clientId, mfaSessionToken, preferredFactor)
+  } else {
+    throw err;
+  }
+}
+```
+
+### Completing the challenge
+
+```ts
+// Send (or resend, or switch factor) a code on the same mfaSessionToken
+const sent = await authKit.mfaChallengeSend(clientId, mfaSessionToken, 'sms');
+// sent.destination is masked, e.g. "+1******1234"
+
+// Verify the code — behaves like login() on success: bearer token is adopted automatically
+const session = await authKit.mfaChallengeVerify(clientId, mfaSessionToken, '123456', /* trustDevice */ true, 'My Laptop');
+
+// Or finalize with a single-use recovery code instead
+const session = await authKit.mfaRecoveryCode(clientId, mfaSessionToken, recoveryCode);
+```
+
+`mfaSessionToken` is short-lived (10 min) and single-use — burned on 5 failed attempts
+(`MFA_TOO_MANY_ATTEMPTS`) or on success. Once burned/expired, there's no "resend within the
+same session" — the caller must restart from `login()`.
+
+### Trusted devices — "don't ask again on this device"
+
+There's no fingerprinting involved: a "recognized device" is purely "the caller presented a
+valid, unexpired, unrevoked `trustedDeviceToken`". Handle it like the native refresh token
+above — same secure storage, same persist-before-next-call discipline:
+
+```ts
+// 1) Persist trustedDeviceToken from a successful challenge (trustDevice: true)
+persistTrustedDeviceToken(session.trustedDeviceToken, session.trustedDeviceExpiresAt);
+
+// 2) Send it on every subsequent call to ANY of the six gated methods — if still valid,
+//    the challenge is skipped entirely. It isn't tied to which method the user challenged
+//    through, so "remember this device" works no matter which login method they pick next.
+const session = await authKit.login(clientId, email, password, storedTrustedDeviceToken);
+const session = await authKit.googleLogin(clientId, idToken, storedTrustedDeviceToken);
+const session = await authKit.exchangeWhatsAppSession(clientId, waToken, sessionKey, storedTrustedDeviceToken);
+// ...and so on for appleLogin (via opts), verifyPhoneCode, verifyMagicLink.
+// If it's revoked/expired, the server silently falls back to requiring a fresh challenge —
+// the method just throws MFA_REQUIRED again, no special-case handling needed.
+
+// 3) Let users audit/revoke devices from a Settings screen
+const { devices } = await authKit.listTrustedDevices(clientId);
+await authKit.revokeTrustedDevice(clientId, deviceId);
+```
+
+### Factor management (Settings → Security)
+
+Authenticated (bearer token) — same `mfaSessionToken` + code mechanism as login challenges,
+just against a `purpose: 'enroll'` challenge instead of `'login'`.
+
+```ts
+// Enroll email (uses the account's existing email)
+const { mfaSessionToken } = await authKit.enrollEmailMfa(clientId);
+await authKit.confirmEmailMfa(clientId, mfaSessionToken, code);
+
+// Enroll SMS
+const { mfaSessionToken: smsToken } = await authKit.enrollSmsMfa(clientId, '+61400000000');
+await authKit.confirmSmsMfa(clientId, smsToken, code);
+
+// Recovery codes — plaintext, shown exactly once; nothing else in the API returns them again
+const { recoveryCodes } = await authKit.generateMfaRecoveryCodes(clientId, password);
+
+// Inspect / remove
+const factors = await authKit.getMfaFactors(clientId);
+// factors: { enrolledFactors: { email?, sms? }, recoveryCodesRemaining, mfaEnabledForClient }
+await authKit.removeMfaFactor(clientId, 'sms', password);
+```
+
+> Enrollment endpoints don't currently check the client's `mfa.mode` — enrolling is possible
+> even when MFA is configured `'off'` for a client. Those factors simply won't be challenged
+> at login until an admin turns the mode on (via the existing admin AuthKit config update,
+> no new admin route in this pass).
+
+### MFA error codes
+
+| `errorCode` | HTTP | Meaning / client action |
+|---|---|---|
+| `MFA_REQUIRED` | 403 | From any of the six gated login methods — see above |
+| `INVALID_MFA_CODE` | 401 | Wrong code — let the user retry (attempts are capped) |
+| `MFA_TOO_MANY_ATTEMPTS` | 429 | 5 wrong attempts — the challenge is burned; restart from `login()` |
+| `MFA_FACTOR_NOT_ENROLLED` | 400 | Requested factor isn't enrolled — programming error if the UI only offers `availableFactors` |
+| `MFA_SESSION_EXPIRED` | 401 | `mfaSessionToken` past its 10-minute TTL — restart from `login()` |
+| `MFA_SESSION_INVALID` | 401 | Unknown/wrong-client/already-consumed token, or (on enroll confirm) mismatched user |
+| `RECOVERY_CODE_INVALID` | 401 | Wrong or already-used recovery code |
 
 ---
 

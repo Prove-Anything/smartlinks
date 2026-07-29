@@ -62,6 +62,31 @@ export interface Collection {
   allowAutoGenerateClaims?: boolean
 
   defaultAuthKitId: string // default auth kit for this collection, used for auth
+
+  /** Admin-configured collection behavior not exposed on public reads */
+  admin?: {
+    /**
+     * Redirect behavior for plain collection-level scans (a short link with
+     * no product/serial code in the path, e.g. `https://.../c/shortId`).
+     * Unset means such links always go to the normal collection page.
+     */
+    redirect?: CollectionRedirectConfig
+  }
+}
+
+/**
+ * Redirect rule for plain collection-level scans.
+ * - `fixed` / `dynamic` - redirect the entire collection to one URL/template,
+ *   defined right here via `url`/`template`.
+ * - `deep` - defer to the collection's product-level, facet-rule, and
+ *   collection-wide redirect config (checked in that order) instead.
+ */
+export interface CollectionRedirectConfig {
+  mode: 'fixed' | 'dynamic' | 'deep'
+  /** Required when mode === 'fixed' */
+  url?: string
+  /** Mustache template, required when mode === 'dynamic' */
+  template?: string
 }
 
 // Backwards compatibility alias

@@ -293,6 +293,7 @@ about:
 | Flag           | Gates                                                                 |
 | -------------- | ---------------------------------------------------------------------- |
 | `analytics`    | Analytics surfaces (dashboards, reporting, event exploration).       |
+| `authenticity` | Live authenticity tracking — flags genuine vs. counterfeit items and enables auditing/tracing on them (e.g. impossible-travel detection). |
 | `crm`          | Customer interaction / CRM — contact records, broadcasts, segments. Sub-features hang off the `crm.*` dotted prefix, e.g. `crm.broadcasts`, `crm.segments`. |
 | `hub`          | The Hub module.                                                      |
 | `portal`       | QR code scan portals.                                                |

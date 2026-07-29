@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.10  |  Generated: 2026-07-20T13:36:45.055Z
+Version: 1.15.14  |  Generated: 2026-07-29T07:45:17.540Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1139,6 +1139,17 @@ interface AnalyticsFilterRequest {
   claimIds?: string[]
   isAdmin?: boolean
   hasLocation?: boolean
+  * Filter web-events rows by the `source` column (list-match). Web-events
+  * only - has no effect on `source: 'tag'` queries.
+  *
+  * There is deliberately no singular `source` filter: the request's own
+  * top-level `source` field (`'events'` vs `'tag'`) already owns that name
+  * as the table selector and predates this column - same word, two
+  * different things. Use a single-element array (`sources: ['portal']`)
+  * for an exact-match filter.
+  sources?: string[]
+  redirectMode?: string
+  redirectModes?: string[]
 }
 ```
 
@@ -1420,11 +1431,10 @@ interface AppliedOverridesSummary {
 interface SystemBlock {
   basePlanId?: string
   * Stable capability tier microapps should branch on instead of
-  * `basePlanId` — see docs/appConfig.md §4.1a. One of
-  * `'simple_redirect' | 'rich_redirect' | 'inform' | 'engage'`, but treat
-  * it as an open string: unknown values should fail closed to the next
-  * tier down.
-  productMode?: string
+  * `basePlanId` — see docs/appConfig.md §4.1. Known tiers are `ProductMode`;
+  * an unrecognised value is a future tier your code doesn't know about yet
+  * — fail closed to the nearest tier you do understand rather than erroring.
+  productMode?: ProductMode | (string & {})
   addOnKeys?: string[]
   apps?: string[]
   * Explicit overrides only — an absent key is NOT "off". Resolve with
@@ -1456,6 +1466,8 @@ interface AppConfigSettings {
   system?: SystemBlock
 }
 ```
+
+**ProductMode** = `'simple_redirect' | 'rich_redirect' | 'inform' | 'engage'`
 
 ### appManifest
 
@@ -3092,6 +3104,70 @@ interface AppleLoginOptions {
   * these again, and never inside the token. Forwarded so the server can persist the
   * display name on first account creation. Treated as untrusted (never used for identity).
   userInfo?: { email?: string; name?: string }
+  * A previously-issued trusted-device token (from a prior MFA `challenge/verify`
+  * or `challenge/recovery-code` response). If still valid, the server skips any
+  * step-up challenge for this login. See `SDK_AUTHKIT_MFA_UPDATE.md` §3.
+  trustedDeviceToken?: string
+}
+```
+
+**MfaRequiredDetails** (interface)
+```typescript
+interface MfaRequiredDetails {
+  mfaSessionToken: string
+  availableFactors: Array<'email' | 'sms'>
+  preferredFactor: 'email' | 'sms'
+  maskedDestinations: { email?: string; sms?: string }
+}
+```
+
+**MfaChallengeSendResponse** (interface)
+```typescript
+interface MfaChallengeSendResponse {
+  success: true
+  factor: 'email' | 'sms'
+  destination: string
+  expiresAt: string
+}
+```
+
+**MfaEnrollSendResponse** (interface)
+```typescript
+interface MfaEnrollSendResponse {
+  mfaSessionToken: string
+  destination: string
+  expiresAt: string
+}
+```
+
+**MfaEnrolledResponse** (interface)
+```typescript
+interface MfaEnrolledResponse {
+  enrolled: true
+  factor: 'email' | 'sms'
+}
+```
+
+**MfaFactorsResponse** (interface)
+```typescript
+interface MfaFactorsResponse {
+  enrolledFactors: {
+  email?: { enrolledAt: string; destination: string }
+  sms?: { enrolledAt: string; destination: string }
+  }
+  recoveryCodesRemaining: number
+  mfaEnabledForClient: boolean
+}
+```
+
+**TrustedDevice** (interface)
+```typescript
+interface TrustedDevice {
+  id: string
+  label: string | null
+  createdAtMs: number
+  lastUsedAtMs: number
+  expiresAtMs: number
 }
 ```
 
@@ -3343,6 +3419,8 @@ interface AuthKitConfig {
 **RefreshErrorCode** = ``
 
 **AuthKitErrorCode** = ``
+
+**MfaErrorCode** = ``
 
 **VerifyStatus** = `'pending' | 'verified' | 'failed' | 'expired' | 'unknown'`
 
@@ -3704,6 +3782,21 @@ interface Collection {
   portalUrl?: string // URL for the collection's portal (if applicable)
   allowAutoGenerateClaims?: boolean
   defaultAuthKitId: string // default auth kit for this collection, used for auth
+  admin?: {
+  * Redirect behavior for plain collection-level scans (a short link with
+  * no product/serial code in the path, e.g. `https://.../c/shortId`).
+  * Unset means such links always go to the normal collection page.
+  redirect?: CollectionRedirectConfig
+  }
+}
+```
+
+**CollectionRedirectConfig** (interface)
+```typescript
+interface CollectionRedirectConfig {
+  mode: 'fixed' | 'dynamic' | 'deep'
+  url?: string
+  template?: string
 }
 ```
 
@@ -8542,20 +8635,20 @@ Gets current account information for the logged in user. Returns user, owner, ac
 
 ### authKit
 
-**login**(clientId: string, email: string, password: string) → `Promise<AuthLoginResponse>`
-Login with email + password (public).
+**login**(clientId: string, email: string, password: string, trustedDeviceToken?: string) → `Promise<AuthLoginResponse>`
+Login with email + password (public). When the client's MFA policy requires a step-up, the server returns **403 `MFA_REQUIRED`** instead of a session — `login()` throws a `SmartlinksApiError` with `err.errorResponse?.errorCode === 'MFA_REQUIRED'` and the challenge details in `err.details` (see {@link MfaRequiredDetails}). Route the caller to {@link mfaChallengeSend} on that error; this method's return type is unchanged. returned one (via {@link mfaChallengeVerify}/{@link mfaRecoveryCode} with `trustDevice: true`), pass it here to skip the challenge entirely as long as it's still valid. If it's revoked/expired, the server silently falls back to requiring a fresh challenge — `login()` just returns `MFA_REQUIRED` again, no special handling.
 
 **register**(clientId: string, data: { email: string; password: string; displayName?: string; accountData?: Record<string, any> }) → `Promise<AuthLoginResponse>`
-Register a new user (public).
+Register a new user (public). Not gated by step-up MFA — a brand-new user has no enrolled factors yet, so there's nothing to challenge against.
 
-**googleLogin**(clientId: string, idToken: string) → `Promise<AuthLoginResponse>`
-Google OAuth login via ID token (public).
+**googleLogin**(clientId: string, idToken: string, trustedDeviceToken?: string) → `Promise<AuthLoginResponse>`
+Google OAuth login via ID token (public). Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape. {@link mfaChallengeVerify}/{@link mfaRecoveryCode} (with `trustDevice: true`) to skip the challenge on this device, same as {@link login}.
 
 **googleCodeLogin**(clientId: string, code: string, redirectUri: string) → `Promise<AuthLoginResponse>`
 Google OAuth login via server-side authorization code (public).
 
 **appleLogin**(clientId: string, identityToken: string, opts?: AppleLoginOptions) → `Promise<AuthLoginResponse>`
-Sign in with Apple via an Apple identity token (public). Mirrors {@link googleLogin}. On success the returned bearer token is stored automatically and the cache is invalidated. Notable error codes (thrown as `SmartlinksApiError`, read via `err.errorCode`): - `MISSING_APPLE_TOKEN` (400), `APPLE_AUTH_NOT_CONFIGURED` (400), `INVALID_APPLE_TOKEN` (401), `APPLE_AUTH_FAILED` (500) - `ACCOUNT_EXISTS_UNVERIFIED` (409) — an unverified account already owns this email; the server refuses to silently link. `err.details.requiresEmailVerification` is `true`. Recoverable: the user should sign in with their password (or reset it), then link Apple from settings. **The same 409 can now come back from {@link googleLogin}** under the shared verified-to-verified linking policy.
+Sign in with Apple via an Apple identity token (public). Mirrors {@link googleLogin}. On success the returned bearer token is stored automatically and the cache is invalidated. Notable error codes (thrown as `SmartlinksApiError`, read via `err.errorCode`): - `MISSING_APPLE_TOKEN` (400), `APPLE_AUTH_NOT_CONFIGURED` (400), `INVALID_APPLE_TOKEN` (401), `APPLE_AUTH_FAILED` (500) - `ACCOUNT_EXISTS_UNVERIFIED` (409) — an unverified account already owns this email; the server refuses to silently link. `err.details.requiresEmailVerification` is `true`. Recoverable: the user should sign in with their password (or reset it), then link Apple from settings. **The same 409 can now come back from {@link googleLogin}** under the shared verified-to-verified linking policy. Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape. Pass `opts.trustedDeviceToken` to skip the challenge on a recognized device.
 
 **refreshToken**(clientId: string, refreshToken: string) → `Promise<RefreshResponse>`
 Exchange a refresh token for a fresh access token (public — the refresh token IS the credential). **Native sessions only**; refresh tokens are issued only when the host opted in via `initializeApi({ platform: 'native' })`. On success the new access token is stored automatically (`setBearerToken`). The returned `refreshToken` is **rotated** — the caller must persist it and discard the old one before refreshing again. ⚠️ **Single-use, no retry, serialize calls.** This method issues exactly one request and never retries: replaying a consumed refresh token triggers `REFRESH_TOKEN_REUSE_DETECTED` (the whole session family is revoked). The caller is responsible for ensuring only one refresh is in flight at a time (e.g. across tabs or resume events). Errors (thrown as `SmartlinksApiError`, read via `err.errorCode`): `MISSING_REFRESH_TOKEN` (400), `INVALID_REFRESH_TOKEN` (401), `REFRESH_TOKEN_REUSE_DETECTED` (401) — the last two mean a hard logout.
@@ -8566,26 +8659,26 @@ Revoke a refresh token's entire family server-side (that device's whole rotation
 **sendMagicLink**(clientId: string, data: { email: string; redirectUrl: string; accountData?: Record<string, any> }) → `Promise<MagicLinkSendResponse>`
 Send a magic link email to the user (public).
 
-**verifyMagicLink**(clientId: string, token: string) → `Promise<MagicLinkVerifyResponse>`
-Verify a magic link token and authenticate/create the user (public).
+**verifyMagicLink**(clientId: string, token: string, trustedDeviceToken?: string) → `Promise<MagicLinkVerifyResponse>`
+Verify a magic link token and authenticate/create the user (public). Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape.
 
 **sendPhoneCode**(clientId: string, phoneNumber: string) → `Promise<PhoneSendCodeResponse>`
 Send phone verification code (public).
 
-**verifyPhoneCode**(clientId: string, phoneNumber: string, code: string) → `Promise<PhoneVerifyResponse>`
-Verify phone verification code (public).
+**verifyPhoneCode**(clientId: string, phoneNumber: string, code: string, trustedDeviceToken?: string) → `Promise<PhoneVerifyResponse>`
+Verify phone verification code (public). Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape.
 
 **sendWhatsApp**(clientId: string, body: SendWhatsAppRequest = {}) → `Promise<SendWhatsAppResponse>`
 Send a WhatsApp verification deep-link (public).
 
 **verifyWhatsApp**(clientId: string, token: string, phoneNumber: string) → `Promise<VerifyWhatsAppResponse>`
-Manually verify WhatsApp token if inbound webhook path is unavailable (legacy/public fallback).
+Manually verify WhatsApp token if inbound webhook path is unavailable (legacy/public fallback). Not gated by step-up MFA — this endpoint only confirms the code, it never issues a session/bearer token, so there is nothing to challenge. {@link exchangeWhatsAppSession} is the WhatsApp method that's gated.
 
 **getWhatsAppStatus**(clientId: string, token: string) → `Promise<WhatsAppStatusResponse>`
 Poll WhatsApp verification status for a token (public).
 
-**exchangeWhatsAppSession**(clientId: string, token: string, sessionKey: string) → `Promise<ExchangeWhatsAppSessionResponse>`
-Exchange a verified WhatsApp token for an Auth Kit session (public).
+**exchangeWhatsAppSession**(clientId: string, token: string, sessionKey: string, trustedDeviceToken?: string) → `Promise<ExchangeWhatsAppSessionResponse>`
+Exchange a verified WhatsApp token for an Auth Kit session (public). Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape. This is the WhatsApp method that needs `trustedDeviceToken`, not {@link verifyWhatsApp} (which never issues a session).
 
 **sendSmsVerify**(clientId: string, body: SendSmsVerifyRequest) → `Promise<SendSmsVerifyResponse>`
 Send an SMS click-to-verify link (public).
@@ -8635,23 +8728,59 @@ Update the authenticated user's profile and replace the bearer token when refres
 **deleteAccount**(clientId: string, password: string, confirmText: string) → `Promise<SuccessResponse>`
 Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
 
+**mfaChallengeSend**(clientId: string, mfaSessionToken: string, factor: 'email' | 'sms') → `Promise<MfaChallengeSendResponse>`
+Send (or resend) an MFA challenge code to the given factor (public).
+
+**mfaChallengeVerify**(clientId: string, mfaSessionToken: string, code: string, trustDevice?: boolean, deviceLabel?: string) → `Promise<MfaFinalizeResponse>`
+Verify an MFA challenge code and finalize the login (public). On success this behaves like {@link login} — the bearer token is adopted and the cache invalidated. it and pass it to future {@link login} calls to skip the challenge on this device.
+
+**mfaRecoveryCode**(clientId: string, mfaSessionToken: string, code: string, trustDevice?: boolean, deviceLabel?: string) → `Promise<MfaFinalizeResponse>`
+Finalize a challenged login using a single-use recovery code instead of a sent code (public). Same finalize-session behaviour as {@link mfaChallengeVerify}.
+
+**getMfaFactors**(clientId: string) → `Promise<MfaFactorsResponse>`
+List enrolled factors and recovery-code count for the current user (authenticated).
+
+**enrollEmailMfa**(clientId: string) → `Promise<MfaEnrollSendResponse>`
+Begin email-factor enrollment; sends a code to the account's existing email (authenticated).
+
+**confirmEmailMfa**(clientId: string, mfaSessionToken: string, code: string) → `Promise<MfaEnrolledResponse>`
+Confirm email-factor enrollment with the code sent by {@link enrollEmailMfa} (authenticated).
+
+**enrollSmsMfa**(clientId: string, phoneNumber: string) → `Promise<MfaEnrollSendResponse>`
+Begin SMS-factor enrollment; sends a code to the given phone number (authenticated).
+
+**confirmSmsMfa**(clientId: string, mfaSessionToken: string, code: string) → `Promise<MfaEnrolledResponse>`
+Confirm SMS-factor enrollment with the code sent by {@link enrollSmsMfa} (authenticated).
+
+**generateMfaRecoveryCodes**(clientId: string, password: string) → `Promise<`
+Generate a fresh set of recovery codes, invalidating any previous set (authenticated). Returned **in plaintext, exactly once** — nothing else in the API ever returns them again, so the caller must display/export them immediately.
+
+**removeMfaFactor**(clientId: string, factor: 'email' | 'sms', password: string) → `Promise<SuccessResponse>`
+Remove an enrolled MFA factor (authenticated). Server route is DELETE with a body.
+
+**listTrustedDevices**(clientId: string) → `Promise<`
+List devices trusted to skip MFA challenges for the current user (authenticated).
+
+**revokeTrustedDevice**(clientId: string, id: string) → `Promise<SuccessResponse>`
+Revoke a single trusted device by id (authenticated).
+
 **load**(authKitId: string) → `Promise<AuthKitConfig>`
-Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
+Revoke a single trusted device by id (authenticated).
 
 **get**(collectionId: string, authKitId: string) → `Promise<AuthKitConfig>`
-Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
+Revoke a single trusted device by id (authenticated).
 
 **list**(collectionId: string, admin?: boolean) → `Promise<AuthKitConfig[]>`
-Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
+Revoke a single trusted device by id (authenticated).
 
 **create**(collectionId: string, data: any) → `Promise<AuthKitConfig>`
-Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
+Revoke a single trusted device by id (authenticated).
 
 **update**(collectionId: string, authKitId: string, data: any) → `Promise<AuthKitConfig>`
-Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
+Revoke a single trusted device by id (authenticated).
 
 **remove**(collectionId: string, authKitId: string) → `Promise<void>`
-Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
+Revoke a single trusted device by id (authenticated).
 
 ### batch
 

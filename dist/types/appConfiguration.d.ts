@@ -69,17 +69,25 @@ export interface AppliedOverridesSummary {
     accountType?: boolean;
     note?: string;
 }
+/**
+ * Capability ladder for `system.productMode`, low → high. See
+ * docs/appConfig.md §4.1 for what each tier unlocks. Not exhaustive going
+ * forward — `SystemBlock.productMode` accepts this union for autocomplete
+ * but also any other string, since future tiers will show up as new values
+ * before this type is updated to know about them.
+ */
+export type ProductMode = 'simple_redirect' | 'rich_redirect' | 'inform' | 'engage';
 /** Resolved entitlements — written only by `entitlements-reconcile`, safe for every client to read. */
 export interface SystemBlock {
+    /** Internal billing/plan identifier — see docs/appConfig.md §4.1. Not a capability signal; use `productMode` for that. */
     basePlanId?: string;
     /**
      * Stable capability tier microapps should branch on instead of
-     * `basePlanId` — see docs/appConfig.md §4.1a. One of
-     * `'simple_redirect' | 'rich_redirect' | 'inform' | 'engage'`, but treat
-     * it as an open string: unknown values should fail closed to the next
-     * tier down.
+     * `basePlanId` — see docs/appConfig.md §4.1. Known tiers are `ProductMode`;
+     * an unrecognised value is a future tier your code doesn't know about yet
+     * — fail closed to the nearest tier you do understand rather than erroring.
      */
-    productMode?: string;
+    productMode?: ProductMode | (string & {});
     addOnKeys?: string[];
     /** Apps unlocked by add-ons. */
     apps?: string[];

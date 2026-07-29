@@ -1,4 +1,4 @@
-import { request, post, put, del, setBearerToken, invalidateCache } from "../http";
+import { request, post, put, del, requestWithOptions, setBearerToken, invalidateCache } from "../http";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
@@ -8,9 +8,26 @@ export var authKit;
     /* ===================================
      * Authentication (Per client)
      * =================================== */
-    /** Login with email + password (public). */
-    async function login(clientId, email, password) {
-        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/login`, { email, password });
+    /**
+     * Login with email + password (public).
+     *
+     * When the client's MFA policy requires a step-up, the server returns **403
+     * `MFA_REQUIRED`** instead of a session — `login()` throws a `SmartlinksApiError` with
+     * `err.errorResponse?.errorCode === 'MFA_REQUIRED'` and the challenge details in
+     * `err.details` (see {@link MfaRequiredDetails}). Route the caller to
+     * {@link mfaChallengeSend} on that error; this method's return type is unchanged.
+     *
+     * @param trustedDeviceToken - Optional. If a previous MFA challenge on this device
+     *   returned one (via {@link mfaChallengeVerify}/{@link mfaRecoveryCode} with
+     *   `trustDevice: true`), pass it here to skip the challenge entirely as long as it's
+     *   still valid. If it's revoked/expired, the server silently falls back to requiring a
+     *   fresh challenge — `login()` just returns `MFA_REQUIRED` again, no special handling.
+     */
+    async function login(clientId, email, password, trustedDeviceToken) {
+        const body = { email, password };
+        if (trustedDeviceToken)
+            body.trustedDeviceToken = trustedDeviceToken;
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/login`, body);
         if (res.token) {
             setBearerToken(res.token);
             invalidateCache();
@@ -18,14 +35,27 @@ export var authKit;
         return res;
     }
     authKit.login = login;
-    /** Register a new user (public). */
+    /**
+     * Register a new user (public).
+     *
+     * Not gated by step-up MFA — a brand-new user has no enrolled factors yet, so there's
+     * nothing to challenge against.
+     */
     async function register(clientId, data) {
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/register`, data);
     }
     authKit.register = register;
-    /** Google OAuth login via ID token (public). */
-    async function googleLogin(clientId, idToken) {
-        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/google`, { idToken });
+    /**
+     * Google OAuth login via ID token (public).
+     *
+     * Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape.
+     *
+     * @param trustedDeviceToken - Optional. Pass a token previously returned by
+     *   {@link mfaChallengeVerify}/{@link mfaRecoveryCode} (with `trustDevice: true`) to skip
+     *   the challenge on this device, same as {@link login}.
+     */
+    async function googleLogin(clientId, idToken, trustedDeviceToken) {
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/google`, { idToken, trustedDeviceToken });
         if (res.token) {
             setBearerToken(res.token);
             invalidateCache();
@@ -57,6 +87,9 @@ export var authKit;
      *   is `true`. Recoverable: the user should sign in with their password (or reset it),
      *   then link Apple from settings. **The same 409 can now come back from
      *   {@link googleLogin}** under the shared verified-to-verified linking policy.
+     *
+     * Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape. Pass
+     * `opts.trustedDeviceToken` to skip the challenge on a recognized device.
      *
      * @see AppleLoginOptions
      */
@@ -121,9 +154,15 @@ export var authKit;
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/magic-link/send`, data);
     }
     authKit.sendMagicLink = sendMagicLink;
-    /** Verify a magic link token and authenticate/create the user (public). */
-    async function verifyMagicLink(clientId, token) {
-        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/magic-link/verify`, { token });
+    /**
+     * Verify a magic link token and authenticate/create the user (public).
+     *
+     * Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape.
+     *
+     * @param trustedDeviceToken - Optional. See {@link login}.
+     */
+    async function verifyMagicLink(clientId, token, trustedDeviceToken) {
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/magic-link/verify`, { token, trustedDeviceToken });
         if (res.token) {
             setBearerToken(res.token);
             invalidateCache();
@@ -136,9 +175,15 @@ export var authKit;
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/phone/send-code`, { phoneNumber });
     }
     authKit.sendPhoneCode = sendPhoneCode;
-    /** Verify phone verification code (public). */
-    async function verifyPhoneCode(clientId, phoneNumber, code) {
-        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/phone/verify`, { phoneNumber, code });
+    /**
+     * Verify phone verification code (public).
+     *
+     * Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape.
+     *
+     * @param trustedDeviceToken - Optional. See {@link login}.
+     */
+    async function verifyPhoneCode(clientId, phoneNumber, code, trustedDeviceToken) {
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/phone/verify`, { phoneNumber, code, trustedDeviceToken });
         setBearerToken(res.token);
         invalidateCache();
         return res;
@@ -149,7 +194,13 @@ export var authKit;
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/send`, body);
     }
     authKit.sendWhatsApp = sendWhatsApp;
-    /** Manually verify WhatsApp token if inbound webhook path is unavailable (legacy/public fallback). */
+    /**
+     * Manually verify WhatsApp token if inbound webhook path is unavailable (legacy/public fallback).
+     *
+     * Not gated by step-up MFA — this endpoint only confirms the code, it never issues a
+     * session/bearer token, so there is nothing to challenge. {@link exchangeWhatsAppSession}
+     * is the WhatsApp method that's gated.
+     */
     async function verifyWhatsApp(clientId, token, phoneNumber) {
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/verify`, { token, phoneNumber });
     }
@@ -160,9 +211,17 @@ export var authKit;
         return request(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/status?token=${encodedToken}`);
     }
     authKit.getWhatsAppStatus = getWhatsAppStatus;
-    /** Exchange a verified WhatsApp token for an Auth Kit session (public). */
-    async function exchangeWhatsAppSession(clientId, token, sessionKey) {
-        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/exchange-session`, { token, sessionKey });
+    /**
+     * Exchange a verified WhatsApp token for an Auth Kit session (public).
+     *
+     * Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape. This is
+     * the WhatsApp method that needs `trustedDeviceToken`, not {@link verifyWhatsApp} (which
+     * never issues a session).
+     *
+     * @param trustedDeviceToken - Optional. See {@link login}.
+     */
+    async function exchangeWhatsAppSession(clientId, token, sessionKey, trustedDeviceToken) {
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/whatsapp/exchange-session`, { token, sessionKey, trustedDeviceToken });
         setBearerToken(res.token);
         invalidateCache();
         return res;
@@ -277,6 +336,101 @@ export var authKit;
         return res;
     }
     authKit.deleteAccount = deleteAccount;
+    /* ===================================
+     * Step-up MFA — completing a challenged login (public)
+     *
+     * Called after login() throws MFA_REQUIRED. mfaSessionToken is short-lived (10 min) and
+     * single-use — burned on 5 failed attempts (MFA_TOO_MANY_ATTEMPTS) or on success.
+     * challenge/send can be called again on the same token (while unexpired/unburned) to
+     * switch factors or resend.
+     * =================================== */
+    /** Send (or resend) an MFA challenge code to the given factor (public). */
+    async function mfaChallengeSend(clientId, mfaSessionToken, factor) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/mfa/challenge/send`, { mfaSessionToken, factor });
+    }
+    authKit.mfaChallengeSend = mfaChallengeSend;
+    /**
+     * Verify an MFA challenge code and finalize the login (public). On success this behaves
+     * like {@link login} — the bearer token is adopted and the cache invalidated.
+     *
+     * @param trustDevice - When `true`, the response includes `trustedDeviceToken` — persist
+     *   it and pass it to future {@link login} calls to skip the challenge on this device.
+     */
+    async function mfaChallengeVerify(clientId, mfaSessionToken, code, trustDevice, deviceLabel) {
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/mfa/challenge/verify`, { mfaSessionToken, code, trustDevice, deviceLabel });
+        if (res.token) {
+            setBearerToken(res.token);
+            invalidateCache();
+        }
+        return res;
+    }
+    authKit.mfaChallengeVerify = mfaChallengeVerify;
+    /**
+     * Finalize a challenged login using a single-use recovery code instead of a sent code
+     * (public). Same finalize-session behaviour as {@link mfaChallengeVerify}.
+     */
+    async function mfaRecoveryCode(clientId, mfaSessionToken, code, trustDevice, deviceLabel) {
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/mfa/challenge/recovery-code`, { mfaSessionToken, code, trustDevice, deviceLabel });
+        if (res.token) {
+            setBearerToken(res.token);
+            invalidateCache();
+        }
+        return res;
+    }
+    authKit.mfaRecoveryCode = mfaRecoveryCode;
+    /* ===================================
+     * Step-up MFA — factor management (Authenticated)
+     * =================================== */
+    /** List enrolled factors and recovery-code count for the current user (authenticated). */
+    async function getMfaFactors(clientId) {
+        return request(`/authkit/${encodeURIComponent(clientId)}/mfa/factors`);
+    }
+    authKit.getMfaFactors = getMfaFactors;
+    /** Begin email-factor enrollment; sends a code to the account's existing email (authenticated). */
+    async function enrollEmailMfa(clientId) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/mfa/factors/email/enroll`, {});
+    }
+    authKit.enrollEmailMfa = enrollEmailMfa;
+    /** Confirm email-factor enrollment with the code sent by {@link enrollEmailMfa} (authenticated). */
+    async function confirmEmailMfa(clientId, mfaSessionToken, code) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/mfa/factors/email/confirm`, { mfaSessionToken, code });
+    }
+    authKit.confirmEmailMfa = confirmEmailMfa;
+    /** Begin SMS-factor enrollment; sends a code to the given phone number (authenticated). */
+    async function enrollSmsMfa(clientId, phoneNumber) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/mfa/factors/sms/enroll`, { phoneNumber });
+    }
+    authKit.enrollSmsMfa = enrollSmsMfa;
+    /** Confirm SMS-factor enrollment with the code sent by {@link enrollSmsMfa} (authenticated). */
+    async function confirmSmsMfa(clientId, mfaSessionToken, code) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/mfa/factors/sms/confirm`, { mfaSessionToken, code });
+    }
+    authKit.confirmSmsMfa = confirmSmsMfa;
+    /**
+     * Generate a fresh set of recovery codes, invalidating any previous set (authenticated).
+     * Returned **in plaintext, exactly once** — nothing else in the API ever returns them
+     * again, so the caller must display/export them immediately.
+     */
+    async function generateMfaRecoveryCodes(clientId, password) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/mfa/recovery-codes/generate`, { password });
+    }
+    authKit.generateMfaRecoveryCodes = generateMfaRecoveryCodes;
+    /** Remove an enrolled MFA factor (authenticated). Server route is DELETE with a body. */
+    async function removeMfaFactor(clientId, factor, password) {
+        const path = `/authkit/${encodeURIComponent(clientId)}/mfa/factors/${factor}`;
+        return requestWithOptions(path, { method: 'DELETE', body: JSON.stringify({ password }) });
+    }
+    authKit.removeMfaFactor = removeMfaFactor;
+    /** List devices trusted to skip MFA challenges for the current user (authenticated). */
+    async function listTrustedDevices(clientId) {
+        return request(`/authkit/${encodeURIComponent(clientId)}/mfa/trusted-devices`);
+    }
+    authKit.listTrustedDevices = listTrustedDevices;
+    /** Revoke a single trusted device by id (authenticated). */
+    async function revokeTrustedDevice(clientId, id) {
+        return del(`/authkit/${encodeURIComponent(clientId)}/mfa/trusted-devices/${encodeURIComponent(id)}`);
+    }
+    authKit.revokeTrustedDevice = revokeTrustedDevice;
     /* ===================================
      * Collection-based AuthKit
      * =================================== */

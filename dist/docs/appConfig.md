@@ -60,11 +60,15 @@ export interface AppEntry {
   [k: string]: unknown;           // per-module inline settings preserved
 }
 
+/** Known `productMode` tiers, low → high — see §4.1. Not exhaustive; unrecognised values are future tiers. */
+export type ProductMode = 'simple_redirect' | 'rich_redirect' | 'inform' | 'engage';
+
 /** Resolved entitlements — safe for every client to read. */
 export interface SystemBlock {
+  /** Internal billing identifier — not a capability signal, see §4. */
   basePlanId?: string;
-  /** Stable capability tier — see §4.1a. Prefer this over basePlanId. */
-  productMode?: string;
+  /** Stable capability tier — see §4.1. Prefer this over basePlanId. */
+  productMode?: ProductMode | (string & {});
   addOnKeys?: string[];
   apps?: string[];                       // apps unlocked by add-ons
   features?: Record<string, boolean>;    // explicit overrides only — see §4.4 for absent-key resolution
@@ -186,22 +190,32 @@ Written only by `entitlements-reconcile`. Represents the union of:
 - every add-on line item on their Stripe subscription
 - `systemPrivate.overrides` (applied last, always wins)
 
-### 4.1 `basePlanId`
+`basePlanId` is an internal Stripe billing/plan identifier (string,
+sourced from subscription metadata) — a billing concern, not a capability
+signal. Don't branch app behavior on its literal value or its internal
+plan names; that's what `productMode` is for.
 
-String id of the tier. Sourced from Stripe subscription metadata
-(`basePlanId` or legacy `planId`). Examples: `simple_redirect`,
-`rich_redirect`, `inform`, `enrich`, `engage`, `hub_inform`,
-`hub_enrich`, `hub_engage`.
-
-### 4.1a `productMode`
+### 4.1 `productMode`
 
 Stable capability tier the app should branch on instead of `basePlanId`
-(a billing identity that can change). Written by `entitlements-reconcile`
-on every sync.
+(a billing identity that can change independently of capability). Written
+by `entitlements-reconcile` on every sync. Typed as `ProductMode` in the
+SDK (`src/types/appConfiguration.ts`) — a union of the known tiers below,
+plus any other string, since future tiers will show up as new values
+before the SDK type is updated to know their names.
 
-Current ladder, low → high: `simple_redirect` → `rich_redirect` →
-`inform` → `engage`. Treat it as an open/extensible string — unknown
-values (future tiers) should fail closed to the tier below what you need.
+Ladder, low → high:
+
+| `productMode`     | Unlocks (roughly)                                                              |
+| ------------------ | --------------------------------------------------------------------------------- |
+| `simple_redirect`  | Redirect-only: scanning a tag/QR sends the user straight to a URL — no product/proof page, no catalog UI. |
+| `rich_redirect`    | Adds a rendered product/proof page (image, description, spec data) — still no deeper apps. |
+| `inform`           | Adds informational surfaces beyond the basic page — documentation, provenance, facts-style apps. |
+| `engage`           | Adds engagement/ownership capabilities — claim, CRM, loyalty, interaction tracking. Top of the ladder today. |
+
+> These four one-liners are inferred from the tier names and ladder
+> ordering, not copied from an authoritative source — worth a sanity check
+> against the actual capability gating before treating them as precise.
 
 ```ts
 const mode = cfg.system?.productMode;
@@ -209,6 +223,9 @@ if (mode === 'simple_redirect' || mode === 'rich_redirect') {
   // redirect-only surface — hide catalog UI
 }
 ```
+
+Unknown values (future tiers your code predates) should fail closed to
+the nearest tier you understand, not throw or assume the top tier.
 
 Not a feature flag and not a billing key — per-capability gating still
 goes through `features` (§4.4); Stripe price selection still goes
@@ -276,6 +293,7 @@ about:
 | Flag           | Gates                                                                 |
 | -------------- | ---------------------------------------------------------------------- |
 | `analytics`    | Analytics surfaces (dashboards, reporting, event exploration).       |
+| `authenticity` | Live authenticity tracking — flags genuine vs. counterfeit items and enables auditing/tracing on them (e.g. impossible-travel detection). |
 | `crm`          | Customer interaction / CRM — contact records, broadcasts, segments. Sub-features hang off the `crm.*` dotted prefix, e.g. `crm.broadcasts`, `crm.segments`. |
 | `hub`          | The Hub module.                                                      |
 | `portal`       | QR code scan portals.                                                |
