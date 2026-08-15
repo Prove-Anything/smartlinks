@@ -495,6 +495,15 @@ export function setBearerToken(token: string | undefined) {
 }
 
 /**
+ * Returns the bearer token currently held by the SDK, or `undefined` if none is set.
+ * In proxy mode, credentials are held by the parent frame, not the local SDK,
+ * so this returns `undefined` even when the caller is authenticated.
+ */
+export function getBearerToken(): string | undefined {
+  return bearerToken
+}
+
+/**
  * Get the currently configured API base URL.
  * Returns null if initializeApi() has not been called yet.
  */

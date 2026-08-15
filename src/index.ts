@@ -1,7 +1,7 @@
 // src/index.ts
 // Top-level entrypoint of the npm package. Re-export initializeApi + all namespaces.
 
-export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, isProxyEnabled, setBearerToken } from "./http"
+export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, isProxyEnabled, setBearerToken, getBearerToken } from "./http"
 export * from "./api"
 export * from "./types"
 // Iframe namespace

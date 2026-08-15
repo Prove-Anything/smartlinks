@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.14  |  Generated: 2026-07-29T07:45:17.540Z
+Version: 1.15.16  |  Generated: 2026-08-15T11:42:50.997Z
 
 This is a concise summary of all available API functions and types.
 
@@ -169,6 +169,9 @@ Replace or augment globally applied custom headers.
 
 **setBearerToken**(token: string | undefined) → `void`
 Allows setting the bearerToken at runtime (e.g. after login/logout). Clears the HTTP cache whenever the token actually changes so that stale user-scoped responses (e.g. /account/profile) are not served after a login or logout event.
+
+**getBearerToken**() → `string | undefined`
+Returns the bearer token currently held by the SDK, or `undefined` if none is set. In proxy mode, credentials are held by the parent frame, not the local SDK, so this returns `undefined` even when the caller is authenticated.
 
 **getBaseURL**() → `string | null`
 Get the currently configured API base URL. Returns null if initializeApi() has not been called yet.
@@ -2456,6 +2459,7 @@ interface UploadAssetOptions {
   onProgress?: (percent: number) => void
   appId?: string
   admin?: boolean
+  signal?: AbortSignal
 }
 ```
 
@@ -2633,6 +2637,43 @@ interface PublicTokenUploadOptions {
   name?: string
   metadata?: Record<string, any>
   onProgress?: (percent: number) => void
+}
+```
+
+**CreateResumableUploadOptions** (interface)
+```typescript
+interface CreateResumableUploadOptions {
+  file: File
+  scope:
+  | { type: 'collection'; collectionId: string }
+  | { type: 'product'; collectionId: string; productId: string }
+  | { type: 'proof'; collectionId: string; productId: string; proofId: string }
+  name?: string
+  metadata?: Record<string, any>
+  appId?: string
+  admin?: boolean
+  * Upload token id (from {@link requestUploadToken}) for public/unauthenticated
+  * uploads. When provided, the public resumable route is used.
+  token?: string
+}
+```
+
+**ResumableStartOptions** (interface)
+```typescript
+interface ResumableStartOptions {
+  onProgress?: (percent: number) => void
+  signal?: AbortSignal
+}
+```
+
+**ResumableUploadHandle** (interface)
+```typescript
+interface ResumableUploadHandle {
+  readonly id: string
+  readonly size: number
+  start(options?: ResumableStartOptions): Promise<Asset>
+  pause(): void
+  resume(options?: ResumableStartOptions): Promise<Asset>
 }
 ```
 
@@ -8475,6 +8516,12 @@ Request a single-use upload token for a public (unauthenticated) upload. The tok
 
 **publicUploadWithToken**(options: PublicTokenUploadOptions) → `Promise<Asset>`
 Upload a file using a single-use upload token (no admin auth required). Assets are created with `status: 'pending_review'` when the token policy has `reviewRequired: true`.
+
+**createResumableUpload**(options: CreateResumableUploadOptions) → `Promise<ResumableUploadHandle>`
+Open a resumable upload for a large file (e.g. video). The bytes are chunked directly to storage and can be paused/resumed — including after a page reload or app restart, by persisting `handle.id` and calling {@link resumeUpload}. ```ts const handle = await asset.createResumableUpload({ file, scope, appId }) localStorage.setItem('pendingUpload', handle.id)   // survives reload const uploaded = await handle.start({ onProgress: p => setPct(p) }) ```
+
+**resumeUpload**(handleId: string, file: File) → `Promise<ResumableUploadHandle>`
+Resume a previously-created resumable upload after a reload/app restart. Pass the persisted `handle.id` and the same `File`; the transfer continues from the offset storage already holds rather than restarting.
 
 ### async
 

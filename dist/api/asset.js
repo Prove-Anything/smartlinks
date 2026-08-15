@@ -104,6 +104,14 @@ export var asset;
                     }
                 };
                 xhr.onerror = () => reject(new AssetUploadError("Network error during asset upload", 'NETWORK_ERROR'));
+                if (options.signal) {
+                    if (options.signal.aborted) {
+                        xhr.abort();
+                        return reject(new AssetUploadError("Upload aborted", 'NETWORK_ERROR'));
+                    }
+                    options.signal.addEventListener('abort', () => xhr.abort(), { once: true });
+                    xhr.onabort = () => reject(new AssetUploadError("Upload aborted", 'NETWORK_ERROR'));
+                }
                 xhr.send(formData);
             });
         }
@@ -529,4 +537,174 @@ export var asset;
         return response.json();
     }
     asset.publicUploadWithToken = publicUploadWithToken;
+    // ---------------------------------------------------------------------------
+    // Resumable uploads (large files, e.g. video) — GCS-backed, chunked, resumable
+    // ---------------------------------------------------------------------------
+    const RESUMABLE_CHUNK_SIZE = 8 * 1024 * 1024; // 8 MiB — must be a multiple of 256 KiB (GCS rule)
+    const RESUMABLE_MAX_RETRIES = 5;
+    /** Thrown by a resumable `start()`/`resume()` when the caller pauses mid-transfer. */
+    class UploadPausedError extends Error {
+        constructor() { super('Upload paused'); this.name = 'UploadPausedError'; }
+    }
+    asset.UploadPausedError = UploadPausedError;
+    function backoff(attempt) {
+        const ms = Math.min(30000, 1000 * Math.pow(2, attempt - 1));
+        return new Promise(r => setTimeout(r, ms));
+    }
+    class ResumableUpload {
+        constructor(uploadId, // signed JWT — capability for finalize
+        sessionUrl, // GCS resumable session URI
+        file, finalizePath, finalizeBody) {
+            this.uploadId = uploadId;
+            this.sessionUrl = sessionUrl;
+            this.file = file;
+            this.finalizePath = finalizePath;
+            this.finalizeBody = finalizeBody;
+            this._paused = false;
+            this._offset = 0;
+        }
+        get id() {
+            const st = { u: this.uploadId, s: this.sessionUrl, n: this.file.name, z: this.file.size, f: this.finalizePath };
+            return JSON.stringify(st);
+        }
+        get size() { return this.file.size; }
+        pause() { this._paused = true; }
+        resume(options) {
+            this._paused = false;
+            return this.start(options);
+        }
+        async start(options) {
+            this._paused = false;
+            const onProgress = options === null || options === void 0 ? void 0 : options.onProgress;
+            const signal = options === null || options === void 0 ? void 0 : options.signal;
+            // Probe the storage offset first — this is what makes resume work after a reload.
+            this._offset = await this.probeOffset(signal);
+            while (this._offset < this.file.size) {
+                if (signal === null || signal === void 0 ? void 0 : signal.aborted)
+                    throw new AssetUploadError('Upload aborted', 'NETWORK_ERROR');
+                if (this._paused)
+                    throw new UploadPausedError();
+                const end = Math.min(this._offset + RESUMABLE_CHUNK_SIZE, this.file.size);
+                const complete = await this.putChunk(this._offset, end, signal);
+                this._offset = end;
+                if (onProgress)
+                    onProgress(Math.round((this._offset / this.file.size) * 100));
+                if (complete)
+                    break;
+            }
+            return post(this.finalizePath, this.finalizeBody);
+        }
+        // PUT with `bytes * /total` returns the current stored offset (or completion).
+        async probeOffset(signal) {
+            const res = await this.putWithRetry({ 'Content-Range': `bytes */${this.file.size}` }, undefined, signal);
+            if (res.status === 200 || res.status === 201)
+                return this.file.size;
+            if (res.status === 308) {
+                const range = res.headers.get('Range');
+                const m = range && /bytes=0-(\d+)/.exec(range);
+                return m ? parseInt(m[1], 10) + 1 : 0;
+            }
+            if (res.status === 404 || res.status === 410)
+                throw new AssetUploadError('Upload session expired', 'UNKNOWN');
+            throw new AssetUploadError(`Unexpected resume-probe status ${res.status}`, 'UNKNOWN');
+        }
+        // Returns true when the final chunk completed the upload (2xx from GCS).
+        async putChunk(start, end, signal) {
+            const blob = this.file.slice(start, end);
+            const res = await this.putWithRetry({ 'Content-Range': `bytes ${start}-${end - 1}/${this.file.size}` }, blob, signal);
+            if (res.status === 200 || res.status === 201)
+                return true;
+            if (res.status === 308)
+                return false;
+            throw new AssetUploadError(`Chunk upload failed (${res.status})`, res.status === 413 ? 'FILE_TOO_LARGE' : 'UNKNOWN');
+        }
+        async putWithRetry(headers, body, signal) {
+            let attempt = 0;
+            while (true) {
+                if (signal === null || signal === void 0 ? void 0 : signal.aborted)
+                    throw new AssetUploadError('Upload aborted', 'NETWORK_ERROR');
+                try {
+                    const res = await fetch(this.sessionUrl, { method: 'PUT', headers, body, signal });
+                    if (res.status >= 500 && attempt < RESUMABLE_MAX_RETRIES) {
+                        attempt++;
+                        await backoff(attempt);
+                        continue;
+                    }
+                    return res;
+                }
+                catch (err) {
+                    if (signal === null || signal === void 0 ? void 0 : signal.aborted)
+                        throw new AssetUploadError('Upload aborted', 'NETWORK_ERROR');
+                    if (attempt < RESUMABLE_MAX_RETRIES) {
+                        attempt++;
+                        await backoff(attempt);
+                        continue;
+                    }
+                    throw new AssetUploadError('Network error during resumable upload', 'NETWORK_ERROR');
+                }
+            }
+        }
+    }
+    function resumableBasePath(opts) {
+        const prefix = (opts.admin && !opts.token) ? '/admin' : '/public';
+        return `${prefix}/collection/${encodeURIComponent(opts.collectionId)}/asset/resumable`;
+    }
+    /**
+     * Open a resumable upload for a large file (e.g. video). The bytes are chunked
+     * directly to storage and can be paused/resumed — including after a page reload
+     * or app restart, by persisting `handle.id` and calling {@link resumeUpload}.
+     *
+     * @example
+     * ```ts
+     * const handle = await asset.createResumableUpload({ file, scope, appId })
+     * localStorage.setItem('pendingUpload', handle.id)   // survives reload
+     * const uploaded = await handle.start({ onProgress: p => setPct(p) })
+     * ```
+     */
+    async function createResumableUpload(options) {
+        const { file, scope, name, appId, token, admin } = options;
+        const base = resumableBasePath({ admin, token, collectionId: scope.collectionId });
+        const startBody = {
+            filename: name || file.name,
+            mime: file.type || 'application/octet-stream',
+            appId,
+        };
+        if (scope.type !== 'collection')
+            startBody.productId = scope.productId;
+        if (scope.type === 'proof')
+            startBody.proofId = scope.proofId;
+        const started = await post(base, startBody, token ? { 'X-Upload-Token': token } : undefined);
+        const finalizePath = `${base}/${encodeURIComponent(started.uploadId)}/complete`;
+        const finalizeBody = {};
+        if (name)
+            finalizeBody.name = name;
+        if (options.metadata)
+            finalizeBody.metadata = options.metadata;
+        return new ResumableUpload(started.uploadId, started.sessionUrl, file, finalizePath, finalizeBody);
+    }
+    asset.createResumableUpload = createResumableUpload;
+    /**
+     * Resume a previously-created resumable upload after a reload/app restart.
+     * Pass the persisted `handle.id` and the same `File`; the transfer continues
+     * from the offset storage already holds rather than restarting.
+     */
+    async function resumeUpload(handleId, file) {
+        let st;
+        try {
+            st = JSON.parse(handleId);
+        }
+        catch (_b) {
+            throw new AssetUploadError('Invalid resumable upload handle', 'UNKNOWN');
+        }
+        if (!st.u || !st.s || !st.f)
+            throw new AssetUploadError('Invalid resumable upload handle', 'UNKNOWN');
+        if (typeof st.z === 'number' && file.size !== st.z) {
+            throw new AssetUploadError('Resumed file does not match the original upload', 'UNKNOWN');
+        }
+        const finalizeBody = {};
+        if (st.n)
+            finalizeBody.name = st.n;
+        return new ResumableUpload(st.u, st.s, file, st.f, finalizeBody);
+    }
+    asset.resumeUpload = resumeUpload;
 })(asset || (asset = {}));

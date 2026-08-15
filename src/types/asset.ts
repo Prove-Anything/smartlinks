@@ -138,6 +138,9 @@ export interface UploadAssetOptions {
 
   /** Optional: Upload via admin route instead of public */
   admin?: boolean
+
+  /** Optional: Abort the in-flight upload (browser fetch/XHR only) */
+  signal?: AbortSignal
 }
 
 /**
@@ -314,4 +317,56 @@ export interface PublicTokenUploadOptions {
   name?: string
   metadata?: Record<string, any>
   onProgress?: (percent: number) => void
+}
+
+// ---------------------------------------------------------------------------
+// Resumable uploads (large files, e.g. video) — GCS-backed
+// ---------------------------------------------------------------------------
+
+/**
+ * Options for opening a resumable upload. Mirrors {@link UploadAssetOptions}
+ * but the transfer is chunked directly to storage and can be paused/resumed,
+ * including after a page reload or app restart.
+ */
+export interface CreateResumableUploadOptions {
+  file: File
+  scope:
+    | { type: 'collection'; collectionId: string }
+    | { type: 'product'; collectionId: string; productId: string }
+    | { type: 'proof'; collectionId: string; productId: string; proofId: string }
+  name?: string
+  metadata?: Record<string, any>
+  appId?: string
+  /** Upload via admin route (default) or, when set, the public token route. */
+  admin?: boolean
+  /**
+   * Upload token id (from {@link requestUploadToken}) for public/unauthenticated
+   * uploads. When provided, the public resumable route is used.
+   */
+  token?: string
+}
+
+export interface ResumableStartOptions {
+  /** Progress callback (0-100), driven by bytes confirmed by storage. */
+  onProgress?: (percent: number) => void
+  /** Abort the in-flight transfer. */
+  signal?: AbortSignal
+}
+
+/**
+ * A handle to a resumable upload. `id` is durable — persist it (e.g. in
+ * IndexedDB) alongside a reference to the file and pass it to
+ * {@link asset.resumeUpload} after a reload to continue mid-file.
+ */
+export interface ResumableUploadHandle {
+  /** Durable, persistable upload id (survives reload/app restart). */
+  readonly id: string
+  /** Total bytes of the file being uploaded. */
+  readonly size: number
+  /** Begin (or continue) uploading, resuming from the storage offset. */
+  start(options?: ResumableStartOptions): Promise<Asset>
+  /** Pause after the current chunk. */
+  pause(): void
+  /** Resume a paused transfer. */
+  resume(options?: ResumableStartOptions): Promise<Asset>
 }

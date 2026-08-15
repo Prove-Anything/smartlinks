@@ -1,4 +1,4 @@
-import { Asset, AssetResponse, UploadAssetOptions, UploadFromUrlOptions, ListAssetsOptions, GetAssetOptions, RemoveAssetOptions, AdminListAssetsOptions, AdminListAssetsResponse, UpdateAssetOptions, ReplaceAssetFileOptions, DeleteAssetOptions, BulkDeleteAssetsOptions, RequestUploadTokenOptions, UploadTokenResponse, PublicTokenUploadOptions } from "../types/asset";
+import { Asset, AssetResponse, UploadAssetOptions, UploadFromUrlOptions, ListAssetsOptions, GetAssetOptions, RemoveAssetOptions, AdminListAssetsOptions, AdminListAssetsResponse, UpdateAssetOptions, ReplaceAssetFileOptions, DeleteAssetOptions, BulkDeleteAssetsOptions, RequestUploadTokenOptions, UploadTokenResponse, PublicTokenUploadOptions, CreateResumableUploadOptions, ResumableUploadHandle } from "../types/asset";
 export declare namespace asset {
     /**
      * Error type for asset uploads
@@ -136,4 +136,27 @@ export declare namespace asset {
      * has `reviewRequired: true`.
      */
     function publicUploadWithToken(options: PublicTokenUploadOptions): Promise<Asset>;
+    /** Thrown by a resumable `start()`/`resume()` when the caller pauses mid-transfer. */
+    class UploadPausedError extends Error {
+        constructor();
+    }
+    /**
+     * Open a resumable upload for a large file (e.g. video). The bytes are chunked
+     * directly to storage and can be paused/resumed — including after a page reload
+     * or app restart, by persisting `handle.id` and calling {@link resumeUpload}.
+     *
+     * @example
+     * ```ts
+     * const handle = await asset.createResumableUpload({ file, scope, appId })
+     * localStorage.setItem('pendingUpload', handle.id)   // survives reload
+     * const uploaded = await handle.start({ onProgress: p => setPct(p) })
+     * ```
+     */
+    function createResumableUpload(options: CreateResumableUploadOptions): Promise<ResumableUploadHandle>;
+    /**
+     * Resume a previously-created resumable upload after a reload/app restart.
+     * Pass the persisted `handle.id` and the same `File`; the transfer continues
+     * from the offset storage already holds rather than restarting.
+     */
+    function resumeUpload(handleId: string, file: File): Promise<ResumableUploadHandle>;
 }

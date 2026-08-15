@@ -17731,6 +17731,8 @@ components:
           type: string
         admin:
           type: boolean
+        signal:
+          $ref: "#/components/schemas/AbortSignal"
       required:
         - file
     UploadFromUrlOptions:
@@ -17996,6 +17998,39 @@ components:
         - collectionId
         - tokenId
         - file
+    CreateResumableUploadOptions:
+      type: object
+      properties:
+        file:
+          $ref: "#/components/schemas/File"
+        name:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        appId:
+          type: string
+        admin:
+          type: boolean
+        token:
+          type: string
+      required:
+        - file
+    ResumableStartOptions:
+      type: object
+      properties:
+        signal:
+          $ref: "#/components/schemas/AbortSignal"
+    ResumableUploadHandle:
+      type: object
+      properties:
+        id:
+          type: string
+        size:
+          type: number
+      required:
+        - id
+        - size
     AttestationResponse:
       type: object
       properties:

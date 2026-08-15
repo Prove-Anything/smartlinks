@@ -50,6 +50,12 @@ export declare function setExtraHeaders(headers: Record<string, string>): void;
  */
 export declare function setBearerToken(token: string | undefined): void;
 /**
+ * Returns the bearer token currently held by the SDK, or `undefined` if none is set.
+ * In proxy mode, credentials are held by the parent frame, not the local SDK,
+ * so this returns `undefined` even when the caller is authenticated.
+ */
+export declare function getBearerToken(): string | undefined;
+/**
  * Get the currently configured API base URL.
  * Returns null if initializeApi() has not been called yet.
  */
