@@ -156,4 +156,48 @@ export var proof;
         return post(path, data);
     }
     proof.migrate = migrate;
+    // ---------------------------------------------------------------------------
+    // Share grants — delegated, scoped, revocable bearer access to this proof
+    // ---------------------------------------------------------------------------
+    function grantBase(collectionId, productId, proofId) {
+        return `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/grant`;
+    }
+    /**
+     * Create a share grant on a proof (owner / collection admin only). The returned
+     * grant includes `token` — the opaque bearer secret, available ONLY on this
+     * response. Embed it in a share link and hand recipients {@link redeemGrant} /
+     * {@link setGrantToken}.
+     */
+    async function createGrant(collectionId, productId, proofId, options) {
+        const body = { scope: options.scope };
+        if (options.audience)
+            body.audience = options.audience;
+        if (options.expiresAt)
+            body.expiresAt = options.expiresAt instanceof Date ? options.expiresAt.toISOString() : options.expiresAt;
+        return post(grantBase(collectionId, productId, proofId), body);
+    }
+    proof.createGrant = createGrant;
+    /** List the active + past grants on a proof (owner / collection admin only). Tokens are never returned here. */
+    async function listGrants(collectionId, productId, proofId) {
+        return request(grantBase(collectionId, productId, proofId));
+    }
+    proof.listGrants = listGrants;
+    /** Revoke a grant by id (owner / collection admin only). Takes effect immediately. */
+    async function revokeGrant(collectionId, productId, proofId, grantId) {
+        return del(`${grantBase(collectionId, productId, proofId)}/${encodeURIComponent(grantId)}`);
+    }
+    proof.revokeGrant = revokeGrant;
+    /**
+     * Redeem a grant token (anonymous or signed-in). Records the redemption and
+     * returns the granted scope, or — for a `verify_owner` grant — an ownership
+     * assertion (never the account). After redeeming, call
+     * {@link setGrantToken} so subsequent data requests carry the token.
+     */
+    async function redeemGrant(collectionId, productId, proofId, token, options) {
+        const body = { token };
+        if (options === null || options === void 0 ? void 0 : options.guestName)
+            body.guestName = options.guestName;
+        return post(`${grantBase(collectionId, productId, proofId)}/redeem`, body);
+    }
+    proof.redeemGrant = redeemGrant;
 })(proof || (proof = {}));

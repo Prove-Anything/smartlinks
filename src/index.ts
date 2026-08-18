@@ -1,7 +1,7 @@
 // src/index.ts
 // Top-level entrypoint of the npm package. Re-export initializeApi + all namespaces.
 
-export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, isProxyEnabled, setBearerToken, getBearerToken } from "./http"
+export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, isProxyEnabled, setBearerToken, getBearerToken, setGrantToken, getGrantToken } from "./http"
 export * from "./api"
 export * from "./types"
 // Iframe namespace
@@ -166,6 +166,12 @@ export type {
   ProofCreateRequest,
   ProofUpdateRequest,
   ProofClaimRequest,
+  ProofGrant,
+  GrantScope,
+  GrantAudience,
+  CreateGrantOptions,
+  RedeemGrantOptions,
+  RedeemGrantResult,
 } from "./types/proof"
 
 // QR & Short Codes

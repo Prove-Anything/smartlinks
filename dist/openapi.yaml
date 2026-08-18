@@ -12183,6 +12183,90 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ProofClaimRequest"
+  /public/collection/{collectionId}/product/{productId}/proof/{proofId}/grant/redeem:
+    post:
+      tags:
+        - proof
+      summary: Redeem a grant token (anonymous or signed-in).
+      operationId: proof_redeemGrant
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: proofId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RedeemGrantResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RedeemGrantOptions"
+  /public/collection/{collectionId}/product/{productId}/proof/{proofId}/grant/{grantId}:
+    delete:
+      tags:
+        - proof
+      summary: Revoke a grant by id (owner / collection admin only).
+      operationId: proof_revokeGrant
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: proofId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: grantId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/collection/{collectionId}/products/{productId}/createClaim:
     post:
       tags:
@@ -24865,6 +24949,80 @@ components:
             $ref: "#/components/schemas/ProofFieldDef"
       required:
         - fields
+    GrantAudience:
+      type: object
+      properties:
+        kind:
+          type: string
+          enum:
+            - public_link
+            - named
+        email:
+          type: string
+        userId:
+          type: string
+      required:
+        - kind
+    ProofGrant:
+      type: object
+      properties:
+        grantId:
+          type: string
+        proofId:
+          type: string
+        productId:
+          type: string
+        scope:
+          type: array
+          items:
+            $ref: "#/components/schemas/GrantScope"
+        audience:
+          $ref: "#/components/schemas/GrantAudience"
+        createdBy:
+          type: string
+        expiresAt:
+          type: string
+        revokedAt:
+          type: string
+        redeemedBy:
+          type: object
+          additionalProperties: true
+        redeemCount:
+          type: number
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        token:
+          type: string
+      required:
+        - grantId
+        - proofId
+        - scope
+        - audience
+        - createdBy
+        - redeemCount
+        - createdAt
+        - updatedAt
+    CreateGrantOptions:
+      type: object
+      properties:
+        scope:
+          type: array
+          items:
+            $ref: "#/components/schemas/GrantScope"
+        audience:
+          $ref: "#/components/schemas/GrantAudience"
+        expiresAt:
+          type: object
+          additionalProperties: true
+      required:
+        - scope
+    RedeemGrantOptions:
+      type: object
+      properties:
+        guestName:
+          type: string
     ProofResponse:
       type: object
       additionalProperties: true

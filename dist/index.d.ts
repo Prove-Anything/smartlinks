@@ -1,4 +1,4 @@
-export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, isProxyEnabled, setBearerToken, getBearerToken } from "./http";
+export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, isProxyEnabled, setBearerToken, getBearerToken, setGrantToken, getGrantToken } from "./http";
 export * from "./api";
 export * from "./types";
 export { iframe } from "./iframe";
@@ -17,7 +17,7 @@ export type { AdditionalGtin, ISODateString, JsonPrimitive, JsonValue, ProductCr
 export type { TranslationLookupMode, TranslationContentType, TranslationQuality, TranslationItemStatus, TranslationContextValue, TranslationContext, TranslationLookupRequestBase, TranslationLookupSingleRequest, TranslationLookupBatchRequest, TranslationLookupRequest, TranslationLookupItem, TranslationLookupResponse, ResolvedTranslationItem, ResolvedTranslationResponse, TranslationHashOptions, TranslationResolveOptions, TranslationRecord, TranslationListParams, TranslationListResponse, TranslationUpdateRequest, } from "./types/translations";
 export type { FacetBucket, FacetDefinition, FacetDefinitionWriteInput, FacetGetParams, FacetListParams, FacetListResponse, FacetNamespaceListResponse, FacetQueryRequest, FacetQueryResponse, FacetValue, FacetValueDefinition, FacetValueGetParams, FacetValueListParams, FacetValueListResponse, FacetValueResponse, FacetValueWriteInput, PublicFacetListParams, } from "./types/facets";
 export type { Collection, CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest, DomainTarget, HubAvailabilityResponse, } from "./types/collection";
-export type { Proof, ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofClaimRequest, } from "./types/proof";
+export type { Proof, ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofClaimRequest, ProofGrant, GrantScope, GrantAudience, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult, } from "./types/proof";
 export type { QrShortCodeLookupResponse, } from "./types/qr";
 export type { ReverseTagLookupParams, ReverseTagLookupResponse, } from "./types/tags";
 export type { AdminMobileCapability, ActionableCapability, AdminMobileHostId, AdminMobileEvent, AdminMobileEventCallback, AdminMobileEventSubscriber, ScannerEventSubscriber, // @deprecated — use AdminMobileEventCallback

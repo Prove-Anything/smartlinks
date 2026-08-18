@@ -1,4 +1,4 @@
-import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofClaimRequest } from "../types/proof";
+import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofClaimRequest, ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult } from "../types/proof";
 export declare namespace proof {
     /**
      * Retrieves a single Proof by Collection ID, Product ID, and Proof ID.
@@ -104,4 +104,22 @@ export declare namespace proof {
     data: {
         targetProductId: string;
     }): Promise<ProofResponse>;
+    /**
+     * Create a share grant on a proof (owner / collection admin only). The returned
+     * grant includes `token` — the opaque bearer secret, available ONLY on this
+     * response. Embed it in a share link and hand recipients {@link redeemGrant} /
+     * {@link setGrantToken}.
+     */
+    function createGrant(collectionId: string, productId: string, proofId: string, options: CreateGrantOptions): Promise<ProofGrant>;
+    /** List the active + past grants on a proof (owner / collection admin only). Tokens are never returned here. */
+    function listGrants(collectionId: string, productId: string, proofId: string): Promise<ProofGrant[]>;
+    /** Revoke a grant by id (owner / collection admin only). Takes effect immediately. */
+    function revokeGrant(collectionId: string, productId: string, proofId: string, grantId: string): Promise<void>;
+    /**
+     * Redeem a grant token (anonymous or signed-in). Records the redemption and
+     * returns the granted scope, or — for a `verify_owner` grant — an ownership
+     * assertion (never the account). After redeeming, call
+     * {@link setGrantToken} so subsequent data requests carry the token.
+     */
+    function redeemGrant(collectionId: string, productId: string, proofId: string, token: string, options?: RedeemGrantOptions): Promise<RedeemGrantResult>;
 }

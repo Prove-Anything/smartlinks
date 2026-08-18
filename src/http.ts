@@ -18,6 +18,12 @@ let extraHeadersGlobal: Record<string, string> = {}
  * issue refresh tokens and short-lived access tokens. Undefined → web behaviour.
  */
 let clientPlatform: 'native' | 'web' | undefined = undefined
+/**
+ * Per-proof share-grant bearer token. When set (via setGrantToken), it is attached
+ * as `X-Grant-Token` on every request so the server can evaluate the grant on any
+ * data call that touches the granted proof (attestations, threads, app data).
+ */
+let grantToken: string | undefined = undefined
 /** Whether initializeApi has been successfully called at least once. */
 let initialized: boolean = false
 
@@ -492,6 +498,34 @@ export function setBearerToken(token: string | undefined) {
   }
   httpCache.clear()
   if (cachePersistence !== 'none') idbClear().catch(() => {})
+}
+
+/**
+ * Set (or clear) the per-proof share-grant token. When set, it is attached as the
+ * `X-Grant-Token` header on every request, so a recipient who has opened a shared
+ * link can read/comment on the granted proof's data. Pass `undefined` to clear it.
+ *
+ * The server re-checks the grant against the database on every request, so calling
+ * `revokeGrant` invalidates an in-flight token immediately. Clears the GET cache on
+ * change so grant-tier responses are not served after the token changes.
+ *
+ * @example
+ * ```ts
+ * // On opening ?proofId=…&shareToken=abc
+ * setGrantToken(shareToken)
+ * const { attestations } = await proof.get(...)  // now sees owner-tier memories
+ * ```
+ */
+export function setGrantToken(token: string | undefined) {
+  if (token === grantToken) return
+  grantToken = token
+  httpCache.clear()
+  if (cachePersistence !== 'none') idbClear().catch(() => {})
+}
+
+/** Returns the currently-set share-grant token, or `undefined`. */
+export function getGrantToken(): string | undefined {
+  return grantToken
 }
 
 /**
@@ -1200,6 +1234,8 @@ export async function request<T>(path: string): Promise<T> {
         if (apiKey) headers["X-API-Key"] = apiKey
         if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
         if (clientPlatform) headers["X-Client-Platform"] = clientPlatform
+        if (grantToken) headers["X-Grant-Token"] = grantToken
+  if (grantToken) headers["X-Grant-Token"] = grantToken
         if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
         const _getDomain = getSourceDomain(); if (_getDomain) headers["X-Source-Domain"] = _getDomain
         for (const [k, v] of Object.entries(extraHeadersGlobal)) headers[k] = v
@@ -1282,6 +1318,7 @@ export async function post<T>(
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
   if (clientPlatform) headers["X-Client-Platform"] = clientPlatform
+  if (grantToken) headers["X-Grant-Token"] = grantToken
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const _postDomain = getSourceDomain(); if (_postDomain) headers["X-Source-Domain"] = _postDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
@@ -1343,6 +1380,7 @@ export async function put<T>(
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
   if (clientPlatform) headers["X-Client-Platform"] = clientPlatform
+  if (grantToken) headers["X-Grant-Token"] = grantToken
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const _putDomain = getSourceDomain(); if (_putDomain) headers["X-Source-Domain"] = _putDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
@@ -1404,6 +1442,7 @@ export async function patch<T>(
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
   if (clientPlatform) headers["X-Client-Platform"] = clientPlatform
+  if (grantToken) headers["X-Grant-Token"] = grantToken
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const _patchDomain = getSourceDomain(); if (_patchDomain) headers["X-Source-Domain"] = _patchDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
@@ -1518,6 +1557,7 @@ export async function requestWithOptions<T>(
         ...(apiKey ? { "X-API-Key": apiKey } : {}),
         ...(bearerToken ? { "AUTHORIZATION": `Bearer ${bearerToken}` } : {}),
         ...(clientPlatform ? { "X-Client-Platform": clientPlatform } : {}),
+        ...(grantToken ? { "X-Grant-Token": grantToken } : {}),
         ...(ngrokSkipBrowserWarning ? { "ngrok-skip-browser-warning": "true" } : {}),
         ...(_rwoDomain ? { "X-Source-Domain": _rwoDomain } : {}),
         ...extraHeaders,
@@ -1653,6 +1693,7 @@ export async function del<T>(
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
   if (clientPlatform) headers["X-Client-Platform"] = clientPlatform
+  if (grantToken) headers["X-Grant-Token"] = grantToken
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const _delDomain = getSourceDomain(); if (_delDomain) headers["X-Source-Domain"] = _delDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
@@ -1690,6 +1731,7 @@ export function getApiHeaders(): Record<string, string> {
   if (apiKey) headers["X-API-Key"] = apiKey
   if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
   if (clientPlatform) headers["X-Client-Platform"] = clientPlatform
+  if (grantToken) headers["X-Grant-Token"] = grantToken
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const sourceDomain = getSourceDomain(); if (sourceDomain) headers["X-Source-Domain"] = sourceDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v

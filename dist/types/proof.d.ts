@@ -65,3 +65,58 @@ export type ProofFieldDef = ScopedFieldDef & {
 export interface ProofFieldsConfig {
     fields: ProofFieldDef[];
 }
+/** What a grant authorises the bearer to do on the proof. */
+export type GrantScope = 'read' | 'comment' | 'admin' | 'verify_owner';
+/** Who may redeem a grant. */
+export interface GrantAudience {
+    kind: 'public_link' | 'named';
+    email?: string;
+    userId?: string;
+}
+/** A share grant issued on a proof. */
+export interface ProofGrant {
+    grantId: string;
+    proofId: string;
+    productId?: string | null;
+    scope: GrantScope[];
+    audience: GrantAudience;
+    createdBy: string;
+    expiresAt?: string | null;
+    revokedAt?: string | null;
+    redeemedBy?: {
+        userId?: string;
+        guestName?: string;
+        redeemedAt: string;
+    };
+    redeemCount: number;
+    createdAt: string;
+    updatedAt: string;
+    /** The opaque bearer token — present ONLY on the `createGrant` response, never on `listGrants`. */
+    token?: string;
+}
+export interface CreateGrantOptions {
+    /** At least one scope is required. */
+    scope: GrantScope[];
+    /** Defaults to `{ kind: 'public_link' }`. */
+    audience?: GrantAudience;
+    /** Optional expiry — a `Date` or ISO string. */
+    expiresAt?: Date | string;
+}
+export interface RedeemGrantOptions {
+    /** Display name to stamp on guest activity when the redeemer is not signed in. */
+    guestName?: string;
+}
+/**
+ * Result of redeeming a grant. For read/comment/admin grants this is the granted
+ * scope; for a `verify_owner` grant it is an ownership assertion (never the account).
+ */
+export type RedeemGrantResult = {
+    scope: GrantScope[];
+    redeemedAt: string;
+} | {
+    proofId: string;
+    assertsOwnership: true;
+    ownerDisplayName?: string;
+    issuedAt?: string;
+    expiresAt?: string;
+};

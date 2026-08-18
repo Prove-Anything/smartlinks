@@ -127,7 +127,7 @@ export namespace navigation {
               type: 'smartlinks-navigate',
               appId: link.appId,
               path: link.kind === 'deep' ? deepPath(link.deepLinkId) : '/',
-              params: link.kind === 'deep' ? (link.params ?? {}) : {},
+              params: (link.kind === 'deep' || link.kind === 'app') ? (link.params ?? {}) : {},
               target: link.target ?? '_self',
             },
             '*'
@@ -143,7 +143,8 @@ export namespace navigation {
           link.kind === 'deep'
             ? `#${deepPath(link.deepLinkId)}${qs(link.params)}`
             : `#/`;
-        const url = `${win.location.pathname}?appId=${encodeURIComponent(link.appId)}${hash}`;
+        const appParams = link.kind === 'app' && link.params ? qs(link.params).replace(/^\?/, '&') : '';
+        const url = `${win.location.pathname}?appId=${encodeURIComponent(link.appId)}${appParams}${hash}`;
         if (link.target === '_blank') {
           win.open(url, '_blank', windowFeatures());
         } else {

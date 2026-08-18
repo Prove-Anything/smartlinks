@@ -122,7 +122,7 @@ export var navigation;
                         type: 'smartlinks-navigate',
                         appId: link.appId,
                         path: link.kind === 'deep' ? deepPath(link.deepLinkId) : '/',
-                        params: link.kind === 'deep' ? ((_b = link.params) !== null && _b !== void 0 ? _b : {}) : {},
+                        params: (link.kind === 'deep' || link.kind === 'app') ? ((_b = link.params) !== null && _b !== void 0 ? _b : {}) : {},
                         target: (_c = link.target) !== null && _c !== void 0 ? _c : '_self',
                     }, '*');
                     return;
@@ -134,7 +134,8 @@ export var navigation;
                 const hash = link.kind === 'deep'
                     ? `#${deepPath(link.deepLinkId)}${qs(link.params)}`
                     : `#/`;
-                const url = `${win.location.pathname}?appId=${encodeURIComponent(link.appId)}${hash}`;
+                const appParams = link.kind === 'app' && link.params ? qs(link.params).replace(/^\?/, '&') : '';
+                const url = `${win.location.pathname}?appId=${encodeURIComponent(link.appId)}${appParams}${hash}`;
                 if (link.target === '_blank') {
                     win.open(url, '_blank', windowFeatures());
                 }

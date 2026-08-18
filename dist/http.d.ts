@@ -50,6 +50,25 @@ export declare function setExtraHeaders(headers: Record<string, string>): void;
  */
 export declare function setBearerToken(token: string | undefined): void;
 /**
+ * Set (or clear) the per-proof share-grant token. When set, it is attached as the
+ * `X-Grant-Token` header on every request, so a recipient who has opened a shared
+ * link can read/comment on the granted proof's data. Pass `undefined` to clear it.
+ *
+ * The server re-checks the grant against the database on every request, so calling
+ * `revokeGrant` invalidates an in-flight token immediately. Clears the GET cache on
+ * change so grant-tier responses are not served after the token changes.
+ *
+ * @example
+ * ```ts
+ * // On opening ?proofId=…&shareToken=abc
+ * setGrantToken(shareToken)
+ * const { attestations } = await proof.get(...)  // now sees owner-tier memories
+ * ```
+ */
+export declare function setGrantToken(token: string | undefined): void;
+/** Returns the currently-set share-grant token, or `undefined`. */
+export declare function getGrantToken(): string | undefined;
+/**
  * Returns the bearer token currently held by the SDK, or `undefined` if none is set.
  * In proxy mode, credentials are held by the parent frame, not the local SDK,
  * so this returns `undefined` even when the caller is authenticated.

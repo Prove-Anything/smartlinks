@@ -42,6 +42,11 @@ export type LinkTarget =
       kind: 'app';
       /** The target app's `appId`. */
       appId: string;
+      /**
+       * App-specific query params (e.g. `{ proofId, shareToken }` for a share link).
+       * Platform context params are injected automatically.
+       */
+      params?: Record<string, string>;
       target?: LinkOpenTarget;
     }
   | {

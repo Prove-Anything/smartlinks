@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.16  |  Generated: 2026-08-15T11:42:50.997Z
+Version: 1.15.17  |  Generated: 2026-08-18T08:10:50.608Z
 
 This is a concise summary of all available API functions and types.
 
@@ -169,6 +169,12 @@ Replace or augment globally applied custom headers.
 
 **setBearerToken**(token: string | undefined) → `void`
 Allows setting the bearerToken at runtime (e.g. after login/logout). Clears the HTTP cache whenever the token actually changes so that stale user-scoped responses (e.g. /account/profile) are not served after a login or logout event.
+
+**setGrantToken**(token: string | undefined) → `void`
+Set (or clear) the per-proof share-grant token. When set, it is attached as the `X-Grant-Token` header on every request, so a recipient who has opened a shared link can read/comment on the granted proof's data. Pass `undefined` to clear it. The server re-checks the grant against the database on every request, so calling `revokeGrant` invalidates an in-flight token immediately. Clears the GET cache on change so grant-tier responses are not served after the token changes. ```ts // On opening ?proofId=…&shareToken=abc setGrantToken(shareToken) const { attestations } = await proof.get(...)  // now sees owner-tier memories ```
+
+**getGrantToken**() → `string | undefined`
+Returns the currently-set share-grant token, or `undefined`.
 
 **getBearerToken**() → `string | undefined`
 Returns the bearer token currently held by the SDK, or `undefined` if none is set. In proxy mode, credentials are held by the parent frame, not the local SDK, so this returns `undefined` even when the caller is authenticated.
@@ -7287,6 +7293,50 @@ interface ProofFieldsConfig {
 }
 ```
 
+**GrantAudience** (interface)
+```typescript
+interface GrantAudience {
+  kind: 'public_link' | 'named'
+  email?: string
+  userId?: string
+}
+```
+
+**ProofGrant** (interface)
+```typescript
+interface ProofGrant {
+  grantId: string
+  proofId: string
+  productId?: string | null
+  scope: GrantScope[]
+  audience: GrantAudience
+  createdBy: string
+  expiresAt?: string | null
+  revokedAt?: string | null
+  redeemedBy?: { userId?: string; guestName?: string; redeemedAt: string }
+  redeemCount: number
+  createdAt: string
+  updatedAt: string
+  token?: string
+}
+```
+
+**CreateGrantOptions** (interface)
+```typescript
+interface CreateGrantOptions {
+  scope: GrantScope[]
+  audience?: GrantAudience
+  expiresAt?: Date | string
+}
+```
+
+**RedeemGrantOptions** (interface)
+```typescript
+interface RedeemGrantOptions {
+  guestName?: string
+}
+```
+
 **ProofResponse** = `Proof`
 
 **ProofUpdateRequest** = `Partial<ProofCreateRequest>`
@@ -7296,6 +7346,10 @@ interface ProofFieldsConfig {
 **ProofFieldScope** = `'public' | 'owner' | 'personal' | 'admin'`
 
 **ProofFieldDef** = `ScopedFieldDef & { scope?: ProofFieldScope }`
+
+**GrantScope** = `'read' | 'comment' | 'admin' | 'verify_owner'`
+
+**RedeemGrantResult** = ``
 
 ### qr
 
@@ -9936,6 +9990,30 @@ Get proofs for a batch (admin only). GET /admin/collection/:collectionId/product
     /** The destination product ID */
     data: { targetProductId: string }) → `Promise<ProofResponse>`
 Migrate a proof to a different product within the same collection (admin only). Because the Firestore ledger document ID is `{productId}-{proofId}`, a proof cannot simply be re-assigned to another product by updating a field — the document must be re-keyed. This endpoint handles that atomically: 1. Reads the source ledger document (`{sourceProductId}-{proofId}`). 2. Writes a new document (`{targetProductId}-{proofId}`) with `productId` and `proofGroup` updated. The short `proofId` (nanoid) is unchanged. 3. Writes a migration history entry to the new document's `history` subcollection (snapshot of the original proof + migration metadata). 4. Copies all subcollections — `assets`, `attestations`, `history` — from the old document to the new one. 5. Deletes the old subcollections and then the old document. Repeated migrations are safe — each one appends a history record; no migration metadata is stored on the proof document itself. ```typescript const migrated = await proof.migrate('coll_123', 'prod_old', 'proof_abc', { targetProductId: 'prod_new', }) console.log(migrated.productId) // 'prod_new' ```
+
+**createGrant**(collectionId: string,
+    productId: string,
+    proofId: string,
+    options: CreateGrantOptions) → `Promise<ProofGrant>`
+Create a share grant on a proof (owner / collection admin only). The returned grant includes `token` — the opaque bearer secret, available ONLY on this response. Embed it in a share link and hand recipients {@link redeemGrant} / {@link setGrantToken}.
+
+**listGrants**(collectionId: string,
+    productId: string,
+    proofId: string) → `Promise<ProofGrant[]>`
+List the active + past grants on a proof (owner / collection admin only). Tokens are never returned here.
+
+**revokeGrant**(collectionId: string,
+    productId: string,
+    proofId: string,
+    grantId: string) → `Promise<void>`
+Revoke a grant by id (owner / collection admin only). Takes effect immediately.
+
+**redeemGrant**(collectionId: string,
+    productId: string,
+    proofId: string,
+    token: string,
+    options?: RedeemGrantOptions) → `Promise<RedeemGrantResult>`
+Redeem a grant token (anonymous or signed-in). Records the redemption and returns the granted scope, or — for a `verify_owner` grant — an ownership assertion (never the account). After redeeming, call {@link setGrantToken} so subsequent data requests carry the token.
 
 ### publicClient
 

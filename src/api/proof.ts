@@ -1,6 +1,9 @@
 // src/api/proof.ts
 import { request, post, put, del } from "../http"
-import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofClaimRequest } from "../types/proof"
+import {
+  ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofClaimRequest,
+  ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult,
+} from "../types/proof"
 
 export namespace proof {
   /**
@@ -206,5 +209,68 @@ export namespace proof {
   ): Promise<ProofResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/products/${encodeURIComponent(productId)}/proofs/${encodeURIComponent(proofId)}/migrate`
     return post<ProofResponse>(path, data)
+  }
+
+  // ---------------------------------------------------------------------------
+  // Share grants — delegated, scoped, revocable bearer access to this proof
+  // ---------------------------------------------------------------------------
+
+  function grantBase(collectionId: string, productId: string, proofId: string): string {
+    return `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/grant`
+  }
+
+  /**
+   * Create a share grant on a proof (owner / collection admin only). The returned
+   * grant includes `token` — the opaque bearer secret, available ONLY on this
+   * response. Embed it in a share link and hand recipients {@link redeemGrant} /
+   * {@link setGrantToken}.
+   */
+  export async function createGrant(
+    collectionId: string,
+    productId: string,
+    proofId: string,
+    options: CreateGrantOptions
+  ): Promise<ProofGrant> {
+    const body: Record<string, any> = { scope: options.scope }
+    if (options.audience) body.audience = options.audience
+    if (options.expiresAt) body.expiresAt = options.expiresAt instanceof Date ? options.expiresAt.toISOString() : options.expiresAt
+    return post<ProofGrant>(grantBase(collectionId, productId, proofId), body)
+  }
+
+  /** List the active + past grants on a proof (owner / collection admin only). Tokens are never returned here. */
+  export async function listGrants(
+    collectionId: string,
+    productId: string,
+    proofId: string
+  ): Promise<ProofGrant[]> {
+    return request<ProofGrant[]>(grantBase(collectionId, productId, proofId))
+  }
+
+  /** Revoke a grant by id (owner / collection admin only). Takes effect immediately. */
+  export async function revokeGrant(
+    collectionId: string,
+    productId: string,
+    proofId: string,
+    grantId: string
+  ): Promise<void> {
+    return del<void>(`${grantBase(collectionId, productId, proofId)}/${encodeURIComponent(grantId)}`)
+  }
+
+  /**
+   * Redeem a grant token (anonymous or signed-in). Records the redemption and
+   * returns the granted scope, or — for a `verify_owner` grant — an ownership
+   * assertion (never the account). After redeeming, call
+   * {@link setGrantToken} so subsequent data requests carry the token.
+   */
+  export async function redeemGrant(
+    collectionId: string,
+    productId: string,
+    proofId: string,
+    token: string,
+    options?: RedeemGrantOptions
+  ): Promise<RedeemGrantResult> {
+    const body: Record<string, any> = { token }
+    if (options?.guestName) body.guestName = options.guestName
+    return post<RedeemGrantResult>(`${grantBase(collectionId, productId, proofId)}/redeem`, body)
   }
 }
