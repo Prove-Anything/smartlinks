@@ -165,6 +165,16 @@ export var app;
         }
         threads.reply = reply;
         /**
+         * Delete a single reply from a thread by its reply id (moderation).
+         * DELETE /threads/:threadId/reply/:replyId
+         * Authorised for the reply's author, the proof owner, or a collection admin.
+         */
+        async function deleteReply(collectionId, appId, threadId, replyId, admin = false) {
+            const path = `${basePath(collectionId, appId, admin)}/${encodeURIComponent(threadId)}/reply/${encodeURIComponent(replyId)}`;
+            return del(path);
+        }
+        threads.deleteReply = deleteReply;
+        /**
          * Get aggregate statistics for threads
          * POST /threads/aggregate
          */

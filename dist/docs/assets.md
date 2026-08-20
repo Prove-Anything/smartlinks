@@ -243,6 +243,87 @@ await Api.asset.bulkDelete({
 
 ---
 
+## Resumable uploads (large files, e.g. video)
+
+`asset.upload()` is a single request — if the connection drops, the whole file
+restarts. For large files on flaky connections (e.g. phone video), use a
+**resumable** upload: the file is chunked directly to storage and can be paused,
+resumed, and — crucially — **continued after a page reload or app restart**.
+
+```typescript
+import { asset } from '@proveanything/smartlinks'
+
+// 1. Open a resumable upload.
+const handle = await asset.createResumableUpload({
+  file,                                   // a File (input[type=file] / drag-drop)
+  scope: { type: 'proof', collectionId, productId, proofId },
+  appId: 'photo-memory',
+  // token: uploadToken,                  // for public/token uploads (see below)
+})
+
+// 2. Persist handle.id so the upload survives a reload.
+localStorage.setItem('pendingUpload', handle.id)
+
+// 3. Upload. Resumes automatically from the offset storage already holds.
+const uploaded = await handle.start({
+  onProgress: (pct) => setProgress(pct),  // 0–100
+  signal: abortController.signal,         // optional: cancel a stalled upload
+})
+localStorage.removeItem('pendingUpload')
+```
+
+### Pause / resume, and resume after a reload
+
+```typescript
+handle.pause()                            // stop after the current chunk
+await handle.resume({ onProgress })       // continue
+
+// After a reload / app kill — rehydrate from the persisted id and the same file:
+const saved = localStorage.getItem('pendingUpload')
+if (saved) {
+  const handle = await asset.resumeUpload(saved, file)
+  await handle.start({ onProgress })      // continues, does not restart
+}
+```
+
+### API
+
+```typescript
+namespace asset {
+  createResumableUpload(options: CreateResumableUploadOptions): Promise<ResumableUploadHandle>
+  resumeUpload(handleId: string, file: File): Promise<ResumableUploadHandle>
+}
+
+interface CreateResumableUploadOptions {
+  file: File
+  scope: { type: 'collection'; collectionId: string }
+       | { type: 'product'; collectionId: string; productId: string }
+       | { type: 'proof'; collectionId: string; productId: string; proofId: string }
+  name?: string
+  metadata?: Record<string, any>
+  appId?: string
+  admin?: boolean          // admin route (default is the public route)
+  token?: string           // upload token for public/unauthenticated uploads
+}
+
+interface ResumableUploadHandle {
+  readonly id: string      // durable, persistable — pass to resumeUpload() after a reload
+  readonly size: number    // total bytes
+  start(opts?: { onProgress?: (pct: number) => void; signal?: AbortSignal }): Promise<Asset>
+  pause(): void
+  resume(opts?: { onProgress?: (pct: number) => void; signal?: AbortSignal }): Promise<Asset>
+}
+```
+
+**Notes**
+
+- `handle.id` is an opaque string that carries everything needed to resume — persist it as-is.
+- On completion, `start()`/`resume()` resolves to the finalized `Asset` record.
+- `pause()` causes the in-flight `start()`/`resume()` promise to reject with an `UploadPausedError`; call `resume()` to continue.
+- `asset.upload()` also now accepts an `AbortSignal` (`upload({ ..., signal })`) for cancelling a stalled single-shot upload.
+
+---
+
 ## Public (token-based) uploads
 
 For anonymous or contact-initiated uploads from the portal — no admin auth required.

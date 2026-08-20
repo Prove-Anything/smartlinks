@@ -250,6 +250,12 @@ export interface CreateThreadInput {
     data?: Record<string, unknown>;
     owner?: Record<string, unknown>;
     admin?: Record<string, unknown>;
+    /**
+     * Optional atomic first reply. Posting a comment no longer needs a separate
+     * create-thread-then-reply round trip (which could orphan an empty thread on
+     * partial failure). The reply is stored with a generated `id` and timestamp.
+     */
+    firstReply?: ReplyInput;
 }
 /**
  * Input for updating a thread
@@ -279,8 +285,16 @@ export interface ReplyInput {
 export interface ThreadListQueryParams extends ListQueryParams {
     slug?: string;
     authorId?: string;
+    /** Disambiguates the parent entity kind (e.g. "memory", "case", "proof"). */
     parentType?: string;
+    /** Anchor to a single app entity id (text — SmartLinks short ids, not UUIDs). */
     parentId?: string;
+    /** Batch-fetch threads for many app entities in one call (e.g. a memory feed). */
+    parentIds?: string[];
+    /** Anchor threads to a proof. For grant-token callers this is the enforced filter. */
+    proofId?: string;
+    /** Anchor threads to a product (one tier up from proof). */
+    productId?: string;
     tag?: string;
     contactId?: string;
 }

@@ -86,6 +86,12 @@ export declare namespace app {
          */
         function reply(collectionId: string, appId: string, threadId: string, input: ReplyInput, admin?: boolean): Promise<AppThread>;
         /**
+         * Delete a single reply from a thread by its reply id (moderation).
+         * DELETE /threads/:threadId/reply/:replyId
+         * Authorised for the reply's author, the proof owner, or a collection admin.
+         */
+        function deleteReply(collectionId: string, appId: string, threadId: string, replyId: string, admin?: boolean): Promise<AppThread>;
+        /**
          * Get aggregate statistics for threads
          * POST /threads/aggregate
          */

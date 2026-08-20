@@ -13941,6 +13941,23 @@ paths:
           required: false
           schema:
             type: string
+        - name: parentIds
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+        - name: proofId
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: productId
+          in: query
+          required: false
+          schema:
+            type: string
         - name: tag
           in: query
           required: false
@@ -14182,6 +14199,52 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ReplyInput"
+  /{zone}/collection/{collectionId}/app/{appId}/threads/{threadId}/reply/{replyId}:
+    delete:
+      tags:
+        - threads
+      summary: Delete a single reply from a thread by its reply id (moderation).
+      operationId: threads_deleteReply
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: threadId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: replyId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppThread"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
 components:
   securitySchemes:
     bearerAuth:
@@ -16967,6 +17030,8 @@ components:
         admin:
           type: object
           additionalProperties: true
+        firstReply:
+          $ref: "#/components/schemas/ReplyInput"
     UpdateThreadInput:
       type: object
       properties:
@@ -17011,6 +17076,14 @@ components:
         parentType:
           type: string
         parentId:
+          type: string
+        parentIds:
+          type: array
+          items:
+            type: string
+        proofId:
+          type: string
+        productId:
           type: string
         tag:
           type: string

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.17  |  Generated: 2026-08-18T08:10:50.608Z
+Version: 1.15.18  |  Generated: 2026-08-19T06:40:47.505Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1993,6 +1993,10 @@ interface CreateThreadInput {
   data?: Record<string, unknown>
   owner?: Record<string, unknown>
   admin?: Record<string, unknown> // admin only
+  * Optional atomic first reply. Posting a comment no longer needs a separate
+  * create-thread-then-reply round trip (which could orphan an empty thread on
+  * partial failure). The reply is stored with a generated `id` and timestamp.
+  firstReply?: ReplyInput
 }
 ```
 
@@ -8434,6 +8438,13 @@ Soft delete a thread DELETE /threads/:threadId
     input: ReplyInput,
     admin: boolean = false) → `Promise<AppThread>`
 Add a reply to a thread POST /threads/:threadId/reply Atomically appends to replies array, increments replyCount, updates lastReplyAt
+
+**deleteReply**(collectionId: string,
+    appId: string,
+    threadId: string,
+    replyId: string,
+    admin: boolean = false) → `Promise<AppThread>`
+Delete a single reply from a thread by its reply id (moderation). DELETE /threads/:threadId/reply/:replyId Authorised for the reply's author, the proof owner, or a collection admin.
 
 **aggregate**(collectionId: string,
     appId: string,

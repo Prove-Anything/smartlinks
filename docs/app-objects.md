@@ -429,6 +429,71 @@ const productComments = await app.threads.list(collectionId, appId, {
 });
 ```
 
+### Anchoring to app entities and proofs
+
+Anchor a thread to your own entity with `parentType` + `parentId`. `parentId` is a
+free-form string (SmartLinks short ids, not just UUIDs), so you can use your app's
+native ids directly — no need to stash them in `body` or a tag.
+
+```typescript
+await app.threads.create(collectionId, appId, {
+  parentType: 'memory',
+  parentId: memoryId,          // e.g. "dVdthBQLAjQEnitU7aWy" — text, not a UUID
+  proofId,                     // anchor to a proof (enables grant-tier reads)
+  body: { text: 'Lovely photo' },
+});
+```
+
+List filters that pair with this (see `ThreadListQueryParams`):
+
+| Param | Purpose |
+|-------|---------|
+| `parentType` / `parentId` | one app entity's threads |
+| `parentIds` | **batch** — every thread for many entities in one call (e.g. a feed) |
+| `proofId` / `productId` | threads anchored to a proof / product |
+
+```typescript
+// One request for the 30 memories currently on screen:
+const feed = await app.threads.list(collectionId, appId, {
+  parentType: 'memory',
+  parentIds: visibleMemoryIds,
+  sort: 'createdAt:desc',
+});
+```
+
+### Atomic first comment (`firstReply`)
+
+Posting the first comment no longer needs a create-thread-then-reply two-step (which
+could leave an orphan empty thread if the reply failed). Pass `firstReply` to create
+the thread and its first reply in one atomic call:
+
+```typescript
+await app.threads.create(collectionId, appId, {
+  parentType: 'memory', parentId: memoryId, proofId,
+  firstReply: { text: 'Lovely photo', authorName: 'Sam' },
+});
+```
+
+### Deleting a reply (moderation)
+
+Replies carry a stable `id`. Remove a single one — authorised for the reply's author,
+the proof owner, or a collection admin:
+
+```typescript
+await app.threads.deleteReply(collectionId, appId, threadId, replyId);
+```
+
+### Grant-tier access (private, shareable comments)
+
+A comment thread on a shared album should be `visibility: 'owner'` (private to the
+proof), with access coming from a **share grant** rather than opening the data to the
+world. A holder of an active `read`/`comment` grant on the proof is treated as
+owner-tier **for that proof only**. Enable it with the `publicCreate.threads.grant`
+policy branch and carry the token via `setGrantToken`.
+
+See **[Proof Share Grants](proof-share-grants.md)** for the full flow (create/redeem
+grants, guest commenting, revocation, and the app config).
+
 ---
 
 ## Records

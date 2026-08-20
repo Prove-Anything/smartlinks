@@ -280,6 +280,22 @@ export namespace threads {
   }
 
   /**
+   * Delete a single reply from a thread by its reply id (moderation).
+   * DELETE /threads/:threadId/reply/:replyId
+   * Authorised for the reply's author, the proof owner, or a collection admin.
+   */
+  export async function deleteReply(
+    collectionId: string,
+    appId: string,
+    threadId: string,
+    replyId: string,
+    admin: boolean = false
+  ): Promise<AppThread> {
+    const path = `${basePath(collectionId, appId, admin)}/${encodeURIComponent(threadId)}/reply/${encodeURIComponent(replyId)}`
+    return del<AppThread>(path)
+  }
+
+  /**
    * Get aggregate statistics for threads
    * POST /threads/aggregate
    */

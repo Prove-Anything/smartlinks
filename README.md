@@ -22,6 +22,9 @@ If you're new to the SDK, this is the easiest path:
 
 - [docs/ai.md](docs/ai.md) — AI responses, chat, RAG, voice, streaming, and product assistants
 - [docs/analytics.md](docs/analytics.md) — fire-and-forget web analytics, tag scan telemetry, and dashboard queries
+- [docs/proof-share-grants.md](docs/proof-share-grants.md) — delegated, scoped, revocable share links for a proof (album sharing, guest comments, proof-of-ownership)
+- [docs/assets.md](docs/assets.md) — asset uploads, including resumable uploads for large files (video)
+- [docs/app-objects.md](docs/app-objects.md) — cases, threads (comments), and records
 - [docs/translations.md](docs/translations.md) — runtime translation lookup, browser-side caching, and translation admin flows
 - [docs/widgets.md](docs/widgets.md) — embeddable React components
 - [docs/realtime.md](docs/realtime.md) — subscriptions and live updates
@@ -33,6 +36,8 @@ If you're new to the SDK, this is the easiest path:
 - **Build an AI assistant** → start with [docs/ai.md](docs/ai.md)
 - **Track page views, clicks, or tag scans** → start with [docs/analytics.md](docs/analytics.md)
 - **Translate dynamic content with local browser caching** → start with [docs/translations.md](docs/translations.md)
+- **Share a proof / album by link, or add guest comments** → start with [docs/proof-share-grants.md](docs/proof-share-grants.md)
+- **Upload large video with resume-on-reconnect** → see [Resumable uploads](docs/assets.md#resumable-uploads-large-files-eg-video)
 - **Fetch collections/products** → see [Quick start](README.md#quick-start)
 - **Authenticate admins or end users** → see [Authentication](README.md#authentication)
 - **Upload and manage files** → see [Assets](README.md#assets)
@@ -44,6 +49,9 @@ For the full list of functions and types, see the API summary:
 **Documentation:**
 - [AI & Chat Completions](docs/ai.md) - Chat completions, RAG, voice integration
 - [Analytics](docs/analytics.md) - Fire-and-forget analytics tracking, tag scans, and dashboard queries
+- [Proof Share Grants](docs/proof-share-grants.md) - Delegated, revocable share links; guest comments; proof-of-ownership
+- [Assets](docs/assets.md) - Uploads, resumable large-file uploads, token uploads, replace/versioning
+- [App Objects](docs/app-objects.md) - Cases, threads (comments), records
 - [Translations](docs/translations.md) - Runtime translation lookup, browser-side IndexedDB caching, and admin translation management
 - [Widgets](docs/widgets.md) - Embeddable React components
 - [Realtime](docs/realtime.md) - Realtime data updates
