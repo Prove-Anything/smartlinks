@@ -22,6 +22,11 @@ export var authKit;
      *   `trustDevice: true`), pass it here to skip the challenge entirely as long as it's
      *   still valid. If it's revoked/expired, the server silently falls back to requiring a
      *   fresh challenge — `login()` just returns `MFA_REQUIRED` again, no special handling.
+     *
+     * Security errors (thrown as `SmartlinksApiError`, see {@link LoginSecurityErrorCode}):
+     * - `ACCOUNT_TEMPORARILY_LOCKED` (429) — `err.details.retryAfterSeconds` says how long to wait.
+     * - `PASSWORD_EXPIRED` (403) — `err.details.resetToken` is short-lived; route into
+     *   {@link completePasswordReset} to change the password in place.
      */
     async function login(clientId, email, password, trustedDeviceToken) {
         const body = { email, password };
@@ -40,6 +45,11 @@ export var authKit;
      *
      * Not gated by step-up MFA — a brand-new user has no enrolled factors yet, so there's
      * nothing to challenge against.
+     *
+     * The new password is validated against the collection's `passwordPolicy` — may throw
+     * a {@link PasswordPolicyErrorCode} (400). The same validation applies to
+     * {@link completePasswordReset} and {@link changePassword}. Read the policy for a live
+     * checklist from `authKit.load(clientId)` → `config.security.passwordPolicy`.
      */
     async function register(clientId, data) {
         return post(`/authkit/${encodeURIComponent(clientId)}/auth/register`, data);
@@ -434,11 +444,18 @@ export var authKit;
     /* ===================================
      * Collection-based AuthKit
      * =================================== */
+    /**
+     * Load the **public** AuthKit config for a client (no auth). Returns branding +
+     * the public security subset (`security.passwordPolicy` + `security.session`);
+     * `security.lockout` is admin-only and never included here. Use this in the login
+     * UI to render password checklists and drive idle sign-out.
+     */
     async function load(authKitId) {
         const path = `/authKit/${encodeURIComponent(authKitId)}/config`;
         return request(path);
     }
     authKit.load = load;
+    /** Get the full AuthKit config, including admin-only fields like `security.lockout` (admin auth). */
     async function get(collectionId, authKitId) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}`;
         return request(path);
@@ -450,11 +467,18 @@ export var authKit;
         return request(path);
     }
     authKit.list = list;
+    /** Create an AuthKit client config (admin). Accepts the account `security` policy — see {@link AuthKitConfigInput}. */
     async function create(collectionId, data) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit`;
         return post(path, data);
     }
     authKit.create = create;
+    /**
+     * Update an AuthKit client config (admin). This is how the account **security
+     * policy** is written — pass a `security` block ({@link AuthKitSecurityConfig}).
+     * The server validates it and enforces it; the login UI reads the public subset
+     * back via {@link load}.
+     */
     async function update(collectionId, authKitId, data) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}`;
         return put(path, data);

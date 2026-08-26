@@ -1579,7 +1579,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: authKit.create
+      summary: Create an AuthKit client config (admin).
       operationId: authKit_create
       security:
         - bearerAuth: []
@@ -1602,11 +1602,17 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthKitConfigInput"
   /admin/collection/{collectionId}/authKit/{authKitId}:
     get:
       tags:
         - authKit
-      summary: authKit.get
+      summary: "Get the full AuthKit config, including admin-only fields like `security.lockout` (admin auth)."
       operationId: authKit_get
       security:
         - bearerAuth: []
@@ -1637,7 +1643,7 @@ paths:
     put:
       tags:
         - authKit
-      summary: authKit.update
+      summary: Update an AuthKit client config (admin).
       operationId: authKit_update
       security:
         - bearerAuth: []
@@ -1665,6 +1671,12 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthKitConfigInput"
     delete:
       tags:
         - authKit
@@ -8077,7 +8089,7 @@ paths:
     get:
       tags:
         - authKit
-      summary: Revoke a single trusted device by id (authenticated).
+      summary: "Load the **public** AuthKit config for a client (no auth)."
       operationId: authKit_load
       security: []
       parameters:
@@ -8401,7 +8413,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: Login with email + password (public).
+      summary: authKit.login
       operationId: authKit_login
       security: []
       parameters:
@@ -19381,8 +19393,74 @@ components:
           type: string
         updatedAt:
           type: string
+        security:
+          $ref: "#/components/schemas/AuthKitSecurityConfig"
       required:
         - id
+    AuthKitSecurityConfig:
+      type: object
+      properties:
+        passwordPolicy:
+          $ref: "#/components/schemas/AuthKitPasswordPolicy"
+        session:
+          $ref: "#/components/schemas/AuthKitSessionPolicy"
+        lockout:
+          $ref: "#/components/schemas/AuthKitLockoutPolicy"
+    AuthKitPasswordPolicy:
+      type: object
+      properties:
+        minLength:
+          type: number
+        requireUppercase:
+          type: boolean
+        requireLowercase:
+          type: boolean
+        requireNumber:
+          type: boolean
+        requireSymbol:
+          type: boolean
+        blockCommonPasswords:
+          type: boolean
+        expiryDays:
+          type: number
+        historyCount:
+          type: number
+    AuthKitSessionPolicy:
+      type: object
+      properties:
+        inactivityTimeoutMinutes:
+          type: number
+        inactivityWarningSeconds:
+          type: number
+        absoluteTimeoutHours:
+          type: number
+        rememberMe:
+          type: boolean
+    AuthKitLockoutPolicy:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        maxFailedAttempts:
+          type: number
+        attemptWindowMinutes:
+          type: number
+        lockoutMinutes:
+          type: number
+        notifyUserOnLockout:
+          type: boolean
+    AuthKitConfigInput:
+      type: string
+      enum:
+        - id
+        - updatedAt
+    PasswordPolicyErrorCode:
+      type: string
+      enum:
+        - PASSWORD_TOO_SHORT
+        - PASSWORD_REQUIREMENTS_NOT_MET
+        - PASSWORD_TOO_COMMON
+        - PASSWORD_RECENTLY_USED
     FirebaseTimestamp:
       type: object
       properties:
@@ -24994,9 +25072,11 @@ components:
         - tokenId
         - userId
         - values
-    ProofCreateRequest:
+    ProofWrite:
       type: object
       properties:
+        id:
+          type: string
         values:
           $ref: "#/components/schemas/ProofValues"
         data:
@@ -25007,12 +25087,33 @@ components:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/JsonValue"
+        owner:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        claimable:
+          type: boolean
+    ProofCreateRequest:
+      type: object
+      properties:
+        proof:
+          $ref: "#/components/schemas/ProofWrite"
+        values:
+          $ref: "#/components/schemas/ProofValues"
         claimable:
           type: boolean
         virtual:
           type: boolean
-      required:
-        - values
+        core:
+          $ref: "#/components/schemas/ProofWrite"
+        data:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        admin:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
     ProofFieldsConfig:
       type: object
       properties:
@@ -25096,9 +25197,87 @@ components:
       properties:
         guestName:
           type: string
-    ProofResponse:
+    ProofTransfer:
       type: object
-      additionalProperties: true
+      properties:
+        id:
+          type: string
+        proofId:
+          type: string
+        productId:
+          type: string
+        type:
+          $ref: "#/components/schemas/ProofTransferType"
+        state:
+          $ref: "#/components/schemas/ProofTransferState"
+        fromUserId:
+          type: string
+        toUserId:
+          type: string
+        toEmail:
+          type: string
+        initiatedByUserId:
+          type: string
+        initiatedByRole:
+          type: string
+          enum:
+            - owner
+            - claimant
+            - admin
+        disputeReason:
+          type: string
+        disputeDeadline:
+          type: string
+        completedAt:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - proofId
+        - type
+        - state
+        - createdAt
+        - updatedAt
+    TransferProofOptions:
+      type: object
+      properties:
+        toEmail:
+          type: string
+        toUserId:
+          type: string
+        toName:
+          type: string
+        release:
+          type: boolean
+        message:
+          type: string
+        notify:
+          type: boolean
+    TransferProofResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        mode:
+          type: string
+          enum:
+            - directed
+            - open_release
+        transfer:
+          $ref: "#/components/schemas/ProofTransfer"
+      required:
+        - ok
+        - mode
+        - transfer
+    ProofTransferType:
+      type: string
+      enum:
+        - directed
+        - open_release
+        - contested
     QrShortCodeLookupResponse:
       type: object
       properties:

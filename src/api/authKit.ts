@@ -12,6 +12,7 @@ import type {
   EmailVerificationActionResponse,
   EmailVerifyTokenResponse,
   AuthKitConfig,
+  AuthKitConfigInput,
   MagicLinkSendResponse,
   MagicLinkVerifyResponse,
   UserProfile,
@@ -61,6 +62,11 @@ export namespace authKit {
    *   `trustDevice: true`), pass it here to skip the challenge entirely as long as it's
    *   still valid. If it's revoked/expired, the server silently falls back to requiring a
    *   fresh challenge — `login()` just returns `MFA_REQUIRED` again, no special handling.
+   *
+   * Security errors (thrown as `SmartlinksApiError`, see {@link LoginSecurityErrorCode}):
+   * - `ACCOUNT_TEMPORARILY_LOCKED` (429) — `err.details.retryAfterSeconds` says how long to wait.
+   * - `PASSWORD_EXPIRED` (403) — `err.details.resetToken` is short-lived; route into
+   *   {@link completePasswordReset} to change the password in place.
    */
   export async function login(clientId: string, email: string, password: string, trustedDeviceToken?: string): Promise<AuthLoginResponse> {
     const body: { email: string; password: string; trustedDeviceToken?: string } = { email, password }
@@ -75,6 +81,11 @@ export namespace authKit {
    *
    * Not gated by step-up MFA — a brand-new user has no enrolled factors yet, so there's
    * nothing to challenge against.
+   *
+   * The new password is validated against the collection's `passwordPolicy` — may throw
+   * a {@link PasswordPolicyErrorCode} (400). The same validation applies to
+   * {@link completePasswordReset} and {@link changePassword}. Read the policy for a live
+   * checklist from `authKit.load(clientId)` → `config.security.passwordPolicy`.
    */
   export async function register(clientId: string, data: { email: string; password: string; displayName?: string; accountData?: Record<string, any> }): Promise<AuthLoginResponse> {
     return post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/register`, data)
@@ -440,11 +451,19 @@ export namespace authKit {
   /* ===================================
    * Collection-based AuthKit
    * =================================== */
+
+  /**
+   * Load the **public** AuthKit config for a client (no auth). Returns branding +
+   * the public security subset (`security.passwordPolicy` + `security.session`);
+   * `security.lockout` is admin-only and never included here. Use this in the login
+   * UI to render password checklists and drive idle sign-out.
+   */
   export async function load(authKitId: string): Promise<AuthKitConfig> {
     const path = `/authKit/${encodeURIComponent(authKitId)}/config`
     return request<AuthKitConfig>(path)
   }
 
+  /** Get the full AuthKit config, including admin-only fields like `security.lockout` (admin auth). */
   export async function get(collectionId: string, authKitId: string): Promise<AuthKitConfig> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}`
     return request<AuthKitConfig>(path)
@@ -456,12 +475,19 @@ export namespace authKit {
     return request<AuthKitConfig[]>(path)
   }
 
-  export async function create(collectionId: string, data: any): Promise<AuthKitConfig> {
+  /** Create an AuthKit client config (admin). Accepts the account `security` policy — see {@link AuthKitConfigInput}. */
+  export async function create(collectionId: string, data: AuthKitConfigInput): Promise<AuthKitConfig> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit`
     return post<AuthKitConfig>(path, data)
   }
 
-  export async function update(collectionId: string, authKitId: string, data: any): Promise<AuthKitConfig> {
+  /**
+   * Update an AuthKit client config (admin). This is how the account **security
+   * policy** is written — pass a `security` block ({@link AuthKitSecurityConfig}).
+   * The server validates it and enforces it; the login UI reads the public subset
+   * back via {@link load}.
+   */
+  export async function update(collectionId: string, authKitId: string, data: AuthKitConfigInput): Promise<AuthKitConfig> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}`
     return put<AuthKitConfig>(path, data)
   }

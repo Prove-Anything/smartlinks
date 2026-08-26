@@ -26,15 +26,38 @@ export var proof;
     /**
      * Create a proof for a product (admin only).
      * POST /admin/collection/:collectionId/product/:productId/proof
+     *
+     * Pass the proof's content in a `proof` block, keyed by zone (see {@link ProofWrite}):
+     * ```ts
+     * proof.create(collectionId, productId, {
+     *   proof: {
+     *     values: { colour: 'red' },   // public + owner readable, owner + admin writable
+     *     data:   { serialNo: 1001 },  // public + owner readable, ADMIN-only writable
+     *     admin:  { costPrice: 4.20 }, // admin-only
+     *   },
+     *   claimable: true,
+     * })
+     * ```
+     * Note: a top-level `data`/`admin` on the request body is legacy — top-level
+     * `data` gets folded into the values bag, so use `proof.data` for `proof.data`.
      */
-    async function create(collectionId, productId, values) {
+    async function create(collectionId, productId, request) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof`;
-        return post(path, values);
+        return post(path, request);
     }
     proof.create = create;
     /**
      * Update a proof for a product (admin only).
      * PUT /admin/collection/:collectionId/product/:productId/proof/:proofId
+     *
+     * Pass the fields to change **at the root**, keyed by zone (see {@link ProofWrite}):
+     * ```ts
+     * proof.update(collectionId, productId, proofId, {
+     *   data:   { serialNo: 1002 },   // → proof.data (admin-only writable)
+     *   values: { colour: 'blue' },   // → proof.values
+     * })
+     * ```
+     * Object zones deep-merge, so you can change one field without wiping the rest.
      */
     async function update(collectionId, productId, proofId, values) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}`;
@@ -200,4 +223,53 @@ export var proof;
         return post(`${grantBase(collectionId, productId, proofId)}/redeem`, body);
     }
     proof.redeemGrant = redeemGrant;
+    // ---------------------------------------------------------------------------
+    // Ownership transfer — moving a proof's single owner from A to B
+    //
+    // A proof always has exactly one owner (`proof.userId`). A transfer moves that
+    // owner with the current owner's consent: either DIRECTED to a named recipient
+    // (who accepts) or an OPEN RELEASE (the proof becomes claimable by anyone).
+    // Contested pull-claims + dispute resolution are a later addition.
+    // ---------------------------------------------------------------------------
+    function transferBase(collectionId, productId, proofId) {
+        return `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/transfer`;
+    }
+    /**
+     * Start a push transfer of a proof (current owner / collection admin only).
+     *
+     * Directed — hand it to a named recipient who then calls {@link acceptTransfer}:
+     * ```ts
+     * await proof.transfer(collectionId, productId, proofId, { toEmail: 'buyer@example.com' })
+     * ```
+     * Open release — make the proof claimable by anyone:
+     * ```ts
+     * await proof.transfer(collectionId, productId, proofId, { release: true })
+     * ```
+     */
+    async function transfer(collectionId, productId, proofId, options) {
+        return post(transferBase(collectionId, productId, proofId), Object.assign({}, options));
+    }
+    proof.transfer = transfer;
+    /**
+     * Accept a directed transfer (the named recipient only). Completes the ownership
+     * move — the proof's `userId` becomes the caller and the previous owner's private
+     * data and share grants are cleared/voided.
+     */
+    async function acceptTransfer(collectionId, productId, proofId) {
+        return post(`${transferBase(collectionId, productId, proofId)}/accept`, {});
+    }
+    proof.acceptTransfer = acceptTransfer;
+    /** Cancel a pending push transfer (current owner / collection admin only). */
+    async function cancelTransfer(collectionId, productId, proofId) {
+        return post(`${transferBase(collectionId, productId, proofId)}/cancel`, {});
+    }
+    proof.cancelTransfer = cancelTransfer;
+    /**
+     * Get the active transfer/status for a proof (owner, collection admin, or the
+     * named recipient). Returns `{ transfer: null }` when nothing is in flight.
+     */
+    async function getTransfer(collectionId, productId, proofId) {
+        return request(transferBase(collectionId, productId, proofId));
+    }
+    proof.getTransfer = getTransfer;
 })(proof || (proof = {}));

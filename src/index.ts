@@ -163,6 +163,7 @@ export type {
 export type {
   Proof,
   ProofResponse,
+  ProofWrite,
   ProofCreateRequest,
   ProofUpdateRequest,
   ProofClaimRequest,
@@ -172,6 +173,11 @@ export type {
   CreateGrantOptions,
   RedeemGrantOptions,
   RedeemGrantResult,
+  ProofTransfer,
+  ProofTransferType,
+  ProofTransferState,
+  TransferProofOptions,
+  TransferProofResult,
 } from "./types/proof"
 
 // QR & Short Codes
@@ -272,4 +278,11 @@ export type {
   UpsertContactResponse,
   AuthKitBrandingConfig,
   AuthKitConfig,
+  AuthKitConfigInput,
+  AuthKitSecurityConfig,
+  AuthKitPasswordPolicy,
+  AuthKitSessionPolicy,
+  AuthKitLockoutPolicy,
+  PasswordPolicyErrorCode,
+  LoginSecurityErrorCode,
 } from './types/authKit';

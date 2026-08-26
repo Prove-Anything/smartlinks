@@ -502,6 +502,113 @@ await authKit.completePasswordReset(clientId, tokenFromUrl, 'newSecurePassword')
 
 ---
 
+## Account security policy
+
+Each collection can configure account-security rules. **The API enforces all of it**; your
+login UI reads the policy for UX only (a live password checklist, idle sign-out). There are
+two sides: an **admin** writes the policy, and the **login UI** reads the public subset.
+
+**Read (login UI, public — no auth):**
+
+```ts
+const config = await authKit.load(clientId);
+const policy  = config.security?.passwordPolicy; // min length, char classes, block-common
+const session = config.security?.session;        // inactivity + absolute timeouts, rememberMe
+```
+
+`lockout` values are admin-only and never returned by `load`.
+
+**Write (admin):** set the whole `security` block with `authKit.update` (or `authKit.create`).
+The shape is {@link AuthKitSecurityConfig}; see {@link AuthKitConfigInput}.
+
+```ts
+await authKit.update(collectionId, clientId, {
+  security: {
+    passwordPolicy: {
+      minLength: 8,               // hard floor enforced server-side
+      blockCommonPasswords: true, // reject the common/breached list
+      requireUppercase: false, requireLowercase: false,
+      requireNumber: false, requireSymbol: false,
+      expiryDays: 0,              // 0 = never expires
+      historyCount: 0,            // 0 = reuse allowed
+    },
+    lockout: {                    // admin-only; enforced server-side
+      enabled: true, maxFailedAttempts: 5,
+      attemptWindowMinutes: 15, lockoutMinutes: 15,
+      notifyUserOnLockout: true,
+    },
+    session: {
+      inactivityTimeoutMinutes: 0, // 0 = disabled (client-enforced when set)
+      inactivityWarningSeconds: 60,
+      absoluteTimeoutHours: 0,     // 0 = use token lifetime (server-enforced)
+      rememberMe: true,
+    },
+  },
+});
+```
+
+Defaults if a collection has never set a policy: 8-char minimum + block-common for everyone,
+lockout disabled, no expiry/history, no idle/absolute timeout. Omit any field to take its default.
+
+### Password policy
+
+`register`, `completePasswordReset`, and `changePassword` validate the new password
+server-side and throw a `SmartlinksApiError` with a {@link PasswordPolicyErrorCode}:
+
+| `errorCode` (400) | Meaning |
+|---|---|
+| `PASSWORD_TOO_SHORT` | below `minLength` |
+| `PASSWORD_REQUIREMENTS_NOT_MET` | missing a required character class |
+| `PASSWORD_TOO_COMMON` | on the common/breached list |
+| `PASSWORD_RECENTLY_USED` | matched one of the last `historyCount` passwords |
+
+Render a live checklist from `policy` so users see the rules before submitting.
+
+### Lockout
+
+After too many failed logins the account is temporarily locked. `login` throws:
+
+```ts
+try {
+  await authKit.login(clientId, email, password);
+} catch (err) {
+  if (err.errorCode === 'ACCOUNT_TEMPORARILY_LOCKED') {
+    const mins = Math.ceil(err.details.retryAfterSeconds / 60);
+    show(`Too many attempts. Try again in ${mins} minute(s).`);
+  }
+}
+```
+
+Failed MFA challenges count toward the same lock. Locking responds identically for unknown
+accounts (no enumeration).
+
+### Password expiry
+
+If a password is older than `passwordPolicy.expiryDays`, a valid login is refused with
+**403 `PASSWORD_EXPIRED`** carrying a short-lived `resetToken` — send the user straight into
+the reset form to change it in place:
+
+```ts
+catch (err) {
+  if (err.errorCode === 'PASSWORD_EXPIRED') {
+    await authKit.completePasswordReset(clientId, err.details.resetToken, newPassword);
+  }
+}
+```
+
+### Session lifetime
+
+- **Absolute timeout** (`session.absoluteTimeoutHours`) is enforced server-side on the native
+  refresh path: once the session is too old, `refreshToken` throws **401 `SESSION_EXPIRED`**
+  (see {@link RefreshErrorCode}) — clear storage and route to login. Web sessions use the
+  stateless bearer token and rely on inactivity sign-out below.
+- **Inactivity timeout** (`session.inactivityTimeoutMinutes` / `inactivityWarningSeconds`) is
+  **client-enforced** — sign the user out after idle, warning first. Sync across tabs.
+- **`session.rememberMe: false`** → don't persist tokens to durable storage; treat the session
+  as browser-scoped.
+
+---
+
 ## Relationship to other parts of the SDK
 
 | Concern | Where it lives |

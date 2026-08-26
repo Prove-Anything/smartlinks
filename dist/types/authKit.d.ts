@@ -89,8 +89,11 @@ export interface LogoutResponse {
  * - `INVALID_REFRESH_TOKEN` (401) — unknown / expired / revoked / wrong client → `logout()` + route to login.
  * - `REFRESH_TOKEN_REUSE_DETECTED` (401) — a consumed token was replayed; the **entire session
  *   family was revoked server-side**. Hard logout: clear storage, force re-login.
+ * - `SESSION_EXPIRED` (401) — the session hit the collection's absolute session timeout
+ *   (`security.session.absoluteTimeoutHours`). Clear storage and route to login. Distinct from
+ *   `INVALID_REFRESH_TOKEN` so the UI can message "your session expired" rather than an error.
  */
-export type RefreshErrorCode = 'MISSING_REFRESH_TOKEN' | 'INVALID_REFRESH_TOKEN' | 'REFRESH_TOKEN_REUSE_DETECTED';
+export type RefreshErrorCode = 'MISSING_REFRESH_TOKEN' | 'INVALID_REFRESH_TOKEN' | 'REFRESH_TOKEN_REUSE_DETECTED' | 'SESSION_EXPIRED';
 /**
  * Options for {@link authKit.appleLogin}. All fields are optional — only the
  * `identityToken` (passed as a positional argument) is required by the server.
@@ -397,4 +400,84 @@ export interface AuthKitConfig {
     supportEmail?: string;
     redirectUrl?: string;
     updatedAt?: string;
+    /**
+     * Per-collection security policy. On the public config endpoint only
+     * `passwordPolicy` + `session` are returned (the client renders password
+     * checklists / idle sign-out from them); `lockout` is admin-only and enforced
+     * server-side. See {@link AuthKitSecurityConfig}.
+     */
+    security?: AuthKitSecurityConfig;
 }
+/**
+ * Writable shape for `authKit.create` / `authKit.update` (admin). Known fields are
+ * typed — importantly `security?: AuthKitSecurityConfig` for the account security
+ * policy — while additional admin-console fields are still permitted. `id` and
+ * `updatedAt` are server-owned and omitted.
+ *
+ * ```ts
+ * await authKit.update(collectionId, authKitId, {
+ *   security: {
+ *     passwordPolicy: { minLength: 10, blockCommonPasswords: true },
+ *     lockout:  { enabled: true, maxFailedAttempts: 5, lockoutMinutes: 15 },
+ *     session:  { inactivityTimeoutMinutes: 30, absoluteTimeoutHours: 12 },
+ *   },
+ * })
+ * ```
+ */
+export type AuthKitConfigInput = Partial<Omit<AuthKitConfig, 'id' | 'updatedAt'>> & Record<string, any>;
+/**
+ * Per-collection account-security policy. The API **enforces** all of this; the
+ * client uses `passwordPolicy` (live checklist) and `session` (idle sign-out) for UX.
+ */
+export interface AuthKitSecurityConfig {
+    passwordPolicy?: AuthKitPasswordPolicy;
+    session?: AuthKitSessionPolicy;
+    /** Admin-only; never returned on the public config endpoint. */
+    lockout?: AuthKitLockoutPolicy;
+}
+export interface AuthKitPasswordPolicy {
+    minLength?: number;
+    requireUppercase?: boolean;
+    requireLowercase?: boolean;
+    requireNumber?: boolean;
+    requireSymbol?: boolean;
+    blockCommonPasswords?: boolean;
+    /** 0 = never expires. */
+    expiryDays?: number;
+    /** 0 = reuse allowed. */
+    historyCount?: number;
+}
+export interface AuthKitSessionPolicy {
+    /** 0 = never (client-enforced idle sign-out). */
+    inactivityTimeoutMinutes?: number;
+    inactivityWarningSeconds?: number;
+    /** 0 = use token lifetime. Enforced server-side on the native refresh path (→ `SESSION_EXPIRED`). */
+    absoluteTimeoutHours?: number;
+    rememberMe?: boolean;
+}
+/** Admin-only lockout policy (operational; not exposed publicly). */
+export interface AuthKitLockoutPolicy {
+    enabled?: boolean;
+    maxFailedAttempts?: number;
+    attemptWindowMinutes?: number;
+    lockoutMinutes?: number;
+    notifyUserOnLockout?: boolean;
+}
+/**
+ * Password-policy validation errors (400) returned by `register`, `completePasswordReset`,
+ * and `changePassword`. Surfaced via `SmartlinksApiError.errorCode`.
+ * - `PASSWORD_TOO_SHORT` — below `passwordPolicy.minLength`.
+ * - `PASSWORD_REQUIREMENTS_NOT_MET` — missing a required character class.
+ * - `PASSWORD_TOO_COMMON` — matched the common/breached list.
+ * - `PASSWORD_RECENTLY_USED` — matched one of the last `historyCount` passwords.
+ */
+export type PasswordPolicyErrorCode = 'PASSWORD_TOO_SHORT' | 'PASSWORD_REQUIREMENTS_NOT_MET' | 'PASSWORD_TOO_COMMON' | 'PASSWORD_RECENTLY_USED';
+/**
+ * Security errors returned by `login`. Surfaced via `SmartlinksApiError.errorCode`,
+ * with extra fields in `SmartlinksApiError.details`:
+ * - `ACCOUNT_TEMPORARILY_LOCKED` (429) — too many failed attempts; `details.retryAfterSeconds`
+ *   says how long to wait. Show a "try again in N minutes" message.
+ * - `PASSWORD_EXPIRED` (403) — password older than `passwordPolicy.expiryDays`; `details.resetToken`
+ *   is a short-lived token — send the user straight into `completePasswordReset()` to change it in place.
+ */
+export type LoginSecurityErrorCode = 'ACCOUNT_TEMPORARILY_LOCKED' | 'PASSWORD_EXPIRED';

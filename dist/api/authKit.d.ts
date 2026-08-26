@@ -1,4 +1,4 @@
-import type { AuthLoginResponse, AppleLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse, MfaChallengeSendResponse, MfaFinalizeResponse, MfaEnrollSendResponse, MfaEnrolledResponse, MfaFactorsResponse, TrustedDevice } from "../types/authKit";
+import type { AuthLoginResponse, AppleLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, AuthKitConfigInput, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse, MfaChallengeSendResponse, MfaFinalizeResponse, MfaEnrollSendResponse, MfaEnrolledResponse, MfaFactorsResponse, TrustedDevice } from "../types/authKit";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
@@ -18,6 +18,11 @@ export declare namespace authKit {
      *   `trustDevice: true`), pass it here to skip the challenge entirely as long as it's
      *   still valid. If it's revoked/expired, the server silently falls back to requiring a
      *   fresh challenge — `login()` just returns `MFA_REQUIRED` again, no special handling.
+     *
+     * Security errors (thrown as `SmartlinksApiError`, see {@link LoginSecurityErrorCode}):
+     * - `ACCOUNT_TEMPORARILY_LOCKED` (429) — `err.details.retryAfterSeconds` says how long to wait.
+     * - `PASSWORD_EXPIRED` (403) — `err.details.resetToken` is short-lived; route into
+     *   {@link completePasswordReset} to change the password in place.
      */
     function login(clientId: string, email: string, password: string, trustedDeviceToken?: string): Promise<AuthLoginResponse>;
     /**
@@ -25,6 +30,11 @@ export declare namespace authKit {
      *
      * Not gated by step-up MFA — a brand-new user has no enrolled factors yet, so there's
      * nothing to challenge against.
+     *
+     * The new password is validated against the collection's `passwordPolicy` — may throw
+     * a {@link PasswordPolicyErrorCode} (400). The same validation applies to
+     * {@link completePasswordReset} and {@link changePassword}. Read the policy for a live
+     * checklist from `authKit.load(clientId)` → `config.security.passwordPolicy`.
      */
     function register(clientId: string, data: {
         email: string;
@@ -221,10 +231,24 @@ export declare namespace authKit {
     }>;
     /** Revoke a single trusted device by id (authenticated). */
     function revokeTrustedDevice(clientId: string, id: string): Promise<SuccessResponse>;
+    /**
+     * Load the **public** AuthKit config for a client (no auth). Returns branding +
+     * the public security subset (`security.passwordPolicy` + `security.session`);
+     * `security.lockout` is admin-only and never included here. Use this in the login
+     * UI to render password checklists and drive idle sign-out.
+     */
     function load(authKitId: string): Promise<AuthKitConfig>;
+    /** Get the full AuthKit config, including admin-only fields like `security.lockout` (admin auth). */
     function get(collectionId: string, authKitId: string): Promise<AuthKitConfig>;
     function list(collectionId: string, admin?: boolean): Promise<AuthKitConfig[]>;
-    function create(collectionId: string, data: any): Promise<AuthKitConfig>;
-    function update(collectionId: string, authKitId: string, data: any): Promise<AuthKitConfig>;
+    /** Create an AuthKit client config (admin). Accepts the account `security` policy — see {@link AuthKitConfigInput}. */
+    function create(collectionId: string, data: AuthKitConfigInput): Promise<AuthKitConfig>;
+    /**
+     * Update an AuthKit client config (admin). This is how the account **security
+     * policy** is written — pass a `security` block ({@link AuthKitSecurityConfig}).
+     * The server validates it and enforces it; the login UI reads the public subset
+     * back via {@link load}.
+     */
+    function update(collectionId: string, authKitId: string, data: AuthKitConfigInput): Promise<AuthKitConfig>;
     function remove(collectionId: string, authKitId: string): Promise<void>;
 }

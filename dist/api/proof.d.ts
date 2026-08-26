@@ -1,4 +1,4 @@
-import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofClaimRequest, ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult } from "../types/proof";
+import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofClaimRequest, ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult, ProofTransfer, TransferProofOptions, TransferProofResult } from "../types/proof";
 export declare namespace proof {
     /**
      * Retrieves a single Proof by Collection ID, Product ID, and Proof ID.
@@ -12,11 +12,34 @@ export declare namespace proof {
     /**
      * Create a proof for a product (admin only).
      * POST /admin/collection/:collectionId/product/:productId/proof
+     *
+     * Pass the proof's content in a `proof` block, keyed by zone (see {@link ProofWrite}):
+     * ```ts
+     * proof.create(collectionId, productId, {
+     *   proof: {
+     *     values: { colour: 'red' },   // public + owner readable, owner + admin writable
+     *     data:   { serialNo: 1001 },  // public + owner readable, ADMIN-only writable
+     *     admin:  { costPrice: 4.20 }, // admin-only
+     *   },
+     *   claimable: true,
+     * })
+     * ```
+     * Note: a top-level `data`/`admin` on the request body is legacy — top-level
+     * `data` gets folded into the values bag, so use `proof.data` for `proof.data`.
      */
-    function create(collectionId: string, productId: string, values: ProofCreateRequest): Promise<ProofResponse>;
+    function create(collectionId: string, productId: string, request: ProofCreateRequest): Promise<ProofResponse>;
     /**
      * Update a proof for a product (admin only).
      * PUT /admin/collection/:collectionId/product/:productId/proof/:proofId
+     *
+     * Pass the fields to change **at the root**, keyed by zone (see {@link ProofWrite}):
+     * ```ts
+     * proof.update(collectionId, productId, proofId, {
+     *   data:   { serialNo: 1002 },   // → proof.data (admin-only writable)
+     *   values: { colour: 'blue' },   // → proof.values
+     * })
+     * ```
+     * Object zones deep-merge, so you can change one field without wiping the rest.
      */
     function update(collectionId: string, productId: string, proofId: string, values: ProofUpdateRequest): Promise<ProofResponse>;
     /**
@@ -122,4 +145,37 @@ export declare namespace proof {
      * {@link setGrantToken} so subsequent data requests carry the token.
      */
     function redeemGrant(collectionId: string, productId: string, proofId: string, token: string, options?: RedeemGrantOptions): Promise<RedeemGrantResult>;
+    /**
+     * Start a push transfer of a proof (current owner / collection admin only).
+     *
+     * Directed — hand it to a named recipient who then calls {@link acceptTransfer}:
+     * ```ts
+     * await proof.transfer(collectionId, productId, proofId, { toEmail: 'buyer@example.com' })
+     * ```
+     * Open release — make the proof claimable by anyone:
+     * ```ts
+     * await proof.transfer(collectionId, productId, proofId, { release: true })
+     * ```
+     */
+    function transfer(collectionId: string, productId: string, proofId: string, options: TransferProofOptions): Promise<TransferProofResult>;
+    /**
+     * Accept a directed transfer (the named recipient only). Completes the ownership
+     * move — the proof's `userId` becomes the caller and the previous owner's private
+     * data and share grants are cleared/voided.
+     */
+    function acceptTransfer(collectionId: string, productId: string, proofId: string): Promise<{
+        ok: boolean;
+        proof: ProofResponse;
+    }>;
+    /** Cancel a pending push transfer (current owner / collection admin only). */
+    function cancelTransfer(collectionId: string, productId: string, proofId: string): Promise<{
+        ok: boolean;
+    }>;
+    /**
+     * Get the active transfer/status for a proof (owner, collection admin, or the
+     * named recipient). Returns `{ transfer: null }` when nothing is in flight.
+     */
+    function getTransfer(collectionId: string, productId: string, proofId: string): Promise<{
+        transfer: ProofTransfer | null;
+    }>;
 }

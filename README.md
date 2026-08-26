@@ -41,10 +41,10 @@ If you're new to the SDK, this is the easiest path:
 - **Fetch collections/products** → see [Quick start](README.md#quick-start)
 - **Authenticate admins or end users** → see [Authentication](README.md#authentication)
 - **Upload and manage files** → see [Assets](README.md#assets)
-- **Browse the full surface area** → use [API_SUMMARY.md](API_SUMMARY.md) as reference
+- **Browse the full surface area** → use [API_SUMMARY.md](docs/API_SUMMARY.md) as reference
 
 For the full list of functions and types, see the API summary:
-→ [API Summary](API_SUMMARY.md)
+→ [API Summary](docs/API_SUMMARY.md)
 
 **Documentation:**
 - [AI & Chat Completions](docs/ai.md) - Chat completions, RAG, voice integration

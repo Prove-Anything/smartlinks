@@ -81,6 +81,9 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **App Records Pattern** | `docs/app-records-pattern.md` | Standard pattern for per-product/facet/variant/batch admin + public widget UIs |
 | **UI Utils** | `docs/ui-utils.md` | `@proveanything/smartlinks-utils-ui` — React shells, hooks, and primitives for records-based apps |
 | **Product/Proof Data Scoping** | `docs/proof-product-data-scoping.md` | Canonical spec for `product.data`/`.admin` and `proof.data`/`.admin`/`.values` (owner/personal) — who can read and write each bucket |
+| **Proof Claiming** | `docs/proof-claiming-methods.md` | The ways a user claims a proof (serial, NFC, claim-set, auto-generate) |
+| **Proof Share Grants** | `docs/proof-share-grants.md` | Delegated, scoped, revocable bearer access to a single proof (read/comment/verify-owner) |
+| **Proof Ownership Transfer** | `docs/proof-ownership-transfer.md` | Moving a proof's single owner (directed transfer / open release), accept/cancel, and the state machine |
 | **appConfig / Feature Flags** | `docs/appConfig.md` | `appConfig` settings contract — installed apps, `system.features`/`entitledAppGroups`/`meters`, `isFeatureEnabled()` helper |
 
 ---

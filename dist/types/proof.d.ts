@@ -40,16 +40,71 @@ export interface Proof {
     values: ProofValues;
 }
 export type ProofResponse = Proof;
-export interface ProofCreateRequest {
-    values: ProofValues;
-    /** Business-writable public spec data. */
+/**
+ * The proof's writable content, addressed by zone. Its keys mirror the proof
+ * document, so what you pass is what the proof looks like. Each zone has its own
+ * read/write visibility:
+ *
+ * | Zone     | Stored at      | Readable by            | Writable by   |
+ * |----------|----------------|------------------------|---------------|
+ * | `values` | `proof.values` | public + owner + admin | owner + admin |
+ * | `data`   | `proof.data`   | public + owner + admin | admin only    |
+ * | `admin`  | `proof.admin`  | admin only             | admin only    |
+ * | `owner`  | `proof.owner`  | admin only             | admin only    |
+ *
+ * Use `data` for business fields everyone should *see* but only the business
+ * should *set* (e.g. a serial number). Use `admin` for fields only the business
+ * should see at all. On update, object zones deep-merge.
+ */
+export interface ProofWrite {
+    /**
+     * Choose the proof's ID (serial, NFC id, etc.). Honoured **on create only** —
+     * the ledger doc becomes `{productId}-{id}`. Omit to auto-generate. Ignored on
+     * update (a proof's ID is immutable).
+     */
+    id?: string;
+    /** Owner + business-writable consumer data. Public + owner readable. → `proof.values` */
+    values?: ProofValues;
+    /** Business spec data (e.g. serialNo). Public + owner readable, admin-only writable. → `proof.data` */
     data?: Record<string, JsonValue>;
-    /** Business-only spec data. */
+    /** Business-only spec data — admin-only read & write (stripped from public + owner). → `proof.admin` */
     admin?: Record<string, JsonValue>;
+    /** Business-only root data — admin-only. → `proof.owner` */
+    owner?: Record<string, JsonValue>;
+    /** Is this proof available to be claimed. */
+    claimable?: boolean;
+    /** Any other named root field. */
+    [key: string]: JsonValue | Record<string, JsonValue> | ProofValues | undefined;
+}
+export interface ProofCreateRequest {
+    /**
+     * The proof to create, by zone (mirrors the proof document). This is the clear,
+     * recommended shape — `create(collectionId, productId, { proof: {...} })`.
+     */
+    proof?: ProofWrite;
+    /** Owner + business-writable consumer data (→ `proof.values`). Same as `proof.values`. */
+    values?: ProofValues;
+    /** Canonical root `claimable` flag (also accepted as `proof.claimable`). */
     claimable?: boolean;
     virtual?: boolean;
+    /** @deprecated Legacy alias for `proof`. Use `proof`. */
+    core?: ProofWrite;
+    /**
+     * @deprecated On the request body this is folded into the **values bag**
+     * (public + owner-writable) — NOT `proof.data`. Use `proof.data`.
+     */
+    data?: Record<string, JsonValue>;
+    /** @deprecated Not routed to `proof.admin` on create — use `proof.admin`. */
+    admin?: Record<string, JsonValue>;
 }
-export type ProofUpdateRequest = Partial<ProofCreateRequest>;
+/**
+ * Update passes the proof's fields **at the root** — `update(c, p, id, { data: {...} })`
+ * sets `proof.data`, `{ values: {...} }` sets `proof.values`, etc. (A `proof` block is
+ * also accepted and routed the same way.) Object zones deep-merge.
+ */
+export type ProofUpdateRequest = Partial<ProofWrite> & {
+    proof?: ProofWrite;
+};
 export type ProofClaimRequest = Record<string, any>;
 /**
  * `'public'` (default, omitted) reads/writes `proof.values[key]`.
@@ -120,3 +175,60 @@ export type RedeemGrantResult = {
     issuedAt?: string;
     expiresAt?: string;
 };
+/**
+ * How a transfer was initiated.
+ * - `directed`     — the owner pushed it to a named recipient, who must accept.
+ * - `open_release` — the owner released it; the proof is `claimable` by anyone.
+ * - `contested`    — a holder claimed ownership the owner did not release (Phase 2).
+ */
+export type ProofTransferType = 'directed' | 'open_release' | 'contested';
+/**
+ * Where a transfer is in its lifecycle. `pending` is in-flight; `completed`
+ * means ownership moved. `disputed`/`escalated` are Phase 2 (contested claims).
+ */
+export type ProofTransferState = 'pending' | 'completed' | 'cancelled' | 'expired' | 'disputed' | 'escalated' | 'rejected';
+/** An ownership-transfer record on a proof. */
+export interface ProofTransfer {
+    id: string;
+    proofId: string;
+    productId?: string | null;
+    type: ProofTransferType;
+    state: ProofTransferState;
+    /** Owner at the time the transfer was initiated. */
+    fromUserId?: string | null;
+    /** Intended recipient (directed) / claimant (contested). */
+    toUserId?: string | null;
+    toEmail?: string | null;
+    initiatedByUserId?: string | null;
+    initiatedByRole?: 'owner' | 'claimant' | 'admin' | null;
+    disputeReason?: string | null;
+    disputeDeadline?: string | null;
+    completedAt?: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+/**
+ * Start a push transfer. Provide **one** of:
+ * - `toEmail` / `toUserId` — a directed transfer to a named recipient (they accept).
+ * - `release: true`        — an open release (the proof becomes claimable by anyone).
+ */
+export interface TransferProofOptions {
+    /** Directed: recipient email (created/looked up if needed). */
+    toEmail?: string;
+    /** Directed: recipient user id, if already known. */
+    toUserId?: string;
+    /** Directed: display name for a newly-created recipient. */
+    toName?: string;
+    /** Open release: mark the proof claimable instead of directing it. */
+    release?: boolean;
+    /** Optional note included in the recipient email. */
+    message?: string;
+    /** Set `false` to skip the recipient notification email (directed only). */
+    notify?: boolean;
+}
+/** Result of initiating a push transfer. */
+export interface TransferProofResult {
+    ok: boolean;
+    mode: 'directed' | 'open_release';
+    transfer: ProofTransfer;
+}

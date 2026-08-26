@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.18  |  Generated: 2026-08-19T06:40:47.505Z
+Version: 1.15.21  |  Generated: 2026-08-25T08:34:52.897Z
 
 This is a concise summary of all available API functions and types.
 
@@ -33,6 +33,8 @@ For detailed guides on specific features:
 - **[Theme System](theme.system.md)** - Theme configuration and customization
 - **[Theme Defaults](theme-defaults.md)** - Default theme values and presets
 - **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)
+- **[Proof Share Grants](proof-share-grants.md)** - Delegated, scoped, revocable bearer access to a single proof (read/comment/verify-owner links)
+- **[Proof Ownership Transfer](proof-ownership-transfer.md)** - Moving a proof to a new owner: directed transfer, open release, accept/cancel, and the state machine
 - **[Product Facets SDK](PRODUCT_FACETS_SDK.md)** - Admin and public product facet endpoints and TypeScript interfaces
 - **[Attestations](attestations.md)** - Append-only fact log with cryptographic chain integrity, time-series analytics, and public/owner/admin visibility
 - **[Auth Kit](auth-kit.md)** - End-user authentication flows (email/password, magic link, OTP, OAuth) for microapps
@@ -3464,6 +3466,55 @@ interface AuthKitConfig {
   supportEmail?: string
   redirectUrl?: string
   updatedAt?: string
+  * Per-collection security policy. On the public config endpoint only
+  * `passwordPolicy` + `session` are returned (the client renders password
+  * checklists / idle sign-out from them); `lockout` is admin-only and enforced
+  * server-side. See {@link AuthKitSecurityConfig}.
+  security?: AuthKitSecurityConfig
+}
+```
+
+**AuthKitSecurityConfig** (interface)
+```typescript
+interface AuthKitSecurityConfig {
+  passwordPolicy?: AuthKitPasswordPolicy
+  session?: AuthKitSessionPolicy
+  lockout?: AuthKitLockoutPolicy
+}
+```
+
+**AuthKitPasswordPolicy** (interface)
+```typescript
+interface AuthKitPasswordPolicy {
+  minLength?: number
+  requireUppercase?: boolean
+  requireLowercase?: boolean
+  requireNumber?: boolean
+  requireSymbol?: boolean
+  blockCommonPasswords?: boolean
+  expiryDays?: number
+  historyCount?: number
+}
+```
+
+**AuthKitSessionPolicy** (interface)
+```typescript
+interface AuthKitSessionPolicy {
+  inactivityTimeoutMinutes?: number
+  inactivityWarningSeconds?: number
+  absoluteTimeoutHours?: number
+  rememberMe?: boolean
+}
+```
+
+**AuthKitLockoutPolicy** (interface)
+```typescript
+interface AuthKitLockoutPolicy {
+  enabled?: boolean
+  maxFailedAttempts?: number
+  attemptWindowMinutes?: number
+  lockoutMinutes?: number
+  notifyUserOnLockout?: boolean
 }
 ```
 
@@ -3474,6 +3525,12 @@ interface AuthKitConfig {
 **MfaErrorCode** = ``
 
 **VerifyStatus** = `'pending' | 'verified' | 'failed' | 'expired' | 'unknown'`
+
+**AuthKitConfigInput** = ``
+
+**PasswordPolicyErrorCode** = ``
+
+**LoginSecurityErrorCode** = ``
 
 ### batch
 
@@ -7279,14 +7336,36 @@ interface Proof {
 }
 ```
 
+**ProofWrite** (interface)
+```typescript
+interface ProofWrite {
+  * Choose the proof's ID (serial, NFC id, etc.). Honoured **on create only** —
+  * the ledger doc becomes `{productId}-{id}`. Omit to auto-generate. Ignored on
+  * update (a proof's ID is immutable).
+  id?: string
+  values?: ProofValues
+  data?: Record<string, JsonValue>
+  admin?: Record<string, JsonValue>
+  owner?: Record<string, JsonValue>
+  claimable?: boolean
+  [key: string]: JsonValue | Record<string, JsonValue> | ProofValues | undefined
+}
+```
+
 **ProofCreateRequest** (interface)
 ```typescript
 interface ProofCreateRequest {
-  values: ProofValues
-  data?: Record<string, JsonValue>
-  admin?: Record<string, JsonValue>
+  * The proof to create, by zone (mirrors the proof document). This is the clear,
+  * recommended shape — `create(collectionId, productId, { proof: {...} })`.
+  proof?: ProofWrite
+  values?: ProofValues
   claimable?: boolean
   virtual?: boolean
+  core?: ProofWrite
+  * @deprecated On the request body this is folded into the **values bag**
+  * (public + owner-writable) — NOT `proof.data`. Use `proof.data`.
+  data?: Record<string, JsonValue>
+  admin?: Record<string, JsonValue>
 }
 ```
 
@@ -7341,9 +7420,51 @@ interface RedeemGrantOptions {
 }
 ```
 
+**ProofTransfer** (interface)
+```typescript
+interface ProofTransfer {
+  id: string
+  proofId: string
+  productId?: string | null
+  type: ProofTransferType
+  state: ProofTransferState
+  fromUserId?: string | null
+  toUserId?: string | null
+  toEmail?: string | null
+  initiatedByUserId?: string | null
+  initiatedByRole?: 'owner' | 'claimant' | 'admin' | null
+  disputeReason?: string | null
+  disputeDeadline?: string | null
+  completedAt?: string | null
+  createdAt: string
+  updatedAt: string
+}
+```
+
+**TransferProofOptions** (interface)
+```typescript
+interface TransferProofOptions {
+  toEmail?: string
+  toUserId?: string
+  toName?: string
+  release?: boolean
+  message?: string
+  notify?: boolean
+}
+```
+
+**TransferProofResult** (interface)
+```typescript
+interface TransferProofResult {
+  ok: boolean
+  mode: 'directed' | 'open_release'
+  transfer: ProofTransfer
+}
+```
+
 **ProofResponse** = `Proof`
 
-**ProofUpdateRequest** = `Partial<ProofCreateRequest>`
+**ProofUpdateRequest** = `Partial<ProofWrite> & { proof?: ProofWrite }`
 
 **ProofClaimRequest** = `Record<string, any>`
 
@@ -7354,6 +7475,10 @@ interface RedeemGrantOptions {
 **GrantScope** = `'read' | 'comment' | 'admin' | 'verify_owner'`
 
 **RedeemGrantResult** = ``
+
+**ProofTransferType** = `'directed' | 'open_release' | 'contested'`
+
+**ProofTransferState** = ``
 
 ### qr
 
@@ -8748,10 +8873,10 @@ Gets current account information for the logged in user. Returns user, owner, ac
 ### authKit
 
 **login**(clientId: string, email: string, password: string, trustedDeviceToken?: string) → `Promise<AuthLoginResponse>`
-Login with email + password (public). When the client's MFA policy requires a step-up, the server returns **403 `MFA_REQUIRED`** instead of a session — `login()` throws a `SmartlinksApiError` with `err.errorResponse?.errorCode === 'MFA_REQUIRED'` and the challenge details in `err.details` (see {@link MfaRequiredDetails}). Route the caller to {@link mfaChallengeSend} on that error; this method's return type is unchanged. returned one (via {@link mfaChallengeVerify}/{@link mfaRecoveryCode} with `trustDevice: true`), pass it here to skip the challenge entirely as long as it's still valid. If it's revoked/expired, the server silently falls back to requiring a fresh challenge — `login()` just returns `MFA_REQUIRED` again, no special handling.
+Login with email + password (public). When the client's MFA policy requires a step-up, the server returns **403 `MFA_REQUIRED`** instead of a session — `login()` throws a `SmartlinksApiError` with `err.errorResponse?.errorCode === 'MFA_REQUIRED'` and the challenge details in `err.details` (see {@link MfaRequiredDetails}). Route the caller to {@link mfaChallengeSend} on that error; this method's return type is unchanged. returned one (via {@link mfaChallengeVerify}/{@link mfaRecoveryCode} with `trustDevice: true`), pass it here to skip the challenge entirely as long as it's still valid. If it's revoked/expired, the server silently falls back to requiring a fresh challenge — `login()` just returns `MFA_REQUIRED` again, no special handling. Security errors (thrown as `SmartlinksApiError`, see {@link LoginSecurityErrorCode}): - `ACCOUNT_TEMPORARILY_LOCKED` (429) — `err.details.retryAfterSeconds` says how long to wait. - `PASSWORD_EXPIRED` (403) — `err.details.resetToken` is short-lived; route into {@link completePasswordReset} to change the password in place.
 
 **register**(clientId: string, data: { email: string; password: string; displayName?: string; accountData?: Record<string, any> }) → `Promise<AuthLoginResponse>`
-Register a new user (public). Not gated by step-up MFA — a brand-new user has no enrolled factors yet, so there's nothing to challenge against.
+Register a new user (public). Not gated by step-up MFA — a brand-new user has no enrolled factors yet, so there's nothing to challenge against. The new password is validated against the collection's `passwordPolicy` — may throw a {@link PasswordPolicyErrorCode} (400). The same validation applies to {@link completePasswordReset} and {@link changePassword}. Read the policy for a live checklist from `authKit.load(clientId)` → `config.security.passwordPolicy`.
 
 **googleLogin**(clientId: string, idToken: string, trustedDeviceToken?: string) → `Promise<AuthLoginResponse>`
 Google OAuth login via ID token (public). Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape. {@link mfaChallengeVerify}/{@link mfaRecoveryCode} (with `trustDevice: true`) to skip the challenge on this device, same as {@link login}.
@@ -8877,22 +9002,22 @@ List devices trusted to skip MFA challenges for the current user (authenticated)
 Revoke a single trusted device by id (authenticated).
 
 **load**(authKitId: string) → `Promise<AuthKitConfig>`
-Revoke a single trusted device by id (authenticated).
+Load the **public** AuthKit config for a client (no auth). Returns branding + the public security subset (`security.passwordPolicy` + `security.session`); `security.lockout` is admin-only and never included here. Use this in the login UI to render password checklists and drive idle sign-out.
 
 **get**(collectionId: string, authKitId: string) → `Promise<AuthKitConfig>`
-Revoke a single trusted device by id (authenticated).
+Get the full AuthKit config, including admin-only fields like `security.lockout` (admin auth).
 
 **list**(collectionId: string, admin?: boolean) → `Promise<AuthKitConfig[]>`
-Revoke a single trusted device by id (authenticated).
+Get the full AuthKit config, including admin-only fields like `security.lockout` (admin auth).
 
-**create**(collectionId: string, data: any) → `Promise<AuthKitConfig>`
-Revoke a single trusted device by id (authenticated).
+**create**(collectionId: string, data: AuthKitConfigInput) → `Promise<AuthKitConfig>`
+Create an AuthKit client config (admin). Accepts the account `security` policy — see {@link AuthKitConfigInput}.
 
-**update**(collectionId: string, authKitId: string, data: any) → `Promise<AuthKitConfig>`
-Revoke a single trusted device by id (authenticated).
+**update**(collectionId: string, authKitId: string, data: AuthKitConfigInput) → `Promise<AuthKitConfig>`
+Update an AuthKit client config (admin). This is how the account **security policy** is written — pass a `security` block ({@link AuthKitSecurityConfig}). The server validates it and enforces it; the login UI reads the public subset back via {@link load}.
 
 **remove**(collectionId: string, authKitId: string) → `Promise<void>`
-Revoke a single trusted device by id (authenticated).
+Update an AuthKit client config (admin). This is how the account **security policy** is written — pass a `security` block ({@link AuthKitSecurityConfig}). The server validates it and enforces it; the login UI reads the public subset back via {@link load}.
 
 ### batch
 
@@ -9952,14 +10077,14 @@ List all Proofs for a Collection.
 
 **create**(collectionId: string,
     productId: string,
-    values: ProofCreateRequest) → `Promise<ProofResponse>`
-Create a proof for a product (admin only). POST /admin/collection/:collectionId/product/:productId/proof
+    request: ProofCreateRequest) → `Promise<ProofResponse>`
+Create a proof for a product (admin only). POST /admin/collection/:collectionId/product/:productId/proof Pass the proof's content in a `proof` block, keyed by zone (see {@link ProofWrite}): ```ts proof.create(collectionId, productId, { proof: { values: { colour: 'red' },   // public + owner readable, owner + admin writable data:   { serialNo: 1001 },  // public + owner readable, ADMIN-only writable admin:  { costPrice: 4.20 }, // admin-only }, claimable: true, }) ``` Note: a top-level `data`/`admin` on the request body is legacy — top-level `data` gets folded into the values bag, so use `proof.data` for `proof.data`.
 
 **update**(collectionId: string,
     productId: string,
     proofId: string,
     values: ProofUpdateRequest) → `Promise<ProofResponse>`
-Update a proof for a product (admin only). PUT /admin/collection/:collectionId/product/:productId/proof/:proofId
+Update a proof for a product (admin only). PUT /admin/collection/:collectionId/product/:productId/proof/:proofId Pass the fields to change **at the root**, keyed by zone (see {@link ProofWrite}): ```ts proof.update(collectionId, productId, proofId, { data:   { serialNo: 1002 },   // → proof.data (admin-only writable) values: { colour: 'blue' },   // → proof.values }) ``` Object zones deep-merge, so you can change one field without wiping the rest.
 
 **claim**(collectionId: string,
     productId: string,
@@ -10025,6 +10150,27 @@ Revoke a grant by id (owner / collection admin only). Takes effect immediately.
     token: string,
     options?: RedeemGrantOptions) → `Promise<RedeemGrantResult>`
 Redeem a grant token (anonymous or signed-in). Records the redemption and returns the granted scope, or — for a `verify_owner` grant — an ownership assertion (never the account). After redeeming, call {@link setGrantToken} so subsequent data requests carry the token.
+
+**transfer**(collectionId: string,
+    productId: string,
+    proofId: string,
+    options: TransferProofOptions) → `Promise<TransferProofResult>`
+Start a push transfer of a proof (current owner / collection admin only). Directed — hand it to a named recipient who then calls {@link acceptTransfer}: ```ts await proof.transfer(collectionId, productId, proofId, { toEmail: 'buyer@example.com' }) ``` Open release — make the proof claimable by anyone: ```ts await proof.transfer(collectionId, productId, proofId, { release: true }) ```
+
+**acceptTransfer**(collectionId: string,
+    productId: string,
+    proofId: string) → `Promise<`
+Accept a directed transfer (the named recipient only). Completes the ownership move — the proof's `userId` becomes the caller and the previous owner's private data and share grants are cleared/voided.
+
+**cancelTransfer**(collectionId: string,
+    productId: string,
+    proofId: string) → `Promise<`
+Cancel a pending push transfer (current owner / collection admin only).
+
+**getTransfer**(collectionId: string,
+    productId: string,
+    proofId: string) → `Promise<`
+Get the active transfer/status for a proof (owner, collection admin, or the named recipient). Returns `{ transfer: null }` when nothing is in flight.
 
 ### publicClient
 
