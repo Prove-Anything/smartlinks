@@ -1,3 +1,21 @@
+// Hosts served by the platform itself (not a collection's own custom domain). A base
+// URL on any of these is NOT a custom domain, so non-master GTINs still need the
+// `/gc/{shortId}` collection prefix. `portalUrl` is only ever set to the platform
+// default or a collection's custom domain, so exact-host matching is sufficient here.
+const PLATFORM_HOSTS = ['smartlinks.app', 'mysmartlinks.app', 'zt.smartlinks.io'];
+/** True when `baseUrl`'s host is a collection's own custom domain (not a platform host). */
+function baseIsCustomDomain(baseUrl) {
+    if (!baseUrl)
+        return false;
+    let host;
+    try {
+        host = new URL(baseUrl).hostname.toLowerCase().replace(/^www\./, '');
+    }
+    catch (_a) {
+        return false;
+    }
+    return host.length > 0 && !PLATFORM_HOSTS.includes(host);
+}
 /**
  * Builds a portal path/URL based on the provided parameters.
  *
@@ -10,8 +28,9 @@
  * Supports multiple path formats:
  * - Basic product: `/c/{shortId}/{productId}`
  * - With proof: `/c/{shortId}/{productId}/{proofId}`
- * - GTIN (own): `/01/{gtin}` - ownGtin is read from the product object
- * - GTIN (not own): `/gc/{shortId}/01/{gtin}`
+ * - GTIN (own, or on a custom domain): `/01/{gtin}` — `ownGtin` is read from the product;
+ *   a custom domain (see `customDomain` / `collection.redirectUrl`) also uses this bare form
+ * - GTIN (not own, on the shared platform domain): `/gc/{shortId}/01/{gtin}`
  * - With batch: adds `/10/{batchId}` and optionally `?17={expiryDate}`
  * - With variant: adds `/22/{variantId}`
  *
@@ -60,20 +79,26 @@
  * ```
  */
 export function buildPortalPath(params) {
-    var _a, _b;
+    var _a, _b, _c;
     const { collection, product, productId, batch, batchId, variant, proof, queryParams = {}, pathOnly = false } = params;
     // Extract values from collection
     const shortId = collection.shortId;
     const baseUrl = 'portalUrl' in collection ? collection.portalUrl : undefined;
+    // A collection on its own custom domain resolves `/01/{gtin}` directly (the host
+    // maps to the collection server-side), so the `/gc/{shortId}` prefix is dropped.
+    // Explicit override wins; otherwise detect from `redirectUrl` (the server's own
+    // custom-domain signal) or a non-platform `portalUrl` host.
+    const redirectUrl = 'redirectUrl' in collection ? collection.redirectUrl : undefined;
+    const customDomain = (_a = params.customDomain) !== null && _a !== void 0 ? _a : (!!redirectUrl || baseIsCustomDomain(baseUrl));
     // Extract product values
     let gtin;
     let ownGtin;
     let extractedProductId;
     if (product) {
         extractedProductId = product.id;
-        gtin = (_a = product.gtin) !== null && _a !== void 0 ? _a : undefined;
+        gtin = (_b = product.gtin) !== null && _b !== void 0 ? _b : undefined;
         // ownGtin is a critical product setting - only read from product, never override
-        ownGtin = 'ownGtin' in product ? (_b = product.ownGtin) !== null && _b !== void 0 ? _b : undefined : undefined;
+        ownGtin = 'ownGtin' in product ? (_c = product.ownGtin) !== null && _c !== void 0 ? _c : undefined : undefined;
     }
     else if (productId) {
         extractedProductId = productId;
@@ -114,8 +139,11 @@ export function buildPortalPath(params) {
     const searchParams = new URLSearchParams();
     // Build pathname based on GTIN or product ID
     if (gtin) {
-        // GS1 Digital Link format
-        if (ownGtin) {
+        // GS1 Digital Link format. A bare `/01/{gtin}` is used when the product owns the
+        // GTIN globally (master registry) OR when we're on the collection's custom domain
+        // (the host resolves the collection). Otherwise the GTIN must be scoped to the
+        // collection with the `/gc/{shortId}` prefix on the shared platform domain.
+        if (ownGtin || customDomain) {
             pathname = `/01/${gtin}`;
         }
         else {

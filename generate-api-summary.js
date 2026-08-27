@@ -251,6 +251,7 @@ function generateAPISummary() {
   summary += '- **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)\n';
   summary += '- **[Proof Share Grants](proof-share-grants.md)** - Delegated, scoped, revocable bearer access to a single proof (read/comment/verify-owner links)\n';
   summary += '- **[Proof Ownership Transfer](proof-ownership-transfer.md)** - Moving a proof to a new owner: directed transfer, open release, accept/cancel, and the state machine\n';
+  summary += '- **[Item Context](item-context.md)** - The `itemContext` container prop derived from a serial-proof URL or NFC tap (what item the URL points at)\n';
   summary += '- **[Product Facets SDK](PRODUCT_FACETS_SDK.md)** - Admin and public product facet endpoints and TypeScript interfaces\n';
   summary += '- **[Attestations](attestations.md)** - Append-only fact log with cryptographic chain integrity, time-series analytics, and public/owner/admin visibility\n';
   summary += '- **[Auth Kit](auth-kit.md)** - End-user authentication flows (email/password, magic link, OTP, OAuth) for microapps\n';
@@ -683,6 +684,23 @@ function generateAPISummary() {
   }
   fs.writeFileSync(path.join(docsDir, 'API_SUMMARY.md'), summary);
   console.log('✓ Generated docs/API_SUMMARY.md');
+
+  // Heads-up (non-fatal): any docs/*.md not linked from the guide list above.
+  // The list is intentionally hand-curated (for the descriptions) — this just
+  // flags a doc that was added without a summary entry, so it doesn't get lost.
+  try {
+    const linked = new Set((summary.match(/\]\(([a-zA-Z0-9._-]+\.md)\)/g) || [])
+      .map(m => m.slice(2, -1)));
+    const IGNORE = new Set(['API_SUMMARY.md']);
+    const orphans = fs.readdirSync(docsDir)
+      .filter(f => f.endsWith('.md') && !IGNORE.has(f) && !linked.has(f));
+    if (orphans.length) {
+      console.warn(`⚠️  ${orphans.length} doc(s) not linked from API_SUMMARY.md — add them to the guide list in generate-api-summary.js:`);
+      orphans.forEach(f => console.warn(`     - docs/${f}`));
+    }
+  } catch (err) {
+    console.warn('（doc-link check skipped:', err.message, '）');
+  }
 }
 
 generateAPISummary();

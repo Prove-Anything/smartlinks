@@ -1,6 +1,6 @@
 {
   "name": "@proveanything/smartlinks",
-  "version": "1.15.21",
+  "version": "1.15.22",
   "description": "Official JavaScript/TypeScript SDK for the Smartlinks API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -17,6 +17,7 @@
     "README.md"
   ],
   "scripts": {
+    "test": "node test/run.cjs",
     "build": "tsc && node generate-api-summary.js && node generate-openapi.js && node scripts/copy-docs-to-dist.js",
     "docs": "typedoc",
     "docs:summary": "node generate-api-summary.js",

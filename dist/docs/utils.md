@@ -77,15 +77,25 @@ Builds a full portal URL based on the provided parameters. Returns full URL by d
 
 - `pathOnly` (optional, default: `false`) - Return only the path without domain  
   Set to `true` to get `/c/abc/prod` instead of `https://domain.com/c/abc/prod`
+- `customDomain` (optional) - Override custom-domain detection. When a collection is
+  served from its own custom domain, a GS1 link resolves `/01/{gtin}` directly (the host
+  identifies the collection), so the `/gc/{shortId}` prefix is dropped. Leave unset to
+  auto-detect from `collection.redirectUrl` or a non-platform `portalUrl` host.
 
 **Path Formats:**
 
 - Basic product: `/c/{shortId}/{productId}`
 - With proof: `/c/{shortId}/{productId}/{proofId}`
-- GTIN (own): `/01/{gtin}` (when product.ownGtin is true)
-- GTIN (not own): `/gc/{shortId}/01/{gtin}` (when product.ownGtin is false)
+- GTIN (own, or on a custom domain): `/01/{gtin}` — when `product.ownGtin` is set, **or** the
+  collection is on its own custom domain (bare `/01/` resolves via the host)
+- GTIN (not own, on the shared platform domain): `/gc/{shortId}/01/{gtin}`
 - With batch: adds `/10/{batchId}` and optionally `?17={expiryDate}`
 - With variant: adds `/22/{variantId}`
+
+**Custom domain behaviour:** On `smartlinks.app`, a non-master GTIN needs the `/gc/{shortId}`
+collection prefix so the server can scope it; a master GTIN (`ownGtin`) uses bare `/01/`.
+On a collection's **own custom domain**, the host already identifies the collection, so the
+generator emits the clean `https://customdomain/01/{gtin}` for any product — no `/gc/` prefix.
 
 ## Examples
 

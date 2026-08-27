@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.21  |  Generated: 2026-08-25T08:34:52.897Z
+Version: 1.15.22  |  Generated: 2026-08-27T17:34:12.788Z
 
 This is a concise summary of all available API functions and types.
 
@@ -35,6 +35,7 @@ For detailed guides on specific features:
 - **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)
 - **[Proof Share Grants](proof-share-grants.md)** - Delegated, scoped, revocable bearer access to a single proof (read/comment/verify-owner links)
 - **[Proof Ownership Transfer](proof-ownership-transfer.md)** - Moving a proof to a new owner: directed transfer, open release, accept/cancel, and the state machine
+- **[Item Context](item-context.md)** - The `itemContext` container prop derived from a serial-proof URL or NFC tap (what item the URL points at)
 - **[Product Facets SDK](PRODUCT_FACETS_SDK.md)** - Admin and public product facet endpoints and TypeScript interfaces
 - **[Attestations](attestations.md)** - Append-only fact log with cryptographic chain integrity, time-series analytics, and public/owner/admin visibility
 - **[Auth Kit](auth-kit.md)** - End-user authentication flows (email/password, magic link, OTP, OAuth) for microapps
@@ -8266,6 +8267,11 @@ interface PortalPathParams {
   proof?: Proof | string
   queryParams?: Record<string, string>
   pathOnly?: boolean
+  * Override custom-domain detection. When the collection is served from its own
+  * custom domain, a GS1 link resolves `/01/{gtin}` directly (the host identifies
+  * the collection), so the `/gc/{shortId}` prefix is dropped. Left undefined, this
+  * is auto-detected from `collection.redirectUrl` or a non-platform `portalUrl` host.
+  customDomain?: boolean
 }
 ```
 
