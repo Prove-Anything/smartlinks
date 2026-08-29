@@ -135,35 +135,25 @@ export function buildPortalPath(params) {
             ? proof
             : proof.id
         : undefined;
+    // GTIN → delegate to the GS1 Digital Link generator (canonical AI ordering:
+    // /01/{gtin}/22/{cpv}/10/{lot}/21/{serial}, data attributes as query params).
+    if (gtin) {
+        return buildGs1DigitalLink({
+            domain: baseUrl,
+            collection,
+            gtin,
+            ownGtin,
+            customDomain,
+            variant: variantId,
+            lot: extractedBatchId,
+            expiry: expiryDate,
+            queryParams,
+            pathOnly,
+        });
+    }
     let pathname = '';
     const searchParams = new URLSearchParams();
-    // Build pathname based on GTIN or product ID
-    if (gtin) {
-        // GS1 Digital Link format. A bare `/01/{gtin}` is used when the product owns the
-        // GTIN globally (master registry) OR when we're on the collection's custom domain
-        // (the host resolves the collection). Otherwise the GTIN must be scoped to the
-        // collection with the `/gc/{shortId}` prefix on the shared platform domain.
-        if (ownGtin || customDomain) {
-            pathname = `/01/${gtin}`;
-        }
-        else {
-            pathname = `/gc/${shortId}/01/${gtin}`;
-        }
-        // Add batch (GS1 AI 10)
-        if (extractedBatchId) {
-            pathname += `/10/${extractedBatchId}`;
-            // Add expiry date as query param (GS1 AI 17)
-            if (expiryDate) {
-                const dateStr = formatExpiryDate(expiryDate);
-                searchParams.append('17', dateStr);
-            }
-        }
-        // Add variant (GS1 AI 22)
-        if (variantId) {
-            pathname += `/22/${variantId}`;
-        }
-    }
-    else if (extractedProductId) {
+    if (extractedProductId) {
         // Regular product path
         pathname = `/c/${shortId}/${extractedProductId}`;
         // Add proof to path
@@ -204,4 +194,130 @@ function formatExpiryDate(date) {
     const month = (date.getMonth() + 1).toString().padStart(2, '0');
     const day = date.getDate().toString().padStart(2, '0');
     return `${year}${month}${day}`;
+}
+// ─── GS1 Digital Link generator ──────────────────────────────────────────────
+/** GS1 path qualifiers for a GTIN (AI 01) key, in the canonical GS1 Digital Link order. */
+const GTIN_PATH_QUALIFIERS = ['22', '10', '21'];
+/** GS1 Application Identifiers whose value is a date — formatted `YYMMDD`. */
+const DATE_AIS = new Set(['11', '12', '13', '15', '16', '17']);
+/** Pull a code out of a string or an object (`serialNumber` preferred, then `id`). */
+function extractCode(v) {
+    var _a;
+    if (v == null)
+        return undefined;
+    if (typeof v === 'string')
+        return v;
+    return (_a = v.serialNumber) !== null && _a !== void 0 ? _a : v.id;
+}
+/**
+ * Builds a GS1 Digital Link for a product, with full support for the standard
+ * Application Identifiers. Path qualifiers are emitted in the canonical GS1 order
+ * (`/01/{gtin}/22/{cpv}/10/{lot}/21/{serial}`); data attributes (expiry, production
+ * date, weights, …) become query params; `linkType` is appended for GS1 resolution.
+ *
+ * A bare `/01/{gtin}` is used when the product owns the GTIN globally (`ownGtin`) or
+ * the collection is on its own custom domain; otherwise the GTIN is scoped to the
+ * collection with the `/gc/{shortId}` prefix on the shared platform domain.
+ *
+ * @example
+ * ```ts
+ * // GTIN + variant + lot + serial + expiry, on a custom domain
+ * buildGs1DigitalLink({
+ *   collection,                 // portalUrl = https://acme.com
+ *   gtin: '05012345678900',
+ *   variant: 'red',
+ *   lot: 'LOT42',
+ *   serial: proof,              // AI 21 from proof.serialNumber ?? proof.id
+ *   expiry: '2026-06-30',
+ * })
+ * // → https://acme.com/01/05012345678900/22/red/10/LOT42/21/{serial}?17=260630
+ *
+ * // Arbitrary AIs via the generic map
+ * buildGs1DigitalLink({
+ *   collection, gtin: '05012345678900',
+ *   ais: { '11': new Date('2025-01-01'), '3103': '000500' }, // production date + net weight (kg)
+ *   linkType: 'gs1:pip',
+ * })
+ * ```
+ */
+export function buildGs1DigitalLink(params) {
+    var _a, _b, _c, _d, _e, _f;
+    const { collection, product, expiry, linkType, ais = {}, queryParams = {}, pathOnly = false } = params;
+    const gtin = (_b = (_a = params.gtin) !== null && _a !== void 0 ? _a : product === null || product === void 0 ? void 0 : product.gtin) !== null && _b !== void 0 ? _b : undefined;
+    if (!gtin) {
+        throw new Error('buildGs1DigitalLink requires a `gtin` (or a `product` that has one)');
+    }
+    const ownGtin = (_c = params.ownGtin) !== null && _c !== void 0 ? _c : (product && 'ownGtin' in product ? !!product.ownGtin : false);
+    // Base domain + custom-domain scoping (same rules as buildPortalPath).
+    const shortId = collection === null || collection === void 0 ? void 0 : collection.shortId;
+    const baseUrl = (_d = params.domain) !== null && _d !== void 0 ? _d : (collection && 'portalUrl' in collection ? collection.portalUrl : undefined);
+    const redirectUrl = collection && 'redirectUrl' in collection ? collection.redirectUrl : undefined;
+    const customDomain = (_e = params.customDomain) !== null && _e !== void 0 ? _e : (!!redirectUrl || baseIsCustomDomain(baseUrl));
+    // ── Path qualifiers (AI 22 → 10 → 21) ──
+    const pathAIs = {};
+    const cpv = extractCode((_f = params.cpv) !== null && _f !== void 0 ? _f : params.variant);
+    if (cpv != null)
+        pathAIs['22'] = cpv;
+    let batchExpiry;
+    let lot = extractCode(params.lot);
+    if (lot == null && params.batch != null) {
+        if (typeof params.batch === 'string') {
+            lot = params.batch;
+        }
+        else {
+            lot = params.batch.id;
+            const exp = params.batch.expiryDate;
+            if (exp) {
+                batchExpiry = (typeof exp === 'object' && 'seconds' in exp)
+                    ? new Date(exp.seconds * 1000)
+                    : exp;
+            }
+        }
+    }
+    if (lot != null)
+        pathAIs['10'] = lot;
+    const serial = extractCode(params.serial);
+    if (serial != null)
+        pathAIs['21'] = serial;
+    // ── Data attributes (query string) ──
+    const attrs = {};
+    const setAttr = (ai, value) => {
+        attrs[ai] = DATE_AIS.has(ai) && (value instanceof Date || typeof value === 'string')
+            ? formatExpiryDate(value)
+            : String(value);
+    };
+    const effectiveExpiry = expiry !== null && expiry !== void 0 ? expiry : batchExpiry;
+    if (effectiveExpiry != null)
+        setAttr('17', effectiveExpiry);
+    // Generic AI map: classify each entry as a path qualifier or a data attribute.
+    for (const [ai, value] of Object.entries(ais)) {
+        if (value == null)
+            continue;
+        if (GTIN_PATH_QUALIFIERS.includes(ai)) {
+            pathAIs[ai] = String(value);
+        }
+        else {
+            setAttr(ai, value);
+        }
+    }
+    // ── Compose the path ──
+    let pathname = (ownGtin || customDomain || !shortId) ? `/01/${gtin}` : `/gc/${shortId}/01/${gtin}`;
+    for (const ai of GTIN_PATH_QUALIFIERS) {
+        if (pathAIs[ai] != null)
+            pathname += `/${ai}/${pathAIs[ai]}`;
+    }
+    // ── Query string ──
+    const searchParams = new URLSearchParams();
+    for (const [ai, value] of Object.entries(attrs))
+        searchParams.append(ai, value);
+    if (linkType)
+        searchParams.append('linkType', linkType);
+    for (const [k, v] of Object.entries(queryParams))
+        searchParams.append(k, v);
+    const queryString = searchParams.toString();
+    const fullPath = pathname + (queryString ? `?${queryString}` : '');
+    if (pathOnly)
+        return fullPath;
+    const domain = baseUrl || 'https://smartlinks.app';
+    return domain.replace(/\/$/, '') + fullPath;
 }

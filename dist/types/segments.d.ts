@@ -5,6 +5,7 @@ export interface InteractionFilterValue {
     from?: string;
     to?: string;
 }
+export type CustomFieldOperator = 'equals' | 'exists' | 'gt' | 'gte' | 'lt' | 'lte' | 'before' | 'after' | 'within_days' | 'older_than_days';
 export type SegmentFilterRule = {
     field: 'interaction';
     op: 'had' | 'exists';
@@ -28,6 +29,11 @@ export type SegmentFilterRule = {
         from?: string;
         to?: string;
     };
+} | {
+    type: 'custom_field';
+    field: string;
+    operator: CustomFieldOperator;
+    value?: string | number;
 } | {
     type: 'interaction';
     interactionId: string;

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.22  |  Generated: 2026-08-27T17:34:12.788Z
+Version: 1.15.23  |  Generated: 2026-08-29T10:19:10.618Z
 
 This is a concise summary of all available API functions and types.
 
@@ -7591,6 +7591,8 @@ interface SegmentRecipientsResponse {
 }
 ```
 
+**CustomFieldOperator** = ``
+
 **SegmentFilterRule** = ``
 
 ### tags
@@ -8272,6 +8274,37 @@ interface PortalPathParams {
   * the collection), so the `/gc/{shortId}` prefix is dropped. Left undefined, this
   * is auto-detected from `collection.redirectUrl` or a non-platform `portalUrl` host.
   customDomain?: boolean
+}
+```
+
+**Gs1DigitalLinkParams** (interface)
+```typescript
+interface Gs1DigitalLinkParams {
+  collection?: Collection | { shortId?: string; portalUrl?: string; redirectUrl?: string }
+  domain?: string
+  gtin?: string
+  product?: Product
+  ownGtin?: boolean
+  * A real GS1 **Consumer Product Variant** code (AI 22). Use this when the brand has a
+  * genuine CPV. Takes precedence over `variant` when both are given.
+  cpv?: string | { id: string }
+  * Internal variant id, emitted as AI 22 (the SmartLinks resolver reads path segment 22
+  * as the variant). Prefer `cpv` when you have a real GS1 CPV code — a non-CPV variant id
+  * in AI 22 is only meaningful to the SmartLinks resolver, not to third-party GS1 resolvers.
+  variant?: string | { id: string }
+  lot?: string | { id: string }
+  batch?: BatchResponse | string
+  serial?: string | { id?: string; serialNumber?: string }
+  expiry?: string | Date
+  * Any other GS1 Application Identifiers as `{ [ai]: value }` — e.g.
+  * `{ '11': prodDate, '3103': '000500' }`. Date AIs (11/12/13/15/16/17) accept a
+  * `Date` and are formatted `YYMMDD`; path-qualifier AIs (22/10/21) are placed in
+  * the path in canonical order; everything else becomes a query-string data attribute.
+  ais?: Record<string, string | number | Date>
+  linkType?: string
+  queryParams?: Record<string, string>
+  customDomain?: boolean
+  pathOnly?: boolean
 }
 ```
 

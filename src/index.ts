@@ -20,6 +20,7 @@ export * as utils from './utils'
 // Explicitly re-export types for documentation
 export type {
   PortalPathParams,
+  Gs1DigitalLinkParams,
   ConditionParams,
   ConditionDebugOptions,
   ConditionDebugLogger,

@@ -101,3 +101,94 @@ export interface PortalPathParams {
  * ```
  */
 export declare function buildPortalPath(params: PortalPathParams): string;
+export interface Gs1DigitalLinkParams {
+    /** Collection — provides the base domain (`portalUrl`), `shortId` (for `/gc` scoping) and custom-domain detection. */
+    collection?: Collection | {
+        shortId?: string;
+        portalUrl?: string;
+        redirectUrl?: string;
+    };
+    /** Explicit base domain (e.g. `"https://acme.com"`), overriding `collection.portalUrl`. */
+    domain?: string;
+    /** GTIN — the product's AI 01 identifier. Required (or provide `product`). */
+    gtin?: string;
+    /** Product object — extracts `gtin` and `ownGtin` when not given explicitly. */
+    product?: Product;
+    /** Override the global-owner flag; otherwise read from `product.ownGtin`. */
+    ownGtin?: boolean;
+    /**
+     * A real GS1 **Consumer Product Variant** code (AI 22). Use this when the brand has a
+     * genuine CPV. Takes precedence over `variant` when both are given.
+     */
+    cpv?: string | {
+        id: string;
+    };
+    /**
+     * Internal variant id, emitted as AI 22 (the SmartLinks resolver reads path segment 22
+     * as the variant). Prefer `cpv` when you have a real GS1 CPV code — a non-CPV variant id
+     * in AI 22 is only meaningful to the SmartLinks resolver, not to third-party GS1 resolvers.
+     */
+    variant?: string | {
+        id: string;
+    };
+    /** Batch / lot (AI 10). A string or an object with `id`. */
+    lot?: string | {
+        id: string;
+    };
+    /** Alias of `lot` (AI 10). A `BatchResponse` also contributes its expiry date (AI 17) unless `expiry` is set. */
+    batch?: BatchResponse | string;
+    /** Serial (AI 21) — the specific item / proof. A string (serial / NFC / virtual id) or an object (`serialNumber` ?? `id`, e.g. a proof). */
+    serial?: string | {
+        id?: string;
+        serialNumber?: string;
+    };
+    /** Expiry date (AI 17). A `Date`, ISO string, or `YYMMDD` string. */
+    expiry?: string | Date;
+    /**
+     * Any other GS1 Application Identifiers as `{ [ai]: value }` — e.g.
+     * `{ '11': prodDate, '3103': '000500' }`. Date AIs (11/12/13/15/16/17) accept a
+     * `Date` and are formatted `YYMMDD`; path-qualifier AIs (22/10/21) are placed in
+     * the path in canonical order; everything else becomes a query-string data attribute.
+     */
+    ais?: Record<string, string | number | Date>;
+    /** GS1 `linkType` (added as a `?linkType=` query param). */
+    linkType?: string;
+    /** Additional non-GS1 query params. */
+    queryParams?: Record<string, string>;
+    /** Override custom-domain detection (see {@link buildPortalPath}). */
+    customDomain?: boolean;
+    /** Return only the path, without a domain. */
+    pathOnly?: boolean;
+}
+/**
+ * Builds a GS1 Digital Link for a product, with full support for the standard
+ * Application Identifiers. Path qualifiers are emitted in the canonical GS1 order
+ * (`/01/{gtin}/22/{cpv}/10/{lot}/21/{serial}`); data attributes (expiry, production
+ * date, weights, …) become query params; `linkType` is appended for GS1 resolution.
+ *
+ * A bare `/01/{gtin}` is used when the product owns the GTIN globally (`ownGtin`) or
+ * the collection is on its own custom domain; otherwise the GTIN is scoped to the
+ * collection with the `/gc/{shortId}` prefix on the shared platform domain.
+ *
+ * @example
+ * ```ts
+ * // GTIN + variant + lot + serial + expiry, on a custom domain
+ * buildGs1DigitalLink({
+ *   collection,                 // portalUrl = https://acme.com
+ *   gtin: '05012345678900',
+ *   variant: 'red',
+ *   lot: 'LOT42',
+ *   serial: proof,              // AI 21 from proof.serialNumber ?? proof.id
+ *   expiry: '2026-06-30',
+ * })
+ * // → https://acme.com/01/05012345678900/22/red/10/LOT42/21/{serial}?17=260630
+ *
+ * // Arbitrary AIs via the generic map
+ * buildGs1DigitalLink({
+ *   collection, gtin: '05012345678900',
+ *   ais: { '11': new Date('2025-01-01'), '3103': '000500' }, // production date + net weight (kg)
+ *   linkType: 'gs1:pip',
+ * })
+ * ```
+ */
+export declare function buildGs1DigitalLink(params: Gs1DigitalLinkParams): string;

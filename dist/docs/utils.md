@@ -219,6 +219,53 @@ utils.buildPortalPath({
 // Returns: https://portal.smartlinks.io/c/abc123/prod123?utm_source=email&utm_campaign=launch&lang=fr
 ```
 
+## GS1 Digital Links — `buildGs1DigitalLink(params)`
+
+`buildPortalPath` covers portal routing; when you specifically want a **GS1 Digital Link**
+with the full range of Application Identifiers (AIs), use `buildGs1DigitalLink`. It emits
+path qualifiers in the **canonical GS1 order** — `/01/{gtin}/22/{cpv}/10/{lot}/21/{serial}` —
+routes data attributes (expiry, production date, weights, …) to the query string, and applies
+the same custom-domain scoping (bare `/01/` on a custom domain or for a master GTIN, `/gc/{shortId}`
+otherwise).
+
+**Named inputs** for the common AIs, plus a generic **`ais` map** for anything else:
+
+| Input | AI | Notes |
+|-------|----|-------|
+| `gtin` / `product.gtin` | 01 | Primary identifier (required) |
+| `cpv` | 22 | Real GS1 Consumer Product Variant code (path). Wins over `variant`. |
+| `variant` | 22 | Internal variant id, emitted as AI 22 for the SmartLinks resolver. Use `cpv` for a genuine GS1 CPV. |
+| `lot` / `batch` | 10 | Batch/lot (path); a batch object also supplies its expiry |
+| `serial` | 21 | Specific item — a string, or an object (`serialNumber` ?? `id`, e.g. a proof / serial / virtual id) |
+| `expiry` | 17 | Date → `YYMMDD` (query) |
+| `ais: { [ai]: value }` | any | Date AIs (11/12/13/15/16/17) formatted `YYMMDD`; qualifier AIs (22/10/21) go in the path; the rest become query attributes |
+| `linkType` | — | GS1 `linkType`, added as `?linkType=` |
+
+```typescript
+// Variant + lot + serial + expiry, on a custom domain
+utils.buildGs1DigitalLink({
+  collection,               // portalUrl = https://acme.com
+  gtin: '05012345678900',
+  variant: 'red',
+  lot: 'LOT42',
+  serial: proof,            // AI 21 from proof.serialNumber ?? proof.id
+  expiry: '2026-06-30',
+})
+// → https://acme.com/01/05012345678900/22/red/10/LOT42/21/{serial}?17=260630
+
+// Arbitrary AIs via the generic map
+utils.buildGs1DigitalLink({
+  collection,
+  gtin: '05012345678900',
+  ais: { '11': new Date(2025, 0, 1), '3103': '000500' }, // production date + net weight
+  linkType: 'gs1:pip',
+})
+// → https://.../01/05012345678900?11=250101&3103=000500&linkType=gs1%3Apip
+```
+
+`buildPortalPath` delegates its GTIN paths to this function, so both stay in sync (and both now
+emit qualifiers in canonical `22 → 10 → 21` order).
+
 ## Use Cases
 
 ### QR Code Generation
