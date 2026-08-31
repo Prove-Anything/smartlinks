@@ -25340,6 +25340,29 @@ components:
           type: string
       required:
         - interactionId
+    OwnershipAttributePredicate:
+      type: object
+      properties:
+        path:
+          type: string
+        operator:
+          $ref: "#/components/schemas/OwnershipAttributeOperator"
+        value:
+          type: object
+          additionalProperties: true
+      required:
+        - path
+        - operator
+    OwnershipFacetSelector:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+      required:
+        - key
+        - value
     SegmentRecord:
       type: object
       properties:
@@ -25445,6 +25468,25 @@ components:
         - limit
         - offset
         - total
+    CustomFieldOperator:
+      type: string
+      enum:
+        - equals
+        - exists
+        - gt
+        - gte
+        - lt
+        - lte
+        - before
+        - after
+        - within_days
+        - older_than_days
+        - "s JSON. Numeric ops (gt/gte/lt/lte) compare as a number. export type OwnershipAttributeOperator = "
+        - " | "
+        - " | "
+        - " | "
+        - " | "
+        - " | "
     Tag:
       type: object
       properties:

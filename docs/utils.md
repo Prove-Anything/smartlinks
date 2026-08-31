@@ -233,7 +233,8 @@ otherwise).
 | Input | AI | Notes |
 |-------|----|-------|
 | `gtin` / `product.gtin` | 01 | Primary identifier (required) |
-| `cpv` / `variant` | 22 | Consumer Product Variant (path) |
+| `cpv` | 22 | Real GS1 Consumer Product Variant code (path). Wins over `variant`. |
+| `variant` | 22 | Internal variant id, emitted as AI 22 for the SmartLinks resolver. Use `cpv` for a genuine GS1 CPV. |
 | `lot` / `batch` | 10 | Batch/lot (path); a batch object also supplies its expiry |
 | `serial` | 21 | Specific item — a string, or an object (`serialNumber` ?? `id`, e.g. a proof / serial / virtual id) |
 | `expiry` | 17 | Date → `YYMMDD` (query) |

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.23  |  Generated: 2026-08-29T10:19:10.618Z
+Version: 1.15.24  |  Generated: 2026-08-31T17:50:11.496Z
 
 This is a concise summary of all available API functions and types.
 
@@ -7531,6 +7531,23 @@ interface InteractionFilterValue {
 }
 ```
 
+**OwnershipAttributePredicate** (interface)
+```typescript
+interface OwnershipAttributePredicate {
+  path: string
+  operator: OwnershipAttributeOperator
+  value?: string | number
+}
+```
+
+**OwnershipFacetSelector** (interface)
+```typescript
+interface OwnershipFacetSelector {
+  key: string
+  value: string
+}
+```
+
 **SegmentRecord** (interface)
 ```typescript
 interface SegmentRecord {
@@ -7592,6 +7609,8 @@ interface SegmentRecipientsResponse {
 ```
 
 **CustomFieldOperator** = ``
+
+**OwnershipAttributeOperator** = `'equals' | 'exists' | 'gt' | 'gte' | 'lt' | 'lte'`
 
 **SegmentFilterRule** = ``
 

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.22  |  Generated: 2026-08-28T10:37:22.806Z
+Version: 1.15.24  |  Generated: 2026-08-31T17:50:11.496Z
 
 This is a concise summary of all available API functions and types.
 
@@ -7531,6 +7531,23 @@ interface InteractionFilterValue {
 }
 ```
 
+**OwnershipAttributePredicate** (interface)
+```typescript
+interface OwnershipAttributePredicate {
+  path: string
+  operator: OwnershipAttributeOperator
+  value?: string | number
+}
+```
+
+**OwnershipFacetSelector** (interface)
+```typescript
+interface OwnershipFacetSelector {
+  key: string
+  value: string
+}
+```
+
 **SegmentRecord** (interface)
 ```typescript
 interface SegmentRecord {
@@ -7590,6 +7607,10 @@ interface SegmentRecipientsResponse {
   note?: string
 }
 ```
+
+**CustomFieldOperator** = ``
+
+**OwnershipAttributeOperator** = `'equals' | 'exists' | 'gt' | 'gte' | 'lt' | 'lte'`
 
 **SegmentFilterRule** = ``
 
@@ -8283,7 +8304,12 @@ interface Gs1DigitalLinkParams {
   gtin?: string
   product?: Product
   ownGtin?: boolean
+  * A real GS1 **Consumer Product Variant** code (AI 22). Use this when the brand has a
+  * genuine CPV. Takes precedence over `variant` when both are given.
   cpv?: string | { id: string }
+  * Internal variant id, emitted as AI 22 (the SmartLinks resolver reads path segment 22
+  * as the variant). Prefer `cpv` when you have a real GS1 CPV code — a non-CPV variant id
+  * in AI 22 is only meaningful to the SmartLinks resolver, not to third-party GS1 resolvers.
   variant?: string | { id: string }
   lot?: string | { id: string }
   batch?: BatchResponse | string

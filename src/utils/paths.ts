@@ -275,9 +275,16 @@ export interface Gs1DigitalLinkParams {
   product?: Product
   /** Override the global-owner flag; otherwise read from `product.ownGtin`. */
   ownGtin?: boolean
-  /** Consumer Product Variant (AI 22). A string or an object with `id`. */
+  /**
+   * A real GS1 **Consumer Product Variant** code (AI 22). Use this when the brand has a
+   * genuine CPV. Takes precedence over `variant` when both are given.
+   */
   cpv?: string | { id: string }
-  /** Alias of `cpv` (AI 22). */
+  /**
+   * Internal variant id, emitted as AI 22 (the SmartLinks resolver reads path segment 22
+   * as the variant). Prefer `cpv` when you have a real GS1 CPV code — a non-CPV variant id
+   * in AI 22 is only meaningful to the SmartLinks resolver, not to third-party GS1 resolvers.
+   */
   variant?: string | { id: string }
   /** Batch / lot (AI 10). A string or an object with `id`. */
   lot?: string | { id: string }
