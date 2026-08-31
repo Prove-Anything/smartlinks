@@ -6,6 +6,17 @@ export interface InteractionFilterValue {
     to?: string;
 }
 export type CustomFieldOperator = 'equals' | 'exists' | 'gt' | 'gte' | 'lt' | 'lte' | 'before' | 'after' | 'within_days' | 'older_than_days';
+export type OwnershipAttributeOperator = 'equals' | 'exists' | 'gt' | 'gte' | 'lt' | 'lte';
+export interface OwnershipAttributePredicate {
+    path: string;
+    operator: OwnershipAttributeOperator;
+    /** Operand: a number for gt/gte/lt/lte, a string for equals; omitted for exists. */
+    value?: string | number;
+}
+export interface OwnershipFacetSelector {
+    key: string;
+    value: string;
+}
 export type SegmentFilterRule = {
     field: 'interaction';
     op: 'had' | 'exists';
@@ -34,6 +45,14 @@ export type SegmentFilterRule = {
     field: string;
     operator: CustomFieldOperator;
     value?: string | number;
+} | {
+    type: 'ownership';
+    productId?: string;
+    facet?: OwnershipFacetSelector;
+    attribute?: OwnershipAttributePredicate;
+    olderThanDays?: number;
+    withinDays?: number;
+    includeDeleted?: boolean;
 } | {
     type: 'interaction';
     interactionId: string;
