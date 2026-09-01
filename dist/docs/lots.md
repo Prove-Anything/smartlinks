@@ -18,8 +18,21 @@ truth for its shared data.
   - `{ mode: 'products', productIds: [...] }` — an explicit list.
 - **`productIds` / `productCount`** — the materialised snapshot of resolved members (re-resolved on create, on selector change, and on demand via `resolve`).
 - **`payload`** — shared lot data (dates, supplier ref, custom fields). Lives only on the lot.
-- **`status`** — `open` → `closed` → `recalled` → `archived`. Archiving never deletes anything.
+- **`status`** — `open` → `closed` → `recalled` → `archived`. A live lifecycle state, distinct from deletion.
 - **`destination`** — optional lot-level redirect; wins over the product's on a lot-scoped scan.
+
+### Archive vs delete
+
+Two separate ideas — mirroring the platform's `deletedAt` convention:
+
+| | `archive` (`status: 'archived'`) | `remove` (soft-delete, `deletedAt`) |
+|---|---|---|
+| Record | stays **live** & visible | **hidden** from reads unless `includeDeleted: true` |
+| `lotNumber` | **stays reserved** | **freed** for reuse by a new lot |
+| AI(10) scan | not resolved (excluded) | not resolved |
+| Reversible | change status back | `restore` (409 if the number was taken by a live lot) |
+
+Nothing is ever hard-deleted (joins/history stay intact). Use **archive** for "this run is done, keep it around"; use **remove** for "this was a mistake, and I want the number back."
 
 ---
 
@@ -50,7 +63,11 @@ const containing  = await lots.list(collectionId, { productId: 'prd_abc' }) // r
 const updated     = await lots.update(collectionId, lot.id, { status: 'closed' })
 const { diff }    = await lots.resolve(collectionId, lot.id)               // { added, removed }
 const members     = await lots.listProducts(collectionId, lot.id, { page: 1, limit: 50 })
-await lots.archive(collectionId, lot.id)
+
+await lots.archive(collectionId, lot.id)                       // live, keeps its number
+await lots.remove(collectionId, lot.id)                        // soft-delete, frees the number
+const withDeleted = await lots.list(collectionId, { includeDeleted: true })
+const restored    = await lots.restore(collectionId, lot.id)   // undo a soft-delete
 
 // Cross-app reads
 const publicLots  = await lots.publicList(collectionId)

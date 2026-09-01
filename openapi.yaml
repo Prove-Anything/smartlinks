@@ -4996,6 +4996,38 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/lots/{lotId}/restore:
+    post:
+      tags:
+        - lots
+      summary: Restore a soft-deleted lot.
+      operationId: lots_restore
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: lotId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Lot"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/lots{params}:
     get:
       tags:
@@ -23737,6 +23769,8 @@ components:
           type: string
         updatedAt:
           type: string
+        deletedAt:
+          type: string
       required:
         - id
         - collectionId
@@ -23777,6 +23811,8 @@ components:
           type: string
         productId:
           type: string
+        includeDeleted:
+          type: boolean
     ListLotsResponse:
       type: object
       properties:

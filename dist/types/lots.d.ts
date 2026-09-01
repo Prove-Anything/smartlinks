@@ -39,6 +39,8 @@ export interface Lot {
     updatedBy?: string | null;
     createdAt: string;
     updatedAt: string;
+    /** Soft-delete timestamp (recoverable). `null` for live lots. Distinct from `status:'archived'`. */
+    deletedAt?: string | null;
 }
 export interface LotCreateInput {
     lotNumber: string;
@@ -57,6 +59,8 @@ export interface ListLotsParams {
     search?: string;
     /** Reverse lookup — lots containing this product id. */
     productId?: string;
+    /** Admin only: include soft-deleted lots (default false). */
+    includeDeleted?: boolean;
 }
 export interface ListLotsResponse {
     lots: Lot[];

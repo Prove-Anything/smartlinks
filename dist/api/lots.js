@@ -22,6 +22,8 @@ export var lots;
             qs.append('search', params.search);
         if (params.productId)
             qs.append('productId', params.productId);
+        if (params.includeDeleted)
+            qs.append('includeDeleted', 'true');
         const s = qs.toString();
         return s ? `?${s}` : '';
     }
@@ -46,14 +48,16 @@ export var lots;
         return res.lots;
     }
     lots.list = list;
-    /** Get the full lot record. */
-    async function get(collectionId, lotId) {
-        return request(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}`);
+    /** Get the full lot record. Pass `{ includeDeleted: true }` to fetch a soft-deleted one. */
+    async function get(collectionId, lotId, opts = {}) {
+        const qs = opts.includeDeleted ? '?includeDeleted=true' : '';
+        return request(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}${qs}`);
     }
     lots.get = get;
     /** Look up a lot by its number (case-insensitive) — used by scan/resolver flows. */
-    async function getByNumber(collectionId, lotNumber) {
-        return request(`${adminBase(collectionId)}/by-number/${encodeURIComponent(lotNumber)}`);
+    async function getByNumber(collectionId, lotNumber, opts = {}) {
+        const qs = opts.includeDeleted ? '?includeDeleted=true' : '';
+        return request(`${adminBase(collectionId)}/by-number/${encodeURIComponent(lotNumber)}${qs}`);
     }
     lots.getByNumber = getByNumber;
     /** Update a lot. Re-resolves members if the selector changed (response then carries `diff`). */
@@ -61,11 +65,24 @@ export var lots;
         return put(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}`, lot);
     }
     lots.update = update;
-    /** Soft-archive a lot (never deletes members). */
-    async function archive(collectionId, lotId) {
+    /**
+     * Soft-delete a lot — recoverable, and frees its `lotNumber` for reuse. Distinct from
+     * {@link archive}. Hidden from reads unless `{ includeDeleted: true }`; undo with {@link restore}.
+     */
+    async function remove(collectionId, lotId) {
         return del(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}`);
     }
+    lots.remove = remove;
+    /** Archive a lot — a live lifecycle state (stays visible, keeps its number). Not a delete. */
+    async function archive(collectionId, lotId) {
+        return post(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}/archive`, {});
+    }
     lots.archive = archive;
+    /** Restore a soft-deleted lot. Rejects (409) if a live lot now uses the same number. */
+    async function restore(collectionId, lotId) {
+        return post(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}/restore`, {});
+    }
+    lots.restore = restore;
     /** Re-resolve members from the current selector; returns the lot + a member diff. */
     async function resolve(collectionId, lotId) {
         return post(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}/resolve`, {});

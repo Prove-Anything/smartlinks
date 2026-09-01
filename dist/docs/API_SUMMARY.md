@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.16.0  |  Generated: 2026-09-01T12:28:06.435Z
+Version: 1.16.1  |  Generated: 2026-09-01T15:47:33.524Z
 
 This is a concise summary of all available API functions and types.
 
@@ -6389,6 +6389,7 @@ interface Lot {
   updatedBy?: string | null
   createdAt: string
   updatedAt: string
+  deletedAt?: string | null
 }
 ```
 
@@ -6412,6 +6413,7 @@ interface ListLotsParams {
   status?: LotStatus
   search?: string
   productId?: string
+  includeDeleted?: boolean
 }
 ```
 
@@ -9898,17 +9900,23 @@ Create a lot (resolves its selector into members).
 **list**(collectionId: string, params: ListLotsParams = {}) → `Promise<Lot[]>`
 List lots (summary rows; `payload`/`productIds` omitted). Filter by status, search, or containing productId.
 
-**get**(collectionId: string, lotId: string) → `Promise<Lot>`
-Get the full lot record.
+**get**(collectionId: string, lotId: string, opts: { includeDeleted?: boolean } = {}) → `Promise<Lot>`
+Get the full lot record. Pass `{ includeDeleted: true }` to fetch a soft-deleted one.
 
-**getByNumber**(collectionId: string, lotNumber: string) → `Promise<Lot>`
+**getByNumber**(collectionId: string, lotNumber: string, opts: { includeDeleted?: boolean } = {}) → `Promise<Lot>`
 Look up a lot by its number (case-insensitive) — used by scan/resolver flows.
 
 **update**(collectionId: string, lotId: string, lot: LotUpdateInput) → `Promise<Lot>`
 Update a lot. Re-resolves members if the selector changed (response then carries `diff`).
 
+**remove**(collectionId: string, lotId: string) → `Promise<`
+Soft-delete a lot — recoverable, and frees its `lotNumber` for reuse. Distinct from {@link archive}. Hidden from reads unless `{ includeDeleted: true }`; undo with {@link restore}.
+
 **archive**(collectionId: string, lotId: string) → `Promise<`
-Soft-archive a lot (never deletes members).
+Archive a lot — a live lifecycle state (stays visible, keeps its number). Not a delete.
+
+**restore**(collectionId: string, lotId: string) → `Promise<Lot>`
+Restore a soft-deleted lot. Rejects (409) if a live lot now uses the same number.
 
 **resolve**(collectionId: string, lotId: string) → `Promise<ResolveLotResponse>`
 Re-resolve members from the current selector; returns the lot + a member diff.

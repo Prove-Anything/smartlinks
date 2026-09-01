@@ -24,6 +24,7 @@ export namespace lots {
     if (params.status) qs.append('status', params.status)
     if (params.search) qs.append('search', params.search)
     if (params.productId) qs.append('productId', params.productId)
+    if (params.includeDeleted) qs.append('includeDeleted', 'true')
     const s = qs.toString()
     return s ? `?${s}` : ''
   }
@@ -48,14 +49,16 @@ export namespace lots {
     return res.lots
   }
 
-  /** Get the full lot record. */
-  export async function get(collectionId: string, lotId: string): Promise<Lot> {
-    return request<Lot>(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}`)
+  /** Get the full lot record. Pass `{ includeDeleted: true }` to fetch a soft-deleted one. */
+  export async function get(collectionId: string, lotId: string, opts: { includeDeleted?: boolean } = {}): Promise<Lot> {
+    const qs = opts.includeDeleted ? '?includeDeleted=true' : ''
+    return request<Lot>(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}${qs}`)
   }
 
   /** Look up a lot by its number (case-insensitive) — used by scan/resolver flows. */
-  export async function getByNumber(collectionId: string, lotNumber: string): Promise<Lot> {
-    return request<Lot>(`${adminBase(collectionId)}/by-number/${encodeURIComponent(lotNumber)}`)
+  export async function getByNumber(collectionId: string, lotNumber: string, opts: { includeDeleted?: boolean } = {}): Promise<Lot> {
+    const qs = opts.includeDeleted ? '?includeDeleted=true' : ''
+    return request<Lot>(`${adminBase(collectionId)}/by-number/${encodeURIComponent(lotNumber)}${qs}`)
   }
 
   /** Update a lot. Re-resolves members if the selector changed (response then carries `diff`). */
@@ -63,9 +66,22 @@ export namespace lots {
     return put<Lot>(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}`, lot)
   }
 
-  /** Soft-archive a lot (never deletes members). */
-  export async function archive(collectionId: string, lotId: string): Promise<{ success: boolean }> {
+  /**
+   * Soft-delete a lot — recoverable, and frees its `lotNumber` for reuse. Distinct from
+   * {@link archive}. Hidden from reads unless `{ includeDeleted: true }`; undo with {@link restore}.
+   */
+  export async function remove(collectionId: string, lotId: string): Promise<{ success: boolean }> {
     return del<{ success: boolean }>(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}`)
+  }
+
+  /** Archive a lot — a live lifecycle state (stays visible, keeps its number). Not a delete. */
+  export async function archive(collectionId: string, lotId: string): Promise<{ success: boolean }> {
+    return post<{ success: boolean }>(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}/archive`, {})
+  }
+
+  /** Restore a soft-deleted lot. Rejects (409) if a live lot now uses the same number. */
+  export async function restore(collectionId: string, lotId: string): Promise<Lot> {
+    return post<Lot>(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}/restore`, {})
   }
 
   /** Re-resolve members from the current selector; returns the lot + a member diff. */
