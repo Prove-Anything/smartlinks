@@ -81,6 +81,21 @@ export type {
   BatchUpdateRequest,
 } from "./types/batch"
 export type {
+  Lot,
+  LotStatus,
+  LotSelector,
+  LotPayload,
+  LotCreateInput,
+  LotUpdateInput,
+  ListLotsParams,
+  ListLotsResponse,
+  LotMemberDiff,
+  ResolveLotResponse,
+  LotProductSummary,
+  ListLotProductsResponse,
+  LotResolutionResult,
+} from "./types/lots"
+export type {
   VariantResponse,
   VariantCreateRequest,
   VariantUpdateRequest,

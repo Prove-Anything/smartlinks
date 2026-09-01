@@ -31,6 +31,12 @@ export interface Proof {
   tokenId: string
   /** Unique identifier for the user */
   userId: string
+  /** Batch (single production run of this product) this item belongs to, if any. */
+  batchId?: string | null
+  /** Variant (product definition) this item belongs to, if any. */
+  variantId?: string | null
+  /** Lot (cross-product production grouping) this item belongs to, if any. Separate from `batchId`. */
+  lotId?: string | null
   /** Is this proof available to be claimed */
   claimable?: boolean
   /** Is this proof virtual */

@@ -298,8 +298,9 @@ about:
 | `hub`          | The Hub module.                                                      |
 | `portal`       | QR code scan portals.                                                |
 | `virtualItems` | Virtual items — algorithmic per-item IDs with no persistent row (battery serials, scan-to-collect points, bulk QR sheets). Replaces the old root-level `virtualItemsEnabled` boolean, which has been removed (§8) — resolve this like any other feature flag, not as a separate config key. Independent of `itemRecordMode`. |
-| `batches`      | Batch support. Used to be the `Collection.batches` boolean; that field has been removed — this flag is now the only source of truth. |
+| `batches`      | Batch support. Used to be the `Collection.batches` boolean; that field has been removed — this flag is now the only source of truth. Also gates AI(10) **batch** resolution on a GS1 Digital Link scan (§ see `lots.md`). |
 | `variants`     | Variant support. Used to be the `Collection.variants` boolean; that field has been removed — this flag is now the only source of truth. |
+| `lots`         | Lot support — collection-scoped production groupings spanning many SKUs (see `lots.md`). Gates AI(10) **lot** resolution on a GS1 Digital Link scan. Independent of `batches`; when both are on, a scanned AI(10) value resolves batch-first (specific SKU) then lot (broad). |
 
 Same resolution rule as any flag (§4.4) — don't read these off
 `cfg.system.features` directly, always go through `isFeatureEnabled()`.

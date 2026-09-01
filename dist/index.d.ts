@@ -10,6 +10,7 @@ export type { LoginResponse, VerifyTokenResponse, AccountInfoResponse, AuthLocat
 export type { UserAccountRegistrationRequest, } from "./types/auth";
 export type { CommunicationEvent, CommsQueryByUser, CommsRecipientIdsQuery, CommsRecipientsWithoutActionQuery, CommsRecipientsWithActionQuery, RecipientId, RecipientWithOutcome, LogCommunicationEventBody, LogBulkCommunicationEventsBody, AppendResult, AppendBulkResult, CommsSettings, TopicConfig, CommsSettingsGetResponse, CommsSettingsPatchBody, CommsPublicTopicsResponse, UnsubscribeQuery, UnsubscribeResponse, CommsConsentUpsertRequest, CommsPreferencesUpsertRequest, CommsSubscribeRequest, CommsSubscribeResponse, CommsSubscriptionCheckQuery, CommsSubscriptionCheckResponse, CommsListMethodsQuery, CommsListMethodsResponse, RegisterEmailMethodRequest, RegisterSmsMethodRequest, RegisterMethodResponse, SubscriptionsResolveRequest, SubscriptionsResolveResponse, } from "./types/comms";
 export type { BatchResponse, BatchCreateRequest, BatchUpdateRequest, } from "./types/batch";
+export type { Lot, LotStatus, LotSelector, LotPayload, LotCreateInput, LotUpdateInput, ListLotsParams, ListLotsResponse, LotMemberDiff, ResolveLotResponse, LotProductSummary, ListLotProductsResponse, LotResolutionResult, } from "./types/lots";
 export type { VariantResponse, VariantCreateRequest, VariantUpdateRequest, } from "./types/variant";
 export type { BroadcastSendRequest } from "./types/broadcasts";
 export type { AppConfigOptions } from "./api/appConfiguration";

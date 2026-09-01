@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.15.24  |  Generated: 2026-08-31T17:50:11.496Z
+Version: 1.16.0  |  Generated: 2026-09-01T12:28:06.435Z
 
 This is a concise summary of all available API functions and types.
 
@@ -35,6 +35,7 @@ For detailed guides on specific features:
 - **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)
 - **[Proof Share Grants](proof-share-grants.md)** - Delegated, scoped, revocable bearer access to a single proof (read/comment/verify-owner links)
 - **[Proof Ownership Transfer](proof-ownership-transfer.md)** - Moving a proof to a new owner: directed transfer, open release, accept/cancel, and the state machine
+- **[Lots](lots.md)** - Collection-scoped production groupings spanning many SKUs; facet/product selectors, member resolution, and GS1 AI(10) batch-then-lot resolution
 - **[Item Context](item-context.md)** - The `itemContext` container prop derived from a serial-proof URL or NFC tap (what item the URL points at)
 - **[Product Facets SDK](PRODUCT_FACETS_SDK.md)** - Admin and public product facet endpoints and TypeScript interfaces
 - **[Attestations](attestations.md)** - Append-only fact log with cryptographic chain integrity, time-series analytics, and public/owner/admin visibility
@@ -135,6 +136,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **jobs** - Functions for jobs operations
 - **journeysAnalytics** - Functions for journeysAnalytics operations
 - **location** - Functions for location operations
+- **lots** - Functions for lots operations
 - **navigation** - Functions for navigation operations
 - **order** - Functions for order operations
 - **products** - Functions for products operations
@@ -6355,6 +6357,120 @@ interface LocationSearchResponse {
 
 **LocationPayload** = `Omit<`
 
+### lots
+
+**LotPayload** (interface)
+```typescript
+interface LotPayload {
+  manufacturedAt?: string | null
+  expiresAt?: string | null
+  location?: string | null
+  custom?: Record<string, any>
+  [key: string]: any
+}
+```
+
+**Lot** (interface)
+```typescript
+interface Lot {
+  id: string
+  collectionId: string
+  lotNumber: string
+  name?: string | null
+  description?: string | null
+  status: LotStatus
+  selector: LotSelector
+  payload?: LotPayload
+  destination?: Record<string, any> | null
+  productCount: number
+  productIds?: string[]
+  resolvedAt?: string | null
+  createdBy?: string | null
+  updatedBy?: string | null
+  createdAt: string
+  updatedAt: string
+}
+```
+
+**LotCreateInput** (interface)
+```typescript
+interface LotCreateInput {
+  lotNumber: string
+  name?: string
+  description?: string
+  selector?: LotSelector
+  payload?: LotPayload
+  destination?: Record<string, any> | null
+  status?: LotStatus
+  id?: string
+}
+```
+
+**ListLotsParams** (interface)
+```typescript
+interface ListLotsParams {
+  status?: LotStatus
+  search?: string
+  productId?: string
+}
+```
+
+**ListLotsResponse** (interface)
+```typescript
+interface ListLotsResponse {
+  lots: Lot[]
+}
+```
+
+**LotMemberDiff** (interface)
+```typescript
+interface LotMemberDiff {
+  added: string[]; removed: string[]
+}
+```
+
+**ResolveLotResponse** (interface)
+```typescript
+interface ResolveLotResponse {
+  lot: Lot; diff: LotMemberDiff
+}
+```
+
+**LotProductSummary** (interface)
+```typescript
+interface LotProductSummary {
+  id: string; name?: string; gtin?: string | null
+}
+```
+
+**ListLotProductsResponse** (interface)
+```typescript
+interface ListLotProductsResponse {
+  products: LotProductSummary[]
+  total: number
+  page: number
+  limit: number
+}
+```
+
+**LotResolutionResult** (interface)
+```typescript
+interface LotResolutionResult {
+  match: 'batch' | 'lot' | 'product' | 'none'
+  productId: string
+  batchId: string | null
+  lotId: string | null
+  ai10: string | null
+  destination?: any
+}
+```
+
+**LotStatus** = `'open' | 'closed' | 'recalled' | 'archived'`
+
+**LotSelector** = ``
+
+**LotUpdateInput** = `Partial<LotCreateInput>`
+
 ### loyalty
 
 **LoyaltyScheme** (interface)
@@ -7329,6 +7445,9 @@ interface Proof {
   productId: string
   tokenId: string
   userId: string
+  batchId?: string | null
+  variantId?: string | null
+  lotId?: string | null
   claimable?: boolean
   virtual?: boolean
   data?: Record<string, JsonValue>
@@ -9770,6 +9889,44 @@ Public: Fetch a global location by ID GET /public/location/:locationId
 **getPublicForCollection**(collectionId: string,
     locationId: string) → `Promise<Location>`
 Public: Fetch a location for a collection; returns either a collection-owned or global fallback GET /public/collection/:collectionId/location/:locationId
+
+### lots
+
+**create**(collectionId: string, lot: LotCreateInput) → `Promise<Lot>`
+Create a lot (resolves its selector into members).
+
+**list**(collectionId: string, params: ListLotsParams = {}) → `Promise<Lot[]>`
+List lots (summary rows; `payload`/`productIds` omitted). Filter by status, search, or containing productId.
+
+**get**(collectionId: string, lotId: string) → `Promise<Lot>`
+Get the full lot record.
+
+**getByNumber**(collectionId: string, lotNumber: string) → `Promise<Lot>`
+Look up a lot by its number (case-insensitive) — used by scan/resolver flows.
+
+**update**(collectionId: string, lotId: string, lot: LotUpdateInput) → `Promise<Lot>`
+Update a lot. Re-resolves members if the selector changed (response then carries `diff`).
+
+**archive**(collectionId: string, lotId: string) → `Promise<`
+Soft-archive a lot (never deletes members).
+
+**resolve**(collectionId: string, lotId: string) → `Promise<ResolveLotResponse>`
+Re-resolve members from the current selector; returns the lot + a member diff.
+
+**listProducts**(collectionId: string, lotId: string, opts: { page?: number; limit?: number } = {}) → `Promise<ListLotProductsResponse>`
+Paginated member product summaries.
+
+**publicList**(collectionId: string, params: ListLotsParams = {}) → `Promise<Lot[]>`
+Paginated member product summaries.
+
+**publicGet**(collectionId: string, lotId: string) → `Promise<Lot>`
+Paginated member product summaries.
+
+**publicGetByNumber**(collectionId: string, lotNumber: string) → `Promise<Lot>`
+Paginated member product summaries.
+
+**publicListProducts**(collectionId: string, lotId: string, opts: { page?: number; limit?: number } = {}) → `Promise<ListLotProductsResponse>`
+Paginated member product summaries.
 
 ### loyalty
 

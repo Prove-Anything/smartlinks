@@ -251,6 +251,7 @@ function generateAPISummary() {
   summary += '- **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)\n';
   summary += '- **[Proof Share Grants](proof-share-grants.md)** - Delegated, scoped, revocable bearer access to a single proof (read/comment/verify-owner links)\n';
   summary += '- **[Proof Ownership Transfer](proof-ownership-transfer.md)** - Moving a proof to a new owner: directed transfer, open release, accept/cancel, and the state machine\n';
+  summary += '- **[Lots](lots.md)** - Collection-scoped production groupings spanning many SKUs; facet/product selectors, member resolution, and GS1 AI(10) batch-then-lot resolution\n';
   summary += '- **[Item Context](item-context.md)** - The `itemContext` container prop derived from a serial-proof URL or NFC tap (what item the URL points at)\n';
   summary += '- **[Product Facets SDK](PRODUCT_FACETS_SDK.md)** - Admin and public product facet endpoints and TypeScript interfaces\n';
   summary += '- **[Attestations](attestations.md)** - Append-only fact log with cryptographic chain integrity, time-series analytics, and public/owner/admin visibility\n';
