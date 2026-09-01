@@ -609,6 +609,45 @@ catch (err) {
 
 ---
 
+## Auth telemetry
+
+AuthKit can report structured telemetry for every auth attempt — start / success / error /
+stall — so a "it just hangs on Processing…" report is never lost. It's **fire-and-forget**
+and **never blocks a login**.
+
+```ts
+await authKit.sendTelemetry(clientId, [
+  {
+    eventId: crypto.randomUUID(),        // idempotency key — safe to re-send
+    correlationId,                       // links a flow's start → error/stall
+    clientId,
+    type: 'flow_error',
+    flow: 'password_reset',
+    ts: new Date().toISOString(),
+    error: { code: 'TOKEN_CONSUMED', statusCode: 400, endpoint: 'POST /authkit/{clientId}/complete-password-reset' },
+    context: { sdkVersion, authKitVersion, mode: 'standalone', userAgent, online: true },
+  },
+])
+// → { accepted, rejected, rejectedIds }  (always HTTP 202)
+```
+
+- **Endpoint:** `POST /authkit/{clientId}/telemetry` — **unauthenticated** (login failures are
+  pre-auth), always `202`, deduped on `eventId`. A bearer token, when present, only attributes
+  `subject.uid` server-side.
+- **Privacy:** never send tokens, raw emails, phones, or passwords. Emails go as
+  `subject.emailHash` only; the server **re-strips** anything that looks like a JWT, a
+  `token=`/`code=`/`oobCode=` value, or an email address as defence in depth.
+- **Storage:** events land in a centralized platform table (queryable across all clients for a
+  super-admin login-activity view) — not per-collection, not Firebase.
+- **Config:** `AuthKitConfig.telemetry` (`enabled`, `successSampleRate`, `captureJsErrors`,
+  `stallThresholdMs`, `retentionDays`) is served on `authKit.load` so the login UI knows what to
+  capture with no extra request.
+
+Types: {@link AuthTelemetryEvent}, {@link AuthEventType}, {@link AuthFlow},
+{@link TelemetryIngestResponse}, {@link AuthKitTelemetryConfig}.
+
+---
+
 ## Relationship to other parts of the SDK
 
 | Concern | Where it lives |

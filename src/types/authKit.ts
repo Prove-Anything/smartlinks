@@ -1,6 +1,71 @@
 // Types for the AuthKit API
 
 
+// ─── Auth telemetry (fire-and-forget error/attempt reporting) ────────────────
+
+export type AuthEventType =
+  | 'flow_start' | 'flow_success' | 'flow_error' | 'flow_stall' | 'js_error' | 'config_error'
+
+export type AuthFlow =
+  | 'login_password' | 'register' | 'google' | 'apple' | 'magic_link' | 'phone' | 'whatsapp'
+  | 'verify_email' | 'password_reset' | 'invite_accept' | 'mfa_challenge' | 'refresh' | 'config_load'
+
+/** One structured auth-telemetry event. Never carries tokens or raw emails/passwords. */
+export interface AuthTelemetryEvent {
+  /** UUID, client-generated — the idempotency key (safe to re-send). */
+  eventId: string
+  /** UUID linking a flow's start → success/error/stall. */
+  correlationId: string
+  clientId: string
+  collectionId?: string
+  type: AuthEventType
+  flow: AuthFlow
+  /** ISO8601, client clock. */
+  ts: string
+  durationMs?: number
+  outcome?: 'success' | 'error' | 'stalled' | 'abandoned'
+  error?: {
+    code?: string
+    statusCode?: number
+    message?: string
+    name?: string
+    stack?: string
+    endpoint?: string
+  }
+  context: {
+    sdkVersion: string
+    authKitVersion: string
+    mode: 'standalone' | 'embedded' | 'proxy' | 'native'
+    route?: string
+    deepLinkMode?: string
+    userAgent: string
+    platform?: string
+    language?: string
+    online: boolean
+    viewport?: { w: number; h: number }
+    darkMode?: boolean
+  }
+  /** Only when a session exists. NEVER tokens. Email is hashed, never raw. */
+  subject?: { uid?: string; emailHash?: string }
+}
+
+/** Result of a telemetry ingest batch (always 202). */
+export interface TelemetryIngestResponse {
+  accepted: number
+  rejected: number
+  rejectedIds: string[]
+}
+
+/** Per-collection telemetry config, served on `authKit.load`. */
+export interface AuthKitTelemetryConfig {
+  enabled?: boolean
+  successSampleRate?: number
+  captureJsErrors?: boolean
+  stallThresholdMs?: number
+  retentionDays?: number
+}
+
+
 export interface AuthKitUser {
   uid: string
   email?: string
@@ -470,6 +535,8 @@ export interface AuthKitConfig {
    * server-side. See {@link AuthKitSecurityConfig}.
    */
   security?: AuthKitSecurityConfig
+  /** Auth telemetry settings — the login UI reads these to decide what/how much to report. */
+  telemetry?: AuthKitTelemetryConfig
 }
 
 /**

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.16.1  |  Generated: 2026-09-01T15:47:33.524Z
+Version: 1.16.1  |  Generated: 2026-09-01T15:57:41.258Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3058,6 +3058,63 @@ interface AccountInfoResponse {
 
 ### authKit
 
+**AuthTelemetryEvent** (interface)
+```typescript
+interface AuthTelemetryEvent {
+  eventId: string
+  correlationId: string
+  clientId: string
+  collectionId?: string
+  type: AuthEventType
+  flow: AuthFlow
+  ts: string
+  durationMs?: number
+  outcome?: 'success' | 'error' | 'stalled' | 'abandoned'
+  error?: {
+  code?: string
+  statusCode?: number
+  message?: string
+  name?: string
+  stack?: string
+  endpoint?: string
+  }
+  context: {
+  sdkVersion: string
+  authKitVersion: string
+  mode: 'standalone' | 'embedded' | 'proxy' | 'native'
+  route?: string
+  deepLinkMode?: string
+  userAgent: string
+  platform?: string
+  language?: string
+  online: boolean
+  viewport?: { w: number; h: number }
+  darkMode?: boolean
+  }
+  subject?: { uid?: string; emailHash?: string }
+}
+```
+
+**TelemetryIngestResponse** (interface)
+```typescript
+interface TelemetryIngestResponse {
+  accepted: number
+  rejected: number
+  rejectedIds: string[]
+}
+```
+
+**AuthKitTelemetryConfig** (interface)
+```typescript
+interface AuthKitTelemetryConfig {
+  enabled?: boolean
+  successSampleRate?: number
+  captureJsErrors?: boolean
+  stallThresholdMs?: number
+  retentionDays?: number
+}
+```
+
 **AuthKitUser** (interface)
 ```typescript
 interface AuthKitUser {
@@ -3520,6 +3577,10 @@ interface AuthKitLockoutPolicy {
   notifyUserOnLockout?: boolean
 }
 ```
+
+**AuthEventType** = ``
+
+**AuthFlow** = ``
 
 **RefreshErrorCode** = ``
 

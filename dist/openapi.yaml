@@ -19137,6 +19137,122 @@ components:
         - auth_time
         - iat
         - features
+    AuthTelemetryEvent:
+      type: object
+      properties:
+        eventId:
+          type: string
+        correlationId:
+          type: string
+        clientId:
+          type: string
+        collectionId:
+          type: string
+        type:
+          $ref: "#/components/schemas/AuthEventType"
+        flow:
+          $ref: "#/components/schemas/AuthFlow"
+        ts:
+          type: string
+        durationMs:
+          type: number
+        outcome:
+          type: string
+          enum:
+            - success
+            - error
+            - stalled
+            - abandoned
+        error:
+          type: object
+          additionalProperties: true
+        code:
+          type: string
+        statusCode:
+          type: number
+        message:
+          type: string
+        name:
+          type: string
+        stack:
+          type: string
+        endpoint:
+          type: string
+        context:
+          type: object
+          additionalProperties: true
+        sdkVersion:
+          type: string
+        authKitVersion:
+          type: string
+        mode:
+          type: string
+          enum:
+            - standalone
+            - embedded
+            - proxy
+            - native
+        route:
+          type: string
+        deepLinkMode:
+          type: string
+        userAgent:
+          type: string
+        platform:
+          type: string
+        language:
+          type: string
+        online:
+          type: boolean
+        viewport:
+          type: object
+          additionalProperties: true
+        darkMode:
+          type: boolean
+        subject:
+          type: object
+          additionalProperties: true
+      required:
+        - eventId
+        - correlationId
+        - clientId
+        - type
+        - flow
+        - ts
+        - context
+        - sdkVersion
+        - authKitVersion
+        - mode
+        - userAgent
+        - online
+    TelemetryIngestResponse:
+      type: object
+      properties:
+        accepted:
+          type: number
+        rejected:
+          type: number
+        rejectedIds:
+          type: array
+          items:
+            type: string
+      required:
+        - accepted
+        - rejected
+        - rejectedIds
+    AuthKitTelemetryConfig:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        successSampleRate:
+          type: number
+        captureJsErrors:
+          type: boolean
+        stallThresholdMs:
+          type: number
+        retentionDays:
+          type: number
     AuthKitUser:
       type: object
       properties:

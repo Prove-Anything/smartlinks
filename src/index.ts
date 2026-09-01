@@ -301,4 +301,9 @@ export type {
   AuthKitLockoutPolicy,
   PasswordPolicyErrorCode,
   LoginSecurityErrorCode,
+  AuthEventType,
+  AuthFlow,
+  AuthTelemetryEvent,
+  TelemetryIngestResponse,
+  AuthKitTelemetryConfig,
 } from './types/authKit';

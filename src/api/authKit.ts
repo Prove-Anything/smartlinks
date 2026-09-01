@@ -13,6 +13,8 @@ import type {
   EmailVerifyTokenResponse,
   AuthKitConfig,
   AuthKitConfigInput,
+  AuthTelemetryEvent,
+  TelemetryIngestResponse,
   MagicLinkSendResponse,
   MagicLinkVerifyResponse,
   UserProfile,
@@ -461,6 +463,16 @@ export namespace authKit {
   export async function load(authKitId: string): Promise<AuthKitConfig> {
     const path = `/authKit/${encodeURIComponent(authKitId)}/config`
     return request<AuthKitConfig>(path)
+  }
+
+  /**
+   * Ship a batch of auth-telemetry events (fire-and-forget). Unauthenticated — safe to call
+   * from a pre-auth login page. The server always responds 202 and dedupes on `eventId`, so
+   * retries/beacon double-sends are harmless. Never include tokens or raw emails in events.
+   */
+  export async function sendTelemetry(clientId: string, events: AuthTelemetryEvent[]): Promise<TelemetryIngestResponse> {
+    const path = `/authKit/${encodeURIComponent(clientId)}/telemetry`
+    return post<TelemetryIngestResponse>(path, { events })
   }
 
   /** Get the full AuthKit config, including admin-only fields like `security.lockout` (admin auth). */

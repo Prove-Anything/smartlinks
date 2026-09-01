@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.16.1  |  Generated: 2026-09-01T15:47:33.524Z
+Version: 1.16.1  |  Generated: 2026-09-01T15:58:39.069Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3058,6 +3058,63 @@ interface AccountInfoResponse {
 
 ### authKit
 
+**AuthTelemetryEvent** (interface)
+```typescript
+interface AuthTelemetryEvent {
+  eventId: string
+  correlationId: string
+  clientId: string
+  collectionId?: string
+  type: AuthEventType
+  flow: AuthFlow
+  ts: string
+  durationMs?: number
+  outcome?: 'success' | 'error' | 'stalled' | 'abandoned'
+  error?: {
+  code?: string
+  statusCode?: number
+  message?: string
+  name?: string
+  stack?: string
+  endpoint?: string
+  }
+  context: {
+  sdkVersion: string
+  authKitVersion: string
+  mode: 'standalone' | 'embedded' | 'proxy' | 'native'
+  route?: string
+  deepLinkMode?: string
+  userAgent: string
+  platform?: string
+  language?: string
+  online: boolean
+  viewport?: { w: number; h: number }
+  darkMode?: boolean
+  }
+  subject?: { uid?: string; emailHash?: string }
+}
+```
+
+**TelemetryIngestResponse** (interface)
+```typescript
+interface TelemetryIngestResponse {
+  accepted: number
+  rejected: number
+  rejectedIds: string[]
+}
+```
+
+**AuthKitTelemetryConfig** (interface)
+```typescript
+interface AuthKitTelemetryConfig {
+  enabled?: boolean
+  successSampleRate?: number
+  captureJsErrors?: boolean
+  stallThresholdMs?: number
+  retentionDays?: number
+}
+```
+
 **AuthKitUser** (interface)
 ```typescript
 interface AuthKitUser {
@@ -3474,6 +3531,7 @@ interface AuthKitConfig {
   * checklists / idle sign-out from them); `lockout` is admin-only and enforced
   * server-side. See {@link AuthKitSecurityConfig}.
   security?: AuthKitSecurityConfig
+  telemetry?: AuthKitTelemetryConfig
 }
 ```
 
@@ -3520,6 +3578,10 @@ interface AuthKitLockoutPolicy {
   notifyUserOnLockout?: boolean
 }
 ```
+
+**AuthEventType** = ``
+
+**AuthFlow** = ``
 
 **RefreshErrorCode** = ``
 
@@ -9182,6 +9244,9 @@ Revoke a single trusted device by id (authenticated).
 
 **load**(authKitId: string) → `Promise<AuthKitConfig>`
 Load the **public** AuthKit config for a client (no auth). Returns branding + the public security subset (`security.passwordPolicy` + `security.session`); `security.lockout` is admin-only and never included here. Use this in the login UI to render password checklists and drive idle sign-out.
+
+**sendTelemetry**(clientId: string, events: AuthTelemetryEvent[]) → `Promise<TelemetryIngestResponse>`
+Ship a batch of auth-telemetry events (fire-and-forget). Unauthenticated — safe to call from a pre-auth login page. The server always responds 202 and dedupes on `eventId`, so retries/beacon double-sends are harmless. Never include tokens or raw emails in events.
 
 **get**(collectionId: string, authKitId: string) → `Promise<AuthKitConfig>`
 Get the full AuthKit config, including admin-only fields like `security.lockout` (admin auth).
