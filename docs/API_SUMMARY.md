@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.16.1  |  Generated: 2026-09-01T15:47:33.524Z
+Version: 1.16.3  |  Generated: 2026-09-05T10:57:07.719Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3549,20 +3549,25 @@ interface FirebaseTimestamp {
 ```typescript
 interface BatchResponse {
   id: string                      // Batch ID
-  name?: string                   // Batch name
-  expiryDate?: FirebaseTimestamp | string  // Firebase timestamp or ISO 8601 date
-  productId?: string              // Product ID (for collection-level searches)
+  name?: string | null            // Batch name
+  expiryDate?: string | null
+  productId?: string              // Product ID
   collectionId?: string           // Collection ID
-  [key: string]: any              // Additional batch fields
+  createdAt?: string              // ISO 8601
+  updatedAt?: string              // ISO 8601
+  deleted?: boolean
+  deletedAt?: string              // ISO 8601
+  admin?: Record<string, any>
+  [key: string]: any              // Additional (schemaless) batch fields
 }
 ```
 
 **BatchCreateRequest** (interface)
 ```typescript
 interface BatchCreateRequest {
-  id: string                      // Batch ID
-  name?: string                   // Batch name
-  expiryDate?: FirebaseTimestamp | string  // Firebase timestamp or ISO 8601 date
+  id?: string
+  name?: string
+  expiryDate?: FirebaseTimestamp | string | Date
   [key: string]: any              // Additional batch fields
 }
 ```
@@ -3570,8 +3575,8 @@ interface BatchCreateRequest {
 **BatchUpdateRequest** (interface)
 ```typescript
 interface BatchUpdateRequest {
-  name?: string                   // Batch name
-  expiryDate?: FirebaseTimestamp | string  // Firebase timestamp or ISO 8601 date
+  name?: string
+  expiryDate?: FirebaseTimestamp | string | Date
   [key: string]: any              // Additional batch fields
 }
 ```
@@ -7433,6 +7438,9 @@ interface ProductFieldsConfig {
 ```typescript
 interface ProofValues {
   [key: string]: JsonValue | Record<string, JsonValue> | Record<string, Record<string, JsonValue>> | undefined
+  * Owner-scoped: read/write by business + current owner; transfers with ownership.
+  * Read exception: while the proof is `claimable`, this bag is also readable by everyone
+  * (so a prospective claimer sees pre-set owner data); it reverts to owner-only once claimed.
   owner?: Record<string, JsonValue>
   personal?: Record<string, Record<string, JsonValue>>
 }
@@ -7488,6 +7496,15 @@ interface ProofCreateRequest {
   * (public + owner-writable) — NOT `proof.data`. Use `proof.data`.
   data?: Record<string, JsonValue>
   admin?: Record<string, JsonValue>
+}
+```
+
+**ProofValuesUpdateRequest** (interface)
+```typescript
+interface ProofValuesUpdateRequest {
+  [key: string]: JsonValue | Record<string, JsonValue> | undefined
+  owner?: Record<string, JsonValue>
+  personal?: Record<string, JsonValue>
 }
 ```
 
@@ -8153,11 +8170,38 @@ interface TranslationUpdateRequest {
 
 ### variant
 
-**VariantResponse** = `any`
+**VariantResponse** (interface)
+```typescript
+interface VariantResponse {
+  id: string
+  name?: string | null
+  productId?: string
+  collectionId?: string
+  createdAt?: string              // ISO 8601
+  updatedAt?: string              // ISO 8601
+  deleted?: boolean
+  deletedAt?: string              // ISO 8601
+  admin?: Record<string, any>
+  [key: string]: any              // Additional (schemaless) variant fields
+}
+```
 
-**VariantCreateRequest** = `any`
+**VariantCreateRequest** (interface)
+```typescript
+interface VariantCreateRequest {
+  id?: string
+  name?: string
+  [key: string]: any
+}
+```
 
-**VariantUpdateRequest** = `any`
+**VariantUpdateRequest** (interface)
+```typescript
+interface VariantUpdateRequest {
+  name?: string
+  [key: string]: any
+}
+```
 
 ### widgets
 
@@ -10308,6 +10352,12 @@ Create a proof for a product (admin only). POST /admin/collection/:collectionId/
     proofId: string,
     values: ProofUpdateRequest) → `Promise<ProofResponse>`
 Update a proof for a product (admin only). PUT /admin/collection/:collectionId/product/:productId/proof/:proofId Pass the fields to change **at the root**, keyed by zone (see {@link ProofWrite}): ```ts proof.update(collectionId, productId, proofId, { data:   { serialNo: 1002 },   // → proof.data (admin-only writable) values: { colour: 'blue' },   // → proof.values }) ``` Object zones deep-merge, so you can change one field without wiping the rest.
+
+**updateValues**(collectionId: string,
+    productId: string,
+    proofId: string,
+    values: ProofValuesUpdateRequest) → `Promise<ProofResponse>`
+Owner self-service update of a proof's owner-writable data. PUT /public/collection/:collectionId/product/:productId/proof/:proofId/values The public counterpart to admin `update` — the current OWNER (or a collection admin) editing their own proof, no admin credentials required. Only owner-writable zones are honoured (see {@link ProofValuesUpdateRequest}): ```ts proof.updateValues(collectionId, productId, proofId, { colour:   'blue',            // → proof.values.colour   (public) owner:    { warranty: '2y' }, // → proof.values.owner    (owner-scoped) personal: { nickname: 'Bo' }, // → proof.values.personal[callerUid] (private, own slot only) }) ``` `personal` always targets the caller's OWN slot — you cannot write another user's personal data, even as an admin. Object zones deep-merge (owner/personal merge field-by-field), so you can change one field without wiping the rest. Business-only zones (`data`/`admin`/`private`) are not writable here — use the admin `update` for those.
 
 **claim**(collectionId: string,
     productId: string,

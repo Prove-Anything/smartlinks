@@ -152,12 +152,9 @@ export function buildPortalPath(params: PortalPathParams): string {
     // Batch object - extract id and expiryDate
     extractedBatchId = batch.id
     if (batch.expiryDate) {
-      // Handle Firebase timestamp or Date
-      if (typeof batch.expiryDate === 'object' && 'seconds' in batch.expiryDate) {
-        expiryDate = new Date(batch.expiryDate.seconds * 1000)
-      } else {
-        expiryDate = batch.expiryDate as string | Date
-      }
+      // Now an ISO string, but stay defensive about a legacy Firebase Timestamp object.
+      const exp: any = batch.expiryDate
+      expiryDate = (exp && typeof exp === 'object' && 'seconds' in exp) ? new Date(exp.seconds * 1000) : exp
     }
   } else if (batchId) {
     // Just batch ID string - no expiry date

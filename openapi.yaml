@@ -12643,6 +12643,48 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/collection/{collectionId}/product/{productId}/proof/{proofId}/values:
+    put:
+      tags:
+        - proof
+      summary: proof.updateValues
+      operationId: proof_updateValues
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: proofId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProofResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProofValuesUpdateRequest"
   /public/collection/{collectionId}/products/{productId}/createClaim:
     post:
       tags:
@@ -19842,12 +19884,22 @@ components:
         name:
           type: string
         expiryDate:
-          type: object
-          additionalProperties: true
+          type: string
         productId:
           type: string
         collectionId:
           type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deleted:
+          type: boolean
+        deletedAt:
+          type: string
+        admin:
+          type: object
+          additionalProperties: true
       required:
         - id
     BatchCreateRequest:
@@ -19860,8 +19912,6 @@ components:
         expiryDate:
           type: object
           additionalProperties: true
-      required:
-        - id
     BatchUpdateRequest:
       type: object
       properties:
@@ -25656,6 +25706,17 @@ components:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/JsonValue"
+    ProofValuesUpdateRequest:
+      type: object
+      properties:
+        owner:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
+        personal:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/JsonValue"
     ProofFieldsConfig:
       type: object
       properties:
@@ -26690,6 +26751,42 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    VariantResponse:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        productId:
+          type: string
+        collectionId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deleted:
+          type: boolean
+        deletedAt:
+          type: string
+        admin:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+    VariantCreateRequest:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+    VariantUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
     NavigationRequest:
       type: object
       properties:

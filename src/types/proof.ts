@@ -9,7 +9,11 @@ import { JsonValue, ScopedFieldDef } from './product'
  */
 export interface ProofValues {
   [key: string]: JsonValue | Record<string, JsonValue> | Record<string, Record<string, JsonValue>> | undefined
-  /** Owner-scoped: read/write by business + current owner; transfers with ownership. */
+  /**
+   * Owner-scoped: read/write by business + current owner; transfers with ownership.
+   * Read exception: while the proof is `claimable`, this bag is also readable by everyone
+   * (so a prospective claimer sees pre-set owner data); it reverts to owner-only once claimed.
+   */
   owner?: Record<string, JsonValue>
   /** Per-user: read/write only by the matching userId; not visible to the next owner, not even business admins. */
   personal?: Record<string, Record<string, JsonValue>>
@@ -118,6 +122,28 @@ export interface ProofCreateRequest {
  * also accepted and routed the same way.) Object zones deep-merge.
  */
 export type ProofUpdateRequest = Partial<ProofWrite> & { proof?: ProofWrite }
+
+/**
+ * Body for the owner self-service values write (`proof.updateValues`), the
+ * public counterpart to the admin `update`. The caller must be the current
+ * owner (or a collection admin). Only owner-writable zones are honoured:
+ *
+ * - flat keys        → `proof.values.<key>` (public data)
+ * - `owner`          → merged into `proof.values.owner` (owner-scoped)
+ * - `personal`       → merged into `proof.values.personal[callerUid]` — the
+ *                      caller's OWN private slot only, never another user's
+ *                      (owner-only, non-transferring; not even admins can
+ *                      write someone else's slot)
+ *
+ * `private` / `proof` sub-keys are business-only and are ignored here.
+ */
+export interface ProofValuesUpdateRequest {
+  [key: string]: JsonValue | Record<string, JsonValue> | undefined
+  /** Owner-scoped data, merged into `proof.values.owner`. */
+  owner?: Record<string, JsonValue>
+  /** The caller's own private slot, merged into `proof.values.personal[callerUid]`. */
+  personal?: Record<string, JsonValue>
+}
 
 // Claim may accept arbitrary payload depending on server-side rules
 export type ProofClaimRequest = Record<string, any>

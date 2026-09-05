@@ -1,4 +1,4 @@
-import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofClaimRequest, ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult, ProofTransfer, TransferProofOptions, TransferProofResult } from "../types/proof";
+import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofValuesUpdateRequest, ProofClaimRequest, ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult, ProofTransfer, TransferProofOptions, TransferProofResult } from "../types/proof";
 export declare namespace proof {
     /**
      * Retrieves a single Proof by Collection ID, Product ID, and Proof ID.
@@ -42,6 +42,27 @@ export declare namespace proof {
      * Object zones deep-merge, so you can change one field without wiping the rest.
      */
     function update(collectionId: string, productId: string, proofId: string, values: ProofUpdateRequest): Promise<ProofResponse>;
+    /**
+     * Owner self-service update of a proof's owner-writable data.
+     * PUT /public/collection/:collectionId/product/:productId/proof/:proofId/values
+     *
+     * The public counterpart to admin `update` — the current OWNER (or a collection
+     * admin) editing their own proof, no admin credentials required. Only owner-writable
+     * zones are honoured (see {@link ProofValuesUpdateRequest}):
+     * ```ts
+     * proof.updateValues(collectionId, productId, proofId, {
+     *   colour:   'blue',            // → proof.values.colour   (public)
+     *   owner:    { warranty: '2y' }, // → proof.values.owner    (owner-scoped)
+     *   personal: { nickname: 'Bo' }, // → proof.values.personal[callerUid] (private, own slot only)
+     * })
+     * ```
+     * `personal` always targets the caller's OWN slot — you cannot write another
+     * user's personal data, even as an admin. Object zones deep-merge (owner/personal
+     * merge field-by-field), so you can change one field without wiping the rest.
+     * Business-only zones (`data`/`admin`/`private`) are not writable here — use the
+     * admin `update` for those.
+     */
+    function updateValues(collectionId: string, productId: string, proofId: string, values: ProofValuesUpdateRequest): Promise<ProofResponse>;
     /**
      * Claim a proof for a product using a proof ID (serial number, NFC tag, etc.).
      * PUT /public/collection/:collectionId/product/:productId/proof/:proofId/claim

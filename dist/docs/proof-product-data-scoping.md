@@ -37,7 +37,8 @@ proof.admin = { … }        // BUSINESS-ONLY → read: business,       write: b
 proof.values = {           // consumer bag — owner + business-writable
   <anyKey>: …,              // PUBLIC        → read: everyone,
                              //                write: business + current owner
-  owner: { … },              // OWNER-SCOPED  → read: business + current owner,
+  owner: { … },              // OWNER-SCOPED  → read: business + current owner
+                             //                (also everyone while `claimable`, see below),
                              //                write: business + current owner,
                              //                transfers with ownership
   personal: {                // PER-USER      → read/write: only the specific user,
@@ -75,10 +76,12 @@ The field-config editor and SDK write helpers MUST reject attempts to create top
 | `proof.data.*`                    |         ✅          |             ✅             |       ✅       |        ✅       |
 | `proof.admin.*`                   |         ❌          |             ❌             |       ❌       |        ✅       |
 | `proof.values.<publicKey>`        |         ✅          |             ✅             |       ✅       |        ✅       |
-| `proof.values.owner.*`            |         ❌          |             ❌             |       ✅       |        ✅       |
+| `proof.values.owner.*`            |        ❌ †         |            ❌ †            |       ✅       |        ✅       |
 | `proof.values.personal[me].*`     |         ❌          |     ✅ (own slot only)     | ✅ (own slot)  | ❌ (see note)   |
 | `proof.values.personal[other].*`  |         ❌          |             ❌             |       ❌       | ❌ (see note)   |
 
+> **† Claimable exception (`proof.values.owner.*`):** while a proof is **claimable** (`proof.claimable === true` *or* `proof.values.claimable === true`), its `owner` bag is returned to **everyone** — public/anonymous and authenticated non-owners included — so a prospective claimer can see pre-set owner data before claiming. Once the proof is claimed (`claimable` flips off) it reverts to owner-only (unless re-marked claimable). This is **read-only** exposure — write authority is unchanged (still owner + business). Implication: don't put anything in `values.owner` on a claimable proof that shouldn't be visible before it's claimed.
+>
 > **Note on `personal`:** the default rule is that `personal` slots are readable *only* by the user whose `userId` matches the slot key — not even business admins. If the platform ever needs an admin-visible variant, it should be a separate mechanism, not a relaxation of this rule.
 
 ## Who writes what (authority matrix)

@@ -1,7 +1,7 @@
 // src/api/proof.ts
 import { request, post, put, del } from "../http"
 import {
-  ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofClaimRequest,
+  ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofValuesUpdateRequest, ProofClaimRequest,
   ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult,
   ProofTransfer, TransferProofOptions, TransferProofResult,
 } from "../types/proof"
@@ -85,6 +85,36 @@ export namespace proof {
     values: ProofUpdateRequest
   ): Promise<ProofResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}`
+    return put<ProofResponse>(path, values)
+  }
+
+  /**
+   * Owner self-service update of a proof's owner-writable data.
+   * PUT /public/collection/:collectionId/product/:productId/proof/:proofId/values
+   *
+   * The public counterpart to admin `update` — the current OWNER (or a collection
+   * admin) editing their own proof, no admin credentials required. Only owner-writable
+   * zones are honoured (see {@link ProofValuesUpdateRequest}):
+   * ```ts
+   * proof.updateValues(collectionId, productId, proofId, {
+   *   colour:   'blue',            // → proof.values.colour   (public)
+   *   owner:    { warranty: '2y' }, // → proof.values.owner    (owner-scoped)
+   *   personal: { nickname: 'Bo' }, // → proof.values.personal[callerUid] (private, own slot only)
+   * })
+   * ```
+   * `personal` always targets the caller's OWN slot — you cannot write another
+   * user's personal data, even as an admin. Object zones deep-merge (owner/personal
+   * merge field-by-field), so you can change one field without wiping the rest.
+   * Business-only zones (`data`/`admin`/`private`) are not writable here — use the
+   * admin `update` for those.
+   */
+  export async function updateValues(
+    collectionId: string,
+    productId: string,
+    proofId: string,
+    values: ProofValuesUpdateRequest
+  ): Promise<ProofResponse> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/values`
     return put<ProofResponse>(path, values)
   }
 
