@@ -4,6 +4,7 @@ import {
   ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofValuesUpdateRequest, ProofClaimRequest,
   ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult,
   ProofTransfer, TransferProofOptions, TransferProofResult,
+  AcceptTransferOptions, CancelTransferOptions,
 } from "../types/proof"
 
 export namespace proof {
@@ -352,6 +353,16 @@ export namespace proof {
    * ```ts
    * await proof.transfer(collectionId, productId, proofId, { release: true })
    * ```
+   * Send comms by naming templates per role (server decides who receives each):
+   * ```ts
+   * await proof.transfer(collectionId, productId, proofId, {
+   *   toEmail: 'buyer@example.com',
+   *   comms: {
+   *     recipient: { templateId: 'transfer-incoming', props: { note: 'Enjoy!' } },
+   *     sender:    { templateId: 'transfer-sent' },
+   *   },
+   * })
+   * ```
    */
   export async function transfer(
     collectionId: string,
@@ -370,18 +381,20 @@ export namespace proof {
   export async function acceptTransfer(
     collectionId: string,
     productId: string,
-    proofId: string
+    proofId: string,
+    options: AcceptTransferOptions = {}
   ): Promise<{ ok: boolean; proof: ProofResponse }> {
-    return post<{ ok: boolean; proof: ProofResponse }>(`${transferBase(collectionId, productId, proofId)}/accept`, {})
+    return post<{ ok: boolean; proof: ProofResponse }>(`${transferBase(collectionId, productId, proofId)}/accept`, { ...options })
   }
 
   /** Cancel a pending push transfer (current owner / collection admin only). */
   export async function cancelTransfer(
     collectionId: string,
     productId: string,
-    proofId: string
+    proofId: string,
+    options: CancelTransferOptions = {}
   ): Promise<{ ok: boolean }> {
-    return post<{ ok: boolean }>(`${transferBase(collectionId, productId, proofId)}/cancel`, {})
+    return post<{ ok: boolean }>(`${transferBase(collectionId, productId, proofId)}/cancel`, { ...options })
   }
 
   /**
