@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.16.3  |  Generated: 2026-09-05T13:56:48.170Z
+Version: 1.16.3  |  Generated: 2026-09-05T14:09:56.723Z
 
 This is a concise summary of all available API functions and types.
 
@@ -35,6 +35,7 @@ For detailed guides on specific features:
 - **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)
 - **[Proof Share Grants](proof-share-grants.md)** - Delegated, scoped, revocable bearer access to a single proof (read/comment/verify-owner links)
 - **[Proof Ownership Transfer](proof-ownership-transfer.md)** - Moving a proof to a new owner: directed transfer, open release, accept/cancel, and the state machine
+- **[Comms Triggers](proof-comms-triggers.md)** - Sending transactional comms from proof actions (claim/transfer/accept/cancel): the role→template map, per-action roles, and the trust boundary
 - **[Lots](lots.md)** - Collection-scoped production groupings spanning many SKUs; facet/product selectors, member resolution, and GS1 AI(10) batch-then-lot resolution
 - **[Item Context](item-context.md)** - The `itemContext` container prop derived from a serial-proof URL or NFC tap (what item the URL points at)
 - **[Product Facets SDK](PRODUCT_FACETS_SDK.md)** - Admin and public product facet endpoints and TypeScript interfaces
@@ -7508,6 +7509,15 @@ interface ProofValuesUpdateRequest {
 }
 ```
 
+**ProofClaimRequest** (interface)
+```typescript
+interface ProofClaimRequest {
+  data?: Record<string, any>
+  comms?: CommsTriggerMap
+  [key: string]: any
+}
+```
+
 **ProofFieldsConfig** (interface)
 ```typescript
 interface ProofFieldsConfig {
@@ -7601,6 +7611,8 @@ interface TransferProofOptions {
   toUserId?: string
   toName?: string
   release?: boolean
+  * @deprecated The legacy fixed transfer email is gone. Put a note in a comms
+  * trigger's props instead, e.g. `comms.recipient.props.note`.
   message?: string
   notify?: boolean
 }
@@ -7634,8 +7646,6 @@ interface CancelTransferOptions {
 **ProofResponse** = `Proof`
 
 **ProofUpdateRequest** = `Partial<ProofWrite> & { proof?: ProofWrite }`
-
-**ProofClaimRequest** = `Record<string, any>`
 
 **ProofFieldScope** = `'public' | 'owner' | 'personal' | 'admin'`
 

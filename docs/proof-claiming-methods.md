@@ -289,6 +289,22 @@ try {
 
 ---
 
+## Sending a claim confirmation
+
+Claims can send a transactional confirmation once the proof is committed to the
+ledger. Pass a `comms` map (role `claimer`) alongside `data` — you author the
+template, the server hydrates `{{ proof }}` / `{{ product }}` / `{{ contact }}`:
+
+```ts
+await proof.claim(collectionId, productId, proofId, {
+  data: { store: 'Regent St' },
+  comms: { claimer: { templateId: 'welcome-owner', channel: 'preferred' } },
+})
+```
+
+Omit `comms` and nothing is sent (opt-in). Full detail:
+[Comms Triggers](./proof-comms-triggers.md).
+
 ## API Reference
 
 ### `proof.claim(collectionId, productId, proofId, data?)`

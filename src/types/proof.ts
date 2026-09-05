@@ -145,8 +145,20 @@ export interface ProofValuesUpdateRequest {
   personal?: Record<string, JsonValue>
 }
 
-// Claim may accept arbitrary payload depending on server-side rules
-export type ProofClaimRequest = Record<string, any>
+/**
+ * Claim/mint payload. Remains open (server-side rules vary), but two keys are
+ * recognised across the claim endpoints:
+ * - `data`  — claim values written to the proof
+ * - `comms` — comms to send once the proof is committed to the ledger. Role:
+ *   `claimer` (the claiming user). See {@link CommsTrigger}.
+ */
+export interface ProofClaimRequest {
+  /** Claim values written to the proof. */
+  data?: Record<string, any>
+  /** Comms to send on claim; role `claimer`. Fired only after the ledger write. */
+  comms?: CommsTriggerMap
+  [key: string]: any
+}
 
 // ─── Collection settings: `proofFields` field-config ──────────────────────────
 
@@ -308,9 +320,12 @@ export interface TransferProofOptions {
   toName?: string
   /** Open release: mark the proof claimable instead of directing it. */
   release?: boolean
-  /** Optional note included in the recipient email. */
+  /**
+   * @deprecated The legacy fixed transfer email is gone. Put a note in a comms
+   * trigger's props instead, e.g. `comms.recipient.props.note`.
+   */
   message?: string
-  /** Set `false` to skip the recipient notification email (directed only). */
+  /** Set `false` to skip ALL comms for this action (per-role: `comms.<role>.notify`). */
   notify?: boolean
 }
 

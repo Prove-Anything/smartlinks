@@ -15,7 +15,7 @@ reserves states for them.
 
 | Mode | How | Who completes it |
 |------|-----|------------------|
-| **Directed** | Owner names a recipient (`toEmail` / `toUserId`). The proof is earmarked for them (`claimUserId`) and they're emailed a link. | The named recipient calls `acceptTransfer`. |
+| **Directed** | Owner names a recipient (`toEmail` / `toUserId`). The proof is earmarked for them (`claimUserId`); you notify them with a comms trigger. | The named recipient calls `acceptTransfer`. |
 | **Open release** | Owner marks the proof `claimable`. | Anyone claims it via the normal claim flow. |
 
 Only the current owner (or a collection admin) can start a transfer. A proof can
@@ -41,10 +41,14 @@ authoritative and atomic:
 ```ts
 import { proof } from '@proveanything/smartlinks'
 
-// Directed — hand it to a named buyer (they must accept)
+// Directed — hand it to a named buyer (they must accept). Notify each party with a
+// comms trigger naming a template you authored (see Comms Triggers below).
 const { transfer } = await proof.transfer(collectionId, productId, proofId, {
   toEmail: 'buyer@example.com',
-  message: 'Enjoy the watch!',
+  comms: {
+    recipient: { templateId: 'transfer-incoming', props: { note: 'Enjoy the watch!' } },
+    sender:    { templateId: 'transfer-sent' },
+  },
 })
 
 // …or an open release — anyone can now claim it
@@ -60,12 +64,18 @@ await proof.cancelTransfer(collectionId, productId, proofId)
 ## Recipient flow (directed)
 
 ```ts
-// Only the named recipient can accept — a third party is rejected.
-const { proof: mine } = await proof.acceptTransfer(collectionId, productId, proofId)
+// Only the named recipient can accept — a third party is rejected. Optionally
+// send completion comms to both parties.
+const { proof: mine } = await proof.acceptTransfer(collectionId, productId, proofId, {
+  comms: {
+    recipient: { templateId: 'transfer-complete-owner' },     // the new owner
+    sender:    { templateId: 'transfer-complete-previous' },  // the previous owner
+  },
+})
 ```
 
 The recipient sees the pending transfer on their account (a pending claim) and via
-the email link. Until they accept, the proof still belongs to the seller.
+the notification you sent. Until they accept, the proof still belongs to the seller.
 
 ---
 
@@ -101,14 +111,34 @@ the email link. Until they accept, the proof still belongs to the seller.
   added, are dispute-protected and never auto-transfer by default).
 - **Every state change is audited** as an append-only attestation on the proof.
 
+## Comms
+
+Every transfer action takes an optional `comms` map (role → comms trigger) that
+sends a transactional message once the action's write is durable. Roles:
+
+| Action | Roles |
+|--------|-------|
+| `transfer` (directed) | `recipient`, `sender` |
+| `transfer` (`release: true`) | `owner` |
+| `acceptTransfer` | `recipient` (new owner), `sender` (previous owner) |
+| `cancelTransfer` | `owner`, `recipient` (directed only) |
+
+You author each template; the server owns who each role resolves to and hydrates
+`{{ proof }}` / `{{ product }}` / `{{ contact }}` / `{{ proofUrl }}`. Pass
+`notify: false` on a role (or omit `comms`) to send nothing. Full detail:
+[Comms Triggers](./proof-comms-triggers.md).
+
 ## API
 
 | Method | Endpoint |
 |--------|----------|
 | `proof.transfer(c, p, id, opts)` | `POST …/proof/:id/transfer` |
-| `proof.acceptTransfer(c, p, id)` | `POST …/proof/:id/transfer/accept` |
-| `proof.cancelTransfer(c, p, id)` | `POST …/proof/:id/transfer/cancel` |
+| `proof.acceptTransfer(c, p, id, opts?)` | `POST …/proof/:id/transfer/accept` |
+| `proof.cancelTransfer(c, p, id, opts?)` | `POST …/proof/:id/transfer/cancel` |
 | `proof.getTransfer(c, p, id)` | `GET …/proof/:id/transfer` |
 
-See also [Proof Share Grants](./proof-share-grants.md) and
+`opts` on transfer/accept/cancel carries the `comms` map (and `notify`).
+
+See also [Comms Triggers](./proof-comms-triggers.md),
+[Proof Share Grants](./proof-share-grants.md) and
 [Proof Claiming Methods](./proof-claiming-methods.md).
