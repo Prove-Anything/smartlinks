@@ -15,8 +15,19 @@ reserves states for them.
 
 | Mode | How | Who completes it |
 |------|-----|------------------|
-| **Directed** | Owner names a recipient (`toEmail` / `toUserId`). The proof is earmarked for them (`claimUserId`); you notify them with a comms trigger. | The named recipient calls `acceptTransfer`. |
+| **Directed** | Owner names a recipient (`toEmail` / `toPhone` / `toUserId`). The proof is earmarked for them (`claimUserId`); you notify them with a comms trigger. | The named recipient calls `acceptTransfer`. |
 | **Open release** | Owner marks the proof `claimable`. | Anyone claims it via the normal claim flow. |
+
+A `toPhone` recipient (E.164) resolves to the **same user they log in as via SMS
+OTP** — Firebase keys the uid by phone number, so the earmark matches when they
+sign in. Pair it with an SMS comms trigger to notify them by text:
+
+```ts
+await proof.transfer(collectionId, productId, proofId, {
+  toPhone: '+14155551234',
+  comms: { recipient: { templateId: 'transfer-incoming', channel: 'sms' } },
+})
+```
 
 Only the current owner (or a collection admin) can start a transfer. A proof can
 have **one active transfer at a time**.
