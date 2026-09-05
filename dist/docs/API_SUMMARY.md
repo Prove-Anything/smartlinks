@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.16.3  |  Generated: 2026-09-05T10:57:07.719Z
+Version: 1.16.4  |  Generated: 2026-09-05T14:13:52.478Z
 
 This is a concise summary of all available API functions and types.
 
@@ -35,6 +35,7 @@ For detailed guides on specific features:
 - **[Proof Claiming Methods](proof-claiming-methods.md)** - All methods for claiming/registering product ownership (NFC tags, serial numbers, auto-generated claims)
 - **[Proof Share Grants](proof-share-grants.md)** - Delegated, scoped, revocable bearer access to a single proof (read/comment/verify-owner links)
 - **[Proof Ownership Transfer](proof-ownership-transfer.md)** - Moving a proof to a new owner: directed transfer, open release, accept/cancel, and the state machine
+- **[Comms Triggers](proof-comms-triggers.md)** - Sending transactional comms from proof actions (claim/transfer/accept/cancel): the role→template map, per-action roles, and the trust boundary
 - **[Lots](lots.md)** - Collection-scoped production groupings spanning many SKUs; facet/product selectors, member resolution, and GS1 AI(10) batch-then-lot resolution
 - **[Item Context](item-context.md)** - The `itemContext` container prop derived from a serial-proof URL or NFC tap (what item the URL points at)
 - **[Product Facets SDK](PRODUCT_FACETS_SDK.md)** - Admin and public product facet endpoints and TypeScript interfaces
@@ -7508,6 +7509,15 @@ interface ProofValuesUpdateRequest {
 }
 ```
 
+**ProofClaimRequest** (interface)
+```typescript
+interface ProofClaimRequest {
+  data?: Record<string, any>
+  comms?: CommsTriggerMap
+  [key: string]: any
+}
+```
+
 **ProofFieldsConfig** (interface)
 ```typescript
 interface ProofFieldsConfig {
@@ -7580,13 +7590,29 @@ interface ProofTransfer {
 }
 ```
 
+**CommsTrigger** (interface)
+```typescript
+interface CommsTrigger {
+  templateId: string
+  channel?: 'preferred' | 'email' | 'sms' | 'push' | 'wallet' | 'whatsapp'
+  props?: Record<string, any>
+  notify?: boolean
+  appId?: string
+}
+```
+
 **TransferProofOptions** (interface)
 ```typescript
 interface TransferProofOptions {
+  * Comms to send. Roles: `recipient` (the named new owner) and `sender` (the
+  * initiator) for a directed transfer; `owner` for an open release.
+  comms?: CommsTriggerMap
   toEmail?: string
   toUserId?: string
   toName?: string
   release?: boolean
+  * @deprecated The legacy fixed transfer email is gone. Put a note in a comms
+  * trigger's props instead, e.g. `comms.recipient.props.note`.
   message?: string
   notify?: boolean
 }
@@ -7601,11 +7627,25 @@ interface TransferProofResult {
 }
 ```
 
+**AcceptTransferOptions** (interface)
+```typescript
+interface AcceptTransferOptions {
+  comms?: CommsTriggerMap
+  notify?: boolean
+}
+```
+
+**CancelTransferOptions** (interface)
+```typescript
+interface CancelTransferOptions {
+  comms?: CommsTriggerMap
+  notify?: boolean
+}
+```
+
 **ProofResponse** = `Proof`
 
 **ProofUpdateRequest** = `Partial<ProofWrite> & { proof?: ProofWrite }`
-
-**ProofClaimRequest** = `Record<string, any>`
 
 **ProofFieldScope** = `'public' | 'owner' | 'personal' | 'admin'`
 
@@ -7618,6 +7658,8 @@ interface TransferProofResult {
 **ProofTransferType** = `'directed' | 'open_release' | 'contested'`
 
 **ProofTransferState** = ``
+
+**CommsTriggerMap** = `Record<string, CommsTrigger>`
 
 ### qr
 
@@ -10428,16 +10470,18 @@ Redeem a grant token (anonymous or signed-in). Records the redemption and return
     productId: string,
     proofId: string,
     options: TransferProofOptions) → `Promise<TransferProofResult>`
-Start a push transfer of a proof (current owner / collection admin only). Directed — hand it to a named recipient who then calls {@link acceptTransfer}: ```ts await proof.transfer(collectionId, productId, proofId, { toEmail: 'buyer@example.com' }) ``` Open release — make the proof claimable by anyone: ```ts await proof.transfer(collectionId, productId, proofId, { release: true }) ```
+Start a push transfer of a proof (current owner / collection admin only). Directed — hand it to a named recipient who then calls {@link acceptTransfer}: ```ts await proof.transfer(collectionId, productId, proofId, { toEmail: 'buyer@example.com' }) ``` Open release — make the proof claimable by anyone: ```ts await proof.transfer(collectionId, productId, proofId, { release: true }) ``` Send comms by naming templates per role (server decides who receives each): ```ts await proof.transfer(collectionId, productId, proofId, { toEmail: 'buyer@example.com', comms: { recipient: { templateId: 'transfer-incoming', props: { note: 'Enjoy!' } }, sender:    { templateId: 'transfer-sent' }, }, }) ```
 
 **acceptTransfer**(collectionId: string,
     productId: string,
-    proofId: string) → `Promise<`
+    proofId: string,
+    options: AcceptTransferOptions = {}) → `Promise<`
 Accept a directed transfer (the named recipient only). Completes the ownership move — the proof's `userId` becomes the caller and the previous owner's private data and share grants are cleared/voided.
 
 **cancelTransfer**(collectionId: string,
     productId: string,
-    proofId: string) → `Promise<`
+    proofId: string,
+    options: CancelTransferOptions = {}) → `Promise<`
 Cancel a pending push transfer (current owner / collection admin only).
 
 **getTransfer**(collectionId: string,

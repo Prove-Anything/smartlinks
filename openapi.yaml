@@ -25717,6 +25717,14 @@ components:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/JsonValue"
+    ProofClaimRequest:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+        comms:
+          $ref: "#/components/schemas/CommsTriggerMap"
     ProofFieldsConfig:
       type: object
       properties:
@@ -25844,9 +25852,34 @@ components:
         - state
         - createdAt
         - updatedAt
+    CommsTrigger:
+      type: object
+      properties:
+        templateId:
+          type: string
+        channel:
+          type: string
+          enum:
+            - preferred
+            - email
+            - sms
+            - push
+            - wallet
+            - whatsapp
+        props:
+          type: object
+          additionalProperties: true
+        notify:
+          type: boolean
+        appId:
+          type: string
+      required:
+        - templateId
     TransferProofOptions:
       type: object
       properties:
+        comms:
+          $ref: "#/components/schemas/CommsTriggerMap"
         toEmail:
           type: string
         toUserId:
@@ -25875,6 +25908,20 @@ components:
         - ok
         - mode
         - transfer
+    AcceptTransferOptions:
+      type: object
+      properties:
+        comms:
+          $ref: "#/components/schemas/CommsTriggerMap"
+        notify:
+          type: boolean
+    CancelTransferOptions:
+      type: object
+      properties:
+        comms:
+          $ref: "#/components/schemas/CommsTriggerMap"
+        notify:
+          type: boolean
     ProofTransferType:
       type: string
       enum:

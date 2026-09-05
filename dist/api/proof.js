@@ -270,6 +270,16 @@ export var proof;
      * ```ts
      * await proof.transfer(collectionId, productId, proofId, { release: true })
      * ```
+     * Send comms by naming templates per role (server decides who receives each):
+     * ```ts
+     * await proof.transfer(collectionId, productId, proofId, {
+     *   toEmail: 'buyer@example.com',
+     *   comms: {
+     *     recipient: { templateId: 'transfer-incoming', props: { note: 'Enjoy!' } },
+     *     sender:    { templateId: 'transfer-sent' },
+     *   },
+     * })
+     * ```
      */
     async function transfer(collectionId, productId, proofId, options) {
         return post(transferBase(collectionId, productId, proofId), Object.assign({}, options));
@@ -280,13 +290,13 @@ export var proof;
      * move — the proof's `userId` becomes the caller and the previous owner's private
      * data and share grants are cleared/voided.
      */
-    async function acceptTransfer(collectionId, productId, proofId) {
-        return post(`${transferBase(collectionId, productId, proofId)}/accept`, {});
+    async function acceptTransfer(collectionId, productId, proofId, options = {}) {
+        return post(`${transferBase(collectionId, productId, proofId)}/accept`, Object.assign({}, options));
     }
     proof.acceptTransfer = acceptTransfer;
     /** Cancel a pending push transfer (current owner / collection admin only). */
-    async function cancelTransfer(collectionId, productId, proofId) {
-        return post(`${transferBase(collectionId, productId, proofId)}/cancel`, {});
+    async function cancelTransfer(collectionId, productId, proofId, options = {}) {
+        return post(`${transferBase(collectionId, productId, proofId)}/cancel`, Object.assign({}, options));
     }
     proof.cancelTransfer = cancelTransfer;
     /**

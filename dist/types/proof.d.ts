@@ -136,7 +136,20 @@ export interface ProofValuesUpdateRequest {
     /** The caller's own private slot, merged into `proof.values.personal[callerUid]`. */
     personal?: Record<string, JsonValue>;
 }
-export type ProofClaimRequest = Record<string, any>;
+/**
+ * Claim/mint payload. Remains open (server-side rules vary), but two keys are
+ * recognised across the claim endpoints:
+ * - `data`  — claim values written to the proof
+ * - `comms` — comms to send once the proof is committed to the ledger. Role:
+ *   `claimer` (the claiming user). See {@link CommsTrigger}.
+ */
+export interface ProofClaimRequest {
+    /** Claim values written to the proof. */
+    data?: Record<string, any>;
+    /** Comms to send on claim; role `claimer`. Fired only after the ledger write. */
+    comms?: CommsTriggerMap;
+    [key: string]: any;
+}
 /**
  * `'public'` (default, omitted) reads/writes `proof.values[key]`.
  * `'owner'` reads/writes `proof.values.owner[key]`.
@@ -239,11 +252,43 @@ export interface ProofTransfer {
     updatedAt: string;
 }
 /**
+ * A comms trigger — the standard way to have an action send a transactional
+ * message as a side-effect of doing its work. You name a template (authored in
+ * the template editor) and optionally supply merge props; the server owns who
+ * receives it and injects the authoritative context ({{ proof }}, {{ product }},
+ * the target contact). This is a 1:1 transactional send — it does not touch the
+ * interactions → segments → broadcasts (marketing) pipeline.
+ */
+export interface CommsTrigger {
+    /** The comms template to render and send. */
+    templateId: string;
+    /** Delivery channel; defaults to the contact's preferred channel. */
+    channel?: 'preferred' | 'email' | 'sms' | 'push' | 'wallet' | 'whatsapp';
+    /** Freeform merge data for the template (note, message, custom fields). */
+    props?: Record<string, any>;
+    /** Set false to skip this message while still performing the action. */
+    notify?: boolean;
+    /** Owning app id, recorded in comms history. */
+    appId?: string;
+}
+/**
+ * A role → {@link CommsTrigger} map passed into an action. Each action documents
+ * the roles it exposes (e.g. a transfer exposes `recipient` and `sender`); only
+ * roles the action recognises are sent. The server decides which contact each
+ * role resolves to — the caller only names templates, never recipients.
+ */
+export type CommsTriggerMap = Record<string, CommsTrigger>;
+/**
  * Start a push transfer. Provide **one** of:
  * - `toEmail` / `toUserId` — a directed transfer to a named recipient (they accept).
  * - `release: true`        — an open release (the proof becomes claimable by anyone).
  */
 export interface TransferProofOptions {
+    /**
+     * Comms to send. Roles: `recipient` (the named new owner) and `sender` (the
+     * initiator) for a directed transfer; `owner` for an open release.
+     */
+    comms?: CommsTriggerMap;
     /** Directed: recipient email (created/looked up if needed). */
     toEmail?: string;
     /** Directed: recipient user id, if already known. */
@@ -252,9 +297,12 @@ export interface TransferProofOptions {
     toName?: string;
     /** Open release: mark the proof claimable instead of directing it. */
     release?: boolean;
-    /** Optional note included in the recipient email. */
+    /**
+     * @deprecated The legacy fixed transfer email is gone. Put a note in a comms
+     * trigger's props instead, e.g. `comms.recipient.props.note`.
+     */
     message?: string;
-    /** Set `false` to skip the recipient notification email (directed only). */
+    /** Set `false` to skip ALL comms for this action (per-role: `comms.<role>.notify`). */
     notify?: boolean;
 }
 /** Result of initiating a push transfer. */
@@ -262,4 +310,23 @@ export interface TransferProofResult {
     ok: boolean;
     mode: 'directed' | 'open_release';
     transfer: ProofTransfer;
+}
+/**
+ * Options for accepting a directed transfer. Comms roles: `recipient` (the
+ * accepting new owner) and `sender` (the previous owner) — the completion
+ * confirmation for each party.
+ */
+export interface AcceptTransferOptions {
+    comms?: CommsTriggerMap;
+    /** Set false to skip all completion comms. */
+    notify?: boolean;
+}
+/**
+ * Options for cancelling a pending transfer. Comms roles: `owner` (the canceller)
+ * and, for a directed transfer, `recipient` (whose earmarked transfer is withdrawn).
+ */
+export interface CancelTransferOptions {
+    comms?: CommsTriggerMap;
+    /** Set false to skip all cancellation comms. */
+    notify?: boolean;
 }

@@ -1,4 +1,4 @@
-import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofValuesUpdateRequest, ProofClaimRequest, ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult, ProofTransfer, TransferProofOptions, TransferProofResult } from "../types/proof";
+import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofValuesUpdateRequest, ProofClaimRequest, ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult, ProofTransfer, TransferProofOptions, TransferProofResult, AcceptTransferOptions, CancelTransferOptions } from "../types/proof";
 export declare namespace proof {
     /**
      * Retrieves a single Proof by Collection ID, Product ID, and Proof ID.
@@ -177,6 +177,16 @@ export declare namespace proof {
      * ```ts
      * await proof.transfer(collectionId, productId, proofId, { release: true })
      * ```
+     * Send comms by naming templates per role (server decides who receives each):
+     * ```ts
+     * await proof.transfer(collectionId, productId, proofId, {
+     *   toEmail: 'buyer@example.com',
+     *   comms: {
+     *     recipient: { templateId: 'transfer-incoming', props: { note: 'Enjoy!' } },
+     *     sender:    { templateId: 'transfer-sent' },
+     *   },
+     * })
+     * ```
      */
     function transfer(collectionId: string, productId: string, proofId: string, options: TransferProofOptions): Promise<TransferProofResult>;
     /**
@@ -184,12 +194,12 @@ export declare namespace proof {
      * move — the proof's `userId` becomes the caller and the previous owner's private
      * data and share grants are cleared/voided.
      */
-    function acceptTransfer(collectionId: string, productId: string, proofId: string): Promise<{
+    function acceptTransfer(collectionId: string, productId: string, proofId: string, options?: AcceptTransferOptions): Promise<{
         ok: boolean;
         proof: ProofResponse;
     }>;
     /** Cancel a pending push transfer (current owner / collection admin only). */
-    function cancelTransfer(collectionId: string, productId: string, proofId: string): Promise<{
+    function cancelTransfer(collectionId: string, productId: string, proofId: string, options?: CancelTransferOptions): Promise<{
         ok: boolean;
     }>;
     /**
