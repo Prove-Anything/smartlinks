@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.16.4  |  Generated: 2026-09-05T15:44:46.849Z
+Version: 1.16.5  |  Generated: 2026-09-06T07:38:54.188Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2797,10 +2797,33 @@ interface CreateAttestationInput {
 }
 ```
 
+**OwnerAttestationInput** (interface)
+```typescript
+interface OwnerAttestationInput {
+  subjectType: AttestationSubjectType
+  subjectId: string
+  attestationType: string
+  recordedAt?: string
+  visibility?: 'public' | 'owner'
+  value?: Record<string, any>
+  ownerData?: Record<string, any>
+  unit?: string
+  source?: string
+  metadata?: Record<string, any>
+}
+```
+
 **ListAttestationsResponse** (interface)
 ```typescript
 interface ListAttestationsResponse {
   attestations: Attestation[]
+}
+```
+
+**CreateOwnerAttestationResponse** (interface)
+```typescript
+interface CreateOwnerAttestationResponse {
+  attestation: Attestation
 }
 ```
 
@@ -9062,6 +9085,10 @@ Tree latest snapshot — most-recent record per type across a container subtree 
 **publicList**(collectionId: string,
     params: ListAttestationsParams) → `Promise<PublicListAttestationsResponse>`
 List attestations for a subject (public). Records with `visibility='admin'` are always excluded. Records with `visibility='owner'` are included only when the caller provides a valid Firebase ID token that resolves to the subject owner. The `audience` field in the response indicates the tier that was served. ```typescript const { attestations: records, audience } = await attestations.publicList('coll_123', { subjectType: 'proof', subjectId:   'proof-uuid', }) ```
+
+**publicCreate**(collectionId: string,
+    data: OwnerAttestationInput) → `Promise<CreateOwnerAttestationResponse>`
+Create an OWNER-authored attestation (public write) — the counterpart to the admin {@link create}. The authenticated caller must OWN the linked proof (identity, not a read grant). Guardrails enforced server-side: they may write `value` + `ownerData` only (`adminData` is dropped), `visibility` is clamped to `'public' | 'owner'`, and `authorId` is forced to the caller. The record joins the same tamper-evident hash chain. POST /public/collection/:collectionId/attestations ```ts await attestations.publicCreate('coll_123', { subjectType: 'proof', subjectId: 'proof_1', attestationType: 'condition-report', value: { grade: 'excellent' }, visibility: 'public', }) ```
 
 **publicSummary**(collectionId: string,
     params: AttestationSummaryParams) → `Promise<PublicAttestationSummaryResponse>`

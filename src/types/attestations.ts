@@ -153,10 +153,34 @@ export interface CreateAttestationInput {
   metadata?: Record<string, any>
 }
 
+/**
+ * Owner-authored attestation input (public write). The proof OWNER adds an
+ * attestation to their own item. Restricted vs {@link CreateAttestationInput}:
+ * no `adminData` (business-only zone), `visibility` limited to `'public' | 'owner'`,
+ * and `authorId` is forced to the caller by the server (so it's omitted here).
+ */
+export interface OwnerAttestationInput {
+  subjectType: AttestationSubjectType
+  subjectId: string
+  attestationType: string
+  recordedAt?: string
+  /** `'public'` | `'owner'` only — defaults to `'owner'`. */
+  visibility?: 'public' | 'owner'
+  value?: Record<string, any>
+  ownerData?: Record<string, any>
+  unit?: string
+  source?: string
+  metadata?: Record<string, any>
+}
+
 // ─── Response shapes ──────────────────────────────────────────────────────────
 
 export interface ListAttestationsResponse {
   attestations: Attestation[]
+}
+
+export interface CreateOwnerAttestationResponse {
+  attestation: Attestation
 }
 
 export interface PublicListAttestationsResponse {

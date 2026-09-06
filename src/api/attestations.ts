@@ -20,6 +20,8 @@ import type {
   AttestationTreeLatestResponse,
   PublicAttestationTreeLatestResponse,
   PublicListAttestationsResponse,
+  OwnerAttestationInput,
+  CreateOwnerAttestationResponse,
 } from "../types/attestations"
 
 // ─── Internal helper ──────────────────────────────────────────────────────────
@@ -48,9 +50,12 @@ function buildAttestationQuery(params: Record<string, any>): string {
  *
  * ### Admin vs Public
  * - **Admin** endpoints (`/admin/collection/:id/attestations`) require a valid
- *   admin session or bearer token.  All three data zones are returned.
- * - **Public** endpoints (`/public/collection/:id/attestations`) are read-only.
- *   Owner elevation is available via `Authorization: Bearer <Firebase ID token>`.
+ *   admin session or bearer token.  All three data zones are returned, and the
+ *   business can write any zone/visibility ({@link create}).
+ * - **Public** endpoints (`/public/collection/:id/attestations`) are read-only,
+ *   EXCEPT {@link publicCreate}: the proof OWNER may author an attestation on
+ *   their own item (value + ownerData, visibility public|owner — never the admin
+ *   zone). Owner elevation is via `Authorization: Bearer <Firebase ID token>`.
  *
  * @see docs/attestations.md
  */
@@ -326,6 +331,30 @@ export namespace attestations {
     const qs = buildAttestationQuery(params)
     const path = `/public/collection/${encodeURIComponent(collectionId)}/attestations${qs}`
     return request<PublicListAttestationsResponse>(path)
+  }
+
+  /**
+   * Create an OWNER-authored attestation (public write) — the counterpart to the
+   * admin {@link create}. The authenticated caller must OWN the linked proof
+   * (identity, not a read grant). Guardrails enforced server-side: they may write
+   * `value` + `ownerData` only (`adminData` is dropped), `visibility` is clamped
+   * to `'public' | 'owner'`, and `authorId` is forced to the caller. The record
+   * joins the same tamper-evident hash chain.
+   * POST /public/collection/:collectionId/attestations
+   * ```ts
+   * await attestations.publicCreate('coll_123', {
+   *   subjectType: 'proof', subjectId: 'proof_1',
+   *   attestationType: 'condition-report',
+   *   value: { grade: 'excellent' }, visibility: 'public',
+   * })
+   * ```
+   */
+  export async function publicCreate(
+    collectionId: string,
+    data: OwnerAttestationInput
+  ): Promise<CreateOwnerAttestationResponse> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/attestations`
+    return post<CreateOwnerAttestationResponse>(path, data)
   }
 
   /**
