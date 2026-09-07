@@ -159,6 +159,15 @@ The middleware resolves the UID and checks ownership:
 
 When ownership is confirmed the request is served at `audience='owner'`, which includes `ownerData`.
 
+**Owner write** — the proof owner may also *author* an attestation on their own item via `POST /api/v1/public/collection/:collectionId/attestations` (`attestations.publicCreate`). It is the public counterpart to the admin write, with tight guardrails:
+
+- the caller must be authenticated and **own the linked proof** (identity — a read grant is not enough); a subject with no linked proof is rejected;
+- they may write `value` and `ownerData` only — **`adminData` is dropped** (the business zone);
+- `visibility` is clamped to `'public' | 'owner'` (never `'admin'`), defaulting to `'owner'`;
+- `authorId` is forced to the caller and `metadata.authorType = 'owner'` is stamped.
+
+The record joins the same append-only, hash-chained log as business/system writes. Business writes (any zone/visibility) remain admin-only.
+
 ### Visibility vs audience
 
 `visibility` is a property of an **individual record** set at write time.  `audience` describes the **caller's tier** resolved at read time.  The server applies:

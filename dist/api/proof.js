@@ -280,6 +280,13 @@ export var proof;
      *   },
      * })
      * ```
+     * Direct to an SMS recipient by phone (E.164) and notify them by text:
+     * ```ts
+     * await proof.transfer(collectionId, productId, proofId, {
+     *   toPhone: '+14155551234',
+     *   comms: { recipient: { templateId: 'transfer-incoming', channel: 'sms' } },
+     * })
+     * ```
      */
     async function transfer(collectionId, productId, proofId, options) {
         return post(transferBase(collectionId, productId, proofId), Object.assign({}, options));

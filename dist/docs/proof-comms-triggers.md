@@ -128,6 +128,11 @@ Omit `comms` entirely and nothing is sent — comms are **opt-in**.
 
 - **Email-only recipients work.** A directed transfer to a `toEmail` that isn't a
   contact yet resolves/creates a contact before sending.
+- **SMS recipients work the same way.** A directed transfer to a `toPhone` (E.164)
+  resolves the recipient by phone and gives their contact a phone identity, so an
+  SMS-channel trigger (`channel: 'sms'`) reaches them. Because the phone maps to a
+  stable Firebase uid, they accept by logging in via SMS OTP — the accept is still
+  auth-gated exactly as with email.
 - **Consent + suppression apply.** Transactional sends still respect the contact's
   channel consent and suppression list; a template's `topic` governs this.
 - **Delivery is logged** to comms history (with your `appId` and a `ref`), so sends

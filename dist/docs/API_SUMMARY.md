@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.16.4  |  Generated: 2026-09-05T14:13:52.478Z
+Version: 1.16.6  |  Generated: 2026-09-06T07:49:21.444Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2797,10 +2797,33 @@ interface CreateAttestationInput {
 }
 ```
 
+**OwnerAttestationInput** (interface)
+```typescript
+interface OwnerAttestationInput {
+  subjectType: AttestationSubjectType
+  subjectId: string
+  attestationType: string
+  recordedAt?: string
+  visibility?: 'public' | 'owner'
+  value?: Record<string, any>
+  ownerData?: Record<string, any>
+  unit?: string
+  source?: string
+  metadata?: Record<string, any>
+}
+```
+
 **ListAttestationsResponse** (interface)
 ```typescript
 interface ListAttestationsResponse {
   attestations: Attestation[]
+}
+```
+
+**CreateOwnerAttestationResponse** (interface)
+```typescript
+interface CreateOwnerAttestationResponse {
+  attestation: Attestation
 }
 ```
 
@@ -7605,9 +7628,14 @@ interface CommsTrigger {
 ```typescript
 interface TransferProofOptions {
   * Comms to send. Roles: `recipient` (the named new owner) and `sender` (the
-  * initiator) for a directed transfer; `owner` for an open release.
+  * initiator) for a directed transfer; `owner` for an open release. For an
+  * SMS recipient, set `comms.recipient.channel = 'sms'`.
   comms?: CommsTriggerMap
   toEmail?: string
+  * Directed: recipient phone in E.164 (e.g. `+14155551234`). Resolves to the same
+  * user they log in as via SMS OTP (created if needed). Pair with an SMS comms
+  * trigger to notify them: `comms.recipient.channel = 'sms'`.
+  toPhone?: string
   toUserId?: string
   toName?: string
   release?: boolean
@@ -9058,6 +9086,10 @@ Tree latest snapshot — most-recent record per type across a container subtree 
     params: ListAttestationsParams) → `Promise<PublicListAttestationsResponse>`
 List attestations for a subject (public). Records with `visibility='admin'` are always excluded. Records with `visibility='owner'` are included only when the caller provides a valid Firebase ID token that resolves to the subject owner. The `audience` field in the response indicates the tier that was served. ```typescript const { attestations: records, audience } = await attestations.publicList('coll_123', { subjectType: 'proof', subjectId:   'proof-uuid', }) ```
 
+**publicCreate**(collectionId: string,
+    data: OwnerAttestationInput) → `Promise<CreateOwnerAttestationResponse>`
+Create an OWNER-authored attestation (public write) — the counterpart to the admin {@link create}. The authenticated caller must OWN the linked proof (identity, not a read grant). Guardrails enforced server-side: they may write `value` + `ownerData` only (`adminData` is dropped), `visibility` is clamped to `'public' | 'owner'`, and `authorId` is forced to the caller. The record joins the same tamper-evident hash chain. POST /public/collection/:collectionId/attestations ```ts await attestations.publicCreate('coll_123', { subjectType: 'proof', subjectId: 'proof_1', attestationType: 'condition-report', value: { grade: 'excellent' }, visibility: 'public', }) ```
+
 **publicSummary**(collectionId: string,
     params: AttestationSummaryParams) → `Promise<PublicAttestationSummaryResponse>`
 Time-series summary (public). Always served at `audience='public'`.  Same parameters as the admin version. `attestationType` are required
@@ -10470,7 +10502,7 @@ Redeem a grant token (anonymous or signed-in). Records the redemption and return
     productId: string,
     proofId: string,
     options: TransferProofOptions) → `Promise<TransferProofResult>`
-Start a push transfer of a proof (current owner / collection admin only). Directed — hand it to a named recipient who then calls {@link acceptTransfer}: ```ts await proof.transfer(collectionId, productId, proofId, { toEmail: 'buyer@example.com' }) ``` Open release — make the proof claimable by anyone: ```ts await proof.transfer(collectionId, productId, proofId, { release: true }) ``` Send comms by naming templates per role (server decides who receives each): ```ts await proof.transfer(collectionId, productId, proofId, { toEmail: 'buyer@example.com', comms: { recipient: { templateId: 'transfer-incoming', props: { note: 'Enjoy!' } }, sender:    { templateId: 'transfer-sent' }, }, }) ```
+Start a push transfer of a proof (current owner / collection admin only). Directed — hand it to a named recipient who then calls {@link acceptTransfer}: ```ts await proof.transfer(collectionId, productId, proofId, { toEmail: 'buyer@example.com' }) ``` Open release — make the proof claimable by anyone: ```ts await proof.transfer(collectionId, productId, proofId, { release: true }) ``` Send comms by naming templates per role (server decides who receives each): ```ts await proof.transfer(collectionId, productId, proofId, { toEmail: 'buyer@example.com', comms: { recipient: { templateId: 'transfer-incoming', props: { note: 'Enjoy!' } }, sender:    { templateId: 'transfer-sent' }, }, }) ``` Direct to an SMS recipient by phone (E.164) and notify them by text: ```ts await proof.transfer(collectionId, productId, proofId, { toPhone: '+14155551234', comms: { recipient: { templateId: 'transfer-incoming', channel: 'sms' } }, }) ```
 
 **acceptTransfer**(collectionId: string,
     productId: string,

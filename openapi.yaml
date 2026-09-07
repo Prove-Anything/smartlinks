@@ -10270,6 +10270,37 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+    post:
+      tags:
+        - attestations
+      summary: "Create an OWNER-authored attestation (public write) — the counterpart to the admin {@link create}."
+      operationId: attestations_publicCreate
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CreateOwnerAttestationResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OwnerAttestationInput"
   /public/collection/{collectionId}/attestations/latest:
     get:
       tags:
@@ -18782,6 +18813,39 @@ components:
         - subjectType
         - subjectId
         - attestationType
+    OwnerAttestationInput:
+      type: object
+      properties:
+        subjectType:
+          $ref: "#/components/schemas/AttestationSubjectType"
+        subjectId:
+          type: string
+        attestationType:
+          type: string
+        recordedAt:
+          type: string
+        visibility:
+          type: string
+          enum:
+            - public
+            - owner
+        value:
+          type: object
+          additionalProperties: true
+        ownerData:
+          type: object
+          additionalProperties: true
+        unit:
+          type: string
+        source:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - subjectType
+        - subjectId
+        - attestationType
     ListAttestationsResponse:
       type: object
       properties:
@@ -18791,6 +18855,13 @@ components:
             $ref: "#/components/schemas/Attestation"
       required:
         - attestations
+    CreateOwnerAttestationResponse:
+      type: object
+      properties:
+        attestation:
+          $ref: "#/components/schemas/Attestation"
+      required:
+        - attestation
     PublicListAttestationsResponse:
       type: object
       properties:
@@ -25881,6 +25952,8 @@ components:
         comms:
           $ref: "#/components/schemas/CommsTriggerMap"
         toEmail:
+          type: string
+        toPhone:
           type: string
         toUserId:
           type: string

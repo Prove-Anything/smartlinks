@@ -280,17 +280,24 @@ export interface CommsTrigger {
 export type CommsTriggerMap = Record<string, CommsTrigger>;
 /**
  * Start a push transfer. Provide **one** of:
- * - `toEmail` / `toUserId` — a directed transfer to a named recipient (they accept).
+ * - `toEmail` / `toPhone` / `toUserId` — a directed transfer to a named recipient (they accept).
  * - `release: true`        — an open release (the proof becomes claimable by anyone).
  */
 export interface TransferProofOptions {
     /**
      * Comms to send. Roles: `recipient` (the named new owner) and `sender` (the
-     * initiator) for a directed transfer; `owner` for an open release.
+     * initiator) for a directed transfer; `owner` for an open release. For an
+     * SMS recipient, set `comms.recipient.channel = 'sms'`.
      */
     comms?: CommsTriggerMap;
     /** Directed: recipient email (created/looked up if needed). */
     toEmail?: string;
+    /**
+     * Directed: recipient phone in E.164 (e.g. `+14155551234`). Resolves to the same
+     * user they log in as via SMS OTP (created if needed). Pair with an SMS comms
+     * trigger to notify them: `comms.recipient.channel = 'sms'`.
+     */
+    toPhone?: string;
     /** Directed: recipient user id, if already known. */
     toUserId?: string;
     /** Directed: display name for a newly-created recipient. */
