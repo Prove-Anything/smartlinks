@@ -222,6 +222,9 @@ export var proof;
             body.audience = options.audience;
         if (options.expiresAt)
             body.expiresAt = options.expiresAt instanceof Date ? options.expiresAt.toISOString() : options.expiresAt;
+        // Only applied server-side when scope includes 'contribute'.
+        if (options.moderate !== undefined)
+            body.moderate = options.moderate;
         return post(grantBase(collectionId, productId, proofId), body);
     }
     proof.createGrant = createGrant;

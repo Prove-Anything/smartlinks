@@ -166,6 +166,25 @@ When ownership is confirmed the request is served at `audience='owner'`, which i
 - `visibility` is clamped to `'public' | 'owner'` (never `'admin'`), defaulting to `'owner'`;
 - `authorId` is forced to the caller and `metadata.authorType = 'owner'` is stamped.
 
+**Contribute write (grant)** — the same endpoint also accepts a holder of a
+`contribute`-scope share grant (set the token with `setGrantToken` first), so a
+third party can add an attestation without owning the proof. Named grant →
+attributed to the signed-in uid; public-link grant → anonymous, with `guestName`
+for attribution; `grantId` is stamped either way. If the grant was issued with
+`moderate: true`, the record is created with `moderationStatus: 'pending'` and is
+held to the owner until approved.
+
+**Moderation** — `moderationStatus` (`approved` | `pending` | `rejected`) is a gate
+**orthogonal to `visibility`** and excluded from the hash chain. A `pending` record
+is returned only to its author and to owner/admin audiences — never to the public,
+whatever its target visibility — and is excluded from public analytics. The owner
+(identity) or a collection admin resolves it with `attestations.moderate(collectionId,
+attestationId, { decision: 'approve' | 'reject' })`; approve releases it to its
+declared visibility, reject keeps it author+admin-only. The review queue is
+`attestations.publicList(..., { moderationStatus: 'pending' })`. Flipping the status
+leaves the hashed fact and its chain untouched. See
+[Proof Share Grants → Contribute access](proof-share-grants.md#contribute-access--let-someone-add-to-a-proof).
+
 The record joins the same append-only, hash-chained log as business/system writes. Business writes (any zone/visibility) remain admin-only.
 
 ### Visibility vs audience

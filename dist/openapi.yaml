@@ -1261,6 +1261,11 @@ paths:
           required: false
           schema:
             type: string
+        - name: moderationStatus
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationModerationStatus"
         - name: recordedAfter
           in: query
           required: false
@@ -10237,6 +10242,11 @@ paths:
           required: false
           schema:
             type: string
+        - name: moderationStatus
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationModerationStatus"
         - name: recordedAfter
           in: query
           required: false
@@ -10273,7 +10283,7 @@ paths:
     post:
       tags:
         - attestations
-      summary: "Create an OWNER-authored attestation (public write) — the counterpart to the admin {@link create}."
+      summary: attestations.publicCreate
       operationId: attestations_publicCreate
       security: []
       parameters:
@@ -10505,6 +10515,43 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/collection/{collectionId}/attestations/{attestationId}/moderate:
+    post:
+      tags:
+        - attestations
+      summary: Moderate a contributed attestation (proof OWNER by identity, or collection admin).
+      operationId: attestations_moderate
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: attestationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerateAttestationResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModerateAttestationInput"
   /public/collection/{collectionId}/comm/email/register:
     post:
       tags:
@@ -11115,6 +11162,11 @@ paths:
           required: false
           schema:
             type: string
+        - name: moderationStatus
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/AttestationModerationStatus"
         - name: recordedAfter
           in: query
           required: false
@@ -18720,6 +18772,10 @@ components:
           type: string
         authorId:
           type: string
+        grantId:
+          type: string
+        moderationStatus:
+          $ref: "#/components/schemas/AttestationModerationStatus"
         metadata:
           type: object
           additionalProperties: true
@@ -18842,10 +18898,29 @@ components:
         metadata:
           type: object
           additionalProperties: true
+        guestName:
+          type: string
       required:
         - subjectType
         - subjectId
         - attestationType
+    ModerateAttestationInput:
+      type: object
+      properties:
+        decision:
+          type: string
+          enum:
+            - approve
+            - reject
+      required:
+        - decision
+    ModerateAttestationResponse:
+      type: object
+      properties:
+        attestation:
+          $ref: "#/components/schemas/Attestation"
+      required:
+        - attestation
     ListAttestationsResponse:
       type: object
       properties:
@@ -18985,6 +19060,8 @@ components:
           type: string
         attestationType:
           type: string
+        moderationStatus:
+          $ref: "#/components/schemas/AttestationModerationStatus"
         recordedAfter:
           type: string
         recordedBefore:
@@ -25832,6 +25909,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/GrantScope"
+        moderate:
+          type: boolean
         audience:
           $ref: "#/components/schemas/GrantAudience"
         createdBy:
@@ -25872,6 +25951,8 @@ components:
         expiresAt:
           type: object
           additionalProperties: true
+        moderate:
+          type: boolean
       required:
         - scope
     RedeemGrantOptions:

@@ -289,6 +289,8 @@ export namespace proof {
     const body: Record<string, any> = { scope: options.scope }
     if (options.audience) body.audience = options.audience
     if (options.expiresAt) body.expiresAt = options.expiresAt instanceof Date ? options.expiresAt.toISOString() : options.expiresAt
+    // Only applied server-side when scope includes 'contribute'.
+    if (options.moderate !== undefined) body.moderate = options.moderate
     return post<ProofGrant>(grantBase(collectionId, productId, proofId), body)
   }
 

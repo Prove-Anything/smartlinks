@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.16.6  |  Generated: 2026-09-06T07:49:21.444Z
+Version: 1.16.7  |  Generated: 2026-09-12T17:58:06.573Z
 
 This is a concise summary of all available API functions and types.
 
@@ -134,6 +134,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **containers** - Functions for containers operations
 - **facets** - Functions for facets operations
 - **http** - Functions for http operations
+- **integrations** - Functions for integrations operations
 - **jobs** - Functions for jobs operations
 - **journeysAnalytics** - Functions for journeysAnalytics operations
 - **location** - Functions for location operations
@@ -142,6 +143,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **order** - Functions for order operations
 - **products** - Functions for products operations
 - **realtime** - Functions for realtime operations
+- **secrets** - Functions for secrets operations
 - **tags** - Functions for tags operations
 - **template** - Functions for template operations
 - **translations** - Functions for translations operations
@@ -2745,6 +2747,15 @@ interface Attestation {
   unit?: string
   source?: string
   authorId?: string
+  * When authored under a `contribute` grant (rather than by identity), the id of
+  * the granting token — provenance for a contributed record. `null`/absent for
+  * owner/admin/identity writes.
+  grantId?: string | null
+  * Moderation gate, orthogonal to {@link visibility} and excluded from the hash
+  * chain. `'approved'` (default) is live; `'pending'` is held for owner review
+  * (visible only to its author and owner/admin audiences); `'rejected'` was
+  * declined. Contributions under a `moderate` grant start `'pending'`.
+  moderationStatus?: AttestationModerationStatus
   metadata?: Record<string, any>
   contentHash: string
   prevHash?: string
@@ -2810,6 +2821,23 @@ interface OwnerAttestationInput {
   unit?: string
   source?: string
   metadata?: Record<string, any>
+  * Attribution for an anonymous (public-link) contribute-grant write. Ignored
+  * for owner writes and for named-grant writes (attributed to the signed-in uid).
+  guestName?: string
+}
+```
+
+**ModerateAttestationInput** (interface)
+```typescript
+interface ModerateAttestationInput {
+  decision: 'approve' | 'reject'
+}
+```
+
+**ModerateAttestationResponse** (interface)
+```typescript
+interface ModerateAttestationResponse {
+  attestation: Attestation
 }
 ```
 
@@ -2905,6 +2933,10 @@ interface ListAttestationsParams {
   subjectType: AttestationSubjectType
   subjectId: string
   attestationType?: string
+  * Filter by moderation state. Primarily for the owner review queue
+  * (`moderationStatus: 'pending'`). ANDs with the server's audience gate, so a
+  * public caller can never use it to widen access.
+  moderationStatus?: AttestationModerationStatus
   recordedAfter?: string
   recordedBefore?: string
   limit?: number
@@ -2968,6 +3000,8 @@ interface AttestationTreeLatestParams {
 **AttestationSubjectType** = ``
 
 **AttestationVisibility** = `'public' | 'owner' | 'admin'`
+
+**AttestationModerationStatus** = `'approved' | 'pending' | 'rejected'`
 
 **AttestationAudience** = `'public' | 'owner' | 'admin'`
 
@@ -5736,6 +5770,195 @@ interface UploadDoneMessage {
 
 **UploadMessage** = ``
 
+### integrations
+
+**FieldMapping** (interface)
+```typescript
+interface FieldMapping {
+  targetPath: string
+  sourcePath?: string
+  transformType: TransformType
+  transformExpression?: string
+}
+```
+
+**FlowConnectionAuth** (interface)
+```typescript
+interface FlowConnectionAuth {
+  method: FlowAuthMethod
+  headerName?: string
+  credentialRef?: string
+}
+```
+
+**FlowConnection** (interface)
+```typescript
+interface FlowConnection {
+  baseUrl?: string
+  sendEndpoint?: string
+  fetchEndpoint?: string
+  defaultHeaders?: Record<string, string>
+  auth?: FlowConnectionAuth
+}
+```
+
+**IntegrationFlowConfig** (interface)
+```typescript
+interface IntegrationFlowConfig {
+  connection?: FlowConnection
+  fieldMappings?: FieldMapping[]
+  [key: string]: any
+}
+```
+
+**IntegrationFlow** (interface)
+```typescript
+interface IntegrationFlow {
+  id: string
+  orgId: string
+  collectionId: string
+  appId: string
+  direction: FlowDirection
+  name: string
+  status: FlowStatus
+  eventTypes: string[]
+  schedule: string | null
+  sourceEntity: string | null
+  targetEntity: string | null
+  config: IntegrationFlowConfig
+  createdBy: string | null
+  createdAt: string
+  updatedAt: string
+  deletedAt?: string | null
+  lastRunAt?: string | null
+  lastRunStatus?: string | null
+  lastRunError?: string | null
+  lastRunCount?: number | null
+  lastPollAt?: string | null
+  lastCursor?: string | null
+  totalSynced?: number | null
+}
+```
+
+**CreateFlowInput** (interface)
+```typescript
+interface CreateFlowInput {
+  appId: string
+  direction: FlowDirection
+  name: string
+  status?: FlowStatus
+  eventTypes?: string[]
+  schedule?: string | null
+  sourceEntity?: string | null
+  targetEntity?: string | null
+  config?: IntegrationFlowConfig
+}
+```
+
+**ListFlowsQuery** (interface)
+```typescript
+interface ListFlowsQuery {
+  direction?: FlowDirection
+  status?: FlowStatus
+  appId?: string
+}
+```
+
+**FlowList** (interface)
+```typescript
+interface FlowList {
+  flows: IntegrationFlow[]
+}
+```
+
+**RunFlowInput** (interface)
+```typescript
+interface RunFlowInput {
+  entityId?: string
+}
+```
+
+**RunFlowSummary** (interface)
+```typescript
+interface RunFlowSummary {
+  flowId: string
+  direction: FlowDirection
+  records: number
+  sent: number
+  failed: number
+  status: RunStatus
+}
+```
+
+**RunFlowEnqueued** (interface)
+```typescript
+interface RunFlowEnqueued {
+  enqueued: true
+  flowId: string
+  entityId: string | null
+}
+```
+
+**SecretMeta** (interface)
+```typescript
+interface SecretMeta {
+  ref: string
+  name: string | null
+  purpose: string
+  hint: string
+  keyVersion: number
+  createdBy: string | null
+  createdAt: string
+  updatedAt: string
+  rotatedAt?: string | null
+}
+```
+
+**SecretList** (interface)
+```typescript
+interface SecretList {
+  secrets: SecretMeta[]
+}
+```
+
+**SetSecretInput** (interface)
+```typescript
+interface SetSecretInput {
+  value: string
+  name?: string
+  purpose?: string
+}
+```
+
+**SetSecretResult** (interface)
+```typescript
+interface SetSecretResult {
+  ref: string
+  hint: string
+}
+```
+
+**ListSecretsQuery** (interface)
+```typescript
+interface ListSecretsQuery {
+  purpose?: string
+}
+```
+
+**FlowDirection** = `'inbound' | 'outbound'`
+
+**FlowStatus** = `'draft' | 'active' | 'paused' | 'error'`
+
+**RunStatus** = `'success' | 'partial' | 'error'`
+
+**TransformType** = `'direct' | 'static' | 'template' | 'jsonata' | 'ai'`
+
+**FlowAuthMethod** = `'api_key' | 'bearer' | 'basic' | 'webhook' | 'oauth2' | 'none'`
+
+**UpdateFlowInput** = `Partial<Omit<CreateFlowInput, 'direction'>> & {`
+
+**RunFlowResult** = `RunFlowSummary | RunFlowEnqueued`
+
 ### interaction
 
 **AdminInteractionsQueryRequest** (interface)
@@ -7564,6 +7787,9 @@ interface ProofGrant {
   proofId: string
   productId?: string | null
   scope: GrantScope[]
+  * `contribute` grants only: when true, records/attestations added under this
+  * grant land `pending` (owner-only) until the owner approves them.
+  moderate?: boolean
   audience: GrantAudience
   createdBy: string
   expiresAt?: string | null
@@ -7582,6 +7808,11 @@ interface CreateGrantOptions {
   scope: GrantScope[]
   audience?: GrantAudience
   expiresAt?: Date | string
+  * Only meaningful with the `contribute` scope: hold contributions made under
+  * this grant for owner review (they start `pending` and are owner-only until
+  * approved). Ignored for other scopes. Defaults to `false` (contributions live
+  * on write).
+  moderate?: boolean
 }
 ```
 
@@ -7679,7 +7910,7 @@ interface CancelTransferOptions {
 
 **ProofFieldDef** = `ScopedFieldDef & { scope?: ProofFieldScope }`
 
-**GrantScope** = `'read' | 'comment' | 'admin' | 'verify_owner'`
+**GrantScope** = `'read' | 'comment' | 'contribute' | 'admin' | 'verify_owner'`
 
 **RedeemGrantResult** = ``
 
@@ -9088,7 +9319,12 @@ List attestations for a subject (public). Records with `visibility='admin'` are 
 
 **publicCreate**(collectionId: string,
     data: OwnerAttestationInput) → `Promise<CreateOwnerAttestationResponse>`
-Create an OWNER-authored attestation (public write) — the counterpart to the admin {@link create}. The authenticated caller must OWN the linked proof (identity, not a read grant). Guardrails enforced server-side: they may write `value` + `ownerData` only (`adminData` is dropped), `visibility` is clamped to `'public' | 'owner'`, and `authorId` is forced to the caller. The record joins the same tamper-evident hash chain. POST /public/collection/:collectionId/attestations ```ts await attestations.publicCreate('coll_123', { subjectType: 'proof', subjectId: 'proof_1', attestationType: 'condition-report', value: { grade: 'excellent' }, visibility: 'public', }) ```
+Create a public attestation — the counterpart to the admin {@link create}. Authorised two ways, same call (the server decides from the request): 1. the proof OWNER (identity, via `Authorization: Bearer <Firebase ID token>`) adds an attestation to their own item; or 2. a holder of a `contribute`-scope grant adds one — call {@link setGrantToken} with the grant token first; for a public-link (anonymous) grant, pass `guestName` for attribution. Guardrails (server-enforced): `value` + `ownerData` only (`adminData` dropped), `visibility` clamped to `'public' | 'owner'`, `authorId`/`grantId` server-stamped. If the contribute grant was issued with `moderate: true`, the returned record has `moderationStatus: 'pending'` — held to the owner until {@link moderate}. The record joins the same tamper-evident hash chain. POST /public/collection/:collectionId/attestations ```ts // Owner: await attestations.publicCreate('coll_123', { subjectType: 'proof', subjectId: 'proof_1', attestationType: 'condition-report', value: { grade: 'excellent' }, visibility: 'public', }) // Contributor on a shared link: setGrantToken(shareToken) await attestations.publicCreate('coll_123', { subjectType: 'proof', subjectId: 'proof_1', attestationType: 'photo', value: { url }, visibility: 'public', guestName: 'Sam', }) ```
+
+**moderate**(collectionId: string,
+    attestationId: string,
+    input: ModerateAttestationInput) → `Promise<ModerateAttestationResponse>`
+Moderate a contributed attestation (proof OWNER by identity, or collection admin). `'approve'` releases it to its declared visibility; `'reject'` keeps it author + admin only. Only the `moderationStatus` changes — the hashed fact and its chain are untouched. Find pending items with {@link publicList} + `moderationStatus: 'pending'`. POST /public/collection/:collectionId/attestations/:attestationId/moderate ```ts await attestations.moderate('coll_123', 'att_uuid', { decision: 'approve' }) ```
 
 **publicSummary**(collectionId: string,
     params: AttestationSummaryParams) → `Promise<PublicAttestationSummaryResponse>`
@@ -9876,6 +10112,34 @@ Perform a PATCH request to any API endpoint.
 **del**(path: string) → `Promise<T>`
 Perform a DELETE request to any API endpoint.
 
+### integrations
+
+**listFlows**(collectionId: string, query: ListFlowsQuery = {}) → `Promise<FlowList>`
+List flows in a collection. GET /integrations/flows
+
+**createFlow**(collectionId: string, input: CreateFlowInput) → `Promise<IntegrationFlow>`
+Create a flow. POST /integrations/flows
+
+**getFlow**(collectionId: string, id: string) → `Promise<IntegrationFlow>`
+Get one flow. GET /integrations/flows/:id
+
+**updateFlow**(collectionId: string, id: string, input: UpdateFlowInput) → `Promise<IntegrationFlow>`
+Update whitelisted fields. PUT /integrations/flows/:id
+
+**deleteFlow**(collectionId: string, id: string) → `Promise<`
+Soft-delete a flow. DELETE /integrations/flows/:id
+
+**runFlow**(collectionId: string,
+    id: string,
+    options: RunFlowInput & { async?: boolean } = {}) → `Promise<RunFlowResult>`
+Run a flow now. POST /integrations/flows/:id/run - inline (default): resolves and returns the run summary. - options.async: enqueue on the worker, returns { enqueued: true }. Pass options.entityId to run for a single source entity.
+
+**isRunSummary**(r: RunFlowResult) → `r is RunFlowSummary`
+Type guard: the run executed inline and returned a summary.
+
+**isRunEnqueued**(r: RunFlowResult) → `r is RunFlowEnqueued`
+Type guard: the run was enqueued (async).
+
 ### interactions
 
 **query**(collectionId: string,
@@ -10567,6 +10831,23 @@ Get an Ably token for public (user-scoped) real-time communication. This endpoin
 
 **getAdminToken**() → `Promise<AblyTokenRequest>`
 Get an Ably token for admin real-time communication. This endpoint returns an Ably TokenRequest that can be used to initialize an Ably client with admin permissions to receive system notifications and alerts. Admin users get subscribe-only (read-only) access to the interaction:{userId} channel pattern. Requires admin authentication (Bearer token). ```ts const tokenRequest = await realtime.getAdminToken() // Use with Ably const ably = new Ably.Realtime.Promise({ authCallback: async (data, callback) => { callback(null, tokenRequest) } }) // Subscribe to admin interaction channel const userId = 'my-user-id' const channel = ably.channels.get(`interaction:${userId}`) await channel.subscribe((message) => { console.log('Admin notification:', message.data) }) ```
+
+### secrets
+
+**list**(collectionId: string, query: ListSecretsQuery = {}) → `Promise<SecretList>`
+List secrets as refs + masked hints + metadata (never values). GET /secrets
+
+**set**(collectionId: string, input: SetSecretInput) → `Promise<SetSecretResult>`
+Create a secret. POST /secrets → { ref, hint }. Store the ref on a flow.
+
+**get**(collectionId: string, ref: string) → `Promise<SecretMeta>`
+Metadata for one secret (never the value). GET /secrets/:ref
+
+**rotate**(collectionId: string, ref: string, input: SetSecretInput) → `Promise<SetSecretResult>`
+Rotate/update a secret's value (and optionally name/purpose). PUT /secrets/:ref → { ref, hint }
+
+**remove**(collectionId: string, ref: string) → `Promise<`
+Soft-delete a secret. DELETE /secrets/:ref
 
 ### segments
 

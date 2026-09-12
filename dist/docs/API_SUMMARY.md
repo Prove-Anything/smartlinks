@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.16.6  |  Generated: 2026-09-06T07:49:21.444Z
+Version: 1.16.7  |  Generated: 2026-09-09T11:29:21.917Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2745,6 +2745,15 @@ interface Attestation {
   unit?: string
   source?: string
   authorId?: string
+  * When authored under a `contribute` grant (rather than by identity), the id of
+  * the granting token — provenance for a contributed record. `null`/absent for
+  * owner/admin/identity writes.
+  grantId?: string | null
+  * Moderation gate, orthogonal to {@link visibility} and excluded from the hash
+  * chain. `'approved'` (default) is live; `'pending'` is held for owner review
+  * (visible only to its author and owner/admin audiences); `'rejected'` was
+  * declined. Contributions under a `moderate` grant start `'pending'`.
+  moderationStatus?: AttestationModerationStatus
   metadata?: Record<string, any>
   contentHash: string
   prevHash?: string
@@ -2810,6 +2819,23 @@ interface OwnerAttestationInput {
   unit?: string
   source?: string
   metadata?: Record<string, any>
+  * Attribution for an anonymous (public-link) contribute-grant write. Ignored
+  * for owner writes and for named-grant writes (attributed to the signed-in uid).
+  guestName?: string
+}
+```
+
+**ModerateAttestationInput** (interface)
+```typescript
+interface ModerateAttestationInput {
+  decision: 'approve' | 'reject'
+}
+```
+
+**ModerateAttestationResponse** (interface)
+```typescript
+interface ModerateAttestationResponse {
+  attestation: Attestation
 }
 ```
 
@@ -2905,6 +2931,10 @@ interface ListAttestationsParams {
   subjectType: AttestationSubjectType
   subjectId: string
   attestationType?: string
+  * Filter by moderation state. Primarily for the owner review queue
+  * (`moderationStatus: 'pending'`). ANDs with the server's audience gate, so a
+  * public caller can never use it to widen access.
+  moderationStatus?: AttestationModerationStatus
   recordedAfter?: string
   recordedBefore?: string
   limit?: number
@@ -2968,6 +2998,8 @@ interface AttestationTreeLatestParams {
 **AttestationSubjectType** = ``
 
 **AttestationVisibility** = `'public' | 'owner' | 'admin'`
+
+**AttestationModerationStatus** = `'approved' | 'pending' | 'rejected'`
 
 **AttestationAudience** = `'public' | 'owner' | 'admin'`
 
@@ -7564,6 +7596,9 @@ interface ProofGrant {
   proofId: string
   productId?: string | null
   scope: GrantScope[]
+  * `contribute` grants only: when true, records/attestations added under this
+  * grant land `pending` (owner-only) until the owner approves them.
+  moderate?: boolean
   audience: GrantAudience
   createdBy: string
   expiresAt?: string | null
@@ -7582,6 +7617,11 @@ interface CreateGrantOptions {
   scope: GrantScope[]
   audience?: GrantAudience
   expiresAt?: Date | string
+  * Only meaningful with the `contribute` scope: hold contributions made under
+  * this grant for owner review (they start `pending` and are owner-only until
+  * approved). Ignored for other scopes. Defaults to `false` (contributions live
+  * on write).
+  moderate?: boolean
 }
 ```
 
@@ -7679,7 +7719,7 @@ interface CancelTransferOptions {
 
 **ProofFieldDef** = `ScopedFieldDef & { scope?: ProofFieldScope }`
 
-**GrantScope** = `'read' | 'comment' | 'admin' | 'verify_owner'`
+**GrantScope** = `'read' | 'comment' | 'contribute' | 'admin' | 'verify_owner'`
 
 **RedeemGrantResult** = ``
 
@@ -9088,7 +9128,12 @@ List attestations for a subject (public). Records with `visibility='admin'` are 
 
 **publicCreate**(collectionId: string,
     data: OwnerAttestationInput) → `Promise<CreateOwnerAttestationResponse>`
-Create an OWNER-authored attestation (public write) — the counterpart to the admin {@link create}. The authenticated caller must OWN the linked proof (identity, not a read grant). Guardrails enforced server-side: they may write `value` + `ownerData` only (`adminData` is dropped), `visibility` is clamped to `'public' | 'owner'`, and `authorId` is forced to the caller. The record joins the same tamper-evident hash chain. POST /public/collection/:collectionId/attestations ```ts await attestations.publicCreate('coll_123', { subjectType: 'proof', subjectId: 'proof_1', attestationType: 'condition-report', value: { grade: 'excellent' }, visibility: 'public', }) ```
+Create a public attestation — the counterpart to the admin {@link create}. Authorised two ways, same call (the server decides from the request): 1. the proof OWNER (identity, via `Authorization: Bearer <Firebase ID token>`) adds an attestation to their own item; or 2. a holder of a `contribute`-scope grant adds one — call {@link setGrantToken} with the grant token first; for a public-link (anonymous) grant, pass `guestName` for attribution. Guardrails (server-enforced): `value` + `ownerData` only (`adminData` dropped), `visibility` clamped to `'public' | 'owner'`, `authorId`/`grantId` server-stamped. If the contribute grant was issued with `moderate: true`, the returned record has `moderationStatus: 'pending'` — held to the owner until {@link moderate}. The record joins the same tamper-evident hash chain. POST /public/collection/:collectionId/attestations ```ts // Owner: await attestations.publicCreate('coll_123', { subjectType: 'proof', subjectId: 'proof_1', attestationType: 'condition-report', value: { grade: 'excellent' }, visibility: 'public', }) // Contributor on a shared link: setGrantToken(shareToken) await attestations.publicCreate('coll_123', { subjectType: 'proof', subjectId: 'proof_1', attestationType: 'photo', value: { url }, visibility: 'public', guestName: 'Sam', }) ```
+
+**moderate**(collectionId: string,
+    attestationId: string,
+    input: ModerateAttestationInput) → `Promise<ModerateAttestationResponse>`
+Moderate a contributed attestation (proof OWNER by identity, or collection admin). `'approve'` releases it to its declared visibility; `'reject'` keeps it author + admin only. Only the `moderationStatus` changes — the hashed fact and its chain are untouched. Find pending items with {@link publicList} + `moderationStatus: 'pending'`. POST /public/collection/:collectionId/attestations/:attestationId/moderate ```ts await attestations.moderate('coll_123', 'att_uuid', { decision: 'approve' }) ```
 
 **publicSummary**(collectionId: string,
     params: AttestationSummaryParams) → `Promise<PublicAttestationSummaryResponse>`

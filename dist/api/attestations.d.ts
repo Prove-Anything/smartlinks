@@ -1,4 +1,4 @@
-import type { Attestation, CreateAttestationInput, ListAttestationsParams, ListAttestationsResponse, AttestationSummaryParams, AttestationSummaryResponse, PublicAttestationSummaryResponse, AttestationLatestParams, AttestationLatestResponse, PublicAttestationLatestResponse, AttestationVerifyParams, ChainVerifyResult, AttestationTreeSummaryParams, AttestationTreeSummaryResponse, PublicAttestationTreeSummaryResponse, AttestationTreeLatestParams, AttestationTreeLatestResponse, PublicAttestationTreeLatestResponse, PublicListAttestationsResponse, OwnerAttestationInput, CreateOwnerAttestationResponse } from "../types/attestations";
+import type { Attestation, CreateAttestationInput, ListAttestationsParams, ListAttestationsResponse, AttestationSummaryParams, AttestationSummaryResponse, PublicAttestationSummaryResponse, AttestationLatestParams, AttestationLatestResponse, PublicAttestationLatestResponse, AttestationVerifyParams, ChainVerifyResult, AttestationTreeSummaryParams, AttestationTreeSummaryResponse, PublicAttestationTreeSummaryResponse, AttestationTreeLatestParams, AttestationTreeLatestResponse, PublicAttestationTreeLatestResponse, PublicListAttestationsResponse, OwnerAttestationInput, CreateOwnerAttestationResponse, ModerateAttestationInput, ModerateAttestationResponse } from "../types/attestations";
 /**
  * Postgres-backed Attestations API (v2).
  *
@@ -13,9 +13,11 @@ import type { Attestation, CreateAttestationInput, ListAttestationsParams, ListA
  *   admin session or bearer token.  All three data zones are returned, and the
  *   business can write any zone/visibility ({@link create}).
  * - **Public** endpoints (`/public/collection/:id/attestations`) are read-only,
- *   EXCEPT {@link publicCreate}: the proof OWNER may author an attestation on
- *   their own item (value + ownerData, visibility public|owner — never the admin
- *   zone). Owner elevation is via `Authorization: Bearer <Firebase ID token>`.
+ *   EXCEPT {@link publicCreate} (the proof OWNER, or a `contribute`-grant holder,
+ *   authors an attestation — value + ownerData, visibility public|owner, never the
+ *   admin zone) and {@link moderate} (owner/admin approves or rejects a contributed
+ *   record). Owner elevation is via `Authorization: Bearer <Firebase ID token>`;
+ *   contributor access via a grant token set with `setGrantToken`.
  *
  * @see docs/attestations.md
  */
@@ -211,22 +213,49 @@ export declare namespace attestations {
      */
     function publicList(collectionId: string, params: ListAttestationsParams): Promise<PublicListAttestationsResponse>;
     /**
-     * Create an OWNER-authored attestation (public write) — the counterpart to the
-     * admin {@link create}. The authenticated caller must OWN the linked proof
-     * (identity, not a read grant). Guardrails enforced server-side: they may write
-     * `value` + `ownerData` only (`adminData` is dropped), `visibility` is clamped
-     * to `'public' | 'owner'`, and `authorId` is forced to the caller. The record
-     * joins the same tamper-evident hash chain.
+     * Create a public attestation — the counterpart to the admin {@link create}.
+     * Authorised two ways, same call (the server decides from the request):
+     *   1. the proof OWNER (identity, via `Authorization: Bearer <Firebase ID token>`)
+     *      adds an attestation to their own item; or
+     *   2. a holder of a `contribute`-scope grant adds one — call
+     *      {@link setGrantToken} with the grant token first; for a public-link
+     *      (anonymous) grant, pass `guestName` for attribution.
+     *
+     * Guardrails (server-enforced): `value` + `ownerData` only (`adminData` dropped),
+     * `visibility` clamped to `'public' | 'owner'`, `authorId`/`grantId` server-stamped.
+     * If the contribute grant was issued with `moderate: true`, the returned record
+     * has `moderationStatus: 'pending'` — held to the owner until {@link moderate}.
+     * The record joins the same tamper-evident hash chain.
      * POST /public/collection/:collectionId/attestations
      * ```ts
+     * // Owner:
      * await attestations.publicCreate('coll_123', {
      *   subjectType: 'proof', subjectId: 'proof_1',
      *   attestationType: 'condition-report',
      *   value: { grade: 'excellent' }, visibility: 'public',
      * })
+     * // Contributor on a shared link:
+     * setGrantToken(shareToken)
+     * await attestations.publicCreate('coll_123', {
+     *   subjectType: 'proof', subjectId: 'proof_1',
+     *   attestationType: 'photo', value: { url }, visibility: 'public',
+     *   guestName: 'Sam',
+     * })
      * ```
      */
     function publicCreate(collectionId: string, data: OwnerAttestationInput): Promise<CreateOwnerAttestationResponse>;
+    /**
+     * Moderate a contributed attestation (proof OWNER by identity, or collection
+     * admin). `'approve'` releases it to its declared visibility; `'reject'` keeps
+     * it author + admin only. Only the `moderationStatus` changes — the hashed fact
+     * and its chain are untouched. Find pending items with
+     * {@link publicList} + `moderationStatus: 'pending'`.
+     * POST /public/collection/:collectionId/attestations/:attestationId/moderate
+     * ```ts
+     * await attestations.moderate('coll_123', 'att_uuid', { decision: 'approve' })
+     * ```
+     */
+    function moderate(collectionId: string, attestationId: string, input: ModerateAttestationInput): Promise<ModerateAttestationResponse>;
     /**
      * Time-series summary (public).
      *

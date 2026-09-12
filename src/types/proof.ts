@@ -181,8 +181,16 @@ export interface ProofFieldsConfig {
 // Share grants — delegated, scoped, revocable bearer access to a proof
 // ---------------------------------------------------------------------------
 
-/** What a grant authorises the bearer to do on the proof. */
-export type GrantScope = 'read' | 'comment' | 'admin' | 'verify_owner'
+/**
+ * What a grant authorises the bearer to do on the proof.
+ * - `read` — see owner-tier data
+ * - `comment` — post app threads/comments
+ * - `contribute` — add records / attestations (temporary contribute access); pair
+ *   with `moderate` on {@link CreateGrantOptions} to hold contributions for review
+ * - `admin` — owner-tier read across the proof
+ * - `verify_owner` — redeem an ownership assertion (never the account)
+ */
+export type GrantScope = 'read' | 'comment' | 'contribute' | 'admin' | 'verify_owner'
 
 /** Who may redeem a grant. */
 export interface GrantAudience {
@@ -197,6 +205,11 @@ export interface ProofGrant {
   proofId: string
   productId?: string | null
   scope: GrantScope[]
+  /**
+   * `contribute` grants only: when true, records/attestations added under this
+   * grant land `pending` (owner-only) until the owner approves them.
+   */
+  moderate?: boolean
   audience: GrantAudience
   createdBy: string
   expiresAt?: string | null
@@ -216,6 +229,13 @@ export interface CreateGrantOptions {
   audience?: GrantAudience
   /** Optional expiry — a `Date` or ISO string. */
   expiresAt?: Date | string
+  /**
+   * Only meaningful with the `contribute` scope: hold contributions made under
+   * this grant for owner review (they start `pending` and are owner-only until
+   * approved). Ignored for other scopes. Defaults to `false` (contributions live
+   * on write).
+   */
+  moderate?: boolean
 }
 
 export interface RedeemGrantOptions {

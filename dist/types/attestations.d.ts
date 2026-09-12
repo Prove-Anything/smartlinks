@@ -18,6 +18,14 @@ export type AttestationSubjectType = 'container' | 'proof' | 'product' | 'tag' |
  */
 export type AttestationVisibility = 'public' | 'owner' | 'admin';
 /**
+ * Moderation state of an attestation (separate from {@link AttestationVisibility}).
+ * - `'approved'` — live; follows its declared visibility (the default)
+ * - `'pending'`  — awaiting owner review; returned only to its author and to
+ *   owner/admin audiences, never to the public, whatever its target visibility
+ * - `'rejected'` — owner declined; author + admin only
+ */
+export type AttestationModerationStatus = 'approved' | 'pending' | 'rejected';
+/**
  * Resolved audience tier returned by public endpoints.
  * Tells the client which data zones are populated in the response.
  */
@@ -59,6 +67,19 @@ export interface Attestation {
     source?: string;
     /** User ID or service account that recorded the fact */
     authorId?: string;
+    /**
+     * When authored under a `contribute` grant (rather than by identity), the id of
+     * the granting token — provenance for a contributed record. `null`/absent for
+     * owner/admin/identity writes.
+     */
+    grantId?: string | null;
+    /**
+     * Moderation gate, orthogonal to {@link visibility} and excluded from the hash
+     * chain. `'approved'` (default) is live; `'pending'` is held for owner review
+     * (visible only to its author and owner/admin audiences); `'rejected'` was
+     * declined. Contributions under a `moderate` grant start `'pending'`.
+     */
+    moderationStatus?: AttestationModerationStatus;
     /** Arbitrary extra metadata */
     metadata?: Record<string, any>;
     /** SHA-256 digest of this record (includes `prevHash`) */
@@ -129,10 +150,18 @@ export interface CreateAttestationInput {
     metadata?: Record<string, any>;
 }
 /**
- * Owner-authored attestation input (public write). The proof OWNER adds an
- * attestation to their own item. Restricted vs {@link CreateAttestationInput}:
- * no `adminData` (business-only zone), `visibility` limited to `'public' | 'owner'`,
- * and `authorId` is forced to the caller by the server (so it's omitted here).
+ * Public attestation write input, used by {@link attestations.publicCreate}.
+ *
+ * Authorised two ways, same input shape (the server decides from the request):
+ *   1. the proof OWNER (Firebase ID token) adds an attestation to their own item;
+ *   2. a holder of a `contribute`-scope grant adds one — set the grant token with
+ *      `setGrantToken(token)` first; for a public-link (anonymous) grant, pass
+ *      `guestName` for attribution.
+ *
+ * Restricted vs {@link CreateAttestationInput}: no `adminData` (business-only
+ * zone), `visibility` limited to `'public' | 'owner'`, and `authorId` / `grantId`
+ * are server-stamped (so they're omitted here). If the contribute grant was issued
+ * with `moderate: true`, the created record comes back `moderationStatus: 'pending'`.
  */
 export interface OwnerAttestationInput {
     subjectType: AttestationSubjectType;
@@ -146,6 +175,18 @@ export interface OwnerAttestationInput {
     unit?: string;
     source?: string;
     metadata?: Record<string, any>;
+    /**
+     * Attribution for an anonymous (public-link) contribute-grant write. Ignored
+     * for owner writes and for named-grant writes (attributed to the signed-in uid).
+     */
+    guestName?: string;
+}
+/** Owner/admin decision on a pending contributed attestation. */
+export interface ModerateAttestationInput {
+    decision: 'approve' | 'reject';
+}
+export interface ModerateAttestationResponse {
+    attestation: Attestation;
 }
 export interface ListAttestationsResponse {
     attestations: Attestation[];
@@ -197,6 +238,12 @@ export interface ListAttestationsParams {
     /** Required */
     subjectId: string;
     attestationType?: string;
+    /**
+     * Filter by moderation state. Primarily for the owner review queue
+     * (`moderationStatus: 'pending'`). ANDs with the server's audience gate, so a
+     * public caller can never use it to widen access.
+     */
+    moderationStatus?: AttestationModerationStatus;
     /** ISO 8601 lower bound (inclusive) */
     recordedAfter?: string;
     /** ISO 8601 upper bound (inclusive) */

@@ -22,11 +22,12 @@ re-checks the grant **server-side** against the database, so revocation is immed
 |-------|--------------------|
 | `read` | read owner-tier data on the proof (attestations, threads, records, cases) |
 | `comment` | create threads/replies on the proof (guest comments) |
+| `contribute` | add attestations / records to the proof for the life of the grant (temporary contribute access) — optionally held for owner review via `moderate` |
 | `admin` | read owner-tier data (reserved for elevated share cases; never exposes the platform admin zone) |
 | `verify_owner` | redeem a shareable ownership **assertion** (not the account) |
 
 A grant can carry several scopes, e.g. `['read', 'comment']` for a shareable,
-commentable album.
+commentable album, or `['read', 'contribute']` to let someone add photos.
 
 ### Security & lifecycle
 
@@ -124,6 +125,65 @@ Other grant holders (and the owner) see these comments because a `read` grant re
 
 ---
 
+## Contribute access — let someone add to a proof
+
+A `contribute` scope grant is **temporary write access**: the bearer can add
+attestations (a photo, a video reference, a check-in) and app records to the proof
+for the life of the grant — no account or proof claim required. It's the successor
+to ad-hoc "claim windows": properly time-boxed (`expiresAt`), revocable, and voided
+on ownership transfer like every other grant.
+
+```typescript
+// Owner issues a contribute grant that expires in 48h and holds contributions
+// for review before they go public.
+const grant = await proof.createGrant(collectionId, productId, proofId, {
+  scope: ['read', 'contribute'],
+  moderate: true,                                   // contributions land 'pending'
+  expiresAt: new Date(Date.now() + 48 * 60 * 60 * 1000),
+})
+
+// Contributor (on the shared link) adds a photo attestation.
+setGrantToken(shareToken)
+await attestation.publicCreate(collectionId, {
+  subjectType: 'proof', subjectId: proofId,
+  attestationType: 'photo',
+  value: { url: 'https://…/photo.jpg' },
+  visibility: 'public',
+  guestName: 'Sam',                                 // attribution for a public-link bearer
+})
+```
+
+### Moderation — the two-step review
+
+When the grant is issued with `moderate: true`, each contribution is created with
+`moderationStatus: 'pending'` and is **held to the owner**: it is returned only to
+its own author and to owner/admin audiences — never to the public, whatever its
+target `visibility`. The owner reviews and approves (or rejects) it:
+
+```typescript
+// Owner lists what's waiting (owner-tier read = identity or an owner session):
+const { attestations } = await attestation.publicList(collectionId, {
+  subjectType: 'proof', subjectId: proofId,
+  moderationStatus: 'pending',
+})
+
+// Approve → the record goes live at its declared visibility; reject → author+admin only.
+await attestation.moderate(collectionId, attestations[0].id, { decision: 'approve' })
+```
+
+The moderation gate is enforced **server-side** — a front end may badge a pending
+item, but it is the server that withholds it from other viewers. Only
+`moderationStatus` changes on approve/reject; the hashed fact and its chain are
+untouched. Contributions under a grant issued with `moderate: false` (the default)
+go live immediately.
+
+> **Media note.** A contributed photo/video is best modelled as an attestation
+> (`attestationType: 'photo'`, `value: { url }`) so it rides this moderation model.
+> The legacy per-proof asset upload path is unchanged and is not grant- or
+> moderation-aware.
+
+---
+
 ## Proof of ownership — `verify_owner`
 
 Ownership itself is **not** a grant — it is `proof.ownerId`, established via the
@@ -154,6 +214,7 @@ granted proof (and only that proof):
 - **Attestations** — `attestation.publicList({ subjectType: 'proof', subjectId })`
 - **Threads / Records / Cases** — `app.threads.list`, `app.records.*`, `app.cases.list`, and the single-item GETs, filtered to the granted proof
 - **Thread creation / replies** — with a `comment` scope grant (see below)
+- **Attestation / record creation** — with a `contribute` scope grant (see [Contribute access](#contribute-access--let-someone-add-to-a-proof))
 
 The token never exposes the platform `admin` zone, and only reveals `owner`-visibility
 rows for the granted `proofId`.
@@ -175,14 +236,24 @@ at `sites/{collectionId}/apps/{appId}` — a `grant` branch alongside
         "requireScope": "comment",
         "enforce": { "visibility": "owner", "status": "open" }
       }
+    },
+    "records": {
+      "grant": {
+        "allow": true,
+        "requireScope": "contribute",
+        "enforce": { "visibility": "owner" }   // held to the owner until promoted
+      }
     }
   }
 }
 ```
 
-This enables grant-scoped commenting **without** opening up anonymous creation. The
-`enforce.visibility: "owner"` keeps comments private to the proof (visible to the
-owner and other grant holders, not the wider public).
+This enables grant-scoped commenting and contribution **without** opening up
+anonymous creation. The `enforce.visibility: "owner"` keeps the created object
+private to the proof (visible to the owner and other grant holders, not the wider
+public). Attestation contribution is gated the same way, by the `contribute` scope;
+whether those contributions are held for review is set per-grant with `moderate`,
+not in app config.
 
 ---
 
@@ -200,12 +271,13 @@ namespace proof {
 function setGrantToken(token: string | undefined): void
 function getGrantToken(): string | undefined
 
-type GrantScope = 'read' | 'comment' | 'admin' | 'verify_owner'
+type GrantScope = 'read' | 'comment' | 'contribute' | 'admin' | 'verify_owner'
 
 interface CreateGrantOptions {
   scope: GrantScope[]                                   // at least one
   audience?: { kind: 'public_link' } | { kind: 'named'; email?: string; userId?: string }
   expiresAt?: Date | string
+  moderate?: boolean                                    // 'contribute' only — hold for review
 }
 
 interface RedeemGrantOptions { guestName?: string }
@@ -219,6 +291,7 @@ interface ProofGrant {
   proofId: string
   productId?: string | null
   scope: GrantScope[]
+  moderate?: boolean   // 'contribute' grants: contributions held for review when true
   audience: { kind: 'public_link' | 'named'; email?: string; userId?: string }
   createdBy: string
   expiresAt?: string | null
