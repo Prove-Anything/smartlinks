@@ -119,12 +119,22 @@ _Capabilities: web:read_
 
 ### `web.screenshot`
 
-Capture a screenshot of a web page. Returns the screenshot (URL or base64).
+Capture a screenshot of a web page. Returns a stable hosted image URL (screenshotUrl) you can then read with image.describe.
 
 _Capabilities: web:read_
 
 **Parameters**
 - `url` _(required)_ — string: Absolute URL to screenshot (https).
+
+### `image.describe`
+
+Describe an image at a URL, or read text from it (image-to-text / vision). Use on a screenshot or photo to extract what it shows or says.
+
+_Capabilities: ai:vision_
+
+**Parameters**
+- `imageUrl` _(required)_ — string: URL of the image to analyse.
+- `prompt` — string: What to extract or describe (default: describe + transcribe visible text).
 
 ### `brand.assets`
 
