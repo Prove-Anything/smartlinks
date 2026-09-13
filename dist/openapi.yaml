@@ -22860,6 +22860,276 @@ components:
     UploadMessage:
       type: object
       additionalProperties: true
+    FieldMapping:
+      type: object
+      properties:
+        targetPath:
+          type: string
+        sourcePath:
+          type: string
+        transformType:
+          $ref: "#/components/schemas/TransformType"
+        transformExpression:
+          type: string
+      required:
+        - targetPath
+        - transformType
+    FlowConnectionAuth:
+      type: object
+      properties:
+        method:
+          $ref: "#/components/schemas/FlowAuthMethod"
+        headerName:
+          type: string
+        credentialRef:
+          type: string
+      required:
+        - method
+    FlowConnection:
+      type: object
+      properties:
+        baseUrl:
+          type: string
+        sendEndpoint:
+          type: string
+        fetchEndpoint:
+          type: string
+        defaultHeaders:
+          type: object
+          additionalProperties:
+            type: string
+        auth:
+          $ref: "#/components/schemas/FlowConnectionAuth"
+    IntegrationFlowConfig:
+      type: object
+      properties:
+        connection:
+          $ref: "#/components/schemas/FlowConnection"
+        fieldMappings:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldMapping"
+    IntegrationFlow:
+      type: object
+      properties:
+        id:
+          type: string
+        orgId:
+          type: string
+        collectionId:
+          type: string
+        appId:
+          type: string
+        direction:
+          $ref: "#/components/schemas/FlowDirection"
+        name:
+          type: string
+        status:
+          $ref: "#/components/schemas/FlowStatus"
+        eventTypes:
+          type: array
+          items:
+            type: string
+        schedule:
+          type: string
+        sourceEntity:
+          type: string
+        targetEntity:
+          type: string
+        config:
+          $ref: "#/components/schemas/IntegrationFlowConfig"
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deletedAt:
+          type: string
+        lastRunAt:
+          type: string
+        lastRunStatus:
+          type: string
+        lastRunError:
+          type: string
+        lastRunCount:
+          type: number
+        lastPollAt:
+          type: string
+        lastCursor:
+          type: string
+        totalSynced:
+          type: number
+      required:
+        - id
+        - orgId
+        - collectionId
+        - appId
+        - direction
+        - name
+        - status
+        - eventTypes
+        - schedule
+        - sourceEntity
+        - targetEntity
+        - config
+        - createdBy
+        - createdAt
+        - updatedAt
+    CreateFlowInput:
+      type: object
+      properties:
+        appId:
+          type: string
+        direction:
+          $ref: "#/components/schemas/FlowDirection"
+        name:
+          type: string
+        status:
+          $ref: "#/components/schemas/FlowStatus"
+        eventTypes:
+          type: array
+          items:
+            type: string
+        schedule:
+          type: string
+        sourceEntity:
+          type: string
+        targetEntity:
+          type: string
+        config:
+          $ref: "#/components/schemas/IntegrationFlowConfig"
+      required:
+        - appId
+        - direction
+        - name
+    ListFlowsQuery:
+      type: object
+      properties:
+        direction:
+          $ref: "#/components/schemas/FlowDirection"
+        status:
+          $ref: "#/components/schemas/FlowStatus"
+        appId:
+          type: string
+    FlowList:
+      type: object
+      properties:
+        flows:
+          type: array
+          items:
+            $ref: "#/components/schemas/IntegrationFlow"
+      required:
+        - flows
+    RunFlowInput:
+      type: object
+      properties:
+        entityId:
+          type: string
+    RunFlowSummary:
+      type: object
+      properties:
+        flowId:
+          type: string
+        direction:
+          $ref: "#/components/schemas/FlowDirection"
+        records:
+          type: number
+        sent:
+          type: number
+        failed:
+          type: number
+        status:
+          $ref: "#/components/schemas/RunStatus"
+      required:
+        - flowId
+        - direction
+        - records
+        - sent
+        - failed
+        - status
+    RunFlowEnqueued:
+      type: object
+      properties:
+        enqueued:
+          type: object
+          additionalProperties: true
+        flowId:
+          type: string
+        entityId:
+          type: string
+      required:
+        - enqueued
+        - flowId
+        - entityId
+    SecretMeta:
+      type: object
+      properties:
+        ref:
+          type: string
+        name:
+          type: string
+        purpose:
+          type: string
+        hint:
+          type: string
+        keyVersion:
+          type: number
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        rotatedAt:
+          type: string
+      required:
+        - ref
+        - name
+        - purpose
+        - hint
+        - keyVersion
+        - createdBy
+        - createdAt
+        - updatedAt
+    SecretList:
+      type: object
+      properties:
+        secrets:
+          type: array
+          items:
+            $ref: "#/components/schemas/SecretMeta"
+      required:
+        - secrets
+    SetSecretInput:
+      type: object
+      properties:
+        value:
+          type: string
+        name:
+          type: string
+        purpose:
+          type: string
+      required:
+        - value
+    SetSecretResult:
+      type: object
+      properties:
+        ref:
+          type: string
+        hint:
+          type: string
+      required:
+        - ref
+        - hint
+    ListSecretsQuery:
+      type: object
+      properties:
+        purpose:
+          type: string
+    RunFlowResult:
+      type: object
+      additionalProperties: true
     AdminInteractionsQueryRequest:
       type: object
       properties:

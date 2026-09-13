@@ -40,5 +40,6 @@ export * from "./appManifest";
 export * from "./appObjects";
 export * from "./loyalty";
 export * from "./translations";
+export * from "./integrations";
 export * from "./config";
 export * from "./widgets";

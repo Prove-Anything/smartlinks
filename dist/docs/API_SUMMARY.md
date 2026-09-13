@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.16.7  |  Generated: 2026-09-09T11:29:21.917Z
+Version: 1.17.0  |  Generated: 2026-09-13T07:11:02.540Z
 
 This is a concise summary of all available API functions and types.
 
@@ -134,6 +134,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **containers** - Functions for containers operations
 - **facets** - Functions for facets operations
 - **http** - Functions for http operations
+- **integrations** - Functions for integrations operations
 - **jobs** - Functions for jobs operations
 - **journeysAnalytics** - Functions for journeysAnalytics operations
 - **location** - Functions for location operations
@@ -142,6 +143,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **order** - Functions for order operations
 - **products** - Functions for products operations
 - **realtime** - Functions for realtime operations
+- **secrets** - Functions for secrets operations
 - **tags** - Functions for tags operations
 - **template** - Functions for template operations
 - **translations** - Functions for translations operations
@@ -5768,6 +5770,195 @@ interface UploadDoneMessage {
 
 **UploadMessage** = ``
 
+### integrations
+
+**FieldMapping** (interface)
+```typescript
+interface FieldMapping {
+  targetPath: string
+  sourcePath?: string
+  transformType: TransformType
+  transformExpression?: string
+}
+```
+
+**FlowConnectionAuth** (interface)
+```typescript
+interface FlowConnectionAuth {
+  method: FlowAuthMethod
+  headerName?: string
+  credentialRef?: string
+}
+```
+
+**FlowConnection** (interface)
+```typescript
+interface FlowConnection {
+  baseUrl?: string
+  sendEndpoint?: string
+  fetchEndpoint?: string
+  defaultHeaders?: Record<string, string>
+  auth?: FlowConnectionAuth
+}
+```
+
+**IntegrationFlowConfig** (interface)
+```typescript
+interface IntegrationFlowConfig {
+  connection?: FlowConnection
+  fieldMappings?: FieldMapping[]
+  [key: string]: any
+}
+```
+
+**IntegrationFlow** (interface)
+```typescript
+interface IntegrationFlow {
+  id: string
+  orgId: string
+  collectionId: string
+  appId: string
+  direction: FlowDirection
+  name: string
+  status: FlowStatus
+  eventTypes: string[]
+  schedule: string | null
+  sourceEntity: string | null
+  targetEntity: string | null
+  config: IntegrationFlowConfig
+  createdBy: string | null
+  createdAt: string
+  updatedAt: string
+  deletedAt?: string | null
+  lastRunAt?: string | null
+  lastRunStatus?: string | null
+  lastRunError?: string | null
+  lastRunCount?: number | null
+  lastPollAt?: string | null
+  lastCursor?: string | null
+  totalSynced?: number | null
+}
+```
+
+**CreateFlowInput** (interface)
+```typescript
+interface CreateFlowInput {
+  appId: string
+  direction: FlowDirection
+  name: string
+  status?: FlowStatus
+  eventTypes?: string[]
+  schedule?: string | null
+  sourceEntity?: string | null
+  targetEntity?: string | null
+  config?: IntegrationFlowConfig
+}
+```
+
+**ListFlowsQuery** (interface)
+```typescript
+interface ListFlowsQuery {
+  direction?: FlowDirection
+  status?: FlowStatus
+  appId?: string
+}
+```
+
+**FlowList** (interface)
+```typescript
+interface FlowList {
+  flows: IntegrationFlow[]
+}
+```
+
+**RunFlowInput** (interface)
+```typescript
+interface RunFlowInput {
+  entityId?: string
+}
+```
+
+**RunFlowSummary** (interface)
+```typescript
+interface RunFlowSummary {
+  flowId: string
+  direction: FlowDirection
+  records: number
+  sent: number
+  failed: number
+  status: RunStatus
+}
+```
+
+**RunFlowEnqueued** (interface)
+```typescript
+interface RunFlowEnqueued {
+  enqueued: true
+  flowId: string
+  entityId: string | null
+}
+```
+
+**SecretMeta** (interface)
+```typescript
+interface SecretMeta {
+  ref: string
+  name: string | null
+  purpose: string
+  hint: string
+  keyVersion: number
+  createdBy: string | null
+  createdAt: string
+  updatedAt: string
+  rotatedAt?: string | null
+}
+```
+
+**SecretList** (interface)
+```typescript
+interface SecretList {
+  secrets: SecretMeta[]
+}
+```
+
+**SetSecretInput** (interface)
+```typescript
+interface SetSecretInput {
+  value: string
+  name?: string
+  purpose?: string
+}
+```
+
+**SetSecretResult** (interface)
+```typescript
+interface SetSecretResult {
+  ref: string
+  hint: string
+}
+```
+
+**ListSecretsQuery** (interface)
+```typescript
+interface ListSecretsQuery {
+  purpose?: string
+}
+```
+
+**FlowDirection** = `'inbound' | 'outbound'`
+
+**FlowStatus** = `'draft' | 'active' | 'paused' | 'error'`
+
+**RunStatus** = `'success' | 'partial' | 'error'`
+
+**TransformType** = `'direct' | 'static' | 'template' | 'jsonata' | 'ai'`
+
+**FlowAuthMethod** = `'api_key' | 'bearer' | 'basic' | 'webhook' | 'oauth2' | 'none'`
+
+**UpdateFlowInput** = `Partial<Omit<CreateFlowInput, 'direction'>> & {`
+
+**RunFlowResult** = `RunFlowSummary | RunFlowEnqueued`
+
 ### interaction
 
 **AdminInteractionsQueryRequest** (interface)
@@ -9921,6 +10112,34 @@ Perform a PATCH request to any API endpoint.
 **del**(path: string) → `Promise<T>`
 Perform a DELETE request to any API endpoint.
 
+### integrations
+
+**listFlows**(collectionId: string, query: ListFlowsQuery = {}) → `Promise<FlowList>`
+List flows in a collection. GET /integrations/flows
+
+**createFlow**(collectionId: string, input: CreateFlowInput) → `Promise<IntegrationFlow>`
+Create a flow. POST /integrations/flows
+
+**getFlow**(collectionId: string, id: string) → `Promise<IntegrationFlow>`
+Get one flow. GET /integrations/flows/:id
+
+**updateFlow**(collectionId: string, id: string, input: UpdateFlowInput) → `Promise<IntegrationFlow>`
+Update whitelisted fields. PUT /integrations/flows/:id
+
+**deleteFlow**(collectionId: string, id: string) → `Promise<`
+Soft-delete a flow. DELETE /integrations/flows/:id
+
+**runFlow**(collectionId: string,
+    id: string,
+    options: RunFlowInput & { async?: boolean } = {}) → `Promise<RunFlowResult>`
+Run a flow now. POST /integrations/flows/:id/run - inline (default): resolves and returns the run summary. - options.async: enqueue on the worker, returns { enqueued: true }. Pass options.entityId to run for a single source entity.
+
+**isRunSummary**(r: RunFlowResult) → `r is RunFlowSummary`
+Type guard: the run executed inline and returned a summary.
+
+**isRunEnqueued**(r: RunFlowResult) → `r is RunFlowEnqueued`
+Type guard: the run was enqueued (async).
+
 ### interactions
 
 **query**(collectionId: string,
@@ -10612,6 +10831,23 @@ Get an Ably token for public (user-scoped) real-time communication. This endpoin
 
 **getAdminToken**() → `Promise<AblyTokenRequest>`
 Get an Ably token for admin real-time communication. This endpoint returns an Ably TokenRequest that can be used to initialize an Ably client with admin permissions to receive system notifications and alerts. Admin users get subscribe-only (read-only) access to the interaction:{userId} channel pattern. Requires admin authentication (Bearer token). ```ts const tokenRequest = await realtime.getAdminToken() // Use with Ably const ably = new Ably.Realtime.Promise({ authCallback: async (data, callback) => { callback(null, tokenRequest) } }) // Subscribe to admin interaction channel const userId = 'my-user-id' const channel = ably.channels.get(`interaction:${userId}`) await channel.subscribe((message) => { console.log('Admin notification:', message.data) }) ```
+
+### secrets
+
+**list**(collectionId: string, query: ListSecretsQuery = {}) → `Promise<SecretList>`
+List secrets as refs + masked hints + metadata (never values). GET /secrets
+
+**set**(collectionId: string, input: SetSecretInput) → `Promise<SetSecretResult>`
+Create a secret. POST /secrets → { ref, hint }. Store the ref on a flow.
+
+**get**(collectionId: string, ref: string) → `Promise<SecretMeta>`
+Metadata for one secret (never the value). GET /secrets/:ref
+
+**rotate**(collectionId: string, ref: string, input: SetSecretInput) → `Promise<SetSecretResult>`
+Rotate/update a secret's value (and optionally name/purpose). PUT /secrets/:ref → { ref, hint }
+
+**remove**(collectionId: string, ref: string) → `Promise<`
+Soft-delete a secret. DELETE /secrets/:ref
 
 ### segments
 
