@@ -18,6 +18,7 @@ import type {
   RunFlowResult,
   RunFlowSummary,
   RunFlowEnqueued,
+  RecordTypesResponse,
 } from "../types/integrations"
 
 function enc(v: string) { return encodeURIComponent(v) }
@@ -38,6 +39,15 @@ export namespace integrations {
   /** List flows in a collection. GET /integrations/flows */
   export async function listFlows(collectionId: string, query: ListFlowsQuery = {}): Promise<FlowList> {
     return request<FlowList>(`${base(collectionId)}${encodeQuery(query as any)}`)
+  }
+
+  /**
+   * Discover the app-record types present in a collection + which app owns each
+   * (introspected), for picking a sub-record source/trigger.
+   * GET /integrations/record-types
+   */
+  export async function listRecordTypes(collectionId: string): Promise<RecordTypesResponse> {
+    return request<RecordTypesResponse>(`/admin/collection/${enc(collectionId)}/integrations/record-types`)
   }
 
   /** Create a flow. POST /integrations/flows */

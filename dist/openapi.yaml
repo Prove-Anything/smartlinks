@@ -38,6 +38,7 @@ tags:
   - name: crate
   - name: facets
   - name: form
+  - name: integrations
   - name: interactions
   - name: jobs
   - name: journeys
@@ -4158,6 +4159,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HubAvailabilityResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/integrations/record-types:
+    get:
+      tags:
+        - integrations
+      summary: Discover the app-record types present in a collection + which app owns each (introspected), for picking a sub-record source/trigger.
+      operationId: integrations_listRecordTypes
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RecordTypesResponse"
         400:
           description: Bad request
         401:
@@ -23429,6 +23457,28 @@ components:
       properties:
         purpose:
           type: string
+    RecordTypeInfo:
+      type: object
+      properties:
+        appId:
+          type: string
+        recordType:
+          type: string
+        count:
+          type: number
+      required:
+        - appId
+        - recordType
+        - count
+    RecordTypesResponse:
+      type: object
+      properties:
+        recordTypes:
+          type: array
+          items:
+            $ref: "#/components/schemas/RecordTypeInfo"
+      required:
+        - recordTypes
     RunFlowResult:
       type: object
       additionalProperties: true

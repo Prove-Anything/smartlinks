@@ -169,3 +169,17 @@ export interface SetSecretResult {
 export interface ListSecretsQuery {
   purpose?: string
 }
+
+// ---------------------------------------------------------------------------
+// Record-type discovery (for choosing a sub-record source/trigger)
+// ---------------------------------------------------------------------------
+
+export interface RecordTypeInfo {
+  appId: string
+  recordType: string
+  count: number
+}
+
+export interface RecordTypesResponse {
+  recordTypes: RecordTypeInfo[]
+}

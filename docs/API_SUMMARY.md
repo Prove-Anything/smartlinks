@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.17.5  |  Generated: 2026-09-13T17:13:45.180Z
+Version: 1.17.6  |  Generated: 2026-09-13T19:03:59.523Z
 
 This is a concise summary of all available API functions and types.
 
@@ -6034,6 +6034,22 @@ interface ListSecretsQuery {
 }
 ```
 
+**RecordTypeInfo** (interface)
+```typescript
+interface RecordTypeInfo {
+  appId: string
+  recordType: string
+  count: number
+}
+```
+
+**RecordTypesResponse** (interface)
+```typescript
+interface RecordTypesResponse {
+  recordTypes: RecordTypeInfo[]
+}
+```
+
 **FlowDirection** = `'inbound' | 'outbound'`
 
 **FlowStatus** = `'draft' | 'active' | 'paused' | 'error'`
@@ -10240,6 +10256,9 @@ Perform a DELETE request to any API endpoint.
 
 **listFlows**(collectionId: string, query: ListFlowsQuery = {}) → `Promise<FlowList>`
 List flows in a collection. GET /integrations/flows
+
+**listRecordTypes**(collectionId: string) → `Promise<RecordTypesResponse>`
+Discover the app-record types present in a collection + which app owns each (introspected), for picking a sub-record source/trigger. GET /integrations/record-types
 
 **createFlow**(collectionId: string, input: CreateFlowInput) → `Promise<IntegrationFlow>`
 Create a flow. POST /integrations/flows

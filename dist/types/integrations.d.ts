@@ -134,3 +134,11 @@ export interface SetSecretResult {
 export interface ListSecretsQuery {
     purpose?: string;
 }
+export interface RecordTypeInfo {
+    appId: string;
+    recordType: string;
+    count: number;
+}
+export interface RecordTypesResponse {
+    recordTypes: RecordTypeInfo[];
+}

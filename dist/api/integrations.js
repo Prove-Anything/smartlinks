@@ -37,6 +37,15 @@ export var integrations;
         return request(`${base(collectionId)}${encodeQuery(query)}`);
     }
     integrations.listFlows = listFlows;
+    /**
+     * Discover the app-record types present in a collection + which app owns each
+     * (introspected), for picking a sub-record source/trigger.
+     * GET /integrations/record-types
+     */
+    async function listRecordTypes(collectionId) {
+        return request(`/admin/collection/${enc(collectionId)}/integrations/record-types`);
+    }
+    integrations.listRecordTypes = listRecordTypes;
     /** Create a flow. POST /integrations/flows */
     async function createFlow(collectionId, input) {
         return post(base(collectionId), input);

@@ -1,7 +1,13 @@
-import type { IntegrationFlow, CreateFlowInput, UpdateFlowInput, ListFlowsQuery, FlowList, RunFlowInput, RunFlowResult, RunFlowSummary, RunFlowEnqueued } from "../types/integrations";
+import type { IntegrationFlow, CreateFlowInput, UpdateFlowInput, ListFlowsQuery, FlowList, RunFlowInput, RunFlowResult, RunFlowSummary, RunFlowEnqueued, RecordTypesResponse } from "../types/integrations";
 export declare namespace integrations {
     /** List flows in a collection. GET /integrations/flows */
     function listFlows(collectionId: string, query?: ListFlowsQuery): Promise<FlowList>;
+    /**
+     * Discover the app-record types present in a collection + which app owns each
+     * (introspected), for picking a sub-record source/trigger.
+     * GET /integrations/record-types
+     */
+    function listRecordTypes(collectionId: string): Promise<RecordTypesResponse>;
     /** Create a flow. POST /integrations/flows */
     function createFlow(collectionId: string, input: CreateFlowInput): Promise<IntegrationFlow>;
     /** Get one flow. GET /integrations/flows/:id */
