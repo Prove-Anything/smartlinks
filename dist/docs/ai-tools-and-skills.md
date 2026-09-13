@@ -147,7 +147,7 @@ _Capabilities: web:read_
 
 ### `image.generate`
 
-Generate a new image from a text prompt. Returns the generated image (url or base64).
+Generate a new image from a text prompt. Returns a stable hosted image URL (hostedUrl).
 
 _Capabilities: ai:image_
 
@@ -155,6 +155,18 @@ _Capabilities: ai:image_
 - `prompt` _(required)_ — string: Description of the image to generate.
 - `size` — string: e.g. "1024x1024".
 - `provider` — `openai` | `gemini`: Image model provider.
+
+### `image.fromReference`
+
+Generate a new image guided by one or more reference images plus a prompt (image-to-image). Use to restyle, combine, or vary existing images. Returns a stable hosted image URL (hostedUrl).
+
+_Capabilities: ai:image_
+
+**Parameters**
+- `prompt` _(required)_ — string: How to transform / what to create from the reference(s).
+- `imageUrls` _(required)_ — array: Reference image URL(s) to guide generation.
+- `size` — string: e.g. "1024x1024".
+- `model` — string: Image model (default gpt-image-1).
 
 ### `image.searchStock`
 
