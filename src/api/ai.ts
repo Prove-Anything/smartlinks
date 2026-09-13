@@ -26,6 +26,9 @@ import type {
   AgentRunResult,
   AgentToolsQuery,
   AgentToolsResponse,
+  // Skills + catalog types
+  SkillsListResponse,
+  CatalogResponse,
   // RAG types
   DocumentChunk,
   IndexDocumentRequest,
@@ -190,6 +193,30 @@ namespace aiInternal {
       const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/agent/tools${qs ? `?${qs}` : ''}`
       return request<AgentToolsResponse>(path)
     }
+  }
+
+  // ============================================================================
+  // Skills + Catalog (app-facing discovery)
+  // ============================================================================
+
+  export namespace skills {
+    /** List the skills apps can invoke (name, description, input/output schema). */
+    export async function list(collectionId: string): Promise<SkillsListResponse> {
+      return request<SkillsListResponse>(`/admin/collection/${encodeURIComponent(collectionId)}/ai/skills`)
+    }
+
+    /**
+     * Invoke a skill by name with structured input — the app-facing verb; no
+     * prompt-shaping. POST /admin/collection/:collectionId/ai/skills/:name/run
+     */
+    export async function run<T = any>(collectionId: string, name: string, input: Record<string, any> = {}): Promise<T> {
+      return post<T>(`/admin/collection/${encodeURIComponent(collectionId)}/ai/skills/${encodeURIComponent(name)}/run`, input)
+    }
+  }
+
+  /** The full self-describing catalog (tools + skills). GET /ai/catalog */
+  export async function catalog(collectionId: string): Promise<CatalogResponse> {
+    return request<CatalogResponse>(`/admin/collection/${encodeURIComponent(collectionId)}/ai/catalog`)
   }
 
   // ============================================================================
@@ -545,6 +572,11 @@ export const ai = {
     run: aiInternal.agent.run,
     listTools: aiInternal.agent.listTools,
   },
+  skills: {
+    list: aiInternal.skills.list,
+    run: aiInternal.skills.run,
+  },
+  catalog: aiInternal.catalog,
   generateContent: aiInternal.generateContent,
   generateImage: aiInternal.generateImage,
   searchPhotos: aiInternal.searchPhotos,

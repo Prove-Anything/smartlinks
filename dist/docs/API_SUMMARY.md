@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.17.2  |  Generated: 2026-09-13T13:53:14.443Z
+Version: 1.17.3  |  Generated: 2026-09-13T14:12:35.535Z
 
 This is a concise summary of all available API functions and types.
 
@@ -58,6 +58,7 @@ For detailed guides on specific features:
 - **[Analytics Metadata Conventions](analytics-metadata-conventions.md)** - Standard recommended keys and conventions for analytics metadata fields
 - **[Loyalty: Points, Members & Earning Rules](loyalty.md)** - Loyalty schemes, automatic point earning via interaction rules, member balances, transaction history, and manual adjustments
 - **[Integrations](integrations.md)** - Inbound/outbound integration flows + the sealed-secret store; triggers (manual/event/schedule), field mappings, and the Syndigo/Event Hub outbound path
+- **[AI Tools & Skills](ai-tools-and-skills.md)** - The AI capability catalog: skills apps invoke by name (e.g. research.brand), the tools the AI reaches for (web fetch/screenshot/brand assets/image gen), the agent loop, and how apps discover them
 - **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration
 - **[AI-Native App Manifests](manifests.md)** - How AI workflows discover, configure, and import apps via structured manifests and prose guides
 - **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide
@@ -1070,6 +1071,32 @@ interface AgentToolsQuery {
   allowCapabilities?: string
   only?: string
   exclude?: string
+}
+```
+
+**SkillDescriptor** (interface)
+```typescript
+interface SkillDescriptor {
+  name: string
+  description: string
+  inputSchema: any
+  outputSchema: any
+  capabilities: string[]
+}
+```
+
+**SkillsListResponse** (interface)
+```typescript
+interface SkillsListResponse {
+  skills: SkillDescriptor[]
+}
+```
+
+**CatalogResponse** (interface)
+```typescript
+interface CatalogResponse {
+  tools: AgentToolDefinition[]
+  skills: SkillDescriptor[]
 }
 ```
 
@@ -10980,6 +11007,14 @@ Soft-delete a secret. DELETE /secrets/:ref
 
 **stats**(collectionId: string) → `Promise<SessionStatistics>`
 Get session statistics
+
+### skills
+
+**list**(collectionId: string) → `Promise<SkillsListResponse>`
+List the skills apps can invoke (name, description, input/output schema).
+
+**run**(collectionId: string, name: string, input: Record<string, any> = {}) → `Promise<T>`
+Invoke a skill by name with structured input — the app-facing verb; no prompt-shaping. POST /admin/collection/:collectionId/ai/skills/:name/run
 
 ### tags
 

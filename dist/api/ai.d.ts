@@ -1,4 +1,4 @@
-import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, AgentRunRequest, AgentRunResult, AgentToolsQuery, AgentToolsResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto } from "../types/ai";
+import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, AgentRunRequest, AgentRunResult, AgentToolsQuery, AgentToolsResponse, SkillsListResponse, CatalogResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto } from "../types/ai";
 export type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto, };
 declare namespace aiInternal {
     namespace chat {
@@ -34,6 +34,17 @@ declare namespace aiInternal {
          */
         function listTools(collectionId: string, query?: AgentToolsQuery): Promise<AgentToolsResponse>;
     }
+    namespace skills {
+        /** List the skills apps can invoke (name, description, input/output schema). */
+        function list(collectionId: string): Promise<SkillsListResponse>;
+        /**
+         * Invoke a skill by name with structured input — the app-facing verb; no
+         * prompt-shaping. POST /admin/collection/:collectionId/ai/skills/:name/run
+         */
+        function run<T = any>(collectionId: string, name: string, input?: Record<string, any>): Promise<T>;
+    }
+    /** The full self-describing catalog (tools + skills). GET /ai/catalog */
+    function catalog(collectionId: string): Promise<CatalogResponse>;
     namespace models {
         /**
          * List available AI models
@@ -198,6 +209,11 @@ export declare const ai: {
         run: typeof aiInternal.agent.run;
         listTools: typeof aiInternal.agent.listTools;
     };
+    skills: {
+        list: typeof aiInternal.skills.list;
+        run: typeof aiInternal.skills.run;
+    };
+    catalog: typeof aiInternal.catalog;
     generateContent: typeof aiInternal.generateContent;
     generateImage: typeof aiInternal.generateImage;
     searchPhotos: typeof aiInternal.searchPhotos;

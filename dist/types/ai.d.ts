@@ -522,3 +522,17 @@ export interface AgentToolsQuery {
     only?: string;
     exclude?: string;
 }
+export interface SkillDescriptor {
+    name: string;
+    description: string;
+    inputSchema: any;
+    outputSchema: any;
+    capabilities: string[];
+}
+export interface SkillsListResponse {
+    skills: SkillDescriptor[];
+}
+export interface CatalogResponse {
+    tools: AgentToolDefinition[];
+    skills: SkillDescriptor[];
+}

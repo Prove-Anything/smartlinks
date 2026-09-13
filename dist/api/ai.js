@@ -90,6 +90,30 @@ var aiInternal;
         agent.listTools = listTools;
     })(agent = aiInternal.agent || (aiInternal.agent = {}));
     // ============================================================================
+    // Skills + Catalog (app-facing discovery)
+    // ============================================================================
+    let skills;
+    (function (skills) {
+        /** List the skills apps can invoke (name, description, input/output schema). */
+        async function list(collectionId) {
+            return request(`/admin/collection/${encodeURIComponent(collectionId)}/ai/skills`);
+        }
+        skills.list = list;
+        /**
+         * Invoke a skill by name with structured input — the app-facing verb; no
+         * prompt-shaping. POST /admin/collection/:collectionId/ai/skills/:name/run
+         */
+        async function run(collectionId, name, input = {}) {
+            return post(`/admin/collection/${encodeURIComponent(collectionId)}/ai/skills/${encodeURIComponent(name)}/run`, input);
+        }
+        skills.run = run;
+    })(skills = aiInternal.skills || (aiInternal.skills = {}));
+    /** The full self-describing catalog (tools + skills). GET /ai/catalog */
+    async function catalog(collectionId) {
+        return request(`/admin/collection/${encodeURIComponent(collectionId)}/ai/catalog`);
+    }
+    aiInternal.catalog = catalog;
+    // ============================================================================
     // Models API
     // ============================================================================
     let models;
@@ -412,6 +436,11 @@ export const ai = {
         run: aiInternal.agent.run,
         listTools: aiInternal.agent.listTools,
     },
+    skills: {
+        list: aiInternal.skills.list,
+        run: aiInternal.skills.run,
+    },
+    catalog: aiInternal.catalog,
     generateContent: aiInternal.generateContent,
     generateImage: aiInternal.generateImage,
     searchPhotos: aiInternal.searchPhotos,
