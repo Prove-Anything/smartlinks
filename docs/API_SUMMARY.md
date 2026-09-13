@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.17.1  |  Generated: 2026-09-13T11:30:17.111Z
+Version: 1.17.1  |  Generated: 2026-09-13T11:30:59.016Z
 
 This is a concise summary of all available API functions and types.
 
@@ -57,6 +57,7 @@ For detailed guides on specific features:
 - **[Analytics](analytics.md)** - Web analytics, link-click tracking, QR/tag scan telemetry, and event reporting
 - **[Analytics Metadata Conventions](analytics-metadata-conventions.md)** - Standard recommended keys and conventions for analytics metadata fields
 - **[Loyalty: Points, Members & Earning Rules](loyalty.md)** - Loyalty schemes, automatic point earning via interaction rules, member balances, transaction history, and manual adjustments
+- **[Integrations](integrations.md)** - Inbound/outbound integration flows + the sealed-secret store; triggers (manual/event/schedule), field mappings, and the Syndigo/Event Hub outbound path
 - **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration
 - **[AI-Native App Manifests](manifests.md)** - How AI workflows discover, configure, and import apps via structured manifests and prose guides
 - **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide
