@@ -9,6 +9,7 @@ servers:
 tags:
   - name: responses
   - name: completions
+  - name: agent
   - name: models
   - name: rag
   - name: sessions
@@ -613,6 +614,81 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/ai/agent/run:
+    post:
+      tags:
+        - agent
+      summary: "Run the server-side AI agent loop once: assembles the tool set, runs the model, executes tool calls, and returns the final text + the tool trace."
+      operationId: agent_run
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRunResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AgentRunRequest"
+  /admin/collection/{collectionId}/ai/agent/tools:
+    get:
+      tags:
+        - agent
+      summary: List the tools the agent can use (optionally scoped by capability / name).
+      operationId: agent_listTools
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: allowCapabilities
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: only
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: exclude
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentToolsResponse"
         400:
           description: Bad request
         401:
@@ -15814,6 +15890,101 @@ components:
           type: string
       required:
         - url
+    AgentRunRequest:
+      type: object
+      properties:
+        input:
+          type: string
+        prompt:
+          type: string
+        instructions:
+          type: string
+        model:
+          type: string
+        maxSteps:
+          type: number
+        allowCapabilities:
+          type: array
+          items:
+            type: string
+        only:
+          type: array
+          items:
+            type: string
+        exclude:
+          type: array
+          items:
+            type: string
+    AgentToolResult:
+      type: object
+      properties:
+        name:
+          type: string
+        isError:
+          type: boolean
+        result: {}
+      required:
+        - name
+        - isError
+        - result
+    AgentRunResult:
+      type: object
+      properties:
+        finalText:
+          type: string
+        steps:
+          type: number
+        maxStepsReached:
+          type: boolean
+        toolResults:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentToolResult"
+        availableTools:
+          type: array
+          items:
+            type: string
+      required:
+        - finalText
+        - steps
+        - maxStepsReached
+        - toolResults
+        - availableTools
+    AgentToolDefinition:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        capabilities:
+          type: array
+          items:
+            type: string
+        parameters: {}
+      required:
+        - name
+        - description
+        - capabilities
+        - parameters
+    AgentToolsResponse:
+      type: object
+      properties:
+        tools:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentToolDefinition"
+      required:
+        - tools
+    AgentToolsQuery:
+      type: object
+      properties:
+        allowCapabilities:
+          type: string
+        only:
+          type: string
+        exclude:
+          type: string
     AnalyticsLocation:
       type: object
       properties:

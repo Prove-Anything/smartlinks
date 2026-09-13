@@ -21,6 +21,11 @@ import type {
   AIModel,
   AIModelListParams,
   AIModelListResponse,
+  // Agent (tool-registry loop) types
+  AgentRunRequest,
+  AgentRunResult,
+  AgentToolsQuery,
+  AgentToolsResponse,
   // RAG types
   DocumentChunk,
   IndexDocumentRequest,
@@ -156,6 +161,34 @@ namespace aiInternal {
         
         return post<ChatCompletionResponse>(path, request)
       }
+    }
+  }
+
+  // ============================================================================
+  // Agent API (server-side tool-registry loop)
+  // ============================================================================
+
+  export namespace agent {
+    /**
+     * Run the server-side AI agent loop once: assembles the tool set, runs the
+     * model, executes tool calls, and returns the final text + the tool trace.
+     * POST /admin/collection/:collectionId/ai/agent/run
+     */
+    export async function run(collectionId: string, body: AgentRunRequest): Promise<AgentRunResult> {
+      const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/agent/run`
+      return post<AgentRunResult>(path, body)
+    }
+
+    /**
+     * List the tools the agent can use (optionally scoped by capability / name).
+     * GET /admin/collection/:collectionId/ai/agent/tools
+     */
+    export async function listTools(collectionId: string, query: AgentToolsQuery = {}): Promise<AgentToolsResponse> {
+      const search = new URLSearchParams()
+      for (const [k, v] of Object.entries(query)) { if (v) search.set(k, String(v)) }
+      const qs = search.toString()
+      const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/agent/tools${qs ? `?${qs}` : ''}`
+      return request<AgentToolsResponse>(path)
     }
   }
 
@@ -507,6 +540,10 @@ export const ai = {
     isSupported: aiInternal.voice.isSupported,
     listen: aiInternal.voice.listen,
     speak: aiInternal.voice.speak,
+  },
+  agent: {
+    run: aiInternal.agent.run,
+    listTools: aiInternal.agent.listTools,
   },
   generateContent: aiInternal.generateContent,
   generateImage: aiInternal.generateImage,

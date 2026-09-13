@@ -59,6 +59,37 @@ var aiInternal;
         })(completions = chat.completions || (chat.completions = {}));
     })(chat = aiInternal.chat || (aiInternal.chat = {}));
     // ============================================================================
+    // Agent API (server-side tool-registry loop)
+    // ============================================================================
+    let agent;
+    (function (agent) {
+        /**
+         * Run the server-side AI agent loop once: assembles the tool set, runs the
+         * model, executes tool calls, and returns the final text + the tool trace.
+         * POST /admin/collection/:collectionId/ai/agent/run
+         */
+        async function run(collectionId, body) {
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/agent/run`;
+            return post(path, body);
+        }
+        agent.run = run;
+        /**
+         * List the tools the agent can use (optionally scoped by capability / name).
+         * GET /admin/collection/:collectionId/ai/agent/tools
+         */
+        async function listTools(collectionId, query = {}) {
+            const search = new URLSearchParams();
+            for (const [k, v] of Object.entries(query)) {
+                if (v)
+                    search.set(k, String(v));
+            }
+            const qs = search.toString();
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/agent/tools${qs ? `?${qs}` : ''}`;
+            return request(path);
+        }
+        agent.listTools = listTools;
+    })(agent = aiInternal.agent || (aiInternal.agent = {}));
+    // ============================================================================
     // Models API
     // ============================================================================
     let models;
@@ -376,6 +407,10 @@ export const ai = {
         isSupported: aiInternal.voice.isSupported,
         listen: aiInternal.voice.listen,
         speak: aiInternal.voice.speak,
+    },
+    agent: {
+        run: aiInternal.agent.run,
+        listTools: aiInternal.agent.listTools,
     },
     generateContent: aiInternal.generateContent,
     generateImage: aiInternal.generateImage,

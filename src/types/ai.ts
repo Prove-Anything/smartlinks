@@ -533,3 +533,56 @@ export interface AISearchPhotosPhoto {
   /** Allow extra fields */
   [key: string]: any
 }
+
+// ============================================================================
+// AI Agent (tool-registry loop)
+// ============================================================================
+
+export interface AgentRunRequest {
+  /** User prompt (either input or prompt). */
+  input?: string
+  prompt?: string
+  /** System instructions. */
+  instructions?: string
+  /** Model id, e.g. 'openai/gpt-5.6-terra'. */
+  model?: string
+  /** Safety cap on model round-trips. */
+  maxSteps?: number
+  /** Cap blast radius: only tools whose capabilities are all granted. */
+  allowCapabilities?: string[]
+  /** Restrict to these tool names. */
+  only?: string[]
+  /** Drop these tool names. */
+  exclude?: string[]
+}
+
+export interface AgentToolResult {
+  name: string
+  isError: boolean
+  result: any
+}
+
+export interface AgentRunResult {
+  finalText: string | null
+  steps: number
+  maxStepsReached: boolean
+  toolResults: AgentToolResult[]
+  availableTools: string[]
+}
+
+export interface AgentToolDefinition {
+  name: string
+  description: string
+  capabilities: string[]
+  parameters: any
+}
+
+export interface AgentToolsResponse {
+  tools: AgentToolDefinition[]
+}
+
+export interface AgentToolsQuery {
+  allowCapabilities?: string
+  only?: string
+  exclude?: string
+}

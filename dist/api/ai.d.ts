@@ -1,4 +1,4 @@
-import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto } from "../types/ai";
+import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, AgentRunRequest, AgentRunResult, AgentToolsQuery, AgentToolsResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto } from "../types/ai";
 export type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateImageRequest, AISearchPhotosRequest, AISearchPhotosPhoto, };
 declare namespace aiInternal {
     namespace chat {
@@ -20,6 +20,19 @@ declare namespace aiInternal {
              */
             function create(collectionId: string, request: ChatCompletionRequest): Promise<ChatCompletionResponse | AsyncIterable<ChatCompletionChunk>>;
         }
+    }
+    namespace agent {
+        /**
+         * Run the server-side AI agent loop once: assembles the tool set, runs the
+         * model, executes tool calls, and returns the final text + the tool trace.
+         * POST /admin/collection/:collectionId/ai/agent/run
+         */
+        function run(collectionId: string, body: AgentRunRequest): Promise<AgentRunResult>;
+        /**
+         * List the tools the agent can use (optionally scoped by capability / name).
+         * GET /admin/collection/:collectionId/ai/agent/tools
+         */
+        function listTools(collectionId: string, query?: AgentToolsQuery): Promise<AgentToolsResponse>;
     }
     namespace models {
         /**
@@ -180,6 +193,10 @@ export declare const ai: {
         isSupported: typeof aiInternal.voice.isSupported;
         listen: typeof aiInternal.voice.listen;
         speak: typeof aiInternal.voice.speak;
+    };
+    agent: {
+        run: typeof aiInternal.agent.run;
+        listTools: typeof aiInternal.agent.listTools;
     };
     generateContent: typeof aiInternal.generateContent;
     generateImage: typeof aiInternal.generateImage;

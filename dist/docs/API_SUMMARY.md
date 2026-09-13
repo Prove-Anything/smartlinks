@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.17.0  |  Generated: 2026-09-13T07:11:02.540Z
+Version: 1.17.1  |  Generated: 2026-09-13T11:30:05.211Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1008,6 +1008,66 @@ interface AISearchPhotosPhoto {
   photographer?: string
   photographerUrl?: string
   [key: string]: any
+}
+```
+
+**AgentRunRequest** (interface)
+```typescript
+interface AgentRunRequest {
+  input?: string
+  prompt?: string
+  instructions?: string
+  model?: string
+  maxSteps?: number
+  allowCapabilities?: string[]
+  only?: string[]
+  exclude?: string[]
+}
+```
+
+**AgentToolResult** (interface)
+```typescript
+interface AgentToolResult {
+  name: string
+  isError: boolean
+  result: any
+}
+```
+
+**AgentRunResult** (interface)
+```typescript
+interface AgentRunResult {
+  finalText: string | null
+  steps: number
+  maxStepsReached: boolean
+  toolResults: AgentToolResult[]
+  availableTools: string[]
+}
+```
+
+**AgentToolDefinition** (interface)
+```typescript
+interface AgentToolDefinition {
+  name: string
+  description: string
+  capabilities: string[]
+  parameters: any
+}
+```
+
+**AgentToolsResponse** (interface)
+```typescript
+interface AgentToolsResponse {
+  tools: AgentToolDefinition[]
+}
+```
+
+**AgentToolsQuery** (interface)
+```typescript
+interface AgentToolsQuery {
+  allowCapabilities?: string
+  only?: string
+  exclude?: string
 }
 ```
 
@@ -8794,6 +8854,14 @@ interface Gs1DigitalLinkParams {
 ```
 
 ## API Functions
+
+### agent
+
+**run**(collectionId: string, body: AgentRunRequest) → `Promise<AgentRunResult>`
+Run the server-side AI agent loop once: assembles the tool set, runs the model, executes tool calls, and returns the final text + the tool trace. POST /admin/collection/:collectionId/ai/agent/run
+
+**listTools**(collectionId: string, query: AgentToolsQuery = {}) → `Promise<AgentToolsResponse>`
+List the tools the agent can use (optionally scoped by capability / name). GET /admin/collection/:collectionId/ai/agent/tools
 
 ### analytics.admin
 
