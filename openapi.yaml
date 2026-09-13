@@ -51,6 +51,7 @@ tags:
   - name: proof
   - name: qr
   - name: realtime
+  - name: research
   - name: segments
   - name: tags
   - name: template
@@ -7480,6 +7481,39 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/research/fetch:
+    post:
+      tags:
+        - research
+      summary: "Fetch + extract a web page: clean markdown, page metadata, and any schema.org JSON-LD (filtered by `type` when given)."
+      operationId: research_fetch
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ResearchFetchResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResearchFetchRequest"
   /admin/collection/{collectionId}/segments:
     get:
       tags:
@@ -26570,6 +26604,51 @@ components:
         - nonce
         - mac
         - clientId
+    ResearchFetchRequest:
+      type: object
+      properties:
+        url:
+          type: string
+        type:
+          type: string
+        schemaType:
+          type: string
+        forceRefresh:
+          type: boolean
+      required:
+        - url
+    ResearchFetchResult:
+      type: object
+      properties:
+        provider:
+          type: string
+          enum:
+            - firecrawl
+            - web
+        status:
+          type: number
+        markdown:
+          type: string
+        html:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        schemas:
+          type: array
+          items: {}
+        url:
+          type: string
+        cached:
+          type: boolean
+        fetchedAt:
+          type: string
+      required:
+        - provider
+        - status
+        - schemas
+        - url
+        - cached
     InteractionFilterValue:
       type: object
       properties:

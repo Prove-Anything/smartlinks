@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.17.1  |  Generated: 2026-09-13T11:30:05.211Z
+Version: 1.17.2  |  Generated: 2026-09-13T13:53:14.443Z
 
 This is a concise summary of all available API functions and types.
 
@@ -57,6 +57,7 @@ For detailed guides on specific features:
 - **[Analytics](analytics.md)** - Web analytics, link-click tracking, QR/tag scan telemetry, and event reporting
 - **[Analytics Metadata Conventions](analytics-metadata-conventions.md)** - Standard recommended keys and conventions for analytics metadata fields
 - **[Loyalty: Points, Members & Earning Rules](loyalty.md)** - Loyalty schemes, automatic point earning via interaction rules, member balances, transaction history, and manual adjustments
+- **[Integrations](integrations.md)** - Inbound/outbound integration flows + the sealed-secret store; triggers (manual/event/schedule), field mappings, and the Syndigo/Event Hub outbound path
 - **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration
 - **[AI-Native App Manifests](manifests.md)** - How AI workflows discover, configure, and import apps via structured manifests and prose guides
 - **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide
@@ -143,6 +144,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **order** - Functions for order operations
 - **products** - Functions for products operations
 - **realtime** - Functions for realtime operations
+- **research** - Functions for research operations
 - **secrets** - Functions for secrets operations
 - **tags** - Functions for tags operations
 - **template** - Functions for template operations
@@ -8017,6 +8019,33 @@ interface AblyTokenRequest {
 
 **RealtimeChannelPattern** = `string`
 
+### research
+
+**ResearchFetchRequest** (interface)
+```typescript
+interface ResearchFetchRequest {
+  url: string
+  type?: string
+  schemaType?: string
+  forceRefresh?: boolean
+}
+```
+
+**ResearchFetchResult** (interface)
+```typescript
+interface ResearchFetchResult {
+  provider: 'firecrawl' | 'web'
+  status: number | null
+  markdown?: string | null
+  html?: string | null
+  metadata?: Record<string, any> | null
+  schemas: any[]
+  url: string
+  cached: boolean
+  fetchedAt?: string
+}
+```
+
 ### segments
 
 **InteractionFilterValue** (interface)
@@ -10899,6 +10928,11 @@ Get an Ably token for public (user-scoped) real-time communication. This endpoin
 
 **getAdminToken**() → `Promise<AblyTokenRequest>`
 Get an Ably token for admin real-time communication. This endpoint returns an Ably TokenRequest that can be used to initialize an Ably client with admin permissions to receive system notifications and alerts. Admin users get subscribe-only (read-only) access to the interaction:{userId} channel pattern. Requires admin authentication (Bearer token). ```ts const tokenRequest = await realtime.getAdminToken() // Use with Ably const ably = new Ably.Realtime.Promise({ authCallback: async (data, callback) => { callback(null, tokenRequest) } }) // Subscribe to admin interaction channel const userId = 'my-user-id' const channel = ably.channels.get(`interaction:${userId}`) await channel.subscribe((message) => { console.log('Admin notification:', message.data) }) ```
+
+### research
+
+**fetch**(collectionId: string, body: ResearchFetchRequest) → `Promise<ResearchFetchResult>`
+Fetch + extract a web page: clean markdown, page metadata, and any schema.org JSON-LD (filtered by `type` when given). Firecrawl-primary, cached per collection. POST /admin/collection/:collectionId/research/fetch
 
 ### secrets
 

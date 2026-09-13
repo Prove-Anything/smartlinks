@@ -39,6 +39,7 @@ export { loyalty } from "./loyalty";
 export { translations } from "./translations";
 export { integrations } from "./integrations";
 export { secrets } from "./secrets";
+export { research } from "./research";
 export { config } from "./config";
 export { http } from "./http";
 export { navigation } from "./navigation";
