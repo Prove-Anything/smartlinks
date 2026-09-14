@@ -273,6 +273,7 @@ function generateAPISummary() {
   summary += '- **[Forms](forms.md)** - Platform-managed form definitions, submissions, and schema-driven React form UI\n';
   summary += '- **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more\n';
   summary += '- **[App Records Pattern](app-records-pattern.md)** - Canonical pattern for storing per-product, per-facet, or rule-targeted app data\n';
+  summary += '- **[Sequences & Claim-Order](sequences.md)** - Allocate a guaranteed-unique, monotonic number (raffle tickets, "Nth to claim", queue positions) and stamp it onto a record — atomic app-config counter + idempotent per-subject stamping, concurrency-safe at stadium scale\n';
   summary += '- **[Communications](comms.md)** - Transactional sends, multi-channel broadcasts, consent management, push registration, and analytics\n';
   summary += '- **[Interactions & Event Tracking](interactions.md)** - Log user events, count outcomes, query history, and define interaction types with permissions\n';
   summary += '- **[Analytics](analytics.md)** - Web analytics, link-click tracking, QR/tag scan telemetry, and event reporting\n';

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.0-alpha.1  |  Generated: 2026-09-14T11:28:42.846Z
+Version: 2.0.0-alpha.2  |  Generated: 2026-09-14T14:36:27.800Z
 
 This is a concise summary of all available API functions and types.
 
@@ -54,6 +54,7 @@ For detailed guides on specific features:
 - **[Forms](forms.md)** - Platform-managed form definitions, submissions, and schema-driven React form UI
 - **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more
 - **[App Records Pattern](app-records-pattern.md)** - Canonical pattern for storing per-product, per-facet, or rule-targeted app data
+- **[Sequences & Claim-Order](sequences.md)** - Allocate a guaranteed-unique, monotonic number (raffle tickets, "Nth to claim", queue positions) and stamp it onto a record — atomic app-config counter + idempotent per-subject stamping, concurrency-safe at stadium scale
 - **[Communications](comms.md)** - Transactional sends, multi-channel broadcasts, consent management, push registration, and analytics
 - **[Interactions & Event Tracking](interactions.md)** - Log user events, count outcomes, query history, and define interaction types with permissions
 - **[Analytics](analytics.md)** - Web analytics, link-click tracking, QR/tag scan telemetry, and event reporting
