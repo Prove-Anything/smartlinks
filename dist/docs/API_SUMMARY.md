@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.17.6  |  Generated: 2026-09-14T10:20:21.314Z
+Version: 1.17.6  |  Generated: 2026-09-14T10:57:43.714Z
 
 This is a concise summary of all available API functions and types.
 
@@ -22,6 +22,7 @@ For detailed guides on specific features:
 - **[App Configuration Files](app-manifest.md)** - `app.manifest.json` and `app.admin.json` reference — bundles, components, setup questions, import schemas, tunable fields, and metrics
 - **[Executor Model](executor.md)** - Programmatic JS bundles for AI-driven setup, server-side SEO metadata generation, and LLM content for AI crawlers
 - **[Server Functions](server-functions.md)** - App-authored server-side "edge functions" (`async (ctx, event) => result`): http/event/cron triggers, the visibility/authority/capabilities security model, and the pre-scoped `ctx` (authority-scoped SDK, capability-gated secrets + fetch)
+- **[Deploying & Registering an App](deploying-apps.md)** - Publish → build → register: the app CDN layout (smartlinks.app), dev/beta/prod channels, channel-scoped deploy keys, the `POST /apps/:appId/releases` registration endpoint + validation, and how to wire it into your build so a bad manifest fails the deploy
 - **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections
 - **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication
 - **[iframe Streaming Parent Changes](iframe-streaming-parent-changes.md)** - Parent-side changes required to support AI streaming in iframe proxy mode
