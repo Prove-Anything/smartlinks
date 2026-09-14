@@ -17243,6 +17243,107 @@ components:
       required:
         - files
         - function
+    AppFunctionTrigger:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/AppFunctionTriggerType"
+        eventTypes:
+          type: array
+          items:
+            type: string
+        schedule:
+          type: string
+        route:
+          type: string
+        methods:
+          type: array
+          items:
+            type: string
+            enum:
+              - GET
+              - POST
+              - PUT
+              - PATCH
+              - DELETE
+      required:
+        - type
+    AppFunctionDef:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        trigger:
+          $ref: "#/components/schemas/AppFunctionTrigger"
+        visibility:
+          $ref: "#/components/schemas/AppFunctionVisibility"
+        authority:
+          $ref: "#/components/schemas/AppFunctionAuthority"
+        capabilities:
+          type: array
+          items:
+            type: string
+        apiVersion:
+          type: string
+        handler:
+          type: string
+      required:
+        - name
+        - trigger
+    AppManifestFunctions:
+      type: object
+      properties:
+        files:
+          $ref: "#/components/schemas/AppManifestFiles"
+        definitions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppFunctionDef"
+      required:
+        - files
+        - definitions
+    ServerFunctionCaller:
+      type: object
+      properties:
+        userId:
+          type: string
+        anonymous:
+          type: boolean
+        origin:
+          type: string
+        ip:
+          type: string
+        via:
+          $ref: "#/components/schemas/AppFunctionTriggerType"
+      required:
+        - userId
+        - anonymous
+        - via
+    ServerFunctionContext:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        appId:
+          type: string
+        sl: {}
+        secrets:
+          type: object
+          additionalProperties: true
+        caller:
+          $ref: "#/components/schemas/ServerFunctionCaller"
+        fetch:
+          type: object
+          additionalProperties: true
+      required:
+        - collectionId
+        - appId
+        - sl
+        - secrets
+        - caller
+        - fetch
     AppAdminConfig:
       type: object
       properties:
@@ -17385,6 +17486,8 @@ components:
             $ref: "#/components/schemas/DeepLinkEntry"
         executor:
           $ref: "#/components/schemas/AppManifestExecutor"
+        functions:
+          $ref: "#/components/schemas/AppManifestFunctions"
       required:
         - name
         - version
@@ -17425,6 +17528,22 @@ components:
       properties:
         force:
           type: boolean
+    AppFunctionTriggerType:
+      type: string
+      enum:
+        - http
+        - event
+        - cron
+    AppFunctionVisibility:
+      type: string
+      enum:
+        - admin
+        - public
+    AppFunctionAuthority:
+      type: string
+      enum:
+        - caller
+        - collection
     PaginatedResponse:
       type: object
       properties:

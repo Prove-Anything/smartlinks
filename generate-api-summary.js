@@ -86,8 +86,11 @@ function extractTypesFromFile(filePath) {
 function formatInterfaceBody(body) {
   const lines = body.split('\n')
     .map(line => line.trim())
-    .filter(line => line && !line.includes('/**') && !line.includes('*/') && !line.startsWith('//'));
-  
+    // Drop comment lines: block delimiters, single-line comments, AND JSDoc
+    // continuation lines (starting with `*`) — otherwise multi-line field comments
+    // leak into the rendered interface body as dangling `* ...` lines.
+    .filter(line => line && !line.includes('/**') && !line.includes('*/') && !line.startsWith('//') && !line.startsWith('*'));
+
   return lines.map(line => `  ${line}`).join('\n');
 }
 
@@ -237,6 +240,7 @@ function generateAPISummary() {
   summary += '- **[Multi-Page App Architecture](mpa.md)** - Vite MPA build pipeline: public/admin entry points, widget/container/executor bundles, content-hashed CDN assets\n';
   summary += '- **[App Configuration Files](app-manifest.md)** - `app.manifest.json` and `app.admin.json` reference — bundles, components, setup questions, import schemas, tunable fields, and metrics\n';
   summary += '- **[Executor Model](executor.md)** - Programmatic JS bundles for AI-driven setup, server-side SEO metadata generation, and LLM content for AI crawlers\n';
+  summary += '- **[Server Functions](server-functions.md)** - App-authored server-side "edge functions" (`async (ctx, event) => result`): http/event/cron triggers, the visibility/authority/capabilities security model, and the pre-scoped `ctx` (authority-scoped SDK, capability-gated secrets + fetch)\n';
   summary += '- **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections\n';
   summary += '- **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication\n';
   summary += '- **[iframe Streaming Parent Changes](iframe-streaming-parent-changes.md)** - Parent-side changes required to support AI streaming in iframe proxy mode\n';

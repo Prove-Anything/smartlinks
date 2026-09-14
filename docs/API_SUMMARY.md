@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.17.6  |  Generated: 2026-09-13T19:03:59.523Z
+Version: 1.17.6  |  Generated: 2026-09-14T10:20:21.314Z
 
 This is a concise summary of all available API functions and types.
 
@@ -21,6 +21,7 @@ For detailed guides on specific features:
 - **[Multi-Page App Architecture](mpa.md)** - Vite MPA build pipeline: public/admin entry points, widget/container/executor bundles, content-hashed CDN assets
 - **[App Configuration Files](app-manifest.md)** - `app.manifest.json` and `app.admin.json` reference — bundles, components, setup questions, import schemas, tunable fields, and metrics
 - **[Executor Model](executor.md)** - Programmatic JS bundles for AI-driven setup, server-side SEO metadata generation, and LLM content for AI crawlers
+- **[Server Functions](server-functions.md)** - App-authored server-side "edge functions" (`async (ctx, event) => result`): http/event/cron triggers, the visibility/authority/capabilities security model, and the pre-scoped `ctx` (authority-scoped SDK, capability-gated secrets + fetch)
 - **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections
 - **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication
 - **[iframe Streaming Parent Changes](iframe-streaming-parent-changes.md)** - Parent-side changes required to support AI streaming in iframe proxy mode
@@ -985,9 +986,6 @@ interface AIGenerateImageRequest {
   prompt: string
   provider?: string
   model?: string
-  * Requested image size.
-  * OpenAI supported values: '1024x1024', '1024x1792', '1792x1024'
-  * Other providers may support different sizes.
   size?: string
   [key: string]: any
 }
@@ -1245,14 +1243,6 @@ interface AnalyticsFilterRequest {
   claimIds?: string[]
   isAdmin?: boolean
   hasLocation?: boolean
-  * Filter web-events rows by the `source` column (list-match). Web-events
-  * only - has no effect on `source: 'tag'` queries.
-  *
-  * There is deliberately no singular `source` filter: the request's own
-  * top-level `source` field (`'events'` vs `'tag'`) already owns that name
-  * as the table selector and predates this column - same word, two
-  * different things. Use a single-element array (`sources: ['portal']`)
-  * for an exact-match filter.
   sources?: string[]
   redirectMode?: string
   redirectModes?: string[]
@@ -1536,24 +1526,12 @@ interface AppliedOverridesSummary {
 ```typescript
 interface SystemBlock {
   basePlanId?: string
-  * Stable capability tier microapps should branch on instead of
-  * `basePlanId` — see docs/appConfig.md §4.1. Known tiers are `ProductMode`;
-  * an unrecognised value is a future tier your code doesn't know about yet
-  * — fail closed to the nearest tier you do understand rather than erroring.
   productMode?: ProductMode | (string & {})
   addOnKeys?: string[]
   apps?: string[]
-  * Explicit overrides only — an absent key is NOT "off". Resolve with
-  * `resolveFeature()` / `isFeatureEnabled()`, which apply the accountType
-  * default: `enterprise` defaults every flag to on unless explicitly
-  * `false` here; `standard` defaults every flag to off unless explicitly
-  * `true` here.
   features?: Record<string, boolean>
   meters?: Record<string, MeterEntry>
   entitledAppGroups?: string[]
-  * Explicit account tier. `'enterprise'` flips the default for every
-  * feature flag to on (see `features`), not just an "unlimited baseline" —
-  * absence of a flag no longer means disabled for enterprise accounts.
   accountType?: 'enterprise' | 'standard'
   syncedAt?: string
   syncedFromSubscriptionId?: string
@@ -1594,10 +1572,6 @@ interface AppManifestFiles {
   umd: string;
   esm?: string;
   };
-  * CSS file path — set to `null` (or omit) when the bundle ships no CSS.
-  * Most widgets and containers use Tailwind/shadcn classes from the parent and produce no CSS file.
-  * Only set to a non-null string if an actual CSS file exists in dist/;
-  * a non-null value pointing to a missing file will cause a 404 in the parent portal.
   css?: string | null;
 }
 ```
@@ -1642,23 +1616,8 @@ interface AppContainerComponent {
 ```typescript
 interface DeepLinkEntry {
   title: string;
-  * Hash route path within the app (optional).
-  * Defaults to "/" if omitted.
-  * @example "/gallery"
   path?: string;
-  * App-specific query params appended to the hash route URL.
-  * Do NOT include platform context params (collectionId, appId, productId, etc.) —
-  * those are injected by the platform automatically.
   params?: Record<string, string>;
-  * When `true`, this entry is also available as a dynamic data context for widgets
-  * (in addition to being a navigable page / container route).
-  *
-  * Entries with `widget: true` appear in the widget config picker so an admin can
-  * select this dataset to drive how the widget renders. The widget receives `params`
-  * and decides its own presentation — no separate rendering contract is required.
-  *
-  * Omit (or `false`) for entries that are only meaningful as full-page navigation
-  * (e.g. multi-step forms, settings pages, checkout flows).
   widget?: true;
 }
 ```
@@ -1744,13 +1703,67 @@ interface AppManifestExecutor {
 }
 ```
 
+**AppFunctionTrigger** (interface)
+```typescript
+interface AppFunctionTrigger {
+  type: AppFunctionTriggerType;
+  eventTypes?: string[];
+  schedule?: string;
+  route?: string;
+  methods?: Array<'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'>;
+}
+```
+
+**AppFunctionDef** (interface)
+```typescript
+interface AppFunctionDef {
+  name: string;
+  description?: string;
+  trigger: AppFunctionTrigger;
+  visibility?: AppFunctionVisibility;
+  authority?: AppFunctionAuthority;
+  capabilities?: string[];
+  apiVersion?: string;
+  handler?: string;
+}
+```
+
+**AppManifestFunctions** (interface)
+```typescript
+interface AppManifestFunctions {
+  files: AppManifestFiles;
+  definitions: AppFunctionDef[];
+}
+```
+
+**ServerFunctionCaller** (interface)
+```typescript
+interface ServerFunctionCaller {
+  userId: string | null;
+  anonymous: boolean;
+  origin?: string | null;
+  ip?: string | null;
+  via: AppFunctionTriggerType;
+}
+```
+
+**ServerFunctionContext** (interface)
+```typescript
+interface ServerFunctionContext {
+  collectionId: string;
+  appId: string;
+  sl: any;
+  secrets: { get(ref: string): Promise<string | null> };
+  caller: ServerFunctionCaller;
+  fetch: typeof fetch;
+  log: (message: string, data?: Record<string, any>) => void;
+}
+```
+
 **AppAdminConfig** (interface)
 ```typescript
 interface AppAdminConfig {
   $schema?: string;
-  * Path (relative to the app's public root) to an AI guide markdown file.
-  * Provides natural-language context for AI-assisted configuration.
-  * @example "ai-guide.md"
   aiGuide?: string;
   setup?: {
   description?: string;
@@ -1818,9 +1831,6 @@ interface AppManifest {
   version: string;
   platformRevision?: string;
   appId: string;
-  * SEO configuration for this app.
-  * `priority` controls which app's singular fields (title, description, ogImage) win
-  * when multiple apps appear on the same page. Default is 0; higher wins.
   seo?: {
   strategy?: 'executor' | string;
   priority?: number;
@@ -1832,26 +1842,15 @@ interface AppManifest {
   };
   };
   };
-  * Relative path to the admin configuration file (e.g. `"app.admin.json"`).
-  * When present, fetch this file to get the full {@link AppAdminConfig}
-  * (setup questions, import schema, tunable fields, metrics definitions).
-  * Absent when the app has no admin UI.
   admin?: string;
   widgets?: AppManifestWidgets;
   containers?: {
   files: AppManifestFiles;
   components: AppContainerComponent[];
   };
-  * Static deep-linkable states built into this app.
-  * These are fixed routes that exist regardless of content — declared once at build time.
-  * Dynamic content entries (e.g. CMS pages) are stored separately in `appConfig.linkable`.
-  * Consumers should merge both sources to get the full set of navigable states.
-  * @see DeepLinkEntry
   linkable?: DeepLinkEntry[];
-  * Executor bundle declaration. Present when the app ships a programmatic executor
-  * for AI-driven configuration, server-side SEO, and LLM content generation.
-  * @see AppManifestExecutor
   executor?: AppManifestExecutor;
+  functions?: AppManifestFunctions;
   [key: string]: any;
 }
 ```
@@ -1880,6 +1879,12 @@ interface GetCollectionWidgetsOptions {
   force?: boolean;
 }
 ```
+
+**AppFunctionTriggerType** = `'http' | 'event' | 'cron'`
+
+**AppFunctionVisibility** = `'admin' | 'public'`
+
+**AppFunctionAuthority** = `'caller' | 'collection'`
 
 ### appObjects
 
@@ -2090,9 +2095,6 @@ interface CreateThreadInput {
   data?: Record<string, unknown>
   owner?: Record<string, unknown>
   admin?: Record<string, unknown> // admin only
-  * Optional atomic first reply. Posting a comment no longer needs a separate
-  * create-thread-then-reply round trip (which could orphan an empty thread on
-  * partial failure). The reply is stored with a generated `id` and timestamp.
   firstReply?: ReplyInput
 }
 ```
@@ -2124,11 +2126,7 @@ interface ReplyInput {
 **FacetRuleClause** (interface)
 ```typescript
 interface FacetRuleClause {
-  * Facet key this clause tests, e.g. "brand", "type", "bread-type".
-  * Must reference a defined facet on the collection.
   facetKey: string
-  * One or more facet value keys that satisfy the clause (OR semantics).
-  * At least one value required. Server deduplicates and sorts.
   anyOf: string[]
 }
 ```
@@ -2136,8 +2134,6 @@ interface FacetRuleClause {
 **FacetRule** (interface)
 ```typescript
 interface FacetRule {
-  * All clauses must be satisfied (AND semantics).
-  * Must be non-empty; no duplicate facetKey entries.
   all: FacetRuleClause[]
 }
 ```
@@ -2149,10 +2145,6 @@ interface RecordTarget {
   variantId?: string
   proofId?: string
   batchId?: string
-  * Facet assignments for the product (e.g. `{ brand: ['samsung'], type: ['tv'] }`).
-  * Used exclusively to match FacetRule records via GIN-indexed containment check.
-  * Does NOT filter legacy scope.facets arrays (that system is removed in SDK 1.12).
-  * Omit to exclude rule records from results.
   facets?: Record<string, string[]>
 }
 ```
@@ -2230,8 +2222,6 @@ interface UpsertRecordInput {
 ```typescript
 interface MatchRecordsInput {
   target: RecordTarget
-  * 'all'  — return all matching records (default)
-  * 'best' — return the highest-specificity record per recordType
   strategy?: 'all' | 'best'
   recordType?: string
   limit?: number
@@ -2271,11 +2261,7 @@ interface AppRecord {
   startsAt: string | null
   expiresAt: string | null
   deletedAt: string | null // admin only
-  * Numeric specificity score. Server-computed from anchor IDs and facetRule.
-  * Higher = more specific. 0 = universal (no anchors, no rule).
   specificity: number
-  * Facet rule for rule records (ref starts with "rule:").
-  * null on all other record types. Mutually exclusive with anchor IDs.
   facetRule: FacetRule | null
   singletonKey: string | null
   data: Record<string, unknown>
@@ -2307,8 +2293,6 @@ interface CreateRecordInput {
   scopeId?: string | null
   customId?: string | null
   sourceSystem?: string | null
-  * Opt-in singleton cardinality. When set, the server upserts rather than
-  * inserting a duplicate. Values: 'collection' | 'product' | 'variant' | 'batch' | 'proof'
   singletonPer?: string
   data?: Record<string, unknown>
   owner?: Record<string, unknown>
@@ -2351,9 +2335,6 @@ interface ResolveAllParams {
   variantId?: string
   batchId?: string
   proofId?: string
-  * Facet assignments for the product — used for both legacy facet-ref matching
-  * and facetRule evaluation.
-  * e.g. { "brand": "samsung", "type": ["tv", "laptop"] }
   facets?: Record<string, string | string[]>
   }
   recordType?: string
@@ -2444,32 +2425,12 @@ interface PublicCreateObjectRule {
 ```typescript
 interface PublicCreateBranch {
   allow: boolean
-  * Field values merged **over** the caller's request body before writing.
-  * Use this to lock down `visibility` and `status` regardless of what the
-  * client sends.
   enforce?: {
   visibility?: 'public' | 'owner' | 'admin'
   status?:     string
   }
-  * Anonymous edit-token configuration.
-  * **Records only** — ignored for cases and threads.
-  *
-  * When `editToken: true`, the server generates a one-time 256-bit hex token
-  * on anonymous record creation, stores it in `admin.editToken` (never
-  * exposed to public / owner responses), and returns it **once** in the
-  * creation response under the `editToken` key.
-  *
-  * The client can then pass that token as the `X-Edit-Token` header on
-  * `PATCH /records/:recordId` to amend the `data` zone without
-  * authentication.
-  *
-  * @see {@link CreateRecordResponse} — creation response shape
-  * @see {@link records.updateWithToken} — SDK method for the amendment call
   edit?: {
   editToken: boolean
-  * Optional expiry window in minutes from `createdAt`.
-  * After this many minutes the token is rejected with HTTP 403
-  * `EDIT_WINDOW_EXPIRED`.  Omit for no expiry.
   windowMinutes?: number
   }
 }
@@ -2518,8 +2479,6 @@ interface Asset {
   proofId: string | null
   appId: string | null
   url: string
-  * CDN URL of the WebP thumbnail (max 512px longest edge, no crop).
-  * Always .webp — null until thumbnail generation has run.
   thumbnail: string | null
   name: string
   cleanName: string | null
@@ -2543,7 +2502,6 @@ interface Asset {
   createdAt: string
   updatedAt: string
   deletedAt: string | null
-  * @deprecated Use `thumbnail` instead. Legacy multi-size thumbnail map.
   thumbnails?: {
   x100?: string
   x200?: string
@@ -2705,8 +2663,6 @@ interface UploadPolicyConfig {
 ```typescript
 interface RequestUploadTokenOptions {
   collectionId: string
-  * App ID whose collection-scoped config provides `uploadPolicy`.
-  * Resolved from `sites/{collectionId}/apps/{appId}`.
   appId: string
   contactId?: string
   productId?: string
@@ -2759,8 +2715,6 @@ interface CreateResumableUploadOptions {
   metadata?: Record<string, any>
   appId?: string
   admin?: boolean
-  * Upload token id (from {@link requestUploadToken}) for public/unauthenticated
-  * uploads. When provided, the public resumable route is used.
   token?: string
 }
 ```
@@ -2836,14 +2790,7 @@ interface Attestation {
   unit?: string
   source?: string
   authorId?: string
-  * When authored under a `contribute` grant (rather than by identity), the id of
-  * the granting token — provenance for a contributed record. `null`/absent for
-  * owner/admin/identity writes.
   grantId?: string | null
-  * Moderation gate, orthogonal to {@link visibility} and excluded from the hash
-  * chain. `'approved'` (default) is live; `'pending'` is held for owner review
-  * (visible only to its author and owner/admin audiences); `'rejected'` was
-  * declined. Contributions under a `moderate` grant start `'pending'`.
   moderationStatus?: AttestationModerationStatus
   metadata?: Record<string, any>
   contentHash: string
@@ -2910,8 +2857,6 @@ interface OwnerAttestationInput {
   unit?: string
   source?: string
   metadata?: Record<string, any>
-  * Attribution for an anonymous (public-link) contribute-grant write. Ignored
-  * for owner writes and for named-grant writes (attributed to the signed-in uid).
   guestName?: string
 }
 ```
@@ -3022,9 +2967,6 @@ interface ListAttestationsParams {
   subjectType: AttestationSubjectType
   subjectId: string
   attestationType?: string
-  * Filter by moderation state. Primarily for the owner review queue
-  * (`moderationStatus: 'pending'`). ANDs with the server's audience gate, so a
-  * public caller can never use it to widen access.
   moderationStatus?: AttestationModerationStatus
   recordedAfter?: string
   recordedBefore?: string
@@ -3259,20 +3201,9 @@ interface AuthLoginResponse {
   requiresEmailVerification?: boolean  // True if email verification is required but not yet completed
   emailVerificationDeadline?: number   // Unix timestamp - for 'immediate' mode grace period deadline
   accountLocked?: boolean              // True if account is locked due to expired verification deadline
-  * True when this login created a brand-new account. Currently only populated by
-  * the Apple login endpoint; left undefined by the other AuthKit login endpoints.
   isNewUser?: boolean
-  * Session token expiry, in **milliseconds since epoch** (not seconds, not a duration),
-  * or null when the server could not decode it. Currently only populated by the Apple
-  * login endpoint.
   expiresAt?: number | null
-  * Opaque, single-use refresh token. **Native clients only** — present only when the
-  * request opted in via `initializeApi({ platform: 'native' })` (or the
-  * `X-Client-Platform: native` header). For native logins, `token` above is the
-  * short-lived access token; pair it with this refresh token. Undefined for web.
   refreshToken?: string
-  * Absolute expiry of the refresh-token family, in **milliseconds since epoch**.
-  * Fixed at login — it does **not** move when the token is rotated. Native only.
   refreshTokenExpiresAt?: number
 }
 ```
@@ -3300,16 +3231,8 @@ interface LogoutResponse {
 ```typescript
 interface AppleLoginOptions {
   authorizationCode?: string
-  * The **raw** nonce the client generated, if nonce binding was used. The server
-  * accepts either `token.nonce === nonce` (native) or `token.nonce === sha256hex(nonce)` (web).
   nonce?: string
-  * Name/email from Apple's **first** authorization callback only — Apple never returns
-  * these again, and never inside the token. Forwarded so the server can persist the
-  * display name on first account creation. Treated as untrusted (never used for identity).
   userInfo?: { email?: string; name?: string }
-  * A previously-issued trusted-device token (from a prior MFA `challenge/verify`
-  * or `challenge/recovery-code` response). If still valid, the server skips any
-  * step-up challenge for this login. See `SDK_AUTHKIT_MFA_UPDATE.md` §3.
   trustedDeviceToken?: string
 }
 ```
@@ -3616,10 +3539,6 @@ interface AuthKitConfig {
   supportEmail?: string
   redirectUrl?: string
   updatedAt?: string
-  * Per-collection security policy. On the public config endpoint only
-  * `passwordPolicy` + `session` are returned (the client renders password
-  * checklists / idle sign-out from them); `lockout` is admin-only and enforced
-  * server-side. See {@link AuthKitSecurityConfig}.
   security?: AuthKitSecurityConfig
 }
 ```
@@ -3981,9 +3900,6 @@ interface ImportClaimSetTagItem {
 ```typescript
 interface ImportClaimSetTagsRequest {
   tags: ImportClaimSetTagItem[]
-  * Import mode:
-  * - "upsert" (default) merges with existing tags
-  * - "replace" wipes all existing tags first then writes the new set
   mode?: 'upsert' | 'replace'
 }
 ```
@@ -4046,9 +3962,6 @@ interface Collection {
   allowAutoGenerateClaims?: boolean
   defaultAuthKitId: string // default auth kit for this collection, used for auth
   admin?: {
-  * Redirect behavior for plain collection-level scans (a short link with
-  * no product/serial code in the path, e.g. `https://.../c/shortId`).
-  * Unset means such links always go to the normal collection page.
   redirect?: CollectionRedirectConfig
   }
 }
@@ -4470,9 +4383,6 @@ interface SubscriptionsResolveResponse {
 interface TransactionalSendRequest {
   contactId: string
   templateId: string
-  * Channel to send on. Defaults to 'preferred', which auto-selects the
-  * contact's best available channel respecting consent, suppression, and
-  * template availability.
   channel?: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet' | 'preferred'
   props?: Record<string, unknown>
   include?: {
@@ -4502,15 +4412,6 @@ interface TransactionalSendResponse {
 ```typescript
 interface TransactionalSendError {
   ok: false
-  * Error code. Known values:
-  * - `transactional.contact_not_found`
-  * - `transactional.template_not_found`
-  * - `transactional.no_channel_available`
-  * - `transactional.email_missing`
-  * - `transactional.phone_missing`
-  * - `transactional.whatsapp_missing`
-  * - `transactional.no_push_methods`
-  * - `transactional.no_wallet_methods`
   error: string
 }
 ```
@@ -4876,8 +4777,6 @@ interface FieldDefinition {
   accept?: string
   clearable?: boolean
   disabled?: boolean
-  * Conditional visibility. If absent the field is always shown.
-  * Object form: `{ field: 'someKey', equals: 'someValue' }` — show when `model[field] === equals`.
   showIf?: { field: string; equals: unknown }
 }
 ```
@@ -4888,39 +4787,19 @@ interface ProofTypeDefinition {
   id: string
   name: string
   description?: string
-  * Grouping used to organise proof types in the picker.
-  * Examples: 'basic', 'retail', 'ownable', 'consumable', 'attendance',
-  * 'qualification', 'creative', 'memories', 'safety', 'connected',
-  * 'smartdocent', 'tradable'
   category?: string
-  * Whether this proof type is shown to users.
-  * Only types with `active === true` are returned to the public API
-  * when the platform admin has filtered by "Only Active".
   active?: boolean
   group: boolean
-  * The underlying proof mechanisms that products of this type can use.
-  * Stored as `proofTypes` (plural) on the product document.
   proofTypes?: ProofMechanism[]
   proofType?: ProofMechanism
-  * Field IDs (from the field catalog) shown when creating/editing the product group.
-  * Ordered — rendered in this sequence.
   groupFields?: string[]
-  * Field IDs shown when creating/editing an individual proof item within the group.
-  * If absent, falls back to groupFields.
   proofFields?: string[]
-  * Column definitions shown in the proof list view.
-  * Keys are field IDs; value true means show the column.
   listFields?: Record<string, boolean>
-  * App uniqueNames automatically installed (for free) when this proof type is selected.
   freeApps?: string[]
-  * App uniqueNames shown as recommended paid add-ons for this proof type.
   apps?: string[]
   collection?: string
   action?: string
   bound?: 'soul'
-  * UI translation overrides for this proof type.
-  * Keys are source English words; values are replacement strings.
-  * Example: `{ "Products": "Works" }`
   translations?: Record<string, string>
   hideProductTools?: boolean
 }
@@ -5139,9 +5018,6 @@ interface ContactSchemaProperty {
   description?: string
   format?: string
   enum?: string[]
-  * Display labels for `enum` values — parallel array.
-  * `enum[i]` is the stored value; `enumNames[i]` is the display label.
-  * When absent, `enum` values are used as labels.
   enumNames?: string[]
   default?: unknown
   minLength?: number
@@ -5214,8 +5090,6 @@ interface Container {
   id: string
   orgId: string
   collectionId: string
-  * Domain label describing what kind of container this is.
-  * Examples: `'pallet'`, `'fridge'`, `'cask'`, `'warehouse'`, `'shipping_container'`
   containerType: string
   ref?: string
   name?: string
@@ -6231,20 +6105,13 @@ interface InteractionPermissions {
   allowedOrigins?: string[]
   startAt?: string
   endAt?: string
-  * Enforce uniqueness per user: prevent duplicate submissions for this interaction.
-  * If true, optionally use `uniquePerUserWindowSeconds` to scope the window.
   uniquePerUser?: boolean
   uniquePerUserWindowSeconds?: number
   uniqueOutcome?: string
-  * Public summary visibility (counts, aggregates) without auth.
-  * If false, summaries require `allowAuthenticatedSummary` + user auth.
   allowPublicSummary?: boolean
-  * Authenticated summary visibility (counts, aggregates) when user is signed in.
   allowAuthenticatedSummary?: boolean
   allowOwnRead?: boolean
   uniquePerAnonId?: boolean
-  * Time window in seconds for `uniquePerAnonId` enforcement.
-  * `0` or omitted means all-time deduplication.
   uniquePerAnonIdWindowSeconds?: number
 }
 ```
@@ -6357,8 +6224,6 @@ interface LoyaltyEffectConfig {
 ```typescript
 interface TransactionalEffectConfig {
   templateId: string
-  * Channel to use.
-  * Default: 'preferred' — auto-selects the contact's best available channel.
   channel?: 'email' | 'sms' | 'push' | 'whatsapp' | 'wallet' | 'preferred'
   props?: Record<string, unknown>
   include?: {
@@ -6397,8 +6262,6 @@ interface TagEffectConfig {
 interface AppRecordEffectConfig {
   appId?: string
   recordType?: string
-  * Singleton cardinality key. At most one record per recordType+singletonPer will
-  * exist per scope. Common values: 'contact', 'product', 'proof', 'global'
   singletonPer?: string
   data?: Record<string, unknown>
   anchors?: {
@@ -6894,10 +6757,6 @@ interface LoyaltyEarningRule {
   schemeId: string
   interactionId: string
   points: number
-  * Key-value conditions matched against the interaction event before awarding.
-  * Supports top-level event fields (outcome, scope, status, eventType, etc.)
-  * and dot-path into metadata (e.g. `"metadata.tier": "gold"`).
-  * Empty object = always fires for any event on this interaction.
   conditions: Record<string, string>
   maxPerContact: number | null
   cooldownHours: number | null
@@ -6987,9 +6846,6 @@ interface UpdateLoyaltyEarningRuleBody {
 interface RecordLoyaltyTransactionBody {
   points: number
   reason?: string
-  * Optional caller-supplied key scoped to the scheme.
-  * If a transaction with this key already exists the server returns 409.
-  * Use to safely retry without double-crediting points.
   idempotencyKey?: string
   metadata?: DataBlock
   userId?: string
@@ -7003,31 +6859,9 @@ interface RecordLoyaltyTransactionBody {
 **ResolveLinkContext** (interface)
 ```typescript
 interface ResolveLinkContext {
-  * True when running inside a SmartLinks container, widget, or iframe.
-  * Defaults to auto-detection via `window.parent !== window`.
   embedded?: boolean;
-  * Override for the `postMessage` target window.
-  * Defaults to `window.parent`. Useful in tests and hosts that proxy messages.
   postTarget?: Window | null;
-  * Override for the navigation window.
-  * Defaults to `window`. Useful in tests.
   win?: Window;
-  * When provided, `resolveLink` automatically fires a `click_link` analytics
-  * event via `SL.analytics.browser.trackLinkClick` immediately before
-  * navigating. Supply at minimum `collectionId`; add `productId`, `proofId`,
-  * or any other `CollectionAnalyticsEvent` fields you want on the event.
-  *
-  * The resolver derives `isExternal`, `destinationAppId`, `linkTitle`, and
-  * `href` from the `LinkTarget` automatically. Fields you supply here take
-  * precedence over the derived values if there is a conflict.
-  *
-  * Called synchronously so the event fires even for external `_blank` links
-  * that unload the page immediately after.
-  *
-  * @example
-  *   SL.navigation.resolveLink(link, {
-  *     track: { collectionId, productId },
-  *   });
   track?: LinkTrackingContext;
 }
 ```
@@ -7693,11 +7527,7 @@ interface ProductWriteInput {
   label?: string | null
   status?: string | null
   sortOrder?: number | null
-  * Pass the existing `AssetRef` unchanged to keep the current image,
-  * or a URL string / `{ url }` object to import a new file.
   heroImage?: AssetRef | ProductImageUrlInput | string | null
-  * Pass existing `AssetRef` entries unchanged; replace entries with a URL string
-  * or `{ url }` object to import new files.
   additionalImages?: Array<AssetRef | ProductImageUrlInput | string>
   facets?: ProductFacetMap
   tags?: Record<string, boolean>
@@ -7790,9 +7620,6 @@ interface ProductFieldsConfig {
 ```typescript
 interface ProofValues {
   [key: string]: JsonValue | Record<string, JsonValue> | Record<string, Record<string, JsonValue>> | undefined
-  * Owner-scoped: read/write by business + current owner; transfers with ownership.
-  * Read exception: while the proof is `claimable`, this bag is also readable by everyone
-  * (so a prospective claimer sees pre-set owner data); it reverts to owner-only once claimed.
   owner?: Record<string, JsonValue>
   personal?: Record<string, Record<string, JsonValue>>
 }
@@ -7821,9 +7648,6 @@ interface Proof {
 **ProofWrite** (interface)
 ```typescript
 interface ProofWrite {
-  * Choose the proof's ID (serial, NFC id, etc.). Honoured **on create only** —
-  * the ledger doc becomes `{productId}-{id}`. Omit to auto-generate. Ignored on
-  * update (a proof's ID is immutable).
   id?: string
   values?: ProofValues
   data?: Record<string, JsonValue>
@@ -7837,15 +7661,11 @@ interface ProofWrite {
 **ProofCreateRequest** (interface)
 ```typescript
 interface ProofCreateRequest {
-  * The proof to create, by zone (mirrors the proof document). This is the clear,
-  * recommended shape — `create(collectionId, productId, { proof: {...} })`.
   proof?: ProofWrite
   values?: ProofValues
   claimable?: boolean
   virtual?: boolean
   core?: ProofWrite
-  * @deprecated On the request body this is folded into the **values bag**
-  * (public + owner-writable) — NOT `proof.data`. Use `proof.data`.
   data?: Record<string, JsonValue>
   admin?: Record<string, JsonValue>
 }
@@ -7892,8 +7712,6 @@ interface ProofGrant {
   proofId: string
   productId?: string | null
   scope: GrantScope[]
-  * `contribute` grants only: when true, records/attestations added under this
-  * grant land `pending` (owner-only) until the owner approves them.
   moderate?: boolean
   audience: GrantAudience
   createdBy: string
@@ -7913,10 +7731,6 @@ interface CreateGrantOptions {
   scope: GrantScope[]
   audience?: GrantAudience
   expiresAt?: Date | string
-  * Only meaningful with the `contribute` scope: hold contributions made under
-  * this grant for owner review (they start `pending` and are owner-only until
-  * approved). Ignored for other scopes. Defaults to `false` (contributions live
-  * on write).
   moderate?: boolean
 }
 ```
@@ -7963,20 +7777,12 @@ interface CommsTrigger {
 **TransferProofOptions** (interface)
 ```typescript
 interface TransferProofOptions {
-  * Comms to send. Roles: `recipient` (the named new owner) and `sender` (the
-  * initiator) for a directed transfer; `owner` for an open release. For an
-  * SMS recipient, set `comms.recipient.channel = 'sms'`.
   comms?: CommsTriggerMap
   toEmail?: string
-  * Directed: recipient phone in E.164 (e.g. `+14155551234`). Resolves to the same
-  * user they log in as via SMS OTP (created if needed). Pair with an SMS comms
-  * trigger to notify them: `comms.recipient.channel = 'sms'`.
   toPhone?: string
   toUserId?: string
   toName?: string
   release?: boolean
-  * @deprecated The legacy fixed transfer email is gone. Put a note in a comms
-  * trigger's props instead, e.g. `comms.recipient.props.note`.
   message?: string
   notify?: boolean
 }
@@ -8198,8 +8004,6 @@ interface Tag {
   variantId:    string | null         // Product variant
   batchId:      string | null         // Production batch
   proofId:      string | null         // Proof / serial number
-  * Polymorphic ref type: `'app_record'`, `'app_case'`, `'app_thread'`, `'container'`, etc.
-  * Always paired with `refId`.
   refType:      string | null
   refId:        string | null
   metadata:     Record<string, any>
@@ -8220,14 +8024,8 @@ interface TagIndexEntry {
 ```typescript
 interface TagEmbedded {
   products?:   Record<string, any>
-  * `proofId → proof record or virtual serial-number proof`
-  * (when `embed` includes `'proof'`)
   proofs?:     Record<string, any>
-  * `containerId → Container row`
-  * (for tags where `refType === 'container'`, when `embed` includes `'container'`)
   containers?: Record<string, any>
-  * `refId → app_record | app_case | app_thread | container`
-  * (when `embed` includes `'ref'`)
   refs?:       Record<string, any>
 }
 ```
@@ -8662,22 +8460,10 @@ interface SmartLinksWidgetProps {
   name?: string
   admin?: boolean
   }
-  * Pre-initialised SmartLinks SDK instance provided by the parent platform.
-  * At runtime this is `typeof import('@proveanything/smartlinks')`.
   SL: Record<string, unknown>
-  * Navigation callback.  Emit a `NavigationRequest` to ask the parent
-  * platform to navigate to another app.  A legacy plain-string path is also
-  * accepted for backward compatibility.
   onNavigate?: (request: NavigationRequest | string) => void
   publicPortalUrl?: string
-  * Authenticity context for the specific item (proof) the URL points at,
-  * resolved via an NFC tap or a serial proof URL. `undefined` for
-  * collection- and product-only URLs, where there's no item to verify.
-  * See docs/item-context.md.
   itemContext?: ItemContext
-  * @deprecated Use `itemContext.tag` instead. Kept for one release for
-  * backward compatibility with scanner-aware apps that read raw NFC/SUN
-  * data directly. See docs/item-context.md.
   tag?: TagContext
   size?: 'compact' | 'standard' | 'large'
   lang?: string
@@ -8809,13 +8595,6 @@ interface UserInfo {
 interface ProductInfo {
   id: string
   tags?: Record<string, any>
-  * Facet assignments on this product: maps each facet key to an array of assigned
-  * value slugs/keys. Matches the slim shape returned by the Products API.
-  *
-  * @example
-  * ```ts
-  * { material: ['cotton'], certifications: ['organic', 'recycled'] }
-  * ```
   facets?: Record<string, string[]>
 }
 ```
@@ -8886,10 +8665,6 @@ interface PortalPathParams {
   proof?: Proof | string
   queryParams?: Record<string, string>
   pathOnly?: boolean
-  * Override custom-domain detection. When the collection is served from its own
-  * custom domain, a GS1 link resolves `/01/{gtin}` directly (the host identifies
-  * the collection), so the `/gc/{shortId}` prefix is dropped. Left undefined, this
-  * is auto-detected from `collection.redirectUrl` or a non-platform `portalUrl` host.
   customDomain?: boolean
 }
 ```
@@ -8902,21 +8677,12 @@ interface Gs1DigitalLinkParams {
   gtin?: string
   product?: Product
   ownGtin?: boolean
-  * A real GS1 **Consumer Product Variant** code (AI 22). Use this when the brand has a
-  * genuine CPV. Takes precedence over `variant` when both are given.
   cpv?: string | { id: string }
-  * Internal variant id, emitted as AI 22 (the SmartLinks resolver reads path segment 22
-  * as the variant). Prefer `cpv` when you have a real GS1 CPV code — a non-CPV variant id
-  * in AI 22 is only meaningful to the SmartLinks resolver, not to third-party GS1 resolvers.
   variant?: string | { id: string }
   lot?: string | { id: string }
   batch?: BatchResponse | string
   serial?: string | { id?: string; serialNumber?: string }
   expiry?: string | Date
-  * Any other GS1 Application Identifiers as `{ [ai]: value }` — e.g.
-  * `{ '11': prodDate, '3103': '000500' }`. Date AIs (11/12/13/15/16/17) accept a
-  * `Date` and are formatted `YYMMDD`; path-qualifier AIs (22/10/21) are placed in
-  * the path in canonical order; everything else becomes a query-string data attribute.
   ais?: Record<string, string | number | Date>
   linkType?: string
   queryParams?: Record<string, string>
