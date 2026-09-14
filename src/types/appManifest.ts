@@ -219,6 +219,128 @@ export interface AppManifestExecutor {
   };
 }
 
+// ---------------------------------------------------------------------------
+// Server functions ("edge functions") — app-authored server-side code.
+//
+// A server function is arbitrary server-side JavaScript an app deploys into
+// SmartLinks. It runs on one contract — `async (ctx, event) => result` — where
+// `ctx` is a SmartLinks SDK the platform has PRE-SCOPED to the function's
+// declared authority, plus capability-gated secrets, the caller's identity, and
+// (when declared) outbound fetch. The function never holds a raw key or a
+// superuser client: authority is injected by the platform as a narrowed handle,
+// never ambient. See docs/server-functions.md.
+// ---------------------------------------------------------------------------
+
+/** What causes a server function to run. */
+export type AppFunctionTriggerType = 'http' | 'event' | 'cron';
+
+export interface AppFunctionTrigger {
+  type: AppFunctionTriggerType;
+  /** `event`: event types this function subscribes to, e.g. `['interaction.submitted:comp-entry']`. */
+  eventTypes?: string[];
+  /** `cron`: standard 5-field crontab expression, evaluated in UTC. */
+  schedule?: string;
+  /** `http`: URL path segment the function is exposed at (defaults to the function `name`). */
+  route?: string;
+  /** `http`: accepted HTTP methods (defaults to `['POST']`). */
+  methods?: Array<'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'>;
+}
+
+/** Who is allowed to invoke an `http`-triggered function. */
+export type AppFunctionVisibility = 'admin' | 'public';
+
+/**
+ * Whose authority the function runs with — i.e. what `ctx.sl` can do.
+ * - `caller`     — runs as the invoking user (their session/JWT). The secure default.
+ * - `collection` — runs with collection-admin authority over THIS collection only
+ *                  (never a global superuser). Required for `public` functions that
+ *                  must perform a privileged server-side action; the author is then
+ *                  responsible for validating input and preventing abuse.
+ */
+export type AppFunctionAuthority = 'caller' | 'collection';
+
+/** One server function declared in the manifest. */
+export interface AppFunctionDef {
+  /** Stable identifier, unique within the app, e.g. `'submitCompetitionEntry'`. */
+  name: string;
+  description?: string;
+  trigger: AppFunctionTrigger;
+  /**
+   * `http` only. `admin` = authenticated admin surface; `public` = publicly callable.
+   * Ignored for `event`/`cron` (no external caller). Defaults to `admin`.
+   */
+  visibility?: AppFunctionVisibility;
+  /**
+   * Whose authority `ctx.sl` carries. Defaults to `caller` (secure by default).
+   * `event`/`cron` functions have no caller and always run as `collection`.
+   */
+  authority?: AppFunctionAuthority;
+  /**
+   * Least-privilege capabilities this function needs, surfaced at install for
+   * consent and capped at runtime — even for `collection`-authority functions.
+   * e.g. `['sl:records:write', 'network:api.example.com', 'secrets:syndigo-key']`.
+   * Grammar: `sl:<resource>:<read|write>`, `network` (or `network:<host>`), `secrets:<ref>`.
+   */
+  capabilities?: string[];
+  /** SDK/manifest API version this function targets (pinned for runtime compatibility). */
+  apiVersion?: string;
+  /** Exported handler name in the functions bundle. Defaults to `name`. */
+  handler?: string;
+}
+
+/** The `functions` block in `app.manifest.json`. Presence means the app ships server functions. */
+export interface AppManifestFunctions {
+  files: AppManifestFiles;
+  definitions: AppFunctionDef[];
+}
+
+/** Identity of whoever invoked a server function. */
+export interface ServerFunctionCaller {
+  /** Authenticated user id, or `null` for anonymous/public/system invocations. */
+  userId: string | null;
+  /** True when no authenticated user is present (public/anonymous call, or event/cron). */
+  anonymous: boolean;
+  /** Request origin/referer, when available (`http` trigger). */
+  origin?: string | null;
+  /** Client IP, when available (`http` trigger). */
+  ip?: string | null;
+  /** How the function was triggered. */
+  via: AppFunctionTriggerType;
+}
+
+/**
+ * The context handed to every SmartLinks server function. The platform builds a
+ * fresh one per invocation and pre-scopes each handle to the function's declared
+ * authority + capabilities. The function receives only handles already narrowed
+ * to what it declared — no raw keys, no ambient superuser client.
+ */
+export interface ServerFunctionContext {
+  collectionId: string;
+  appId: string;
+  /**
+   * SmartLinks SDK, pre-scoped to the function's declared `authority`:
+   *  - `caller`     → scoped to the invoking user (their JWT).
+   *  - `collection` → scoped to a collection-admin principal for THIS collection
+   *                   only — never a global superuser.
+   * Declared `capabilities` cap what these calls may do.
+   */
+  sl: any;
+  /** Capability-gated secret access. `get(ref)` resolves only refs granted via `secrets:<ref>`. */
+  secrets: { get(ref: string): Promise<string | null> };
+  /** Who invoked this function. */
+  caller: ServerFunctionCaller;
+  /** Outbound HTTP — present only when the `network` capability is declared (host-scoped if `network:<host>`). */
+  fetch: typeof fetch;
+  /** Structured logging captured into run telemetry. */
+  log: (message: string, data?: Record<string, any>) => void;
+}
+
+/** The signature every SmartLinks server function implements. */
+export type ServerFunctionHandler<TEvent = any, TResult = any> = (
+  ctx: ServerFunctionContext,
+  event: TEvent,
+) => Promise<TResult> | TResult;
+
 /**
  * Shape of `app.admin.json` -- the separate admin configuration file pointed to
  * by `AppManifest.admin`. Fetch this file yourself when you need setup / import /
@@ -360,6 +482,14 @@ export interface AppManifest {
    * @see AppManifestExecutor
    */
   executor?: AppManifestExecutor;
+
+  /**
+   * Server functions ("edge functions") this app deploys into SmartLinks —
+   * arbitrary server-side code triggered by http, events, or cron, each running
+   * with a declared authority + least-privilege capabilities.
+   * @see AppManifestFunctions
+   */
+  functions?: AppManifestFunctions;
 
   [key: string]: any;
 }
