@@ -27897,3 +27897,28 @@ components:
           additionalProperties: true
       required:
         - valid
+    AllocateSequenceInput:
+      type: object
+      properties:
+        appId:
+          type: string
+        sequenceId:
+          type: string
+        subjectId:
+          type: string
+        productId:
+          type: string
+      required:
+        - appId
+        - sequenceId
+        - subjectId
+    AllocatedSequence:
+      type: object
+      properties:
+        number:
+          type: number
+        isNew:
+          type: boolean
+      required:
+        - number
+        - isNew

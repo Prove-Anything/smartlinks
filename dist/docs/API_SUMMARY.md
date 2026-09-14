@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.0-alpha.2  |  Generated: 2026-09-14T14:13:56.533Z
+Version: 2.0.0-alpha.3  |  Generated: 2026-09-14T15:07:12.272Z
 
 This is a concise summary of all available API functions and types.
 
@@ -54,6 +54,7 @@ For detailed guides on specific features:
 - **[Forms](forms.md)** - Platform-managed form definitions, submissions, and schema-driven React form UI
 - **[App Objects: Cases, Threads & Records](app-objects.md)** - Generic app-scoped building blocks for support cases, discussions, bookings, registrations, and more
 - **[App Records Pattern](app-records-pattern.md)** - Canonical pattern for storing per-product, per-facet, or rule-targeted app data
+- **[Sequences & Claim-Order](sequences.md)** - Allocate a guaranteed-unique, monotonic number (raffle tickets, "Nth to claim", queue positions) and stamp it onto a record — atomic app-config counter + idempotent per-subject stamping, concurrency-safe at stadium scale
 - **[Communications](comms.md)** - Transactional sends, multi-channel broadcasts, consent management, push registration, and analytics
 - **[Interactions & Event Tracking](interactions.md)** - Log user events, count outcomes, query history, and define interaction types with permissions
 - **[Analytics](analytics.md)** - Web analytics, link-click tracking, QR/tag scan telemetry, and event reporting
@@ -149,6 +150,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **realtime** - Functions for realtime operations
 - **research** - Functions for research operations
 - **secrets** - Functions for secrets operations
+- **sequence** - Functions for sequence operations
 - **tags** - Functions for tags operations
 - **template** - Functions for template operations
 - **translations** - Functions for translations operations
@@ -8534,6 +8536,26 @@ type VerifyTokenResponse = {
 }
 ```
 
+### sequence (api)
+
+**AllocateSequenceInput** (interface)
+```typescript
+interface AllocateSequenceInput {
+  appId: string
+  sequenceId: string
+  subjectId: string
+  productId?: string
+}
+```
+
+**AllocatedSequence** (interface)
+```typescript
+interface AllocatedSequence {
+  number: number
+  isNew: boolean
+}
+```
+
 ### conditions (utils)
 
 **BaseCondition** (interface)
@@ -10789,6 +10811,11 @@ Soft-delete a secret. DELETE /secrets/:ref
 **recipients**(collectionId: string,
     id: string,
     query: { limit?: number; offset?: number } = {}) → `Promise<SegmentRecipientsResponse>`
+
+### sequence
+
+**allocate**(collectionId: string, input: AllocateSequenceInput) → `Promise<AllocatedSequence>`
+Allocate (or return the existing) sequence number for a subject. Idempotent — safe to call on load (auto-enter) and on a button tap; a subject that already has a number gets it back with `isNew: false`. const { number, isNew } = await sequence.allocate(collectionId, { appId: 'raffle-app', sequenceId: 'raffle', subjectId: claimSetId, })
 
 ### sessions
 
