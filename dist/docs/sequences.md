@@ -62,30 +62,47 @@ The stamp target is configurable — the number lives wherever you'll read it:
 | `proof` | A minted proof (value or attestation) — when the number should travel with the proof. |
 | `appRecord` | A structured app record — for queryable, per-app data. |
 
-## Worked example — a free raffle on NFC wristbands
+## Configure the sequence (once, server-side)
 
-Everyone taps a wristband and hits **Enter the raffle**. Each tap allocates the next number
-and writes it onto that wristband's claim set — fast, unique, no proof mint:
+You define the sequence **in your app config**, under `data.sequenceConfigs`. This is what
+makes the public endpoint safe: the target/field/scope are set by you, not the caller.
 
 ```jsonc
-// allocate-and-stamp (conceptual shape)
+// app config: data.sequenceConfigs
 {
-  "appId":     "raffle-app",
-  "productId": "wristbands-2026",     // the counter's scope
-  "key":       "raffle:2026-cup",     // the named sequence
-  "start":     1,
-  "subjectId": "<claim set id>",      // STABLE identity — re-taps collapse to one number
-  "target":    "claimSet",
-  "field":     "raffleNumber"
+  "raffle": {
+    "key":     "raffle:2026-cup",   // the named counter (data.sequences.<key>)
+    "target":  "claimSet",          // claimSet | proof | appRecord — where the number is stamped
+    "field":   "raffleNumber",      // the property written on the target
+    "productId": "wristbands-2026", // counter scope (optional; else collection-wide)
+    "start":   1                    // first number (optional, default 1)
+  }
 }
-// → { "number": 42, "isNew": true }   (re-tap → { "number": 42, "isNew": false })
 ```
 
-Drawing the winner needs no separate ledger either — query the claim sets (or proofs) where
-`raffleNumber` is set; that field is your entry list, in allocation order.
+## Call it (the widget)
 
-## Status
+Your widget calls one bounded, public endpoint on tap. It passes only the **subject id** —
+never the target/field:
 
-The allocator + stamping run server-side today. The **public "enter" action** an app widget
-calls on tap (and its SDK wrapper) is being wired in the 2.0.0-alpha line — this doc is the
-contract it will expose.
+```
+POST /api/v1/public/collection/:collectionId/sequence/allocate
+{ "appId": "raffle-app", "sequenceId": "raffle", "subjectId": "<claim set id>" }
+→ { "number": 42, "isNew": true }        // re-tap → { "number": 42, "isNew": false }
+```
+
+- **`subjectId`** is the STABLE identity — the claim-set id from the tap. Re-taps collapse to
+  one number.
+- **Idempotent**, so both your flows are the *same call*:
+  - **Auto:** on load, call allocate → get your number (existing or freshly minted).
+  - **Button:** click → animate → same call → "Your raffle number is 42."
+- **Refresh:** just read the `raffleNumber` field back off the claim set (or proof) — it's the
+  ledger. Or call allocate again; you'll get the same number with `isNew: false`.
+
+Errors: `404 SEQUENCE_NOT_FOUND` (not configured), `404 CLAIMSET_NOT_FOUND` (bad subject),
+`400 BAD_REQUEST` (missing fields).
+
+## Drawing the winner
+
+No separate ledger — query the claim sets (or proofs) where `raffleNumber` is set; that field
+is your entry list, in allocation order.
