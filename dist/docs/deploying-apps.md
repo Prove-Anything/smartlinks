@@ -12,24 +12,42 @@ This guide covers registration and how to wire it into your build.
 
 ---
 
-## Where apps live
+## Two "wheres": the API host vs the bundle CDN
 
-Published bundles and the manifest are served from the SmartLinks app CDN. **Today the
-domain is always `smartlinks.app`**, with this structure:
+Deploying touches two different locations — keep them distinct:
 
-```
-https://smartlinks.app/apps/{appId}/{version}/app.manifest.json
-https://smartlinks.app/apps/{appId}/{version}/widgets-<hash>.umd.js
-https://smartlinks.app/apps/{appId}/{version}/functions.umd.js
-…
-```
+1. **The install endpoint (API host)** — *where you register*. This is a SmartLinks
+   **API v1** endpoint, and its **host is the environment** you're installing into (see
+   below). This is the one that varies per deployment.
+2. **The bundle CDN** — *where your files are served from*. **Today always `smartlinks.app`**:
 
-That base — `https://smartlinks.app/apps/{appId}/{version}` — is your **`bundleBaseUrl`**.
-Dev builds published from Lovable may instead serve from a dev URL you provide.
+   ```
+   https://smartlinks.app/apps/{appId}/{version}/app.manifest.json
+   https://smartlinks.app/apps/{appId}/{version}/widgets-<hash>.umd.js
+   https://smartlinks.app/apps/{appId}/{version}/functions.umd.js
+   ```
 
-> **Future:** custom domains (your own, or a client's) will be supported. For now, assume
-> `smartlinks.app`. Always pass `bundleBaseUrl` explicitly at registration so your app keeps
-> working unchanged when custom domains land.
+   That base — `https://smartlinks.app/apps/{appId}/{version}` — is your **`bundleBaseUrl`**,
+   which you pass at registration. Always pass it explicitly so nothing breaks if the CDN
+   location changes later.
+
+## Environments & the app registry
+
+Historically an app was **stateless everywhere**: every environment fetched the same CDN
+manifest on the fly, so apps were agnostic to shards, clients, and VPCs. Registration changes
+that — an app is now **installed into an environment's registry**, which is **global to that
+environment (not per-collection / not per-shard)**.
+
+An **environment** is one SmartLinks deployment: the main SaaS, or a client's isolated (VPC)
+instance. Each owns its own app registry, so:
+
+- The **install endpoint's host is the environment** — `POST https://<that-env's-api>/api/v1/apps/…`.
+  Installing into a client's VPC means calling *their* API with *their* deploy key.
+- **Rolling out to several environments = the same call, once per target** (different API host
+  + key each). The registration script below takes the API base as a parameter for exactly this.
+
+> Enabling an app on a specific **collection** (and consenting to its capabilities) is a
+> separate, per-collection step layered on top of the environment's registry.
 
 ---
 
