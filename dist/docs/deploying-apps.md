@@ -20,20 +20,30 @@ This guide covers registration and how to wire it into your build.
 
 Deploying touches two different locations — keep them distinct:
 
-1. **The install endpoint (API host)** — *where you register*. This is a SmartLinks
-   **API v1** endpoint, and its **host is the environment** you're installing into (see
-   below). This is the one that varies per deployment.
-2. **The bundle CDN** — *where your files are served from*. **Today always `smartlinks.app`**:
+1. **The install endpoint (API host)** — *where you register*. On the **main SaaS this is
+   `https://smartlinks.app`** (the API lives under `/api/v1` — the same base your app already
+   passes to `initializeApi`). A client's isolated (VPC) environment has its **own** host; you
+   install into it by calling that host. This is the value that varies per deployment.
+2. **The bundle CDN** — *where your built files are actually served from*, which you pass at
+   registration as **`bundleBaseUrl`**. **This depends on the channel:**
+   - **`dev` (Lovable):** your files are served by **Lovable at your published app URL** — that
+     URL is your dev `bundleBaseUrl`. Lovable *is* the CDN for dev; nothing is uploaded to
+     SmartLinks.
+   - **`prod`:** files are published to the SmartLinks app CDN at
+     `https://smartlinks.app/apps/{appId}/{version}/…` by your prod deploy step; that base is
+     your prod `bundleBaseUrl`.
 
    ```
-   https://smartlinks.app/apps/{appId}/{version}/app.manifest.json
-   https://smartlinks.app/apps/{appId}/{version}/widgets-<hash>.umd.js
+   https://smartlinks.app/apps/{appId}/{version}/app.manifest.json   # prod layout
    https://smartlinks.app/apps/{appId}/{version}/functions.umd.js
    ```
 
-   That base — `https://smartlinks.app/apps/{appId}/{version}` — is your **`bundleBaseUrl`**,
-   which you pass at registration. Always pass it explicitly so nothing breaks if the CDN
-   location changes later.
+   Always pass `bundleBaseUrl` explicitly so it keeps working if a location changes.
+
+> **Who publishes the bundles?** The platform does **not** fetch or mirror them for you —
+> `bundleBaseUrl` must already serve the files at registration time. For `dev` that's Lovable
+> (on Publish); for `prod` that's your own CDN deploy step. Registration records *where* the
+> bundles are + the validated manifest; it does not host anything.
 
 ## Environments & the app registry
 
@@ -72,26 +82,36 @@ and exercise a build before it reaches `prod`.
 
 ## Deploy keys
 
-Registration is authenticated by a **deploy key** — not a user login — scoped to the
-channels it may write. Security comes from the *scope*, so a key that leaks can only affect
-what it was allowed to touch.
+Registration is authenticated by a **deploy key** — not a user login — scoped to the channels
+it may write. Security comes from the *scope*: a leaked key can only do what its scope allows.
 
-| Key | Lives in | May write |
-|---|---|---|
-| **Dev key** | your app's (private) source / build env | `dev` channel only |
-| **Prod master key** | your Cloud Build toolset only — never in app source | all channels |
-| **Per-app key** *(future)* | a client's build | one specific app |
+| Key | Where to keep it | May write | If it leaks |
+|---|---|---|---|
+| **Dev key** | a **Lovable workspace Build Secret** (below) | `dev` channel, **any app in the environment** | someone can register/overwrite `dev` releases — which are served only to test collections — but **never** `beta`/`prod` |
+| **Prod master key** | your CI/Cloud Build secret store **only** | all channels | full control — so keep it out of app source entirely |
+| **Per-app key** *(future)* | provisioned per app | one specific app | scoped to that one app |
 
-Because a Lovable build has no secret store, the **dev key lives in your app source** — which
-is safe precisely because it can only ever write the `dev` channel. The **prod key stays in
-Cloud Build**. Present the key in the `x-smartlinks-deploy-key` header.
+**Keep the dev key in Lovable Build Secrets — do not commit it.** Lovable exposes
+**workspace-level Build Secrets** shared across every project in the workspace: set the dev key
+there **once** and every microapp inherits it, nothing is committed, and there's a single value
+to rotate. (An earlier draft of this guide said to put the key in app source — don't; use Build
+Secrets.)
+
+**Minting (current state, 2.0.0-alpha):** the `dev` and `prod` keys are **shared secrets
+configured on the SmartLinks backend** — one `dev` key and one `prod` key covering all
+first-party apps. There is **no self-service minting UI yet**: ask the platform owner for the
+`dev` key and put it in your workspace Build Secret. Per-app keys, self-service minting, and
+rotation are planned; rotating the shared `dev` key just means updating the one Build Secret
+(registered releases are unaffected — the key authorizes *writes*, it isn't stored on releases).
+
+Present the key in the `x-smartlinks-deploy-key` header.
 
 ---
 
 ## The registration endpoint
 
 ```
-POST https://<smartlinks-api>/api/v1/apps/{appId}/releases
+POST https://smartlinks.app/api/v1/apps/{appId}/releases   # main SaaS; a VPC env uses its own host
 x-smartlinks-deploy-key: <your deploy key>
 Content-Type: application/json
 ```
@@ -124,6 +144,15 @@ Each validation error is `{ code, message, path }`, e.g.:
 ]}
 ```
 
+### Re-registering & version collisions
+
+Registration is an **upsert keyed by (app, channel)** — the newest registration becomes that
+channel's live release. Registering again **overwrites** it (last write wins); there is **no**
+version-collision error even if `meta.version` is unchanged. So re-publishing to `dev` without
+bumping the version is a normal, intentional overwrite — which is what you want on `dev`. (A
+stricter `prod` policy that rejects a duplicate `version` may come later; it isn't enforced
+today.)
+
 ### What gets validated
 
 - `manifest.meta.appId` must match the `{appId}` in the URL.
@@ -145,24 +174,36 @@ so a bad install fails the publish.
 import { readFileSync } from 'node:fs'
 import { execSync } from 'node:child_process'
 
-const API      = process.env.SMARTLINKS_API      || 'https://api.smartlinks.app'
-const KEY      = process.env.SMARTLINKS_DEPLOY_KEY               // dev key (in source/env) or prod key (Cloud Build)
-const CHANNEL  = process.env.SMARTLINKS_CHANNEL  || 'dev'        // 'prod' in Cloud Build
+const API     = process.env.SMARTLINKS_API || 'https://smartlinks.app'   // a VPC env: set to its host
+const KEY     = process.env.SMARTLINKS_DEPLOY_KEY                         // Lovable Build Secret (dev) / CI secret (prod)
+const CHANNEL = process.env.SMARTLINKS_CHANNEL                           // 'dev' | 'beta' | 'prod'; UNSET ⇒ don't register
+
+// --- Gate: only register when this build is meant to ---
+// A preview / live-edit build (no channel) skips quietly so it never fails. A build that
+// declares a channel but has no key is a hard error IF it's prod; dev skips quietly.
+if (!CHANNEL) {
+  console.log('ℹ︎ SmartLinks: SMARTLINKS_CHANNEL unset — skipping release registration (preview build).')
+  process.exit(0)
+}
+if (!KEY) {
+  if (CHANNEL === 'prod') { console.error('❌ prod build but SMARTLINKS_DEPLOY_KEY is missing'); process.exit(1) }
+  console.log(`ℹ︎ SmartLinks: no deploy key for "${CHANNEL}" — skipping registration.`)
+  process.exit(0)
+}
 
 const manifest = JSON.parse(readFileSync('dist/app.manifest.json', 'utf8'))
 const appId    = manifest.meta.appId
 const version  = manifest.meta.version
 const gitHash  = (() => { try { return execSync('git rev-parse --short HEAD').toString().trim() } catch { return null } })()
+// dev: your published Lovable URL; prod: the SmartLinks CDN base. Set SMARTLINKS_BUNDLE_BASE_URL.
+const bundleBaseUrl = process.env.SMARTLINKS_BUNDLE_BASE_URL || `https://smartlinks.app/apps/${appId}/${version}`
 
 const res = await fetch(`${API}/api/v1/apps/${appId}/releases`, {
   method: 'POST',
   headers: { 'content-type': 'application/json', 'x-smartlinks-deploy-key': KEY },
   body: JSON.stringify({
-    channel: CHANNEL,
-    version,
-    build: { at: new Date().toISOString(), gitHash, builder: CHANNEL === 'dev' ? 'lovable' : 'cloudbuild' },
-    manifest,
-    bundleBaseUrl: `https://smartlinks.app/apps/${appId}/${version}`,
+    channel: CHANNEL, version, manifest, bundleBaseUrl,
+    build: { at: new Date().toISOString(), gitHash, builder: CHANNEL === 'dev' ? 'lovable' : 'ci' },
   }),
 })
 
@@ -175,7 +216,7 @@ if (!res.ok || !body.ok) {
 console.log(`✅ Registered ${appId}@${version} on "${CHANNEL}" — functions: ${(body.functions || []).join(', ') || 'none'}`)
 ```
 
-Wire it after your bundle build/hash step, e.g.:
+Wire it after your bundle build/hash step:
 
 ```jsonc
 // package.json
@@ -185,9 +226,19 @@ Wire it after your bundle build/hash step, e.g.:
 }
 ```
 
-- **Dev (Lovable "Publish")** runs `build` → `postbuild` with the **dev key** and
-  `SMARTLINKS_CHANNEL=dev`.
-- **Prod (Cloud Build)** runs the same with the **prod key** and `SMARTLINKS_CHANNEL=prod`.
+Registration is gated by **`SMARTLINKS_CHANNEL`**, so the three Lovable build types behave correctly:
 
-That's it: hitting Publish now validates and registers your app — and a broken manifest or
-function stops the deploy with an actionable error instead of shipping.
+| Build | `SMARTLINKS_CHANNEL` | Result |
+|---|---|---|
+| **Preview / live-edit** | unset | **skips quietly** — never registers, never fails |
+| **Dev (Publish)** | `dev` | registers to `dev` with the workspace Build-Secret key + your Lovable `SMARTLINKS_BUNDLE_BASE_URL` |
+| **Prod (CI)** | `prod` | registers to `prod` with the prod key; a missing key **hard-fails** |
+
+The gate is `SMARTLINKS_CHANNEL`, so **set it only where you want a release** — i.e. on the
+Publish/CI build, not on preview. If your host exposes a publish-only signal (an env var it sets
+only on Publish), key `SMARTLINKS_CHANNEL` off that; otherwise set it in the Publish build's env
+and leave it unset for preview. That one variable is the difference between "this build ships a
+release" and "this build is just a preview."
+
+That's it: a real Publish validates + registers your app (a broken manifest or function stops
+the deploy with an actionable error), while preview builds stay quiet.
