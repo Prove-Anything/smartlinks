@@ -276,6 +276,13 @@ export interface AppFunctionDef {
    */
   authority?: AppFunctionAuthority;
   /**
+   * Required acknowledgment for the sharp edge: a `public` + `collection` function is
+   * publicly callable AND runs with elevated collection authority. Set `elevated: true`
+   * to confirm you intend that and accept responsibility for validating requests —
+   * without it, install/validation fails. Ignored for any other visibility/authority combo.
+   */
+  elevated?: boolean;
+  /**
    * Least-privilege capabilities this function needs, surfaced at install for
    * consent and capped at runtime — even for `collection`-authority functions.
    * e.g. `['sl:records:write', 'network:api.example.com', 'secrets:syndigo-key']`.

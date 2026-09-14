@@ -1,5 +1,9 @@
 # Deploying & registering an app
 
+> **Preview — SmartLinks SDK 2.0.0-alpha.** Part of the installable-app platform being built
+> toward 2.0.0 stable. These APIs may change before then. Published under the npm `next` tag;
+> `latest` remains 1.x.
+
 A SmartLinks app is a bundle (widgets, containers, and — new — [server functions](server-functions.md))
 described by an `app.manifest.json`. Deploying an app has two halves:
 

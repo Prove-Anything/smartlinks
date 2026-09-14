@@ -1,5 +1,9 @@
 # Server functions ("edge functions")
 
+> **Preview — SmartLinks SDK 2.0.0-alpha.** Part of the installable-app platform being built
+> toward 2.0.0 stable (author → register → install → run → test). These APIs may change before
+> then. Published under the npm `next` tag; `latest` remains 1.x.
+
 A **server function** is arbitrary server-side JavaScript your app deploys directly into
 SmartLinks. It runs on the SmartLinks servers — with access to the full SDK, to your app's
 secrets, and to outbound network — so you can do things a browser app can't: validate and
@@ -38,6 +42,7 @@ in a bundle alongside your widgets/containers:
         "trigger":    { "type": "http", "methods": ["POST"] },
         "visibility": "public",              // WHO may call it
         "authority":  "collection",          // WHOSE authority it runs as
+        "elevated":   true,                  // required ack for public + collection
         "capabilities": ["sl:records:write", "network:api.recaptcha.net"],
         "apiVersion": "2026-09"
       },
@@ -104,6 +109,10 @@ functions have no external caller, so they always run as `collection`.
 > secrets, even though it's "elevated"). But **validating the request is still your job**:
 > check the payload, rate-limit using `ctx.caller`, guard against replay. Treat the function
 > body as a trust boundary.
+>
+> Because it's the sharp edge, a `public` + `collection` function must **explicitly opt in**
+> with `elevated: true` in its declaration — a conscious acknowledgment that you're exposing
+> collection authority to public callers. Without it, install/validation fails.
 
 ---
 
@@ -218,6 +227,69 @@ The admin surface is collection-admin gated, so an admin function's `caller` aut
 at admin level, attributed to the signed-in admin. The public surface resolves auth if a
 token is present (→ `owner`) and treats its absence as anonymous (→ `public`); a
 `collection`-authority function runs elevated regardless.
+
+## Testing & preview
+
+You don't have to deploy to find out whether a function works. There are three levels of
+fidelity — use them in order.
+
+### 1. Local harness (fast, offline)
+
+`@proveanything/smartlinks/testing` builds a `ctx` that **enforces the declared capability
+envelope**, so a function fails locally the same way it would in production — the common
+"I forgot to declare `sl:records:write`" bug is caught before you deploy, not after.
+
+```ts
+import { createFunctionTestContext } from '@proveanything/smartlinks/testing'
+import manifest from '../public/app.manifest.json'
+import { submitCompetitionEntry } from '../src/functions'
+
+const def = manifest.functions.definitions.find(d => d.name === 'submitCompetitionEntry')
+
+const ctx = createFunctionTestContext({
+  def,                                       // capabilities enforced come from the manifest itself
+  caller: { userId: 'tester' },
+  secrets: { 'recaptcha-secret': 'test-value' },   // fixtures — real secrets are server-only
+})
+
+const res = await submitCompetitionEntry(ctx, { method: 'POST', body: { email: 'a@b.com', answer: '42' } })
+// ctx.sl.appRecords.create(...) throws CapabilityError unless `def` declares sl:records:write
+```
+
+Pass the **`def`** (not a hand-typed capability list) so "tested" can't drift from
+"declared". By default `ctx.sl` methods return a stub result (pure unit test — no network);
+inject `sl` to delegate to your live SDK for real reads/writes:
+
+```ts
+const ctx = createFunctionTestContext({
+  def,
+  sl: { appRecords: { create: (fields) => mySdk.app.records.create(fields) } },
+})
+```
+
+### 2. Deployed test mode (high fidelity, safe)
+
+Register to the `dev` channel and invoke on the real server — real secrets, real data —
+without a live run *(coming next)*: a test invocation is forced to `caller` authority,
+side-effecting writes are dry-run, and the traffic is logged separately from live metrics.
+
+### 3. Live
+
+Point a real collection at the channel and invoke for real.
+
+### What differs across the three
+
+| | Capabilities | `ctx.sl` | Secrets | Authority | Writes |
+|---|---|---|---|---|---|
+| **Local harness** | Enforced (from `def`) | Stub, or your injected SDK | Fixtures you pass | Informational | Whatever your impl does |
+| **Deployed test** | Enforced | Real (test-scoped) | Real | Forced to `caller` | Dry-run |
+| **Live** | Enforced | Real | Real | As declared | Real |
+
+### Recommended CI pattern
+
+1. **Unit** — run each handler through `createFunctionTestContext` (no network); assert
+   behaviour *and* that capabilities are sufficient (an under-declared capability throws).
+2. **Post-deploy smoke** — after registering to `dev`, hit each function once in test mode.
 
 ## Where functions run (and why it doesn't change how you write them)
 

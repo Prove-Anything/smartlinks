@@ -1,6 +1,6 @@
 {
   "name": "@proveanything/smartlinks",
-  "version": "1.17.6",
+  "version": "2.0.0-alpha.1",
   "description": "Official JavaScript/TypeScript SDK for the Smartlinks API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -8,6 +8,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./testing": {
+      "types": "./dist/testing/index.d.ts",
+      "default": "./dist/testing/index.js"
     }
   },
   "files": [
@@ -37,7 +41,8 @@
   "author": "Glenn Shoosmith",
   "license": "MIT",
   "publishConfig": {
-    "access": "public"
+    "access": "public",
+    "tag": "next"
   },
   "dependencies": {
     "cross-fetch": "^3.1.5"

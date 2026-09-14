@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 1.17.6  |  Generated: 2026-09-14T10:57:43.714Z
+Version: 2.0.0-alpha.1  |  Generated: 2026-09-14T11:28:42.846Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1723,6 +1723,7 @@ interface AppFunctionDef {
   trigger: AppFunctionTrigger;
   visibility?: AppFunctionVisibility;
   authority?: AppFunctionAuthority;
+  elevated?: boolean;
   capabilities?: string[];
   apiVersion?: string;
   handler?: string;

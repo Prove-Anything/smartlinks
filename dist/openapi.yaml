@@ -17281,6 +17281,8 @@ components:
           $ref: "#/components/schemas/AppFunctionVisibility"
         authority:
           $ref: "#/components/schemas/AppFunctionAuthority"
+        elevated:
+          type: boolean
         capabilities:
           type: array
           items:
