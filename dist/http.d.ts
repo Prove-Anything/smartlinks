@@ -5,6 +5,26 @@ type Logger = {
     error?: (...args: any[]) => void;
     log?: (...args: any[]) => void;
 } | ((...args: any[]) => void);
+/** Snapshot of cache counters + current keys. Call from the console via `window.__slHttpDiag()`. */
+export declare function getHttpCacheDiagnostics(): {
+    size: number;
+    keys: string[];
+    inflight: string[];
+    cacheEnabled: boolean;
+    cacheDefaultTtlMs: number;
+    cachePersistence: "none" | "indexeddb";
+    cacheClearOnPageLoad: boolean;
+    l1Hits: number;
+    inflightDedups: number;
+    l2Hits: number;
+    networkFetches: number;
+    skips: number;
+    clears: number;
+    lastClearReason: string | null;
+    lastClearAt: number;
+};
+/** Reset the diagnostics counters (does not touch the cache itself). */
+export declare function resetHttpCacheDiagnostics(): void;
 /** Return whether proxy mode is currently enabled. */
 export declare function isProxyEnabled(): boolean;
 export declare function initializeApi(options: {

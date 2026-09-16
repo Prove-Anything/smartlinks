@@ -3,7 +3,13 @@ export interface AllocateSequenceInput {
     appId: string;
     /** The configured sequence id — the key of data.sequenceConfigs on the app config. */
     sequenceId: string;
-    /** The STABLE subject identity — the claim-set id from the tap (NOT a per-tap virtual id). */
+    /**
+     * The STABLE subject identity. For a `claimSet` sequence, pass the tap's virtual-proof id
+     * `<claimSetId>-<code>` (e.g. "23-oOkf8o") for a per-wristband raffle — the code is the tag's
+     * permanent id, so re-taps of the same wristband return the same number; the number is stamped
+     * on that code's doc and surfaces in `tagData`. Pass a bare claim-set id for one number per
+     * group. Never a value that changes per tap.
+     */
     subjectId: string;
     /** Optional product scope, when the sequence config is scoped per product. */
     productId?: string;

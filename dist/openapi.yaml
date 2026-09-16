@@ -8842,6 +8842,32 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /authkit/{clientId}/auth/linkedin:
+    post:
+      tags:
+        - authKit
+      summary: authKit.linkedInLogin
+      operationId: authKit_linkedInLogin
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthLoginResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /authkit/{clientId}/auth/login:
     post:
       tags:

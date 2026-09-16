@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.0-alpha.3  |  Generated: 2026-09-14T15:07:12.272Z
+Version: 2.0.1  |  Generated: 2026-09-16T05:25:36.851Z
 
 This is a concise summary of all available API functions and types.
 
@@ -158,6 +158,12 @@ The Smartlinks SDK is organized into the following namespaces:
 ## HTTP Utilities
 
 Core HTTP functions for API configuration and communication:
+
+**getHttpCacheDiagnostics**() → `void`
+Snapshot of cache counters + current keys. Call from the console via `window.__slHttpDiag()`.
+
+**resetHttpCacheDiagnostics**() → `void`
+Reset the diagnostics counters (does not touch the cache itself).
 
 **isProxyEnabled**() → `boolean`
 Return whether proxy mode is currently enabled.
@@ -9346,6 +9352,9 @@ Google OAuth login via ID token (public). Gated by step-up MFA — see {@link lo
 
 **googleCodeLogin**(clientId: string, code: string, redirectUri: string) → `Promise<AuthLoginResponse>`
 Google OAuth login via server-side authorization code (public).
+
+**linkedInLogin**(clientId: string, code: string, redirectUri: string, trustedDeviceToken?: string) → `Promise<AuthLoginResponse>`
+Sign in with LinkedIn (OpenID Connect) via a server-side authorization code (public). LinkedIn has no client-side ID-token SDK, so this is always the authorization-code flow: redirect the browser to LinkedIn's authorize endpoint, then pass the returned one-time `code` (and the exact `redirectUri` used) here — the server exchanges it (with the app's client secret) and verifies the id_token. Mirrors {@link googleCodeLogin}: on success the bearer token is stored and the cache invalidated. Notable error codes (thrown as `SmartlinksApiError`, read via `err.errorCode`): - `MISSING_LINKEDIN_CODE` (400), `LINKEDIN_AUTH_NOT_CONFIGURED` (400), `INVALID_LINKEDIN_TOKEN` (400), `LINKEDIN_AUTH_FAILED` (500) - `ACCOUNT_EXISTS_UNVERIFIED` (409) — same shared verified-to-verified linking policy as {@link googleLogin}/{@link appleLogin}. Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape.
 
 **appleLogin**(clientId: string, identityToken: string, opts?: AppleLoginOptions) → `Promise<AuthLoginResponse>`
 Sign in with Apple via an Apple identity token (public). Mirrors {@link googleLogin}. On success the returned bearer token is stored automatically and the cache is invalidated. Notable error codes (thrown as `SmartlinksApiError`, read via `err.errorCode`): - `MISSING_APPLE_TOKEN` (400), `APPLE_AUTH_NOT_CONFIGURED` (400), `INVALID_APPLE_TOKEN` (401), `APPLE_AUTH_FAILED` (500) - `ACCOUNT_EXISTS_UNVERIFIED` (409) — an unverified account already owns this email; the server refuses to silently link. `err.details.requiresEmailVerification` is `true`. Recoverable: the user should sign in with their password (or reset it), then link Apple from settings. **The same 409 can now come back from {@link googleLogin}** under the shared verified-to-verified linking policy. Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape. Pass `opts.trustedDeviceToken` to skip the challenge on a recognized device.

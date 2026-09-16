@@ -114,6 +114,29 @@ export namespace authKit {
   }
 
   /**
+   * Sign in with LinkedIn (OpenID Connect) via a server-side authorization code (public).
+   *
+   * LinkedIn has no client-side ID-token SDK, so this is always the authorization-code flow:
+   * redirect the browser to LinkedIn's authorize endpoint, then pass the returned one-time
+   * `code` (and the exact `redirectUri` used) here — the server exchanges it (with the app's
+   * client secret) and verifies the id_token. Mirrors {@link googleCodeLogin}: on success the
+   * bearer token is stored and the cache invalidated.
+   *
+   * Notable error codes (thrown as `SmartlinksApiError`, read via `err.errorCode`):
+   * - `MISSING_LINKEDIN_CODE` (400), `LINKEDIN_AUTH_NOT_CONFIGURED` (400),
+   *   `INVALID_LINKEDIN_TOKEN` (400), `LINKEDIN_AUTH_FAILED` (500)
+   * - `ACCOUNT_EXISTS_UNVERIFIED` (409) — same shared verified-to-verified linking policy as
+   *   {@link googleLogin}/{@link appleLogin}.
+   *
+   * Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape.
+   */
+  export async function linkedInLogin(clientId: string, code: string, redirectUri: string, trustedDeviceToken?: string): Promise<AuthLoginResponse> {
+    const res = await post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/linkedin`, { code, redirectUri, trustedDeviceToken })
+    if (res.token) { setBearerToken(res.token); invalidateCache() }
+    return res
+  }
+
+  /**
    * Sign in with Apple via an Apple identity token (public).
    *
    * Mirrors {@link googleLogin}. On success the returned bearer token is stored

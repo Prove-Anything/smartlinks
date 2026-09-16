@@ -45,22 +45,27 @@ subject first and return the number it already has, rather than allocating a sec
 ## Idempotency subject — use a *stable* id
 
 The number is deduped by the **subject id** you pass, so it must be the **stable** identity:
-- **Claim set id** (the wristband's permanent record) — the right key when people aren't
-  logged in. A re-tap resolves to the same claim set → same number.
+- **Virtual-proof id `<claimSetId>-<code>`** (e.g. `23-oOkf8o`) — the right key for a
+  per-wristband raffle. The `code` is the physical tag's permanent id, so a re-tap of the same
+  wristband resolves to the same code doc → same number. The virtual proof record is transient,
+  but the **code** inside its id is stable — that's what the sink keys on (it splits the id and
+  uses only `<claimSetId>` + `<code>`).
+- **Bare claim-set id** — when one number per *group* is intended.
 - The authenticated **user/contact** — if they sign in / claim.
 
-Do **not** key on a value that changes per interaction (e.g. a virtual proof id minted fresh
-on each tap) — that would let one person take several numbers.
+Do **not** key on the transient part of a per-tap identity (a freshly-minted virtual proof
+record) — key on the stable **code**, which is exactly what the `<claimSetId>-<code>` subject
+carries.
 
 ## Where the number is stored (the sink)
 
 The stamp target is configurable — the number lives wherever you'll read it:
 
-| Target | Use |
-|---|---|
-| `claimSet` | The Firestore wristband record — fast, no proof mint on the hot path. |
-| `proof` | A minted proof (value or attestation) — when the number should travel with the proof. |
-| `appRecord` | A structured app record — for queryable, per-app data. |
+| Target | Subject id | Use |
+|---|---|---|
+| `claimSet` | the virtual-proof id `<claimSetId>-<code>` (e.g. `23-oOkf8o`) **or** a bare `<claimSetId>` | The Firestore claim-set world. **The subject decides the exact doc:** a `<claimSetId>-<code>` id stamps the individual **code** doc (per-wristband — rides back as `tagData` on the next tap, every wristband its own number); a bare id stamps the whole **set** doc (one shared value). Claim-set ids are hyphen-free, so a hyphen unambiguously means the per-code form. |
+| `proof` | the proof id | A minted proof (value or attestation) — when the number should travel with the proof. |
+| `appRecord` | the record id | A structured app record — for queryable, per-app data. |
 
 ## Configure the sequence (once, server-side)
 
@@ -72,13 +77,18 @@ makes the public endpoint safe: the target/field/scope are set by you, not the c
 {
   "raffle": {
     "key":     "raffle:2026-cup",   // the named counter (data.sequences.<key>)
-    "target":  "claimSet",          // claimSet | proof | appRecord — where the number is stamped
-    "field":   "raffleNumber",      // the property written on the target
-    "productId": "wristbands-2026", // counter scope (optional; else collection-wide)
+    "target":  "claimSet",          // claimSet | proof | appRecord — the ledger domain
+    "field":   "raffleNumber",      // the property written on the target (comes back in tagData)
     "start":   1                    // first number (optional, default 1)
+    // no productId → one collection-wide counter (all wristbands share the sequence)
   }
 }
 ```
+
+> **Per-wristband raffle.** Keep `target: "claimSet"` and pass the tap's virtual-proof id
+> (`<claimSetId>-<code>`) as the subject — the sink writes the individual tag's **code** doc, so
+> each wristband gets its own number and it surfaces in `tagData` on the next tap. Pass a bare
+> claim-set id instead only if you want one number for the whole group.
 
 ## Call it (the widget)
 
@@ -87,12 +97,13 @@ never the target/field:
 
 ```
 POST /api/v1/public/collection/:collectionId/sequence/allocate
-{ "appId": "raffle-app", "sequenceId": "raffle", "subjectId": "<claim set id>" }
+{ "appId": "liveWidgets", "sequenceId": "raffle", "subjectId": "23-oOkf8o" }
 → { "number": 42, "isNew": true }        // re-tap → { "number": 42, "isNew": false }
 ```
 
-- **`subjectId`** is the STABLE identity — the claim-set id from the tap. Re-taps collapse to
-  one number.
+- **`subjectId`** is the STABLE identity. For `claimCode` it's the virtual-proof id
+  `<claimSetId>-<code>` (e.g. `23-oOkf8o`) straight off the tap — re-taps of the same wristband
+  collapse to one number. (For `claimSet` it's the claim-set id.)
 - **Idempotent**, so both your flows are the *same call*:
   - **Auto:** on load, call allocate → get your number (existing or freshly minted).
   - **Button:** click → animate → same call → "Your raffle number is 42."

@@ -72,6 +72,88 @@ let cachePersistenceTtlMs: number = 7 * 24 * 60 * 60_000
 /** When true (default), serve stale L2 data via SmartlinksOfflineError on network failure. */
 let cacheServeStaleOnOffline: boolean = true
 
+// NOTE: `logger` is declared HERE (not lower down) on purpose. The diagnostics below
+// read it, and clearSessionCachesOnPageLoad() runs at MODULE LOAD — so `logger` must be
+// initialized before that point or it hits the temporal-dead-zone. Do not move it down.
+type Logger = {
+  debug?: (...args: any[]) => void
+  info?: (...args: any[]) => void
+  warn?: (...args: any[]) => void
+  error?: (...args: any[]) => void
+  log?: (...args: any[]) => void
+} | ((...args: any[]) => void)
+let logger: Logger | undefined
+
+// =============================================================================
+// HTTP cache diagnostics (opt-in) — for testing why a GET did/didn't cache.
+//
+// Enable at runtime with `window.__SL_HTTP_DEBUG__ = true` (no portal wiring
+// needed) or by passing a `logger` to initializeApi. When on, every GET logs its
+// cache decision (L1 hit / in-flight dedup / L2 hit / network / skip) and every
+// cache clear logs a REASON. Running counters are exposed via
+// getHttpCacheDiagnostics() and on `window.__slHttpDiag()` for console access.
+// Behaviour-neutral: instrumentation only counts + logs, it never changes caching.
+// =============================================================================
+interface HttpCacheStats {
+  l1Hits: number; inflightDedups: number; l2Hits: number
+  networkFetches: number; skips: number
+  clears: number; lastClearReason: string | null; lastClearAt: number
+}
+const httpCacheStats: HttpCacheStats = {
+  l1Hits: 0, inflightDedups: 0, l2Hits: 0, networkFetches: 0, skips: 0,
+  clears: 0, lastClearReason: null, lastClearAt: 0,
+}
+
+function httpDebugEnabled(): boolean {
+  try {
+    if (typeof window !== 'undefined') {
+      if ((window as any).__SL_HTTP_DEBUG__) return true
+      // URL opt-in so boot-time GETs can be traced on a deployed app without any
+      // code change: just append ?__slhttpdebug=1 (or &…) to the page URL and reload.
+      if (/[?&]__slhttpdebug=1\b/.test(window.location?.search || '')) return true
+    }
+  } catch {}
+  return !!logger
+}
+function httpDebug(...args: any[]): void {
+  if (!httpDebugEnabled()) return
+  try { (console.info || console.log).call(console, '[sl-http]', ...args) } catch {}
+}
+
+/**
+ * Single choke-point for wiping the in-memory GET cache. Routing every clear
+ * through here means each one is counted and logged with a reason — so a test
+ * run shows exactly which cache clears fired and why (e.g. token change on a
+ * public page that should never have cleared).
+ */
+function clearHttpCache(reason: string): void {
+  httpCacheStats.clears++
+  httpCacheStats.lastClearReason = reason
+  httpCacheStats.lastClearAt = Date.now()
+  httpDebug('cache CLEAR', { reason, hadEntries: httpCache.size })
+  httpCache.clear()
+}
+
+/** Snapshot of cache counters + current keys. Call from the console via `window.__slHttpDiag()`. */
+export function getHttpCacheDiagnostics() {
+  const keys = [...httpCache.keys()]
+  return {
+    ...httpCacheStats,
+    size: httpCache.size,
+    keys,
+    inflight: [...httpCache.entries()].filter(([, v]) => v.promise).map(([k]) => k),
+    cacheEnabled, cacheDefaultTtlMs, cachePersistence, cacheClearOnPageLoad,
+  }
+}
+/** Reset the diagnostics counters (does not touch the cache itself). */
+export function resetHttpCacheDiagnostics(): void {
+  httpCacheStats.l1Hits = 0; httpCacheStats.inflightDedups = 0; httpCacheStats.l2Hits = 0
+  httpCacheStats.networkFetches = 0; httpCacheStats.skips = 0
+  httpCacheStats.clears = 0; httpCacheStats.lastClearReason = null; httpCacheStats.lastClearAt = 0
+}
+// Expose on window for zero-wiring console access after a build.
+try { if (typeof window !== 'undefined') (window as any).__slHttpDiag = getHttpCacheDiagnostics } catch {}
+
 /**
  * Per-resource TTL overrides — checked in order, first match wins.
  *
@@ -134,8 +216,8 @@ function evictLruIfNeeded(): void {
 function clearSessionCachesOnPageLoad(): void {
   if (typeof window === 'undefined') return // Node.js environment
   
-  httpCache.clear()
-  
+  clearHttpCache('pageLoad session reset')
+
   try {
     if (typeof sessionStorage !== 'undefined') {
       const sessionKeys = Object.keys(sessionStorage).filter(k => k.startsWith('smartlinks:cache:'))
@@ -208,15 +290,6 @@ function isNetworkError(err: unknown): boolean {
   // fetch() throws TypeError on network failure; SmartlinksApiError is not a TypeError
   return err instanceof TypeError
 }
-
-type Logger = {
-  debug?: (...args: any[]) => void
-  info?: (...args: any[]) => void
-  warn?: (...args: any[]) => void
-  error?: (...args: any[]) => void
-  log?: (...args: any[]) => void
-} | ((...args: any[]) => void)
-let logger: Logger | undefined
 
 function logDebug(...args: any[]) {
   if (!logger) return
@@ -452,7 +525,7 @@ export function initializeApi(options: {
   // Clear both cache tiers on forced re-initialization so stale data
   // from the previous configuration cannot bleed through.
   if (options.force) {
-    httpCache.clear()
+    clearHttpCache('initializeApi(force)')
     idbClear().catch(() => {})
   }
   logger = options.logger
@@ -496,7 +569,7 @@ export function setBearerToken(token: string | undefined) {
       try { localStorage.removeItem(TOKEN_STORAGE_KEY) } catch {}
     }
   }
-  httpCache.clear()
+  clearHttpCache(`setBearerToken(${token ? 'set' : 'cleared'})`)
   if (cachePersistence !== 'none') idbClear().catch(() => {})
 }
 
@@ -519,7 +592,7 @@ export function setBearerToken(token: string | undefined) {
 export function setGrantToken(token: string | undefined) {
   if (token === grantToken) return
   grantToken = token
-  httpCache.clear()
+  clearHttpCache(`setGrantToken(${token ? 'set' : 'cleared'})`)
   if (cachePersistence !== 'none') idbClear().catch(() => {})
 }
 
@@ -646,7 +719,7 @@ export function configureSdkCache(options: {
  */
 export function invalidateCache(urlPattern?: string): void {
   if (!urlPattern) {
-    httpCache.clear()
+    clearHttpCache('invalidateCache(all)')
     if (cachePersistence !== 'none') idbClear().catch(() => {})
     return
   }
@@ -1188,10 +1261,17 @@ export async function request<T>(path: string): Promise<T> {
   const cacheKey = buildCacheKey(path)
   const ttl = skipCache ? 0 : getTtlForPath(path)
 
+  if (skipCache) {
+    httpCacheStats.skips++
+    httpDebug('GET skip-cache', { path })
+  }
+
   if (!skipCache) {
     // 1. L1 hit — return from memory immediately
     const l1 = getHttpCacheHit(cacheKey, ttl)
     if (l1 !== null) {
+      httpCacheStats.l1Hits++
+      httpDebug('GET L1 hit', { path, ttlMs: ttl })
       logDebug('[smartlinks] GET cache hit (L1)', { path })
       return l1 as T
     }
@@ -1199,9 +1279,13 @@ export async function request<T>(path: string): Promise<T> {
     // 2. In-flight deduplication — share an already-pending promise
     const inflight = httpCache.get(cacheKey)
     if (inflight?.promise) {
+      httpCacheStats.inflightDedups++
+      httpDebug('GET in-flight dedup', { path })
       logDebug('[smartlinks] GET in-flight dedup', { path })
       return inflight.promise as Promise<T>
     }
+
+    httpDebug('GET MISS → will fetch', { path, ttlMs: ttl, cacheKey })
   }
 
   // 3. Build the fetch promise.
@@ -1213,6 +1297,8 @@ export async function request<T>(path: string): Promise<T> {
     if (!skipCache && cachePersistence !== 'none') {
       const l2 = await idbGet(cacheKey)
       if (l2 && Date.now() - l2.timestamp <= ttl) {
+        httpCacheStats.l2Hits++
+        httpDebug('GET L2 hit', { path })
         logDebug('[smartlinks] GET cache hit (L2)', { path })
         setHttpCacheEntry(cacheKey, l2.data)
         return l2.data as T
@@ -1221,6 +1307,8 @@ export async function request<T>(path: string): Promise<T> {
 
     // 3b. Network fetch
     try {
+      httpCacheStats.networkFetches++
+      httpDebug('GET NETWORK fetch', { path, skipCache, ttlMs: ttl })
       let data: T
       if (proxyMode) {
         logDebug('[smartlinks] GET via proxy', { path })
