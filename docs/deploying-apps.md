@@ -16,6 +16,31 @@ This guide covers registration and how to wire it into your build.
 
 ---
 
+## Fast dev publish (recommended for dev)
+
+For the **dev** channel there's a one-step path that does *both* halves — SmartLinks **hosts and
+registers** — so you don't host bundles anywhere yourself (no Lovable, no CDN of your own) and
+don't run a separate register step:
+
+```bash
+# build your app first (produces dist/ with app.manifest.json), then:
+smartlinks-publish                 # uploads dist/ → SmartLinks hosts it + registers the dev release
+smartlinks-publish --watch         # re-publish on every change (save → live)
+```
+
+Env: `SMARTLINKS_APP_ID` (your platform id), `SMARTLINKS_DEPLOY_KEY` (dev key — dev-only, safe to
+keep locally), optional `SMARTLINKS_API` / `--dir`. It uploads the built files to
+`POST /api/v1/apps/{appId}/publish?channel=dev`; the server validates the manifest + functions,
+writes the bundle to `smartlinks.app/apps/{appId}/dev/…` with **`no-store` caching** (every reload
+is instantly fresh — no cache-busting, no invalidation), and registers the release. It works from
+**anywhere** — local, Claude, CI, or a build step — because the builder builds and the platform
+hosts; there's no dependency on any external host for dev.
+
+Use this for dev. Use the **register-a-URL** flow below when *you* host the bundle (a beta/stable
+CDN deploy, or an external host) and just want to register where it lives + its manifest.
+
+---
+
 ## Two "wheres": the API host vs the bundle CDN
 
 Deploying touches two different locations — keep them distinct:
@@ -134,7 +159,7 @@ Content-Type: application/json
 
 | Status | Meaning |
 |---|---|
-| `200` | Registered. Body: `{ ok: true, appId, channel, version, functions: [names], registeredAt }` |
+| `200` | Registered. Body: `{ ok: true, appId, channel, version, functions: [names], registeredAt, warnings? }` — `warnings` is present for non-blocking issues (e.g. `APPID_IGNORED` when the manifest declared a different id). |
 | `422` | Validation failed — **the build should fail**. Body: `{ ok: false, errors: [...] }` |
 | `401` | Missing/invalid deploy key |
 | `403` | Key not permitted for that channel (e.g. a dev key targeting `prod`) — `CHANNEL_FORBIDDEN` |

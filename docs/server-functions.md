@@ -63,6 +63,47 @@ in a bundle alongside your widgets/containers:
 
 Each definition maps to an exported handler of the same `name` (override with `handler`).
 
+## Building the functions bundle
+
+The handlers ship as a **self-contained UMD** — one file, all dependencies compiled in, no
+`require`/`import` of platform or Node modules (see [Runtime](#runtime--what-your-function-can-use)).
+Your functions entry just **named-exports** each handler:
+
+```js
+// src/functions/index.js — the functions entry
+export async function submitCompetitionEntry(ctx, event) { /* … */ }
+export async function onProofCreated(ctx, event) { /* … */ }
+```
+
+Build it to `dist/functions.umd.js` with a Vite lib build — **UMD format, nothing externalised**
+(so it's self-contained), and don't wipe the widgets you built into the same `dist/`:
+
+```ts
+// vite.functions.config.ts
+import { defineConfig } from 'vite'
+export default defineConfig({
+  build: {
+    lib: { entry: 'src/functions/index.js', formats: ['umd'], name: 'functions',
+           fileName: () => 'functions.umd.js' },
+    outDir: 'dist',
+    emptyOutDir: false,            // co-exist with the widgets/containers build
+    rollupOptions: { external: [] } // bundle everything — no Node/platform externals
+  },
+})
+```
+
+```jsonc
+// package.json — build widgets/containers as usual, then the functions bundle
+"scripts": {
+  "build": "vite build && vite build --config vite.functions.config.ts"
+}
+```
+
+That emits `dist/functions.umd.js` (matching `functions.files.js.umd`), whose named exports the
+platform pairs with your manifest `definitions`. Then **deploy** it — for dev,
+`smartlinks-publish` uploads `dist/` and registers in one step (see
+[Deploying & registering](deploying-apps.md)).
+
 ---
 
 ## The two security questions every function answers
@@ -159,7 +200,9 @@ interface ServerFunctionContext {
   /** Outbound HTTP — present only if you declared `network` (host-scoped if `network:<host>`). */
   fetch: typeof fetch
 
-  /** Structured logging, captured into your function's run telemetry. */
+  /** Structured logging — returned inline on the admin surface and recorded as an
+   *  execution activity event (owner Errors & Activity console). See "Seeing your
+   *  function's runs and logs" below. */
   log: (message: string, data?: Record<string, any>) => void
 }
 ```
@@ -168,6 +211,73 @@ interface ServerFunctionContext {
 already authenticated as your declared authority and scoped to the collection. Do **not** try
 to construct your own SDK client or carry your own key; that's what `ctx.sl` is for, and it's
 the only way authority stays correct.
+
+---
+
+## Runtime — what your function can use
+
+Your function runs in a **web-standard sandbox** (think Cloudflare Workers / Deno), **not
+Node**. Concretely it targets the **WinterTC Minimum Common Web Platform API** (WinterTC is the
+Ecma International technical committee for this, formerly WinterCG) — the same surface those
+runtimes guarantee — so what you can rely on is portable, and the future isolated runner will
+host the same bundle unchanged.
+
+**Available globals** (no import needed):
+- **Data / encoding:** `JSON`, `URL`, `URLSearchParams`, `TextEncoder` / `TextDecoder`,
+  `atob` / `btoa`, `Buffer`, `structuredClone`.
+- **Crypto:** `crypto` (Web Crypto) — `crypto.subtle` for hashing / HMAC / encrypt / sign /
+  verify, `crypto.getRandomValues`, `crypto.randomUUID`.
+- **HTTP:** `fetch`, `Headers`, `Request`, `Response`, `FormData`, `Blob`, `File`,
+  `AbortController` / `AbortSignal` (use one for **request timeouts**).
+- **Streams & timing:** `ReadableStream` / `WritableStream` / `TransformStream`,
+  `CompressionStream` / `DecompressionStream` (gzip/deflate for third-party payloads), the timer
+  functions, `queueMicrotask`, `performance`, `console`.
+- **Runtime identity:** `navigator.userAgent` reports the runtime key (currently
+  `"SmartLinks-Functions"`) — use it if a portable dependency needs to feature-detect the host.
+  It stays stable when functions move to the isolated runner.
+
+**Not available:** `require` / `import` of platform or Node modules, `process`, `fs`, and the
+Node built-ins (`node:crypto`, `node:http`, …). There is no ambient database, key, or network
+handle — everything the platform gives you comes through **`ctx`**.
+
+**Dependencies:** bundle them. Your build must produce a **self-contained** UMD (deps compiled
+in), and those deps must be **edge-compatible** — pure JS / Web APIs. A library that reaches for
+Node built-ins (e.g. `axios`'s Node adapter, anything using `node:crypto`) will fail to load.
+Prefer the platform primitives above over a dependency; when you do need one, pick edge-safe:
+
+| Need | Native? | Recommended (bundle, edge-safe) |
+|---|---|---|
+| JSON | **native** — `JSON.parse/stringify` | — |
+| XML parse / build | no | `fast-xml-parser` |
+| CSV | no | `papaparse` |
+| Schema validation of inputs | no | `zod` |
+| JWT (sign/verify for a third-party API) | Web Crypto can, verbosely | `jose` |
+| Hash / HMAC / encrypt | **native** — `crypto.subtle` | — |
+
+**The common actions, and how to do each:**
+
+| You want to… | Use | Requires |
+|---|---|---|
+| Call a third-party API (GET/POST) | `ctx.fetch(url, init)` — the standard Fetch API | capability `network` or `network:<host>` |
+| Read a secret (API key, signing key) | `await ctx.secrets.get('<ref>')` | capability `secrets:<ref>` |
+| Hash / HMAC-sign / verify / encrypt | `crypto.subtle` (Web Crypto) | — |
+| Random id / bytes | `crypto.randomUUID()` / `crypto.getRandomValues()` | — |
+| Read or write SmartLinks data | `ctx.sl.*` (records, products, attestations, …) | the matching `sl:<res>:<read\|write>` |
+
+Notes:
+- **Talking to the SmartLinks core is `ctx.sl`, not HTTP.** The common pattern — *validate /
+  process, then act on the core* — is: check the input, then call `ctx.sl.appRecords.create(…)`,
+  `ctx.sl.products.update(…)`, etc. `ctx.sl` is already authenticated as your declared authority
+  and capped by your capabilities, so you never construct a SmartLinks API URL or carry a key.
+  Use `fetch`/`ctx.fetch` for *third-party* servers; use `ctx.sl` for SmartLinks itself.
+- **There is one `fetch`, and it is capability-gated.** Whether you call the global `fetch` or
+  `ctx.fetch`, the behaviour is identical: the call **throws** unless your declared `network`
+  (or `network:<host>`) capability covers the target host — the same way Deno's `fetch` throws
+  without `--allow-net`. There is no ungated escape hatch. Declare the hosts you need.
+- **Secrets are read-only at runtime.** You fetch a secret you declared; you do **not** set or
+  rotate secrets from a function — that's an admin/deploy-time operation on the platform.
+- **Signing a webhook / verifying a signature** is `crypto.subtle` with an HMAC key imported
+  from a secret — no Node `crypto` needed.
 
 ---
 
@@ -220,13 +330,40 @@ POST /public/collection/:collectionId/functions/:name    # visibility: public (a
 The request body is delivered to the handler as `event.body` (query string as
 `event.query`). A function only runs on its own surface — calling an `admin` function on
 the public endpoint is a `403`. The response is `{ ok: true, result }` on success, or
-`{ error, message }` (HTTP 400) if the handler returned an error. `GET` on either endpoint
-lists the functions callable on that surface.
+`{ error, message }` (HTTP 400) if the handler returned an error. On the **admin surface**
+the response also includes `logs` (your `ctx.log` lines) and `durationMs` for quick
+debugging; the **public surface returns only `result`** (a public caller never sees your
+internal logs). `GET` on either endpoint lists the functions callable on that surface.
 
 The admin surface is collection-admin gated, so an admin function's `caller` authority runs
 at admin level, attributed to the signed-in admin. The public surface resolves auth if a
 token is present (→ `owner`) and treats its absence as anonymous (→ `public`); a
 `collection`-authority function runs elevated regardless.
+
+### Before it will resolve
+
+An http call returns `404 FUNCTION_NOT_FOUND` unless **both** of these are true (this is the
+most common first-run surprise):
+
+1. **The app's release is registered on the channel** the collection follows (see
+   [deploying-apps.md](deploying-apps.md)) — that's what publishes the function bundle into
+   the registry the runtime loads from.
+2. **The app is enabled on the collection** (`appConfig.apps[]`, on that same channel — see
+   [appConfig.md](appConfig.md)).
+
+So the end-to-end path is: *write → register the release → enable on a collection → call.*
+
+### Seeing your function's runs and logs
+
+Every invocation is recorded as an **execution** activity event, carrying your `ctx.log`
+lines. Where to look, easiest first:
+
+- **Admin-surface response** — `logs` + `durationMs` come straight back in the JSON.
+- **Deployed test mode** — see below; real run, isolated logging.
+- **Owner console** — the collection's **Advanced → Errors & Activity → events** tab,
+  filtered to **source = execution**: each run shows as `function <name> ok` (or an error),
+  and the detail carries your `ctx.log` output. (Telemetry is streamed, so allow a few
+  seconds.)
 
 ## Testing & preview
 

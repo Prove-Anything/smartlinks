@@ -312,6 +312,24 @@ See the **[Executor Model guide](executor.md)** for the full build setup, SEO co
 | `llmContent.function` | string | Name of the `getLLMContent` export |
 | `llmContent.timeout` | number | Timeout in ms (default 500) |
 
+#### `functions`
+
+Declares app-authored **server functions** — server-side handlers `(ctx, event) ⇒ result`
+(http / event / cron), shipped in a self-contained UMD bundle. Omit if the app has no server
+functions. The security model (`visibility`/`authority`/`capabilities`), the runtime surface, how
+to build the bundle, and how to invoke are all in the **[Server Functions guide](server-functions.md)** —
+this is just the manifest shape.
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `files.js.umd` | string | UMD bundle path (e.g. `dist/functions.umd.js`) — a self-contained bundle exporting each handler by name |
+| `definitions[]` | object[] | One entry per function |
+| `definitions[].name` | string | Function name; also the handler export name (override with `handler`) |
+| `definitions[].trigger` | object | `{ type: "http"|"event"|"cron", … }` |
+| `definitions[].visibility` | string | `admin` \| `public` (http only) — who may call it |
+| `definitions[].authority` | string | `caller` \| `collection` — whose authority it runs as |
+| `definitions[].capabilities` | string[] | Least-privilege grants (`sl:<res>:<read\|write>`, `network[:<host>]`, `secrets:<ref>`) |
+
 ---
 
 ## `app.admin.json`

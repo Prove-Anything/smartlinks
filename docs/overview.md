@@ -63,6 +63,8 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Containers** | `docs/containers.md` | Building full-app embeddable containers (lazy-loaded) |
 | **Mobile Admin Container** | `docs/mobile-admin-container.md` | Building a separate Capacitor-aware mobile admin bundle for field operators |
 | **Executors** | `docs/executor.md` | Building executor bundles for SEO, LLM content, programmatic config |
+| **Server Functions** | `docs/server-functions.md` | App-authored server-side functions `(ctx, event) ⇒ result`: security model, runtime surface, invoking |
+| **Deploying & Registering** | `docs/deploying-apps.md` | Getting your app into the platform: fast dev publish, channels, deploy keys, registering releases |
 | **Deep Linking** | `docs/deep-link-discovery.md` | URL state management, navigable states, portal menus, AI nav |
 | **Portal Back Button** | `docs/portal-back-button.md` | Hierarchy-aware "up" navigation inside embedded apps |
 | **Portal Request Action** | `docs/portal-request-action.md` | Triggering portal built-in actions (__qrScanner, __share, __logout, etc.) from sub-apps |

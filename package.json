@@ -1,6 +1,6 @@
 {
   "name": "@proveanything/smartlinks",
-  "version": "2.0.2",
+  "version": "2.0.4",
   "description": "Official JavaScript/TypeScript SDK for the Smartlinks API",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -15,12 +15,14 @@
     }
   },
   "bin": {
-    "smartlinks-register-release": "scripts/register-release.mjs"
+    "smartlinks-register-release": "scripts/register-release.mjs",
+    "smartlinks-publish": "scripts/publish.mjs"
   },
   "files": [
     "dist/",
     "docs/",
     "scripts/register-release.mjs",
+    "scripts/publish.mjs",
     "openapi.yaml",
     "README.md"
   ],
