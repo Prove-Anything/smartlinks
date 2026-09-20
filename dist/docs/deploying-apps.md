@@ -71,9 +71,13 @@ A release is registered on one **channel**, matching how you deploy:
 
 | Channel | Deployed from | Typical use |
 |---|---|---|
-| `dev`  | **Lovable "Publish"** | Live development / testing |
-| `beta` | your pipeline | Staging / preview |
-| `prod` | your **Cloud Build** toolset (from git) | Production |
+| `dev`   | **Lovable "Publish"** | Live development / testing |
+| `alpha` | your pipeline | Early internal testing |
+| `beta`  | your pipeline | Staging / preview |
+| `stable`| your **Cloud Build** toolset (from git) | Production |
+
+The canonical channels are **`dev` · `alpha` · `beta` · `stable`**. Legacy `prod`/`production`/
+`live` are accepted and normalise to **`stable`** (there is no separate "prod" channel).
 
 A collection chooses which channel it follows, so you can point a test collection at `dev`
 and exercise a build before it reaches `prod`.
@@ -155,7 +159,11 @@ today.)
 
 ### What gets validated
 
-- `manifest.meta.appId` must match the `{appId}` in the URL.
+- The **app id is the `{appId}` in the URL** — the platform-assigned id, which is authoritative
+  (it's what every collection's config + the CDN path already bind to). `manifest.meta.appId` is
+  **ignored** for identity: if it differs, the release still registers under the URL id and you get
+  a non-blocking `APPID_IGNORED` warning. So pass your **platform id** in the URL (the script below
+  reads it from `SMARTLINKS_APP_ID`), and don't rely on the manifest to declare it.
 - The **`functions` block** is validated with the *same* rules the runtime enforces
   (names, triggers, `visibility`/`authority`, the capability grammar, duplicate names) — so
   a malformed server function is caught **at deploy time**, not at runtime. See
@@ -169,62 +177,29 @@ Registration is the **last step of your build** — after bundles are built and 
 small script that reads your built manifest and POSTs it, and **exits non-zero on failure**
 so a bad install fails the publish.
 
-```js
-// scripts/register-release.mjs — run as the build's postbuild step
-import { readFileSync } from 'node:fs'
-import { execSync } from 'node:child_process'
-
-const API     = process.env.SMARTLINKS_API || 'https://smartlinks.app'   // a VPC env: set to its host
-const KEY     = process.env.SMARTLINKS_DEPLOY_KEY                         // Lovable Build Secret (dev) / CI secret (prod)
-const CHANNEL = process.env.SMARTLINKS_CHANNEL                           // 'dev' | 'beta' | 'prod'; UNSET ⇒ don't register
-
-// --- Gate: only register when this build is meant to ---
-// A preview / live-edit build (no channel) skips quietly so it never fails. A build that
-// declares a channel but has no key is a hard error IF it's prod; dev skips quietly.
-if (!CHANNEL) {
-  console.log('ℹ︎ SmartLinks: SMARTLINKS_CHANNEL unset — skipping release registration (preview build).')
-  process.exit(0)
-}
-if (!KEY) {
-  if (CHANNEL === 'prod') { console.error('❌ prod build but SMARTLINKS_DEPLOY_KEY is missing'); process.exit(1) }
-  console.log(`ℹ︎ SmartLinks: no deploy key for "${CHANNEL}" — skipping registration.`)
-  process.exit(0)
-}
-
-const manifest = JSON.parse(readFileSync('dist/app.manifest.json', 'utf8'))
-const appId    = manifest.meta.appId
-const version  = manifest.meta.version
-const gitHash  = (() => { try { return execSync('git rev-parse --short HEAD').toString().trim() } catch { return null } })()
-// dev: your published Lovable URL; prod: the SmartLinks CDN base. Set SMARTLINKS_BUNDLE_BASE_URL.
-const bundleBaseUrl = process.env.SMARTLINKS_BUNDLE_BASE_URL || `https://smartlinks.app/apps/${appId}/${version}`
-
-const res = await fetch(`${API}/api/v1/apps/${appId}/releases`, {
-  method: 'POST',
-  headers: { 'content-type': 'application/json', 'x-smartlinks-deploy-key': KEY },
-  body: JSON.stringify({
-    channel: CHANNEL, version, manifest, bundleBaseUrl,
-    build: { at: new Date().toISOString(), gitHash, builder: CHANNEL === 'dev' ? 'lovable' : 'ci' },
-  }),
-})
-
-const body = await res.json().catch(() => ({}))
-if (!res.ok || !body.ok) {
-  console.error(`❌ SmartLinks registration failed (${res.status}):`)
-  for (const e of body.errors || []) console.error(`   • ${e.path}: ${e.message}`)
-  process.exit(1)  // fail the build
-}
-console.log(`✅ Registered ${appId}@${version} on "${CHANNEL}" — functions: ${(body.functions || []).join(', ') || 'none'}`)
-```
-
-Wire it after your bundle build/hash step:
+The SDK ships the script, so you don't copy-paste it — run it as your postbuild step. It reads
+your built manifest, POSTs it, prints any warnings, and exits non-zero on failure.
 
 ```jsonc
 // package.json
 "scripts": {
   "build":     "vite build && … && node scripts/hash-bundles.mjs",
-  "postbuild": "node scripts/register-release.mjs"
+  "postbuild": "smartlinks-register-release"   // ships in @proveanything/smartlinks
 }
 ```
+
+It is driven entirely by env vars, so the same command works for dev (Lovable) and prod (CI):
+
+| Env var | Required | What it is |
+|---|---|---|
+| `SMARTLINKS_APP_ID` | **yes** | your **platform** app id — authoritative, assigned by SmartLinks (per-project). Not the manifest's `meta.appId`. |
+| `SMARTLINKS_DEPLOY_KEY` | yes* | channel-scoped deploy key. *dev builds skip quietly if unset; `beta`/`stable` hard-fail. |
+| `SMARTLINKS_CHANNEL` | the gate | `dev` \| `alpha` \| `beta` \| `stable` (legacy `prod` → `stable`). **UNSET ⇒ skip** (preview builds never register). |
+| `SMARTLINKS_BUNDLE_BASE_URL` | recommended | where the files are served — **dev:** your Lovable URL; **prod:** the CDN base. |
+| `SMARTLINKS_API` | no | API host; default `https://smartlinks.app`. A VPC env uses its own. |
+| `SMARTLINKS_MANIFEST` | no | manifest path; default `dist/app.manifest.json`. |
+
+> The full source is at `scripts/register-release.mjs` in the SDK package if you'd rather vendor it.
 
 Registration is gated by **`SMARTLINKS_CHANNEL`**, so the three Lovable build types behave correctly:
 
@@ -232,7 +207,12 @@ Registration is gated by **`SMARTLINKS_CHANNEL`**, so the three Lovable build ty
 |---|---|---|
 | **Preview / live-edit** | unset | **skips quietly** — never registers, never fails |
 | **Dev (Publish)** | `dev` | registers to `dev` with the workspace Build-Secret key + your Lovable `SMARTLINKS_BUNDLE_BASE_URL` |
-| **Prod (CI)** | `prod` | registers to `prod` with the prod key; a missing key **hard-fails** |
+| **Prod (CI)** | `stable` | registers to `stable` with the prod/master key; a missing key **hard-fails** |
+
+**Two secrets, two scopes:** the **deploy key** is channel-scoped and can be a *workspace-level*
+Lovable Build Secret shared by every app (a dev key only writes `dev`, so sharing it is safe). The
+**`SMARTLINKS_APP_ID` is per-app** — set it as a *project-level* variable on each app, so each
+registers under its own authoritative platform id.
 
 The gate is `SMARTLINKS_CHANNEL`, so **set it only where you want a release** — i.e. on the
 Publish/CI build, not on preview. If your host exposes a publish-only signal (an env var it sets
