@@ -180,6 +180,22 @@ An ESM bundle **must externalize exactly the shared-dependency contract** — re
 (`SHARED_DEPENDENCY_SPECIFIERS`) rather than hard-coding it, and stamp the version you built against
 into `meta.sharedDependencies`. See [host-dependency-contract.md](host-dependency-contract.md).
 
+##### Validate before you ship: `smartlinks doctor`
+
+Run the checker (shipped with the SDK) against your built app — it reads the same contract the host
+serves, so the two can't drift:
+
+```bash
+npx smartlinks-doctor            # in the app dir, after building
+```
+
+It reads your manifest, and for every ESM surface confirms **every bare import in the bundle is a
+contract entry**. A correctly-externalized ESM bundle inlines everything except the host singletons,
+so anything else left as a bare import will either fail to resolve through the import map or silently
+double-load (the duplicate-React class of bug). It also warns when a UMD app still declares stale
+`*.es.js`/`*.esm.js` bundles the host will never load. Exit code is non-zero on violations, so it
+drops straight into CI.
+
 #### `build`
 
 Optional build provenance. Recommended for the **Lovable dev publish** flow: stamp the content

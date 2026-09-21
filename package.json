@@ -25,13 +25,15 @@
   },
   "bin": {
     "smartlinks-register-release": "scripts/register-release.mjs",
-    "smartlinks-publish": "scripts/publish.mjs"
+    "smartlinks-publish": "scripts/publish.mjs",
+    "smartlinks-doctor": "scripts/doctor.mjs"
   },
   "files": [
     "dist/",
     "docs/",
     "scripts/register-release.mjs",
     "scripts/publish.mjs",
+    "scripts/doctor.mjs",
     "openapi.yaml",
     "README.md"
   ],
