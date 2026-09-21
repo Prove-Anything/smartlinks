@@ -97,7 +97,7 @@ The manifest is loaded automatically by the platform for every collection page. 
     "files": {
       "js": {
         "umd": "dist/mobile-admin.umd.js",
-        "esm": "dist/mobile-admin.es.js"
+        "esm": "dist/mobile-admin.esm.js"
       },
       "css": null
     },
@@ -146,7 +146,7 @@ The manifest is loaded automatically by the platform for every collection page. 
 | `name` | string | ✅ | Human-readable display name |
 | `description` | string | ❌ | Short description shown in app directories and AI context |
 | `version` | string | ✅ | SemVer string, e.g. `"1.2.0"` |
-| `platformRevision` | string | ❌ | ISO date string marking the platform API revision this build targets |
+| `platformRevision` | string | ❌ | Platform revision tag this build targets, e.g. `"R5"` (see [host-dependency-contract.md](host-dependency-contract.md)) |
 | `moduleFormat` | `"umd"` \| `"esm"` \| `"dual"` | ❌ | How the host loads this app's bundles. Absent = `"umd"`. See [Module format](#module-format-umd-vs-esm) below. |
 | `sharedDependencies` | string | ❌ | Shared-dependency contract version the bundle was built against, e.g. `"v5"`. Used by the host to pick a compatible ESM import map. |
 | `globals` | object | ❌ | Per-app namespaced UMD globals (R4.7+), e.g. `{ "widgets": "MyAppWidgets" }`. UMD-only; ESM bundles don't need it. |
@@ -243,7 +243,7 @@ Apps such as widget toolkits often store reusable widget instances in collection
   "files": {
     "js": {
       "umd": "dist/widgets.umd.js",
-      "esm": "dist/widgets.es.js"
+      "esm": "dist/widgets.esm.js"
     },
     "css": null
   },
@@ -296,7 +296,7 @@ See [mobile-admin-container.md](mobile-admin-container.md) for the `AdminMobileH
   "files": {
     "js": {
       "umd": "dist/mobile-admin.umd.js",
-      "esm": "dist/mobile-admin.es.js"
+      "esm": "dist/mobile-admin.esm.js"
     },
     "css": null
   },

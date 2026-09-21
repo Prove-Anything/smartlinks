@@ -56,9 +56,9 @@ vite build
 | Step | Config / Script | Gate env var | Output |
 |------|----------------|-------------|--------|
 | 1 | `vite.config.ts` | Always runs | `index.html`, `admin.html`, `assets/*` |
-| 2 | `vite.config.widget.ts` | `VITE_ENABLE_WIDGETS=true` | `widgets.umd.js`, `widgets.es.js`, `widgets.css` |
-| 3 | `vite.config.container.ts` | `VITE_ENABLE_CONTAINERS=true` | `containers.umd.js`, `containers.es.js`, `containers.css` |
-| 4 | `vite.config.executor.ts` | `VITE_ENABLE_EXECUTOR!=false` | `executor.umd.js`, `executor.es.js` |
+| 2 | `vite.config.widget.ts` | `VITE_ENABLE_WIDGETS=true` | `widgets.umd.js`, `widgets.esm.js`, `widgets.css` |
+| 3 | `vite.config.container.ts` | `VITE_ENABLE_CONTAINERS=true` | `containers.umd.js`, `containers.esm.js`, `containers.css` |
+| 4 | `vite.config.executor.ts` | `VITE_ENABLE_EXECUTOR!=false` | `executor.umd.js`, `executor.esm.js` |
 | 5 | `scripts/hash-bundles.mjs` | Always runs | Renames bundles with content hashes; patches `dist/app.manifest.json` |
 
 Steps 2–4 produce a harmless stub file when their gate env var is not set. Step 5 detects and skips stub files automatically.

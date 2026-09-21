@@ -1,12 +1,12 @@
 # SmartLinks Executor Model
 
-> **SDK minimum:** `@proveanything/smartlinks@1.4.1`
+> **SDK:** `@proveanything/smartlinks@^2.0` (R5 baseline; build against 2.0.7+)
 
 ---
 
 ## What Is an Executor?
 
-An executor is a **standalone JavaScript library** (`executor.umd.js` / `executor.es.js`) that a SmartLinks app ships alongside its widget and container bundles. It exposes programmatic functions that external systems — AI orchestrators, the Hub server, setup wizards — can call **without rendering the app's UI**.
+An executor is a **standalone JavaScript library** (`executor.umd.js` / `executor.esm.js`) that a SmartLinks app ships alongside its widget and container bundles. It exposes programmatic functions that external systems — AI orchestrators, the Hub server, setup wizards — can call **without rendering the app's UI**.
 
 Every app can optionally ship an executor. The executor pattern solves three problems that iframe-based apps can't address on their own:
 
@@ -38,7 +38,7 @@ Every executor is declared in `app.manifest.json` so the platform can discover a
   },
   "executor": {
     "files": {
-      "js": { "umd": "dist/executor.umd.js", "esm": "dist/executor.es.js" }
+      "js": { "umd": "dist/executor.umd.js", "esm": "dist/executor.esm.js" }
     },
     "factory": "createMyAppExecutor",
     "exports": ["createMyAppExecutor", "getSEO", "getLLMContent"],
@@ -61,7 +61,7 @@ Every executor is declared in `app.manifest.json` so the platform can discover a
 
 ```typescript
 // ESM (modern bundlers, Deno, Node 18+)
-const { createMyAppExecutor } = await import('https://my-app.smartlinks.app/dist/executor.es.js');
+const { createMyAppExecutor } = await import('https://my-app.smartlinks.app/dist/executor.esm.js');
 
 // UMD (script tag, legacy environments)
 // After loading executor.umd.js:

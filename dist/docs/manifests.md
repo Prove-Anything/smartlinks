@@ -32,7 +32,7 @@ app.admin.json      ←  loaded on-demand (setup wizards, import, AI config flow
     "instanceResolution": true,
     "instanceParam": "widgetId",
     "files": {
-      "js": { "umd": "dist/widgets.umd.js", "esm": "dist/widgets.es.js" },
+      "js": { "umd": "dist/widgets.umd.js", "esm": "dist/widgets.esm.js" },
       "css": null
     },
     "components": [
@@ -46,13 +46,13 @@ app.admin.json      ←  loaded on-demand (setup wizards, import, AI config flow
   },
   "containers": {
     "files": {
-      "js": { "umd": "dist/containers.umd.js", "esm": "dist/containers.es.js" },
+      "js": { "umd": "dist/containers.umd.js", "esm": "dist/containers.esm.js" },
       "css": null
     },
     "components": [{ "name": "PublicContainer", "description": "Full app view." }]
   },
   "executor": {
-    "files": { "js": { "umd": "dist/executor.umd.js", "esm": "dist/executor.es.js" } },
+    "files": { "js": { "umd": "dist/executor.umd.js", "esm": "dist/executor.esm.js" } },
     "factory": "createMyAppExecutor",
     "exports": ["createMyAppExecutor", "getSEO", "getLLMContent"],
     "description": "Programmatic configuration and SEO API for My App."

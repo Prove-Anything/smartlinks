@@ -1,6 +1,6 @@
 # Native Capability Facade (`host.native` / `SL.native`)
 
-> **Version:** 1.12 · **Platform:** SmartLinks R4 · **Last updated:** 2026-04-30
+> **Version:** 1.12 · **Platform:** SmartLinks R5 · **Last updated:** 2026-09-21
 
 The `NativeFacade` is a thin contract layer between microapps and the device capabilities available on the current host shell (Kotlin, Capacitor iOS/Android, PWA, or browser). It lets a microapp call `host.native.share.share({...})` without knowing whether it's running over `window.SmartlinksScanner`, a Capacitor plugin, or `navigator.share`.
 

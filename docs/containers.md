@@ -1,7 +1,5 @@
 # SmartLinks Containers
 
-> **Copy this file into `node_modules/@proveanything/smartlinks/docs/containers.md`** in the published SDK package.
-
 Containers are the **full public app experience** packaged as an embeddable React component. Unlike widgets (lightweight previews/cards), containers render the complete public interface — all pages, routing, and features — inside a parent React application.
 
 ---
@@ -15,7 +13,7 @@ Containers are the **full public app experience** packaged as an embeddable Reac
 | **Loading**     | Loaded immediately with page       | Lazy-loaded on demand                        |
 | **Routing**     | None (single component)            | MemoryRouter (parent owns URL bar)           |
 | **Use case**    | Cards, thumbnails, quick glance    | "Open full view", embedded experiences       |
-| **Build output**| `widgets.umd.js` / `widgets.es.js` | `containers.umd.js` / `containers.es.js`    |
+| **Build output**| `widgets.umd.js` / `widgets.esm.js` | `containers.umd.js` / `containers.esm.js`    |
 
 ### Why Separate Bundles?
 
@@ -323,7 +321,7 @@ Parent App (owns URL bar, provides globals)
 
 ```typescript
 // Lazy-load the container only when needed
-const { PublicContainer } = await import('https://my-app.com/containers.es.js');
+const { PublicContainer } = await import('https://my-app.com/containers.esm.js');
 
 <PublicContainer
   collectionId="abc"
@@ -345,8 +343,12 @@ const { PublicContainer } = await import('https://my-app.com/containers.es.js');
 <!-- Ensure shared globals are set up first (see Shared Dependencies Contract) -->
 <script src="https://my-app.com/containers.umd.js"></script>
 <script>
-  const { PublicContainer } = window.SmartLinksContainers;
-  // Render with React
+  // The UMD global is PER-APP NAMESPACED — read the name from the manifest
+  // (manifest.meta.globals.containers), e.g. "SmartLinksContainers__myApp".
+  // Do NOT use a bare `window.SmartLinksContainers` — it collides across apps.
+  const globalName = manifest.meta.globals.containers;
+  const { PublicContainer } = window[globalName];
+  // Render with React (or prefer the ESM path: import from containers.esm.js)
 </script>
 ```
 
@@ -396,7 +398,7 @@ vite build --config vite.config.container.ts
 ```text
 dist/
 ├── containers.umd.js    # Full app container (UMD)
-├── containers.es.js     # Full app container (ESM)
+├── containers.esm.js    # Full app container (ESM)
 └── containers.css       # Container styles
 ```
 

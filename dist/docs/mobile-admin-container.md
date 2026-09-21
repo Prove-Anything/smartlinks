@@ -1,6 +1,6 @@
 ﻿# Mobile Admin Container SDK
 
-> **Version:** 1.0 · **Platform:** SmartLinks R4 · **Last updated:** 2026-04-30
+> **Version:** 1.0 · **Platform:** SmartLinks R5 · **Last updated:** 2026-09-21
 
 This document describes how to build a **Mobile Admin Container** — a SmartLinks microapp that provides an in-the-field operator/admin surface optimised for mobile devices. These containers ship as a **separate `mobileAdmin` bundle** (not inside the `containers` bundle) so that Capacitor plugins, offline helpers, and operator-only code never reach the public consumer bundle.
 
@@ -271,7 +271,7 @@ Declare the bundle under the top-level `mobileAdmin` key in `app.manifest.json`.
   "meta": { "appId": "my-app", "name": "My App", "version": "1.0.0" },
 
   "containers": {
-    "files": { "js": { "umd": "dist/containers.umd.js", "esm": "dist/containers.es.js" }, "css": "dist/containers.css" },
+    "files": { "js": { "umd": "dist/containers.umd.js", "esm": "dist/containers.esm.js" }, "css": "dist/containers.css" },
     "components": [
       { "name": "PublicContainer", "description": "Default consumer experience" }
     ]
@@ -281,7 +281,7 @@ Declare the bundle under the top-level `mobileAdmin` key in `app.manifest.json`.
     "files": {
       "js": {
         "umd": "dist/mobile-admin.umd.js",
-        "esm": "dist/mobile-admin.es.js"
+        "esm": "dist/mobile-admin.esm.js"
       },
       "css": null
     },
@@ -416,7 +416,7 @@ The mobile admin bundle has its own Vite config: `vite.config.mobile-admin.ts`.
 
 ```
 dist/mobile-admin.umd.js
-dist/mobile-admin.es.js
+dist/mobile-admin.esm.js
 dist/mobile-admin.css    (if needed)
 ```
 

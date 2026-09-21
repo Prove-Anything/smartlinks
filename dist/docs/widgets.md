@@ -14,7 +14,7 @@ Widgets are self-contained React components that:
 
 ```text
 ┌─────────────────────────────────────────────────────────────────┐
-│ Parent SmartLinks Portal (React 18)                             │
+│ Parent SmartLinks Portal (React 19)                             │
 │                                                                 │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐          │
 │  │ Competition  │  │ Music App    │  │ Warranty     │          │
@@ -344,7 +344,7 @@ Declare support in `app.manifest.json`:
     "files": {
       "js": {
         "umd": "dist/widgets.umd.js",
-        "esm": "dist/widgets.es.js"
+        "esm": "dist/widgets.esm.js"
       },
       "css": null
     },
@@ -511,7 +511,7 @@ export { MyWidget } from './MyWidget';
 // Update the manifest
 export const WIDGET_MANIFEST = {
   version: '1.0.0',
-  reactVersion: '18.x',
+  reactVersion: '19.x',
   widgets: [
     // ... existing widgets
     {
@@ -570,7 +570,7 @@ The project includes a separate Vite config for building widgets:
 # Build widgets only
 vite build --config vite.config.widget.ts
 
-# Output: dist/widgets.es.js
+# Output: dist/widgets.esm.js
 ```
 
 ### Build Configuration
@@ -626,7 +626,7 @@ import * as SL from '@proveanything/smartlinks';
 
 // Dynamic import from app's CDN
 const CompetitionWidget = lazy(() => 
-  import('https://competition-app.example.com/widgets.es.js')
+  import('https://competition-app.example.com/widgets.esm.js')
     .then(m => ({ default: m.CompetitionWidget }))
 );
 
@@ -670,7 +670,7 @@ import { WidgetWrapper, CompetitionWidget } from 'competition-app/widgets';
 import { WIDGET_MANIFEST } from 'competition-app/widgets';
 
 // Verify React version compatibility
-if (!WIDGET_MANIFEST.reactVersion.startsWith('18')) {
+if (!WIDGET_MANIFEST.reactVersion.startsWith('19')) {
   console.warn('Widget React version mismatch');
 }
 
@@ -741,7 +741,7 @@ Each app exports a `WIDGET_MANIFEST` for discovery:
 ```typescript
 export const WIDGET_MANIFEST = {
   version: '1.0.0',        // Widget bundle version
-  reactVersion: '18.x',    // Required React version
+  reactVersion: '19.x',    // Required React version
   widgets: [
     {
       name: 'ExampleWidget',

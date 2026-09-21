@@ -45,7 +45,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 
 > Product endpoints: use `products` (plural) for new integrations. The older `product` (singular) namespace remains for backward compatibility and is deprecated.
 
-> **Minimum SDK version: `1.4.1`** — Ensure `@proveanything/smartlinks` is at least this version. If not, update with `npm install @proveanything/smartlinks@latest`.
+> **SDK baseline: `@proveanything/smartlinks@^2.0`** (R5). Install/update with `npm install @proveanything/smartlinks@^2.0`. Individual features may need a higher minor — see the relevant doc. The single source of truth for the R5 host/version stack is [`host-dependency-contract.md`](host-dependency-contract.md).
 
 | Topic | File | When to Use |
 |-------|------|-------------|

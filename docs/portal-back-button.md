@@ -1,8 +1,7 @@
 # Portal Back Button — "Up" Navigation Inside Sub-Apps
 
-> **For sub-app authors.** Drop this file into the SmartLinks SDK docs (e.g.
-> `docs/portal-back-button.md`) and link it from `routing.md` / `mpa.md` so
-> microapp authors discover it.
+> **For sub-app authors.** How to cooperate with the portal shell's top-level
+> back/up control. See also [`mpa.md`](mpa.md).
 
 When a sub-app is embedded by a portal shell, the shell renders a top-level
 back button. By default that button **exits the app entirely** when tapped —

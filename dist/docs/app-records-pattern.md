@@ -6,7 +6,7 @@
 >
 > Status: **standard**. New apps MUST follow this contract; existing apps SHOULD migrate.
 >
-> SDK: `@proveanything/smartlinks` ≥ **1.11**.
+> SDK: `@proveanything/smartlinks` ≥ **2.0** (R5).
 > Admin shell (React only): `@proveanything/smartlinks-utils-ui` ≥ **0.7.6** — required for the admin side if using the React shell; not needed in public widgets.
 
 ---
@@ -347,7 +347,7 @@ interface EditorContext<TData> {
 
 ## 7. Migration checklist (existing apps)
 
-1. **Update SDKs:** `@proveanything/smartlinks@^1.11`, `@proveanything/smartlinks-utils-ui@^0.7.6`.
+1. **Update SDKs:** `@proveanything/smartlinks@^2.0`, `@proveanything/smartlinks-utils-ui@^2.0`.
 2. **Add `cardinality` and `allowFacetRules`** to every entry under `records` in `app.admin.json`.
 3. **Add `'rule'` (and `'collection'` if missing) to `scopes`** wherever `allowFacetRules: true`.
 4. **Pass `cardinality`** to `<RecordsAdminShell>`.

@@ -1,7 +1,5 @@
 # Item Context (container prop)
 
-> **Copy this file into `node_modules/@proveanything/smartlinks/docs/item-context.md`** in the published SDK package.
-
 When the URL points at a specific item — either a **serial proof URL** or an
 **NFC tap** — the portal derives an `ItemContext` describing what it found
 and hands it to the container as the **`itemContext`** prop.

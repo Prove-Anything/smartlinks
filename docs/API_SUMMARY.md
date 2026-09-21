@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.7  |  Generated: 2026-09-21T15:29:06.776Z
+Version: 2.0.8  |  Generated: 2026-09-21T15:53:57.985Z
 
 This is a concise summary of all available API functions and types.
 
@@ -17,7 +17,6 @@ For detailed guides on specific features:
 - **[Containers](containers.md)** - Building full-app embeddable containers (lazy-loaded)
 - **[Mobile Admin Container](mobile-admin-container.md)** - Building mobile-optimised operator/admin containers as a separate bundle
 - **[Container Tracking](container-tracking.md)** - Hierarchical physical/logical container groupings with item membership
-- **[Scanner Containers](scanner-container.md)** - Building scanner microapps for the SmartLinks Scanner Android host (RFID, NFC, QR, key events)
 - **[Multi-Page App Architecture](mpa.md)** - Vite MPA build pipeline: public/admin entry points, widget/container/executor bundles, content-hashed CDN assets
 - **[App Configuration Files](app-manifest.md)** - `app.manifest.json` and `app.admin.json` reference — bundles, components, setup questions, import schemas, tunable fields, and metrics
 - **[Executor Model](executor.md)** - Programmatic JS bundles for AI-driven setup, server-side SEO metadata generation, and LLM content for AI crawlers
