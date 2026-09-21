@@ -1,6 +1,8 @@
 # Container Tracking
 
 > Physical or logical groupings with hierarchical nesting, item membership, and attestation history.
+>
+> **Not [containers.md](containers.md)** — that's the embeddable app *bundle*. This doc is about grouping physical/logical **items** (cases, pallets, shipments…).
 
 ---
 

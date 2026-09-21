@@ -183,23 +183,3 @@ try {
 }
 ```
 
-## Migration from Old Behavior
-
-If you previously relied on caches persisting across refreshes:
-
-```typescript
-// Old (implicit) behavior:
-// - SessionStorage survived refreshes
-// - Apps might see stale data after F5
-
-// New (explicit) behavior:
-configureSdkCache({
-  clearOnPageLoad: true, // default - fresh data on refresh
-});
-
-// If you REALLY need old behavior (not recommended):
-configureSdkCache({
-  clearOnPageLoad: false,
-  persistence: 'indexeddb', // move to IndexedDB instead
-});
-```

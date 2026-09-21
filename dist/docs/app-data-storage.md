@@ -249,44 +249,6 @@ If the object starts needing richer semantics, migrate that use case to `app.rec
 
 ---
 
-## Migration from Old SDK
-
-### Old SDK → New SDK
-
-```typescript
-// OLD: Get user config
-RemoteApi.get({ path: `public/auth/app/${appId}` })
-// NEW:
-userAppData.getConfig(appId)
-
-// OLD: Set user config
-RemoteApi.post({ path: `public/auth/app/${appId}`, data })
-// NEW:
-userAppData.setConfig(appId, data)
-
-// OLD: Get user data items
-RemoteApi.get({ path: `public/auth/app/${appId}/data` })
-// NEW:
-userAppData.list(appId)
-
-// OLD: Get user data item
-RemoteApi.get({ path: `public/auth/app/${appId}/data/${itemId}` })
-// NEW:
-userAppData.get(appId, itemId)
-
-// OLD: Set user data item
-RemoteApi.post({ path: `public/auth/app/${appId}/data`, data: item })
-// NEW:
-userAppData.set(appId, item)
-
-// OLD: Delete user data item
-RemoteApi.delete({ path: `public/auth/app/${appId}/data/${itemId}` })
-// NEW:
-userAppData.remove(appId, itemId)
-```
-
----
-
 ## Complete API Reference
 
 ### `userAppData` (User-Specific Data)

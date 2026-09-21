@@ -1,5 +1,7 @@
 # SmartLinks Containers
 
+> **Not [container-tracking.md](container-tracking.md).** This doc is the embeddable full-app **bundle**; that one is about grouping physical/logical *items*.
+
 Containers are the **full public app experience** packaged as an embeddable React component. Unlike widgets (lightweight previews/cards), containers render the complete public interface — all pages, routing, and features — inside a parent React application.
 
 ---

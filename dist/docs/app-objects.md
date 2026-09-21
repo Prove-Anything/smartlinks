@@ -291,32 +291,6 @@ const summary = await app.cases.summary(collectionId, appId, {
 // Returns: { total: 142, byStatus: { open: 12, resolved: 130 }, ... }
 ```
 
-### Use Case: Support Dashboard
-
-Build a live support dashboard showing open cases by priority:
-
-```typescript
-const openCases = await app.cases.list(collectionId, appId, {
-  status: 'open',
-  sort: 'priority:desc',
-  limit: 50
-}, true);
-
-// Aggregate by category
-const stats = await app.cases.aggregate(collectionId, appId, {
-  filters: { status: 'open' },
-  groupBy: ['category', 'priority'],
-  metrics: ['count']
-}, true);
-
-// Time series: cases created per week
-const trend = await app.cases.aggregate(collectionId, appId, {
-  timeSeriesField: 'created_at',
-  timeSeriesInterval: 'week',
-  metrics: ['count']
-}, true);
-```
-
 ---
 
 ## Threads
@@ -380,53 +354,6 @@ await app.threads.reply(collectionId, appId, question.id, {
 await app.threads.update(collectionId, appId, question.id, {
   status: 'resolved'
 }, true);
-```
-
-### Use Case: Forum-Style Discussions
-
-List recent discussions with reply counts:
-
-```typescript
-// Get active threads
-const activeThreads = await app.threads.list(collectionId, appId, {
-  status: 'open',
-  sort: 'lastReplyAt:desc',
-  limit: 20
-});
-
-// Filter by tag
-const cleaningThreads = await app.threads.list(collectionId, appId, {
-  tag: 'cleaning'
-});
-
-// Aggregate: most active discussion topics
-const topicStats = await app.threads.aggregate(collectionId, appId, {
-  groupBy: ['status'],
-  metrics: ['count', 'reply_count']
-});
-```
-
-### Use Case: Product Comments
-
-Attach comments to a specific product:
-
-```typescript
-// Create a comment thread for a product
-await app.threads.create(collectionId, appId, {
-  visibility: 'public',
-  parentType: 'product',
-  parentId: product.id,
-  authorId: user.contactId,
-  body: { text: 'Love this product! Best purchase ever.' },
-  tags: ['positive']
-});
-
-// List all comments for a product
-const productComments = await app.threads.list(collectionId, appId, {
-  parentType: 'product',
-  parentId: product.id,
-  sort: 'createdAt:desc'
-});
 ```
 
 ### Anchoring to app entities and proofs
@@ -945,81 +872,6 @@ const activeRegistrations = await app.records.list(collectionId, appId, {
 const expiringSoon = await app.records.list(collectionId, appId, {
   recordType: 'product_registration',
   expiresAt: `lte:${new Date(Date.now() + 30*24*60*60*1000).toISOString()}` // next 30 days
-}, true);
-```
-
-### Example: Appointment Booking
-
-```typescript
-// Customer books a service appointment
-const booking = await app.records.create(collectionId, appId, {
-  recordType: 'service_appointment',
-  visibility: 'owner',
-  contactId: user.contactId,
-  startsAt: '2026-03-15T10:00:00Z',
-  expiresAt: '2026-03-15T11:00:00Z', // 1-hour appointment
-  data: {
-    serviceType: 'installation',
-    location: 'Customer site',
-    technician: null // assigned later
-  },
-  owner: {
-    address: '123 Main St',
-    phone: '555-1234',
-    notes: 'Call before arrival'
-  }
-});
-
-// Admin assigns technician
-await app.records.update(collectionId, appId, booking.id, {
-  data: {
-    serviceType: 'installation',
-    location: 'Customer site',
-    technician: 'tech_john'
-  },
-  admin: {
-    cost: 150.00,
-    travelTime: 30
-  }
-}, true);
-
-// List today's appointments
-const today = new Date().toISOString().split('T')[0];
-const todaysAppointments = await app.records.list(collectionId, appId, {
-  recordType: 'service_appointment',
-  startsAt: `gte:${today}T00:00:00Z`,
-  sort: 'startsAt:asc'
-}, true);
-```
-
-### Example: Usage Tracking
-
-```typescript
-// Log product usage (could be triggered by IoT device)
-await app.records.create(collectionId, appId, {
-  recordType: 'usage_log',
-  visibility: 'admin',
-  productId: product.id,
-  proofId: proof.id,
-  startsAt: new Date().toISOString(),
-  data: {
-    metric: 'power_on',
-    duration: 3600, // seconds
-    location: 'geo:37.7749,-122.4194'
-  }
-}, true);
-
-// Aggregate usage metrics
-const usageStats = await app.records.aggregate(collectionId, appId, {
-  filters: {
-    record_type: 'usage_log',
-    created_at: {
-      gte: '2026-02-01',
-      lte: '2026-02-28'
-    }
-  },
-  groupBy: ['product_id'],
-  metrics: ['count']
 }, true);
 ```
 
