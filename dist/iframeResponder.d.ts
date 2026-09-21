@@ -30,6 +30,12 @@ export declare class IframeResponder {
     private iframe;
     private options;
     private cache;
+    /**
+     * Timestamp of the last anonymous (`401`) `/account` result, so a burst of
+     * "am I logged in?" checks on one page load doesn't re-hit the API 3–4 times.
+     * Only used while `cache.user` is unset; cleared the moment a login lands.
+     */
+    private lastAnonAccountAt;
     private uploads;
     private activeStreams;
     private isInitialLoad;

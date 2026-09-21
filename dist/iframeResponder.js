@@ -34,6 +34,12 @@ import { getBaseURL } from './http.js';
 export class IframeResponder {
     constructor(options) {
         this.iframe = null;
+        /**
+         * Timestamp of the last anonymous (`401`) `/account` result, so a burst of
+         * "am I logged in?" checks on one page load doesn't re-hit the API 3–4 times.
+         * Only used while `cache.user` is unset; cleared the moment a login lands.
+         */
+        this.lastAnonAccountAt = 0;
         this.uploads = new Map();
         this.activeStreams = new Map();
         this.isInitialLoad = true;
@@ -346,8 +352,10 @@ export class IframeResponder {
                     // TODO: Validate token using SDK auth utilities when available
                     // await auth.verifyToken(token);
                     await this.options.onAuthLogin(token, user, accountData);
-                    // Update cache with new user
+                    // Update cache with new user; drop any stale "anonymous" account marker
+                    // so the next check reflects the fresh login immediately.
                     this.cache.user = user;
+                    this.lastAnonAccountAt = 0;
                     this.sendResponse(event, {
                         type: 'smartlinks:authkit:login-acknowledged',
                         messageId,
@@ -414,6 +422,20 @@ export class IframeResponder {
                     return;
                 }
             }
+            // Anonymous /account: serve the recent "not authenticated" result instead of
+            // re-hitting the API on every check during a single page load. The positive
+            // path above already handles logged-in users (cache.user set), and the first
+            // check still goes to the network, so any real auth path is preserved.
+            if (proxyData.method === 'GET' && path.includes('/account') && !this.cache.user) {
+                const ANON_ACCOUNT_TTL_MS = 30000;
+                if (this.lastAnonAccountAt && Date.now() - this.lastAnonAccountAt < ANON_ACCOUNT_TTL_MS) {
+                    response.statusCode = 401;
+                    response.error = 'Not authenticated';
+                    response.errorBody = { account: null, errorCode: 'NOT_AUTHENTICATED' };
+                    this.sendResponse(event, response);
+                    return;
+                }
+            }
             // Forward to actual API using SDK's configured baseURL
             const baseUrl = getBaseURL();
             if (!baseUrl) {
@@ -434,6 +456,10 @@ export class IframeResponder {
                 response.error = (responseData === null || responseData === void 0 ? void 0 : responseData.message) || (responseData === null || responseData === void 0 ? void 0 : responseData.errorText) || `Request failed with status ${fetchResponse.status}`;
                 response.statusCode = fetchResponse.status;
                 response.errorBody = responseData;
+                // Remember an anonymous /account result so repeat checks skip the network.
+                if (fetchResponse.status === 401 && path.includes('/account') && !this.cache.user) {
+                    this.lastAnonAccountAt = Date.now();
+                }
             }
             else {
                 response.data = responseData;
