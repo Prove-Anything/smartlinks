@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.7  |  Generated: 2026-09-21T14:35:59.204Z
+Version: 2.0.7  |  Generated: 2026-09-21T15:05:27.084Z
 
 This is a concise summary of all available API functions and types.
 
@@ -220,8 +220,8 @@ Returns true if the SDK currently has any auth credential set (bearer token or A
 }) → `void`
 Configure the SDK's built-in in-memory GET cache. The cache is transparent — it sits inside the HTTP layer and requires no changes to your existing API calls. All GET requests benefit automatically. Per-resource rules (collections/products → 1 h, proofs → 30 s, etc.) override this value. in-memory only (`'none'`, default). Ignored in Node.js. fallback, from the original fetch time (default: 7 days). `SmartlinksOfflineError` with stale data instead of propagating the network error. caches on page load/refresh. IndexedDB persists for offline. ```ts // Enable IndexedDB persistence for offline support configureSdkCache({ persistence: 'indexeddb' }) // Disable cache entirely in test environments configureSdkCache({ enabled: false }) // Keep caches across page refreshes (not recommended for production) configureSdkCache({ clearOnPageLoad: false }) ```
 
-**invalidateCache**(urlPattern?: string) → `void`
-Manually invalidate entries in the SDK's GET cache. *contains* this string is removed. Omit (or pass `undefined`) to wipe the entire cache. ```ts invalidateCache()                     // clear everything invalidateCache('/collection/abc123') // one specific collection invalidateCache('/product/')          // all legacy singular product responses invalidateCache('/products/')         // all canonical plural product responses ```
+**invalidateCache**(urlPattern?: string, options?: InvalidateCacheOptions) → `void`
+Manually invalidate entries in the SDK's GET cache. Note: the GET cache is **in-memory, per page load** (with an optional L2 IndexedDB layer when persistence is enabled) — it does not persist across reloads unless you opt into persistence, so it rarely needs disabling "for correctness". *contains* this string is removed). With `{ exact: true }`, matches the path precisely. Omit to wipe the entire cache. ```ts invalidateCache()                                  // clear everything invalidateCache('/collection/abc123')              // that collection AND everything under it invalidateCache('/collection/abc123', { exact: true }) // ONLY that collection entry invalidateCache('/products/')                      // all canonical plural product responses ```
 
 **proxyUploadFormData**(path: string,
   formData: FormData,

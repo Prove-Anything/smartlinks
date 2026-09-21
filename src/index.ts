@@ -6,6 +6,7 @@ export * from "./api"
 export * from "./types"
 // Iframe namespace
 export { iframe } from "./iframe"
+export type { InvalidateCacheOptions } from "./http"
 // Cache utilities
 export * as cache from './cache'
 // IframeResponder (also exported via iframe namespace)

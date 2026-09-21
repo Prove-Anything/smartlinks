@@ -168,22 +168,38 @@ export declare function configureSdkCache(options: {
     serveStaleOnOffline?: boolean;
     clearOnPageLoad?: boolean;
 }): void;
+/** Options for {@link invalidateCache}. */
+export interface InvalidateCacheOptions {
+    /**
+     * Match the path **exactly** (ignoring any query string) instead of the default
+     * substring match. Use this to clear one resource without wiping everything
+     * nested under it — e.g. `invalidateCache('/collection/abc', { exact: true })`
+     * drops only that entry, not `/collection/abc/settings|widgets|products|proofs`.
+     */
+    exact?: boolean;
+}
 /**
  * Manually invalidate entries in the SDK's GET cache.
  *
- * @param urlPattern - Optional substring match. Every cache entry whose key
- *   *contains* this string is removed. Omit (or pass `undefined`) to wipe the
- *   entire cache.
+ * Note: the GET cache is **in-memory, per page load** (with an optional L2
+ * IndexedDB layer when persistence is enabled) — it does not persist across
+ * reloads unless you opt into persistence, so it rarely needs disabling "for
+ * correctness".
+ *
+ * @param urlPattern - Substring match by default (every entry whose key
+ *   *contains* this string is removed). With `{ exact: true }`, matches the path
+ *   precisely. Omit to wipe the entire cache.
+ * @param options - See {@link InvalidateCacheOptions}.
  *
  * @example
  * ```ts
- * invalidateCache()                     // clear everything
- * invalidateCache('/collection/abc123') // one specific collection
- * invalidateCache('/product/')          // all legacy singular product responses
- * invalidateCache('/products/')         // all canonical plural product responses
+ * invalidateCache()                                  // clear everything
+ * invalidateCache('/collection/abc123')              // that collection AND everything under it
+ * invalidateCache('/collection/abc123', { exact: true }) // ONLY that collection entry
+ * invalidateCache('/products/')                      // all canonical plural product responses
  * ```
  */
-export declare function invalidateCache(urlPattern?: string): void;
+export declare function invalidateCache(urlPattern?: string, options?: InvalidateCacheOptions): void;
 /**
  * Upload a FormData payload via proxy with progress events using chunked postMessage.
  * Parent is expected to implement the counterpart protocol.

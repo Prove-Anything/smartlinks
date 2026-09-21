@@ -2,6 +2,7 @@ export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, in
 export * from "./api/index.js";
 export * from "./types/index.js";
 export { iframe } from "./iframe.js";
+export type { InvalidateCacheOptions } from "./http.js";
 export * as cache from './cache.js';
 export { IframeResponder, isAdminFromRoles, buildIframeSrc, } from './iframeResponder.js';
 export * as utils from './utils/index.js';
