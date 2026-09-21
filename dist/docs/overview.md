@@ -7,7 +7,9 @@
 
 ## What Is a SmartLinks Microapp?
 
-SmartLinks microapps are **modular, embeddable React applications** that extend the SmartLinks platform — product info, warranty registration, competitions, and more. SmartLinks connects physical products to digital experiences: each item has a digital identity (a "proof") that is scanned, claimed, and enriched over time; microapps are its extensibility layer. Each app:
+SmartLinks connects **physical products to digital experiences**: each item has a digital identity — a **proof** — that a consumer reaches by scanning a QR / NFC tag, then claims and enriches over time. A **microapp** is a focused, embeddable React experience a brand adds to that product's digital life: product info, warranty registration, authenticity checks, manuals, competitions, loyalty, post-purchase support, and more.
+
+Rather than baking every feature into the core platform, functionality is distributed across purpose-built apps, so a brand adds exactly the experiences its product needs. Each app:
 
 - **Embeds** in the SmartLinks Portal (public) and Admin Console (management)
 - **Shares context** through URL parameters (collection, product, proof)
