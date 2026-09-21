@@ -107,7 +107,7 @@ dist/
 └── executor-[hash].es.js           ← Executor bundle (ESM)
 ```
 
-> Widget and container CSS files are only present when the bundle ships custom styles. Most apps set `"css": null` in the manifest because they rely entirely on Tailwind/shadcn from the parent. See the [AI-Native App Manifests](manifests.md) guide for the CSS null warning.
+> Widget and container CSS files are only present when the bundle ships custom styles. Most apps set `"css": null` in the manifest because they rely entirely on Tailwind/shadcn from the parent. See the [App Configuration Files](app-manifest.md) for the CSS null warning.
 
 ---
 
@@ -133,6 +133,6 @@ If the embedded app exposes nested screens, document its "up" navigation path wi
 | [Widgets](widgets.md) | Widget bundle: components, props, settings |
 | [Containers](containers.md) | Container bundle: full-app embeds |
 | [Executor Model](executor.md) | Executor bundle: SEO, LLM content, config mutations |
-| [AI-Native App Manifests](manifests.md) | How manifests wire all bundles together for AI discovery |
+| [App Configuration Files](app-manifest.md) | Manifest + admin reference; widget settings schema; AI workflows |
 | [iframe Responder](iframe-responder.md) | Reading context params inside the iframe |
 | [Portal Back Button](portal-back-button.md) | Hierarchy-aware back navigation for embedded apps |

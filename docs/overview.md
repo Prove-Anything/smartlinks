@@ -67,7 +67,6 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Portal Back Button** | `docs/portal-back-button.md` | Hierarchy-aware "up" navigation inside embedded apps |
 | **Portal Request Action** | `docs/portal-request-action.md` | Triggering portal built-in actions (__qrScanner, __share, __logout, etc.) from sub-apps |
 | **Interactions** | `docs/interactions.md` | Business events, outcomes, voting, competitions, and journey triggers |
-| **AI-Native Manifests** | `docs/manifests.md` | `app.manifest.json`, `app.admin.json`, `ai-guide.md` structure |
 | **App Config Files** | `docs/app-manifest.md` | Full field-by-field reference for both JSON config files |
 | **Real-time Messaging** | `docs/realtime.md` | Adding Ably real-time features (chat, live updates) |
 | **Liquid Templates** | `docs/liquid-templates.md` | Dynamic content rendering with LiquidJS |

@@ -312,4 +312,4 @@ Now that you understand the core concepts, see the implementation guides:
 - [deep-link-discovery.md](./deep-link-discovery.md) — Deep linking patterns
 - [portal-back-button.md](./portal-back-button.md) — Portal shell back-button behavior for hierarchical embeds
 - [portal-auth-broadcast.md](./portal-auth-broadcast.md) — Custom authentication and session broadcast
-- [manifests.md](./manifests.md) — App manifest configuration
+- [app-manifest.md](./app-manifest.md) — App configuration files (manifest + admin)

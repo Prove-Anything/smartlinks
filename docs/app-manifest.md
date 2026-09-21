@@ -598,6 +598,54 @@ Declares what interactions and KPIs the app reports. Used by the platform's anal
 
 ---
 
+## Widget settings schema (JSON Schema)
+
+Each widget component's `settings` object uses **JSON Schema** to describe its configurable props, so schema-form renderers *and* AI orchestrators can auto-generate a config UI without per-widget code:
+
+```json
+"components": [
+  {
+    "name": "MyWidget",
+    "description": "What this widget does",
+    "sizes": ["compact", "standard", "large"],
+    "settings": {
+      "type": "object",
+      "properties": {
+        "displayMode": {
+          "type": "string", "title": "Display Mode",
+          "description": "How the widget renders",
+          "enum": ["compact", "standard", "large"],
+          "enumLabels": { "compact": "Icons only", "standard": "With names", "large": "Full cards" },
+          "default": "standard", "order": 1
+        },
+        "showImage": { "type": "boolean", "title": "Show Product Image", "default": true, "order": 2 }
+      }
+    }
+  }
+]
+```
+
+| Field | Purpose |
+|-------|---------|
+| `type`, `enum` | Standard JSON Schema validation |
+| `title` | Human-readable form label |
+| `description` | Help text shown alongside the field |
+| `enumLabels` | Friendly display names for enum values (`{ value → label }`) |
+| `default` | Pre-selected value when no config exists |
+| `order` | Field display order (lower number = higher) |
+
+The schema serves both AI orchestrators (understand what a widget accepts, configure it conversationally) and schema-form renderers (auto-generate settings UIs).
+
+## AI workflows the manifest enables
+
+SmartLinks manifests are **AI-discoverable, -configurable, and -importable**: the structured manifest plus the prose `ai-guide.md` (start from [ai-guide-template.md](ai-guide-template.md)) let AI systems set up and populate apps without custom integration code. Three workflows read the manifest:
+
+1. **Widget Builder** — reads `widgets.components[]` and each `settings` schema to embed a widget with correct props and auto-render its configuration UI.
+2. **Setup Wizard** — reads `setup` from `app.admin.json`: walks `setup.questions[]`, validates against `setup.configSchema`, optionally auto-generates content via `SL.ai`, then saves per `setup.saveWith`.
+3. **Data Importer** — reads `import` from `app.admin.json`: builds a CSV template from `import.fields[]`, normalises rows, and calls `import.saveWith.method` per row (multi-app imports merge fields into one CSV).
+
+When you change your config shape, keep all three in sync: `app.manifest.json` (widget `settings`, containers, executor, linkable), `app.admin.json` (setup / import / tunable), and `ai-guide.md` (prose guidance).
+
 ## Reading the Files at Runtime
 
 ### Manifest — available from the widgets endpoint

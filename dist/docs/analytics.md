@@ -46,7 +46,7 @@ There are two analytics domains:
 
 The backend stores custom analytics dimensions in `metadata`, but promoted analytics fields now belong at top level and are queried from real columns.
 
-See [docs/analytics-metadata-conventions.md](analytics-metadata-conventions.md) for the recommended key set.
+See [Metadata conventions](#metadata-conventions) below for the recommended key set.
 
 ### A note on server-written events
 
@@ -663,7 +663,7 @@ Analytics metadata filtering currently works best with top-level scalar keys suc
 - `utmCampaign`
 - `pagePath`
 
-See [docs/analytics-metadata-conventions.md](analytics-metadata-conventions.md) for the recommended shared vocabulary.
+See [Metadata conventions](#metadata-conventions) for the recommended shared vocabulary.
 
 ### 4. Prefer generic endpoints for custom dashboards
 
@@ -718,4 +718,43 @@ async function loadScanDashboard(collectionId: string) {
     suspiciousTags: suspicious.charts.suspiciousTags,
   }
 }
+```
+
+---
+
+## Metadata conventions
+
+Recommended standard analytics keys — a shared vocabulary so teams don't invent divergent names. Some are promoted top-level fields; others are good `metadata` keys for custom dimensions.
+
+### Promoted top-level fields
+
+Send these at the **top level**, not inside `metadata`: `visitorId`, `referrerHost`, `entryType`, `pageId`, `scanMethod`, `source` (collection/web-events only — free-form client id like `'portal'`/`'hub'`; not on tag events), `redirectMode` (tag-events only; usually server-written).
+
+### Metadata-friendly keys
+
+`referrer`, `utmSource`, `utmMedium`, `utmCampaign`, `utmContent`, `utmTerm`, `group`, `tag`, `campaign`, `placement`, `linkGroup`, `linkPlacement`, `linkPosition`, `linkTitle`, `destinationDomain`, `pagePath`, `qrCodeId`.
+
+### Guidance
+
+- Treat these as reserved standard keys; prefer them before inventing alternatives.
+- Keep values flat and scalar so they're easy to filter/break-down later.
+- Promote a field to a first-class backend column only when it becomes a hot platform-wide dimension.
+- `source` (the event column) and the query-time `source` parameter (`'events' | 'tag'`, which table to query) are unrelated fields that share a name — filter the column via the **plural** `sources` array (there is no singular `source` filter).
+
+```typescript
+analytics.collection.track({
+  sessionId: 1234567890,
+  eventType: 'click_link',
+  collectionId: 'demo-collection',
+  visitorId: 'visitor_123',
+  linkId: 'hero-cta',
+  href: 'https://example.com/buy',
+  referrerHost: 'instagram.com',
+  placement: 'hero',
+  campaign: 'summer-launch',
+  utmSource: 'email',
+  pageId: 'QR123',
+  source: 'portal',
+  metadata: { pagePath: '/c/demo-collection' },
+})
 ```

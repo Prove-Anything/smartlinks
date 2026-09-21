@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.9  |  Generated: 2026-09-21T16:16:13.755Z
+Version: 2.0.9  |  Generated: 2026-09-21T16:20:44.064Z
 
 This is a concise summary of all available API functions and types.
 
@@ -23,8 +23,7 @@ For detailed guides on specific features:
 - **[Server Functions](server-functions.md)** - App-authored server-side "edge functions" (`async (ctx, event) => result`): http/event/cron triggers, the visibility/authority/capabilities security model, and the pre-scoped `ctx` (authority-scoped SDK, capability-gated secrets + fetch)
 - **[Deploying & Registering an App](deploying-apps.md)** - Publish → build → register: the app CDN layout (smartlinks.app), dev/beta/prod channels, channel-scoped deploy keys, the `POST /apps/:appId/releases` registration endpoint + validation, and how to wire it into your build so a bad manifest fails the deploy
 - **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections
-- **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication
-- **[iframe Streaming Parent Changes](iframe-streaming-parent-changes.md)** - Parent-side changes required to support AI streaming in iframe proxy mode
+- **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication (incl. hand-rolled streaming protocol)
 - **[Utilities](utils.md)** - Helper functions for building portal paths, URLs, and common tasks
 - **[UI Utils](ui-utils.md)** - Reusable, themeable admin UI React component library for microapps
 - **[Caching](caching.md)** - Multi-tier caching strategy (in-memory, SessionStorage, IndexedDB) used by the SDK
@@ -62,7 +61,6 @@ For detailed guides on specific features:
 - **[Integrations](integrations.md)** - Inbound/outbound integration flows + the sealed-secret store; triggers (manual/event/schedule), field mappings, and the Syndigo/Event Hub outbound path
 - **[AI Tools & Skills](ai-tools-and-skills.md)** - The AI capability catalog: skills apps invoke by name (e.g. research.brand), the tools the AI reaches for (web fetch/screenshot/brand assets/image gen), the agent loop, and how apps discover them
 - **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration
-- **[AI-Native App Manifests](manifests.md)** - How AI workflows discover, configure, and import apps via structured manifests and prose guides
 - **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide
 
 ## Choosing App Storage

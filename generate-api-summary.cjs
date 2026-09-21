@@ -242,8 +242,7 @@ function generateAPISummary() {
   summary += '- **[Server Functions](server-functions.md)** - App-authored server-side "edge functions" (`async (ctx, event) => result`): http/event/cron triggers, the visibility/authority/capabilities security model, and the pre-scoped `ctx` (authority-scoped SDK, capability-gated secrets + fetch)\n';
   summary += '- **[Deploying & Registering an App](deploying-apps.md)** - Publish → build → register: the app CDN layout (smartlinks.app), dev/beta/prod channels, channel-scoped deploy keys, the `POST /apps/:appId/releases` registration endpoint + validation, and how to wire it into your build so a bad manifest fails the deploy\n';
   summary += '- **[Realtime](realtime.md)** - Real-time data updates and WebSocket connections\n';
-  summary += '- **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication\n';
-  summary += '- **[iframe Streaming Parent Changes](iframe-streaming-parent-changes.md)** - Parent-side changes required to support AI streaming in iframe proxy mode\n';
+  summary += '- **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication (incl. hand-rolled streaming protocol)\n';
   summary += '- **[Utilities](utils.md)** - Helper functions for building portal paths, URLs, and common tasks\n';
   summary += '- **[UI Utils](ui-utils.md)** - Reusable, themeable admin UI React component library for microapps\n';
   summary += '- **[Caching](caching.md)** - Multi-tier caching strategy (in-memory, SessionStorage, IndexedDB) used by the SDK\n';
@@ -281,7 +280,6 @@ function generateAPISummary() {
   summary += '- **[Integrations](integrations.md)** - Inbound/outbound integration flows + the sealed-secret store; triggers (manual/event/schedule), field mappings, and the Syndigo/Event Hub outbound path\n';
   summary += '- **[AI Tools & Skills](ai-tools-and-skills.md)** - The AI capability catalog: skills apps invoke by name (e.g. research.brand), the tools the AI reaches for (web fetch/screenshot/brand assets/image gen), the agent loop, and how apps discover them\n';
   summary += '- **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration\n';
-  summary += '- **[AI-Native App Manifests](manifests.md)** - How AI workflows discover, configure, and import apps via structured manifests and prose guides\n';
   summary += '- **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide\n\n';
 
   summary += '## Choosing App Storage\n\n';
