@@ -1,5 +1,5 @@
 /** Current contract revision. Bumped when the entry list or host versions change. */
-export declare const SHARED_DEPENDENCY_CONTRACT_VERSION: "v5";
+export declare const SHARED_DEPENDENCY_CONTRACT_VERSION: "v6";
 export interface SharedDependency {
     /** Bare import specifier the app writes, e.g. `react-dom/client`. */
     specifier: string;
@@ -13,8 +13,8 @@ export interface SharedDependency {
 /**
  * Canonical import-map path for a specifier: drop the leading `@` scope marker and
  * turn every `/` into `-`.
- *   'react-dom/client'      -> '/sl-shared/v5/react-dom-client.js'
- *   '@radix-ui/react-slot'  -> '/sl-shared/v5/radix-ui-react-slot.js'
+ *   'react-dom/client'      -> '/sl-shared/v6/react-dom-client.js'
+ *   '@radix-ui/react-slot'  -> '/sl-shared/v6/radix-ui-react-slot.js'
  * Hosts MUST serve shims at these paths so the map the SDK advertises resolves.
  */
 export declare function importMapPathFor(specifier: string, version?: string): string;

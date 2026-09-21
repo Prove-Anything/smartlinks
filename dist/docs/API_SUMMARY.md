@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.10  |  Generated: 2026-09-21T18:01:30.424Z
+Version: 2.0.11  |  Generated: 2026-09-21T19:24:12.520Z
 
 This is a concise summary of all available API functions and types.
 
@@ -580,6 +580,11 @@ interface ResponsesRequest {
   max_concurrent_subagents?: number
   }
   service_tier?: 'auto' | 'standard' | 'flex' | 'priority'
+  server_tools?: boolean | AiToolName[]
+  allowCapabilities?: AiToolCapability[]
+  only?: AiToolName[]
+  exclude?: AiToolName[]
+  maxSteps?: number
 }
 ```
 
@@ -604,6 +609,7 @@ interface ResponsesResult {
   conversation?: unknown
   provider: 'openai'
   responseTime: number
+  _agent?: ResponsesAgentTrace
 }
 ```
 
@@ -1187,6 +1193,258 @@ interface CatalogResponse {
   skills: SkillDescriptor[]
 }
 ```
+
+**WebFetchPageArgs** (interface)
+```typescript
+interface WebFetchPageArgs {
+  url: string; type?: string; forceRefresh?: boolean
+}
+```
+
+**WebExtractSchemaArgs** (interface)
+```typescript
+interface WebExtractSchemaArgs {
+  url: string; schemaType?: string; forceRefresh?: boolean
+}
+```
+
+**WebScreenshotArgs** (interface)
+```typescript
+interface WebScreenshotArgs {
+  url: string
+}
+```
+
+**WebSearchArgs** (interface)
+```typescript
+interface WebSearchArgs {
+  query: string; limit?: number; scrapeContent?: boolean
+}
+```
+
+**BrandAssetsArgs** (interface)
+```typescript
+interface BrandAssetsArgs {
+  url: string
+}
+```
+
+**DocumentReadArgs** (interface)
+```typescript
+interface DocumentReadArgs {
+  url: string; forceRefresh?: boolean
+}
+```
+
+**DataExtractArgs** (interface)
+```typescript
+interface DataExtractArgs {
+  url: string; schema?: Record<string, any>; prompt?: string
+}
+```
+
+**ImageDescribeArgs** (interface)
+```typescript
+interface ImageDescribeArgs {
+  imageUrl: string; prompt?: string
+}
+```
+
+**ImageGenerateArgs** (interface)
+```typescript
+interface ImageGenerateArgs {
+  prompt: string; size?: string; provider?: 'openai' | 'gemini'
+}
+```
+
+**ImageFromReferenceArgs** (interface)
+```typescript
+interface ImageFromReferenceArgs {
+  prompt: string; imageUrls: string[]; size?: string; model?: string
+}
+```
+
+**ImageSearchStockArgs** (interface)
+```typescript
+interface ImageSearchStockArgs {
+  query: string; per_page?: number; orientation?: 'landscape' | 'portrait' | 'squarish'
+}
+```
+
+**ImageTransformArgs** (interface)
+```typescript
+interface ImageTransformArgs {
+  imageUrl: string
+  resize?: { width?: number; height?: number; fit?: 'cover' | 'contain' | 'fill' | 'inside' | 'outside'; allowUpscale?: boolean }
+  crop?: { left: number; top: number; width: number; height: number }
+  rotate?: number
+  flip?: boolean
+  flop?: boolean
+  grayscale?: boolean
+  tint?: string
+  modulate?: { brightness?: number; saturation?: number; hue?: number; lightness?: number }
+  format?: 'jpeg' | 'png' | 'webp' | 'avif'
+  quality?: number
+}
+```
+
+**PdfCreateArgs** (interface)
+```typescript
+interface PdfCreateArgs {
+  html: string; format?: string; landscape?: boolean
+}
+```
+
+**PdfFillArgs** (interface)
+```typescript
+interface PdfFillArgs {
+  url: string; fields: Record<string, string | number | boolean>; flatten?: boolean
+}
+```
+
+**PdfMergeArgs** (interface)
+```typescript
+interface PdfMergeArgs {
+  urls: string[]
+}
+```
+
+**HttpRequestArgs** (interface)
+```typescript
+interface HttpRequestArgs {
+  url: string; method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD'; headers?: Record<string, string>; body?: any
+}
+```
+
+**TranslateArgs** (interface)
+```typescript
+interface TranslateArgs {
+  text: string; targetLanguages: string[]; sourceLanguage?: string
+}
+```
+
+**AiToolArgsMap** (interface)
+```typescript
+interface AiToolArgsMap {
+  'web.fetchPage': WebFetchPageArgs
+  'web.extractSchema': WebExtractSchemaArgs
+  'web.screenshot': WebScreenshotArgs
+  'web.search': WebSearchArgs
+  'brand.assets': BrandAssetsArgs
+  'document.read': DocumentReadArgs
+  'data.extract': DataExtractArgs
+  'image.describe': ImageDescribeArgs
+  'image.generate': ImageGenerateArgs
+  'image.fromReference': ImageFromReferenceArgs
+  'image.searchStock': ImageSearchStockArgs
+  'image.transform': ImageTransformArgs
+  'pdf.create': PdfCreateArgs
+  'pdf.fill': PdfFillArgs
+  'pdf.merge': PdfMergeArgs
+  'http.request': HttpRequestArgs
+  'translate': TranslateArgs
+}
+```
+
+**WebSearchResultItem** (interface)
+```typescript
+interface WebSearchResultItem {
+  url: string | null; title: string | null; description: string | null; markdown?: string
+}
+```
+
+**WebSearchResult** (interface)
+```typescript
+interface WebSearchResult {
+  query: string; results: WebSearchResultItem[]
+}
+```
+
+**DocumentReadResult** (interface)
+```typescript
+interface DocumentReadResult {
+  url: string; text: string | null; metadata?: any; provider?: string; cached?: boolean
+}
+```
+
+**DataExtractResult** (interface)
+```typescript
+interface DataExtractResult {
+  url: string; data: Record<string, any>
+}
+```
+
+**WebFetchPageResult** (interface)
+```typescript
+interface WebFetchPageResult {
+  url: string; markdown?: string | null; html?: string | null; metadata?: any; schemas?: any[]; provider?: string; cached?: boolean; status?: number | null
+}
+```
+
+**ImageDescribeResult** (interface)
+```typescript
+interface ImageDescribeResult {
+  imageUrl: string; text: string | null
+}
+```
+
+**HostedAssetResult** (interface)
+```typescript
+interface HostedAssetResult {
+  hostedUrl: string | null; contentType?: string; info?: { width?: number; height?: number; format?: string; size?: number }
+}
+```
+
+**HttpRequestResult** (interface)
+```typescript
+interface HttpRequestResult {
+  status: number; headers: Record<string, any>; body: any; truncated: boolean; finalUrl: string
+}
+```
+
+**TranslateResult** (interface)
+```typescript
+interface TranslateResult {
+  translations: Record<string, string>; sourceLanguage: string
+}
+```
+
+**ResponsesAgentTrace** (interface)
+```typescript
+interface ResponsesAgentTrace {
+  steps: number
+  maxStepsReached: boolean
+  toolResults: AgentToolResult[]
+  availableTools: string[]
+}
+```
+
+**AgentToolCallEvent** (interface)
+```typescript
+interface AgentToolCallEvent {
+  type: 'agent.tool_call'; name: string; args: Record<string, any>
+}
+```
+
+**AgentToolResultEvent** (interface)
+```typescript
+interface AgentToolResultEvent {
+  type: 'agent.tool_result'; name: string; isError: boolean; result: any
+}
+```
+
+**AgentResponseCompletedEvent** (interface)
+```typescript
+interface AgentResponseCompletedEvent {
+  type: 'response.completed'; response: ResponsesResult; _agent: ResponsesAgentTrace
+}
+```
+
+**AiToolCapability** = ``
+
+**AiToolName** = ``
+
+**AgentStreamEvent** = ``
 
 ### analytics
 

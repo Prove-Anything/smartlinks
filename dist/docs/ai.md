@@ -257,6 +257,85 @@ const response = await ai.chat.responses.create('my-collection', {
 console.log(response.output);
 ```
 
+### Server-side tools (built-in agent loop)
+
+The example above is **client-relayed** tool calling: you define the tools, the model returns
+`tool_call` requests, and *your app* executes them and sends results back. For the common tools —
+reading and searching the web, vision, reading documents, generating images — the platform ships a
+curated, tested **built-in toolset it runs itself**. Opt in with `server_tools` and the server
+executes each tool and feeds the result back automatically, looping until the model has its answer.
+You get one final response; no relay code.
+
+```typescript
+// Enable the whole built-in toolset:
+const res = await ai.chat.responses.create('my-collection', {
+  model: 'balanced',
+  input: 'Research acme.com and summarise what they sell, with their brand colours.',
+  server_tools: true
+});
+console.log(res.output_text);
+console.log(res._agent.toolResults); // trace: which tools ran, with what result
+```
+
+Scope it to specific tools (recommended — smaller blast radius, faster), by name or capability:
+
+```typescript
+import { AI_TOOL_NAMES } from '@proveanything/smartlinks';
+
+const res = await ai.chat.responses.create('my-collection', {
+  input: 'Find the current price of this product and return it as JSON.',
+  server_tools: [AI_TOOL_NAMES.WEB_SEARCH, AI_TOOL_NAMES.DATA_EXTRACT],
+  // or: allowCapabilities: ['web:read'],   exclude: ['image.generate'],
+  maxSteps: 6 // cap model round-trips (1–12, default 8)
+});
+```
+
+**Streaming** surfaces tool progress as it happens — ideal for a "thinking…" UI. You get
+`agent.tool_call` / `agent.tool_result` events, then a final `response.completed`:
+
+```typescript
+const stream = await ai.chat.responses.create('my-collection', {
+  input: 'Research acme.com', server_tools: true, stream: true
+});
+for await (const ev of stream) {
+  if (ev.type === 'agent.tool_call')   showStep(`Running ${ev.name}…`);
+  if (ev.type === 'agent.tool_result') showStep(`${ev.name} done`);
+  if (ev.type === 'response.completed') render(ev.response.output_text);
+}
+```
+
+`server_tools` can't be combined with `previous_response_id`/`conversation` yet — pass prior turns
+in `input`.
+
+#### Built-in tools
+
+| Tool | Does |
+|------|------|
+| `web.search` | Live web search → candidate results (url/title/description). |
+| `web.fetchPage` | Fetch a page → clean markdown + metadata + schema.org JSON-LD. |
+| `web.extractSchema` | Return only a page's schema.org data of a given `@type` (deterministic). |
+| `document.read` | Read a document at a URL — **PDF, deck, doc**, or article — into markdown. |
+| `data.extract` | Page + JSON-schema/prompt → **typed JSON** (turn a page into UI data). |
+| `brand.assets` | Extract a site's logo, colours, and design. |
+| `web.screenshot` | Screenshot a page → hosted image URL (feed to `image.describe`). |
+| `image.describe` | Vision: describe an image / read its text. |
+| `image.generate` | Generate an image from a prompt → hosted URL. |
+| `image.fromReference` | Image-to-image: generate guided by reference image(s). |
+| `image.searchStock` | Search real stock photos (Unsplash). |
+| `image.transform` | Resize / crop / rotate / grayscale / format-convert / compress → hosted URL. |
+| `pdf.create` | Render HTML → PDF → hosted URL. |
+| `pdf.fill` | Fill an AcroForm PDF's fields → hosted URL. |
+| `pdf.merge` | Merge several PDFs into one → hosted URL. |
+| `http.request` | SSRF-guarded outbound HTTP(S) to a public URL (call a REST API). |
+| `translate` | Translate text into one or more languages (generic, model-based). |
+
+Discover tools two ways:
+- **Design time (typed):** import `BUILTIN_AI_TOOLS`, `AI_TOOL_NAMES`, and the per-tool arg types
+  (`WebSearchArgs`, `DataExtractArgs`, …) from the SDK. This is the core set — stable, versioned,
+  documented here.
+- **Runtime (live):** `await ai.catalog(collectionId)` returns the registry as the server sees it,
+  including any future app-contributed tools. The built-in set above is always present.
+
 ### Recommended Models
 
 For agentic workflows on `v1/responses`, GPT-5.6 ships in three tiers. Pass either the full model

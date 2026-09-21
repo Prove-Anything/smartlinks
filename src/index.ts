@@ -26,6 +26,9 @@ export {
   getHostSharedDependencies,
 } from './shared-dependencies'
 export type { SharedDependency, HostSharedDependencies } from './shared-dependencies'
+// Built-in AI tool catalog (design-time discovery of the core agentic toolset)
+export { AI_TOOL_NAMES, BUILTIN_AI_TOOLS, getBuiltinAiTool } from './ai-tools'
+export type { BuiltinAiToolDescriptor } from './ai-tools'
 
 // Explicitly re-export types for documentation
 export type {

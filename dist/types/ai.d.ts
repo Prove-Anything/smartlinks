@@ -109,6 +109,24 @@ export interface ResponsesRequest {
     };
     /** `'flex'` is ~50% cheaper at Batch-API rates but slower; reserve for non-interactive/background work. */
     service_tier?: 'auto' | 'standard' | 'flex' | 'priority';
+    /**
+     * Run through the server-side agent loop: the platform executes built-in tools
+     * (see BUILTIN_AI_TOOLS / AiToolName) and feeds results back automatically, so the
+     * app never has to relay tool calls itself. `true` enables all built-ins; an array
+     * restricts to those tool names. When streaming, tool progress arrives as
+     * `agent.tool_call` / `agent.tool_result` events (see AgentStreamEvent), ending with
+     * `response.completed`. Not combinable with `previous_response_id`/`conversation`
+     * yet — pass prior turns in `input`.
+     */
+    server_tools?: boolean | AiToolName[];
+    /** With `server_tools`: only run tools whose capabilities are all granted. */
+    allowCapabilities?: AiToolCapability[];
+    /** With `server_tools`: restrict to these tool names (alias of the array form). */
+    only?: AiToolName[];
+    /** With `server_tools`: drop these tool names. */
+    exclude?: AiToolName[];
+    /** With `server_tools`: cap model round-trips (1–12, default 8). */
+    maxSteps?: number;
 }
 /** Response from the Responses API. */
 export interface ResponsesResult {
@@ -132,6 +150,8 @@ export interface ResponsesResult {
     conversation?: unknown;
     provider: 'openai';
     responseTime: number;
+    /** Present when the request used `server_tools`: the server-side tool-use trace. */
+    _agent?: ResponsesAgentTrace;
 }
 /** Generic SSE event emitted by the Responses API. */
 export interface ResponsesStreamEvent {
@@ -631,3 +651,211 @@ export interface CatalogResponse {
     tools: AgentToolDefinition[];
     skills: SkillDescriptor[];
 }
+/** Capability tags a tool requires; scope a run with `allowCapabilities`. */
+export type AiToolCapability = 'web:read' | 'ai:vision' | 'ai:image' | 'ai:text' | 'media:image' | 'media:pdf' | 'net:http';
+/** The names of the built-in server-side agent tools (run via `server_tools`). */
+export type AiToolName = 'web.fetchPage' | 'web.extractSchema' | 'web.screenshot' | 'web.search' | 'brand.assets' | 'document.read' | 'data.extract' | 'image.describe' | 'image.generate' | 'image.fromReference' | 'image.searchStock' | 'image.transform' | 'pdf.create' | 'pdf.fill' | 'pdf.merge' | 'http.request' | 'translate';
+export interface WebFetchPageArgs {
+    url: string;
+    type?: string;
+    forceRefresh?: boolean;
+}
+export interface WebExtractSchemaArgs {
+    url: string;
+    schemaType?: string;
+    forceRefresh?: boolean;
+}
+export interface WebScreenshotArgs {
+    url: string;
+}
+export interface WebSearchArgs {
+    query: string;
+    limit?: number;
+    scrapeContent?: boolean;
+}
+export interface BrandAssetsArgs {
+    url: string;
+}
+export interface DocumentReadArgs {
+    url: string;
+    forceRefresh?: boolean;
+}
+export interface DataExtractArgs {
+    url: string;
+    schema?: Record<string, any>;
+    prompt?: string;
+}
+export interface ImageDescribeArgs {
+    imageUrl: string;
+    prompt?: string;
+}
+export interface ImageGenerateArgs {
+    prompt: string;
+    size?: string;
+    provider?: 'openai' | 'gemini';
+}
+export interface ImageFromReferenceArgs {
+    prompt: string;
+    imageUrls: string[];
+    size?: string;
+    model?: string;
+}
+export interface ImageSearchStockArgs {
+    query: string;
+    per_page?: number;
+    orientation?: 'landscape' | 'portrait' | 'squarish';
+}
+export interface ImageTransformArgs {
+    imageUrl: string;
+    resize?: {
+        width?: number;
+        height?: number;
+        fit?: 'cover' | 'contain' | 'fill' | 'inside' | 'outside';
+        allowUpscale?: boolean;
+    };
+    crop?: {
+        left: number;
+        top: number;
+        width: number;
+        height: number;
+    };
+    rotate?: number;
+    flip?: boolean;
+    flop?: boolean;
+    grayscale?: boolean;
+    tint?: string;
+    modulate?: {
+        brightness?: number;
+        saturation?: number;
+        hue?: number;
+        lightness?: number;
+    };
+    format?: 'jpeg' | 'png' | 'webp' | 'avif';
+    quality?: number;
+}
+export interface PdfCreateArgs {
+    html: string;
+    format?: string;
+    landscape?: boolean;
+}
+export interface PdfFillArgs {
+    url: string;
+    fields: Record<string, string | number | boolean>;
+    flatten?: boolean;
+}
+export interface PdfMergeArgs {
+    urls: string[];
+}
+export interface HttpRequestArgs {
+    url: string;
+    method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD';
+    headers?: Record<string, string>;
+    body?: any;
+}
+export interface TranslateArgs {
+    text: string;
+    targetLanguages: string[];
+    sourceLanguage?: string;
+}
+/** Map of tool name → its argument type, for typed construction. */
+export interface AiToolArgsMap {
+    'web.fetchPage': WebFetchPageArgs;
+    'web.extractSchema': WebExtractSchemaArgs;
+    'web.screenshot': WebScreenshotArgs;
+    'web.search': WebSearchArgs;
+    'brand.assets': BrandAssetsArgs;
+    'document.read': DocumentReadArgs;
+    'data.extract': DataExtractArgs;
+    'image.describe': ImageDescribeArgs;
+    'image.generate': ImageGenerateArgs;
+    'image.fromReference': ImageFromReferenceArgs;
+    'image.searchStock': ImageSearchStockArgs;
+    'image.transform': ImageTransformArgs;
+    'pdf.create': PdfCreateArgs;
+    'pdf.fill': PdfFillArgs;
+    'pdf.merge': PdfMergeArgs;
+    'http.request': HttpRequestArgs;
+    'translate': TranslateArgs;
+}
+export interface WebSearchResultItem {
+    url: string | null;
+    title: string | null;
+    description: string | null;
+    markdown?: string;
+}
+export interface WebSearchResult {
+    query: string;
+    results: WebSearchResultItem[];
+}
+export interface DocumentReadResult {
+    url: string;
+    text: string | null;
+    metadata?: any;
+    provider?: string;
+    cached?: boolean;
+}
+export interface DataExtractResult {
+    url: string;
+    data: Record<string, any>;
+}
+export interface WebFetchPageResult {
+    url: string;
+    markdown?: string | null;
+    html?: string | null;
+    metadata?: any;
+    schemas?: any[];
+    provider?: string;
+    cached?: boolean;
+    status?: number | null;
+}
+export interface ImageDescribeResult {
+    imageUrl: string;
+    text: string | null;
+}
+/** Result of a tool that produces a hosted binary (image.transform, pdf.*). */
+export interface HostedAssetResult {
+    hostedUrl: string | null;
+    contentType?: string;
+    info?: {
+        width?: number;
+        height?: number;
+        format?: string;
+        size?: number;
+    };
+}
+export interface HttpRequestResult {
+    status: number;
+    headers: Record<string, any>;
+    body: any;
+    truncated: boolean;
+    finalUrl: string;
+}
+export interface TranslateResult {
+    translations: Record<string, string>;
+    sourceLanguage: string;
+}
+/** The `_agent` trace attached to an agentic Responses result. */
+export interface ResponsesAgentTrace {
+    steps: number;
+    maxStepsReached: boolean;
+    toolResults: AgentToolResult[];
+    availableTools: string[];
+}
+export interface AgentToolCallEvent {
+    type: 'agent.tool_call';
+    name: string;
+    args: Record<string, any>;
+}
+export interface AgentToolResultEvent {
+    type: 'agent.tool_result';
+    name: string;
+    isError: boolean;
+    result: any;
+}
+export interface AgentResponseCompletedEvent {
+    type: 'response.completed';
+    response: ResponsesResult;
+    _agent: ResponsesAgentTrace;
+}
+/** Union of events emitted when streaming an agentic Responses request. */
+export type AgentStreamEvent = AgentToolCallEvent | AgentToolResultEvent | AgentResponseCompletedEvent | ResponsesStreamEvent;

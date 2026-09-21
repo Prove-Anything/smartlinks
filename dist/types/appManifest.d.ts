@@ -417,7 +417,7 @@ export interface AppManifest {
          */
         moduleFormat?: 'umd' | 'esm' | 'dual';
         /**
-         * Shared-dependency contract version this bundle was built against, e.g. `"v5"`
+         * Shared-dependency contract version this bundle was built against, e.g. `"v6"`
          * (see `SHARED_DEPENDENCY_CONTRACT_VERSION`). The host uses it to select a
          * compatible import map for the ESM load path.
          */
