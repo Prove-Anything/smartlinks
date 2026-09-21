@@ -102,54 +102,7 @@ export const PublicContainer = (props: Record<string, any>) => {
 
 ### The `useAppContext()` Pattern
 
-To write containers that work identically in both modes, use this abstraction pattern:
-
-```tsx
-// src/hooks/useAppContext.ts
-import { useContext, createContext, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-
-export interface AppContextValue {
-  collectionId: string;
-  appId: string;
-  productId?: string;
-  proofId?: string;
-  pageId?: string;
-  initialPath?: string;
-  lang?: string;
-  user?: { id: string; email: string; name?: string };
-  SL: typeof import('@proveanything/smartlinks');
-  onNavigate?: (request: any) => void;
-}
-
-export const AppContext = createContext<AppContextValue | null>(null);
-
-/**
- * Returns app context regardless of rendering mode.
- * - Direct component mode: reads from AppContext (props)
- * - Iframe mode: reads from URL search params
- */
-export function useAppContext(): AppContextValue {
-  const ctx = useContext(AppContext);
-  
-  // If context exists, we're in direct-component mode
-  if (ctx) return ctx;
-  
-  // Otherwise, we're in iframe mode — read from URL params
-  const [searchParams] = useSearchParams();
-  const SL = (window as any).SL ?? require('@proveanything/smartlinks');
-
-  return useMemo(() => ({
-    collectionId: searchParams.get('collectionId') ?? '',
-    appId: searchParams.get('appId') ?? '',
-    productId: searchParams.get('productId') ?? undefined,
-    proofId: searchParams.get('proofId') ?? undefined,
-    pageId: searchParams.get('pageId') ?? undefined,
-    lang: searchParams.get('lang') ?? undefined,
-    SL,
-  }), [searchParams, SL]);
-}
-```
+Containers read their context through the same shared **`useAppContext()`** hook as widgets, so one codebase works in both direct-component and iframe modes. See **[building-react-components.md](building-react-components.md#the-useappcontext-pattern)** for the canonical hook + `AppContext` provider — don't re-define it. Containers additionally carry an **`initialPath?`** field on the context (the entry route the host asked for).
 
 **Usage in your container:**
 
@@ -354,20 +307,11 @@ const { PublicContainer } = await import('https://my-app.com/containers.esm.js')
 
 ---
 
-## Shared Dependencies Contract
+## Shared dependencies
 
-Containers use the **exact same Shared Dependencies Contract** as widgets. No additional globals are needed. The parent app must expose these globals before loading container bundles:
+Containers externalize the **exact same shared-dependency contract** as widgets — resolved from host globals (UMD) or the import map (ESM); no extra globals are needed. **The full versioned list, window-global names, and Vite `external`/`globals` config are canonical in [host-dependency-contract.md](host-dependency-contract.md)** — externalize exactly that set (from the SDK's `SHARED_DEPENDENCY_SPECIFIERS`) and never bundle your own React.
 
-- React, ReactDOM, jsxRuntime
-- SL (SmartLinks SDK)
-- CVA (class-variance-authority) — **uppercase to avoid `cva.cva` collision**
-- ReactRouterDOM, ReactQuery
-- LucideReact, dateFns, LiquidJS
-- 12 Radix UI primitives (Slot, Dialog, Popover, Tooltip, Tabs, Accordion, Select, ScrollArea, Label, Toast, Progress, Avatar)
-
-See `widgets.md` for the complete table with globals and version expectations.
-
-> **Why `CVA` not `cva`?** The `class-variance-authority` package exports a named function called `cva`. If the UMD global is also `cva`, the wrapper resolves it as `window.cva.cva` — a double-nesting bug. Using uppercase `CVA` avoids this collision.
+> **Why `CVA` not `cva`?** `class-variance-authority` exports a function named `cva`; if the UMD global were also `cva`, the wrapper resolves it as `window.cva.cva` — a double-nesting bug. The contract uses uppercase `CVA` to avoid the collision.
 
 ---
 

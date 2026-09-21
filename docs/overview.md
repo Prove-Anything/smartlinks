@@ -1,25 +1,19 @@
 # SmartLinks Microapp Development Guide
 
-> **Platform revision:** R5 · **SDK:** `@proveanything/smartlinks@^2` (current `latest`, 2.0.5) · React 19 · Vite 8 · Tailwind 4  
-> **Last updated:** 2026-03-03
+> **Platform revision:** R5 · **SDK:** `@proveanything/smartlinks@^2` · React 19 · Vite 8 · Router 7 · Tailwind 4 · TS 6.
+> The canonical version/host stack lives in [host-dependency-contract.md](host-dependency-contract.md).
 
 ---
 
 ## What Is a SmartLinks Microapp?
 
-SmartLinks microapps are **modular, embeddable React applications** that extend the SmartLinks digital twin platform. They provide specialised functionality — product information displays, warranty registration, competitions, pamphlet generators, and more — while inheriting context, authentication, and theming from the parent platform.
+SmartLinks microapps are **modular, embeddable React applications** that extend the SmartLinks platform — product info, warranty registration, competitions, and more. SmartLinks connects physical products to digital experiences: each item has a digital identity (a "proof") that is scanned, claimed, and enriched over time; microapps are its extensibility layer. Each app:
 
-### The Digital Twin Ecosystem
-
-SmartLinks is a **digital twin platform** that connects physical products to digital experiences. Each physical item (a wine bottle, a luxury handbag, a piece of equipment) has a corresponding digital identity — a "proof" — that can be scanned, claimed, and enriched with data over time.
-
-Microapps are the **extensibility layer** of this ecosystem. Rather than building monolithic features into the core platform, functionality is distributed across purpose-built apps that:
-
-- **Embed seamlessly** via iframes in the SmartLinks Portal (public) and Admin Console (management)
-- **Share context** through URL parameters (collection, product, or proof being viewed)
-- **Inherit identity** from the parent platform's authentication system
-- **Adapt visually** to the brand's theme configuration
-- **Communicate bidirectionally** with the parent via postMessage for deep linking and navigation
+- **Embeds** in the SmartLinks Portal (public) and Admin Console (management)
+- **Shares context** through URL parameters (collection, product, proof)
+- **Inherits identity** from the parent platform's auth
+- **Adapts** to the brand's theme
+- **Communicates** with the parent via postMessage for deep linking and navigation
 
 ### Deployment Modes
 
@@ -89,6 +83,21 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Proof Share Grants** | `docs/proof-share-grants.md` | Delegated, scoped, revocable bearer access to a single proof (read/comment/verify-owner) |
 | **Proof Ownership Transfer** | `docs/proof-ownership-transfer.md` | Moving a proof's single owner (directed transfer / open release), accept/cancel, and the state machine |
 | **appConfig / Feature Flags** | `docs/appConfig.md` | `appConfig` settings contract — installed apps, `system.features`/`entitledAppGroups`/`meters`, `isFeatureEnabled()` helper |
+| **App Objects** | `docs/app-objects.md` | Queryable domain objects — `app.records` / `app.cases` / `app.threads`: JSONB zones, visibility, policies, aggregations |
+| **App Data Storage** | `docs/app-data-storage.md` | Decision guide: pick between `appConfiguration` / `userAppData` / `app.records` |
+| **Attestations** | `docs/attestations.md` | Postgres attestations API (proof-level user/admin data; replaces the legacy Firestore path) |
+| **Caching** | `docs/caching.md` | SDK GET cache tiers + TTLs, `invalidateCache({ exact })`, and `force`/push guidance |
+| **Comms & Broadcasts** | `docs/comms.md` | Transactional comms, campaigns, consent, push |
+| **Container Tracking** | `docs/container-tracking.md` | Physical/logical **item** container groupings — *not* app containers (see containers.md) |
+| **Lots** | `docs/lots.md` | Cross-SKU production "Lot" entity |
+| **Loyalty** | `docs/loyalty.md` | Points, members, earning rules |
+| **Sequences** | `docs/sequences.md` | Atomic monotonic number allocation (raffle / queue / edition) |
+| **Integrations** | `docs/integrations.md` | Inbound/outbound external-system integration flows |
+| **Item Context** | `docs/item-context.md` | The `itemContext` container prop (serial / NFC authenticity context) |
+| **Native Facade** | `docs/native-facade.md` | `host.native` / `SL.native` device-capability facade |
+| **Product Facets** | `docs/PRODUCT_FACETS_SDK.md` | Facet API reference (admin + public endpoints, types) |
+| **AI Tools & Skills** | `docs/ai-tools-and-skills.md` | Platform AI capability registry (web research, extraction, images) |
+| **Proof Comms Triggers** | `docs/proof-comms-triggers.md` | Transactional comms fired as a side-effect of proof actions |
 
 ---
 

@@ -53,53 +53,7 @@ Widgets are typically single-view components and don't need internal routing. If
 
 ### The `useAppContext()` Pattern
 
-To write widgets that work identically in both modes, use this abstraction pattern:
-
-```tsx
-// src/hooks/useAppContext.ts
-import { useContext, createContext, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
-
-export interface AppContextValue {
-  collectionId: string;
-  appId: string;
-  productId?: string;
-  proofId?: string;
-  pageId?: string;
-  lang?: string;
-  user?: { id: string; email: string; name?: string };
-  SL: typeof import('@proveanything/smartlinks');
-  onNavigate?: (request: any) => void;
-}
-
-export const AppContext = createContext<AppContextValue | null>(null);
-
-/**
- * Returns app context regardless of rendering mode.
- * - Direct component mode: reads from AppContext (props)
- * - Iframe mode: reads from URL search params
- */
-export function useAppContext(): AppContextValue {
-  const ctx = useContext(AppContext);
-  
-  // If context exists, we're in direct-component mode
-  if (ctx) return ctx;
-  
-  // Otherwise, we're in iframe mode — read from URL params
-  const [searchParams] = useSearchParams();
-  const SL = (window as any).SL ?? require('@proveanything/smartlinks');
-
-  return useMemo(() => ({
-    collectionId: searchParams.get('collectionId') ?? '',
-    appId: searchParams.get('appId') ?? '',
-    productId: searchParams.get('productId') ?? undefined,
-    proofId: searchParams.get('proofId') ?? undefined,
-    pageId: searchParams.get('pageId') ?? undefined,
-    lang: searchParams.get('lang') ?? undefined,
-    SL,
-  }), [searchParams, SL]);
-}
-```
+Widgets read their context through the shared **`useAppContext()`** hook so the same code works in both direct-component and iframe modes. The hook and `AppContext` provider are defined once — see **[building-react-components.md](building-react-components.md#the-useappcontext-pattern)** for the full implementation (don't re-define it per app).
 
 **Usage in your widget:**
 
@@ -582,23 +536,11 @@ The widget build:
 - Minifies with esbuild for production
 - Outputs to `/dist` alongside the main app (not a separate folder)
 
-### Externalized Dependencies (Peer Dependencies)
+### Externalized dependencies
 
-The widget bundle does **not** include these libraries—the parent app must provide them:
+The widget bundle does **not** include the host's shared libraries (React, the SDK, Radix, LiquidJS, …) — it **externalizes** them and resolves them from the host at runtime, so the bundle stays tiny and there's exactly one shared instance.
 
-| Package | Why Externalized |
-|---------|------------------|
-| `react`, `react-dom` | Parent's React context |
-| `@proveanything/smartlinks` | Passed via props as `SL` |
-| `@proveanything/smartlinks-auth-ui` | Auth UI components (also available globally as `window.SmartlinksAuthUI`) |
-| `tailwind-merge` | Utility for merging Tailwind classes |
-| `clsx` | Utility for conditional class names |
-| `class-variance-authority` | Utility for component variants |
-
-These are standard packages that any modern React + Tailwind app will have. Externalizing them:
-1. Reduces bundle size significantly
-2. Removes JSDoc comments that inflate the bundle
-3. Ensures consistent behavior with parent's versions
+**The canonical, versioned list is the shared-dependency contract — don't hand-maintain your own here.** Import it from the SDK (`SHARED_DEPENDENCY_SPECIFIERS`) for your build's `external` list, and see **[host-dependency-contract.md](host-dependency-contract.md)** for the full table, the Vite `external`/`globals` config, and the *never bundle your own React* rule. `@proveanything/smartlinks-auth-ui` is externalized too (host global `window.SmartlinksAuthUI`) — do not ship a second copy.
 
 ### Enabling Widget Builds
 

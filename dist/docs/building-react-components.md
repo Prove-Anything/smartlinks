@@ -212,25 +212,17 @@ In **direct-component mode**, there are no URL search params — context comes a
 
 **Cause:** Your bundle includes its own copy of React instead of using the parent's shared instance.
 
-**Fix:** Ensure your build configuration externalizes React, ReactDOM, and react/jsx-runtime:
+**Fix:** Externalize the shared-dependency contract — read it from the SDK so it can't drift:
 
 ```ts
 // vite.config.container.ts or vite.config.widget.ts
+import { SHARED_DEPENDENCY_SPECIFIERS } from '@proveanything/smartlinks'
 export default defineConfig({
-  build: {
-    rollupOptions: {
-      external: [
-        'react',
-        'react-dom',
-        'react/jsx-runtime',
-        'react-router-dom',
-        '@proveanything/smartlinks',
-        // ... other shared dependencies
-      ],
-    },
-  },
+  build: { rollupOptions: { external: [...SHARED_DEPENDENCY_SPECIFIERS] } },
 });
 ```
+
+> The full list + `globals` map is canonical in [host-dependency-contract.md](host-dependency-contract.md). Never bundle your own React (two instances = a hard crash).
 
 ---
 
