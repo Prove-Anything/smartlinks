@@ -1,8 +1,7 @@
 # Server functions ("edge functions")
 
-> **Preview — SmartLinks SDK 2.0.0-alpha.** Part of the installable-app platform being built
-> toward 2.0.0 stable (author → register → install → run → test). These APIs may change before
-> then. Published under the npm `next` tag; `latest` remains 1.x.
+> **SmartLinks SDK 2.x** (current `latest`). Part of the installable-app platform
+> (author → register → install → run → test). Install `@proveanything/smartlinks@^2`.
 
 A **server function** is arbitrary server-side JavaScript your app deploys directly into
 SmartLinks. It runs on the SmartLinks servers — with access to the full SDK, to your app's

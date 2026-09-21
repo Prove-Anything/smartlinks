@@ -1,8 +1,7 @@
 # Deploying & registering an app
 
-> **Preview — SmartLinks SDK 2.0.0-alpha.** Part of the installable-app platform being built
-> toward 2.0.0 stable. These APIs may change before then. Published under the npm `next` tag;
-> `latest` remains 1.x.
+> **SmartLinks SDK 2.x** (current `latest`). Part of the installable-app platform. Install
+> `@proveanything/smartlinks@^2`.
 
 A SmartLinks app is a bundle (widgets, containers, and — new — [server functions](server-functions.md))
 described by an `app.manifest.json`. Deploying an app has two halves:
@@ -16,28 +15,69 @@ This guide covers registration and how to wire it into your build.
 
 ---
 
-## Fast dev publish (recommended for dev)
+## Fast dev publish
 
-For the **dev** channel there's a one-step path that does *both* halves — SmartLinks **hosts and
-registers** — so you don't host bundles anywhere yourself (no Lovable, no CDN of your own) and
-don't run a separate register step:
+Getting a **dev** build live should be instant and secret-free. There are two paths depending on
+**where you build** — pick the one that matches your setup. Both end the same way: the dev release
+is registered and served **`no-store`** (every reload is instantly fresh — no cache-busting, no CDN
+invalidation).
+
+### A. From Lovable — hit Publish, no key anywhere *(recommended for Lovable apps)*
+
+Lovable builds and hosts your app on **Publish**. You don't push to us and you **don't put any
+secret in Lovable or your repo** — instead your build *pings* us and we pull your just-published
+bundle. Two small additions to your build, both non-secret:
+
+1. **Stamp the build hash into `app.manifest.json`.** In the same build step that content-hashes
+   your JS, write the hash into the manifest so we can tell when your new version is live:
+   ```jsonc
+   // app.manifest.json
+   "build": { "hash": "a1b2c3d4", "at": "2026-09-20T10:00:00Z" }
+   ```
+2. **Ping us on publish** (a `postbuild` step — `SMARTLINKS_APP_ID` is an *identifier, not a
+   secret*, so it's fine in the repo):
+   ```jsonc
+   // package.json
+   "scripts": {
+     "build":     "vite build && … && node scripts/hash-bundles.mjs",   // your existing hashing step
+     "postbuild": "curl -fsS -X POST \"$SMARTLINKS_API/api/v1/apps/$SMARTLINKS_APP_ID/refresh-dev\" -H 'content-type: application/json' -d \"{\\\"hash\\\":\\\"$BUILD_HASH\\\"}\""
+   }
+   ```
+
+That's it — no deploy key. When the ping arrives, SmartLinks looks up your app's published URL
+(from the catalog — **not** from the ping, so it's safe), **waits until your manifest reports that
+exact `build.hash`** (so it never grabs a half-propagated build), validates the manifest + functions,
+and registers the dev release (the hash becomes the version). `POST /apps/{appId}/refresh-dev`
+authorises nothing on its own — worst case it re-fetches your app's own public bundle — so it needs
+no secret; it's rate-limited and de-duped per app.
+
+**One-time setup:** the app must exist in the catalog with its **id** and its **Lovable URL**
+recorded (that's how we know what to fetch, and the `id` you ping with must match). Ask the platform
+owner to register the app once; after that, every Publish auto-updates dev.
+
+**If a publish doesn't appear:** because the ping is fire-and-forget, a failure (e.g. the build
+hash never went live, or an invalid manifest) happens in the background — it won't show in your
+build output. Every attempt (success *and* failure, with the reason) is recorded, and the platform
+owner can see it in the console at **Admin → App Registry → Recent activity**. That's the place to
+look for "I hit Publish but dev didn't change."
+
+### B. From local / CI / Claude — `smartlinks-publish`
+
+If you build somewhere you control (so you can hold a dev key locally — never committed), push the
+built bundle straight to SmartLinks, which hosts + registers it:
 
 ```bash
-# build your app first (produces dist/ with app.manifest.json), then:
-smartlinks-publish                 # uploads dist/ → SmartLinks hosts it + registers the dev release
+# build dist/ first, then:
+smartlinks-publish                 # uploads dist/ → SmartLinks hosts + registers the dev release
 smartlinks-publish --watch         # re-publish on every change (save → live)
 ```
 
-Env: `SMARTLINKS_APP_ID` (your platform id), `SMARTLINKS_DEPLOY_KEY` (dev key — dev-only, safe to
-keep locally), optional `SMARTLINKS_API` / `--dir`. It uploads the built files to
-`POST /api/v1/apps/{appId}/publish?channel=dev`; the server validates the manifest + functions,
-writes the bundle to `smartlinks.app/apps/{appId}/dev/…` with **`no-store` caching** (every reload
-is instantly fresh — no cache-busting, no invalidation), and registers the release. It works from
-**anywhere** — local, Claude, CI, or a build step — because the builder builds and the platform
-hosts; there's no dependency on any external host for dev.
+Env: `SMARTLINKS_APP_ID`, `SMARTLINKS_DEPLOY_KEY` (dev key — dev-only, safe to keep locally),
+optional `SMARTLINKS_API` / `--dir`. It POSTs the files to `POST /apps/{appId}/publish?channel=dev`;
+the server validates and writes them to `smartlinks.app/apps/{appId}/dev/…` (`no-store`).
 
-Use this for dev. Use the **register-a-URL** flow below when *you* host the bundle (a beta/stable
-CDN deploy, or an external host) and just want to register where it lives + its manifest.
+**Which to use:** building in Lovable → **A** (ping, no key). Building anywhere you control →
+**B** (push with a local key). For beta/stable, see the register-a-URL flow below.
 
 ---
 

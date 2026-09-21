@@ -1,6 +1,6 @@
 # Sequences & claim-order allocation
 
-> **Preview — SmartLinks SDK 2.0.0-alpha.** APIs may change before 2.0.0 stable.
+> **SmartLinks SDK 2.x** (current `latest`). Install `@proveanything/smartlinks@^2`.
 
 A **sequence** hands out a guaranteed-unique, monotonic number — `1, 2, 3, …` — and stamps it
 onto a record. It's the primitive behind raffle tickets, "you're the Nth to claim", queue

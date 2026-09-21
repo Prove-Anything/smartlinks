@@ -1,4 +1,4 @@
-export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, getHttpCacheDiagnostics, resetHttpCacheDiagnostics, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, isProxyEnabled, setBearerToken, getBearerToken, setGrantToken, getGrantToken } from "./http";
+export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, getHttpCacheDiagnostics, resetHttpCacheDiagnostics, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, getBaseURL, isProxyEnabled, setBearerToken, getBearerToken, setGrantToken, getGrantToken } from "./http";
 export * from "./api";
 export * from "./types";
 export { iframe } from "./iframe";

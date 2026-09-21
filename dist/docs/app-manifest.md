@@ -147,6 +147,21 @@ The manifest is loaded automatically by the platform for every collection page. 
 | `platformRevision` | string | ❌ | ISO date string marking the platform API revision this build targets |
 | `seo.priority` | number | ❌ | Controls which app's `title`/`description`/`ogImage` wins when multiple apps are on the same page. Default `0`; higher wins. See the [Executor guide](executor.md). |
 
+#### `build`
+
+Optional build provenance. Recommended for the **Lovable dev publish** flow: stamp the content
+hash your build already produces here so the platform can tell when a new version is live before it
+registers (see [Deploying & registering](deploying-apps.md#a-from-lovable--hit-publish-no-key-anywhere-recommended-for-lovable-apps)).
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `build.hash` | string | Unique build/content hash — the platform waits for this to appear before registering, and uses it as the dev release version |
+| `build.at` | string | ISO timestamp of the build (optional) |
+
+```json
+"build": { "hash": "a1b2c3d4", "at": "2026-09-20T10:00:00Z" }
+```
+
 #### `admin`
 
 A relative path (from the app's public root) to the `app.admin.json` file. Omit entirely if the app has no admin UI.
