@@ -361,6 +361,7 @@ var aiInternal;
      */
     async function searchPhotos(collectionId, params) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/searchPhotos`;
+        // The API wraps the photos in an envelope — the array is on `.results`.
         return post(path, params);
     }
     aiInternal.searchPhotos = searchPhotos;

@@ -55,8 +55,11 @@ import type {
   // Legacy types
   AIGenerateContentRequest,
   AIGenerateImageRequest,
+  AIGenerateImageResponse,
+  AIGeneratedImage,
   AISearchPhotosRequest,
   AISearchPhotosPhoto,
+  AISearchPhotosResponse,
 } from "../types/ai"
 
 // Re-export types for backwards compatibility
@@ -100,8 +103,11 @@ export type {
   PodcastStatus,
   AIGenerateContentRequest,
   AIGenerateImageRequest,
+  AIGenerateImageResponse,
+  AIGeneratedImage,
   AISearchPhotosRequest,
   AISearchPhotosPhoto,
+  AISearchPhotosResponse,
 }
 
 function encodeQueryParams(params?: { [key: string]: string | undefined }): string {
@@ -484,9 +490,9 @@ namespace aiInternal {
   /**
    * Generate an image via AI (admin)
    */
-  export async function generateImage(collectionId: string, params: AIGenerateImageRequest): Promise<any> {
+  export async function generateImage(collectionId: string, params: AIGenerateImageRequest): Promise<AIGenerateImageResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/generateImage`
-    return post<any>(path, params)
+    return post<AIGenerateImageResponse>(path, params)
   }
 
   /**
@@ -495,9 +501,10 @@ namespace aiInternal {
   export async function searchPhotos(
     collectionId: string,
     params: AISearchPhotosRequest
-  ): Promise<AISearchPhotosPhoto[]> {
+  ): Promise<AISearchPhotosResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/searchPhotos`
-    return post<AISearchPhotosPhoto[]>(path, params)
+    // The API wraps the photos in an envelope — the array is on `.results`.
+    return post<AISearchPhotosResponse>(path, params)
   }
 
   /**

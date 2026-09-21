@@ -522,15 +522,63 @@ export interface AISearchPhotosRequest {
 
 /** Single photo item returned by searchPhotos */
 export interface AISearchPhotosPhoto {
+  /** Provider photo id */
+  id?: string
   /** Direct image URL */
   url: string
+  /** Thumbnail URL */
+  thumb?: string
   /** Alt text/description for accessibility */
   alt?: string
+  /** Pixel dimensions */
+  width?: number
+  height?: number
   /** Photographer display name */
   photographer?: string
   /** Link to the photographer profile */
   photographerUrl?: string
   /** Allow extra fields */
+  [key: string]: any
+}
+
+/**
+ * Response from `searchPhotos`. The API returns an **envelope** — the photos are in
+ * `results`, not the top-level array. (`searchPhotos` returns this object, not `Photo[]`.)
+ */
+export interface AISearchPhotosResponse {
+  /** Source provider, e.g. `'unsplash'`. */
+  provider: string
+  /** The matched photos. */
+  results: AISearchPhotosPhoto[]
+  /** Total matches available. */
+  total?: number
+  /** Total pages available. */
+  total_pages?: number
+  [key: string]: any
+}
+
+/** A single generated image from `generateImage`. */
+export interface AIGeneratedImage {
+  /** Image URL, or a `data:` URI when the provider returns base64; `null` if neither. */
+  url: string | null
+  /** Base64 image payload when the model returns it, else `null`. */
+  b64_json: string | null
+  /** The provider's revised prompt, when returned. */
+  revised_prompt?: string
+  [key: string]: any
+}
+
+/**
+ * Response from `generateImage`. The API returns an **envelope** — the image(s) are in
+ * `images`, with `provider`/`model` metadata. (Not a bare URL or a bare array.)
+ */
+export interface AIGenerateImageResponse {
+  /** Provider used, e.g. `'openai'` | `'gemini'`. */
+  provider: string
+  /** Model used, when reported. */
+  model?: string
+  /** The generated image(s). */
+  images: AIGeneratedImage[]
   [key: string]: any
 }
 

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.9  |  Generated: 2026-09-21T16:41:03.227Z
+Version: 2.0.10  |  Generated: 2026-09-21T17:46:02.278Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1010,10 +1010,45 @@ interface AISearchPhotosRequest {
 **AISearchPhotosPhoto** (interface)
 ```typescript
 interface AISearchPhotosPhoto {
+  id?: string
   url: string
+  thumb?: string
   alt?: string
+  width?: number
+  height?: number
   photographer?: string
   photographerUrl?: string
+  [key: string]: any
+}
+```
+
+**AISearchPhotosResponse** (interface)
+```typescript
+interface AISearchPhotosResponse {
+  provider: string
+  results: AISearchPhotosPhoto[]
+  total?: number
+  total_pages?: number
+  [key: string]: any
+}
+```
+
+**AIGeneratedImage** (interface)
+```typescript
+interface AIGeneratedImage {
+  url: string | null
+  b64_json: string | null
+  revised_prompt?: string
+  [key: string]: any
+}
+```
+
+**AIGenerateImageResponse** (interface)
+```typescript
+interface AIGenerateImageResponse {
+  provider: string
+  model?: string
+  images: AIGeneratedImage[]
   [key: string]: any
 }
 ```

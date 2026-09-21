@@ -803,7 +803,8 @@ paths:
           description: Success
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/AIGenerateImageResponse"
         400:
           description: Bad request
         401:
@@ -1011,9 +1012,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AISearchPhotosPhoto"
+                $ref: "#/components/schemas/AISearchPhotosResponse"
         400:
           description: Bad request
         401:
@@ -16023,16 +16022,66 @@ components:
     AISearchPhotosPhoto:
       type: object
       properties:
+        id:
+          type: string
         url:
+          type: string
+        thumb:
           type: string
         alt:
           type: string
+        width:
+          type: number
+        height:
+          type: number
         photographer:
           type: string
         photographerUrl:
           type: string
       required:
         - url
+    AISearchPhotosResponse:
+      type: object
+      properties:
+        provider:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/AISearchPhotosPhoto"
+        total:
+          type: number
+        total_pages:
+          type: number
+      required:
+        - provider
+        - results
+    AIGeneratedImage:
+      type: object
+      properties:
+        url:
+          type: string
+        b64_json:
+          type: string
+        revised_prompt:
+          type: string
+      required:
+        - url
+        - b64_json
+    AIGenerateImageResponse:
+      type: object
+      properties:
+        provider:
+          type: string
+        model:
+          type: string
+        images:
+          type: array
+          items:
+            $ref: "#/components/schemas/AIGeneratedImage"
+      required:
+        - provider
+        - images
     AgentRunRequest:
       type: object
       properties:
