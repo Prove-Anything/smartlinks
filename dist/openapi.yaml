@@ -777,7 +777,8 @@ paths:
           description: Success
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/AICacheRef"
         400:
           description: Bad request
         401:
@@ -1131,7 +1132,8 @@ paths:
           description: Success
           content:
             application/json:
-              schema: {}
+              schema:
+                $ref: "#/components/schemas/AIUploadedFile"
         400:
           description: Bad request
         401:
@@ -16082,6 +16084,61 @@ components:
       required:
         - provider
         - images
+    AIGenerateContentCandidate:
+      type: object
+      properties:
+        content:
+          type: object
+          additionalProperties: true
+        finishReason:
+          type: string
+    AIGenerateContentResponse:
+      type: object
+      properties:
+        provider:
+          type: string
+        model:
+          type: string
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/AIGenerateContentCandidate"
+        usageMetadata:
+          type: object
+          additionalProperties: true
+        promptTokenCount:
+          type: number
+        candidatesTokenCount:
+          type: number
+        totalTokenCount:
+          type: number
+        responseTime:
+          type: number
+    AIUploadedFile:
+      type: object
+      properties:
+        name:
+          type: string
+        uri:
+          type: string
+        url:
+          type: string
+        mimeType:
+          type: string
+        sizeBytes:
+          type: object
+          additionalProperties: true
+        state:
+          type: string
+    AICacheRef:
+      type: object
+      properties:
+        name:
+          type: string
+        model:
+          type: string
+        expireTime:
+          type: string
     AgentRunRequest:
       type: object
       properties:

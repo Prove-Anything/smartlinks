@@ -54,12 +54,16 @@ import type {
   PodcastStatus,
   // Legacy types
   AIGenerateContentRequest,
+  AIGenerateContentCandidate,
+  AIGenerateContentResponse,
   AIGenerateImageRequest,
   AIGenerateImageResponse,
   AIGeneratedImage,
   AISearchPhotosRequest,
   AISearchPhotosPhoto,
   AISearchPhotosResponse,
+  AIUploadedFile,
+  AICacheRef,
 } from "../types/ai"
 
 // Re-export types for backwards compatibility
@@ -102,12 +106,16 @@ export type {
   GeneratePodcastResponse,
   PodcastStatus,
   AIGenerateContentRequest,
+  AIGenerateContentCandidate,
+  AIGenerateContentResponse,
   AIGenerateImageRequest,
   AIGenerateImageResponse,
   AIGeneratedImage,
   AISearchPhotosRequest,
   AISearchPhotosPhoto,
   AISearchPhotosResponse,
+  AIUploadedFile,
+  AICacheRef,
 }
 
 function encodeQueryParams(params?: { [key: string]: string | undefined }): string {
@@ -481,10 +489,11 @@ namespace aiInternal {
     collectionId: string,
     params: AIGenerateContentRequest,
     admin: boolean = true
-  ): Promise<any> {
+  ): Promise<AIGenerateContentResponse> {
     const base = admin ? '/admin' : '/public'
     const path = `${base}/collection/${encodeURIComponent(collectionId)}/ai/generateContent`
-    return post<any>(path, params)
+    // Normalised envelope — text is at candidates[0].content.parts[0].text.
+    return post<AIGenerateContentResponse>(path, params)
   }
 
   /**
@@ -510,26 +519,17 @@ namespace aiInternal {
   /**
    * Upload a file for AI usage (admin). Pass FormData for binary uploads.
    */
-  export async function uploadFile(collectionId: string, params: any): Promise<any> {
+  export async function uploadFile(collectionId: string, params: any): Promise<AIUploadedFile> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/uploadFile`
-    return post<any>(path, params)
+    return post<AIUploadedFile>(path, params)
   }
 
   /**
    * Create or warm a cache for AI (admin)
    */
-  export async function createCache(collectionId: string, params: any): Promise<any> {
+  export async function createCache(collectionId: string, params: any): Promise<AICacheRef> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/createCache`
-    return post<any>(path, params)
-  }
-
-  /**
-   * Post a chat message to the AI (admin or public)
-   */
-  export async function postChat(collectionId: string, params: any, admin: boolean = true): Promise<any> {
-    const base = admin ? '/admin' : '/public'
-    const path = `${base}/collection/${encodeURIComponent(collectionId)}/ai/postChat`
-    return post<any>(path, params)
+    return post<AICacheRef>(path, params)
   }
 }
 
@@ -589,5 +589,4 @@ export const ai = {
   searchPhotos: aiInternal.searchPhotos,
   uploadFile: aiInternal.uploadFile,
   createCache: aiInternal.createCache,
-  postChat: aiInternal.postChat,
 }

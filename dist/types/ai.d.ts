@@ -524,6 +524,56 @@ export interface AIGenerateImageResponse {
     images: AIGeneratedImage[];
     [key: string]: any;
 }
+/** One candidate in a `generateContent` response (Gemini-normalised shape). */
+export interface AIGenerateContentCandidate {
+    content?: {
+        parts?: Array<{
+            text?: string;
+            [k: string]: any;
+        }>;
+        role?: string;
+        [k: string]: any;
+    };
+    finishReason?: string;
+    [key: string]: any;
+}
+/**
+ * Response from `generateContent`. The API returns a **normalised envelope** (both providers
+ * are mapped to this shape) — text lives at `candidates[0].content.parts[0].text`.
+ */
+export interface AIGenerateContentResponse {
+    provider?: string;
+    model?: string;
+    candidates?: AIGenerateContentCandidate[];
+    usageMetadata?: {
+        promptTokenCount?: number;
+        candidatesTokenCount?: number;
+        totalTokenCount?: number;
+        [k: string]: any;
+    };
+    responseTime?: number;
+    [key: string]: any;
+}
+/** A file uploaded for AI use (`uploadFile`) — a provider file reference. */
+export interface AIUploadedFile {
+    /** Provider file id / resource name. */
+    name?: string;
+    /** URI to reference the file in later calls. */
+    uri?: string;
+    url?: string;
+    mimeType?: string;
+    sizeBytes?: number | string;
+    state?: string;
+    [key: string]: any;
+}
+/** A cache reference returned by `createCache` — a provider cache resource. */
+export interface AICacheRef {
+    /** Cache resource name / id. */
+    name?: string;
+    model?: string;
+    expireTime?: string;
+    [key: string]: any;
+}
 export interface AgentRunRequest {
     /** User prompt (either input or prompt). */
     input?: string;

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.10  |  Generated: 2026-09-21T17:46:02.278Z
+Version: 2.0.10  |  Generated: 2026-09-21T18:01:30.424Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1049,6 +1049,55 @@ interface AIGenerateImageResponse {
   provider: string
   model?: string
   images: AIGeneratedImage[]
+  [key: string]: any
+}
+```
+
+**AIGenerateContentCandidate** (interface)
+```typescript
+interface AIGenerateContentCandidate {
+  content?: { parts?: Array<{ text?: string; [k: string]: any }>; role?: string; [k: string]: any }
+  finishReason?: string
+  [key: string]: any
+}
+```
+
+**AIGenerateContentResponse** (interface)
+```typescript
+interface AIGenerateContentResponse {
+  provider?: string
+  model?: string
+  candidates?: AIGenerateContentCandidate[]
+  usageMetadata?: {
+  promptTokenCount?: number
+  candidatesTokenCount?: number
+  totalTokenCount?: number
+  [k: string]: any
+  }
+  responseTime?: number
+  [key: string]: any
+}
+```
+
+**AIUploadedFile** (interface)
+```typescript
+interface AIUploadedFile {
+  name?: string
+  uri?: string
+  url?: string
+  mimeType?: string
+  sizeBytes?: number | string
+  state?: string
+  [key: string]: any
+}
+```
+
+**AICacheRef** (interface)
+```typescript
+interface AICacheRef {
+  name?: string
+  model?: string
+  expireTime?: string
   [key: string]: any
 }
 ```

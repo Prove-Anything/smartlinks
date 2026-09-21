@@ -345,6 +345,7 @@ var aiInternal;
     async function generateContent(collectionId, params, admin = true) {
         const base = admin ? '/admin' : '/public';
         const path = `${base}/collection/${encodeURIComponent(collectionId)}/ai/generateContent`;
+        // Normalised envelope — text is at candidates[0].content.parts[0].text.
         return post(path, params);
     }
     aiInternal.generateContent = generateContent;
@@ -381,15 +382,6 @@ var aiInternal;
         return post(path, params);
     }
     aiInternal.createCache = createCache;
-    /**
-     * Post a chat message to the AI (admin or public)
-     */
-    async function postChat(collectionId, params, admin = true) {
-        const base = admin ? '/admin' : '/public';
-        const path = `${base}/collection/${encodeURIComponent(collectionId)}/ai/postChat`;
-        return post(path, params);
-    }
-    aiInternal.postChat = postChat;
 })(aiInternal || (aiInternal = {}));
 export const ai = {
     chat: {
@@ -447,5 +439,4 @@ export const ai = {
     searchPhotos: aiInternal.searchPhotos,
     uploadFile: aiInternal.uploadFile,
     createCache: aiInternal.createCache,
-    postChat: aiInternal.postChat,
 };

@@ -1,5 +1,5 @@
-import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, AgentRunRequest, AgentRunResult, AgentToolsQuery, AgentToolsResponse, SkillsListResponse, CatalogResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse } from "../types/ai.js";
-export type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, };
+import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, AgentRunRequest, AgentRunResult, AgentToolsQuery, AgentToolsResponse, SkillsListResponse, CatalogResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef } from "../types/ai.js";
+export type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef, };
 declare namespace aiInternal {
     namespace chat {
         namespace responses {
@@ -141,7 +141,7 @@ declare namespace aiInternal {
      * Generate text/content via AI (admin)
      * @deprecated Use ai.chat.completions.create() instead
      */
-    function generateContent(collectionId: string, params: AIGenerateContentRequest, admin?: boolean): Promise<any>;
+    function generateContent(collectionId: string, params: AIGenerateContentRequest, admin?: boolean): Promise<AIGenerateContentResponse>;
     /**
      * Generate an image via AI (admin)
      */
@@ -153,15 +153,11 @@ declare namespace aiInternal {
     /**
      * Upload a file for AI usage (admin). Pass FormData for binary uploads.
      */
-    function uploadFile(collectionId: string, params: any): Promise<any>;
+    function uploadFile(collectionId: string, params: any): Promise<AIUploadedFile>;
     /**
      * Create or warm a cache for AI (admin)
      */
-    function createCache(collectionId: string, params: any): Promise<any>;
-    /**
-     * Post a chat message to the AI (admin or public)
-     */
-    function postChat(collectionId: string, params: any, admin?: boolean): Promise<any>;
+    function createCache(collectionId: string, params: any): Promise<AICacheRef>;
 }
 export declare const ai: {
     chat: {
@@ -219,5 +215,4 @@ export declare const ai: {
     searchPhotos: typeof aiInternal.searchPhotos;
     uploadFile: typeof aiInternal.uploadFile;
     createCache: typeof aiInternal.createCache;
-    postChat: typeof aiInternal.postChat;
 };
