@@ -406,6 +406,29 @@ export interface AppManifest {
         platformRevision?: string;
         appId: string;
         /**
+         * How this app's bundles are packaged, so the host knows how to load them:
+         * - `"umd"` (default when absent) — host loads the UMD bundle (`files.js.umd`)
+         *   via the CommonJS `require` shim, resolving shared deps from window globals.
+         *   Every existing app keeps working with no change.
+         * - `"dual"` — host prefers the ESM bundle (`files.js.esm`) when it has an import
+         *   map for the declared `sharedDependencies` contract; falls back to UMD otherwise.
+         * - `"esm"` — host loads ESM natively; if it has no matching import map it fails
+         *   with an actionable error rather than a bare-specifier resolution crash.
+         */
+        moduleFormat?: 'umd' | 'esm' | 'dual';
+        /**
+         * Shared-dependency contract version this bundle was built against, e.g. `"v5"`
+         * (see `SHARED_DEPENDENCY_CONTRACT_VERSION`). The host uses it to select a
+         * compatible import map for the ESM load path.
+         */
+        sharedDependencies?: string;
+        /**
+         * Per-app namespaced UMD globals (R4.7+), e.g. `{ widgets: "MyAppWidgets" }`.
+         * UMD-only: ESM bundles expose their exports through the module namespace and
+         * don't need this. Absent → legacy bundle (colliding `window.SmartLinks{Surface}`).
+         */
+        globals?: Record<string, string>;
+        /**
          * SEO configuration for this app.
          * `priority` controls which app's singular fields (title, description, ogImage) win
          * when multiple apps appear on the same page. Default is 0; higher wins.

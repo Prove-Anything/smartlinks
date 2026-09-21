@@ -40,7 +40,9 @@ The manifest is loaded automatically by the platform for every collection page. 
     "name": "My App",
     "description": "A short human-readable description of what this app does.",
     "version": "1.2.0",
-    "platformRevision": "2026-01-01"
+    "platformRevision": "R5",
+    "moduleFormat": "dual",
+    "sharedDependencies": "v5"
   },
 
   "admin": "app.admin.json",
@@ -51,7 +53,7 @@ The manifest is loaded automatically by the platform for every collection page. 
     "files": {
       "js": {
         "umd": "dist/widgets.umd.js",
-        "esm": "dist/widgets.es.js"
+        "esm": "dist/widgets.esm.js"
       },
       "css": "dist/widgets.css"
     },
@@ -75,7 +77,7 @@ The manifest is loaded automatically by the platform for every collection page. 
     "files": {
       "js": {
         "umd": "dist/containers.umd.js",
-        "esm": "dist/containers.es.js"
+        "esm": "dist/containers.esm.js"
       },
       "css": "dist/containers.css"
     },
@@ -145,7 +147,38 @@ The manifest is loaded automatically by the platform for every collection page. 
 | `description` | string | ❌ | Short description shown in app directories and AI context |
 | `version` | string | ✅ | SemVer string, e.g. `"1.2.0"` |
 | `platformRevision` | string | ❌ | ISO date string marking the platform API revision this build targets |
+| `moduleFormat` | `"umd"` \| `"esm"` \| `"dual"` | ❌ | How the host loads this app's bundles. Absent = `"umd"`. See [Module format](#module-format-umd-vs-esm) below. |
+| `sharedDependencies` | string | ❌ | Shared-dependency contract version the bundle was built against, e.g. `"v5"`. Used by the host to pick a compatible ESM import map. |
+| `globals` | object | ❌ | Per-app namespaced UMD globals (R4.7+), e.g. `{ "widgets": "MyAppWidgets" }`. UMD-only; ESM bundles don't need it. |
 | `seo.priority` | number | ❌ | Controls which app's `title`/`description`/`ogImage` wins when multiple apps are on the same page. Default `0`; higher wins. See the [Executor guide](executor.md). |
+
+#### Module format (UMD vs ESM)
+
+The host provides shared libraries (React, Radix, the SmartLinks SDK, LiquidJS…) as **singletons**
+so apps never bundle their own. Two delivery mechanisms exist, and `meta.moduleFormat` tells the host
+which to use:
+
+| `moduleFormat` | Host behaviour |
+|---|---|
+| `"umd"` *(default)* | Loads `files.js.umd` via the CommonJS `require` shim; shared deps resolve from **window globals**. Every existing app works unchanged. |
+| `"dual"` | Prefers `files.js.esm` when the host has an **import map** for the declared `sharedDependencies` version; **falls back to UMD** otherwise. The safe transition setting. |
+| `"esm"` | Loads `files.js.esm` **natively**; if the host has no matching import map it fails with an actionable error rather than a bare-specifier crash. Use only once you know your hosts are on the contract. |
+
+The ESM bundle is declared in the **same** `files.js` block as `esm` (there is no separate `jsEsm`
+field):
+
+```jsonc
+"widgets": {
+  "files": {
+    "js": { "umd": "dist/widgets.umd.js", "esm": "dist/widgets.esm.js" },
+    "css": "dist/widgets.css"
+  }
+}
+```
+
+An ESM bundle **must externalize exactly the shared-dependency contract** — read it from the SDK
+(`SHARED_DEPENDENCY_SPECIFIERS`) rather than hard-coding it, and stamp the version you built against
+into `meta.sharedDependencies`. See [host-dependency-contract.md](host-dependency-contract.md).
 
 #### `build`
 

@@ -17471,6 +17471,18 @@ components:
           type: string
         appId:
           type: string
+        moduleFormat:
+          type: string
+          enum:
+            - umd
+            - esm
+            - dual
+        sharedDependencies:
+          type: string
+        globals:
+          type: object
+          additionalProperties:
+            type: string
         seo:
           type: object
           additionalProperties: true
