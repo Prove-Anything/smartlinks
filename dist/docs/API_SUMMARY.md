@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.7  |  Generated: 2026-09-21T15:16:27.527Z
+Version: 2.0.7  |  Generated: 2026-09-21T15:24:22.188Z
 
 This is a concise summary of all available API functions and types.
 

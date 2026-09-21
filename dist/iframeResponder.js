@@ -3,7 +3,7 @@
 // =============================================================================
 import * as cache from './cache.js';
 import { collection } from './api/collection.js';
-import { getBaseURL } from './http.js';
+import { getBaseURL, hasAuthCredentials } from './http.js';
 /**
  * Parent-side iframe responder for SmartLinks microapp embedding.
  *
@@ -422,17 +422,32 @@ export class IframeResponder {
                     return;
                 }
             }
-            // Anonymous /account: serve the recent "not authenticated" result instead of
-            // re-hitting the API on every check during a single page load. The positive
-            // path above already handles logged-in users (cache.user set), and the first
-            // check still goes to the network, so any real auth path is preserved.
+            // "Am I logged in?" (GET /account) with no logged-in user cached. The positive
+            // path above already served logged-in users (cache.user set).
             if (proxyData.method === 'GET' && path.includes('/account') && !this.cache.user) {
-                const ANON_ACCOUNT_TTL_MS = 30000;
-                if (this.lastAnonAccountAt && Date.now() - this.lastAnonAccountAt < ANON_ACCOUNT_TTL_MS) {
+                const notAuthenticated = () => {
                     response.statusCode = 401;
                     response.error = 'Not authenticated';
                     response.errorBody = { account: null, errorCode: 'NOT_AUTHENTICATED' };
                     this.sendResponse(event, response);
+                };
+                // Pre-emptive gate: will this request carry ANY credential the server could
+                // validate? The portal authenticates by bearer token (not cookie), and the
+                // proxy fetch forwards no cookie, so if neither the parent SDK nor the
+                // forwarded headers carry a token, the call is provably pointless — answer
+                // "not authenticated" locally, zero network calls.
+                const headers = (proxyData.headers || {});
+                const hasHeaderAuth = Object.keys(headers).some((k) => k.toLowerCase() === 'authorization' && !!headers[k]);
+                if (!hasAuthCredentials() && !hasHeaderAuth) {
+                    notAuthenticated();
+                    return;
+                }
+                // A credential IS present but no user is cached (e.g. an expired token):
+                // the first check goes to the network, then its 401 is remembered briefly
+                // so repeat checks in the same page load don't re-hit the API.
+                const ANON_ACCOUNT_TTL_MS = 30000;
+                if (this.lastAnonAccountAt && Date.now() - this.lastAnonAccountAt < ANON_ACCOUNT_TTL_MS) {
+                    notAuthenticated();
                     return;
                 }
             }
