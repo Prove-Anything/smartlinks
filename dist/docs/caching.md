@@ -119,12 +119,31 @@ Different API resources have different cache lifetimes:
 ```typescript
 import { invalidateCache } from '@smartlinks/sdk';
 
-// Clear cache for a specific collection
+// Substring match (default): clears the collection AND everything under it
+// (settings, widgets, products, proofs) — a prefix wipe.
 invalidateCache('/collection/abc123');
+
+// Exact match: clears ONLY that entry, not its sub-resources. Use this to avoid
+// accidental cascade wipes.
+invalidateCache('/collection/abc123', { exact: true });
 
 // Clear all product caches
 invalidateCache('/product/');
 ```
+
+### Don't force-refresh from a container-hosted app
+
+`getWidgets(collectionId, { force: true })` (and `getAppConfig(..., { force: true })`)
+bypass the cache and re-fetch. Inside a **container/iframe app**, the host has usually
+already fetched that data and shares its own cache — forcing a refetch duplicates the
+request the host just made. `force: true` was a **polling-era workaround** for not being
+able to tell when something changed; **prefer the default (cached) path** in hosted apps.
+
+> **Direction:** the platform is moving to a **push-based** model — app/config updates are
+> pushed centrally and invalidate the relevant caches immediately, so a normal GET returns
+> fresh data (and, with conditional requests/ETags, returns "not modified" cheaply) without
+> anyone polling or forcing. As that lands, `force: true` should disappear from app code
+> entirely. Don't build new flows around it.
 
 ### Clear All Caches
 

@@ -99,6 +99,15 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 - **Context via URL params** — All contextual data is passed through URL parameters
 - **SmartLinks NPM module** — All data access and platform interaction goes through `@proveanything/smartlinks`
 - **No standalone auth** — Authentication is handled by the parent SmartLinks platform
+
+> **Use the host-provided `SL`, don't instantiate your own.** When your app runs in a
+> container/iframe, the host injects an already-initialized, authenticated SDK instance (the
+> `SL` prop / the externalized `@proveanything/smartlinks` singleton). Import and use *that*.
+> Calling `initializeApi()` yourself to spin up a **second** SDK instance is a common source
+> of bugs: it won't share the host's auth (so it looks signed-out), won't share the host's
+> cache (duplicate requests, stale data), and in proxy mode it bypasses the host's request
+> routing. Rule of thumb: **host-provided `SL` for anything the platform owns** (auth, config,
+> data, cache); only app-owned state is yours.
 - **Multi-page build** — Separate bundles for public and admin — see `docs/mpa.md`
 - **Embedded back navigation** — Use `docs/portal-back-button.md` when a sub-app has a real content hierarchy
 
