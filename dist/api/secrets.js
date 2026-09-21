@@ -9,7 +9,7 @@
 // config.connection.auth.credentialRef.
 //
 // Endpoints: /admin/collection/:collectionId/secrets
-import { request, post, put, del } from "../http";
+import { request, post, put, del } from "../http.js";
 function enc(v) { return encodeURIComponent(v); }
 function encodeQuery(params = {}) {
     const search = new URLSearchParams();

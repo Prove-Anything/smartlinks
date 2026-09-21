@@ -1,5 +1,5 @@
 // src/api/config.ts
-import { request } from "../http";
+import { request } from "../http.js";
 export var config;
 (function (config) {
     /**

@@ -1,4 +1,4 @@
-import type { SegmentRecord, ListSegmentsQuery, SegmentList, SegmentCalculateResult, SegmentRecipientsResponse } from "../types/segments";
+import type { SegmentRecord, ListSegmentsQuery, SegmentList, SegmentCalculateResult, SegmentRecipientsResponse } from "../types/segments.js";
 export declare namespace segments {
     function create(collectionId: string, body: Omit<SegmentRecord, 'id' | 'collectionId' | 'createdAt'>): Promise<SegmentRecord>;
     function list(collectionId: string, query?: ListSegmentsQuery): Promise<SegmentList>;

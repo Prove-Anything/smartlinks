@@ -1,4 +1,4 @@
-import type { SecretMeta, SecretList, SetSecretInput, SetSecretResult, ListSecretsQuery } from "../types/integrations";
+import type { SecretMeta, SecretList, SetSecretInput, SetSecretResult, ListSecretsQuery } from "../types/integrations.js";
 export declare namespace secrets {
     /** List secrets as refs + masked hints + metadata (never values). GET /secrets */
     function list(collectionId: string, query?: ListSecretsQuery): Promise<SecretList>;

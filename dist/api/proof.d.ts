@@ -1,4 +1,4 @@
-import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofValuesUpdateRequest, ProofClaimRequest, ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult, ProofTransfer, TransferProofOptions, TransferProofResult, AcceptTransferOptions, CancelTransferOptions } from "../types/proof";
+import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofValuesUpdateRequest, ProofClaimRequest, ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult, ProofTransfer, TransferProofOptions, TransferProofResult, AcceptTransferOptions, CancelTransferOptions } from "../types/proof.js";
 export declare namespace proof {
     /**
      * Retrieves a single Proof by Collection ID, Product ID, and Proof ID.

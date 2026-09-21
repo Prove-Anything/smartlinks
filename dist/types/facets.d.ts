@@ -1,4 +1,4 @@
-import type { JsonValue, ProductQueryRequest } from "./product";
+import type { JsonValue, ProductQueryRequest } from "./product.js";
 export interface FacetDefinition {
     id?: string;
     orgId?: string;

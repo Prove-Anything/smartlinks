@@ -10,9 +10,9 @@ var __rest = (this && this.__rest) || function (s, e) {
     return t;
 };
 // src/api/appConfiguration.ts
-import { request, post, del } from "../http";
-import * as cache from "../cache";
-import { collection as collectionApi } from "./collection";
+import { request, post, del } from "../http.js";
+import * as cache from "../cache.js";
+import { collection as collectionApi } from "./collection.js";
 function getWidgetsMap(config) {
     if (!config || typeof config !== 'object' || Array.isArray(config))
         return {};

@@ -1,5 +1,5 @@
-import { patch, post, request } from '../http';
-import { clearCachedTranslations, deriveTranslationContextKey, getCachedTranslations, getDefaultTranslationCacheTtlMs, hashTranslationText, normalizeTranslationText, setCachedTranslations, } from '../translationCache';
+import { patch, post, request } from '../http.js';
+import { clearCachedTranslations, deriveTranslationContextKey, getCachedTranslations, getDefaultTranslationCacheTtlMs, hashTranslationText, normalizeTranslationText, setCachedTranslations, } from '../translationCache.js';
 function normalizeLookupRequest(body) {
     var _a, _b, _c;
     const texts = Array.isArray(body.texts)

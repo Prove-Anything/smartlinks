@@ -1,4 +1,4 @@
-import { request, post, del, patch } from "../http";
+import { request, post, del, patch } from "../http.js";
 export var contact;
 (function (contact) {
     async function create(collectionId, data) {

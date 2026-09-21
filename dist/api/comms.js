@@ -1,6 +1,6 @@
 // src/api/comms.ts
 // Communications and notifications API for Smartlinks
-import { post, request, patch } from "../http";
+import { post, request, patch } from "../http.js";
 /**
  * Communications namespace for sending notifications and managing user communications
  */

@@ -1,4 +1,4 @@
-import { VariantResponse, VariantCreateRequest, VariantUpdateRequest } from "../types/variant";
+import { VariantResponse, VariantCreateRequest, VariantUpdateRequest } from "../types/variant.js";
 export declare namespace variant {
     /**
      * Get a single variant by ID for a collection and product (admin only).

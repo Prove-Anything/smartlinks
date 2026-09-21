@@ -1,5 +1,5 @@
-import type { IdField } from './common';
-import type { BroadcastChannel } from './broadcasts';
+import type { IdField } from './common.js';
+import type { BroadcastChannel } from './broadcasts.js';
 /**
  * Target subject for notifications (product, collection, etc.)
  */
@@ -93,7 +93,7 @@ export interface AppendBulkResult {
     success: true;
     count: number;
 }
-export type Recipient = import('./contact').Contact;
+export type Recipient = import('./contact.js').Contact;
 export interface RecipientsPage {
     items: Recipient[];
     total: number;
@@ -181,7 +181,7 @@ export interface UnsubscribeResponse {
     };
 }
 export type ConsentChannels = Partial<Record<BroadcastChannel, boolean>>;
-type SubjectType = import('./contact').SubjectType;
+type SubjectType = import('./contact.js').SubjectType;
 export interface CommsConsentUpsertRequest {
     contactId: string;
     channels?: ConsentChannels;
@@ -229,7 +229,7 @@ export interface CommsListMethodsQuery {
 }
 export interface CommsListMethodsResponse {
     ok: true;
-    methods: import('./contact').CommMethod[];
+    methods: import('./contact.js').CommMethod[];
 }
 export interface RegisterEmailMethodRequest {
     contactId?: string;

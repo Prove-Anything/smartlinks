@@ -1,5 +1,5 @@
 // src/api/collection.ts
-import { request, post, put, del } from "../http";
+import { request, post, put, del } from "../http.js";
 export var collection;
 (function (collection) {
     /**

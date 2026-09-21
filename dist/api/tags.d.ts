@@ -1,4 +1,4 @@
-import type { TagIndexEntry, CreateTagRequest, CreateTagResponse, BatchCreateTagRequest, BatchCreateResult, UpdateTagRequest, UpdateTagResponse, DeleteTagResponse, GetTagResponse, ListTagsRequest, ListTagsResponse, LookupTagsRequest, LookupTagsQueryRequest, TagLookupResponse, PublicGetTagResponse, ByRefRequest, ByRefResponse, ReverseTagLookupParams, ReverseTagLookupResponse } from "../types/tags";
+import type { TagIndexEntry, CreateTagRequest, CreateTagResponse, BatchCreateTagRequest, BatchCreateResult, UpdateTagRequest, UpdateTagResponse, DeleteTagResponse, GetTagResponse, ListTagsRequest, ListTagsResponse, LookupTagsRequest, LookupTagsQueryRequest, TagLookupResponse, PublicGetTagResponse, ByRefRequest, ByRefResponse, ReverseTagLookupParams, ReverseTagLookupResponse } from "../types/tags.js";
 /**
  * Tag Management API
  *

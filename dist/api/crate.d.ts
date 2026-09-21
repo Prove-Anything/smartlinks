@@ -1,4 +1,4 @@
-import { GetCrateResponse, CreateCrateRequest, CreateCrateResponse, UpdateCrateRequest, UpdateCrateResponse, DeleteCrateResponse, ListCratesRequest, ListCratesResponse } from "../types/crate";
+import { GetCrateResponse, CreateCrateRequest, CreateCrateResponse, UpdateCrateRequest, UpdateCrateResponse, DeleteCrateResponse, ListCratesRequest, ListCratesResponse } from "../types/crate.js";
 /**
  * Crate Management API
  *

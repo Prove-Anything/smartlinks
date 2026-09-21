@@ -1,4 +1,4 @@
-import { Lot, LotCreateInput, LotUpdateInput, ListLotsParams, ResolveLotResponse, ListLotProductsResponse } from "../types/lots";
+import { Lot, LotCreateInput, LotUpdateInput, ListLotsParams, ResolveLotResponse, ListLotProductsResponse } from "../types/lots.js";
 /**
  * Lots — collection-scoped production groupings that span one or more products.
  * Writes and admin reads hit `/admin/collection/:cid/lots`; the `public*` reads hit

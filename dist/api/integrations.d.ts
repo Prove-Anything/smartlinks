@@ -1,4 +1,4 @@
-import type { IntegrationFlow, CreateFlowInput, UpdateFlowInput, ListFlowsQuery, FlowList, RunFlowInput, RunFlowResult, RunFlowSummary, RunFlowEnqueued, RecordTypesResponse } from "../types/integrations";
+import type { IntegrationFlow, CreateFlowInput, UpdateFlowInput, ListFlowsQuery, FlowList, RunFlowInput, RunFlowResult, RunFlowSummary, RunFlowEnqueued, RecordTypesResponse } from "../types/integrations.js";
 export declare namespace integrations {
     /** List flows in a collection. GET /integrations/flows */
     function listFlows(collectionId: string, query?: ListFlowsQuery): Promise<FlowList>;

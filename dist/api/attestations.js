@@ -1,5 +1,5 @@
 // src/api/attestations.ts
-import { request, post } from "../http";
+import { request, post } from "../http.js";
 // ─── Internal helper ──────────────────────────────────────────────────────────
 function buildAttestationQuery(params) {
     const q = new URLSearchParams();

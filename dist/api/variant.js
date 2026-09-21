@@ -1,5 +1,5 @@
 // src/api/variant.ts
-import { request, post, put, del } from "../http";
+import { request, post, put, del } from "../http.js";
 export var variant;
 (function (variant) {
     // Admin CRUD operations

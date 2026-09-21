@@ -1,4 +1,4 @@
-import { JsonValue, ScopedFieldDef } from './product';
+import { JsonValue, ScopedFieldDef } from './product.js';
 /**
  * `proof.values` — the owner + business-writable bag.
  * Public keys sit at the root (business + current owner can write, everyone

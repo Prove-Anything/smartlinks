@@ -1,4 +1,4 @@
-import type { NfcValidateRequest, NfcValidateResponse, NfcTagInfo, NfcClaimTagRequest } from "../types/nfc";
+import type { NfcValidateRequest, NfcValidateResponse, NfcTagInfo, NfcClaimTagRequest } from "../types/nfc.js";
 export declare namespace nfc {
     /**
      * Claim an NFC tag (public).

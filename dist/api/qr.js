@@ -1,6 +1,6 @@
 // src/api/qr.ts
 // QR / Short code lookup API
-import { request } from "../http";
+import { request } from "../http.js";
 /**
  * QR namespace for public short code lookups.
  */

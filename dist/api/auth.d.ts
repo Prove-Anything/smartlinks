@@ -1,5 +1,5 @@
-import type { UserAccountRegistrationRequest, AccountInfoResponse, AuthLocation, AuthLocationCacheOptions } from "../types/auth";
-export type { AccountInfoResponse, AuthLocation, AuthLocationCacheOptions } from "../types/auth";
+import type { UserAccountRegistrationRequest, AccountInfoResponse, AuthLocation, AuthLocationCacheOptions } from "../types/auth.js";
+export type { AccountInfoResponse, AuthLocation, AuthLocationCacheOptions } from "../types/auth.js";
 export type LoginResponse = {
     id: string;
     name: string;

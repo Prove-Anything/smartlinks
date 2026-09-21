@@ -1,4 +1,4 @@
-import type { ResolvedTranslationResponse, TranslationHashOptions, TranslationListParams, TranslationListResponse, TranslationLookupRequest, TranslationLookupResponse, TranslationRecord, TranslationResolveOptions, TranslationUpdateRequest } from '../types/translations';
+import type { ResolvedTranslationResponse, TranslationHashOptions, TranslationListParams, TranslationListResponse, TranslationLookupRequest, TranslationLookupResponse, TranslationRecord, TranslationResolveOptions, TranslationUpdateRequest } from '../types/translations.js';
 export declare namespace translations {
     function hashText(text: string, options?: TranslationHashOptions): Promise<string>;
     function hashTexts(texts: string[], options?: TranslationHashOptions): Promise<string[]>;

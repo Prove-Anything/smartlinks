@@ -1,5 +1,5 @@
 // src/api/journeysAnalytics.ts
-import { post } from "../http";
+import { post } from "../http.js";
 export var journeysAnalytics;
 (function (journeysAnalytics) {
     /**

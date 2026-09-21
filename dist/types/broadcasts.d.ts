@@ -44,7 +44,7 @@ export interface BroadcastList {
     offset: number;
 }
 export interface BroadcastRecipientsResponse {
-    items: import('./comms').Recipient[];
+    items: import('./comms.js').Recipient[];
     total: number;
     limit: number;
     offset: number;

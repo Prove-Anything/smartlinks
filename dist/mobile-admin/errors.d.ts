@@ -5,7 +5,7 @@
  * All three classes call `Object.setPrototypeOf(this, new.target.prototype)` so
  * `instanceof` works correctly when transpiled to ES5.
  */
-import type { ActionableCapability, AdminMobileHostId } from './types';
+import type { ActionableCapability, AdminMobileHostId } from './types.js';
 /**
  * Thrown when a container requests a hardware action that the current host
  * does not support (e.g. calling `requestNfcTap` on a `'pwa'` host).

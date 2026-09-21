@@ -1,6 +1,6 @@
-import { CollectionWidgetsResponse, GetCollectionWidgetsOptions } from "../types/appManifest";
-import type { AppsConfigResponse } from "../types/collection";
-import type { GetWidgetInstanceOptions, WidgetInstance, WidgetInstanceSummary, SystemBlock } from "../types/appConfiguration";
+import { CollectionWidgetsResponse, GetCollectionWidgetsOptions } from "../types/appManifest.js";
+import type { AppsConfigResponse } from "../types/collection.js";
+import type { GetWidgetInstanceOptions, WidgetInstance, WidgetInstanceSummary, SystemBlock } from "../types/appConfiguration.js";
 /**
  * Options for collection/product-scoped app configuration.
  * This data is set by admins and applies to all users within the scope.

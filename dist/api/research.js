@@ -5,7 +5,7 @@
 // agent loop (e.g. the Recipes app fetching a recipe's schema.org JSON-LD from a URL).
 //
 // Endpoints: /admin/collection/:collectionId/research
-import { post } from "../http";
+import { post } from "../http.js";
 export var research;
 (function (research) {
     /**

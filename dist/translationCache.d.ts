@@ -1,4 +1,4 @@
-import type { ResolvedTranslationItem, TranslationContext, TranslationHashOptions } from './types/translations';
+import type { ResolvedTranslationItem, TranslationContext, TranslationHashOptions } from './types/translations.js';
 interface LocalTranslationCacheEntry {
     collectionId: string;
     sourceLanguage: string;

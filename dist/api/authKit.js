@@ -1,4 +1,4 @@
-import { request, post, put, del, requestWithOptions, setBearerToken, invalidateCache } from "../http";
+import { request, post, put, del, requestWithOptions, setBearerToken, invalidateCache } from "../http.js";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).

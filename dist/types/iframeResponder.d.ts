@@ -1,6 +1,6 @@
-export type { AuthKitUser } from './authKit';
-export type { AppConfig as CollectionApp } from './collection';
-import type { AppConfig } from './collection';
+export type { AuthKitUser } from './authKit.js';
+export type { AppConfig as CollectionApp } from './collection.js';
+import type { AppConfig } from './collection.js';
 export interface CachedData {
     collection?: Record<string, any>;
     product?: Record<string, any>;

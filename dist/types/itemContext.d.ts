@@ -1,4 +1,4 @@
-import type { TagContext } from './nfc';
+import type { TagContext } from './nfc.js';
 /**
  * Authenticity status for a specific item — a proof, resolved via an NFC
  * tap or a serial proof URL. Collection- and product-only URLs have no

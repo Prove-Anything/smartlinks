@@ -1,4 +1,4 @@
-import { request, post, put, del } from "../http";
+import { request, post, put, del } from "../http.js";
 /**
  * @deprecated Legacy Firestore-backed attestation API.
  *

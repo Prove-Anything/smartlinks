@@ -1,4 +1,4 @@
-import { request, post, put, del as httpDel } from "../http";
+import { request, post, put, del as httpDel } from "../http.js";
 export var template;
 (function (template) {
     // Admin APIs

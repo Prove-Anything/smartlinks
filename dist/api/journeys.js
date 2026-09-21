@@ -1,5 +1,5 @@
 // src/api/journeys.ts
-import { request, post, patch, del } from "../http";
+import { request, post, patch, del } from "../http.js";
 function encodeQuery(params) {
     const search = new URLSearchParams();
     for (const [key, value] of Object.entries(params)) {

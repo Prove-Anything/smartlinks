@@ -1,4 +1,4 @@
-import type { AppFunctionDef, ServerFunctionContext } from '../types/appManifest';
+import type { AppFunctionDef, ServerFunctionContext } from '../types/appManifest.js';
 export declare class CapabilityError extends Error {
     capability: string;
     code: string;

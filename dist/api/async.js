@@ -1,5 +1,5 @@
 // src/api/async.ts
-import { request, post } from "../http";
+import { request, post } from "../http.js";
 function enc(v) { return encodeURIComponent(v); }
 export var async;
 (function (async) {

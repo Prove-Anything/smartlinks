@@ -1,5 +1,5 @@
 // src/api/jobs.ts
-import { request } from "../http";
+import { request } from "../http.js";
 function enc(v) { return encodeURIComponent(v); }
 function encodeQuery(params = {}) {
     const search = new URLSearchParams();

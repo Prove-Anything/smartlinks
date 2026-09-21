@@ -1,4 +1,4 @@
-import type { Location, LocationPayload, LocationSearchQuery, LocationSearchResponse } from "../types/location";
+import type { Location, LocationPayload, LocationSearchQuery, LocationSearchResponse } from "../types/location.js";
 export declare namespace location {
     /**
      * Platform: Create a global location (super admin; requires features.adminApps)

@@ -1,4 +1,4 @@
-import type { ResearchFetchRequest, ResearchFetchResult } from "../types/research";
+import type { ResearchFetchRequest, ResearchFetchResult } from "../types/research.js";
 export declare namespace research {
     /**
      * Fetch + extract a web page: clean markdown, page metadata, and any schema.org

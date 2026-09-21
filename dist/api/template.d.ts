@@ -1,4 +1,4 @@
-import type { Template, TemplateInput, TemplateUpdate, TemplatePublic, TemplateRenderRequest, TemplateRenderResponse, TemplateRenderSourceRequest, TemplateRenderSourceResponse } from "../types";
+import type { Template, TemplateInput, TemplateUpdate, TemplatePublic, TemplateRenderRequest, TemplateRenderResponse, TemplateRenderSourceRequest, TemplateRenderSourceResponse } from "../types/index.js";
 export declare namespace template {
     function getAll(collectionId: string): Promise<Template[]>;
     function get(collectionId: string, templateId: string): Promise<Template>;

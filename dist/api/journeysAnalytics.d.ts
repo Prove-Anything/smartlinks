@@ -1,4 +1,4 @@
-import type { JourneyStatsRequest, JourneyStatsResponse, JourneyStepRecipientsRequest, JourneyStepRecipientsResponse, JourneyFunnelReportRequest, JourneyFunnelReportResponse } from "../types/journeysAnalytics";
+import type { JourneyStatsRequest, JourneyStatsResponse, JourneyStepRecipientsRequest, JourneyStepRecipientsResponse, JourneyFunnelReportRequest, JourneyFunnelReportResponse } from "../types/journeysAnalytics.js";
 export declare namespace journeysAnalytics {
     /**
      * POST /admin/collection/:collectionId/journeys.analytics/:journeyId/stats

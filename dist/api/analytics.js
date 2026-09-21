@@ -9,7 +9,7 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
-import { post, getBaseURL, getApiHeaders } from "../http";
+import { post, getBaseURL, getApiHeaders } from "../http.js";
 const analyticsBrowserState = {
     config: {
         sessionStorageKey: 'smartlinks.analytics.sessionId',

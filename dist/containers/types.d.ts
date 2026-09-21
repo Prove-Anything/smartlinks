@@ -1,4 +1,4 @@
-import type { SmartLinksWidgetProps } from '../types';
+import type { SmartLinksWidgetProps } from '../types/index.js';
 /**
  * Props for a SmartLinks container component.
  *

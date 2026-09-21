@@ -1,5 +1,5 @@
 // src/api/tags.ts
-import { request, post, put, del } from "../http";
+import { request, post, put, del } from "../http.js";
 /**
  * Tag Management API
  *

@@ -1,4 +1,4 @@
-import type { EnqueueAsyncJobRequest, EnqueueAsyncJobResponse, Job } from "../types/jobs";
+import type { EnqueueAsyncJobRequest, EnqueueAsyncJobResponse, Job } from "../types/jobs.js";
 export declare namespace async {
     /**
      * Enqueue a background job for a collection

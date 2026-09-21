@@ -1,4 +1,4 @@
-import type { JourneyRecord, JourneyList, ListJourneysQuery, CreateJourneyBody, UpdateJourneyBody } from "../types/journeys";
+import type { JourneyRecord, JourneyList, ListJourneysQuery, CreateJourneyBody, UpdateJourneyBody } from "../types/journeys.js";
 export declare namespace journeys {
     function create(collectionId: string, body: CreateJourneyBody): Promise<JourneyRecord>;
     function list(collectionId: string, query?: ListJourneysQuery): Promise<JourneyList>;

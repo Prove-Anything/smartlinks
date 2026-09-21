@@ -1,4 +1,4 @@
-import type { QrShortCodeLookupResponse } from "../types/qr";
+import type { QrShortCodeLookupResponse } from "../types/qr.js";
 /**
  * QR namespace for public short code lookups.
  */

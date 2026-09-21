@@ -1,4 +1,4 @@
-import type { FieldDefinition, ProofTypeDefinition } from "../types/config";
+import type { FieldDefinition, ProofTypeDefinition } from "../types/config.js";
 export declare namespace config {
     /**
      * Returns the full platform field catalog.

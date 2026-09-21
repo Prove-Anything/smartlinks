@@ -1,5 +1,5 @@
-import type { ListBroadcastsQuery, BroadcastRecord, BroadcastList, BroadcastRecipientsResponse, BroadcastPreviewRequest, BroadcastPreviewResponse, BroadcastSendTestRequest, BroadcastSendTestResponse, BroadcastSendManualRequest, BroadcastSendManualResponse, BroadcastAppendEventBody, BroadcastAppendBulkBody, BroadcastSendRequest } from "../types/broadcasts";
-import type { AppendResult, AppendBulkResult } from "../types/comms";
+import type { ListBroadcastsQuery, BroadcastRecord, BroadcastList, BroadcastRecipientsResponse, BroadcastPreviewRequest, BroadcastPreviewResponse, BroadcastSendTestRequest, BroadcastSendTestResponse, BroadcastSendManualRequest, BroadcastSendManualResponse, BroadcastAppendEventBody, BroadcastAppendBulkBody, BroadcastSendRequest } from "../types/broadcasts.js";
+import type { AppendResult, AppendBulkResult } from "../types/comms.js";
 export declare namespace broadcasts {
     function create(collectionId: string, body: Omit<BroadcastRecord, 'id' | 'collectionId' | 'createdAt'>): Promise<BroadcastRecord>;
     function list(collectionId: string, query?: ListBroadcastsQuery): Promise<BroadcastList>;

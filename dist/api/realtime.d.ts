@@ -1,4 +1,4 @@
-import type { AblyTokenRequest, RealtimeTokenRequest } from "../types/realtime";
+import type { AblyTokenRequest, RealtimeTokenRequest } from "../types/realtime.js";
 /**
  * Real-Time Communications API
  *

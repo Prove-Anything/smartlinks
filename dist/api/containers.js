@@ -1,5 +1,5 @@
 // src/api/containers.ts
-import { request, post, patch, del, requestWithOptions } from "../http";
+import { request, post, patch, del, requestWithOptions } from "../http.js";
 // ─── Internal helper ──────────────────────────────────────────────────────────
 function buildContainerQuery(params) {
     const q = new URLSearchParams();

@@ -17,7 +17,7 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
-import { request, post, put, del } from "../http";
+import { request, post, put, del } from "../http.js";
 function enc(v) { return encodeURIComponent(v); }
 function encodeQuery(params = {}) {
     const search = new URLSearchParams();

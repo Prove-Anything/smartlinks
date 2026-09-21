@@ -1,4 +1,4 @@
-import type { LoyaltyScheme, LoyaltyMember, LoyaltyTransaction, LoyaltyEarningRule, LoyaltySchemeWithMembership, LoyaltyTransactionResult, LoyaltyPaginationParams, LoyaltyPaginatedResult, CreateLoyaltySchemeBody, UpdateLoyaltySchemeBody, CreateLoyaltyEarningRuleBody, UpdateLoyaltyEarningRuleBody, RecordLoyaltyTransactionBody } from "../types/loyalty";
+import type { LoyaltyScheme, LoyaltyMember, LoyaltyTransaction, LoyaltyEarningRule, LoyaltySchemeWithMembership, LoyaltyTransactionResult, LoyaltyPaginationParams, LoyaltyPaginatedResult, CreateLoyaltySchemeBody, UpdateLoyaltySchemeBody, CreateLoyaltyEarningRuleBody, UpdateLoyaltyEarningRuleBody, RecordLoyaltyTransactionBody } from "../types/loyalty.js";
 export declare namespace loyalty {
     function list(collectionId: string, params?: {
         includeDeleted?: boolean;

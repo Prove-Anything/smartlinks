@@ -103,7 +103,7 @@ export interface PublicUpdateMyContactResponse {
     ok: boolean;
     contact: ContactPublic;
 }
-export type ChannelName = import('./broadcasts').BroadcastChannel;
+export type ChannelName = import('./broadcasts.js').BroadcastChannel;
 export type SubjectType = 'product' | 'proof' | 'batch';
 /** Registered delivery method for a contact */
 export interface CommMethodMeta {

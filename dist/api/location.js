@@ -1,5 +1,5 @@
 // src/api/location.ts
-import { request, post } from "../http";
+import { request, post } from "../http.js";
 function buildQueryString(q = {}) {
     var _a, _b;
     const params = new URLSearchParams();

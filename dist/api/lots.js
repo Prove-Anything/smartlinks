@@ -1,5 +1,5 @@
 // src/api/lots.ts
-import { request, post, put, del } from "../http";
+import { request, post, put, del } from "../http.js";
 /**
  * Lots — collection-scoped production groupings that span one or more products.
  * Writes and admin reads hit `/admin/collection/:cid/lots`; the `public*` reads hit

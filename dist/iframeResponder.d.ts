@@ -1,4 +1,4 @@
-import type { IframeResponderOptions, CachedData } from './types/iframeResponder';
+import type { IframeResponderOptions, CachedData } from './types/iframeResponder.js';
 /**
  * Parent-side iframe responder for SmartLinks microapp embedding.
  *

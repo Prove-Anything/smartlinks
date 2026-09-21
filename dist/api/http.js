@@ -22,7 +22,7 @@
 //     '/public/app/eticket/uploadTickets',
 //     { collectionId, productId, appId, data }
 //   )
-import { request as _get, post as _post, put as _put, patch as _patch, del as _del, } from '../http';
+import { request as _get, post as _post, put as _put, patch as _patch, del as _del, } from '../http.js';
 /** Ensure the path always starts with `/` so it concatenates correctly with baseURL. */
 function normalizePath(path) {
     return path.startsWith('/') ? path : `/${path}`;

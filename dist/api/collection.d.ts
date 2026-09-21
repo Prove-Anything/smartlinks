@@ -1,4 +1,4 @@
-import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest, AppsConfigResponse, DomainTarget, HubAvailabilityResponse } from "../types/collection";
+import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest, AppsConfigResponse, DomainTarget, HubAvailabilityResponse } from "../types/collection.js";
 export declare namespace collection {
     /**
      * Retrieves a single Collection by its ID.

@@ -16,6 +16,15 @@ export {
 } from './iframeResponder'
 // Utility functions
 export * as utils from './utils'
+// Shared dependency contract (host↔app) — one source of truth for externalized deps
+export {
+  SHARED_DEPENDENCY_CONTRACT_VERSION,
+  SHARED_DEPENDENCIES,
+  SHARED_DEPENDENCY_SPECIFIERS,
+  importMapPathFor,
+  getHostSharedDependencies,
+} from './shared-dependencies'
+export type { SharedDependency, HostSharedDependencies } from './shared-dependencies'
 
 // Explicitly re-export types for documentation
 export type {

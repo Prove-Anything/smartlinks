@@ -1,5 +1,5 @@
 // src/api/batch.ts
-import { request, post, put, del } from "../http";
+import { request, post, put, del } from "../http.js";
 export var batch;
 (function (batch) {
     // Admin CRUD operations

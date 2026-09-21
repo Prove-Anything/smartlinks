@@ -1,5 +1,5 @@
 // src/api/realtime.ts
-import { request } from "../http";
+import { request } from "../http.js";
 /**
  * Real-Time Communications API
  *

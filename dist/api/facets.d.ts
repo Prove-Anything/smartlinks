@@ -1,4 +1,4 @@
-import type { FacetDefinition, FacetDefinitionWriteInput, FacetGetParams, FacetListParams, FacetListResponse, FacetNamespaceListResponse, FacetQueryRequest, FacetQueryResponse, FacetValueGetParams, FacetValueListParams, FacetValueListResponse, FacetValueResponse, FacetValueWriteInput, PublicFacetListParams } from "../types/facets";
+import type { FacetDefinition, FacetDefinitionWriteInput, FacetGetParams, FacetListParams, FacetListResponse, FacetNamespaceListResponse, FacetQueryRequest, FacetQueryResponse, FacetValueGetParams, FacetValueListParams, FacetValueListResponse, FacetValueResponse, FacetValueWriteInput, PublicFacetListParams } from "../types/facets.js";
 /**
  * Facet management and aggregation endpoints.
  *

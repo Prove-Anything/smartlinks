@@ -1,5 +1,5 @@
-import { AssetRef } from "./asset";
-import type { AppConfigSettings } from "./appConfiguration";
+import { AssetRef } from "./asset.js";
+import type { AppConfigSettings } from "./appConfiguration.js";
 /**
  * Represents a Collection object.
  */

@@ -1,4 +1,4 @@
-import type { CommunicationEvent, CommsQueryByUser, CommsRecipientIdsQuery, CommsRecipientsWithoutActionQuery, CommsRecipientsWithActionQuery, RecipientId, RecipientWithOutcome, LogCommunicationEventBody, LogBulkCommunicationEventsBody, AppendResult, AppendBulkResult, TransactionalSendRequest, TransactionalSendResult } from "../types/comms";
+import type { CommunicationEvent, CommsQueryByUser, CommsRecipientIdsQuery, CommsRecipientsWithoutActionQuery, CommsRecipientsWithActionQuery, RecipientId, RecipientWithOutcome, LogCommunicationEventBody, LogBulkCommunicationEventsBody, AppendResult, AppendBulkResult, TransactionalSendRequest, TransactionalSendResult } from "../types/comms.js";
 /**
  * Communications namespace for sending notifications and managing user communications
  */
@@ -8,12 +8,12 @@ export declare namespace comms {
      * GET /public/collection/:collectionId/comm/push/vapidPublicKey
      * Note: Key may be global; path is collection-scoped for consistency.
      */
-    function getPushVapidPublicKey(collectionId: string): Promise<import("../types/comms").PushVapidResponse>;
+    function getPushVapidPublicKey(collectionId: string): Promise<import("../types/comms.js").PushVapidResponse>;
     /**
      * Public: Register a Web Push subscription under unified comms.
      * POST /public/collection/:collectionId/comm/push/register
      */
-    function registerPush(collectionId: string, body: import("../types/comms").RegisterPushMethodRequest): Promise<import("../types/comms").PushSubscribeResponse>;
+    function registerPush(collectionId: string, body: import("../types/comms.js").RegisterPushMethodRequest): Promise<import("../types/comms.js").PushSubscribeResponse>;
     /**
      * Admin: Get current comms settings for a collection.
      * GET /admin/collection/:collectionId/comm.settings
@@ -21,66 +21,66 @@ export declare namespace comms {
      */
     function getSettings(collectionId: string, opts?: {
         includeSecret?: boolean;
-    }): Promise<import("../types/comms").CommsSettingsGetResponse>;
+    }): Promise<import("../types/comms.js").CommsSettingsGetResponse>;
     /**
      * Admin: Patch comms settings for a collection.
      * PATCH /admin/collection/:collectionId/comm.settings
      */
-    function patchSettings(collectionId: string, body: import("../types/comms").CommsSettingsPatchBody): Promise<import("../types/comms").CommsSettingsGetResponse>;
+    function patchSettings(collectionId: string, body: import("../types/comms.js").CommsSettingsPatchBody): Promise<import("../types/comms.js").CommsSettingsGetResponse>;
     /**
      * Public: Fetch configured topics for a collection.
      * GET /public/collection/:collectionId/comm/topics
      */
-    function getPublicTopics(collectionId: string): Promise<import("../types/comms").CommsPublicTopicsResponse>;
+    function getPublicTopics(collectionId: string): Promise<import("../types/comms.js").CommsPublicTopicsResponse>;
     /**
      * Public: Unsubscribe a contact from a category or channel.
      * GET /public/collection/:collectionId/comm/unsubscribe
      */
-    function unsubscribe(collectionId: string, query: import("../types/comms").UnsubscribeQuery): Promise<import("../types/comms").UnsubscribeResponse>;
+    function unsubscribe(collectionId: string, query: import("../types/comms.js").UnsubscribeQuery): Promise<import("../types/comms.js").UnsubscribeResponse>;
     /**
      * Public: Upsert default consent for a contact.
      * POST /public/collection/:collectionId/comm/consent
      */
-    function upsertConsent(collectionId: string, body: import("../types/comms").CommsConsentUpsertRequest): Promise<{
+    function upsertConsent(collectionId: string, body: import("../types/comms.js").CommsConsentUpsertRequest): Promise<{
         ok: true;
     }>;
     /**
      * Public: Upsert preferences for a specific subject (or default if subject omitted).
      * POST /public/collection/:collectionId/comm/preferences
      */
-    function upsertPreferences(collectionId: string, body: import("../types/comms").CommsPreferencesUpsertRequest): Promise<{
+    function upsertPreferences(collectionId: string, body: import("../types/comms.js").CommsPreferencesUpsertRequest): Promise<{
         ok: true;
     }>;
     /**
      * Public: Subscribe/unsubscribe contact to a subject.
      * POST /public/collection/:collectionId/comm/subscribe
      */
-    function subscribe(collectionId: string, body: import("../types/comms").CommsSubscribeRequest): Promise<import("../types/comms").CommsSubscribeResponse>;
+    function subscribe(collectionId: string, body: import("../types/comms.js").CommsSubscribeRequest): Promise<import("../types/comms.js").CommsSubscribeResponse>;
     /**
      * Public: Check subscription status for a subject.
      * GET /public/collection/:collectionId/comm/subscription/check
      */
-    function checkSubscription(collectionId: string, query: import("../types/comms").CommsSubscriptionCheckQuery): Promise<import("../types/comms").CommsSubscriptionCheckResponse>;
+    function checkSubscription(collectionId: string, query: import("../types/comms.js").CommsSubscriptionCheckQuery): Promise<import("../types/comms.js").CommsSubscriptionCheckResponse>;
     /**
      * Public: List registered contact methods.
      * GET /public/collection/:collectionId/comm/methods
      */
-    function listMethods(collectionId: string, query: import("../types/comms").CommsListMethodsQuery): Promise<import("../types/comms").CommsListMethodsResponse>;
+    function listMethods(collectionId: string, query: import("../types/comms.js").CommsListMethodsQuery): Promise<import("../types/comms.js").CommsListMethodsResponse>;
     /**
      * Public: Register email method for a contact.
      * POST /public/collection/:collectionId/comm/email/register
      */
-    function registerEmail(collectionId: string, body: import("../types/comms").RegisterEmailMethodRequest): Promise<import("../types/comms").RegisterMethodResponse>;
+    function registerEmail(collectionId: string, body: import("../types/comms.js").RegisterEmailMethodRequest): Promise<import("../types/comms.js").RegisterMethodResponse>;
     /**
      * Public: Register SMS method for a contact.
      * POST /public/collection/:collectionId/comm/sms/register
      */
-    function registerSms(collectionId: string, body: import("../types/comms").RegisterSmsMethodRequest): Promise<import("../types/comms").RegisterMethodResponse>;
+    function registerSms(collectionId: string, body: import("../types/comms.js").RegisterSmsMethodRequest): Promise<import("../types/comms.js").RegisterMethodResponse>;
     /**
      * Public: Resolve contacts for a subject with identity hints.
      * POST /public/collection/:collectionId/comm/subscriptions/resolve
      */
-    function resolveSubscriptions(collectionId: string, body: import("../types/comms").SubscriptionsResolveRequest): Promise<import("../types/comms").SubscriptionsResolveResponse>;
+    function resolveSubscriptions(collectionId: string, body: import("../types/comms.js").SubscriptionsResolveRequest): Promise<import("../types/comms.js").SubscriptionsResolveResponse>;
     /**
      * Analytics: Query communication events by user or contact.
      * POST /admin/collection/:collectionId/comm/query/by-user

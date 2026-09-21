@@ -130,3 +130,30 @@ must stay pinned:
   a direct dependency.
 
 Both are compile-time/build-time concerns for the app's own toolchain; neither is a host global.
+
+## Reading the contract programmatically (one source of truth)
+
+Don't hard-code the externalized list — import it from the SDK, so hosts and apps
+never drift:
+
+```ts
+import {
+  SHARED_DEPENDENCY_CONTRACT_VERSION, // 'v5'
+  SHARED_DEPENDENCIES,                // [{ specifier, globalName, minVersion, importMapPath }, …] (25)
+  SHARED_DEPENDENCY_SPECIFIERS,       // bare specifiers — drop straight into a bundler `external` list
+  getHostSharedDependencies,          // what the live host advertises at runtime, or null
+} from '@proveanything/smartlinks'
+
+// Build config: externalize exactly the contract.
+export const external = [...SHARED_DEPENDENCY_SPECIFIERS]
+
+// Runtime: degrade gracefully on an older host that lacks the import map.
+const host = getHostSharedDependencies()
+if (host && host.version !== SHARED_DEPENDENCY_CONTRACT_VERSION) {
+  console.warn(`Built against ${SHARED_DEPENDENCY_CONTRACT_VERSION}, host serves ${host.version}`)
+}
+```
+
+The host publishes its live contract on `window.__SMARTLINKS_SHARED__` (`{ version, specifiers }`),
+which `getHostSharedDependencies()` reads. Import-map shim paths follow `importMapPathFor(specifier)`
+(`/sl-shared/<version>/<slug>.js`), so both the portal and the SDK generate identical paths.

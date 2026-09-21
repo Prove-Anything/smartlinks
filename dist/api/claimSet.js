@@ -1,4 +1,4 @@
-import { request, post, put, del } from "../http";
+import { request, post, put, del } from "../http.js";
 /**
  * Returns the base path for claim set endpoints.
  * When collectionId is provided, routes to the collection-scoped admin API.

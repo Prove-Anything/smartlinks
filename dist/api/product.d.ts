@@ -1,4 +1,4 @@
-import { JsonValue, ProductClaimCreateRequestBody, ProductCreateRequest, ProductQueryRequest, ProductQueryResponse, ProductResponse, ProductUpdateRequest } from "../types/product";
+import { JsonValue, ProductClaimCreateRequestBody, ProductCreateRequest, ProductQueryRequest, ProductQueryResponse, ProductResponse, ProductUpdateRequest } from "../types/product.js";
 type ProductPublicFindParams = Record<string, string | number | boolean | null | undefined | Array<string | number | boolean>>;
 export declare namespace product {
     /**

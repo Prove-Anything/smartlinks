@@ -1,5 +1,5 @@
 // src/api/appObjects.ts
-import { request, post, patch, del } from '../http';
+import { request, post, patch, del } from '../http.js';
 // ==================== APP NAMESPACE ====================
 export var app;
 (function (app) {

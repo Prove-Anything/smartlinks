@@ -9,8 +9,8 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
-import { request, post, put, del, getApiHeaders, getBaseURL, isProxyEnabled, proxyUploadFormData } from "../http";
-import { SmartlinksApiError } from "../types/error";
+import { request, post, put, del, getApiHeaders, getBaseURL, isProxyEnabled, proxyUploadFormData } from "../http.js";
+import { SmartlinksApiError } from "../types/error.js";
 export var asset;
 (function (asset) {
     function resolveApiUrl(path) {

@@ -1,4 +1,4 @@
-import { UpdateClaimDataRequest, AssignClaimsRequest, CreateClaimSetTagRequest, CreateClaimSetTagResponse, CreateClaimSetRequest, ImportClaimSetTagsRequest, ImportClaimSetTagsResponse } from "../types";
+import { UpdateClaimDataRequest, AssignClaimsRequest, CreateClaimSetTagRequest, CreateClaimSetTagResponse, CreateClaimSetRequest, ImportClaimSetTagsRequest, ImportClaimSetTagsResponse } from "../types/index.js";
 export declare namespace claimSet {
     /**
      * Get all claim sets.

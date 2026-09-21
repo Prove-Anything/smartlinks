@@ -1,9 +1,9 @@
 // =============================================================================
 // IframeResponder - Parent-side iframe communication handler
 // =============================================================================
-import * as cache from './cache';
-import { collection } from './api/collection';
-import { getBaseURL } from './http';
+import * as cache from './cache.js';
+import { collection } from './api/collection.js';
+import { getBaseURL } from './http.js';
 /**
  * Parent-side iframe responder for SmartLinks microapp embedding.
  *

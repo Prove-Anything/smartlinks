@@ -1,5 +1,5 @@
-import { post, request, setBearerToken, getApiHeaders, hasAuthCredentials, isProxyEnabled, invalidateCache } from "../http";
-import { SmartlinksApiError } from "../types/error";
+import { post, request, setBearerToken, getApiHeaders, hasAuthCredentials, isProxyEnabled, invalidateCache } from "../http.js";
+import { SmartlinksApiError } from "../types/error.js";
 const DEFAULT_AUTH_LOCATION_CACHE_KEY = 'smartlinks.auth.location';
 const DEFAULT_AUTH_LOCATION_TTL_MS = 30 * 60 * 1000;
 let inMemoryAuthLocationCache = null;

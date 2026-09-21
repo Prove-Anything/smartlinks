@@ -1,4 +1,4 @@
-import { JsonValue, ProductClaimCreateRequestBody, ProductCreateRequest, ProductQueryRequest, ProductQueryResponse, ProductResponse, ProductUpdateRequest } from "../types/product";
+import { JsonValue, ProductClaimCreateRequestBody, ProductCreateRequest, ProductQueryRequest, ProductQueryResponse, ProductResponse, ProductUpdateRequest } from "../types/product.js";
 export declare namespace products {
     function get(collectionId: string, productId: string, admin?: boolean): Promise<ProductResponse>;
     function list(collectionId: string, admin?: boolean): Promise<ProductResponse[]>;

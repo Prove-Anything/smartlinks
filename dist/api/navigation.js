@@ -1,5 +1,5 @@
 // src/api/navigation.ts
-import { analytics } from './analytics';
+import { analytics } from './analytics.js';
 // ---------------------------------------------------------------------------
 // Internal helpers
 // ---------------------------------------------------------------------------

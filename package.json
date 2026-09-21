@@ -1,18 +1,27 @@
 {
   "name": "@proveanything/smartlinks",
-  "version": "2.0.6",
+  "version": "2.0.7",
   "description": "Official JavaScript/TypeScript SDK for the Smartlinks API",
+  "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
     "./testing": {
       "types": "./dist/testing/index.d.ts",
+      "import": "./dist/testing/index.js",
       "default": "./dist/testing/index.js"
-    }
+    },
+    "./*": {
+      "types": "./dist/*.d.ts",
+      "import": "./dist/*.js",
+      "default": "./dist/*.js"
+    },
+    "./package.json": "./package.json"
   },
   "bin": {
     "smartlinks-register-release": "scripts/register-release.mjs",
@@ -28,10 +37,10 @@
   ],
   "scripts": {
     "test": "node test/run.cjs",
-    "build": "tsc && node generate-api-summary.js && node generate-openapi.js && node scripts/copy-docs-to-dist.js",
+    "build": "tsc && node scripts/fix-esm-extensions.mjs && node generate-api-summary.cjs && node generate-openapi.cjs && node scripts/copy-docs-to-dist.cjs",
     "docs": "typedoc",
-    "docs:summary": "node generate-api-summary.js",
-    "docs:openapi": "node generate-openapi.js",
+    "docs:summary": "node generate-api-summary.cjs",
+    "docs:openapi": "node generate-openapi.cjs",
     "build:docs": "tsc build-docs.ts --outDir dist && node dist/build-docs.js",
     "prepublishOnly": "npm run build"
   },

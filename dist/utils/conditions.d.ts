@@ -1,4 +1,4 @@
-import type { ItemContext } from '../types/itemContext';
+import type { ItemContext } from '../types/itemContext.js';
 /**
  * Geographic region definitions for country-based conditions
  */

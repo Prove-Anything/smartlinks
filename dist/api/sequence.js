@@ -5,7 +5,7 @@
 // field, scope) is configured server-side in app config (data.sequenceConfigs[sequenceId]);
 // this call supplies only the subject and is idempotent — a re-tap returns the same number.
 // See docs/sequences.md.
-import { post } from "../http";
+import { post } from "../http.js";
 export var sequence;
 (function (sequence) {
     const base = (collectionId) => `/public/collection/${encodeURIComponent(collectionId)}/sequence`;

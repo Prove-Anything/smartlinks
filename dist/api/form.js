@@ -1,4 +1,4 @@
-import { request, post, put, del } from "../http";
+import { request, post, put, del } from "../http.js";
 export var form;
 (function (form) {
     /**

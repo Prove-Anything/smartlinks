@@ -1,4 +1,4 @@
-import type { Container, CreateContainerInput, UpdateContainerInput, AddContainerItemsInput, RemoveContainerItemsInput, ListContainersParams, ListContainersResponse, PublicListContainersResponse, GetContainerParams, ListContainerItemsParams, ContainerItemsResponse, AddContainerItemsResponse, RemoveContainerItemsResponse, FindContainersForItemParams, FindContainersForItemResponse } from "../types/containers";
+import type { Container, CreateContainerInput, UpdateContainerInput, AddContainerItemsInput, RemoveContainerItemsInput, ListContainersParams, ListContainersResponse, PublicListContainersResponse, GetContainerParams, ListContainerItemsParams, ContainerItemsResponse, AddContainerItemsResponse, RemoveContainerItemsResponse, FindContainersForItemParams, FindContainersForItemResponse } from "../types/containers.js";
 /**
  * Container Tracking API.
  *

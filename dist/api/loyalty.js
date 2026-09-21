@@ -1,5 +1,5 @@
 // src/api/loyalty.ts
-import { request, post, patch, del } from "../http";
+import { request, post, patch, del } from "../http.js";
 function encodeQuery(params) {
     const q = new URLSearchParams();
     for (const [k, v] of Object.entries(params)) {

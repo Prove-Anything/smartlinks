@@ -95,7 +95,7 @@ export interface SegmentCalculateResult {
     note?: string;
 }
 export interface SegmentRecipientsResponse {
-    items: import('./comms').Recipient[];
+    items: import('./comms.js').Recipient[];
     limit: number;
     offset: number;
     total: number;

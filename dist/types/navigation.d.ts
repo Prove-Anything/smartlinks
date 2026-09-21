@@ -1,4 +1,4 @@
-import type { CollectionAnalyticsEvent } from './analytics';
+import type { CollectionAnalyticsEvent } from './analytics.js';
 /** Where the link opens once resolved. */
 export type LinkOpenTarget = '_self' | '_blank';
 /**

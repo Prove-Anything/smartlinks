@@ -25,8 +25,8 @@ var __asyncGenerator = (this && this.__asyncGenerator) || function (thisArg, _ar
     function reject(value) { resume("throw", value); }
     function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
 };
-import { SmartlinksApiError, SmartlinksOfflineError } from "./types/error";
-import { idbGet, idbSet, idbClear } from './persistentCache';
+import { SmartlinksApiError, SmartlinksOfflineError } from "./types/error.js";
+import { idbGet, idbSet, idbClear } from './persistentCache.js';
 let baseURL = null;
 let apiKey = undefined;
 let bearerToken = undefined;
@@ -424,7 +424,7 @@ function normalizeErrorResponse(responseBody, statusCode) {
  * @property {string} [options.bearerToken] - (Optional) Bearer token for AUTHORIZATION header
  * @property {boolean} [options.proxyMode] - (Optional) Tells the API that it is running in an iframe via parent proxy
  */
-import { iframe } from './iframe';
+import { iframe } from './iframe.js';
 export function initializeApi(options) {
     var _a;
     // Normalize baseURL by removing trailing slashes.

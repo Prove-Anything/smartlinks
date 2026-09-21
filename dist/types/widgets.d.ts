@@ -1,5 +1,5 @@
-import type { TagContext } from './nfc';
-import type { ItemContext } from './itemContext';
+import type { TagContext } from './nfc.js';
+import type { ItemContext } from './itemContext.js';
 /**
  * Structured navigation request emitted via the `onNavigate` prop when a
  * widget or container needs to navigate the parent platform shell to another

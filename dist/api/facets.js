@@ -1,4 +1,4 @@
-import { del, post, put, request } from "../http";
+import { del, post, put, request } from "../http.js";
 function appendSearchParam(searchParams, key, value) {
     if (value === undefined || value === null)
         return;

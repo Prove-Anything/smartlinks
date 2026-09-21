@@ -1,5 +1,5 @@
 // src/api/nfc.ts
-import { post, request } from "../http";
+import { post, request } from "../http.js";
 export var nfc;
 (function (nfc) {
     /**

@@ -1,7 +1,7 @@
-import type { Product } from '../types/product';
-import type { Collection } from '../types/collection';
-import type { BatchResponse } from '../types/batch';
-import type { Proof } from '../types/proof';
+import type { Product } from '../types/product.js';
+import type { Collection } from '../types/collection.js';
+import type { BatchResponse } from '../types/batch.js';
+import type { Proof } from '../types/proof.js';
 /**
  * Parameters for building a portal path.
  * Pass in objects where available - the function will extract the needed properties.

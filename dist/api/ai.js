@@ -1,6 +1,6 @@
 // src/api/ai.ts
 // AI endpoints: public and admin helpers
-import { post, request, del, requestStream } from "../http";
+import { post, request, del, requestStream } from "../http.js";
 function encodeQueryParams(params) {
     if (!params)
         return '';

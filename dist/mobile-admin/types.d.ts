@@ -1,4 +1,4 @@
-import type { NativeFacade } from '../native/types';
+import type { NativeFacade } from '../native/types.js';
 /**
  * Hardware/software capability tokens a mobile admin host may advertise.
  * Passed to `AdminMobileHostContext.capabilities` and to
@@ -79,7 +79,7 @@ export interface AdminMobileHostContext {
      * calls — never `import * as SL from '@proveanything/smartlinks'` inside a
      * container, as that would create a second SDK instance.
      */
-    SL: typeof import('../index');
+    SL: typeof import('../index.js');
     /** Capabilities advertised by this host instance. */
     capabilities: AdminMobileCapability[];
     /**

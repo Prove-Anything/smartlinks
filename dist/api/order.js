@@ -1,5 +1,5 @@
 // src/api/order.ts
-import { request, post, put, del, requestWithOptions } from "../http";
+import { request, post, put, del, requestWithOptions } from "../http.js";
 /**
  * Order Management API
  *

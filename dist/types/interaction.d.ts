@@ -1,4 +1,4 @@
-import type { IdField } from './common';
+import type { IdField } from './common.js';
 export interface AdminInteractionsQueryRequest {
     userId?: string;
     contactId?: string;

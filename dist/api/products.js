@@ -1,4 +1,4 @@
-import { del, post, put, request } from "../http";
+import { del, post, put, request } from "../http.js";
 export var products;
 (function (products) {
     async function get(collectionId, productId, admin) {

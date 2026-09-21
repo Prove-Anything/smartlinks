@@ -1,4 +1,4 @@
-import type { AttestationResponse, AttestationCreateRequest, AttestationUpdateRequest } from "../types/attestation";
+import type { AttestationResponse, AttestationCreateRequest, AttestationUpdateRequest } from "../types/attestation.js";
 /**
  * @deprecated Legacy Firestore-backed attestation API.
  *

@@ -1,4 +1,4 @@
-import type { JobsPage, ListJobsQuery, Job } from "../types/jobs";
+import type { JobsPage, ListJobsQuery, Job } from "../types/jobs.js";
 export declare namespace jobs {
     /**
      * List visible jobs for a collection

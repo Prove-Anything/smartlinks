@@ -1,4 +1,4 @@
-import type { LinkTarget, ResolveLinkContext, ResolvedLink } from '../types/navigation';
+import type { LinkTarget, ResolveLinkContext, ResolvedLink } from '../types/navigation.js';
 export declare namespace navigation {
     /**
      * Resolve a stored `LinkTarget` into an executable navigation action.

@@ -1,4 +1,4 @@
-import { BatchResponse, BatchCreateRequest, BatchUpdateRequest, SearchBatchesRequest, BatchTag } from "../types/batch";
+import { BatchResponse, BatchCreateRequest, BatchUpdateRequest, SearchBatchesRequest, BatchTag } from "../types/batch.js";
 export declare namespace batch {
     /**
      * Get a single batch by ID for a collection and product (admin only).
