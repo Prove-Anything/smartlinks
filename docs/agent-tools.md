@@ -81,12 +81,21 @@ Identical to server functions — nothing new to reason about:
 Untrusted third-party tools run in the platform's isolated runner — the same boundary as untrusted
 server functions.
 
-## Replacing `app.admin.json` AI setup
+## Working with `app.admin.json` (complement, not replacement)
 
-This supersedes the `app.admin.json` "AI setup" schema-extraction model (the outer agent reading a
-schema and handing back JSON blobs). Instead the app owns its domain logic and exposes **real,
-capability-scoped actions** the agent invokes — with multi-turn and streaming. The AI-schema path is
-**deprecated as of V2** (still works through the V2 line; removed later).
+`app.admin.json` stays the **canonical declarative config contract** — setup questions, config schema,
+import fields, tunable settings, content hints. It's inspectable, validatable, deterministic, and
+reused by many consumers at once (the admin form renderer, AI setup, a signup journey asking the same
+questions, bulk import). Agent tools **do not replace it — they serve and adapt it**:
+
+- Keep the declarative schema as the default and source of truth.
+- When you want *dynamic, contextual* behaviour — "which questions for **this** collection?", "the
+  config schema as it stands right now", "apply these answers" — expose a small function/tool that
+  reads the declaration and returns a tailored result. **Static-first; dynamic only where it earns its
+  keep.**
+
+There's no rip-and-replace and nothing to migrate off: an app happy with its `app.admin.json` keeps
+it untouched.
 
 ## What ships now vs staged
 
@@ -96,16 +105,19 @@ capability-scoped actions** the agent invokes — with multi-turn and streaming.
 | SDK types for it; tool descriptors surfaced for discovery | `tools/call` streaming, cancellation, cross-app toolbelt arbitration |
 | Your handlers run today via http/event | Human-approval UX for `approval: "require"` |
 
-## Adopting this in an existing app
+## Adopting this — opt-in, per app, no fleet migration
 
-Do it in order — each step is a drop-in migration prompt (see the migration steps that ship with the
-SDK). Roughly:
+Agent tools are **purely additive**. There is **no migration pass**, and nothing breaks if you never
+adopt them — an existing app on the V2 SDK simply *gains the ability* to add them whenever you want.
+You do **not** touch every app; you turn it on for one app at a time.
 
-1. **Server functions** — add the `functions` block + build target + test harness (if the app
-   doesn't have them). See [server-functions.md](server-functions.md).
+To turn them on for a single app (say, an FAQ app), once it's on the V2 SDK:
+
+1. **Server functions** — add the `functions` block + build target + test harness if the app doesn't
+   already have them. See [server-functions.md](server-functions.md).
 2. **Expose tools** — add the `agent` block to the functions you want the agent to call; give each a
-   title/description/input schema and an approval mode.
-3. **Retire `app.admin.json` AI setup** — move any AI-authoring behaviour to tools; drop the
-   AI-schema block.
+   title / description / input schema and an approval mode.
 
-Steps 1–2 are safe to ship now; step 3 as you migrate each app off the old AI path.
+That's it — declare and build. The live agent loop is staged (see the table above); until it ships,
+your handlers still run via http/event, so declaring tools now is **forward-compatible, not
+speculative breakage**. `app.admin.json` stays as-is throughout — nothing to retire.

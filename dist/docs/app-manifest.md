@@ -646,6 +646,8 @@ SmartLinks manifests are **AI-discoverable, -configurable, and -importable**: th
 
 When you change your config shape, keep all three in sync: `app.manifest.json` (widget `settings`, containers, executor, linkable), `app.admin.json` (setup / import / tunable), and `ai-guide.md` (prose guidance).
 
+This declarative model is canonical and works today. An app may **optionally** layer agent tools on top — a function that reads the declaration and returns a *context-adapted* result (e.g. "which setup questions for this collection?") — without changing the schema. That's additive and opt-in; see [agent-tools.md](agent-tools.md).
+
 ## Reading the Files at Runtime
 
 ### Manifest — available from the widgets endpoint
