@@ -423,6 +423,13 @@ export interface AppManifest {
          */
         sharedDependencies?: string;
         /**
+         * The SmartLinks CSS baseline this bundle relies on, e.g. `"v1"`. A small, frozen,
+         * `sl-`-namespaced set of structural helpers the SDK ships and the host guarantees
+         * present. Container apps declare it and ship nothing; iframe apps import
+         * `@proveanything/smartlinks/baseline.css`. Opt-in and additive. See docs/css-baseline.md.
+         */
+        cssBaseline?: string;
+        /**
          * Per-app namespaced UMD globals (R4.7+), e.g. `{ widgets: "MyAppWidgets" }`.
          * UMD-only: ESM bundles expose their exports through the module namespace and
          * don't need this. Absent → legacy bundle (colliding `window.SmartLinks{Surface}`).

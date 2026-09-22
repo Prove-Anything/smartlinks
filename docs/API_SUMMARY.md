@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.12  |  Generated: 2026-09-22T08:39:26.309Z
+Version: 2.0.13  |  Generated: 2026-09-22T11:15:26.795Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2182,6 +2182,7 @@ interface AppManifest {
   appId: string;
   moduleFormat?: 'umd' | 'esm' | 'dual';
   sharedDependencies?: string;
+  cssBaseline?: string;
   globals?: Record<string, string>;
   seo?: {
   strategy?: 'executor' | string;

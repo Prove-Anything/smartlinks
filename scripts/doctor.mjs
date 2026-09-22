@@ -143,6 +143,47 @@ if (!checkEsm && problems.length === 0) {
   console.log(`${DIM}moduleFormat "${format}" — ESM path not in use; UMD bundles resolve shared deps from window globals.${RESET}`);
 }
 
+// ---- CSS baseline (sl-baseline) --------------------------------------------
+// If the app declares meta.cssBaseline, warn on any `sl-*` class it uses that isn't in
+// the declared baseline version — those render nothing once the host's baseline is the
+// only source. Heuristic (scans built bundle text for the distinctive `sl-` namespace)
+// and WARN-only: it never fails the build.
+if (meta.cssBaseline) {
+  let baseline = null;
+  try {
+    baseline = JSON.parse(readFileSync(resolve(here, '../dist/baseline.classes.json'), 'utf8'));
+  } catch {
+    warnings.push(`meta.cssBaseline is "${meta.cssBaseline}" but this SDK build has no baseline class list to check against.`);
+  }
+  if (baseline) {
+    if (baseline.version !== meta.cssBaseline) {
+      warnings.push(`meta.cssBaseline is "${meta.cssBaseline}" but this SDK ships baseline "${baseline.version}" — the host may serve a different set.`);
+    }
+    const baseSet = new Set(baseline.classes || []);
+    // Class usage lives in compiled markup strings — present in every bundle regardless
+    // of module format, so scan both umd + esm across all surfaces.
+    const used = new Set();
+    for (const [, block] of surfaces) {
+      for (const p of [block?.files?.js?.umd, block?.files?.js?.esm]) {
+        if (!p) continue;
+        const bp = resolveBundle(p);
+        if (!bp) continue;
+        for (const m of readFileSync(bp, 'utf8').matchAll(/\bsl-[a-z0-9-]+/g)) used.add(m[0]);
+      }
+    }
+    const unknown = [...used].filter((c) => !baseSet.has(c)).sort();
+    if (used.size === 0) {
+      console.log(`${DIM}cssBaseline (${baseline.version}) — declared; no sl-* classes found in the bundles.${RESET}`);
+    } else if (unknown.length === 0) {
+      console.log(`${GREEN}✓${RESET} cssBaseline ${DIM}(${baseline.version})${RESET} — all ${used.size} sl-* classes used are in the baseline`);
+    } else {
+      console.log(`${YELLOW}⚠${RESET} cssBaseline ${DIM}(${baseline.version})${RESET} — ${unknown.length} sl-* class${unknown.length === 1 ? '' : 'es'} used but not in the baseline (they will not render):`);
+      for (const c of unknown) console.log(`    ${YELLOW}${c}${RESET}`);
+      warnings.push(`sl-* classes used but not in cssBaseline "${baseline.version}": ${unknown.join(', ')} — define them in your own CSS, fix the typo, or drop them.`);
+    }
+  }
+}
+
 console.log('');
 for (const w of warnings) console.log(`${YELLOW}⚠ ${w}${RESET}`);
 

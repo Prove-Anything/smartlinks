@@ -17957,6 +17957,8 @@ components:
             - dual
         sharedDependencies:
           type: string
+        cssBaseline:
+          type: string
         globals:
           type: object
           additionalProperties:

@@ -1,6 +1,6 @@
 {
   "name": "@proveanything/smartlinks",
-  "version": "2.0.12",
+  "version": "2.0.14",
   "description": "Official JavaScript/TypeScript SDK for the Smartlinks API",
   "type": "module",
   "main": "dist/index.js",
@@ -21,6 +21,8 @@
       "import": "./dist/*.js",
       "default": "./dist/*.js"
     },
+    "./baseline.css": "./dist/baseline.css",
+    "./baseline.classes.json": "./dist/baseline.classes.json",
     "./package.json": "./package.json"
   },
   "bin": {
@@ -34,12 +36,13 @@
     "scripts/register-release.mjs",
     "scripts/publish.mjs",
     "scripts/doctor.mjs",
+    "scripts/lib/",
     "openapi.yaml",
     "README.md"
   ],
   "scripts": {
     "test": "node test/run.cjs",
-    "build": "tsc && node scripts/fix-esm-extensions.mjs && node generate-api-summary.cjs && node generate-openapi.cjs && node scripts/copy-docs-to-dist.cjs",
+    "build": "tsc && node scripts/fix-esm-extensions.mjs && node generate-api-summary.cjs && node generate-openapi.cjs && node scripts/copy-docs-to-dist.cjs && node scripts/build-baseline.mjs",
     "docs": "typedoc",
     "docs:summary": "node generate-api-summary.cjs",
     "docs:openapi": "node generate-openapi.cjs",

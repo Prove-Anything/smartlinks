@@ -121,6 +121,12 @@ Bundles ship their own compiled CSS, so the host's Tailwind version is irrelevan
 micro-app can stay on **Tailwind 3 indefinitely**, or adopt Tailwind 4 — its choice. (The starter
 app ships the Tailwind 4 CSS-first layout as the default; see its README.)
 
+> **CSS baseline (`sl-baseline` v1):** the CSS sibling of this JS contract, but deliberately
+> **not** a shared Tailwind dump. It's a small, frozen, `sl-`-namespaced set of structural
+> helpers (layout, spacing, responsive flow, type scale, motion — no colours, fonts, or
+> components) the SDK ships (`@proveanything/smartlinks/baseline.css`) and the host serves.
+> Opt-in via `meta.cssBaseline: "v1"`. See [css-baseline.md](css-baseline.md).
+
 ## The R5 host stack (reference)
 
 React **19.3** · Vite **8.3** · react-router-dom **7.18** · Tailwind **4.3** (CSS-first) ·

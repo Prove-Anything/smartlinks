@@ -1,0 +1,194 @@
+/* =============================================================================
+ * SmartLinks CSS baseline — sl-baseline v1  (FROZEN)
+ * -----------------------------------------------------------------------------
+ * A small, namespaced set of structural helpers the platform guarantees are
+ * present, so any sub-app (and any AI/markdown/dynamic content inside one) can
+ * rely on them. Mechanics only — NO colours, fonts, or components.
+ *
+ * Contract: docs/css-baseline.md. FROZEN: an existing `sl-*` rule's meaning
+ * never changes; new capability ships as v2 alongside, never an edit here.
+ *
+ * Delivery: shipped by the SDK. Container apps inherit it from the host; iframe
+ * apps import `@proveanything/smartlinks/baseline.css`.
+ *
+ * Cascade: everything lives in the low-priority `sl-baseline` layer, so any
+ * ordinary (unlayered) app CSS wins ties. Classes are `sl-`-prefixed so they
+ * never collide with an app's own Tailwind utilities.
+ *
+ * Responsive: `sl-{sm|md|lg}-*` variants are CONTAINER queries — they respond to
+ * the app's own box, not the browser viewport (correct for both container and
+ * iframe embeds). They only apply inside an `sl-container` (or any ancestor with
+ * `container-type: inline-size`). Breakpoints: sm 480 / md 768 / lg 1024.
+ * ============================================================================= */
+
+@layer sl-baseline;
+
+/* Keyframes live outside the layer (layers don't affect @keyframes). */
+@keyframes sl-reveal-kf { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+@layer sl-baseline {
+  /* ---- Reset & a11y ------------------------------------------------------- */
+  .sl-reset, .sl-reset * { box-sizing: border-box; }
+  .sl-reset { margin: 0; }
+  .sl-media { max-width: 100%; height: auto; }
+  .sl-focus:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+  .sl-sr-only {
+    position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+    overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+  }
+  /* Responsive container context. Put on the app root (or the host mount) so the
+     sl-{sm|md|lg}-* variants can query the app's own width. */
+  .sl-container { container-type: inline-size; }
+
+  /* ---- Display ------------------------------------------------------------ */
+  .sl-block { display: block; }
+  .sl-inline-block { display: inline-block; }
+  .sl-inline { display: inline; }
+  .sl-flex { display: flex; }
+  .sl-inline-flex { display: inline-flex; }
+  .sl-grid { display: grid; }
+  .sl-hidden { display: none; }
+
+  /* ---- Flex --------------------------------------------------------------- */
+  .sl-flex-row { flex-direction: row; }
+  .sl-flex-col { flex-direction: column; }
+  .sl-flex-wrap { flex-wrap: wrap; }
+  .sl-flex-nowrap { flex-wrap: nowrap; }
+  .sl-items-start { align-items: flex-start; }
+  .sl-items-center { align-items: center; }
+  .sl-items-end { align-items: flex-end; }
+  .sl-items-stretch { align-items: stretch; }
+  .sl-items-baseline { align-items: baseline; }
+  .sl-justify-start { justify-content: flex-start; }
+  .sl-justify-center { justify-content: center; }
+  .sl-justify-end { justify-content: flex-end; }
+  .sl-justify-between { justify-content: space-between; }
+  .sl-justify-around { justify-content: space-around; }
+  .sl-flex-1 { flex: 1 1 0%; }
+  .sl-flex-auto { flex: 1 1 auto; }
+  .sl-grow-0 { flex-grow: 0; }
+  .sl-shrink-0 { flex-shrink: 0; }
+
+  /* ---- Grid --------------------------------------------------------------- */
+  .sl-grid-2 { grid-template-columns: 1fr; }
+  .sl-grid-3 { grid-template-columns: 1fr; }
+  .sl-grid-4 { grid-template-columns: 1fr; }
+  .sl-grid-auto { grid-template-columns: repeat(auto-fit, minmax(min(16rem, 100%), 1fr)); }
+  .sl-col-span-full { grid-column: 1 / -1; }
+
+  /* ---- Spacing (scale 0..7 ≈ 0/.25/.5/.75/1/1.5/2/3rem; logical props) ----- */
+  .sl-gap-0 { gap: 0; } .sl-gap-1 { gap: .25rem; } .sl-gap-2 { gap: .5rem; } .sl-gap-3 { gap: .75rem; }
+  .sl-gap-4 { gap: 1rem; } .sl-gap-5 { gap: 1.5rem; } .sl-gap-6 { gap: 2rem; } .sl-gap-7 { gap: 3rem; }
+
+  .sl-p-0 { padding: 0; } .sl-p-1 { padding: .25rem; } .sl-p-2 { padding: .5rem; } .sl-p-3 { padding: .75rem; }
+  .sl-p-4 { padding: 1rem; } .sl-p-5 { padding: 1.5rem; } .sl-p-6 { padding: 2rem; } .sl-p-7 { padding: 3rem; }
+
+  .sl-px-0 { padding-inline: 0; } .sl-px-1 { padding-inline: .25rem; } .sl-px-2 { padding-inline: .5rem; } .sl-px-3 { padding-inline: .75rem; }
+  .sl-px-4 { padding-inline: 1rem; } .sl-px-5 { padding-inline: 1.5rem; } .sl-px-6 { padding-inline: 2rem; } .sl-px-7 { padding-inline: 3rem; }
+
+  .sl-py-0 { padding-block: 0; } .sl-py-1 { padding-block: .25rem; } .sl-py-2 { padding-block: .5rem; } .sl-py-3 { padding-block: .75rem; }
+  .sl-py-4 { padding-block: 1rem; } .sl-py-5 { padding-block: 1.5rem; } .sl-py-6 { padding-block: 2rem; } .sl-py-7 { padding-block: 3rem; }
+
+  .sl-ps-0 { padding-inline-start: 0; } .sl-ps-1 { padding-inline-start: .25rem; } .sl-ps-2 { padding-inline-start: .5rem; } .sl-ps-3 { padding-inline-start: .75rem; }
+  .sl-ps-4 { padding-inline-start: 1rem; } .sl-ps-5 { padding-inline-start: 1.5rem; } .sl-ps-6 { padding-inline-start: 2rem; } .sl-ps-7 { padding-inline-start: 3rem; }
+
+  .sl-pe-0 { padding-inline-end: 0; } .sl-pe-1 { padding-inline-end: .25rem; } .sl-pe-2 { padding-inline-end: .5rem; } .sl-pe-3 { padding-inline-end: .75rem; }
+  .sl-pe-4 { padding-inline-end: 1rem; } .sl-pe-5 { padding-inline-end: 1.5rem; } .sl-pe-6 { padding-inline-end: 2rem; } .sl-pe-7 { padding-inline-end: 3rem; }
+
+  .sl-m-0 { margin: 0; } .sl-m-1 { margin: .25rem; } .sl-m-2 { margin: .5rem; } .sl-m-3 { margin: .75rem; }
+  .sl-m-4 { margin: 1rem; } .sl-m-5 { margin: 1.5rem; } .sl-m-6 { margin: 2rem; } .sl-m-7 { margin: 3rem; }
+  .sl-mx-auto { margin-inline: auto; }
+  .sl-mt-0 { margin-block-start: 0; } .sl-mt-1 { margin-block-start: .25rem; } .sl-mt-2 { margin-block-start: .5rem; } .sl-mt-3 { margin-block-start: .75rem; }
+  .sl-mt-4 { margin-block-start: 1rem; } .sl-mt-5 { margin-block-start: 1.5rem; } .sl-mt-6 { margin-block-start: 2rem; } .sl-mt-7 { margin-block-start: 3rem; }
+  .sl-mb-0 { margin-block-end: 0; } .sl-mb-1 { margin-block-end: .25rem; } .sl-mb-2 { margin-block-end: .5rem; } .sl-mb-3 { margin-block-end: .75rem; }
+  .sl-mb-4 { margin-block-end: 1rem; } .sl-mb-5 { margin-block-end: 1.5rem; } .sl-mb-6 { margin-block-end: 2rem; } .sl-mb-7 { margin-block-end: 3rem; }
+
+  /* ---- Sizing ------------------------------------------------------------- */
+  .sl-w-full { width: 100%; }
+  .sl-h-full { height: 100%; }
+  .sl-min-w-0 { min-width: 0; }
+  .sl-max-w-reading { max-width: 42rem; }
+  .sl-max-w-prose { max-width: 65ch; }
+  .sl-max-w-page { max-width: 72rem; }
+  .sl-aspect-square { aspect-ratio: 1 / 1; }
+  .sl-aspect-wide { aspect-ratio: 16 / 9; }
+
+  /* ---- Typography (static rem scale; use responsive variants for headings) - */
+  .sl-text-xs { font-size: .75rem; } .sl-text-sm { font-size: .875rem; } .sl-text-base { font-size: 1rem; }
+  .sl-text-lg { font-size: 1.125rem; } .sl-text-xl { font-size: 1.25rem; } .sl-text-2xl { font-size: 1.5rem; }
+  .sl-text-3xl { font-size: 1.875rem; } .sl-text-4xl { font-size: 2.25rem; }
+  .sl-font-normal { font-weight: 400; } .sl-font-medium { font-weight: 500; }
+  .sl-font-semibold { font-weight: 600; } .sl-font-bold { font-weight: 700; }
+  .sl-leading-tight { line-height: 1.2; } .sl-leading-normal { line-height: 1.5; } .sl-leading-relaxed { line-height: 1.75; }
+  .sl-tracking-tight { letter-spacing: -0.01em; } .sl-tracking-normal { letter-spacing: 0; }
+  .sl-text-left { text-align: left; } .sl-text-center { text-align: center; } .sl-text-right { text-align: right; }
+  .sl-truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sl-line-clamp-2 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; }
+  .sl-line-clamp-3 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+  .sl-balance { text-wrap: balance; }
+  .sl-pretty { text-wrap: pretty; }
+
+  /* ---- Radius / border / shadow (neutral mechanics; colour stays per-app) -- */
+  .sl-rounded-sm { border-radius: .25rem; } .sl-rounded-md { border-radius: .5rem; }
+  .sl-rounded-lg { border-radius: .75rem; } .sl-rounded-xl { border-radius: 1rem; }
+  .sl-rounded-full { border-radius: 9999px; }
+  .sl-border { border: 1px solid var(--sl-border, color-mix(in srgb, currentColor 14%, transparent)); }
+  .sl-border-0 { border: 0; }
+  .sl-shadow-sm { box-shadow: 0 1px 2px rgba(0,0,0,.06); }
+  .sl-shadow-md { box-shadow: 0 4px 12px rgba(0,0,0,.10); }
+  .sl-shadow-lg { box-shadow: 0 12px 32px rgba(0,0,0,.16); }
+
+  /* ---- Object-fit / overflow --------------------------------------------- */
+  .sl-cover { object-fit: cover; }
+  .sl-contain { object-fit: contain; }
+  .sl-overflow-hidden { overflow: hidden; }
+  .sl-overflow-auto { overflow: auto; }
+
+  /* ---- Position & layering (named z levels — a house convention) ---------- */
+  .sl-relative { position: relative; }
+  .sl-absolute { position: absolute; }
+  .sl-sticky { position: sticky; }
+  .sl-inset-0 { inset: 0; }
+  .sl-z-base { z-index: 1; }
+  .sl-z-raised { z-index: 10; }
+  .sl-z-overlay { z-index: 100; }
+
+  /* ---- Motion (reduced-motion safe) -------------------------------------- */
+  .sl-transition { transition: all .2s ease; }
+  .sl-reveal { animation: sl-reveal-kf .5s ease both; }
+  .sl-hover-lift { transition: transform .2s ease, box-shadow .2s ease; }
+  .sl-hover-lift:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(0,0,0,.16); }
+  @media (prefers-reduced-motion: reduce) {
+    .sl-transition, .sl-reveal, .sl-hover-lift { transition: none; animation: none; }
+    .sl-hover-lift:hover { transform: none; }
+  }
+
+  /* ---- Responsive (container queries; require an sl-container ancestor) --- */
+  @container (min-width: 480px) {
+    .sl-sm-block { display: block; } .sl-sm-flex { display: flex; } .sl-sm-inline-flex { display: inline-flex; }
+    .sl-sm-grid { display: grid; } .sl-sm-hidden { display: none; }
+    .sl-sm-flex-row { flex-direction: row; } .sl-sm-flex-col { flex-direction: column; }
+    .sl-sm-grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .sl-sm-grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .sl-sm-grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .sl-sm-text-left { text-align: left; } .sl-sm-text-center { text-align: center; } .sl-sm-text-right { text-align: right; }
+  }
+  @container (min-width: 768px) {
+    .sl-md-block { display: block; } .sl-md-flex { display: flex; } .sl-md-inline-flex { display: inline-flex; }
+    .sl-md-grid { display: grid; } .sl-md-hidden { display: none; }
+    .sl-md-flex-row { flex-direction: row; } .sl-md-flex-col { flex-direction: column; }
+    .sl-md-grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .sl-md-grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .sl-md-grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .sl-md-text-left { text-align: left; } .sl-md-text-center { text-align: center; } .sl-md-text-right { text-align: right; }
+  }
+  @container (min-width: 1024px) {
+    .sl-lg-block { display: block; } .sl-lg-flex { display: flex; } .sl-lg-inline-flex { display: inline-flex; }
+    .sl-lg-grid { display: grid; } .sl-lg-hidden { display: none; }
+    .sl-lg-flex-row { flex-direction: row; } .sl-lg-flex-col { flex-direction: column; }
+    .sl-lg-grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .sl-lg-grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .sl-lg-grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .sl-lg-text-left { text-align: left; } .sl-lg-text-center { text-align: center; } .sl-lg-text-right { text-align: right; }
+  }
+}
