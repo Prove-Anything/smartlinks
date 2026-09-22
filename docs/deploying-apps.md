@@ -34,14 +34,24 @@ bundle. Two small additions to your build, both non-secret:
    // app.manifest.json
    "build": { "hash": "a1b2c3d4", "at": "2026-09-20T10:00:00Z" }
    ```
-2. **Ping us on publish** (a `postbuild` step — `SMARTLINKS_APP_ID` is an *identifier, not a
-   secret*, so it's fine in the repo):
+2. **Ping us on publish** (a `postbuild` step — the app id is an *identifier, not a secret*, so it's
+   fine in the repo). **Prefer the tiny node wrapper** the example app ships
+   (`scripts/smartlinks-deploy.mjs` in `smartlinks-app-example` — copy it): its
+   no-key path does exactly this ping and, crucially, **resolves the app id from
+   `SMARTLINKS_APP_ID` *or* the manifest's `meta.appId`**, so it works even when no env var is set:
+   ```js
+   // the id-resolution the wrapper uses — env var first, manifest fallback
+   const appId = process.env.SMARTLINKS_APP_ID
+     || JSON.parse(fs.readFileSync('public/app.manifest.json')).meta.appId
+   ```
    ```jsonc
-   // package.json
-   "scripts": {
-     "build":     "vite build && … && node scripts/hash-bundles.mjs",   // your existing hashing step
-     "postbuild": "curl -fsS -X POST \"$SMARTLINKS_API/api/v1/apps/$SMARTLINKS_APP_ID/refresh-dev\" -H 'content-type: application/json' -d \"{\\\"hash\\\":\\\"$BUILD_HASH\\\"}\""
-   }
+   // package.json — wrapper (recommended)
+   "scripts": { "postbuild": "node scripts/smartlinks-deploy.mjs" }
+   ```
+   A bare `curl` works too, **but only if `$SMARTLINKS_APP_ID` is actually set in the build env** —
+   it has no manifest fallback, so an unset var makes the ping a silent no-op (a common miss):
+   ```jsonc
+   "postbuild": "curl -fsS -X POST \"$SMARTLINKS_API/api/v1/apps/$SMARTLINKS_APP_ID/refresh-dev\" -H 'content-type: application/json' -d \"{\\\"hash\\\":\\\"$BUILD_HASH\\\"}\""
    ```
 
 That's it — no deploy key. When the ping arrives, SmartLinks looks up your app's published URL
@@ -50,6 +60,14 @@ exact `build.hash`** (so it never grabs a half-propagated build), validates the 
 and registers the dev release (the hash becomes the version). `POST /apps/{appId}/refresh-dev`
 authorises nothing on its own — worst case it re-fetches your app's own public bundle — so it needs
 no secret; it's rate-limited and de-duped per app.
+
+**Where your app learns its own id:** either `SMARTLINKS_APP_ID` (a build-env var) or the manifest's
+`meta.appId`. **Whichever you use must equal your authoritative platform id** — the one in the
+catalog (the `appModules` handle the CDN + every collection's config bind to). On the keyed
+`/releases` path `meta.appId` is *ignored* in favour of the URL id, but for `refresh-dev` the id you
+ping with **is** the lookup key — so if `meta.appId` is blank or has drifted from your platform id,
+the ping resolves the wrong app (or `NO_DEV_URL`). **Stamp `meta.appId` with your real platform id**
+(don't invent one) and the manifest fallback is reliable.
 
 **One-time setup:** the app must exist in the catalog with its **id** and its **Lovable URL**
 recorded (that's how we know what to fetch, and the `id` you ping with must match). Ask the platform
@@ -236,14 +254,24 @@ today.)
 
 ---
 
-## Wiring it into your build
+## Wiring it into your build (the KEYED path — CI / controlled env / beta·stable)
 
-Registration is the **last step of your build** — after bundles are built and hashed. Run a
+> ⚠️ **This is the deploy-key path — not the default for a Lovable dev publish.** If you build in
+> Lovable (no deploy key in the build), your dev publishes register via the **key-free `refresh-dev`
+> ping** in **[Section A](#a-from-lovable--hit-publish-no-key-anywhere-recommended-for-lovable-apps)** — put *that* in `postbuild`, not the
+> binary below. Reach for `smartlinks-register-release` only where you (a) hold a deploy key and
+> (b) set `SMARTLINKS_CHANNEL` — i.e. a controlled dev/CI environment, or a formal **beta/stable**
+> deploy. In a keyless Lovable postbuild this binary **skips silently** (no channel ⇒ no-op), so a
+> dev publish would register *nothing* — that's the trap. One rule: **dev publish → `refresh-dev`;
+> keyed/formal deploy → `register-release`.**
+
+Registration is the **last step of a keyed build** — after bundles are built and hashed. Run a
 small script that reads your built manifest and POSTs it, and **exits non-zero on failure**
 so a bad install fails the publish.
 
-The SDK ships the script, so you don't copy-paste it — run it as your postbuild step. It reads
-your built manifest, POSTs it, prints any warnings, and exits non-zero on failure.
+The SDK ships the script, so you don't copy-paste it — run it as your postbuild step **in a keyed
+environment**. It reads your built manifest, POSTs it, prints any warnings, and exits non-zero on
+failure.
 
 ```jsonc
 // package.json
@@ -266,13 +294,16 @@ It is driven entirely by env vars, so the same command works for dev (Lovable) a
 
 > The full source is at `scripts/register-release.mjs` in the SDK package if you'd rather vendor it.
 
-Registration is gated by **`SMARTLINKS_CHANNEL`**, so the three Lovable build types behave correctly:
+Registration is gated by **`SMARTLINKS_CHANNEL`**, so a keyed build behaves correctly by intent:
 
 | Build | `SMARTLINKS_CHANNEL` | Result |
 |---|---|---|
-| **Preview / live-edit** | unset | **skips quietly** — never registers, never fails |
-| **Dev (Publish)** | `dev` | registers to `dev` with the workspace Build-Secret key + your Lovable `SMARTLINKS_BUNDLE_BASE_URL` |
-| **Prod (CI)** | `stable` | registers to `stable` with the prod/master key; a missing key **hard-fails** |
+| **Preview / live-edit / plain Lovable dev publish** | unset | **skips quietly** — never registers, never fails. (A Lovable dev publish is meant to register via the key-free `refresh-dev` ping in [Section A](#a-from-lovable--hit-publish-no-key-anywhere-recommended-for-lovable-apps), not this binary.) |
+| **Controlled dev env (you hold a dev key)** | `dev` | registers to `dev` with the dev key + your `SMARTLINKS_BUNDLE_BASE_URL` |
+| **Prod (CI / formal deploy)** | `stable` | registers to `stable` with the prod/master key; a missing key **hard-fails** |
+
+> The middle row is a *controlled* dev environment where you deliberately hold a dev key and set the
+> channel — **not** a stock Lovable publish, which carries neither and so should use `refresh-dev`.
 
 **Two secrets, two scopes:** the **deploy key** is channel-scoped and can be a *workspace-level*
 Lovable Build Secret shared by every app (a dev key only writes `dev`, so sharing it is safe). The

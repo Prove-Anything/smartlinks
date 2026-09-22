@@ -178,3 +178,24 @@ if (host && host.version !== SHARED_DEPENDENCY_CONTRACT_VERSION) {
 The host publishes its live contract on `window.__SMARTLINKS_SHARED__` (`{ version, specifiers }`),
 which `getHostSharedDependencies()` reads. Import-map shim paths follow `importMapPathFor(specifier)`
 (`/sl-shared/<version>/<slug>.js`), so both the portal and the SDK generate identical paths.
+
+## Version retention — hosts MUST keep every published version (load-bearing)
+
+The version in the shim path (`/sl-shared/vN/`) exists **so multiple contract versions coexist**. A
+deployed app pins the version it was built against (`meta.sharedDependencies`) and resolves its shims
+from that path forever. Therefore:
+
+> **A contract bump is ADDITIVE. Generating `/sl-shared/v7/` MUST NOT delete `/sl-shared/v5/` or
+> `/sl-shared/v6/`.** The shims are tiny re-export files — keep them.
+
+If the host's shim generator *replaces* the previous version instead of *appending*, the versioning
+buys nothing: every bump silently breaks every already-deployed app not yet rebuilt (bare-specifier
+resolution failure → blank container — the exact failure this whole contract prevents). "The host
+serves all versions while apps migrate" is not aspirational; it's a hard requirement of the host.
+
+**Retiring a version:** only remove `/sl-shared/vN/` once no installed app still declares that
+`meta.sharedDependencies` version. You can determine that from the app registry (each app's declared
+version × where it's installed); until it's provably unreferenced, keep it. Prefer a long deprecation
+window over reclaiming a few KB.
+
+(The same rule applies to any versioned CSS-baseline paths — additive, never delete a live version.)

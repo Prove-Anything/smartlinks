@@ -236,14 +236,24 @@ today.)
 
 ---
 
-## Wiring it into your build
+## Wiring it into your build (the KEYED path — CI / controlled env / beta·stable)
 
-Registration is the **last step of your build** — after bundles are built and hashed. Run a
+> ⚠️ **This is the deploy-key path — not the default for a Lovable dev publish.** If you build in
+> Lovable (no deploy key in the build), your dev publishes register via the **key-free `refresh-dev`
+> ping** in **[Section A](#a-from-lovable--hit-publish-no-key-anywhere-recommended-for-lovable-apps)** — put *that* in `postbuild`, not the
+> binary below. Reach for `smartlinks-register-release` only where you (a) hold a deploy key and
+> (b) set `SMARTLINKS_CHANNEL` — i.e. a controlled dev/CI environment, or a formal **beta/stable**
+> deploy. In a keyless Lovable postbuild this binary **skips silently** (no channel ⇒ no-op), so a
+> dev publish would register *nothing* — that's the trap. One rule: **dev publish → `refresh-dev`;
+> keyed/formal deploy → `register-release`.**
+
+Registration is the **last step of a keyed build** — after bundles are built and hashed. Run a
 small script that reads your built manifest and POSTs it, and **exits non-zero on failure**
 so a bad install fails the publish.
 
-The SDK ships the script, so you don't copy-paste it — run it as your postbuild step. It reads
-your built manifest, POSTs it, prints any warnings, and exits non-zero on failure.
+The SDK ships the script, so you don't copy-paste it — run it as your postbuild step **in a keyed
+environment**. It reads your built manifest, POSTs it, prints any warnings, and exits non-zero on
+failure.
 
 ```jsonc
 // package.json
@@ -266,13 +276,16 @@ It is driven entirely by env vars, so the same command works for dev (Lovable) a
 
 > The full source is at `scripts/register-release.mjs` in the SDK package if you'd rather vendor it.
 
-Registration is gated by **`SMARTLINKS_CHANNEL`**, so the three Lovable build types behave correctly:
+Registration is gated by **`SMARTLINKS_CHANNEL`**, so a keyed build behaves correctly by intent:
 
 | Build | `SMARTLINKS_CHANNEL` | Result |
 |---|---|---|
-| **Preview / live-edit** | unset | **skips quietly** — never registers, never fails |
-| **Dev (Publish)** | `dev` | registers to `dev` with the workspace Build-Secret key + your Lovable `SMARTLINKS_BUNDLE_BASE_URL` |
-| **Prod (CI)** | `stable` | registers to `stable` with the prod/master key; a missing key **hard-fails** |
+| **Preview / live-edit / plain Lovable dev publish** | unset | **skips quietly** — never registers, never fails. (A Lovable dev publish is meant to register via the key-free `refresh-dev` ping in [Section A](#a-from-lovable--hit-publish-no-key-anywhere-recommended-for-lovable-apps), not this binary.) |
+| **Controlled dev env (you hold a dev key)** | `dev` | registers to `dev` with the dev key + your `SMARTLINKS_BUNDLE_BASE_URL` |
+| **Prod (CI / formal deploy)** | `stable` | registers to `stable` with the prod/master key; a missing key **hard-fails** |
+
+> The middle row is a *controlled* dev environment where you deliberately hold a dev key and set the
+> channel — **not** a stock Lovable publish, which carries neither and so should use `refresh-dev`.
 
 **Two secrets, two scopes:** the **deploy key** is channel-scoped and can be a *workspace-level*
 Lovable Build Secret shared by every app (a dev key only writes `dev`, so sharing it is safe). The
