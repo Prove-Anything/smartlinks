@@ -42,7 +42,7 @@ The manifest is loaded automatically by the platform for every collection page. 
     "version": "1.2.0",
     "platformRevision": "R5",
     "moduleFormat": "dual",
-    "sharedDependencies": "v6"
+    "sharedDependencies": "v7"
   },
 
   "admin": "app.admin.json",
@@ -148,7 +148,7 @@ The manifest is loaded automatically by the platform for every collection page. 
 | `version` | string | ✅ | SemVer string, e.g. `"1.2.0"` |
 | `platformRevision` | string | ❌ | Platform revision tag this build targets, e.g. `"R5"` (see [host-dependency-contract.md](host-dependency-contract.md)) |
 | `moduleFormat` | `"umd"` \| `"esm"` \| `"dual"` | ❌ | How the host loads this app's bundles. Absent = `"umd"`. See [Module format](#module-format-umd-vs-esm) below. |
-| `sharedDependencies` | string | ❌ | Shared-dependency contract version the bundle was built against, e.g. `"v6"`. Used by the host to pick a compatible ESM import map. |
+| `sharedDependencies` | string | ❌ | Shared-dependency contract version the bundle was built against, e.g. `"v7"`. Used by the host to pick a compatible ESM import map. |
 | `globals` | object | ❌ | Per-app namespaced UMD globals (R4.7+), e.g. `{ "widgets": "MyAppWidgets" }`. UMD-only; ESM bundles don't need it. |
 | `seo.priority` | number | ❌ | Controls which app's `title`/`description`/`ogImage` wins when multiple apps are on the same page. Default `0`; higher wins. See the [Executor guide](executor.md). |
 

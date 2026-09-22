@@ -12,7 +12,7 @@
 // See docs/host-dependency-contract.md.
 
 /** Current contract revision. Bumped when the entry list or host versions change. */
-export const SHARED_DEPENDENCY_CONTRACT_VERSION = 'v6' as const;
+export const SHARED_DEPENDENCY_CONTRACT_VERSION = 'v7' as const;
 
 export interface SharedDependency {
   /** Bare import specifier the app writes, e.g. `react-dom/client`. */
@@ -28,8 +28,8 @@ export interface SharedDependency {
 /**
  * Canonical import-map path for a specifier: drop the leading `@` scope marker and
  * turn every `/` into `-`.
- *   'react-dom/client'      -> '/sl-shared/v6/react-dom-client.js'
- *   '@radix-ui/react-slot'  -> '/sl-shared/v6/radix-ui-react-slot.js'
+ *   'react-dom/client'      -> '/sl-shared/v7/react-dom-client.js'
+ *   '@radix-ui/react-slot'  -> '/sl-shared/v7/radix-ui-react-slot.js'
  * Hosts MUST serve shims at these paths so the map the SDK advertises resolves.
  */
 export function importMapPathFor(
@@ -42,10 +42,12 @@ export function importMapPathFor(
 
 type ContractEntry = Omit<SharedDependency, 'importMapPath'>;
 
-// The 26-entry v6 contract: the v5 set plus `marked` (host-provided markdown
-// renderer, so apps stop bundling their own ~30KB copy — portal & hub render it in
-// the container). minVersion follows the R5 host baseline (React 19, Router 7.18.4
-// security floor, LiquidJS 10.27+, current Radix majors).
+// The 29-entry v7 contract: the v6 set plus `dompurify` (HTML sanitizer — pairs with
+// the shared `marked` so output apps sanitize instead of each bundling their own),
+// `clsx` + `tailwind-merge` (the standard `cn()` pair the portal/hub already ship, now
+// exposed to apps). All small, version-stable, ubiquitous — apps stop bundling copies.
+// minVersion follows the R5 host baseline (React 19, Router 7.18.4 security floor,
+// LiquidJS 10.27+, current Radix majors).
 const CONTRACT: ContractEntry[] = [
   { specifier: 'react', globalName: 'React', minVersion: '19.0.0' },
   { specifier: 'react-dom', globalName: 'ReactDOM', minVersion: '19.0.0' },
@@ -60,6 +62,12 @@ const CONTRACT: ContractEntry[] = [
   { specifier: 'date-fns', globalName: 'dateFns', minVersion: '4.0.0' },
   { specifier: 'liquidjs', globalName: 'LiquidJS', minVersion: '10.27.0' },
   { specifier: 'marked', globalName: 'marked', minVersion: '12.0.0' },
+  // `window.DOMPurify` is the CONFIGURED instance (callable, `.sanitize()`), exactly as
+  // dompurify's own UMD build exposes it — so `import DOMPurify from 'dompurify'`
+  // resolves to the same instance a bundled default import would.
+  { specifier: 'dompurify', globalName: 'DOMPurify', minVersion: '3.0.0' },
+  { specifier: 'clsx', globalName: 'clsx', minVersion: '2.0.0' },
+  { specifier: 'tailwind-merge', globalName: 'tailwindMerge', minVersion: '3.0.0' },
   { specifier: 'class-variance-authority', globalName: 'CVA', minVersion: '0.7.0' },
   { specifier: '@radix-ui/react-slot', globalName: 'RadixSlot', minVersion: '1.2.0' },
   { specifier: '@radix-ui/react-dialog', globalName: 'RadixDialog', minVersion: '1.1.0' },

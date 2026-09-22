@@ -19,6 +19,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
+import { bareImportsOf } from './lib/bare-imports.mjs';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -75,25 +76,9 @@ if (meta.sharedDependencies && meta.sharedDependencies !== SHARED_DEPENDENCY_CON
   warnings.push(`built against contract ${meta.sharedDependencies}, but this SDK ships ${SHARED_DEPENDENCY_CONTRACT_VERSION} — host may not serve a matching import map.`);
 }
 
-// Pull the bare imports out of a bundle (handles minified `from"x"` too).
-function bareImportsOf(code) {
-  const specs = new Set();
-  const patterns = [
-    /\bfrom\s*["']([^"']+)["']/g, // static import/export ... from "x"
-    /\bimport\s*["']([^"']+)["']/g, // side-effect import "x"
-    /\bimport\(\s*["']([^"']+)["']\s*\)/g, // dynamic import("x")
-  ];
-  for (const re of patterns) {
-    let m;
-    while ((m = re.exec(code))) {
-      const spec = m[1];
-      if (spec.startsWith('.') || spec.startsWith('/')) continue; // internal/relative
-      if (/^https?:/.test(spec)) continue; // absolute URL import
-      specs.add(spec);
-    }
-  }
-  return [...specs];
-}
+// bareImportsOf (scripts/lib/bare-imports.mjs) LEXES the bundle for real import
+// statements — so bundled data containing the word `from` (e.g. tailwind-merge's class
+// map) is not mistaken for an import.
 
 // Resolve a manifest-relative bundle path against the likely roots (dist paths
 // are sometimes relative to the app root, sometimes to the manifest dir).

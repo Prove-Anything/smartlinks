@@ -32,7 +32,8 @@ export default defineConfig({
         'react', 'react-dom', 'react/jsx-runtime',
         '@proveanything/smartlinks',
         'react-router-dom', '@tanstack/react-query',
-        'lucide-react', 'date-fns', 'liquidjs', 'marked', 'class-variance-authority',
+        'lucide-react', 'date-fns', 'liquidjs', 'marked', 'dompurify', 'clsx', 'tailwind-merge',
+        'class-variance-authority',
         '@radix-ui/react-slot', '@radix-ui/react-dialog', '@radix-ui/react-popover',
         '@radix-ui/react-tooltip', '@radix-ui/react-tabs', '@radix-ui/react-accordion',
         '@radix-ui/react-select', '@radix-ui/react-scroll-area', '@radix-ui/react-label',
@@ -44,7 +45,8 @@ export default defineConfig({
           '@proveanything/smartlinks': 'SL',
           'react-router-dom': 'ReactRouterDOM', '@tanstack/react-query': 'ReactQuery',
           'lucide-react': 'LucideReact', 'date-fns': 'dateFns', 'liquidjs': 'LiquidJS',
-          'marked': 'marked', 'class-variance-authority': 'CVA',
+          'marked': 'marked', 'dompurify': 'DOMPurify', 'clsx': 'clsx',
+          'tailwind-merge': 'tailwindMerge', 'class-variance-authority': 'CVA',
           '@radix-ui/react-slot': 'RadixSlot', '@radix-ui/react-dialog': 'RadixDialog',
           '@radix-ui/react-popover': 'RadixPopover', '@radix-ui/react-tooltip': 'RadixTooltip',
           '@radix-ui/react-tabs': 'RadixTabs', '@radix-ui/react-accordion': 'RadixAccordion',
@@ -72,6 +74,9 @@ export default defineConfig({
 | `date-fns` | `dateFns` | 4.4 |
 | `liquidjs` | `LiquidJS` | 10.27+ |
 | `marked` | `marked` | 12+ |
+| `dompurify` | `DOMPurify` | 3+ |
+| `clsx` | `clsx` | 2+ |
+| `tailwind-merge` | `tailwindMerge` | 3+ |
 | `class-variance-authority` | `CVA` | 0.7 |
 | `@radix-ui/react-slot` | `RadixSlot` | 1.2.4 |
 | `@radix-ui/react-dialog` | `RadixDialog` | 1.1.23 |
@@ -86,10 +91,15 @@ export default defineConfig({
 | `@radix-ui/react-progress` | `RadixProgress` | 1.1.8 |
 | `@radix-ui/react-avatar` | `RadixAvatar` | 1.1.11 |
 
-`liquidjs` and `marked` are **host-provided** — externalise them, don't ship a second copy
-(frequently missed). `marked` is new in **contract v6**: the portal and hub render markdown in the
-container, so an app should use the host's renderer rather than bundling its own. `marked` does not
-sanitise HTML — if you render untrusted markdown, sanitise the output (e.g. DOMPurify) yourself.
+`liquidjs`, `marked`, `dompurify`, `clsx` and `tailwind-merge` are **host-provided** — externalise
+them, don't ship a second copy (frequently missed). `marked` arrived in **v6**; `dompurify`, `clsx`
+and `tailwind-merge` in **v7**. The portal and hub render markdown in the container, so use the
+host's `marked` rather than bundling your own. `marked` does not sanitise HTML — pair it with the
+shared `dompurify`: `el.innerHTML = DOMPurify.sanitize(marked.parse(md))`. `window.DOMPurify` is the
+**configured instance** (callable, `.sanitize()`), so `import DOMPurify from 'dompurify'` behaves
+exactly like a bundled default import. `clsx` + `tailwind-merge` are the standard `cn()` pair
+(`import { clsx } from 'clsx'; import { twMerge } from 'tailwind-merge'`) — keep your local `cn()`
+helper if you like, it just stops paying the bundle cost.
 
 ## Backwards compatibility
 
@@ -115,7 +125,8 @@ app ships the Tailwind 4 CSS-first layout as the default; see its README.)
 
 React **19.3** · Vite **8.3** · react-router-dom **7.18** · Tailwind **4.3** (CSS-first) ·
 TypeScript **6.0** · ESLint **10.11** · `@proveanything/smartlinks` **2.0.5** ·
-`@proveanything/smartlinks-utils-ui` **1.16.4** · liquidjs **10.29** · marked **12+**.
+`@proveanything/smartlinks-utils-ui` **1.16.4** · liquidjs **10.29** · marked **12+** ·
+dompurify **3+** · clsx **2+** · tailwind-merge **3+**.
 
 > **TypeScript 7** (the native/Go compiler) is **deliberately deferred** — tooling hasn't settled.
 > Target **TS 6** for R5; it compiles existing code with no source changes.
@@ -142,8 +153,8 @@ never drift:
 
 ```ts
 import {
-  SHARED_DEPENDENCY_CONTRACT_VERSION, // 'v6'
-  SHARED_DEPENDENCIES,                // [{ specifier, globalName, minVersion, importMapPath }, …] (26)
+  SHARED_DEPENDENCY_CONTRACT_VERSION, // 'v7'
+  SHARED_DEPENDENCIES,                // [{ specifier, globalName, minVersion, importMapPath }, …] (29)
   SHARED_DEPENDENCY_SPECIFIERS,       // bare specifiers — drop straight into a bundler `external` list
   getHostSharedDependencies,          // what the live host advertises at runtime, or null
 } from '@proveanything/smartlinks'

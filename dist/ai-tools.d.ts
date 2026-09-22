@@ -1,4 +1,4 @@
-import type { AiToolName, AiToolCapability } from './types/ai';
+import type { AiToolName, AiToolCapability } from './types/ai.js';
 export interface BuiltinAiToolDescriptor {
     /** Canonical tool name, e.g. 'web.search'. */
     name: AiToolName;
