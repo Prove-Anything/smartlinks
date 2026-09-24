@@ -1,12 +1,17 @@
 # SmartLinks Theme Tokens — host theming contract
 
-Status: **v1 (draft) — FORTHCOMING, not yet live host-side.**
-> ⚠️ **Do not build apps against this yet.** The host (Hub/Portal) does not yet set `--sl-*` tokens
-> or send `smartlinks:root-state`. Until it does, apps follow the **current** theming — see
-> [`theme.system.md`](./theme.system.md) (`useSmartLinksTheme()` + shadcn vars `--primary`/`--background`,
-> the `?theme=` base64 payload). This document is the target model that will supersede it once the host
-> serves it; it exists so the SDK preset (`theme.css`), the iframe bootstrap (`theme-boot.js`) and the
-> Hub theme engine can be built against a fixed contract.
+Status: **v1 — live. This is the theming contract to build against.**
+> ✅ **Adopt this.** The R5 host (Hub/Portal) sets the `--sl-*` tokens on your mount root and sends
+> `smartlinks:root-state` for live viewer-preference changes; the SDK preset (`theme.css`), the iframe
+> bootstrap (`theme-boot.js`) and the Hub theme engine all speak this contract. Bind your app to these
+> tokens (via `theme.css`) and it is themed by every host, forever, with no per-app theme code.
+>
+> **It degrades gracefully, so adoption is safe.** `theme.css` ships sensible fallback values for every
+> token, so on a host that hasn't enabled token theming yet the app simply renders with neutral
+> defaults rather than breaking. The legacy path (`useSmartLinksTheme()` + shadcn `--primary`/`--background`
+> via the `?theme=` payload, see [`theme.system.md`](./theme.system.md)) still works during the
+> transition, and [step 17] shows how to bridge shadcn variables to these tokens so both paths stay live.
+> New work should bind to the tokens here.
 
 Applies to: `@proveanything/smartlinks` ^2.0 (R5), container + widget embeds
 Companion to: [`css-baseline.md`](./css-baseline.md) (mechanics, live) — this doc is **brand** (colour, shape, type)

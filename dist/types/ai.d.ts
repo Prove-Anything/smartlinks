@@ -110,6 +110,18 @@ export interface ResponsesRequest {
     /** `'flex'` is ~50% cheaper at Batch-API rates but slower; reserve for non-interactive/background work. */
     service_tier?: 'auto' | 'standard' | 'flex' | 'priority';
     /**
+     * Attribution tag for AI usage/cost reporting (see `ai.usage`). Not sent to the model —
+     * the server strips it. e.g. `'readiness-check'`, `'design-critique'`.
+     */
+    feature?: string;
+    /**
+     * Persist this turn to a server-managed session (create one with `ai.sessions.create`). The
+     * server threads the session's prior transcript into the input and appends the new turn — so
+     * you get conversation memory without managing history yourself, and it works even with
+     * `server_tools` (unlike `previous_response_id`).
+     */
+    session_id?: string;
+    /**
      * Run through the server-side agent loop: the platform executes built-in tools
      * (see BUILTIN_AI_TOOLS / AiToolName) and feeds results back automatically, so the
      * app never has to relay tool calls itself. `true` enables all built-ins; an array
@@ -349,6 +361,65 @@ export interface SessionStatistics {
     activeSessions: number;
     totalMessages: number;
     rateLimitedUsers: number;
+}
+/** Who may read/append a persisted AI session. */
+export type AiSessionScope = 'admin' | 'owner' | 'public';
+/** A persisted AI assistant conversation (durable, scoped). */
+export interface AiSession {
+    id: string;
+    collectionId: string;
+    appId?: string | null;
+    scope: AiSessionScope;
+    title?: string | null;
+    status: string;
+    ownerId?: string | null;
+    authorId?: string | null;
+    productId?: string | null;
+    proofId?: string | null;
+    feature?: string | null;
+    /** Append-only Responses items (input/output + tool calls/results). */
+    items: ResponseInputItem[];
+    /** Compacted digest of older turns (server-managed). */
+    summary?: Record<string, any>;
+    /** Running token/turn accounting for this session. */
+    usage?: Record<string, any>;
+    itemCount: number;
+    lastTurnAt?: string | null;
+    createdAt: string;
+    updatedAt: string;
+    expiresAt?: string | null;
+}
+/** Fields for creating a session (all optional). */
+export interface AiSessionCreate {
+    appId?: string;
+    title?: string;
+    productId?: string;
+    proofId?: string;
+    feature?: string;
+    /** Time-to-live in ms; omit to keep until explicitly cleared. */
+    ttlMs?: number;
+    /** Seed items (e.g. a system/instruction turn). */
+    items?: ResponseInputItem[];
+}
+/** Per-collection AI usage/cost report. `costUnits` are OPAQUE internal units, never provider currency. */
+export interface AiUsageReport {
+    groupBy: string[];
+    from?: string | null;
+    to?: string | null;
+    totals: {
+        promptTokens: number;
+        outputTokens: number;
+        totalTokens: number;
+        requests: number;
+        costUnits: number;
+    };
+    groups: Array<Record<string, any> & {
+        promptTokens: number;
+        outputTokens: number;
+        totalTokens: number;
+        requests: number;
+        costUnits: number;
+    }>;
 }
 /** Voice session request */
 export interface VoiceSessionRequest {

@@ -173,7 +173,59 @@ var aiInternal;
             return request(path);
         }
         sessions.stats = stats;
+        /**
+         * Persisted AI assistant sessions (admin scope) — durable conversation history for
+         * admin/host assistants. Create one, then either append your turns explicitly, OR pass
+         * its `id` as `session_id` to `ai.chat.responses.create` and the server threads prior
+         * turns into the input and persists the new turn automatically (works with `server_tools`).
+         */
+        async function create(collectionId, body = {}) {
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/sessions`;
+            return post(path, body);
+        }
+        sessions.create = create;
+        /** List sessions, most-recently-active first (optionally filtered by app). */
+        async function list(collectionId, params) {
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/sessions${encodeQueryParams({
+                appId: params === null || params === void 0 ? void 0 : params.appId,
+                limit: (params === null || params === void 0 ? void 0 : params.limit) != null ? String(params.limit) : undefined,
+            })}`;
+            return request(path);
+        }
+        sessions.list = list;
+        /** Get one session, including its full transcript. */
+        async function get(collectionId, id) {
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/sessions/${encodeURIComponent(id)}`;
+            return request(path);
+        }
+        sessions.get = get;
+        /** Append Responses items (input/output/tool) to a session — the manual-persistence path. */
+        async function append(collectionId, id, items, opts) {
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/sessions/${encodeURIComponent(id)}/append`;
+            return post(path, { items, usage: opts === null || opts === void 0 ? void 0 : opts.usage });
+        }
+        sessions.append = append;
+        /** Archive (soft-delete) a session. */
+        async function clear(collectionId, id) {
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/sessions/${encodeURIComponent(id)}`;
+            return del(path);
+        }
+        sessions.clear = clear;
     })(sessions = aiInternal.sessions || (aiInternal.sessions = {}));
+    /**
+     * AI usage / cost report for a collection, grouped by any of model/serviceTier/appId/feature/mode
+     * over an optional date window. `costUnits` are OPAQUE internal units, never provider currency.
+     */
+    async function usage(collectionId, params) {
+        const groupBy = Array.isArray(params === null || params === void 0 ? void 0 : params.groupBy) ? params.groupBy.join(',') : params === null || params === void 0 ? void 0 : params.groupBy;
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/usage${encodeQueryParams({
+            groupBy,
+            from: params === null || params === void 0 ? void 0 : params.from,
+            to: params === null || params === void 0 ? void 0 : params.to,
+        })}`;
+        return request(path);
+    }
+    aiInternal.usage = usage;
     // ============================================================================
     // Rate Limiting API
     // ============================================================================
@@ -254,6 +306,44 @@ var aiInternal;
             return del(path);
         }
         publicClient.clearSession = clearSession;
+        /**
+         * Persisted consumer AI sessions (durable — the replacement for getSession/clearSession above).
+         * `scope: 'owner'` keys the history to the signed-in consumer (send the authKit bearer, and
+         * only that consumer can read/append/clear it); `scope: 'public'` (default) is an anonymous
+         * session where possession of the id is the capability.
+         */
+        let sessions;
+        (function (sessions) {
+            async function create(collectionId, body = {}) {
+                const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/sessions`;
+                return post(path, body);
+            }
+            sessions.create = create;
+            /** List the signed-in consumer's own ('owner') sessions — requires an authKit bearer. */
+            async function list(collectionId, params) {
+                const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/sessions${encodeQueryParams({
+                    appId: params === null || params === void 0 ? void 0 : params.appId,
+                    limit: (params === null || params === void 0 ? void 0 : params.limit) != null ? String(params.limit) : undefined,
+                })}`;
+                return request(path);
+            }
+            sessions.list = list;
+            async function get(collectionId, id) {
+                const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/sessions/${encodeURIComponent(id)}`;
+                return request(path);
+            }
+            sessions.get = get;
+            async function append(collectionId, id, items, opts) {
+                const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/sessions/${encodeURIComponent(id)}/append`;
+                return post(path, { items, usage: opts === null || opts === void 0 ? void 0 : opts.usage });
+            }
+            sessions.append = append;
+            async function clear(collectionId, id) {
+                const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/sessions/${encodeURIComponent(id)}`;
+                return del(path);
+            }
+            sessions.clear = clear;
+        })(sessions = publicClient.sessions || (publicClient.sessions = {}));
         /**
          * Check rate limit status
          */

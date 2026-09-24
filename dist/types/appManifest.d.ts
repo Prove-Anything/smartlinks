@@ -298,9 +298,15 @@ export interface ServerFunctionContext {
      * Declared `capabilities` cap what these calls may do.
      */
     sl: any;
-    /** Capability-gated secret access. `get(ref)` resolves only refs granted via `secrets:<ref>`. */
+    /**
+     * Capability-gated secret access (both require the `secrets:<ref>` capability).
+     * `get(ref)` resolves the collection's OWN secret first (a client's credential), then falls back
+     * to the app-level secret (the developer's shared singleton, installed once per instance).
+     * `app(ref)` reads the app-level secret only, skipping the collection store.
+     */
     secrets: {
         get(ref: string): Promise<string | null>;
+        app(ref: string): Promise<string | null>;
     };
     /** Who invoked this function. */
     caller: ServerFunctionCaller;

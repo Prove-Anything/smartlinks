@@ -62,12 +62,19 @@ export default defineConfig({
 
 ## Host-provided globals (build against versions ≤ these)
 
+> **The SmartLinks packages on the host are always the latest published.** `@proveanything/smartlinks`
+> (and `-utils-ui`, `-auth-ui`) are considered *released* only once Hub and Portal are running them —
+> that's the first place a version lands, by design. So **build against the latest published SmartLinks
+> SDK**; never pin below it. The exact number below is just "current at time of writing" — the rule is
+> *latest*. The third-party framework versions (React, Vite, Router, …) change rarely and are the real
+> compile-time ceiling.
+
 | Import | Window global | Host provides (R5) |
 |---|---|---|
 | `react` | `React` | 19.3 (accepts 18.3 builds) |
 | `react-dom` | `ReactDOM` | 19.3 (accepts 18.3 builds) |
 | `react/jsx-runtime` | `jsxRuntime` | 19.3 |
-| `@proveanything/smartlinks` | `SL` | 2.0.5 |
+| `@proveanything/smartlinks` | `SL` | latest published 2.x (build against latest) |
 | `react-router-dom` | `ReactRouterDOM` | 7.18 (accepts 6.x builds) |
 | `@tanstack/react-query` | `ReactQuery` | 5.103 |
 | `lucide-react` | `LucideReact` | 1.47 |
@@ -130,9 +137,11 @@ app ships the Tailwind 4 CSS-first layout as the default; see its README.)
 ## The R5 host stack (reference)
 
 React **19.3** · Vite **8.3** · react-router-dom **7.18** · Tailwind **4.3** (CSS-first) ·
-TypeScript **6.0** · ESLint **10.11** · `@proveanything/smartlinks` **2.0.5** ·
-`@proveanything/smartlinks-utils-ui` **1.16.4** · liquidjs **10.29** · marked **12+** ·
+TypeScript **6.0** · ESLint **10.11** · liquidjs **10.29** · marked **12+** ·
 dompurify **3+** · clsx **2+** · tailwind-merge **3+**.
+
+The SmartLinks packages (`@proveanything/smartlinks`, `-utils-ui`, `-auth-ui`) are **always the latest
+published 2.x** — see the note above; build against latest, don't pin a specific number here (it rots).
 
 > **TypeScript 7** (the native/Go compiler) is **deliberately deferred** — tooling hasn't settled.
 > Target **TS 6** for R5; it compiles existing code with no source changes.

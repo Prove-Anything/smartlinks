@@ -1,5 +1,5 @@
-import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, AgentRunRequest, AgentRunResult, AgentToolsQuery, AgentToolsResponse, SkillsListResponse, CatalogResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef } from "../types/ai.js";
-export type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef, };
+import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, AgentRunRequest, AgentRunResult, AgentToolsQuery, AgentToolsResponse, SkillsListResponse, CatalogResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, AiSession, AiSessionCreate, AiUsageReport, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef } from "../types/ai.js";
+export type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, AiSession, AiSessionCreate, AiUsageReport, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef, };
 declare namespace aiInternal {
     namespace chat {
         namespace responses {
@@ -70,7 +70,41 @@ declare namespace aiInternal {
          * Get session statistics
          */
         function stats(collectionId: string): Promise<SessionStatistics>;
+        /**
+         * Persisted AI assistant sessions (admin scope) — durable conversation history for
+         * admin/host assistants. Create one, then either append your turns explicitly, OR pass
+         * its `id` as `session_id` to `ai.chat.responses.create` and the server threads prior
+         * turns into the input and persists the new turn automatically (works with `server_tools`).
+         */
+        function create(collectionId: string, body?: AiSessionCreate): Promise<AiSession>;
+        /** List sessions, most-recently-active first (optionally filtered by app). */
+        function list(collectionId: string, params?: {
+            appId?: string;
+            limit?: number;
+        }): Promise<{
+            sessions: AiSession[];
+        }>;
+        /** Get one session, including its full transcript. */
+        function get(collectionId: string, id: string): Promise<AiSession>;
+        /** Append Responses items (input/output/tool) to a session — the manual-persistence path. */
+        function append(collectionId: string, id: string, items: ResponseInputItem[], opts?: {
+            usage?: Record<string, any>;
+        }): Promise<AiSession>;
+        /** Archive (soft-delete) a session. */
+        function clear(collectionId: string, id: string): Promise<{
+            ok: boolean;
+            id: string;
+        }>;
     }
+    /**
+     * AI usage / cost report for a collection, grouped by any of model/serviceTier/appId/feature/mode
+     * over an optional date window. `costUnits` are OPAQUE internal units, never provider currency.
+     */
+    function usage(collectionId: string, params?: {
+        groupBy?: string | string[];
+        from?: string;
+        to?: string;
+    }): Promise<AiUsageReport>;
     namespace rateLimit {
         /**
          * Reset rate limit for a user
@@ -111,6 +145,32 @@ declare namespace aiInternal {
         function clearSession(collectionId: string, sessionId: string): Promise<{
             success: boolean;
         }>;
+        /**
+         * Persisted consumer AI sessions (durable — the replacement for getSession/clearSession above).
+         * `scope: 'owner'` keys the history to the signed-in consumer (send the authKit bearer, and
+         * only that consumer can read/append/clear it); `scope: 'public'` (default) is an anonymous
+         * session where possession of the id is the capability.
+         */
+        namespace sessions {
+            function create(collectionId: string, body?: AiSessionCreate & {
+                scope?: 'owner' | 'public';
+            }): Promise<AiSession>;
+            /** List the signed-in consumer's own ('owner') sessions — requires an authKit bearer. */
+            function list(collectionId: string, params?: {
+                appId?: string;
+                limit?: number;
+            }): Promise<{
+                sessions: AiSession[];
+            }>;
+            function get(collectionId: string, id: string): Promise<AiSession>;
+            function append(collectionId: string, id: string, items: ResponseInputItem[], opts?: {
+                usage?: Record<string, any>;
+            }): Promise<AiSession>;
+            function clear(collectionId: string, id: string): Promise<{
+                ok: boolean;
+                id: string;
+            }>;
+        }
         /**
          * Check rate limit status
          */

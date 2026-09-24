@@ -152,6 +152,11 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
         if (!parsed.secrets.has(ref)) throw new CapabilityError(`secrets:${ref}`)
         return Object.prototype.hasOwnProperty.call(secretsMap, ref) ? secretsMap[ref] : null
       },
+      // App-scoped read — in tests it resolves from the same provided secrets map.
+      async app(ref: string): Promise<string | null> {
+        if (!parsed.secrets.has(ref)) throw new CapabilityError(`secrets:${ref}`)
+        return Object.prototype.hasOwnProperty.call(secretsMap, ref) ? secretsMap[ref] : null
+      },
     },
     caller: {
       userId: caller.userId ?? null,

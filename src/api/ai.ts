@@ -40,6 +40,9 @@ import type {
   Session,
   RateLimitStatus,
   SessionStatistics,
+  AiSession,
+  AiSessionCreate,
+  AiUsageReport,
   // Voice types
   VoiceSessionRequest,
   VoiceSessionResponse,
@@ -95,6 +98,9 @@ export type {
   Session,
   RateLimitStatus,
   SessionStatistics,
+  AiSession,
+  AiSessionCreate,
+  AiUsageReport,
   VoiceSessionRequest,
   VoiceSessionResponse,
   EphemeralTokenRequest,
@@ -298,6 +304,66 @@ namespace aiInternal {
       const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/sessions/stats`
       return request<SessionStatistics>(path)
     }
+
+    /**
+     * Persisted AI assistant sessions (admin scope) — durable conversation history for
+     * admin/host assistants. Create one, then either append your turns explicitly, OR pass
+     * its `id` as `session_id` to `ai.chat.responses.create` and the server threads prior
+     * turns into the input and persists the new turn automatically (works with `server_tools`).
+     */
+    export async function create(collectionId: string, body: AiSessionCreate = {}): Promise<AiSession> {
+      const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/sessions`
+      return post<AiSession>(path, body)
+    }
+
+    /** List sessions, most-recently-active first (optionally filtered by app). */
+    export async function list(collectionId: string, params?: { appId?: string; limit?: number }): Promise<{ sessions: AiSession[] }> {
+      const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/sessions${encodeQueryParams({
+        appId: params?.appId,
+        limit: params?.limit != null ? String(params.limit) : undefined,
+      })}`
+      return request<{ sessions: AiSession[] }>(path)
+    }
+
+    /** Get one session, including its full transcript. */
+    export async function get(collectionId: string, id: string): Promise<AiSession> {
+      const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/sessions/${encodeURIComponent(id)}`
+      return request<AiSession>(path)
+    }
+
+    /** Append Responses items (input/output/tool) to a session — the manual-persistence path. */
+    export async function append(
+      collectionId: string,
+      id: string,
+      items: ResponseInputItem[],
+      opts?: { usage?: Record<string, any> }
+    ): Promise<AiSession> {
+      const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/sessions/${encodeURIComponent(id)}/append`
+      return post<AiSession>(path, { items, usage: opts?.usage })
+    }
+
+    /** Archive (soft-delete) a session. */
+    export async function clear(collectionId: string, id: string): Promise<{ ok: boolean; id: string }> {
+      const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/sessions/${encodeURIComponent(id)}`
+      return del<{ ok: boolean; id: string }>(path)
+    }
+  }
+
+  /**
+   * AI usage / cost report for a collection, grouped by any of model/serviceTier/appId/feature/mode
+   * over an optional date window. `costUnits` are OPAQUE internal units, never provider currency.
+   */
+  export async function usage(
+    collectionId: string,
+    params?: { groupBy?: string | string[]; from?: string; to?: string }
+  ): Promise<AiUsageReport> {
+    const groupBy = Array.isArray(params?.groupBy) ? params!.groupBy.join(',') : params?.groupBy
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/usage${encodeQueryParams({
+      groupBy,
+      from: params?.from,
+      to: params?.to,
+    })}`
+    return request<AiUsageReport>(path)
   }
 
   // ============================================================================
@@ -387,6 +453,54 @@ namespace aiInternal {
     export async function clearSession(collectionId: string, sessionId: string): Promise<{ success: boolean }> {
       const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/session/${encodeURIComponent(sessionId)}`
       return del<{ success: boolean }>(path)
+    }
+
+    /**
+     * Persisted consumer AI sessions (durable — the replacement for getSession/clearSession above).
+     * `scope: 'owner'` keys the history to the signed-in consumer (send the authKit bearer, and
+     * only that consumer can read/append/clear it); `scope: 'public'` (default) is an anonymous
+     * session where possession of the id is the capability.
+     */
+    export namespace sessions {
+      export async function create(
+        collectionId: string,
+        body: AiSessionCreate & { scope?: 'owner' | 'public' } = {}
+      ): Promise<AiSession> {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/sessions`
+        return post<AiSession>(path, body)
+      }
+
+      /** List the signed-in consumer's own ('owner') sessions — requires an authKit bearer. */
+      export async function list(
+        collectionId: string,
+        params?: { appId?: string; limit?: number }
+      ): Promise<{ sessions: AiSession[] }> {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/sessions${encodeQueryParams({
+          appId: params?.appId,
+          limit: params?.limit != null ? String(params.limit) : undefined,
+        })}`
+        return request<{ sessions: AiSession[] }>(path)
+      }
+
+      export async function get(collectionId: string, id: string): Promise<AiSession> {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/sessions/${encodeURIComponent(id)}`
+        return request<AiSession>(path)
+      }
+
+      export async function append(
+        collectionId: string,
+        id: string,
+        items: ResponseInputItem[],
+        opts?: { usage?: Record<string, any> }
+      ): Promise<AiSession> {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/sessions/${encodeURIComponent(id)}/append`
+        return post<AiSession>(path, { items, usage: opts?.usage })
+      }
+
+      export async function clear(collectionId: string, id: string): Promise<{ ok: boolean; id: string }> {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/sessions/${encodeURIComponent(id)}`
+        return del<{ ok: boolean; id: string }>(path)
+      }
     }
 
     /**

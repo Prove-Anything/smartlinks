@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.17  |  Generated: 2026-09-24T09:42:39.649Z
+Version: 2.0.19  |  Generated: 2026-09-24T19:51:28.993Z
 
 This is a concise summary of all available API functions and types.
 
@@ -580,6 +580,8 @@ interface ResponsesRequest {
   max_concurrent_subagents?: number
   }
   service_tier?: 'auto' | 'standard' | 'flex' | 'priority'
+  feature?: string
+  session_id?: string
   server_tools?: boolean | AiToolName[]
   allowCapabilities?: AiToolCapability[]
   only?: AiToolName[]
@@ -854,6 +856,55 @@ interface SessionStatistics {
   activeSessions: number
   totalMessages: number
   rateLimitedUsers: number
+}
+```
+
+**AiSession** (interface)
+```typescript
+interface AiSession {
+  id: string
+  collectionId: string
+  appId?: string | null
+  scope: AiSessionScope
+  title?: string | null
+  status: string
+  ownerId?: string | null
+  authorId?: string | null
+  productId?: string | null
+  proofId?: string | null
+  feature?: string | null
+  items: ResponseInputItem[]
+  summary?: Record<string, any>
+  usage?: Record<string, any>
+  itemCount: number
+  lastTurnAt?: string | null
+  createdAt: string
+  updatedAt: string
+  expiresAt?: string | null
+}
+```
+
+**AiSessionCreate** (interface)
+```typescript
+interface AiSessionCreate {
+  appId?: string
+  title?: string
+  productId?: string
+  proofId?: string
+  feature?: string
+  ttlMs?: number
+  items?: ResponseInputItem[]
+}
+```
+
+**AiUsageReport** (interface)
+```typescript
+interface AiUsageReport {
+  groupBy: string[]
+  from?: string | null
+  to?: string | null
+  totals: { promptTokens: number; outputTokens: number; totalTokens: number; requests: number; costUnits: number }
+  groups: Array<Record<string, any> & { promptTokens: number; outputTokens: number; totalTokens: number; requests: number; costUnits: number }>
 }
 ```
 
@@ -1439,6 +1490,8 @@ interface AgentResponseCompletedEvent {
   type: 'response.completed'; response: ResponsesResult; _agent: ResponsesAgentTrace
 }
 ```
+
+**AiSessionScope** = `'admin' | 'owner' | 'public'`
 
 **AiToolCapability** = ``
 
@@ -2102,7 +2155,10 @@ interface ServerFunctionContext {
   collectionId: string;
   appId: string;
   sl: any;
-  secrets: { get(ref: string): Promise<string | null> };
+  secrets: {
+  get(ref: string): Promise<string | null>;
+  app(ref: string): Promise<string | null>;
+  };
   caller: ServerFunctionCaller;
   fetch: typeof fetch;
   log: (message: string, data?: Record<string, any>) => void;
@@ -11091,6 +11147,27 @@ Check rate limit status
       request: EphemeralTokenRequest) → `Promise<EphemeralTokenResponse>`
 Generate ephemeral token for Gemini Live
 
+### publicClient.sessions
+
+**create**(collectionId: string,
+        body: AiSessionCreate & { scope?: 'owner' | 'public' } = {}) → `Promise<AiSession>`
+
+**list**(collectionId: string,
+        params?: { appId?: string; limit?: number }) → `Promise<`
+List the signed-in consumer's own ('owner') sessions — requires an authKit bearer.
+
+**get**(collectionId: string, id: string) → `Promise<AiSession>`
+List the signed-in consumer's own ('owner') sessions — requires an authKit bearer.
+
+**append**(collectionId: string,
+        id: string,
+        items: ResponseInputItem[],
+        opts?: { usage?: Record<string, any> }) → `Promise<AiSession>`
+List the signed-in consumer's own ('owner') sessions — requires an authKit bearer.
+
+**clear**(collectionId: string, id: string) → `Promise<`
+List the signed-in consumer's own ('owner') sessions — requires an authKit bearer.
+
 ### qr
 
 **lookupShortCode**(shortId: string, code: string) → `Promise<QrShortCodeLookupResponse>`
@@ -11175,6 +11252,24 @@ Allocate (or return the existing) sequence number for a subject. Idempotent — 
 
 **stats**(collectionId: string) → `Promise<SessionStatistics>`
 Get session statistics
+
+**create**(collectionId: string, body: AiSessionCreate = {}) → `Promise<AiSession>`
+Persisted AI assistant sessions (admin scope) — durable conversation history for admin/host assistants. Create one, then either append your turns explicitly, OR pass its `id` as `session_id` to `ai.chat.responses.create` and the server threads prior turns into the input and persists the new turn automatically (works with `server_tools`).
+
+**list**(collectionId: string, params?: { appId?: string; limit?: number }) → `Promise<`
+List sessions, most-recently-active first (optionally filtered by app).
+
+**get**(collectionId: string, id: string) → `Promise<AiSession>`
+Get one session, including its full transcript.
+
+**append**(collectionId: string,
+      id: string,
+      items: ResponseInputItem[],
+      opts?: { usage?: Record<string, any> }) → `Promise<AiSession>`
+Append Responses items (input/output/tool) to a session — the manual-persistence path.
+
+**clear**(collectionId: string, id: string) → `Promise<`
+Archive (soft-delete) a session.
 
 ### skills
 

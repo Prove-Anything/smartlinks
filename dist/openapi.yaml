@@ -1081,6 +1081,39 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/AISearchPhotosRequest"
+  /admin/collection/{collectionId}/ai/sessions:
+    post:
+      tags:
+        - sessions
+      summary: Persisted AI assistant sessions (admin scope) — durable conversation history for admin/host assistants.
+      operationId: sessions_create
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSession"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiSessionCreate"
   /admin/collection/{collectionId}/ai/sessions/stats:
     get:
       tags:
@@ -1108,6 +1141,77 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/ai/sessions/{id}:
+    get:
+      tags:
+        - sessions
+      summary: Get one session, including its full transcript.
+      operationId: sessions_get
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSession"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/ai/sessions/{id}/append:
+    post:
+      tags:
+        - sessions
+      summary: Append Responses items (input/output/tool) to a session — the manual-persistence path.
+      operationId: sessions_append
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSession"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
   /admin/collection/{collectionId}/ai/skills:
     get:
       tags:
@@ -1190,6 +1294,33 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AIUploadedFile"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/ai/usage:
+    get:
+      tags:
+        - sessions
+      summary: AI usage / cost report for a collection, grouped by any of model/serviceTier/appId/feature/mode over an optional date window.
+      operationId: sessions_usage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiUsageReport"
         400:
           description: Bad request
         401:
@@ -10294,9 +10425,9 @@ paths:
   /public/collection/{collectionId}/ai/rate-limit/{userId}:
     get:
       tags:
-        - publicClient
+        - sessions
       summary: Check rate limit status
-      operationId: publicClient_getRateLimit
+      operationId: sessions_getRateLimit
       security: []
       parameters:
         - name: collectionId
@@ -10353,12 +10484,113 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/collection/{collectionId}/ai/sessions:
+    post:
+      tags:
+        - sessions
+      summary: sessions.create
+      operationId: sessions_create
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSession"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AiSessionCreate"
+  /public/collection/{collectionId}/ai/sessions/{id}:
+    get:
+      tags:
+        - sessions
+      summary: sessions.get
+      operationId: sessions_get
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSession"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/collection/{collectionId}/ai/sessions/{id}/append:
+    post:
+      tags:
+        - sessions
+      summary: sessions.append
+      operationId: sessions_append
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AiSession"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
   /public/collection/{collectionId}/ai/token:
     post:
       tags:
-        - publicClient
+        - sessions
       summary: Generate ephemeral token for Gemini Live
-      operationId: publicClient_getToken
+      operationId: sessions_getToken
       security: []
       parameters:
         - name: collectionId
@@ -15244,6 +15476,10 @@ components:
             - standard
             - flex
             - priority
+        feature:
+          type: string
+        session_id:
+          type: string
         server_tools:
           type: array
           items:
@@ -15799,6 +16035,102 @@ components:
         - activeSessions
         - totalMessages
         - rateLimitedUsers
+    AiSession:
+      type: object
+      properties:
+        id:
+          type: string
+        collectionId:
+          type: string
+        appId:
+          type: string
+        scope:
+          $ref: "#/components/schemas/AiSessionScope"
+        title:
+          type: string
+        status:
+          type: string
+        ownerId:
+          type: string
+        authorId:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        feature:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResponseInputItem"
+        summary:
+          type: object
+          additionalProperties: true
+        usage:
+          type: object
+          additionalProperties: true
+        itemCount:
+          type: number
+        lastTurnAt:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        expiresAt:
+          type: string
+      required:
+        - id
+        - collectionId
+        - scope
+        - status
+        - items
+        - itemCount
+        - createdAt
+        - updatedAt
+    AiSessionCreate:
+      type: object
+      properties:
+        appId:
+          type: string
+        title:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        feature:
+          type: string
+        ttlMs:
+          type: number
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ResponseInputItem"
+    AiUsageReport:
+      type: object
+      properties:
+        groupBy:
+          type: array
+          items:
+            type: string
+        from:
+          type: string
+        to:
+          type: string
+        totals:
+          type: object
+          additionalProperties: true
+        groups:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - groupBy
+        - totals
+        - groups
     VoiceSessionRequest:
       type: object
       properties:
@@ -16656,6 +16988,12 @@ components:
           additionalProperties: true
       required:
         - type
+    AiSessionScope:
+      type: string
+      enum:
+        - admin
+        - owner
+        - public
     AiToolCapability:
       type: string
       enum:
