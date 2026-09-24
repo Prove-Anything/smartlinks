@@ -2,63 +2,118 @@ openapi: "3.0.3"
 info:
   title: Smartlinks API
   version: "1.0.0"
+  license:
+    name: MIT
+    url: "https://opensource.org/licenses/MIT"
   description: "REST API for the Smartlinks platform.\n\nAdmin endpoints (`/admin/...`) require a Bearer token via the `Authorization` header.\nPublic endpoints (`/public/...`) are unauthenticated unless otherwise noted.\nAuthKit endpoints (`/authkit/...`) are public.\n\nSet the global `security` to `bearerAuth` and override individual operations with `security: []` for public routes."
 servers:
   - url: "https://smartlinks.app/api/v1"
     description: Production
 tags:
   - name: responses
+    description: Agentic responses API (server-tool runs).
   - name: completions
+    description: Chat completion generation.
   - name: agent
+    description: Agent orchestration and tool-calling.
   - name: skills
+    description: Reusable agent skills.
   - name: models
+    description: Available AI models and their metadata.
   - name: rag
+    description: Retrieval-augmented generation and document indexing.
   - name: sessions
+    description: Conversation session management.
   - name: podcast
+    description: Podcast generation.
   - name: tts
+    description: Text-to-speech synthesis.
   - name: publicClient
+    description: Public client-side helpers.
   - name: voice
+    description: Voice interaction endpoints.
   - name: userAppData
+    description: Per-user application data storage.
   - name: cases
+    description: Support/workflow cases.
   - name: threads
+    description: Message threads within cases.
   - name: records
+    description: Application record objects.
   - name: asset
+    description: Asset upload and media management.
   - name: async
+    description: Asynchronous/long-running job helpers.
   - name: attestation
+    description: Single attestation operations.
   - name: attestations
+    description: Attestation collections and trees.
   - name: auth
+    description: Authentication and token management.
   - name: authKit
+    description: AuthKit hosted authentication flows.
   - name: batch
+    description: Batch (production run) management.
   - name: broadcasts
+    description: Broadcast messaging campaigns.
   - name: collection
+    description: Collection (tenant) configuration and resources.
   - name: comms
+    description: Communications preferences, consent and delivery.
   - name: config
+    description: Proof-type and platform configuration.
   - name: contact
+    description: Contact (CRM) records.
   - name: containers
+    description: Container and item tracking.
   - name: crate
+    description: Crate packaging and logistics.
   - name: facets
+    description: Product facet querying and aggregation.
   - name: form
+    description: Form definitions and submissions.
   - name: integrations
+    description: Third-party integration flows and imports.
   - name: interactions
+    description: Interaction events and types.
   - name: jobs
+    description: Background job scheduling and status.
   - name: journeys
+    description: Customer journey definitions.
   - name: journeysAnalytics
+    description: Journey analytics and reporting.
   - name: location
+    description: Physical location management.
   - name: lots
+    description: Lot management and lookup.
   - name: loyalty
+    description: Loyalty programs and points.
   - name: nfc
+    description: NFC tag encoding and lookup.
   - name: order
+    description: Order records and line items.
   - name: product
+    description: Single product operations.
   - name: products
+    description: Product collections and bulk operations.
   - name: proof
+    description: Proof (ownership ledger) operations.
   - name: qr
+    description: QR code generation and resolution.
   - name: realtime
+    description: Realtime channels and subscriptions.
   - name: research
+    description: Product research service.
   - name: segments
+    description: Contact segmentation rules.
   - name: tags
+    description: Tagging and tag analytics.
   - name: template
+    description: Message and document templates.
   - name: translations
+    description: Localization and translation lookup.
   - name: variant
+    description: Product variant management.
 security:
   - bearerAuth: []
 paths:
@@ -1100,7 +1155,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Blob"
+                type: string
+                format: binary
         400:
           description: Bad request
         401:
@@ -2167,11 +2223,7 @@ paths:
         content:
           application/json:
             schema:
-              type: string
-              enum:
-                - id
-                - collectionId
-                - createdAt
+              $ref: "#/components/schemas/BroadcastRecord"
     delete:
       tags:
         - broadcasts
@@ -2482,10 +2534,8 @@ paths:
         content:
           application/json:
             schema:
-              type: string
-              enum:
-                - userId
-                - contactId
+              type: object
+              additionalProperties: true
   /admin/collection/{collectionId}/comm/query/by-user:
     post:
       tags:
@@ -4992,6 +5042,33 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/lots:
+    get:
+      tags:
+        - lots
+      summary: "List lots (summary rows; `payload`/`productIds` omitted)."
+      operationId: lots_list
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListLotsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/lots/by-number/{lotNumber}:
     get:
       tags:
@@ -5093,7 +5170,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/LotUpdateInput"
-  /admin/collection/{collectionId}/lots/{lotId}/products{opts}:
+  /admin/collection/{collectionId}/lots/{lotId}/products:
     get:
       tags:
         - lots
@@ -5108,11 +5185,6 @@ paths:
           schema:
             type: string
         - name: lotId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: opts
           in: path
           required: true
           schema:
@@ -5188,38 +5260,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Lot"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/lots{params}:
-    get:
-      tags:
-        - lots
-      summary: "List lots (summary rows; `payload`/`productIds` omitted)."
-      operationId: lots_list
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: params
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListLotsResponse"
         400:
           description: Bad request
         401:
@@ -7748,11 +7788,7 @@ paths:
         content:
           application/json:
             schema:
-              type: string
-              enum:
-                - id
-                - collectionId
-                - createdAt
+              $ref: "#/components/schemas/SegmentRecord"
     delete:
       tags:
         - segments
@@ -12010,7 +12046,7 @@ paths:
           content:
             application/json:
               schema:
-                oneOf:
+                anyOf:
                   - $ref: "#/components/schemas/SubmitInteractionResponse"
                   - $ref: "#/components/schemas/SubmitInteractionError"
         400:
@@ -12087,6 +12123,32 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/collection/{collectionId}/lots:
+    get:
+      tags:
+        - lots
+      summary: lots.publicList
+      operationId: lots_publicList
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ListLotsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/collection/{collectionId}/lots/by-number/{lotNumber}:
     get:
       tags:
@@ -12149,7 +12211,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection/{collectionId}/lots/{lotId}/products{opts}:
+  /public/collection/{collectionId}/lots/{lotId}/products:
     get:
       tags:
         - lots
@@ -12167,11 +12229,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: opts
-          in: path
-          required: true
-          schema:
-            type: string
       responses:
         200:
           description: Success
@@ -12179,37 +12236,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ListLotProductsResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /public/collection/{collectionId}/lots{params}:
-    get:
-      tags:
-        - lots
-      summary: lots.publicList
-      operationId: lots_publicList
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: params
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListLotsResponse"
         400:
           description: Bad request
         401:
@@ -13059,7 +13085,7 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection/{collectionId}/proof{qp}:
+  /public/collection/{collectionId}/proof:
     get:
       tags:
         - proof
@@ -13068,11 +13094,6 @@ paths:
       security: []
       parameters:
         - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: qp
           in: path
           required: true
           schema:
@@ -15173,7 +15194,7 @@ components:
         tools:
           type: array
           items:
-            oneOf:
+            anyOf:
               - $ref: "#/components/schemas/ToolDefinition"
               - $ref: "#/components/schemas/ResponseTool"
         stream:
@@ -15282,10 +15303,8 @@ components:
           type: number
         error: {}
         incomplete_details:
-          type: string
-          enum:
-            - max_output_tokens
-            - content_filter
+          type: object
+          additionalProperties: true
         previous_response_id:
           type: string
         conversation: {}
@@ -15333,12 +15352,8 @@ components:
           items:
             $ref: "#/components/schemas/ToolDefinition"
         tool_choice:
-          type: string
-          enum:
-            - none
-            - auto
-            - required
-            - function
+          type: object
+          additionalProperties: true
         temperature:
           type: number
         max_tokens:
@@ -15350,10 +15365,8 @@ components:
         presence_penalty:
           type: number
         response_format:
-          type: string
-          enum:
-            - text
-            - json_object
+          type: object
+          additionalProperties: true
         user:
           type: string
       required:
@@ -16394,13 +16407,8 @@ components:
         imageUrl:
           type: string
         resize:
-          type: string
-          enum:
-            - cover
-            - contain
-            - fill
-            - inside
-            - outside
+          type: object
+          additionalProperties: true
         crop:
           type: object
           additionalProperties: true
@@ -16648,6 +16656,39 @@ components:
           additionalProperties: true
       required:
         - type
+    AiToolCapability:
+      type: string
+      enum:
+        - "web:read"
+        - "ai:vision"
+        - "ai:image"
+        - "ai:text"
+        - "media:image"
+        - "media:pdf"
+        - "net:http"
+    AiToolName:
+      type: string
+      enum:
+        - web.fetchPage
+        - web.extractSchema
+        - web.screenshot
+        - web.search
+        - brand.assets
+        - document.read
+        - data.extract
+        - image.describe
+        - image.generate
+        - image.fromReference
+        - image.searchStock
+        - image.transform
+        - pdf.create
+        - pdf.fill
+        - pdf.merge
+        - http.request
+        - translate
+    AgentStreamEvent:
+      type: object
+      additionalProperties: true
     AnalyticsLocation:
       type: object
       properties:
@@ -16804,8 +16845,7 @@ components:
         autoCaptureCampaignParams:
           type: boolean
         campaignParamMap:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/AnalyticsStandardEventFields"
         defaultCollectionEvent:
           $ref: "#/components/schemas/CollectionAnalyticsEvent"
         defaultTagEvent:
@@ -17099,7 +17139,7 @@ components:
         source:
           $ref: "#/components/schemas/AnalyticsSource"
         dimension:
-          oneOf:
+          anyOf:
             - $ref: "#/components/schemas/EventAnalyticsDimension"
             - $ref: "#/components/schemas/TagAnalyticsDimension"
         metric:
@@ -17311,6 +17351,85 @@ components:
     AnalyticsCountryRequest:
       type: object
       properties: {}
+    AnalyticsSource:
+      type: string
+      enum:
+        - events
+        - tag
+    AnalyticsEventType:
+      type: string
+    AnalyticsGranularity:
+      type: string
+      enum:
+        - hour
+        - day
+        - week
+        - month
+    AnalyticsMetric:
+      type: string
+      enum:
+        - count
+        - uniqueSessions
+        - uniqueVisitors
+    AnalyticsSortOrder:
+      type: string
+      enum:
+        - asc
+        - desc
+    AnalyticsDeviceType:
+      type: string
+      enum:
+        - mobile
+        - tablet
+        - desktop
+        - unknown
+    AnalyticsStorageMode:
+      type: string
+      enum:
+        - local
+        - session
+    AnalyticsSessionId:
+      type: number
+    EventAnalyticsDimension:
+      type: string
+      enum:
+        - eventType
+        - country
+        - linkId
+        - href
+        - path
+        - appId
+        - destinationAppId
+        - deviceType
+        - isExternal
+        - productId
+        - proofId
+        - batchId
+        - variantId
+        - sessionId
+        - metadata
+        - source
+    TagAnalyticsDimension:
+      type: string
+      enum:
+        - eventType
+        - country
+        - codeId
+        - claimId
+        - proofId
+        - productId
+        - batchId
+        - variantId
+        - deviceType
+        - sessionId
+        - isAdmin
+        - location
+        - metadata
+        - redirectMode
+    AnalyticsQrCodesResponse:
+      type: array
+      items:
+        $ref: "#/components/schemas/AnalyticsQrCodeRow"
     AppConfigurationResponse:
       type: object
       properties:
@@ -17352,7 +17471,8 @@ components:
         name:
           type: string
         widget:
-          $ref: "#/components/schemas/TWidget"
+          type: object
+          additionalProperties: true
       required:
         - id
     WidgetInstanceSummary:
@@ -17442,8 +17562,7 @@ components:
         basePlanId:
           type: string
         productMode:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/ProductMode"
         addOnKeys:
           type: array
           items:
@@ -17502,6 +17621,13 @@ components:
       required:
         - id
         - apps
+    ProductMode:
+      type: string
+      enum:
+        - simple_redirect
+        - rich_redirect
+        - inform
+        - engage
     AppBundle:
       type: object
       properties:
@@ -17959,6 +18085,10 @@ components:
           type: string
         cssBaseline:
           type: string
+        respectsHostTheme:
+          type: boolean
+        themeTokens:
+          type: string
         globals:
           type: object
           additionalProperties:
@@ -18070,7 +18200,8 @@ components:
         data:
           type: array
           items:
-            $ref: "#/components/schemas/T"
+            type: object
+            additionalProperties: true
         pagination:
           type: object
           additionalProperties: true
@@ -18107,9 +18238,8 @@ components:
           type: object
           additionalProperties: true
         closed_at:
-          type: string
-          enum:
-            - __notnull__
+          type: object
+          additionalProperties: true
         expires_at:
           type: object
           additionalProperties: true
@@ -19186,6 +19316,32 @@ components:
       properties:
         editToken:
           type: string
+    Visibility:
+      type: string
+      enum:
+        - public
+        - owner
+        - admin
+    CallerRole:
+      type: string
+      enum:
+        - admin
+        - owner
+        - public
+    BulkDeleteInput:
+      type: object
+      additionalProperties: true
+    MatchedAt:
+      type: string
+      enum:
+        - rule
+        - proof
+        - batch
+        - variant
+        - product
+        - facet
+        - collection
+        - universal
     AssetRef:
       type: object
       properties:
@@ -19348,7 +19504,8 @@ components:
       type: object
       properties:
         file:
-          $ref: "#/components/schemas/File"
+          type: string
+          format: binary
         name:
           type: string
         metadata:
@@ -19358,8 +19515,7 @@ components:
           type: string
         admin:
           type: boolean
-        signal:
-          $ref: "#/components/schemas/AbortSignal"
+        signal: {}
       required:
         - file
     UploadFromUrlOptions:
@@ -19494,7 +19650,8 @@ components:
         assetId:
           type: string
         file:
-          $ref: "#/components/schemas/File"
+          type: string
+          format: binary
       required:
         - collectionId
         - assetId
@@ -19615,7 +19772,8 @@ components:
         tokenId:
           type: string
         file:
-          $ref: "#/components/schemas/File"
+          type: string
+          format: binary
         name:
           type: string
         metadata:
@@ -19629,7 +19787,8 @@ components:
       type: object
       properties:
         file:
-          $ref: "#/components/schemas/File"
+          type: string
+          format: binary
         name:
           type: string
         metadata:
@@ -19646,8 +19805,7 @@ components:
     ResumableStartOptions:
       type: object
       properties:
-        signal:
-          $ref: "#/components/schemas/AbortSignal"
+        signal: {}
     ResumableUploadHandle:
       type: object
       properties:
@@ -19658,6 +19816,8 @@ components:
       required:
         - id
         - size
+    AssetResponse:
+      $ref: "#/components/schemas/Asset"
     AttestationResponse:
       type: object
       properties:
@@ -20128,6 +20288,31 @@ components:
         - tag
         - serial
         - order_item
+    AttestationVisibility:
+      type: string
+      enum:
+        - public
+        - owner
+        - admin
+    AttestationModerationStatus:
+      type: string
+      enum:
+        - approved
+        - pending
+        - rejected
+    AttestationAudience:
+      type: string
+      enum:
+        - public
+        - owner
+        - admin
+    AttestationGroupBy:
+      type: string
+      enum:
+        - hour
+        - day
+        - week
+        - month
     UserAccountRegistrationRequest:
       type: object
       properties:
@@ -20972,11 +21157,41 @@ components:
           type: number
         notifyUserOnLockout:
           type: boolean
-    AuthKitConfigInput:
+    RefreshErrorCode:
       type: string
       enum:
-        - id
-        - updatedAt
+        - MISSING_REFRESH_TOKEN
+        - INVALID_REFRESH_TOKEN
+        - REFRESH_TOKEN_REUSE_DETECTED
+        - SESSION_EXPIRED
+    AuthKitErrorCode:
+      type: string
+      enum:
+        - MISSING_APPLE_TOKEN
+        - APPLE_AUTH_NOT_CONFIGURED
+        - INVALID_APPLE_TOKEN
+        - ACCOUNT_EXISTS_UNVERIFIED
+        - APPLE_AUTH_FAILED
+    MfaErrorCode:
+      type: string
+      enum:
+        - MFA_REQUIRED
+        - INVALID_MFA_CODE
+        - MFA_TOO_MANY_ATTEMPTS
+        - MFA_FACTOR_NOT_ENROLLED
+        - MFA_SESSION_EXPIRED
+        - MFA_SESSION_INVALID
+        - RECOVERY_CODE_INVALID
+    VerifyStatus:
+      type: string
+      enum:
+        - pending
+        - verified
+        - failed
+        - expired
+        - unknown
+    AuthKitConfigInput:
+      $ref: "#/components/schemas/AuthKitConfig"
     PasswordPolicyErrorCode:
       type: string
       enum:
@@ -20984,6 +21199,11 @@ components:
         - PASSWORD_REQUIREMENTS_NOT_MET
         - PASSWORD_TOO_COMMON
         - PASSWORD_RECENTLY_USED
+    LoginSecurityErrorCode:
+      type: string
+      enum:
+        - ACCOUNT_TEMPORARILY_LOCKED
+        - PASSWORD_EXPIRED
     FirebaseTimestamp:
       type: object
       properties:
@@ -21330,6 +21550,16 @@ components:
       required:
         - ids
         - params
+    BroadcastChannel:
+      type: string
+      enum:
+        - email
+        - push
+        - sms
+        - wallet
+    BroadcastPreviewResponse:
+      type: object
+      additionalProperties: true
     ClaimCodeRef:
       type: object
       properties:
@@ -21631,6 +21861,20 @@ components:
             $ref: "#/components/schemas/AppConfig"
       required:
         - apps
+    CollectionResponse:
+      $ref: "#/components/schemas/Collection"
+    CollectionCreateRequest:
+      $ref: "#/components/schemas/Collection"
+    CollectionUpdateRequest:
+      $ref: "#/components/schemas/Collection"
+    DomainTarget:
+      type: object
+      additionalProperties: true
+    IdField:
+      type: string
+      enum:
+        - userId
+        - contactId
     NotificationSubjectTarget:
       type: object
       properties:
@@ -21910,8 +22154,7 @@ components:
           type: object
           additionalProperties: true
         channels:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/BroadcastChannel"
         topics:
           type: object
           additionalProperties:
@@ -21922,10 +22165,7 @@ components:
             - opt-in
             - opt-out
         byChannel:
-          type: string
-          enum:
-            - opt-in
-            - opt-out
+          $ref: "#/components/schemas/BroadcastChannel"
         rules:
           type: object
           additionalProperties: true
@@ -21989,8 +22229,7 @@ components:
           additionalProperties:
             type: boolean
         topicsByChannel:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/BroadcastChannel"
       required:
         - contactId
     CommsPreferencesUpsertRequest:
@@ -22008,8 +22247,7 @@ components:
           additionalProperties:
             type: boolean
         topicsByChannel:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/BroadcastChannel"
       required:
         - contactId
     CommsSubscribeRequest:
@@ -22127,8 +22365,7 @@ components:
         subscribed:
           type: boolean
         channels:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/BroadcastChannel"
         walletForSubject:
           type: boolean
         anySubscribed:
@@ -22219,6 +22456,19 @@ components:
       required:
         - ok
         - error
+    RecipientId:
+      type: string
+    Recipient:
+      type: object
+      additionalProperties: true
+    CommsSettingsPatchBody:
+      $ref: "#/components/schemas/CommsSettings"
+    ConsentChannels:
+      $ref: "#/components/schemas/BroadcastChannel"
+    TransactionalSendResult:
+      anyOf:
+        - $ref: "#/components/schemas/TransactionalSendResponse"
+        - $ref: "#/components/schemas/TransactionalSendError"
     FieldOption:
       type: object
       properties:
@@ -22335,16 +22585,26 @@ components:
         - name
         - group
     FieldType:
-      type: array
-      items:
-        type: string
-        enum:
-          - text
-          - email
-          - url
-          - textarea
-          - number
-          - select
+      type: string
+      enum:
+        - text
+        - email
+        - url
+        - textarea
+        - number
+        - select
+    ProofMechanism:
+      type: string
+      enum:
+        - certificate
+        - ownable
+        - consumable
+        - timeline
+        - docent
+        - connected
+        - text
+        - image
+        - video
     Contact:
       type: object
       properties:
@@ -22652,15 +22912,13 @@ components:
         subjectId:
           type: string
         channels:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/ChannelName"
         topics:
           type: object
           additionalProperties:
             type: boolean
         topicsByChannel:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/ChannelName"
         updatedAt:
           type: string
     CommsState:
@@ -22793,9 +23051,43 @@ components:
         - fieldOrder
         - settings
         - styling
-    ContactSchema:
+    ContactCustomFields:
       type: object
       additionalProperties: true
+    ContactResponse:
+      $ref: "#/components/schemas/Contact"
+    ContactCreateRequest:
+      $ref: "#/components/schemas/Contact"
+    ContactUpdateRequest:
+      $ref: "#/components/schemas/ContactCreateRequest"
+    PublicContactUpsertRequest:
+      $ref: "#/components/schemas/Contact"
+    ContactPatch:
+      $ref: "#/components/schemas/Contact"
+    ChannelName:
+      type: object
+      additionalProperties: true
+    SubjectType:
+      type: string
+      enum:
+        - product
+        - proof
+        - batch
+    ConditionOperator:
+      type: string
+      enum:
+        - equals
+        - not_equals
+        - contains
+        - not_contains
+        - is_empty
+        - is_not_empty
+        - is_true
+        - is_false
+        - greater_than
+        - less_than
+    ContactSchema:
+      $ref: "#/components/schemas/ContactSchemaResponse"
     Container:
       type: object
       properties:
@@ -23056,6 +23348,19 @@ components:
       required:
         - itemType
         - itemId
+    ContainerStatus:
+      type: string
+      enum:
+        - active
+        - archived
+    ContainerItemType:
+      type: string
+      enum:
+        - tag
+        - proof
+        - serial
+        - order_item
+        - container
     CrateItem:
       type: object
       properties:
@@ -23377,16 +23682,13 @@ components:
         namespace:
           type: string
         query:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/ProductQueryRequest"
         facetEquals:
           type: object
           additionalProperties:
             type: array
             items:
-              oneOf:
-                - $ref: "#/components/schemas/JsonValue"
-                - $ref: "#/components/schemas/JsonValue"
+              $ref: "#/components/schemas/JsonValue"
     FacetBucket:
       type: object
       properties:
@@ -23478,6 +23780,8 @@ components:
       properties:
         includeDeleted:
           type: boolean
+    FacetValueDefinition:
+      $ref: "#/components/schemas/FacetValue"
     CachedData:
       type: object
       properties:
@@ -23762,7 +24066,8 @@ components:
         seq:
           type: number
         chunk:
-          $ref: "#/components/schemas/ArrayBuffer"
+          type: string
+          format: binary
       required:
         - _smartlinksProxyUpload
         - phase
@@ -24118,9 +24423,47 @@ components:
             $ref: "#/components/schemas/RecordTypeInfo"
       required:
         - recordTypes
+    FlowDirection:
+      type: string
+      enum:
+        - inbound
+        - outbound
+    FlowStatus:
+      type: string
+      enum:
+        - draft
+        - active
+        - paused
+        - error
+    RunStatus:
+      type: string
+      enum:
+        - success
+        - partial
+        - error
+    TransformType:
+      type: string
+      enum:
+        - direct
+        - static
+        - template
+        - jsonata
+        - ai
+    FlowAuthMethod:
+      type: string
+      enum:
+        - api_key
+        - bearer
+        - basic
+        - webhook
+        - oauth2
+        - none
+    UpdateFlowInput:
+      $ref: "#/components/schemas/CreateFlowInput"
     RunFlowResult:
-      type: object
-      additionalProperties: true
+      anyOf:
+        - $ref: "#/components/schemas/RunFlowSummary"
+        - $ref: "#/components/schemas/RunFlowEnqueued"
     AdminInteractionsQueryRequest:
       type: object
       properties:
@@ -24732,6 +25075,18 @@ components:
         - metadata
         - broadcastId
         - journeyId
+    EffectType:
+      type: string
+      enum:
+        - loyalty
+        - transactional
+        - webhook
+        - tag
+        - appRecord
+        - segment
+    EffectConfig:
+      type: object
+      additionalProperties: true
     ItemContext:
       type: object
       properties:
@@ -24757,6 +25112,14 @@ components:
         - status
         - source
         - checkedAt
+    ItemContextStatus:
+      type: string
+      enum:
+        - valid
+        - rescan
+        - invalid
+        - not-found
+        - error
     Job:
       type: object
       properties:
@@ -24859,6 +25222,12 @@ components:
       required:
         - id
         - task
+    JobStatus:
+      type: string
+      enum:
+        - queued
+        - running
+        - errored
     JourneyRecord:
       type: object
       properties:
@@ -25100,6 +25469,10 @@ components:
         - completedCount
         - conversionRate
         - avgTimeToComplete
+    JourneyStepRecipientsResponse:
+      type: array
+      items:
+        type: string
     Location:
       type: object
       properties:
@@ -25178,6 +25551,11 @@ components:
       required:
         - items
         - count
+    Geofence:
+      type: object
+      additionalProperties: true
+    LocationPayload:
+      $ref: "#/components/schemas/Location"
     LotPayload:
       type: object
       properties:
@@ -25350,6 +25728,18 @@ components:
         - batchId
         - lotId
         - ai10
+    LotStatus:
+      type: string
+      enum:
+        - open
+        - closed
+        - recalled
+        - archived
+    LotSelector:
+      type: object
+      additionalProperties: true
+    LotUpdateInput:
+      $ref: "#/components/schemas/LotCreateInput"
     LoyaltyScheme:
       type: object
       properties:
@@ -25512,10 +25902,7 @@ components:
       type: object
       properties:
         member:
-          type: string
-          enum:
-            - owner
-            - admin
+          $ref: "#/components/schemas/LoyaltyMember"
       required:
         - member
     LoyaltyTransactionResult:
@@ -25541,7 +25928,8 @@ components:
         items:
           type: array
           items:
-            $ref: "#/components/schemas/T"
+            type: object
+            additionalProperties: true
         limit:
           type: number
         offset:
@@ -25637,28 +26025,36 @@ components:
           type: string
       required:
         - points
+    DataBlock:
+      type: object
+      additionalProperties: true
     ResolveLinkContext:
       type: object
       properties:
         embedded:
           type: boolean
-        postTarget:
-          $ref: "#/components/schemas/Window"
-        win:
-          $ref: "#/components/schemas/Window"
+        postTarget: {}
+        win: {}
         track:
           $ref: "#/components/schemas/LinkTrackingContext"
     ResolvedLink:
       type: object
       properties: {}
+    LinkTrackingContext:
+      type: object
+      properties:
+        collectionId:
+          type: string
+      required:
+        - collectionId
     LinkOpenTarget:
       type: string
       enum:
         - _self
         - _blank
-    LinkTrackingContext:
+    LinkTarget:
       type: object
-      properties: {}
+      additionalProperties: true
     NfcTagInfo:
       type: object
       properties:
@@ -25793,6 +26189,13 @@ components:
         - status
         - source
         - validatedAt
+    TagStatus:
+      type: string
+      enum:
+        - valid
+        - rescan
+        - invalid
+        - error
     OrderItem:
       type: object
       properties:
@@ -27017,6 +27420,45 @@ components:
             $ref: "#/components/schemas/ProductFieldDef"
       required:
         - fields
+    JsonPrimitive:
+      type: object
+      additionalProperties: true
+    JsonValue:
+      type: object
+      additionalProperties: true
+    ISODateString:
+      type: string
+    ProductFacetMap:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          type: string
+    ProductClaimCreateRequestBody:
+      $ref: "#/components/schemas/ProductClaimCreateInput"
+    ProductResponse:
+      $ref: "#/components/schemas/Product"
+    ProductCreateRequest:
+      $ref: "#/components/schemas/ProductWriteInput"
+    ProductUpdateRequest:
+      $ref: "#/components/schemas/ProductWriteInput"
+    ScopedFieldType:
+      type: string
+      enum:
+        - text
+        - textarea
+        - number
+        - date
+        - select
+        - switch
+        - url
+    ProductFieldScope:
+      type: string
+      enum:
+        - public
+        - admin
+    ProductFieldDef:
+      $ref: "#/components/schemas/ScopedFieldDef"
     ProofValues:
       type: object
       properties:
@@ -27337,12 +27779,50 @@ components:
           $ref: "#/components/schemas/CommsTriggerMap"
         notify:
           type: boolean
+    ProofResponse:
+      $ref: "#/components/schemas/Proof"
+    ProofUpdateRequest:
+      $ref: "#/components/schemas/ProofWrite"
+    ProofFieldScope:
+      type: string
+      enum:
+        - public
+        - owner
+        - personal
+        - admin
+    ProofFieldDef:
+      $ref: "#/components/schemas/ScopedFieldDef"
+    GrantScope:
+      type: string
+      enum:
+        - read
+        - comment
+        - contribute
+        - admin
+        - verify_owner
+    RedeemGrantResult:
+      type: object
+      additionalProperties: true
     ProofTransferType:
       type: string
       enum:
         - directed
         - open_release
         - contested
+    ProofTransferState:
+      type: string
+      enum:
+        - pending
+        - completed
+        - cancelled
+        - expired
+        - disputed
+        - escalated
+        - rejected
+    CommsTriggerMap:
+      type: object
+      additionalProperties:
+        $ref: "#/components/schemas/CommsTrigger"
     QrShortCodeLookupResponse:
       type: object
       properties:
@@ -27390,6 +27870,8 @@ components:
         - nonce
         - mac
         - clientId
+    RealtimeChannelPattern:
+      type: string
     ResearchFetchRequest:
       type: object
       properties:
@@ -27591,12 +28073,18 @@ components:
         - after
         - within_days
         - older_than_days
-        - "s JSON. Numeric ops (gt/gte/lt/lte) compare as a number. export type OwnershipAttributeOperator = "
-        - " | "
-        - " | "
-        - " | "
-        - " | "
-        - " | "
+    OwnershipAttributeOperator:
+      type: string
+      enum:
+        - equals
+        - exists
+        - gt
+        - gte
+        - lt
+        - lte
+    SegmentFilterRule:
+      type: object
+      additionalProperties: true
     Tag:
       type: object
       properties:
@@ -27951,7 +28439,8 @@ components:
         parameters:
           type: array
           items:
-            $ref: "#/components/schemas/TemplateParameterSchema"
+            type: object
+            additionalProperties: true
         subject:
           type: string
         body:
@@ -28028,6 +28517,12 @@ components:
           additionalProperties: true
       required:
         - ok
+    TemplateInput:
+      $ref: "#/components/schemas/TemplateBase"
+    TemplateUpdate:
+      $ref: "#/components/schemas/TemplateBase"
+    TemplatePublic:
+      $ref: "#/components/schemas/TemplateBase"
     TranslationContext:
       type: object
       properties:
@@ -28258,6 +28753,27 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    TranslationLookupMode:
+      type: string
+      enum:
+        - cache-fill
+        - cache-only
+    TranslationContentType:
+      type: object
+      additionalProperties: true
+    TranslationQuality:
+      type: object
+      additionalProperties: true
+    TranslationItemStatus:
+      type: object
+      additionalProperties: true
+    TranslationContextValue:
+      type: object
+      additionalProperties: true
+    TranslationLookupRequest:
+      anyOf:
+        - $ref: "#/components/schemas/TranslationLookupSingleRequest"
+        - $ref: "#/components/schemas/TranslationLookupBatchRequest"
     VariantResponse:
       type: object
       properties:

@@ -16,7 +16,7 @@
 // Exit code: 0 = clean, 1 = violations (CI-friendly).
 // =============================================================================
 
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, existsSync, readdirSync } from 'node:fs';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { bareImportsOf } from './lib/bare-imports.mjs';
@@ -181,6 +181,54 @@ if (meta.cssBaseline) {
       for (const c of unknown) console.log(`    ${YELLOW}${c}${RESET}`);
       warnings.push(`sl-* classes used but not in cssBaseline "${baseline.version}": ${unknown.join(', ')} — define them in your own CSS, fix the typo, or drop them.`);
     }
+  }
+}
+
+// ---- Host theming (theme tokens) -------------------------------------------
+// If the app declares meta.respectsHostTheme, warn on hardcoded Tailwind PALETTE utilities in
+// component SOURCE (e.g. bg-blue-600, text-zinc-900) — those pin a colour instead of following the
+// host brand via the semantic tokens (bg-primary, text-foreground, border-border). Scans source,
+// not compiled bundles (bundles are full of legitimate hex). Heuristic + WARN-only. See
+// docs/theme-tokens.md.
+if (meta.respectsHostTheme) {
+  const THEME_TOKENS_VERSION = 'v1';
+  if (!meta.themeTokens) {
+    warnings.push(`meta.respectsHostTheme is true but meta.themeTokens is not declared — set it to "${THEME_TOKENS_VERSION}".`);
+  } else if (meta.themeTokens !== THEME_TOKENS_VERSION) {
+    warnings.push(`meta.themeTokens is "${meta.themeTokens}" but this SDK ships theme tokens "${THEME_TOKENS_VERSION}".`);
+  }
+
+  const PALETTE = 'slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|teal|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose';
+  const UTIL = 'bg|text|border|ring|divide|from|via|to|fill|stroke|outline|decoration|shadow|accent|caret';
+  const paletteRe = new RegExp(`\\b(?:${UTIL})-(?:${PALETTE})-(?:50|100|200|300|400|500|600|700|800|900|950)\\b`, 'g');
+
+  const SRC_EXT = /\.(tsx|ts|jsx|js|vue|html|svelte)$/;
+  const SKIP_DIR = new Set(['node_modules', 'dist', '.nuxt', '.output', '.git', 'public']);
+  function walk(dir, out = []) {
+    let entries = [];
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return out; }
+    for (const e of entries) {
+      if (e.isDirectory()) { if (!SKIP_DIR.has(e.name)) walk(join(dir, e.name), out); }
+      else if (SRC_EXT.test(e.name)) out.push(join(dir, e.name));
+    }
+    return out;
+  }
+
+  const srcRoot = existsSync(join(appDir, 'src')) ? join(appDir, 'src') : appDir;
+  const offenders = [];
+  let totalHits = 0;
+  for (const f of walk(srcRoot)) {
+    const hits = [...new Set((readFileSync(f, 'utf8').match(paletteRe) || []))];
+    if (hits.length) { offenders.push({ file: f.replace(appDir + '/', '').replace(appDir + '\\', ''), hits }); totalHits += hits.length; }
+  }
+
+  if (offenders.length === 0) {
+    console.log(`${GREEN}✓${RESET} theme ${DIM}(respectsHostTheme)${RESET} — no hardcoded palette utilities in source`);
+  } else {
+    console.log(`${YELLOW}⚠${RESET} theme ${DIM}(respectsHostTheme)${RESET} — hardcoded palette utilities in ${offenders.length} file${offenders.length === 1 ? '' : 's'} (use bg-primary / text-foreground / border-border instead):`);
+    for (const o of offenders.slice(0, 15)) console.log(`    ${DIM}${o.file}${RESET}  ${YELLOW}${o.hits.slice(0, 6).join(' ')}${o.hits.length > 6 ? ' …' : ''}${RESET}`);
+    if (offenders.length > 15) console.log(`    ${DIM}…and ${offenders.length - 15} more file(s)${RESET}`);
+    warnings.push(`respectsHostTheme is true but ${totalHits} hardcoded palette utilit${totalHits === 1 ? 'y' : 'ies'} found in source — replace with semantic tokens, or drop respectsHostTheme if the app intentionally brings its own look.`);
   }
 }
 

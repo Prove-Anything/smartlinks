@@ -7,7 +7,7 @@
 > Status: **standard**. New apps MUST follow this contract; existing apps SHOULD migrate.
 >
 > SDK: `@proveanything/smartlinks` ≥ **2.0** (R5).
-> Admin shell (React only): `@proveanything/smartlinks-utils-ui` ≥ **0.7.6** — required for the admin side if using the React shell; not needed in public widgets.
+> Admin shell (React only): `@proveanything/smartlinks-utils-ui` ≥ **2.0** — required for the admin side if using the React shell; not needed in public widgets.
 
 ---
 

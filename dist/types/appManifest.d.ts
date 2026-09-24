@@ -430,6 +430,18 @@ export interface AppManifest {
          */
         cssBaseline?: string;
         /**
+         * True if this app reads the host theme tokens (`--sl-color-*`, `--sl-radius-*`,
+         * `--sl-font-*`) rather than hardcoding a palette — i.e. it follows the host's brand.
+         * Lets a host's app browser show "follows your brand" vs "brings its own look", and turns
+         * on the doctor's hardcoded-colour warning. Opt-in. See docs/theme-tokens.md.
+         */
+        respectsHostTheme?: boolean;
+        /**
+         * Theme-token contract version this app targets, e.g. `"v1"`. Pairs with
+         * `@proveanything/smartlinks/theme.css`. See docs/theme-tokens.md.
+         */
+        themeTokens?: string;
+        /**
          * Per-app namespaced UMD globals (R4.7+), e.g. `{ widgets: "MyAppWidgets" }`.
          * UMD-only: ESM bundles expose their exports through the module namespace and
          * don't need this. Absent → legacy bundle (colliding `window.SmartLinks{Surface}`).

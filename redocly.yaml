@@ -1,0 +1,27 @@
+# Redocly configuration for the generated openapi.yaml (see generate-openapi.cjs).
+#
+# The spec is produced by a hand-rolled generator from the SDK source. Two rules
+# in the recommended ruleset flag behaviour that is intentional for this doc, so
+# they are turned off here (with rationale) rather than by mutating the spec:
+#
+#   no-unused-components:
+#     The generator publishes the FULL type catalogue (every exported
+#     interface/type in src/types + src/api) into components.schemas so the docs
+#     portal can link to any named type, even those not referenced by an
+#     operation. Pruning them would defeat that purpose, so unused components are
+#     expected by design.
+#
+#   no-ambiguous-paths:
+#     A handful of real routes overlap a literal segment with a sibling path
+#     parameter — e.g. `/lots/by-number/{lotNumber}` vs `/lots/{lotId}/products`,
+#     `/collection/by-domain/{domain}` vs `/collection/{collectionId}/...`, and
+#     `.../batch/{batchId}` vs `.../{id}/batch`. These are distinct, real
+#     endpoints; the server disambiguates them at runtime (literal segments take
+#     priority over parameters). Redocly's static check cannot model that, so the
+#     rule is disabled. NOTE: malformed pseudo-params from stripped querystrings
+#     (e.g. `products{opts}`) are fixed in the generator, not hidden here.
+extends:
+  - recommended
+rules:
+  no-unused-components: off
+  no-ambiguous-paths: off

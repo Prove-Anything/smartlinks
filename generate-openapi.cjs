@@ -124,6 +124,13 @@ function tsToSchema(t, known) {
   if (t === 'object' || t === '{}')
     return { type: 'object', additionalProperties: true };
 
+  // DOM/binary types → binary string (these are never in `known`)
+  if (['File', 'Blob', 'ArrayBuffer', 'Uint8Array', 'Buffer'].includes(t))
+    return { type: 'string', format: 'binary' };
+  // Non-serializable client-only/ambient types → unconstrained
+  if (['Window', 'Document', 'HTMLElement', 'AbortSignal', 'Node', 'Response', 'Request', 'FormData'].includes(t))
+    return {};
+
   // Array: T[] or Array<T>
   const arr = t.match(/^(.+)\[\]$/) || t.match(/^Array<(.+)>$/);
   if (arr) return { type: 'array', items: tsToSchema(arr[1].trim(), known) };
@@ -141,15 +148,23 @@ function tsToSchema(t, known) {
   const prom = t.match(/^Promise<(.+)>$/);
   if (prom) return tsToSchema(prom[1].trim(), known);
 
-  // Partial<T>, Omit<T,...>, Pick<T,...>, Required<T>, etc.
-  const wrapper = t.match(/^(?:Partial|Required|Readonly|NonNullable|Omit|Pick)<(\w+)[^>]*>$/);
-  if (wrapper) return known.has(wrapper[1])
-    ? { $ref: `#/components/schemas/${wrapper[1]}` }
-    : { type: 'object', additionalProperties: true };
+  // Utility-type wrappers (Partial/Omit/Pick/Required/... possibly nested) and
+  // intersections (A & B). Model as a $ref to the first referenced known type
+  // (acceptable per generator convention), else a generic object.
+  if (/^(?:Partial|Required|Readonly|NonNullable|Omit|Pick|Exclude|Extract)</.test(t) || t.includes(' & ')) {
+    return firstKnownRef(t, known) || { type: 'object', additionalProperties: true };
+  }
 
-  // String literal union: 'a' | 'b' | 'c'
+  // Union of object shapes / discriminated union (contains `{`): model generically.
+  // (Must run before the string-literal-union check, which would otherwise scrape
+  // quoted discriminant values into a bogus enum.)
+  if (t.includes('|') && t.includes('{')) {
+    return { type: 'object', additionalProperties: true };
+  }
+
+  // String literal union: 'a' | 'b' | 'c'  (dedupe values → no-duplicated-enum-values)
   if (/'[^']+'/.test(t) && t.includes('|')) {
-    const vals = [...t.matchAll(/'([^']+)'/g)].map(m => m[1]);
+    const vals = [...new Set([...t.matchAll(/'([^']+)'/g)].map(m => m[1]))];
     if (vals.length) return { type: 'string', enum: vals };
   }
 
@@ -164,7 +179,15 @@ function tsToSchema(t, known) {
     const parts = t.split(' | ').map(p => p.trim()).filter(p => p !== 'null' && p !== 'undefined' && p !== 'void');
     if (parts.length === 1) return tsToSchema(parts[0], known);
     const allKnown = parts.every(p => known.has(p));
-    if (allKnown) return { oneOf: parts.map(p => ({ $ref: `#/components/schemas/${p}` })) };
+    if (allKnown) {
+      // Dedupe members, then use `anyOf` (not `oneOf`): a TS union has
+      // "matches at least one" semantics and its members frequently overlap
+      // structurally, which `oneOf` (mutually-exclusive) would flag under
+      // no-illogical-composition-keywords. A single member collapses to a $ref.
+      const uniq = [...new Set(parts)];
+      const members = uniq.map(p => ({ $ref: `#/components/schemas/${p}` }));
+      return members.length === 1 ? members[0] : { anyOf: members };
+    }
     return { type: 'object', additionalProperties: true };
   }
 
@@ -176,10 +199,23 @@ function tsToSchema(t, known) {
   if (gen && known.has(gen[1])) return { $ref: `#/components/schemas/${gen[1]}` };
   if (gen) return { type: 'object', additionalProperties: true };
 
-  // PascalCase — assume a type reference
-  if (/^[A-Z]/.test(t) && /^\w+$/.test(t)) return { $ref: `#/components/schemas/${t}` };
-
+  // Unknown bare identifier (PascalCase type, generic param like T/TWidget, or an
+  // un-exported/ambient type). NEVER emit a $ref to an unknown name — that produces
+  // an unresolvable reference. Only known names reach the `known.has` check above.
   return { type: 'object', additionalProperties: true };
+}
+
+// Scan a type expression for the first identifier that is a known schema, and
+// return a $ref to it (used for utility wrappers / intersections). Skips the
+// utility keywords themselves so `Omit<Collection,...>` resolves to Collection.
+const UTILITY_KEYWORDS = new Set(['Partial', 'Required', 'Readonly', 'NonNullable', 'Omit', 'Pick', 'Exclude', 'Extract', 'Record', 'Array', 'Promise', 'Map', 'Set']);
+function firstKnownRef(t, known) {
+  const ids = t.match(/[A-Za-z_$][\w$]*/g) || [];
+  for (const id of ids) {
+    if (UTILITY_KEYWORDS.has(id)) continue;
+    if (known.has(id)) return { $ref: `#/components/schemas/${id}` };
+  }
+  return null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -193,6 +229,45 @@ function extractBlock(content, startIdx) {
     else if (content[i] === '}') { depth--; if (depth === 0) return content.slice(startIdx, i + 1); }
   }
   return null;
+}
+
+// Strip TS comments from a captured type RHS (block + line comments).
+function stripTypeComments(s) {
+  return s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+}
+
+// Capture the full right-hand side of a `type X = <RHS>` alias starting at
+// startIdx (the first RHS char). Handles multi-line unions, nested generics,
+// brace-containing object shapes and intersections that the previous
+// single-line, `;`-terminated regex silently dropped. The statement ends at a
+// top-level `;`, or at a newline where neither the text so far nor the next
+// token continues the type expression.
+function captureAliasRhs(content, startIdx) {
+  const OPEN = '{[(<', CLOSE = '}])>';
+  let depth = 0, out = '';
+  const max = Math.min(content.length, startIdx + 8000);  // safety bound
+  for (let i = startIdx; i < max; i++) {
+    const c = content[i];
+    if (c === ';' && depth === 0) break;
+    if (OPEN.includes(c)) {
+      if (!(c === '<' && content[i - 1] === '=')) depth++;            // ignore => arrows
+    } else if (CLOSE.includes(c)) {
+      if (!(c === '>' && content[i - 1] === '=')) depth = Math.max(0, depth - 1);
+    }
+    if (c === '\n' && depth === 0) {
+      const before = out.replace(/\/\/[^\n]*$/, '').trimEnd();
+      const lastCh = before.slice(-1);
+      let k = i + 1;
+      while (k < content.length && /\s/.test(content[k])) k++;        // next non-ws (across blanks)
+      const nextCh = content[k] || '';
+      const nextChunk = content.slice(k, k + 10);
+      const contBefore = '|&=<([{,.'.includes(lastCh) || /extends$/.test(before);
+      const contAfter  = '|&>)]}.'.includes(nextCh) || /^extends\b/.test(nextChunk);
+      if (!contBefore && !contAfter) break;
+    }
+    out += c;
+  }
+  return out;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -243,8 +318,8 @@ function toOaPath(tpl) {
   return cleaned
     // Strip ternary expressions like ${qs ? `?${qs}` : ''} or ${query ? `?...` : ""}
     .replace(/\$\{[^}?]*\?[^`}]*`?[^`}]*`?[^}]*\}/g, '')
-    // Strip query helper interpolations like ${qs}, ${query}, ${buildQueryString(params)}
-    .replace(/\/?\$\{[^}]*\b(?:qs|query|search|queryString|queryParams|build\w*Query\w*|encodeQuery)\b[^}]*\}/gi, '')
+    // Strip query helper interpolations like ${qs}, ${query}, ${qp}, ${opts}, ${params}, ${buildQueryString(params)}
+    .replace(/\/?\$\{[^}]*\b(?:qs|qp|query|search|opts|params|options|queryString|queryParams|searchParams|build\w*Query\w*|encodeQuery)\b[^}]*\}/gi, '')
     // Strip naked conditional tails like ${qs ? or ${query ?  (partial captures from nested template literal)
     .replace(/\$\{[^}]*\?.*$/g, '')
     // Convert ${encodeURIComponent(x)} → {x}
@@ -255,6 +330,11 @@ function toOaPath(tpl) {
     .replace(/\$\{(\w+)\}/g, '{$1}')
     // Strip any remaining ${...} or partial ${ expressions
     .replace(/\$\{[^}]*\}?/g, '')
+    // Remove leftover interpolation params that are NOT real path params: a real
+    // path param is always preceded by '/', so any `{word}` glued to a preceding
+    // non-slash char (e.g. products{opts}, proof{qp}, lots{params}) is a stripped
+    // querystring remnant — drop it.
+    .replace(/([^/]){\w+}/g, '$1')
     // Strip query string
     .replace(/[?#].*$/, '')
     // Collapse duplicate slashes introduced by stripped interpolations
@@ -415,25 +495,29 @@ function extractAllSchemas(known) {
       if (schema) schemas[name] = schema;
     }
 
-    // Simple type aliases (unions/primitives/strings — not object types)
-    const typeRe = /export type (\w+)\s*=\s*([^;\n{][^;{]*);/g;
-    while ((m = typeRe.exec(content)) !== null) {
-      const name = m[1];
-      if (schemas[name]) continue;
-      const def = m[2].trim();
-      if (!def.includes('{') && !def.startsWith('(')) {
-        const s = tsToSchema(def, known);
-        if (Object.keys(s).length) schemas[name] = s;
-      }
-    }
-
-    // Inline object type aliases: export type Foo = { ... }
-    const objTypeRe = /export type (\w+)\s*=\s*\{/g;
+    // Inline object type aliases: export type Foo = { ... }  (parse the shape)
+    const objTypeRe = /export type (\w+)(?:<[^>]*>)?\s*=\s*\{/g;
     while ((m = objTypeRe.exec(content)) !== null) {
       const name = m[1];
       if (schemas[name]) continue;
-      const schema = extractInterfaceSchema(content, m.index, `export type ${name} = {`, known);
+      // Locate the opening brace so extractInterfaceSchema can read the block.
+      const braceIdx = content.indexOf('{', m.index + m[0].length - 1);
+      const schema = extractInterfaceSchema(content, braceIdx, '{', known);
       if (schema) schemas[name] = schema;
+    }
+
+    // All other type aliases — unions (incl. multi-line), primitives, wrappers,
+    // intersections. Captures the full RHS (previously only single-line,
+    // `;`-terminated, brace-free aliases were emitted, so ~90 names that were
+    // $ref'd elsewhere never got defined). Route each through tsToSchema.
+    const aliasRe = /export type (\w+)(?:<[^>]*>)?\s*=\s*/g;
+    while ((m = aliasRe.exec(content)) !== null) {
+      const name = m[1];
+      if (schemas[name]) continue;                         // object aliases already handled
+      const rhs = stripTypeComments(captureAliasRhs(content, aliasRe.lastIndex)).trim();
+      if (!rhs || rhs.startsWith('{') || rhs.startsWith('(')) continue;  // object/fn handled/skip
+      const s = tsToSchema(rhs, known);
+      if (Object.keys(s).length) schemas[name] = s;
     }
   };
 
@@ -692,6 +776,67 @@ function parseApiFile(filePath, known) {
 // Build the OpenAPI spec object
 // ─────────────────────────────────────────────────────────────────────────────
 
+// One-liner descriptions per namespace tag (satisfies tag-description). Any tag
+// not listed falls back to a generic "<name> API".
+const TAG_DESCRIPTIONS = {
+  responses: 'Agentic responses API (server-tool runs).',
+  completions: 'Chat completion generation.',
+  agent: 'Agent orchestration and tool-calling.',
+  skills: 'Reusable agent skills.',
+  models: 'Available AI models and their metadata.',
+  rag: 'Retrieval-augmented generation and document indexing.',
+  sessions: 'Conversation session management.',
+  podcast: 'Podcast generation.',
+  tts: 'Text-to-speech synthesis.',
+  publicClient: 'Public client-side helpers.',
+  voice: 'Voice interaction endpoints.',
+  userAppData: 'Per-user application data storage.',
+  cases: 'Support/workflow cases.',
+  threads: 'Message threads within cases.',
+  records: 'Application record objects.',
+  asset: 'Asset upload and media management.',
+  async: 'Asynchronous/long-running job helpers.',
+  attestation: 'Single attestation operations.',
+  attestations: 'Attestation collections and trees.',
+  auth: 'Authentication and token management.',
+  authKit: 'AuthKit hosted authentication flows.',
+  batch: 'Batch (production run) management.',
+  broadcasts: 'Broadcast messaging campaigns.',
+  collection: 'Collection (tenant) configuration and resources.',
+  comms: 'Communications preferences, consent and delivery.',
+  config: 'Proof-type and platform configuration.',
+  contact: 'Contact (CRM) records.',
+  containers: 'Container and item tracking.',
+  crate: 'Crate packaging and logistics.',
+  facets: 'Product facet querying and aggregation.',
+  form: 'Form definitions and submissions.',
+  integrations: 'Third-party integration flows and imports.',
+  interactions: 'Interaction events and types.',
+  jobs: 'Background job scheduling and status.',
+  journeys: 'Customer journey definitions.',
+  journeysAnalytics: 'Journey analytics and reporting.',
+  location: 'Physical location management.',
+  lots: 'Lot management and lookup.',
+  loyalty: 'Loyalty programs and points.',
+  nfc: 'NFC tag encoding and lookup.',
+  order: 'Order records and line items.',
+  product: 'Single product operations.',
+  products: 'Product collections and bulk operations.',
+  proof: 'Proof (ownership ledger) operations.',
+  qr: 'QR code generation and resolution.',
+  realtime: 'Realtime channels and subscriptions.',
+  research: 'Product research service.',
+  segments: 'Contact segmentation rules.',
+  tags: 'Tagging and tag analytics.',
+  template: 'Message and document templates.',
+  translations: 'Localization and translation lookup.',
+  variant: 'Product variant management.',
+};
+
+function tagDescription(name) {
+  return TAG_DESCRIPTIONS[name] || `${name} API`;
+}
+
 function buildSpec() {
   const known = collectKnownTypes();
   const schemas = extractAllSchemas(known);
@@ -804,6 +949,7 @@ function buildSpec() {
     info: {
       title: 'Smartlinks API',
       version: '1.0.0',
+      license: { name: 'MIT', url: 'https://opensource.org/licenses/MIT' },
       description:
         'REST API for the Smartlinks platform.\n\n' +
         'Admin endpoints (`/admin/...`) require a Bearer token via the `Authorization` header.\n' +
@@ -815,7 +961,7 @@ function buildSpec() {
     servers: [
       { url: 'https://smartlinks.app/api/v1', description: 'Production' },
     ],
-    tags: tagOrder.map(name => ({ name })),
+    tags: tagOrder.map(name => ({ name, description: tagDescription(name) })),
     security: [{ bearerAuth: [] }],
     paths,
     components: {

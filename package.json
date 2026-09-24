@@ -1,6 +1,6 @@
 {
   "name": "@proveanything/smartlinks",
-  "version": "2.0.15",
+  "version": "2.0.17",
   "description": "Official JavaScript/TypeScript SDK for the Smartlinks API",
   "type": "module",
   "main": "dist/index.js",
@@ -23,6 +23,8 @@
     },
     "./baseline.css": "./dist/baseline.css",
     "./baseline.classes.json": "./dist/baseline.classes.json",
+    "./theme.css": "./dist/theme.css",
+    "./theme-boot.js": "./dist/theme-boot.js",
     "./package.json": "./package.json"
   },
   "bin": {
@@ -46,6 +48,8 @@
     "docs": "typedoc",
     "docs:summary": "node generate-api-summary.cjs",
     "docs:openapi": "node generate-openapi.cjs",
+    "docs:openapi:lint": "npx --yes @redocly/cli@latest lint openapi.yaml",
+    "docs:openapi:check": "node generate-openapi.cjs && npx --yes @redocly/cli@latest lint openapi.yaml",
     "build:docs": "tsc build-docs.ts --outDir dist && node dist/build-docs.js",
     "prepublishOnly": "npm run build"
   },
