@@ -45,6 +45,13 @@ let clientPlatform = undefined;
  * data call that touches the granted proof (attestations, threads, app data).
  */
 let grantToken = undefined;
+/**
+ * The current app context — the appId of the micro-app this SDK instance belongs to.
+ * Set via initializeApi({ appId }) or setAppContext(). Lets an app call its OWN server
+ * functions without repeating its id: SL.functions.call(collectionId, name) resolves
+ * app-scoped when this is set. Explicit `appId` on a call always overrides it.
+ */
+let appContextId = undefined;
 /** Whether initializeApi has been successfully called at least once. */
 let initialized = false;
 /** Safely returns the current browser hostname, or an empty string in non-browser / Node environments. */
@@ -293,6 +300,14 @@ function logDebug(...args) {
 export function isProxyEnabled() {
     return proxyMode;
 }
+/** The current app context (appId), if the SDK was initialized with one. */
+export function getAppContext() {
+    return appContextId;
+}
+/** Set (or clear) the current app context — the appId used to scope SL.functions calls. */
+export function setAppContext(id) {
+    appContextId = id;
+}
 function maskSensitive(value) {
     if (!value)
         return value;
@@ -443,6 +458,9 @@ export function initializeApi(options) {
     }
     baseURL = normalizedBaseURL;
     apiKey = options.apiKey;
+    // Preserve the app context across re-inits that omit it (mirrors platform/token handling).
+    if (options.appId !== undefined)
+        appContextId = options.appId;
     // Enable token persistence before restoring the token.
     if (options.persistToken !== undefined)
         tokenPersistenceEnabled = options.persistToken;

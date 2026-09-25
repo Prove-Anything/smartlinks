@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.19  |  Generated: 2026-09-24T19:51:28.993Z
+Version: 2.0.22  |  Generated: 2026-09-25T18:07:22.478Z
 
 This is a concise summary of all available API functions and types.
 
@@ -135,6 +135,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **config** - Functions for config operations
 - **containers** - Functions for containers operations
 - **facets** - Functions for facets operations
+- **functions** - Functions for functions operations
 - **http** - Functions for http operations
 - **integrations** - Functions for integrations operations
 - **jobs** - Functions for jobs operations
@@ -164,6 +165,12 @@ Reset the diagnostics counters (does not touch the cache itself).
 
 **isProxyEnabled**() → `boolean`
 Return whether proxy mode is currently enabled.
+
+**getAppContext**() → `string | undefined`
+The current app context (appId), if the SDK was initialized with one.
+
+**setAppContext**(id: string | undefined) → `void`
+Set (or clear) the current app context — the appId used to scope SL.functions calls.
 
 **initializeApi**(options: {
   baseURL: string
@@ -8943,6 +8950,31 @@ type VerifyTokenResponse = {
 }
 ```
 
+### functions (api)
+
+**FunctionListEntry** (interface)
+```typescript
+interface FunctionListEntry {
+  name: string; visibility?: string; trigger?: string
+}
+```
+
+**FunctionListResponse** (interface)
+```typescript
+interface FunctionListResponse {
+  functions: FunctionListEntry[]
+}
+```
+
+**FunctionCallOptions** (interface)
+```typescript
+interface FunctionCallOptions {
+  appId?: string; channel?: string
+}
+```
+
+**FunctionCallResult** = `any`
+
 ### sequence (api)
 
 **AllocateSequenceInput** (interface)
@@ -10434,6 +10466,23 @@ Update a form for a collection (admin only).
 
 **remove**(collectionId: string, formId: string) → `Promise<void>`
 Delete a form for a collection (admin only).
+
+### functions
+
+**call**(collectionId: string,
+    name: string,
+    body: Record<string, any> = {},
+    opts: FunctionCallOptions = {}) → `Promise<T>`
+Call a PUBLIC app server function inline (surface `'public'`). App-scoped: `POST /public/collection/:c/app/:appId/functions/:name`. // App calling its own function (appId from initializeApi({ appId })): const { value } = await SL.functions.call<{ value: number }>(collectionId, 'pressCounter') // Or address another app explicitly: await SL.functions.call(collectionId, 'pressCounter', {}, { appId: 'my-counter-app' })
+
+**callAdmin**(collectionId: string,
+    name: string,
+    body: Record<string, any> = {},
+    opts: FunctionCallOptions = {}) → `Promise<T>`
+Call an ADMIN app server function (surface `'admin'`; requires an admin session). App-scoped: `POST /admin/collection/:c/app/:appId/functions/:name`.
+
+**list**(collectionId: string, opts: FunctionCallOptions = {}) → `Promise<FunctionListResponse>`
+List the public functions available for a collection (discovery). Scoped to one app when an appId is given (or set as the SDK app context): `GET /public/collection/:c[/app/:appId]/functions`.
 
 ### http
 

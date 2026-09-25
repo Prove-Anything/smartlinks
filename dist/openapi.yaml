@@ -29269,6 +29269,29 @@ components:
           additionalProperties: true
       required:
         - valid
+    FunctionListEntry:
+      type: object
+      properties:
+        name:
+          type: object
+          additionalProperties: true
+      required:
+        - name
+    FunctionListResponse:
+      type: object
+      properties:
+        functions:
+          type: array
+          items:
+            $ref: "#/components/schemas/FunctionListEntry"
+      required:
+        - functions
+    FunctionCallOptions:
+      type: object
+      properties:
+        appId:
+          type: object
+          additionalProperties: true
     AllocateSequenceInput:
       type: object
       properties:

@@ -181,11 +181,14 @@ interface ServerFunctionContext {
   collectionId: string
   appId: string
 
-  /** SmartLinks SDK, pre-scoped to your declared `authority`. Capabilities cap what it may do. */
+  /** SmartLinks SDK, pre-scoped to your declared `authority`. Capabilities cap what it may do.
+   *  Key resources: `sl.appRecords` (per-app records), `sl.appData` (general/app-wide config +
+   *  data — URLs, flags, counters, arrays), `sl.products`, `sl.attestations`. */
   sl: SmartLinks
 
-  /** Capability-gated secrets. Resolves only refs you declared via `secrets:<ref>`. */
-  secrets: { get(ref: string): Promise<string | null> }
+  /** Capability-gated secrets (need `secrets:<ref>`). `get(ref)` resolves the collection's OWN
+   *  secret first, then the app-level one; `app(ref)` reads the app-level secret only. */
+  secrets: { get(ref: string): Promise<string | null>; app(ref: string): Promise<string | null> }
 
   /** Who invoked this function. */
   caller: {
@@ -210,6 +213,61 @@ interface ServerFunctionContext {
 already authenticated as your declared authority and scoped to the collection. Do **not** try
 to construct your own SDK client or carry your own key; that's what `ctx.sl` is for, and it's
 the only way authority stays correct.
+
+### Calling a function from your app (client side)
+
+From a page/UI, invoke an `http`-trigger function with the SDK — no manual fetch, no URL building:
+
+```ts
+// public function (runs on the caller's authority — signed-in owner, else public):
+const res = await SL.functions.call(collectionId, 'increment', { /* becomes event.body */ })
+// admin surface (needs an admin session):
+const res = await SL.functions.callAdmin(collectionId, 'recomputeTotals', { … })
+```
+
+`res` is whatever your handler returns. See the `edge-function-test` example for a full page +
+function + manifest.
+
+#### Functions are ALWAYS app-scoped
+
+A function belongs to an app, so the canonical route carries the appId:
+`POST /collection/:collectionId/app/:appId/functions/:name`. Two different installed apps can each
+ship a function of the same name without clashing.
+
+The SDK fills the appId in for you. Initialize with your app's id once, then call by bare name —
+the SDK routes it app-scoped:
+
+```ts
+SL.initializeApi({ baseURL, appId: 'my-counter-app' })   // usually done by the host/bootstrap
+await SL.functions.call(collectionId, 'pressCounter')     // → /collection/:c/app/my-counter-app/functions/pressCounter
+```
+
+To call a *different* app's function, pass the appId explicitly:
+
+```ts
+await SL.functions.call(collectionId, 'pressCounter', {}, { appId: 'some-other-app' })
+```
+
+**The app does NOT have to be enabled on the collection.** Because the appId is explicit, the
+function is resolved directly from the app's release — so you can test an app on any collection
+before installing it (and without it showing up in that collection's menus). Enabling an app is
+currently just a UX courtesy (dropdowns/menus), not a gate on running its functions. For a build
+that isn't the default `stable` channel — e.g. a **dev** app you haven't installed — pass the
+channel:
+
+```ts
+await SL.functions.call(collectionId, 'pressCounter', {}, { appId: 'my-counter-app', channel: 'dev' })
+```
+
+If no appId is available (not set on init, none passed), the call falls back to the **deprecated
+flat path** `/collection/:c/functions/:name`, which searches only the collection's **enabled** apps,
+resolves by bare name, and **rejects with `409 AMBIGUOUS_FUNCTION`** when more than one defines that
+name (a first-party builtin still wins). Always prefer an appId.
+
+> There is no such thing as an app-less function. First-party builtins (e.g. the `functions.ping`
+> diagnostic) belong to the reserved `smartlinks` app. A "global" function is just an app enabled on
+> the `global` collection and called at `/collection/global/app/:appId/functions/:name` — same two
+> facets (collection + app), with `global` as the sentinel collection.
 
 ---
 
@@ -262,6 +320,8 @@ Prefer the platform primitives above over a dependency; when you do need one, pi
 | Hash / HMAC-sign / verify / encrypt | `crypto.subtle` (Web Crypto) | — |
 | Random id / bytes | `crypto.randomUUID()` / `crypto.getRandomValues()` | — |
 | Read or write SmartLinks data | `ctx.sl.*` (records, products, attestations, …) | the matching `sl:<res>:<read\|write>` |
+| Read/write general or app-wide data (config, URLs, counters, arrays) | `ctx.sl.appData.get()` / `ctx.sl.appData.set({…})` — pass `{ scope: 'global' }` for app-wide (shared by every install; global writes need collection authority) | `sl:data:read` / `sl:data:write` |
+| Guarantee a UNIQUE claim (pool of numbers, one-per-user, idempotency key) | `ctx.sl.appRecords.create({ ref: 'ball:57' })` — the DB unique index rejects a duplicate `ref` (catch = "already taken") | `sl:records:write` |
 
 Notes:
 - **Talking to the SmartLinks core is `ctx.sl`, not HTTP.** The common pattern — *validate /
@@ -318,13 +378,30 @@ other secrets, or any other collection.
 
 ## Invoking an http function
 
-An `http` function is called by POSTing to the collection's functions endpoint on the
+An `http` function is called by POSTing to the app-scoped functions endpoint on the
 surface that matches its `visibility`:
 
 ```
-POST /admin/collection/:collectionId/functions/:name    # visibility: admin  (collection-admin auth)
-POST /public/collection/:collectionId/functions/:name    # visibility: public (auth optional)
+POST /admin/collection/:collectionId/app/:appId/functions/:name    # visibility: admin  (collection-admin auth)
+POST /public/collection/:collectionId/app/:appId/functions/:name   # visibility: public (auth optional)
+GET  /{admin|public}/collection/:collectionId/app/:appId/functions # list this app's functions on the surface
 ```
+
+The app-scoped route resolves the app **directly by id**, so the app need not be enabled on the
+collection — handy for testing an un-installed (dev) app. Add `?channel=dev` (default `stable`) to
+pick the release. Enablement (`appConfig.apps[]`) currently only controls menus/discovery, not
+whether a function can run.
+
+The bare-name form (`/collection/:c/functions/:name`, no `/app/:appId`) is a **deprecated alias**:
+it searches only the collection's **enabled** apps, resolves by name, lets a first-party builtin
+win, and returns `409 AMBIGUOUS_FUNCTION` when two enabled apps define the same name. Prefer the
+app-scoped route (the SDK emits it automatically once an appId is set — see "Calling a function
+from your app").
+
+> **Security note (first-party model, today):** because enablement is not an auth gate, any app's
+> function can be invoked on any collection by id. That's fine while all apps are first-party and
+> trusted. When untrusted third-party apps arrive, gate *elevated* (`public` + `collection`)
+> invocation of a **non-enabled** app behind install/consent — the app-scoped resolver is the seam.
 
 The request body is delivered to the handler as `event.body` (query string as
 `event.query`). A function only runs on its own surface — calling an `admin` function on

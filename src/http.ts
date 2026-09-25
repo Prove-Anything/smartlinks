@@ -24,6 +24,13 @@ let clientPlatform: 'native' | 'web' | undefined = undefined
  * data call that touches the granted proof (attestations, threads, app data).
  */
 let grantToken: string | undefined = undefined
+/**
+ * The current app context — the appId of the micro-app this SDK instance belongs to.
+ * Set via initializeApi({ appId }) or setAppContext(). Lets an app call its OWN server
+ * functions without repeating its id: SL.functions.call(collectionId, name) resolves
+ * app-scoped when this is set. Explicit `appId` on a call always overrides it.
+ */
+let appContextId: string | undefined = undefined
 /** Whether initializeApi has been successfully called at least once. */
 let initialized: boolean = false
 
@@ -303,6 +310,16 @@ export function isProxyEnabled(): boolean {
   return proxyMode
 }
 
+/** The current app context (appId), if the SDK was initialized with one. */
+export function getAppContext(): string | undefined {
+  return appContextId
+}
+
+/** Set (or clear) the current app context — the appId used to scope SL.functions calls. */
+export function setAppContext(id: string | undefined): void {
+  appContextId = id
+}
+
 function maskSensitive(value?: string) {
   if (!value) return value
   if (value.length <= 8) return '*'.repeat(Math.max(4, value.length))
@@ -451,6 +468,12 @@ export function initializeApi(options: {
    * across re-initialization when not supplied.
    */
   platform?: 'native' | 'web'
+  /**
+   * The appId of the micro-app initializing the SDK. When set, `SL.functions.call(...)` and
+   * `callAdmin(...)` resolve app-scoped by default (no need to pass appId on every call).
+   * Preserved across re-initialization when not supplied.
+   */
+  appId?: string
   iframeAutoResize?: boolean // default true when in iframe
   logger?: Logger // optional console-like or function to enable verbose logging
   /**
@@ -485,6 +508,9 @@ export function initializeApi(options: {
 
   baseURL = normalizedBaseURL
   apiKey = options.apiKey
+
+  // Preserve the app context across re-inits that omit it (mirrors platform/token handling).
+  if (options.appId !== undefined) appContextId = options.appId
 
   // Enable token persistence before restoring the token.
   if (options.persistToken !== undefined) tokenPersistenceEnabled = options.persistToken

@@ -28,6 +28,7 @@ export { qr } from "./qr.js";
 export { template } from "./template.js";
 export { interactions } from "./interactions.js";
 export { analytics } from "./analytics.js";
+export { functions } from "./functions.js";
 export { location } from "./location.js";
 export * as realtime from "./realtime.js";
 export { tags } from "./tags.js";

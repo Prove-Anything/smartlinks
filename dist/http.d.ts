@@ -27,6 +27,10 @@ export declare function getHttpCacheDiagnostics(): {
 export declare function resetHttpCacheDiagnostics(): void;
 /** Return whether proxy mode is currently enabled. */
 export declare function isProxyEnabled(): boolean;
+/** The current app context (appId), if the SDK was initialized with one. */
+export declare function getAppContext(): string | undefined;
+/** Set (or clear) the current app context — the appId used to scope SL.functions calls. */
+export declare function setAppContext(id: string | undefined): void;
 export declare function initializeApi(options: {
     baseURL: string;
     apiKey?: string;
@@ -42,6 +46,12 @@ export declare function initializeApi(options: {
      * across re-initialization when not supplied.
      */
     platform?: 'native' | 'web';
+    /**
+     * The appId of the micro-app initializing the SDK. When set, `SL.functions.call(...)` and
+     * `callAdmin(...)` resolve app-scoped by default (no need to pass appId on every call).
+     * Preserved across re-initialization when not supplied.
+     */
+    appId?: string;
     iframeAutoResize?: boolean;
     logger?: Logger;
     /**
