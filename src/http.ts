@@ -31,6 +31,16 @@ let grantToken: string | undefined = undefined
  * app-scoped when this is set. Explicit `appId` on a call always overrides it.
  */
 let appContextId: string | undefined = undefined
+/**
+ * Auth-ready gate. When an app declares (initializeApi({ awaitAuth: true })) that its bearer token
+ * will arrive ASYNCHRONOUSLY — e.g. a dev app embedded in the console that receives its token over
+ * postMessage — outgoing requests await this until setBearerToken() is called, so the app's first
+ * calls don't race the token and 401. Resolved by default (no gating); a timeout resolves it anyway
+ * so a token that never arrives can't hang the app forever.
+ */
+let authReady: Promise<void> = Promise.resolve()
+let resolveAuthReady: (() => void) | null = null
+function ensureAuthReady(): Promise<void> { return authReady }
 /** Whether initializeApi has been successfully called at least once. */
 let initialized: boolean = false
 
@@ -474,6 +484,14 @@ export function initializeApi(options: {
    * Preserved across re-initialization when not supplied.
    */
   appId?: string
+  /**
+   * Declares that a bearer token will arrive asynchronously (e.g. handed by the host over
+   * postMessage in a dev/direct embed). Until setBearerToken() is called, outgoing requests wait
+   * rather than firing unauthenticated. Ignored if a bearerToken is already present.
+   */
+  awaitAuth?: boolean
+  /** How long (ms) to wait for the async token before letting requests proceed anyway. Default 8000. */
+  awaitAuthTimeoutMs?: number
   iframeAutoResize?: boolean // default true when in iframe
   logger?: Logger // optional console-like or function to enable verbose logging
   /**
@@ -531,6 +549,15 @@ export function initializeApi(options: {
   }
   // else: preserve the existing runtime bearerToken.
 
+  // Open the auth-ready gate when the caller declares a token is coming but none is set yet, so
+  // requests wait for setBearerToken() instead of firing unauthenticated. A timeout releases it.
+  if (options.awaitAuth && !bearerToken && !resolveAuthReady) {
+    authReady = new Promise<void>((res) => {
+      resolveAuthReady = res
+      setTimeout(() => { if (resolveAuthReady) { resolveAuthReady = null; res() } }, options.awaitAuthTimeoutMs ?? 8000)
+    })
+  }
+
   proxyMode = !!options.proxyMode
 
   // Auto-enable ngrok skip header if domain contains .ngrok.io and user did not explicitly set the flag.
@@ -585,6 +612,9 @@ export function setExtraHeaders(headers: Record<string, string>) {
  * login or logout event.
  */
 export function setBearerToken(token: string | undefined) {
+  // Release any auth-ready gate the moment a real token arrives (even if the value is unchanged),
+  // so requests that were waiting for the async handoff can proceed.
+  if (token && resolveAuthReady) { resolveAuthReady(); resolveAuthReady = null }
   if (token === bearerToken) return
   bearerToken = token
   // Persist or clear from localStorage when token persistence is enabled.
@@ -1310,6 +1340,7 @@ export async function proxyUploadFormData<T>(
  * Node-safe: IndexedDB calls are no-ops when IDB is unavailable.
  */
 export async function request<T>(path: string): Promise<T> {
+  await ensureAuthReady()
   const skipCache = shouldSkipCache(path)
   const cacheKey = buildCacheKey(path)
   const ttl = skipCache ? 0 : getTtlForPath(path)
@@ -1443,6 +1474,7 @@ export async function post<T>(
   body: any,
   extraHeaders?: Record<string, string>
 ): Promise<T> {
+  await ensureAuthReady()
   if (proxyMode) {
     logDebug('[smartlinks] POST via proxy', { path, body: safeBodyPreview(body) })
     const result = await proxyRequest<T>("POST", path, body, extraHeaders)
@@ -1505,6 +1537,7 @@ export async function put<T>(
   body: any,
   extraHeaders?: Record<string, string>
 ): Promise<T> {
+  await ensureAuthReady()
   if (proxyMode) {
     logDebug('[smartlinks] PUT via proxy', { path, body: safeBodyPreview(body) })
     const result = await proxyRequest<T>("PUT", path, body, extraHeaders)
@@ -1567,6 +1600,7 @@ export async function patch<T>(
   body: any,
   extraHeaders?: Record<string, string>
 ): Promise<T> {
+  await ensureAuthReady()
   if (proxyMode) {
     logDebug('[smartlinks] PATCH via proxy', { path, body: safeBodyPreview(body) })
     const result = await proxyRequest<T>("PATCH", path, body, extraHeaders)
@@ -1818,6 +1852,7 @@ export async function del<T>(
   path: string,
   extraHeaders?: Record<string, string>
 ): Promise<T> {
+  await ensureAuthReady()
   if (proxyMode) {
     logDebug('[smartlinks] DELETE via proxy', { path })
     const result = await proxyRequest<T>("DELETE", path, undefined, extraHeaders)

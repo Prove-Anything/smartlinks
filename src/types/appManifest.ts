@@ -289,6 +289,13 @@ export interface AppFunctionDef {
    * Grammar: `sl:<resource>:<read|write>`, `network` (or `network:<host>`), `secrets:<ref>`.
    */
   capabilities?: string[];
+  /**
+   * Default scope for `ctx.sl.appData.*` — `'collection'` (this collection; the default) or
+   * `'global'` (the app's app-wide bucket, shared by every collection that installed it). A function
+   * whose data is global-by-intent declares `'global'` and then just uses `appData.get()/set()`.
+   * Per-call `{ scope }` and the `appData.global` / `appData.collection` handles override this.
+   */
+  dataScope?: 'collection' | 'global';
   /** SDK/manifest API version this function targets (pinned for runtime compatibility). */
   apiVersion?: string;
   /** Exported handler name in the functions bundle. Defaults to `name`. */
@@ -299,6 +306,55 @@ export interface AppFunctionDef {
 export interface AppManifestFunctions {
   files: AppManifestFiles;
   definitions: AppFunctionDef[];
+}
+
+/** Scope + selector options for `ctx.sl.appData.*`. */
+export interface AppDataOpts {
+  /** `'collection'` (this collection) or `'global'` (the app's app-wide bucket). Defaults to the function's `dataScope`. */
+  scope?: 'collection' | 'global';
+  productId?: string;
+  variantId?: string;
+  batchId?: string;
+  /** For `getData`/`setData`/`delete`: the keyed data item id. */
+  dataId?: string;
+  queries?: Record<string, any>;
+}
+
+/** Read/write handle for an app's own durable data. `set` deep-merges the singleton config blob. */
+export interface AppDataHandle {
+  get(opts?: AppDataOpts): Promise<any>;
+  set(data: any, opts?: AppDataOpts): Promise<any>;
+  getData(opts?: AppDataOpts): Promise<any>;
+  setData(data: any, opts?: AppDataOpts): Promise<any>;
+  delete(opts?: AppDataOpts): Promise<any>;
+}
+
+/**
+ * The capability-gated SmartLinks surface handed to a server function. Two access modes:
+ *  - by APP identity — `appData` / `appRecords` are THIS app's OWN data (any scope), gated by the
+ *    declared capability only (the caller's role is irrelevant — it's the app's own namespace).
+ *  - by CALLER identity — everything else (products, attestations, and `app(id)` cross-app reads)
+ *    is bounded by what the invoking user could do through the permissioned API.
+ */
+export interface ServerFunctionSl {
+  /** THIS app's records (own namespace). */
+  appRecords: any;
+  /** Products, scoped by caller authority + declared capability. */
+  products: any;
+  /** Attestations, scoped by caller authority + declared capability. */
+  attestations: any;
+  /**
+   * THIS app's durable data/config. Default scope follows the function's declared `dataScope`
+   * (else `collection`). `appData.global` / `appData.collection` force a scope regardless.
+   * Own-data access is gated by `sl:data:read` / `sl:data:write` only.
+   */
+  appData: AppDataHandle & { global: AppDataHandle; collection: AppDataHandle };
+  /**
+   * Read ANOTHER app's data in this collection, by CALLER identity — only what the invoking user
+   * could read (admin sees all; otherwise public-filtered, private fields stripped). Read-only;
+   * never another app's private/global store, never another collection. Gated by `sl:data:read`.
+   */
+  app(appId: string): { data: Pick<AppDataHandle, 'get' | 'getData'> };
 }
 
 /** Identity of whoever invoked a server function. */
@@ -331,7 +387,7 @@ export interface ServerFunctionContext {
    *                   only — never a global superuser.
    * Declared `capabilities` cap what these calls may do.
    */
-  sl: any;
+  sl: ServerFunctionSl;
   /**
    * Capability-gated secret access (both require the `secrets:<ref>` capability).
    * `get(ref)` resolves the collection's OWN secret first (a client's credential), then falls back
@@ -350,7 +406,30 @@ export interface ServerFunctionContext {
   log: (message: string, data?: Record<string, any>) => void;
 }
 
-/** The signature every SmartLinks server function implements. */
+/** The HTTP request handed to an `http`-trigger function as `event`. */
+export interface ServerFunctionHttpEvent<TBody = any> {
+  method: string;
+  /** Parsed JSON body (when the request was JSON). */
+  body: TBody;
+  query: Record<string, any>;
+  /** Raw request headers (lower-cased keys). */
+  headers: Record<string, any>;
+  /** Raw request body bytes, when captured — for non-JSON inputs (XML, form, …). */
+  rawBody?: string | Buffer | null;
+  /** The request `content-type`, if any. */
+  contentType?: string | null;
+}
+
+/**
+ * The signature every SmartLinks server function implements.
+ *
+ * RETURN CONTRACT (http trigger): whatever you return **is** the HTTP response.
+ *  - a plain value → JSON body, HTTP 200 (no `{ ok, result }` envelope);
+ *  - a web-standard `Response` → passed through verbatim (your status, headers, content-type, body —
+ *    XML, CSV, binary, redirect, custom status);
+ *  - throwing → HTTP 500 `{ error, message, code }`. For expected errors, return a `Response` with
+ *    your own 4xx/5xx.
+ */
 export type ServerFunctionHandler<TEvent = any, TResult = any> = (
   ctx: ServerFunctionContext,
   event: TEvent,
@@ -439,6 +518,44 @@ export interface AppAdminConfig {
  * Setup, import, tunable, and metrics configuration lives in a separate
  * `app.admin.json` file. Use the `admin` field to locate and fetch it.
  */
+/** A public view's kind: context-aware (tag-tap) vs a full-screen, non-contextual screen. */
+export type PublicViewKind = 'contextual' | 'standalone';
+
+/** The caller-supplied params a public view expects. */
+export interface PublicViewParams {
+  /** Params the view REQUIRES to render (e.g. `['collectionId','pageId']`). */
+  required?: string[];
+  /** Params the view can use if present (e.g. `['productId','proofId','orientation']`). */
+  optional?: string[];
+}
+
+/**
+ * A declared PUBLIC VIEW of the app — one soft-routed entry over the single public bundle
+ * (`index.html` → HashRouter), so the platform + Dev Hub can enumerate and target it instead of
+ * guessing at undeclared hash routes. A view is `route` + fixed params (`set`) + caller `params` +
+ * a `kind`. It is a DELIVERY-agnostic description: the same view renders as a `page` (standalone
+ * HTML, hash-routed, its own CSS — embed in an iframe or open directly) or, for a `contextual` view,
+ * as a `component` (PublicContainer, props context). NOT a separate build. See
+ * docs/design/public-views.md. (Distinct from `linkable`/DeepLinkEntry, which is deep-link
+ * discovery; publicViews is the top-level public-entry taxonomy used for preview + tag-tap routing.)
+ */
+export interface PublicView {
+  /** Stable id, unique within the app. */
+  id: string;
+  /** Human label (Dev Hub dropdown, platform pickers). */
+  title: string;
+  /** `contextual` (context-aware, tag-tap target) or `standalone` (full-screen display/kiosk). */
+  kind: PublicViewKind;
+  /** Hash route within the public bundle. Defaults to `/`. */
+  route?: string;
+  /** Query params this view PINS (e.g. `{ tvMode: 'true' }`), merged under the caller's params. */
+  set?: Record<string, string>;
+  /** The params the caller supplies. */
+  params?: PublicViewParams;
+  /** The default `contextual` view — the tag-tap target. At most one view sets this. */
+  default?: boolean;
+}
+
 export interface AppManifest {
   $schema?: string;
 
@@ -532,6 +649,15 @@ export interface AppManifest {
    * @see DeepLinkEntry
    */
   linkable?: DeepLinkEntry[];
+
+  /**
+   * The app's PUBLIC VIEWS — the soft-routed entries over the single public bundle
+   * (contextual page, display board, kiosk/TV, …), so the platform + Dev Hub can enumerate,
+   * preview, and target them. Declares `route` + fixed `set` params + caller `params` + `kind`
+   * per view; the `default` contextual view is the tag-tap target. See PublicView +
+   * docs/design/public-views.md.
+   */
+  publicViews?: PublicView[];
 
   /**
    * Executor bundle declaration. Present when the app ships a programmatic executor

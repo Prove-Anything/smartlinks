@@ -152,6 +152,40 @@ export function sendParentCustom(type: string, payload: Record<string, any>) {
   postParentMessage(type, payload)
 }
 
+/**
+ * Ask the embedding host (parent window) to hand this app a bearer token, for DIRECT (non-proxied)
+ * mode. Posts `{ type: 'smartlinks:request-auth' }` and resolves with the token from the host's
+ * `{ type: 'smartlinks:auth', bearerToken }` reply, or `null` on timeout / when not embedded.
+ *
+ * Use in a first-party/dev embed where the host owns the session and hands it down (the console dev
+ * preview), then feed it to the SDK:
+ *   SL.initializeApi({ baseURL, proxyMode: false, awaitAuth: true })
+ *   SL.iframe.requestParentAuth().then(t => t && SL.setBearerToken(t))
+ * Untrusted third-party embeds should use proxyMode instead (never hold the user's token).
+ */
+export function requestParentAuth(opts?: { timeoutMs?: number }): Promise<string | null> {
+  if (!inIframe()) return Promise.resolve(null)
+  return new Promise((resolve) => {
+    let done = false
+    const finish = (v: string | null) => {
+      if (done) return
+      done = true
+      clearTimeout(timer)
+      try { window.removeEventListener('message', onMsg) } catch { /* ignore */ }
+      resolve(v)
+    }
+    const onMsg = (e: MessageEvent) => {
+      const d = e && e.data
+      if (d && d.type === 'smartlinks:auth' && typeof d.bearerToken === 'string' && d.bearerToken) {
+        finish(d.bearerToken)
+      }
+    }
+    const timer = setTimeout(() => finish(null), opts?.timeoutMs ?? 8000)
+    try { window.addEventListener('message', onMsg) } catch { /* ignore */ }
+    postParentMessage('smartlinks:request-auth', {})
+  })
+}
+
 /** Returns true if running inside an iframe (browser). */
 export function isIframe(): boolean {
   return inIframe()

@@ -63,6 +63,17 @@ export interface TestSlImpl {
     create?(data: any, opts?: any): any; update?(id: string, data: any, opts?: any): any
   }
   attestations?: { create?(fields: any): any }
+  /**
+   * THIS app's own data. Provide impls to assert calls, or omit to use a built-in in-memory store
+   * (so a counter test actually persists across calls within the test). `.global`/`.collection` and
+   * per-call `{ scope }` share the same store in the harness.
+   */
+  appData?: {
+    get?(opts?: any): any; set?(data: any, opts?: any): any
+    getData?(opts?: any): any; setData?(data: any, opts?: any): any; delete?(opts?: any): any
+  }
+  /** Cross-app reads: return another app's data as the caller would see it. Keyed by appId. */
+  app?: (appId: string) => { data?: { get?(opts?: any): any; getData?(opts?: any): any } }
 }
 
 export interface TestCaller {
@@ -136,6 +147,31 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
     attestations: {
       create: gated('attestations', 'write', at.create && at.create.bind(at), 'create'),
     },
+  }
+
+  // appData — own-data (capability-gated only, no role gate). Delegates to a provided impl, else a
+  // built-in in-memory store so read-modify-write (e.g. a counter) works across calls in one test.
+  const ad = impl.appData || {}
+  const memConfig: Record<string, any> = {}
+  const memData: Record<string, any> = {}
+  const deepMerge = (t: any, s: any) => { for (const k of Object.keys(s || {})) t[k] = (s[k] && typeof s[k] === 'object' && !Array.isArray(s[k])) ? deepMerge(t[k] || {}, s[k]) : s[k]; return t }
+  const makeAppData = () => ({
+    get: gated('data', 'read', ad.get ? ad.get.bind(ad) : (async () => ({ ...memConfig })), 'get'),
+    set: gated('data', 'write', ad.set ? ad.set.bind(ad) : (async (data: any) => deepMerge(memConfig, data)), 'set'),
+    getData: gated('data', 'read', ad.getData ? ad.getData.bind(ad) : (async (opts: any = {}) => (opts.dataId ? memData[opts.dataId] : Object.values(memData))), 'getData'),
+    setData: gated('data', 'write', ad.setData ? ad.setData.bind(ad) : (async (data: any, opts: any = {}) => { if (opts.dataId) memData[opts.dataId] = data; return data }), 'setData'),
+    delete: gated('data', 'write', ad.delete ? ad.delete.bind(ad) : (async (opts: any = {}) => { if (opts.dataId) delete memData[opts.dataId]; else for (const k of Object.keys(memConfig)) delete memConfig[k] }), 'delete'),
+  })
+  sl.appData = Object.assign(makeAppData(), { global: makeAppData(), collection: makeAppData() })
+  sl.app = (appId: string) => {
+    const other = (impl.app && impl.app(appId)) || {}
+    const od = other.data || {}
+    return {
+      data: {
+        get: gated('data', 'read', od.get ? od.get.bind(od) : (async () => null), 'app.get'),
+        getData: gated('data', 'read', od.getData ? od.getData.bind(od) : (async () => []), 'app.getData'),
+      },
+    }
   }
 
   const secretsMap = opts.secrets || {}

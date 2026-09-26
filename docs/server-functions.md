@@ -320,7 +320,8 @@ Prefer the platform primitives above over a dependency; when you do need one, pi
 | Hash / HMAC-sign / verify / encrypt | `crypto.subtle` (Web Crypto) | — |
 | Random id / bytes | `crypto.randomUUID()` / `crypto.getRandomValues()` | — |
 | Read or write SmartLinks data | `ctx.sl.*` (records, products, attestations, …) | the matching `sl:<res>:<read\|write>` |
-| Read/write general or app-wide data (config, URLs, counters, arrays) | `ctx.sl.appData.get()` / `ctx.sl.appData.set({…})` — pass `{ scope: 'global' }` for app-wide (shared by every install; global writes need collection authority) | `sl:data:read` / `sl:data:write` |
+| Read/write your app's own data (config, URLs, counters, arrays) | `ctx.sl.appData.get()` / `ctx.sl.appData.set({…})` — collection-scoped by default; `ctx.sl.appData.global.*` (or `{ scope:'global' }`, or declare `dataScope:'global'`) for the app-wide bucket. It's your OWN namespace, so **any** authority may read/write it | `sl:data:read` / `sl:data:write` |
+| Read ANOTHER app's data (as the caller may see it) | `ctx.sl.app('other-app').data.get()` — caller-authority, this collection, public-filtered, read-only | `sl:data:read` |
 | Guarantee a UNIQUE claim (pool of numbers, one-per-user, idempotency key) | `ctx.sl.appRecords.create({ ref: 'ball:57' })` — the DB unique index rejects a duplicate `ref` (catch = "already taken") | `sl:records:write` |
 
 Notes:
@@ -403,13 +404,25 @@ from your app").
 > trusted. When untrusted third-party apps arrive, gate *elevated* (`public` + `collection`)
 > invocation of a **non-enabled** app behind install/consent — the app-scoped resolver is the seam.
 
-The request body is delivered to the handler as `event.body` (query string as
-`event.query`). A function only runs on its own surface — calling an `admin` function on
-the public endpoint is a `403`. The response is `{ ok: true, result }` on success, or
-`{ error, message }` (HTTP 400) if the handler returned an error. On the **admin surface**
-the response also includes `logs` (your `ctx.log` lines) and `durationMs` for quick
-debugging; the **public surface returns only `result`** (a public caller never sees your
-internal logs). `GET` on either endpoint lists the functions callable on that surface.
+The handler receives the request as `event`: `event.body` (parsed JSON), `event.query`,
+`event.headers`, `event.rawBody` (raw bytes, for XML/form/other inputs), and `event.contentType`.
+A function only runs on its own surface — calling an `admin` function on the public endpoint is a
+`403`. `GET` on either endpoint lists the functions callable on that surface.
+
+**Response contract — your return IS the response (no envelope):**
+- Return a **plain value** → it becomes the JSON body, HTTP `200`. (`SL.functions.call()` gives you
+  that value directly — `res.value`, not `res.result.value`.)
+- Return a web-standard **`Response`** → passed through verbatim: your status, headers, content-type
+  and body (XML, CSV, text, binary, redirect, custom status). `Response` is a runtime global.
+  ```js
+  return new Response(toXml(data), { status: 200, headers: { "content-type": "application/xml" } })
+  ```
+- **Throw** → HTTP `500` `{ error: "FUNCTION_ERROR", message, code }`. For *expected* errors (400/404/
+  409…), return a `Response` with your own status + body.
+
+One rule: **plain object ⇒ 200; want any other status/headers/content-type ⇒ return a `Response`.**
+Timing comes back in an `X-SL-Function-Duration-Ms` header (admin surface); your `ctx.log` lines land
+in the collection's Errors & Activity feed — the body stays purely your output.
 
 The admin surface is collection-admin gated, so an admin function's `caller` authority runs
 at admin level, attributed to the signed-in admin. The public surface resolves auth if a
@@ -434,7 +447,7 @@ So the end-to-end path is: *write → register the release → enable on a colle
 Every invocation is recorded as an **execution** activity event, carrying your `ctx.log`
 lines. Where to look, easiest first:
 
-- **Admin-surface response** — `logs` + `durationMs` come straight back in the JSON.
+- **Admin-surface response** — timing comes back in the `X-SL-Function-Duration-Ms` header (logs are in Errors & Activity, not the body).
 - **Deployed test mode** — see below; real run, isolated logging.
 - **Owner console** — the collection's **Advanced → Errors & Activity → events** tab,
   filtered to **source = execution**: each run shows as `function <name> ok` (or an error),
