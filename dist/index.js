@@ -5,6 +5,8 @@ export * from "./api/index.js";
 export * from "./types/index.js";
 // Iframe namespace
 export { iframe } from "./iframe.js";
+// App context reader (props → hash → search), for pages and containers alike
+export { readContext } from "./context.js";
 import * as cache_1 from './cache.js';
 export { cache_1 as cache };
 // IframeResponder (also exported via iframe namespace)

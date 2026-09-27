@@ -18255,6 +18255,11 @@ components:
           type: array
           items:
             type: string
+        dataScope:
+          type: string
+          enum:
+            - collection
+            - global
         apiVersion:
           type: string
         handler:
@@ -18274,6 +18279,41 @@ components:
       required:
         - files
         - definitions
+    AppDataOpts:
+      type: object
+      properties:
+        scope:
+          type: string
+          enum:
+            - collection
+            - global
+        productId:
+          type: string
+        variantId:
+          type: string
+        batchId:
+          type: string
+        dataId:
+          type: string
+        queries:
+          type: object
+          additionalProperties: true
+    AppDataHandle:
+      type: object
+      properties: {}
+    ServerFunctionSl:
+      type: object
+      properties:
+        appRecords: {}
+        products: {}
+        attestations: {}
+        appData:
+          $ref: "#/components/schemas/AppDataHandle"
+      required:
+        - appRecords
+        - products
+        - attestations
+        - appData
     ServerFunctionCaller:
       type: object
       properties:
@@ -18298,7 +18338,8 @@ components:
           type: string
         appId:
           type: string
-        sl: {}
+        sl:
+          $ref: "#/components/schemas/ServerFunctionSl"
         secrets:
           type: object
           additionalProperties: true
@@ -18314,6 +18355,30 @@ components:
         - secrets
         - caller
         - fetch
+    ServerFunctionHttpEvent:
+      type: object
+      properties:
+        method:
+          type: string
+        body:
+          type: object
+          additionalProperties: true
+        query:
+          type: object
+          additionalProperties: true
+        headers:
+          type: object
+          additionalProperties: true
+        rawBody:
+          type: object
+          additionalProperties: true
+        contentType:
+          type: string
+      required:
+        - method
+        - body
+        - query
+        - headers
     AppAdminConfig:
       type: object
       properties:
@@ -18397,6 +18462,40 @@ components:
         - scope
         - name
         - type
+    PublicViewParams:
+      type: object
+      properties:
+        required:
+          type: array
+          items:
+            type: string
+        optional:
+          type: array
+          items:
+            type: string
+    PublicView:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        kind:
+          $ref: "#/components/schemas/PublicViewKind"
+        route:
+          type: string
+        set:
+          type: object
+          additionalProperties:
+            type: string
+        params:
+          $ref: "#/components/schemas/PublicViewParams"
+        default:
+          type: boolean
+      required:
+        - id
+        - title
+        - kind
     AppManifest:
       type: object
       properties:
@@ -18472,6 +18571,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/DeepLinkEntry"
+        publicViews:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicView"
         executor:
           $ref: "#/components/schemas/AppManifestExecutor"
         functions:
@@ -18532,6 +18635,11 @@ components:
       enum:
         - caller
         - collection
+    PublicViewKind:
+      type: string
+      enum:
+        - contextual
+        - standalone
     PaginatedResponse:
       type: object
       properties:

@@ -24,6 +24,25 @@ export interface TestSlImpl {
     attestations?: {
         create?(fields: any): any;
     };
+    /**
+     * THIS app's own data. Provide impls to assert calls, or omit to use a built-in in-memory store
+     * (so a counter test actually persists across calls within the test). `.global`/`.collection` and
+     * per-call `{ scope }` share the same store in the harness.
+     */
+    appData?: {
+        get?(opts?: any): any;
+        set?(data: any, opts?: any): any;
+        getData?(opts?: any): any;
+        setData?(data: any, opts?: any): any;
+        delete?(opts?: any): any;
+    };
+    /** Cross-app reads: return another app's data as the caller would see it. Keyed by appId. */
+    app?: (appId: string) => {
+        data?: {
+            get?(opts?: any): any;
+            getData?(opts?: any): any;
+        };
+    };
 }
 export interface TestCaller {
     userId?: string | null;

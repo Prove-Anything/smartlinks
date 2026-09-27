@@ -102,6 +102,36 @@ export function createFunctionTestContext(opts) {
             create: gated('attestations', 'write', at.create && at.create.bind(at), 'create'),
         },
     };
+    // appData — own-data (capability-gated only, no role gate). Delegates to a provided impl, else a
+    // built-in in-memory store so read-modify-write (e.g. a counter) works across calls in one test.
+    const ad = impl.appData || {};
+    const memConfig = {};
+    const memData = {};
+    const deepMerge = (t, s) => { for (const k of Object.keys(s || {}))
+        t[k] = (s[k] && typeof s[k] === 'object' && !Array.isArray(s[k])) ? deepMerge(t[k] || {}, s[k]) : s[k]; return t; };
+    const makeAppData = () => ({
+        get: gated('data', 'read', ad.get ? ad.get.bind(ad) : (async () => (Object.assign({}, memConfig))), 'get'),
+        set: gated('data', 'write', ad.set ? ad.set.bind(ad) : (async (data) => deepMerge(memConfig, data)), 'set'),
+        getData: gated('data', 'read', ad.getData ? ad.getData.bind(ad) : (async (opts = {}) => (opts.dataId ? memData[opts.dataId] : Object.values(memData))), 'getData'),
+        setData: gated('data', 'write', ad.setData ? ad.setData.bind(ad) : (async (data, opts = {}) => { if (opts.dataId)
+            memData[opts.dataId] = data; return data; }), 'setData'),
+        delete: gated('data', 'write', ad.delete ? ad.delete.bind(ad) : (async (opts = {}) => { if (opts.dataId)
+            delete memData[opts.dataId];
+        else
+            for (const k of Object.keys(memConfig))
+                delete memConfig[k]; }), 'delete'),
+    });
+    sl.appData = Object.assign(makeAppData(), { global: makeAppData(), collection: makeAppData() });
+    sl.app = (appId) => {
+        const other = (impl.app && impl.app(appId)) || {};
+        const od = other.data || {};
+        return {
+            data: {
+                get: gated('data', 'read', od.get ? od.get.bind(od) : (async () => null), 'app.get'),
+                getData: gated('data', 'read', od.getData ? od.getData.bind(od) : (async () => []), 'app.getData'),
+            },
+        };
+    };
     const secretsMap = opts.secrets || {};
     const baseFetch = opts.fetch || (typeof fetch !== 'undefined' ? fetch : undefined);
     const via = (def.trigger && def.trigger.type) || 'http';

@@ -52,6 +52,16 @@ let grantToken = undefined;
  * app-scoped when this is set. Explicit `appId` on a call always overrides it.
  */
 let appContextId = undefined;
+/**
+ * Auth-ready gate. When an app declares (initializeApi({ awaitAuth: true })) that its bearer token
+ * will arrive ASYNCHRONOUSLY — e.g. a dev app embedded in the console that receives its token over
+ * postMessage — outgoing requests await this until setBearerToken() is called, so the app's first
+ * calls don't race the token and 401. Resolved by default (no gating); a timeout resolves it anyway
+ * so a token that never arrives can't hang the app forever.
+ */
+let authReady = Promise.resolve();
+let resolveAuthReady = null;
+function ensureAuthReady() { return authReady; }
 /** Whether initializeApi has been successfully called at least once. */
 let initialized = false;
 /** Safely returns the current browser hostname, or an empty string in non-browser / Node environments. */
@@ -481,6 +491,18 @@ export function initializeApi(options) {
         }
     }
     // else: preserve the existing runtime bearerToken.
+    // Open the auth-ready gate when the caller declares a token is coming but none is set yet, so
+    // requests wait for setBearerToken() instead of firing unauthenticated. A timeout releases it.
+    if (options.awaitAuth && !bearerToken && !resolveAuthReady) {
+        authReady = new Promise((res) => {
+            var _a;
+            resolveAuthReady = res;
+            setTimeout(() => { if (resolveAuthReady) {
+                resolveAuthReady = null;
+                res();
+            } }, (_a = options.awaitAuthTimeoutMs) !== null && _a !== void 0 ? _a : 8000);
+        });
+    }
     proxyMode = !!options.proxyMode;
     // Auto-enable ngrok skip header if domain contains .ngrok.io and user did not explicitly set the flag.
     // Infer ngrok usage from common domains (.ngrok.io or .ngrok-free.dev)
@@ -530,6 +552,12 @@ export function setExtraHeaders(headers) {
  * login or logout event.
  */
 export function setBearerToken(token) {
+    // Release any auth-ready gate the moment a real token arrives (even if the value is unchanged),
+    // so requests that were waiting for the async handoff can proceed.
+    if (token && resolveAuthReady) {
+        resolveAuthReady();
+        resolveAuthReady = null;
+    }
     if (token === bearerToken)
         return;
     bearerToken = token;
@@ -1189,6 +1217,7 @@ export async function proxyUploadFormData(path, formData, onProgress) {
  * Node-safe: IndexedDB calls are no-ops when IDB is unavailable.
  */
 export async function request(path) {
+    await ensureAuthReady();
     const skipCache = shouldSkipCache(path);
     const cacheKey = buildCacheKey(path);
     const ttl = skipCache ? 0 : getTtlForPath(path);
@@ -1314,6 +1343,7 @@ export async function request(path) {
  * Returns the parsed JSON as T, or throws an Error.
  */
 export async function post(path, body, extraHeaders) {
+    await ensureAuthReady();
     if (proxyMode) {
         logDebug('[smartlinks] POST via proxy', { path, body: safeBodyPreview(body) });
         const result = await proxyRequest("POST", path, body, extraHeaders);
@@ -1375,6 +1405,7 @@ export async function post(path, body, extraHeaders) {
  * Returns the parsed JSON as T, or throws an Error.
  */
 export async function put(path, body, extraHeaders) {
+    await ensureAuthReady();
     if (proxyMode) {
         logDebug('[smartlinks] PUT via proxy', { path, body: safeBodyPreview(body) });
         const result = await proxyRequest("PUT", path, body, extraHeaders);
@@ -1436,6 +1467,7 @@ export async function put(path, body, extraHeaders) {
  * Returns the parsed JSON as T, or throws an Error.
  */
 export async function patch(path, body, extraHeaders) {
+    await ensureAuthReady();
     if (proxyMode) {
         logDebug('[smartlinks] PATCH via proxy', { path, body: safeBodyPreview(body) });
         const result = await proxyRequest("PATCH", path, body, extraHeaders);
@@ -1648,6 +1680,7 @@ export async function requestStream(path, options) {
  * Returns the parsed JSON as T, or throws an Error.
  */
 export async function del(path, extraHeaders) {
+    await ensureAuthReady();
     if (proxyMode) {
         logDebug('[smartlinks] DELETE via proxy', { path });
         const result = await proxyRequest("DELETE", path, undefined, extraHeaders);

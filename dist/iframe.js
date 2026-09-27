@@ -122,6 +122,49 @@ export var iframe;
         postParentMessage(type, payload);
     }
     iframe.sendParentCustom = sendParentCustom;
+    /**
+     * Ask the embedding host (parent window) to hand this app a bearer token, for DIRECT (non-proxied)
+     * mode. Posts `{ type: 'smartlinks:request-auth' }` and resolves with the token from the host's
+     * `{ type: 'smartlinks:auth', bearerToken }` reply, or `null` on timeout / when not embedded.
+     *
+     * Use in a first-party/dev embed where the host owns the session and hands it down (the console dev
+     * preview), then feed it to the SDK:
+     *   SL.initializeApi({ baseURL, proxyMode: false, awaitAuth: true })
+     *   SL.iframe.requestParentAuth().then(t => t && SL.setBearerToken(t))
+     * Untrusted third-party embeds should use proxyMode instead (never hold the user's token).
+     */
+    function requestParentAuth(opts) {
+        if (!inIframe())
+            return Promise.resolve(null);
+        return new Promise((resolve) => {
+            var _a;
+            let done = false;
+            const finish = (v) => {
+                if (done)
+                    return;
+                done = true;
+                clearTimeout(timer);
+                try {
+                    window.removeEventListener('message', onMsg);
+                }
+                catch ( /* ignore */_a) { /* ignore */ }
+                resolve(v);
+            };
+            const onMsg = (e) => {
+                const d = e && e.data;
+                if (d && d.type === 'smartlinks:auth' && typeof d.bearerToken === 'string' && d.bearerToken) {
+                    finish(d.bearerToken);
+                }
+            };
+            const timer = setTimeout(() => finish(null), (_a = opts === null || opts === void 0 ? void 0 : opts.timeoutMs) !== null && _a !== void 0 ? _a : 8000);
+            try {
+                window.addEventListener('message', onMsg);
+            }
+            catch ( /* ignore */_b) { /* ignore */ }
+            postParentMessage('smartlinks:request-auth', {});
+        });
+    }
+    iframe.requestParentAuth = requestParentAuth;
     /** Returns true if running inside an iframe (browser). */
     function isIframe() {
         return inIframe();

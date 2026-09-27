@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.22  |  Generated: 2026-09-25T18:07:22.478Z
+Version: 2.0.23  |  Generated: 2026-09-26T13:30:11.116Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2132,6 +2132,7 @@ interface AppFunctionDef {
   authority?: AppFunctionAuthority;
   elevated?: boolean;
   capabilities?: string[];
+  dataScope?: 'collection' | 'global';
   apiVersion?: string;
   handler?: string;
 }
@@ -2142,6 +2143,40 @@ interface AppFunctionDef {
 interface AppManifestFunctions {
   files: AppManifestFiles;
   definitions: AppFunctionDef[];
+}
+```
+
+**AppDataOpts** (interface)
+```typescript
+interface AppDataOpts {
+  scope?: 'collection' | 'global';
+  productId?: string;
+  variantId?: string;
+  batchId?: string;
+  dataId?: string;
+  queries?: Record<string, any>;
+}
+```
+
+**AppDataHandle** (interface)
+```typescript
+interface AppDataHandle {
+  get(opts?: AppDataOpts): Promise<any>;
+  set(data: any, opts?: AppDataOpts): Promise<any>;
+  getData(opts?: AppDataOpts): Promise<any>;
+  setData(data: any, opts?: AppDataOpts): Promise<any>;
+  delete(opts?: AppDataOpts): Promise<any>;
+}
+```
+
+**ServerFunctionSl** (interface)
+```typescript
+interface ServerFunctionSl {
+  appRecords: any;
+  products: any;
+  attestations: any;
+  appData: AppDataHandle & { global: AppDataHandle; collection: AppDataHandle };
+  app(appId: string): { data: Pick<AppDataHandle, 'get' | 'getData'> };
 }
 ```
 
@@ -2161,7 +2196,7 @@ interface ServerFunctionCaller {
 interface ServerFunctionContext {
   collectionId: string;
   appId: string;
-  sl: any;
+  sl: ServerFunctionSl;
   secrets: {
   get(ref: string): Promise<string | null>;
   app(ref: string): Promise<string | null>;
@@ -2169,6 +2204,18 @@ interface ServerFunctionContext {
   caller: ServerFunctionCaller;
   fetch: typeof fetch;
   log: (message: string, data?: Record<string, any>) => void;
+}
+```
+
+**ServerFunctionHttpEvent<TBody = any>** (interface)
+```typescript
+interface ServerFunctionHttpEvent<TBody = any> {
+  method: string;
+  body: TBody;
+  query: Record<string, any>;
+  headers: Record<string, any>;
+  rawBody?: string | Buffer | null;
+  contentType?: string | null;
 }
 ```
 
@@ -2233,6 +2280,27 @@ interface AppAdminConfig {
 }
 ```
 
+**PublicViewParams** (interface)
+```typescript
+interface PublicViewParams {
+  required?: string[];
+  optional?: string[];
+}
+```
+
+**PublicView** (interface)
+```typescript
+interface PublicView {
+  id: string;
+  title: string;
+  kind: PublicViewKind;
+  route?: string;
+  set?: Record<string, string>;
+  params?: PublicViewParams;
+  default?: boolean;
+}
+```
+
 **AppManifest** (interface)
 ```typescript
 interface AppManifest {
@@ -2267,6 +2335,7 @@ interface AppManifest {
   components: AppContainerComponent[];
   };
   linkable?: DeepLinkEntry[];
+  publicViews?: PublicView[];
   executor?: AppManifestExecutor;
   functions?: AppManifestFunctions;
   [key: string]: any;
@@ -2303,6 +2372,8 @@ interface GetCollectionWidgetsOptions {
 **AppFunctionVisibility** = `'admin' | 'public'`
 
 **AppFunctionAuthority** = `'caller' | 'collection'`
+
+**PublicViewKind** = `'contextual' | 'standalone'`
 
 ### appObjects
 

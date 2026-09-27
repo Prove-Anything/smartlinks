@@ -52,6 +52,14 @@ export declare function initializeApi(options: {
      * Preserved across re-initialization when not supplied.
      */
     appId?: string;
+    /**
+     * Declares that a bearer token will arrive asynchronously (e.g. handed by the host over
+     * postMessage in a dev/direct embed). Until setBearerToken() is called, outgoing requests wait
+     * rather than firing unauthenticated. Ignored if a bearerToken is already present.
+     */
+    awaitAuth?: boolean;
+    /** How long (ms) to wait for the async token before letting requests proceed anyway. Default 8000. */
+    awaitAuthTimeoutMs?: number;
     iframeAutoResize?: boolean;
     logger?: Logger;
     /**

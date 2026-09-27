@@ -332,6 +332,40 @@ See the [Deep Link Discovery guide](deep-link-discovery.md) for the full dual-so
 | `path` | string | ❌ | Hash route within the app (defaults to `"/"` if omitted) |
 | `params` | object | ❌ | App-specific query params appended to the URL — do **not** include platform params (`collectionId`, `productId`, etc.) |
 
+#### `publicViews`
+
+Declares the app's **public views** — the soft-routed entries over your single public bundle
+(`index.html` → HashRouter): the contextual page, a display board, a kiosk/TV screen, etc. Without
+this, those routes/modes are invisible to the platform and the Dev Hub. Each view is a `route` + fixed
+`set` params + caller `params` + a `kind`; the `default` **contextual** view is the tag-tap target.
+It's delivery-agnostic — the same view renders as a **page** (standalone, self-CSS, hash-routed, embed
+in an iframe or open directly) or, for a contextual view, as a **component** (`PublicContainer`).
+Not a separate build. (Distinct from `linkable`, which is deep-link discovery.)
+
+```json
+"publicViews": [
+  { "id": "page",  "title": "Product page",  "kind": "contextual", "route": "/", "default": true,
+    "params": { "required": ["collectionId"], "optional": ["productId", "proofId"] } },
+  { "id": "board", "title": "Display board", "kind": "standalone", "route": "/preview",
+    "params": { "required": ["collectionId", "appId", "pageId"], "optional": ["orientation"] } },
+  { "id": "tv",    "title": "TV / big screen", "kind": "standalone", "route": "/",
+    "set": { "tvMode": "true" }, "params": { "required": ["collectionId", "voteId"] } }
+]
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `id` | string | ✅ | Stable id, unique within the app |
+| `title` | string | ✅ | Human label (Dev Hub dropdown, platform pickers) |
+| `kind` | `"contextual"` \| `"standalone"` | ✅ | Context-aware (tag-tap) vs full-screen, non-contextual |
+| `route` | string | ❌ | Hash route within the public bundle (defaults to `"/"`) |
+| `set` | object | ❌ | Query params this view PINS (e.g. `{ "tvMode": "true" }`), merged under caller params |
+| `params` | `{ required?: string[]; optional?: string[] }` | ❌ | The params the caller supplies |
+| `default` | boolean | ❌ | The default contextual view — the tag-tap target (at most one) |
+
+Read context the same way in every delivery with **`SL.readContext(props?)`** (merges props → hash →
+search), instead of hand-rolling the `containerProps || hash || search` chain.
+
 #### `records`
 
 Declares which `app.records` record types the app stores, and which scopes each type supports. Required for any app that follows the [App Records Pattern](app-records-pattern.md). Omit if the app does not use scoped records.
