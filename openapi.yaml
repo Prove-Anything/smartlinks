@@ -10431,6 +10431,38 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/collection/{collectionId}/ai/agent/run:
+    post:
+      tags:
+        - publicClient
+      summary: Public agent loop — run the orchestration-neutral tool loop on the consumer surface.
+      operationId: publicClient_agentRun
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgentRunResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PublicAgentRunRequest"
   /public/collection/{collectionId}/ai/chat:
     post:
       tags:
@@ -16588,6 +16620,39 @@ components:
             type: string
       required:
         - appId
+    PublicAgentRunRequest:
+      type: object
+      properties:
+        input:
+          type: string
+        prompt:
+          type: string
+        instructions:
+          type: string
+        model:
+          type: string
+        maxSteps:
+          type: number
+        server_tools:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiToolName"
+        only:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiToolName"
+        exclude:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiToolName"
+        allowCapabilities:
+          type: array
+          items:
+            $ref: "#/components/schemas/AiToolCapability"
+        appFunctions:
+          $ref: "#/components/schemas/AgentAppFunctionsOption"
+        userId:
+          type: string
     AgentToolResult:
       type: object
       properties:

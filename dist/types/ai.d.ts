@@ -703,6 +703,32 @@ export interface AgentAppFunctionsOption {
     /** Restrict to these function names. */
     only?: string[];
 }
+/**
+ * Body for the PUBLIC agent loop (`ai.publicClient.agentRun`). The consumer-surface equivalent of
+ * AgentRunRequest: the caller is the signed-in consumer (authKit bearer → 'owner') or anonymous
+ * ('public'), and tools run at that authority. Its main use is exposing an app's PUBLIC functions.
+ * SAFETY: built-in tools are opt-in by EXPLICIT allowlist only — `server_tools` here is an array, not
+ * a boolean (there is no "all built-ins" on the public surface).
+ */
+export interface PublicAgentRunRequest {
+    input?: string;
+    prompt?: string;
+    instructions?: string;
+    model?: string;
+    maxSteps?: number;
+    /** Built-in tools to allow (explicit list; no `true`=all on the public surface). */
+    server_tools?: AiToolName[];
+    /** Alias of server_tools[] — restrict built-ins to these names. */
+    only?: AiToolName[];
+    /** Drop these built-in tool names. */
+    exclude?: AiToolName[];
+    /** Cap blast radius: only built-ins whose capabilities are all granted. */
+    allowCapabilities?: AiToolCapability[];
+    /** Include an installed app's PUBLIC AI functions as tools. */
+    appFunctions?: AgentAppFunctionsOption;
+    /** Rate-limit key for anonymous callers (else derived from the bearer/IP). */
+    userId?: string;
+}
 export interface AgentToolResult {
     name: string;
     isError: boolean;

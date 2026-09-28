@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.27  |  Generated: 2026-09-28T12:44:45.761Z
+Version: 2.0.27  |  Generated: 2026-09-28T12:51:46.112Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1188,6 +1188,23 @@ interface AgentAppFunctionsOption {
   appId: string
   channel?: string
   only?: string[]
+}
+```
+
+**PublicAgentRunRequest** (interface)
+```typescript
+interface PublicAgentRunRequest {
+  input?: string
+  prompt?: string
+  instructions?: string
+  model?: string
+  maxSteps?: number
+  server_tools?: AiToolName[]
+  only?: AiToolName[]
+  exclude?: AiToolName[]
+  allowCapabilities?: AiToolCapability[]
+  appFunctions?: AgentAppFunctionsOption
+  userId?: string
 }
 ```
 
@@ -11333,6 +11350,10 @@ Get the active transfer/status for a proof (owner, collection admin, or the name
 **chat**(collectionId: string,
       request: PublicChatRequest) → `Promise<PublicChatResponse>`
 Chat with product assistant (RAG)
+
+**agentRun**(collectionId: string,
+      body: PublicAgentRunRequest) → `Promise<AgentRunResult>`
+Public agent loop — run the orchestration-neutral tool loop on the consumer surface. Exposes an app's PUBLIC server functions (`agent.tool:true`, `visibility:'public'`) to a consumer assistant; built-in tools are opt-in by explicit `server_tools[]` allowlist only. The caller runs as the signed-in consumer ('owner', send the authKit bearer) or anonymous ('public'). POST /public/collection/:collectionId/ai/agent/run
 
 **getSession**(collectionId: string, sessionId: string) → `Promise<Session>`
 Get session history

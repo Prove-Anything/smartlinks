@@ -302,6 +302,18 @@ var aiInternal;
         }
         publicClient.chat = chat;
         /**
+         * Public agent loop — run the orchestration-neutral tool loop on the consumer surface. Exposes an
+         * app's PUBLIC server functions (`agent.tool:true`, `visibility:'public'`) to a consumer assistant;
+         * built-in tools are opt-in by explicit `server_tools[]` allowlist only. The caller runs as the
+         * signed-in consumer ('owner', send the authKit bearer) or anonymous ('public').
+         * POST /public/collection/:collectionId/ai/agent/run
+         */
+        async function agentRun(collectionId, body) {
+            const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/agent/run`;
+            return post(path, body);
+        }
+        publicClient.agentRun = agentRun;
+        /**
          * Get session history
          */
         async function getSession(collectionId, sessionId) {

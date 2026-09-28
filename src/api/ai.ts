@@ -29,6 +29,7 @@ import type {
   ToolRunResult,
   AiToolName,
   AiToolArgsMap,
+  PublicAgentRunRequest,
   // Skills + catalog types
   SkillsListResponse,
   CatalogResponse,
@@ -475,6 +476,21 @@ namespace aiInternal {
     ): Promise<PublicChatResponse> {
       const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/chat`
       return post<PublicChatResponse>(path, request)
+    }
+
+    /**
+     * Public agent loop — run the orchestration-neutral tool loop on the consumer surface. Exposes an
+     * app's PUBLIC server functions (`agent.tool:true`, `visibility:'public'`) to a consumer assistant;
+     * built-in tools are opt-in by explicit `server_tools[]` allowlist only. The caller runs as the
+     * signed-in consumer ('owner', send the authKit bearer) or anonymous ('public').
+     * POST /public/collection/:collectionId/ai/agent/run
+     */
+    export async function agentRun(
+      collectionId: string,
+      body: PublicAgentRunRequest
+    ): Promise<AgentRunResult> {
+      const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/agent/run`
+      return post<AgentRunResult>(path, body)
     }
 
     /**

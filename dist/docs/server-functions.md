@@ -320,8 +320,20 @@ await SL.ai.agent.run(collectionId, {
 })
 ```
 
+On the **consumer surface**, a `visibility: "public"` function reaches a public assistant via the
+public agent loop — the caller runs as the signed-in consumer (`'owner'`, send the authKit bearer) or
+anonymous (`'public'`):
+
+```ts
+await SL.ai.publicClient.agentRun(collectionId, {
+  input: '…',
+  appFunctions: { appId: 'my-app' },   // this app's public agent tools
+  server_tools: ['web.search'],         // built-ins are an explicit allowlist on the public surface
+})
+```
+
 `channel` (default `'stable'`, pass `'dev'` to test a dev build) and `only: string[]` narrow which
-functions are exposed. Only `http` functions with `ai.tool: true` are eligible; `event`/`cron`
+functions are exposed. Only `http` functions with `agent.tool: true` are eligible; `event`/`cron`
 functions never are. A built-in tool of the same name wins the clash.
 
 > Directly (no model): every function is also callable deterministically — `SL.functions.call` /
