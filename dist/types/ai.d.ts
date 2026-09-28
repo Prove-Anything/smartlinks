@@ -687,6 +687,16 @@ export interface AgentToolResult {
     isError: boolean;
     result: any;
 }
+/**
+ * Result of a DIRECT single-tool invocation (`ai.tools.run`) — no model in the loop.
+ * Mirrors one AgentToolResult but typed to the tool's own result. `result` is the tool's
+ * raw output; deterministic tools may still put a tool-level `{ error }` inside it.
+ */
+export interface ToolRunResult<T = any> {
+    name: string;
+    isError: boolean;
+    result: T;
+}
 export interface AgentRunResult {
     finalText: string | null;
     steps: number;
@@ -725,7 +735,7 @@ export interface CatalogResponse {
 /** Capability tags a tool requires; scope a run with `allowCapabilities`. */
 export type AiToolCapability = 'web:read' | 'ai:vision' | 'ai:image' | 'ai:text' | 'media:image' | 'media:pdf' | 'net:http';
 /** The names of the built-in server-side agent tools (run via `server_tools`). */
-export type AiToolName = 'web.fetchPage' | 'web.extractSchema' | 'web.screenshot' | 'web.search' | 'brand.assets' | 'document.read' | 'data.extract' | 'image.describe' | 'image.generate' | 'image.fromReference' | 'image.searchStock' | 'image.transform' | 'pdf.create' | 'pdf.fill' | 'pdf.merge' | 'http.request' | 'translate';
+export type AiToolName = 'web.fetchPage' | 'web.extractSchema' | 'web.screenshot' | 'web.search' | 'brand.assets' | 'document.read' | 'data.extract' | 'image.describe' | 'image.generate' | 'image.fromReference' | 'image.searchStock' | 'image.transform' | 'pdf.create' | 'pdf.fill' | 'pdf.merge' | 'pdf.inspect' | 'pdf.render' | 'pdf.extract' | 'http.request' | 'translate';
 export interface WebFetchPageArgs {
     url: string;
     type?: string;
@@ -817,6 +827,23 @@ export interface PdfFillArgs {
 export interface PdfMergeArgs {
     urls: string[];
 }
+export interface PdfInspectArgs {
+    url: string;
+    maxPages?: number;
+    minTextChars?: number;
+}
+export interface PdfRenderArgs {
+    url: string;
+    page?: number;
+    dpi?: number;
+}
+export interface PdfExtractArgs {
+    url: string;
+    schema?: Record<string, any>;
+    prompt?: string;
+    maxPages?: number;
+    dpi?: number;
+}
 export interface HttpRequestArgs {
     url: string;
     method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD';
@@ -845,6 +872,9 @@ export interface AiToolArgsMap {
     'pdf.create': PdfCreateArgs;
     'pdf.fill': PdfFillArgs;
     'pdf.merge': PdfMergeArgs;
+    'pdf.inspect': PdfInspectArgs;
+    'pdf.render': PdfRenderArgs;
+    'pdf.extract': PdfExtractArgs;
     'http.request': HttpRequestArgs;
     'translate': TranslateArgs;
 }
@@ -904,6 +934,41 @@ export interface HttpRequestResult {
 export interface TranslateResult {
     translations: Record<string, string>;
     sourceLanguage: string;
+}
+/** One page's structure from pdf.inspect. */
+export interface PdfInspectPage {
+    page: number;
+    width: number;
+    height: number;
+    textChars: number;
+    hasText: boolean;
+    imageCount: number;
+    likelyType: 'text-native' | 'text+raster' | 'raster-only' | 'curve-only';
+}
+export interface PdfInspectResult {
+    url: string;
+    pageCount: number;
+    inspectedPages: number;
+    totalTextChars: number;
+    isTextNative: boolean;
+    isCurveOnly: boolean;
+    recommendedPath: 'text' | 'vision';
+    note: string;
+    pages: PdfInspectPage[];
+}
+export interface PdfRenderResult {
+    url: string | null;
+    page: number;
+    pageCount: number;
+    dpi: number;
+    width: number;
+    height: number;
+}
+export interface PdfExtractResult {
+    url: string;
+    method: 'text' | 'vision';
+    pagesRead: number;
+    fields: Record<string, any>;
 }
 /** The `_agent` trace attached to an agentic Responses result. */
 export interface ResponsesAgentTrace {

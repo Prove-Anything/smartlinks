@@ -16,6 +16,8 @@ tags:
     description: Chat completion generation.
   - name: agent
     description: Agent orchestration and tool-calling.
+  - name: tools
+    description: tools API
   - name: skills
     description: Reusable agent skills.
   - name: models
@@ -1239,6 +1241,45 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/ai/tools/{name}/run:
+    post:
+      tags:
+        - tools
+      summary: tools.run
+      operationId: tools_run
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ToolRunResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
   /admin/collection/{collectionId}/ai/tts:
     post:
       tags:
@@ -16542,6 +16583,20 @@ components:
         - name
         - isError
         - result
+    ToolRunResult:
+      type: object
+      properties:
+        name:
+          type: string
+        isError:
+          type: boolean
+        result:
+          type: object
+          additionalProperties: true
+      required:
+        - name
+        - isError
+        - result
     AgentRunResult:
       type: object
       properties:
@@ -16793,6 +16848,30 @@ components:
             type: string
       required:
         - urls
+    PdfInspectArgs:
+      type: object
+      properties:
+        url:
+          type: object
+          additionalProperties: true
+      required:
+        - url
+    PdfRenderArgs:
+      type: object
+      properties:
+        url:
+          type: object
+          additionalProperties: true
+      required:
+        - url
+    PdfExtractArgs:
+      type: object
+      properties:
+        url:
+          type: object
+          additionalProperties: true
+      required:
+        - url
     HttpRequestArgs:
       type: object
       properties:
@@ -16848,6 +16927,12 @@ components:
           $ref: "#/components/schemas/PdfFillArgs"
         pdf.merge:
           $ref: "#/components/schemas/PdfMergeArgs"
+        pdf.inspect:
+          $ref: "#/components/schemas/PdfInspectArgs"
+        pdf.render:
+          $ref: "#/components/schemas/PdfRenderArgs"
+        pdf.extract:
+          $ref: "#/components/schemas/PdfExtractArgs"
         http.request:
           $ref: "#/components/schemas/HttpRequestArgs"
         translate:
@@ -16868,6 +16953,9 @@ components:
         - pdf.create
         - pdf.fill
         - pdf.merge
+        - pdf.inspect
+        - pdf.render
+        - pdf.extract
         - http.request
         - translate
     WebSearchResultItem:
@@ -16944,6 +17032,48 @@ components:
           additionalProperties: true
       required:
         - translations
+    PdfInspectPage:
+      type: object
+      properties:
+        page:
+          type: string
+          enum:
+            - text-native
+            - text+raster
+            - raster-only
+            - curve-only
+      required:
+        - page
+    PdfInspectResult:
+      type: object
+      properties:
+        url:
+          type: array
+          items:
+            type: string
+            enum:
+              - text
+              - vision
+      required:
+        - url
+    PdfRenderResult:
+      type: object
+      properties:
+        url:
+          type: object
+          additionalProperties: true
+      required:
+        - url
+    PdfExtractResult:
+      type: object
+      properties:
+        url:
+          type: string
+          enum:
+            - text
+            - vision
+      required:
+        - url
     ResponsesAgentTrace:
       type: object
       properties:
@@ -17022,6 +17152,9 @@ components:
         - pdf.create
         - pdf.fill
         - pdf.merge
+        - pdf.inspect
+        - pdf.render
+        - pdf.extract
         - http.request
         - translate
     AgentStreamEvent:

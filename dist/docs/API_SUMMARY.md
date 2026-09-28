@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.26  |  Generated: 2026-09-28T11:30:29.988Z
+Version: 2.0.27  |  Generated: 2026-09-28T12:13:34.569Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1189,6 +1189,15 @@ interface AgentToolResult {
 }
 ```
 
+**ToolRunResult<T = any>** (interface)
+```typescript
+interface ToolRunResult<T = any> {
+  name: string
+  isError: boolean
+  result: T
+}
+```
+
 **AgentRunResult** (interface)
 ```typescript
 interface AgentRunResult {
@@ -1367,6 +1376,27 @@ interface PdfMergeArgs {
 }
 ```
 
+**PdfInspectArgs** (interface)
+```typescript
+interface PdfInspectArgs {
+  url: string; maxPages?: number; minTextChars?: number
+}
+```
+
+**PdfRenderArgs** (interface)
+```typescript
+interface PdfRenderArgs {
+  url: string; page?: number; dpi?: number
+}
+```
+
+**PdfExtractArgs** (interface)
+```typescript
+interface PdfExtractArgs {
+  url: string; schema?: Record<string, any>; prompt?: string; maxPages?: number; dpi?: number
+}
+```
+
 **HttpRequestArgs** (interface)
 ```typescript
 interface HttpRequestArgs {
@@ -1399,6 +1429,9 @@ interface AiToolArgsMap {
   'pdf.create': PdfCreateArgs
   'pdf.fill': PdfFillArgs
   'pdf.merge': PdfMergeArgs
+  'pdf.inspect': PdfInspectArgs
+  'pdf.render': PdfRenderArgs
+  'pdf.extract': PdfExtractArgs
   'http.request': HttpRequestArgs
   'translate': TranslateArgs
 }
@@ -1464,6 +1497,34 @@ interface HttpRequestResult {
 ```typescript
 interface TranslateResult {
   translations: Record<string, string>; sourceLanguage: string
+}
+```
+
+**PdfInspectPage** (interface)
+```typescript
+interface PdfInspectPage {
+  page: number; width: number; height: number; textChars: number; hasText: boolean; imageCount: number; likelyType: 'text-native' | 'text+raster' | 'raster-only' | 'curve-only'
+}
+```
+
+**PdfInspectResult** (interface)
+```typescript
+interface PdfInspectResult {
+  url: string; pageCount: number; inspectedPages: number; totalTextChars: number; isTextNative: boolean; isCurveOnly: boolean; recommendedPath: 'text' | 'vision'; note: string; pages: PdfInspectPage[]
+}
+```
+
+**PdfRenderResult** (interface)
+```typescript
+interface PdfRenderResult {
+  url: string | null; page: number; pageCount: number; dpi: number; width: number; height: number
+}
+```
+
+**PdfExtractResult** (interface)
+```typescript
+interface PdfExtractResult {
+  url: string; method: 'text' | 'vision'; pagesRead: number; fields: Record<string, any>
 }
 ```
 
@@ -11482,6 +11543,22 @@ Reverse lookup by ref via POST (public). `POST /public/collection/:collectionId/
 
 **renderSource**(collectionId: string,
     body: TemplateRenderSourceRequest) → `Promise<TemplateRenderSourceResponse>`
+
+### tools
+
+**run**(collectionId: string,
+      name: K,
+      args: AiToolArgsMap[K],) → `Promise<ToolRunResult>
+    export async function run<T = any>(
+      collectionId: string,
+      name: string,
+      args?: Record<string, any>,
+    ): Promise<ToolRunResult<T>>
+    export async function run(
+      collectionId: string,
+      name: string,
+      args: Record<string, any> =`
+Invoke ONE built-in server tool directly — no model in the loop. This is the "direct code" caller of the orchestration-neutral tool registry: the SAME tools the agent loop and the Responses `server_tools` path run, but called as a plain, typed, deterministic API. A front end can use it two ways: (1) call a tool straight as an API (e.g. `pdf.render` / `pdf.extract` behind a PDF UX), or (2) drive its OWN agent loop and execute each model tool-call here. Capability-gated server-side to the caller's grants (same blast-radius rules as the agent loop). POST /admin/collection/:collectionId/ai/tools/:name/run
 
 ### translations
 

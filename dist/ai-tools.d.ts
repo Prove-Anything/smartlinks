@@ -26,6 +26,9 @@ export declare const AI_TOOL_NAMES: {
     readonly PDF_CREATE: "pdf.create";
     readonly PDF_FILL: "pdf.fill";
     readonly PDF_MERGE: "pdf.merge";
+    readonly PDF_INSPECT: "pdf.inspect";
+    readonly PDF_RENDER: "pdf.render";
+    readonly PDF_EXTRACT: "pdf.extract";
     readonly HTTP_REQUEST: "http.request";
     readonly TRANSLATE: "translate";
 };

@@ -90,6 +90,17 @@ var aiInternal;
         agent.listTools = listTools;
     })(agent = aiInternal.agent || (aiInternal.agent = {}));
     // ============================================================================
+    // Tools (direct, deterministic single-tool invocation — no model loop)
+    // ============================================================================
+    let tools;
+    (function (tools) {
+        async function run(collectionId, name, args = {}) {
+            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/tools/${encodeURIComponent(name)}/run`;
+            return post(path, args);
+        }
+        tools.run = run;
+    })(tools = aiInternal.tools || (aiInternal.tools = {}));
+    // ============================================================================
     // Skills + Catalog (app-facing discovery)
     // ============================================================================
     let skills;

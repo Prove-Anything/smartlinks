@@ -747,6 +747,17 @@ export interface AgentToolResult {
   result: any
 }
 
+/**
+ * Result of a DIRECT single-tool invocation (`ai.tools.run`) — no model in the loop.
+ * Mirrors one AgentToolResult but typed to the tool's own result. `result` is the tool's
+ * raw output; deterministic tools may still put a tool-level `{ error }` inside it.
+ */
+export interface ToolRunResult<T = any> {
+  name: string
+  isError: boolean
+  result: T
+}
+
 export interface AgentRunResult {
   finalText: string | null
   steps: number
@@ -829,6 +840,9 @@ export type AiToolName =
   | 'pdf.create'
   | 'pdf.fill'
   | 'pdf.merge'
+  | 'pdf.inspect'
+  | 'pdf.render'
+  | 'pdf.extract'
   | 'http.request'
   | 'translate'
 
@@ -860,6 +874,9 @@ export interface ImageTransformArgs {
 export interface PdfCreateArgs { html: string; format?: string; landscape?: boolean }
 export interface PdfFillArgs { url: string; fields: Record<string, string | number | boolean>; flatten?: boolean }
 export interface PdfMergeArgs { urls: string[] }
+export interface PdfInspectArgs { url: string; maxPages?: number; minTextChars?: number }
+export interface PdfRenderArgs { url: string; page?: number; dpi?: number }
+export interface PdfExtractArgs { url: string; schema?: Record<string, any>; prompt?: string; maxPages?: number; dpi?: number }
 export interface HttpRequestArgs { url: string; method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD'; headers?: Record<string, string>; body?: any }
 export interface TranslateArgs { text: string; targetLanguages: string[]; sourceLanguage?: string }
 
@@ -880,6 +897,9 @@ export interface AiToolArgsMap {
   'pdf.create': PdfCreateArgs
   'pdf.fill': PdfFillArgs
   'pdf.merge': PdfMergeArgs
+  'pdf.inspect': PdfInspectArgs
+  'pdf.render': PdfRenderArgs
+  'pdf.extract': PdfExtractArgs
   'http.request': HttpRequestArgs
   'translate': TranslateArgs
 }
@@ -895,6 +915,11 @@ export interface ImageDescribeResult { imageUrl: string; text: string | null }
 export interface HostedAssetResult { hostedUrl: string | null; contentType?: string; info?: { width?: number; height?: number; format?: string; size?: number } }
 export interface HttpRequestResult { status: number; headers: Record<string, any>; body: any; truncated: boolean; finalUrl: string }
 export interface TranslateResult { translations: Record<string, string>; sourceLanguage: string }
+/** One page's structure from pdf.inspect. */
+export interface PdfInspectPage { page: number; width: number; height: number; textChars: number; hasText: boolean; imageCount: number; likelyType: 'text-native' | 'text+raster' | 'raster-only' | 'curve-only' }
+export interface PdfInspectResult { url: string; pageCount: number; inspectedPages: number; totalTextChars: number; isTextNative: boolean; isCurveOnly: boolean; recommendedPath: 'text' | 'vision'; note: string; pages: PdfInspectPage[] }
+export interface PdfRenderResult { url: string | null; page: number; pageCount: number; dpi: number; width: number; height: number }
+export interface PdfExtractResult { url: string; method: 'text' | 'vision'; pagesRead: number; fields: Record<string, any> }
 
 // ---- Agentic responses trace + stream events -------------------------------
 /** The `_agent` trace attached to an agentic Responses result. */

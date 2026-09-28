@@ -26,6 +26,9 @@ import type {
   AgentRunResult,
   AgentToolsQuery,
   AgentToolsResponse,
+  ToolRunResult,
+  AiToolName,
+  AiToolArgsMap,
   // Skills + catalog types
   SkillsListResponse,
   CatalogResponse,
@@ -212,6 +215,41 @@ namespace aiInternal {
       const qs = search.toString()
       const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/agent/tools${qs ? `?${qs}` : ''}`
       return request<AgentToolsResponse>(path)
+    }
+  }
+
+  // ============================================================================
+  // Tools (direct, deterministic single-tool invocation — no model loop)
+  // ============================================================================
+
+  export namespace tools {
+    /**
+     * Invoke ONE built-in server tool directly — no model in the loop. This is the
+     * "direct code" caller of the orchestration-neutral tool registry: the SAME tools the
+     * agent loop and the Responses `server_tools` path run, but called as a plain, typed,
+     * deterministic API. A front end can use it two ways: (1) call a tool straight as an
+     * API (e.g. `pdf.render` / `pdf.extract` behind a PDF UX), or (2) drive its OWN agent
+     * loop and execute each model tool-call here. Capability-gated server-side to the
+     * caller's grants (same blast-radius rules as the agent loop).
+     * POST /admin/collection/:collectionId/ai/tools/:name/run
+     */
+    export async function run<K extends AiToolName>(
+      collectionId: string,
+      name: K,
+      args: AiToolArgsMap[K],
+    ): Promise<ToolRunResult>
+    export async function run<T = any>(
+      collectionId: string,
+      name: string,
+      args?: Record<string, any>,
+    ): Promise<ToolRunResult<T>>
+    export async function run(
+      collectionId: string,
+      name: string,
+      args: Record<string, any> = {},
+    ): Promise<ToolRunResult> {
+      const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/tools/${encodeURIComponent(name)}/run`
+      return post<ToolRunResult>(path, args)
     }
   }
 
