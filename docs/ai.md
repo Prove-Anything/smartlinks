@@ -324,15 +324,33 @@ in `input`.
 | `image.searchStock` | Search real stock photos (Unsplash). |
 | `image.transform` | Resize / crop / rotate / grayscale / format-convert / compress → hosted URL. |
 | `pdf.create` | Render HTML → PDF → hosted URL. |
-| `pdf.fill` | Fill an AcroForm PDF's fields → hosted URL. |
-| `pdf.merge` | Merge several PDFs into one → hosted URL. |
+| `pdf.fill` | Fill an AcroForm PDF's fields (`{ field: value }`) → hosted URL. |
+| `pdf.merge` | Merge several PDFs into one, in order → hosted URL. |
+| `pdf.inspect` | Cheap, no-AI introspection: page count/sizes, which pages have a real text layer, raster present, and a routing hint (`text` vs `vision`). |
+| `pdf.render` | Rasterize one page to a PNG at a chosen DPI → hosted image URL (feed to vision, or screenshot a page). |
+| `pdf.extract` | PDF → typed JSON in one call (schema and/or prompt). Auto-routes: text-layer pages use cheap text extraction; curve-only/raster pages are rendered and read with vision. |
 | `http.request` | SSRF-guarded outbound HTTP(S) to a public URL (call a REST API). |
 | `translate` | Translate text into one or more languages (generic, model-based). |
 
+**Working with PDFs.** The PDF tools split into *read/analyse* and *produce*:
+
+- **Read a whole PDF as text** → `document.read` (Firecrawl; good for prose/decks).
+- **Turn a PDF into structured fields** → `pdf.extract` (give it a JSON schema and/or a prompt; it
+  returns typed JSON). It routes itself, but you can drive the route yourself: call `pdf.inspect`
+  first (deterministic, no AI) to see whether each page has a real text layer, then `pdf.extract`
+  (cheap text path) or `pdf.render` → `image.describe`/vision for curve-only or raster artwork.
+- **Zoom in on small print** (INCI/allergen lists, barcodes) → `pdf.render` at a high DPI (e.g. 300),
+  then read the PNG with vision.
+- **Produce a PDF** → `pdf.create` (HTML → PDF), `pdf.fill` (populate an AcroForm's fields),
+  `pdf.merge` (combine several). These return a hosted `hostedUrl`.
+
+Every tool is also directly callable without the model loop via `ai.tools.run(collectionId, name,
+args)` — e.g. render a page or extract fields straight from a UI, no agent round-trip.
+
 Discover tools two ways:
 - **Design time (typed):** import `BUILTIN_AI_TOOLS`, `AI_TOOL_NAMES`, and the per-tool arg types
-  (`WebSearchArgs`, `DataExtractArgs`, …) from the SDK. This is the core set — stable, versioned,
-  documented here.
+  (`WebSearchArgs`, `DataExtractArgs`, `PdfExtractArgs`, …) from the SDK. This is the core set —
+  stable, versioned, documented here.
 - **Runtime (live):** `await ai.catalog(collectionId)` returns the registry as the server sees it,
   including any future app-contributed tools. The built-in set above is always present.
 
