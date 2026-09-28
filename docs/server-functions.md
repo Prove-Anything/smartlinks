@@ -275,7 +275,7 @@ name (a first-party builtin still wins). Always prefer an appId.
 
 An `http` function can be offered to the AI agent as a **callable tool**, alongside the built-in
 tools. The model calls it, the server runs it, and the result is fed back into the loop. Opt in from
-the manifest with an `ai` block:
+the manifest with an `agent` block (full reference: [agent-tools.md](agent-tools.md)):
 
 ```jsonc
 {
@@ -284,22 +284,25 @@ the manifest with an `ai` block:
   "visibility": "admin",
   "authority": "caller",
   "capabilities": ["sl:records:read"],
-  "ai": {
+  "agent": {
     "tool": true,
+    "title": "Loyalty balance",
     "description": "Look up a member's current loyalty points balance.",
-    "parameters": {
+    "input": {
       "type": "object",
       "properties": { "memberId": { "type": "string" } },
       "required": ["memberId"]
-    }
+    },
+    "approval": "auto"                       // 'require' = human confirms before each call
   }
 }
 ```
 
 The agent becomes **just another caller surface** — your function's `visibility`, `authority`, and
-`capabilities` are enforced exactly as on the http route. Nothing new is granted. The model's tool
+`capabilities` are enforced exactly as on the http route. Nothing new is granted. The agent's tool
 arguments arrive as the function's request `body`, and whatever you return becomes the tool result the
-model sees.
+model sees. `approval: "require"` tools are held back from the autonomous server-side loop until the
+human-approval UX ships.
 
 Include your app's functions in an agent run:
 

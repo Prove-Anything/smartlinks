@@ -18414,21 +18414,28 @@ components:
           type: string
         handler:
           type: string
-        ai:
-          $ref: "#/components/schemas/AppFunctionAiExposure"
+        agent:
+          $ref: "#/components/schemas/AppFunctionAgentExposure"
       required:
         - name
         - trigger
-    AppFunctionAiExposure:
+    AppFunctionAgentExposure:
       type: object
       properties:
         tool:
           type: boolean
+        title:
+          type: string
         description:
           type: string
-        parameters:
+        input:
           type: object
           additionalProperties: true
+        approval:
+          type: string
+          enum:
+            - auto
+            - require
       required:
         - tool
     AppManifestFunctions:

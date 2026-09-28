@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.27  |  Generated: 2026-09-28T12:36:39.744Z
+Version: 2.0.27  |  Generated: 2026-09-28T12:44:45.761Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2207,16 +2207,18 @@ interface AppFunctionDef {
   dataScope?: 'collection' | 'global';
   apiVersion?: string;
   handler?: string;
-  ai?: AppFunctionAiExposure;
+  agent?: AppFunctionAgentExposure;
 }
 ```
 
-**AppFunctionAiExposure** (interface)
+**AppFunctionAgentExposure** (interface)
 ```typescript
-interface AppFunctionAiExposure {
+interface AppFunctionAgentExposure {
   tool: boolean;
+  title?: string;
   description?: string;
-  parameters?: Record<string, any>;
+  input?: Record<string, any>;
+  approval?: 'auto' | 'require';
 }
 ```
 

@@ -272,25 +272,33 @@ export interface AppFunctionDef {
     /** Exported handler name in the functions bundle. Defaults to `name`. */
     handler?: string;
     /**
-     * Expose this function to the AI agent as a callable tool. Only `http`-trigger functions can be
-     * exposed. The agent loop becomes just another caller surface, so the function's
-     * visibility/authority/capabilities apply UNCHANGED — nothing new is granted. The model's tool
-     * arguments arrive as the function's http request `body`. See ai.md ("App functions as tools").
+     * Expose this function to the AI agent as a callable tool (an MCP-shaped facade over the function).
+     * Only `http`-trigger functions can be exposed. The agent becomes just another caller surface, so
+     * the function's visibility/authority/capabilities apply UNCHANGED — nothing new is granted. The
+     * agent-supplied arguments arrive as the function's http request `body`. See agent-tools.md.
      */
-    ai?: AppFunctionAiExposure;
+    agent?: AppFunctionAgentExposure;
 }
-/** Opt-in that turns a server function into an agent-callable tool. */
-export interface AppFunctionAiExposure {
-    /** When true, offer this `http` function to the agent loop as a tool. */
+/** Opt-in that turns a server function into an agent-callable tool. See agent-tools.md. */
+export interface AppFunctionAgentExposure {
+    /** When true, offer this `http` function to the agent as a tool. */
     tool: boolean;
-    /** Model-facing description of the tool (falls back to the function's `description`). */
+    /** Short human label for the tool (tool pickers / approval prompts). */
+    title?: string;
+    /** Model-facing description — when to use the tool (falls back to the function's `description`). */
     description?: string;
     /**
-     * JSON Schema (`{ type: 'object', properties: … }`) for the tool's arguments. The agent fills
-     * this; the object arrives as the function's http request body. Strongly recommended — without it
-     * the agent is told the tool takes a free-form object.
+     * JSON Schema (`{ type: 'object', properties: … }`) for the arguments the agent supplies. They
+     * arrive as the function's http request body. Strongly recommended — without it the agent is told
+     * the tool takes a free-form object.
      */
-    parameters?: Record<string, any>;
+    input?: Record<string, any>;
+    /**
+     * `'auto'` (default) = the agent may call it without confirmation. `'require'` = a human must
+     * confirm before each call. Until the human-approval UX ships, `'require'` tools are NOT offered to
+     * the autonomous server-side loop (they'd otherwise run unconfirmed).
+     */
+    approval?: 'auto' | 'require';
 }
 /** The `functions` block in `app.manifest.json`. Presence means the app ships server functions. */
 export interface AppManifestFunctions {
