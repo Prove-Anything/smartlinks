@@ -334,22 +334,23 @@ See the [Deep Link Discovery guide](deep-link-discovery.md) for the full dual-so
 
 #### `publicViews`
 
-Declares the app's **public views** — the soft-routed entries over your single public bundle
-(`index.html` → HashRouter): the contextual page, a display board, a kiosk/TV screen, etc. Without
-this, those routes/modes are invisible to the platform and the Dev Hub. Each view is a `route` + fixed
-`set` params + caller `params` + a `kind`; the `default` **contextual** view is the tag-tap target.
-It's delivery-agnostic — the same view renders as a **page** (standalone, self-CSS, hash-routed, embed
-in an iframe or open directly) or, for a contextual view, as a **component** (`PublicContainer`).
-Not a separate build. (Distinct from `linkable`, which is deep-link discovery.)
+Declares the app's **public views** — **standalone, external screens** served over your single public
+bundle (`index.html` → HashRouter): a display board, a kiosk/TV screen, a dashboard, a public share
+page. Without this, those routes/modes are invisible to the platform and the Dev Hub. Each view is a
+`route` + fixed `set` params + caller `params`.
+
+> **Public views are NOT portal.** They are completely external and independent. Their only input is
+> **URL parameters** (often a `collectionId`, as a plain param). They expect **no** portal wrapper, **no**
+> host-managed auth/session, and **no** physical-twin context (no QR/NFC/tag scan). They open at a URL
+> and stand alone. For the two **portal** surfaces — where the app renders *inside* portal, and the
+> entry points portal menus link to — see below.
 
 ```json
 "publicViews": [
-  { "id": "page",  "title": "Product page",  "kind": "contextual", "route": "/", "default": true,
-    "params": { "required": ["collectionId"], "optional": ["productId", "proofId"] } },
-  { "id": "board", "title": "Display board", "kind": "standalone", "route": "/preview",
-    "params": { "required": ["collectionId", "appId", "pageId"], "optional": ["orientation"] } },
-  { "id": "tv",    "title": "TV / big screen", "kind": "standalone", "route": "/",
-    "set": { "tvMode": "true" }, "params": { "required": ["collectionId", "voteId"] } }
+  { "id": "board", "title": "Display board", "route": "/display",
+    "params": { "required": ["collectionId"], "optional": ["orientation"] } },
+  { "id": "tv",    "title": "TV / big screen", "route": "/", "set": { "tvMode": "true" },
+    "params": { "required": ["collectionId", "voteId"] } }
 ]
 ```
 
@@ -357,14 +358,21 @@ Not a separate build. (Distinct from `linkable`, which is deep-link discovery.)
 |-------|------|----------|-------------|
 | `id` | string | ✅ | Stable id, unique within the app |
 | `title` | string | ✅ | Human label (Dev Hub dropdown, platform pickers) |
-| `kind` | `"contextual"` \| `"standalone"` | ✅ | Context-aware (tag-tap) vs full-screen, non-contextual |
 | `route` | string | ❌ | Hash route within the public bundle (defaults to `"/"`) |
 | `set` | object | ❌ | Query params this view PINS (e.g. `{ "tvMode": "true" }`), merged under caller params |
-| `params` | `{ required?: string[]; optional?: string[] }` | ❌ | The params the caller supplies |
-| `default` | boolean | ❌ | The default contextual view — the tag-tap target (at most one) |
+| `params` | `{ required?: string[]; optional?: string[] }` | ❌ | The params the caller supplies via the URL |
 
-Read context the same way in every delivery with **`SL.readContext(props?)`** (merges props → hash →
-search), instead of hand-rolling the `containerProps || hash || search` chain.
+Read the URL params with **`SL.readContext()`** (merges hash → search) instead of hand-rolling it.
+
+##### Public views vs the two portal surfaces
+
+An app can have any combination of three setup styles. Only public views are external:
+
+| Style | Declared by | Lives | Context |
+|-------|-------------|-------|---------|
+| **Portal components** — where the app renders inside portal (collection / product / batch / variant / proof) | module registry `components.*` (set at publish) | Inside portal | Physical twin (QR/NFC scan) |
+| **Portal deep links** — the entry points portal menus/tabs/side-menus link to (e.g. list view vs calendar view) | `linkable` / `DeepLinkEntry` | Inside portal | Portal (menu picks the entry) |
+| **Public views** — standalone external screens | `publicViews` (this block) | Outside portal | URL params only |
 
 #### `records`
 

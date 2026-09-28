@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.24  |  Generated: 2026-09-27T07:59:57.959Z
+Version: 2.0.26  |  Generated: 2026-09-28T11:30:29.988Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2293,11 +2293,9 @@ interface PublicViewParams {
 interface PublicView {
   id: string;
   title: string;
-  kind: PublicViewKind;
   route?: string;
   set?: Record<string, string>;
   params?: PublicViewParams;
-  default?: boolean;
 }
 ```
 
@@ -2372,8 +2370,6 @@ interface GetCollectionWidgetsOptions {
 **AppFunctionVisibility** = `'admin' | 'public'`
 
 **AppFunctionAuthority** = `'caller' | 'collection'`
-
-**PublicViewKind** = `'contextual' | 'standalone'`
 
 ### appObjects
 

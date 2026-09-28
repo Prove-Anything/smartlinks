@@ -485,40 +485,42 @@ export interface AppAdminConfig {
  * Setup, import, tunable, and metrics configuration lives in a separate
  * `app.admin.json` file. Use the `admin` field to locate and fetch it.
  */
-/** A public view's kind: context-aware (tag-tap) vs a full-screen, non-contextual screen. */
-export type PublicViewKind = 'contextual' | 'standalone';
 /** The caller-supplied params a public view expects. */
 export interface PublicViewParams {
     /** Params the view REQUIRES to render (e.g. `['collectionId','pageId']`). */
     required?: string[];
-    /** Params the view can use if present (e.g. `['productId','proofId','orientation']`). */
+    /** Params the view can use if present (e.g. `['orientation','theme']`). */
     optional?: string[];
 }
 /**
- * A declared PUBLIC VIEW of the app — one soft-routed entry over the single public bundle
- * (`index.html` → HashRouter), so the platform + Dev Hub can enumerate and target it instead of
- * guessing at undeclared hash routes. A view is `route` + fixed params (`set`) + caller `params` +
- * a `kind`. It is a DELIVERY-agnostic description: the same view renders as a `page` (standalone
- * HTML, hash-routed, its own CSS — embed in an iframe or open directly) or, for a `contextual` view,
- * as a `component` (PublicContainer, props context). NOT a separate build. See
- * docs/design/public-views.md. (Distinct from `linkable`/DeepLinkEntry, which is deep-link
- * discovery; publicViews is the top-level public-entry taxonomy used for preview + tag-tap routing.)
+ * A declared PUBLIC VIEW of the app — a STANDALONE, freeform screen served over the app's single
+ * public bundle (`index.html` → HashRouter), enumerable/targetable by the platform + Dev Hub instead
+ * of guessing at undeclared hash routes. A view is `route` + fixed params (`set`) + caller `params`.
+ *
+ * PUBLIC VIEWS ARE NOT PORTAL. They are completely external, independent pages — display boards,
+ * projector/kiosk screens, dashboards, public share pages. Their ONLY input is URL parameters (often a
+ * `collectionId`, as a plain param). They expect NO portal wrapper, NO host-managed auth/session, and
+ * NO physical-twin context (no QR/NFC/tag scan). They open at a URL and stand alone.
+ *
+ * This is distinct from the two PORTAL-side surfaces, which are declared elsewhere and are context-fed
+ * by the physical twin the portal resolves:
+ *  - WHERE the app renders inside portal (collection/product/batch/variant/proof) → the module
+ *    registry `components.*` (see prove docs/design/module-registry-fields.md).
+ *  - The different entry points portal MENUS/TABS/SIDE-MENUS link to (e.g. one app with a list view
+ *    and a calendar view) → `linkable`/DeepLinkEntry below.
+ * See docs/design/public-views.md.
  */
 export interface PublicView {
     /** Stable id, unique within the app. */
     id: string;
     /** Human label (Dev Hub dropdown, platform pickers). */
     title: string;
-    /** `contextual` (context-aware, tag-tap target) or `standalone` (full-screen display/kiosk). */
-    kind: PublicViewKind;
     /** Hash route within the public bundle. Defaults to `/`. */
     route?: string;
     /** Query params this view PINS (e.g. `{ tvMode: 'true' }`), merged under the caller's params. */
     set?: Record<string, string>;
-    /** The params the caller supplies. */
+    /** The params the caller supplies via the URL. */
     params?: PublicViewParams;
-    /** The default `contextual` view — the tag-tap target. At most one view sets this. */
-    default?: boolean;
 }
 export interface AppManifest {
     $schema?: string;
@@ -601,19 +603,22 @@ export interface AppManifest {
         components: AppContainerComponent[];
     };
     /**
-     * Static deep-linkable states built into this app.
-     * These are fixed routes that exist regardless of content — declared once at build time.
-     * Dynamic content entries (e.g. CMS pages) are stored separately in `appConfig.linkable`.
-     * Consumers should merge both sources to get the full set of navigable states.
+     * PORTAL deep-linkable states built into this app — the entry points the portal's menu system
+     * (bottom menu, side menus, tabs) can link to. Use these when one app has several ways to enter/load
+     * its portal component (e.g. a list view and a calendar view, or a viewer and an editor) that
+     * different parts of portal should link to independently. These live INSIDE portal.
+     * Fixed routes are declared here at build time; dynamic content entries (e.g. CMS pages) are stored
+     * separately in `appConfig.linkable` — merge both for the full navigable set.
      * @see DeepLinkEntry
      */
     linkable?: DeepLinkEntry[];
     /**
-     * The app's PUBLIC VIEWS — the soft-routed entries over the single public bundle
-     * (contextual page, display board, kiosk/TV, …), so the platform + Dev Hub can enumerate,
-     * preview, and target them. Declares `route` + fixed `set` params + caller `params` + `kind`
-     * per view; the `default` contextual view is the tag-tap target. See PublicView +
-     * docs/design/public-views.md.
+     * The app's PUBLIC VIEWS — STANDALONE, external screens (display boards, kiosks/TVs, dashboards,
+     * public pages) served over the single public bundle, so the platform + Dev Hub can enumerate,
+     * preview, and target them. Declares `route` + fixed `set` params + caller `params` per view.
+     * NOT portal: no portal wrapper, no host auth/session, no physical-twin context — URL params only.
+     * For portal surfaces use `components.*` (where it renders) and `linkable` (portal menu entries).
+     * See PublicView + docs/design/public-views.md.
      */
     publicViews?: PublicView[];
     /**

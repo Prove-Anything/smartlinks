@@ -18480,8 +18480,6 @@ components:
           type: string
         title:
           type: string
-        kind:
-          $ref: "#/components/schemas/PublicViewKind"
         route:
           type: string
         set:
@@ -18490,12 +18488,9 @@ components:
             type: string
         params:
           $ref: "#/components/schemas/PublicViewParams"
-        default:
-          type: boolean
       required:
         - id
         - title
-        - kind
     AppManifest:
       type: object
       properties:
@@ -18635,11 +18630,6 @@ components:
       enum:
         - caller
         - collection
-    PublicViewKind:
-      type: string
-      enum:
-        - contextual
-        - standalone
     PaginatedResponse:
       type: object
       properties:
