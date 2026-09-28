@@ -336,6 +336,26 @@ await SL.ai.publicClient.agentRun(collectionId, {
 functions are exposed. Only `http` functions with `agent.tool: true` are eligible; `event`/`cron`
 functions never are. A built-in tool of the same name wins the clash.
 
+### One unified toolbelt
+
+Rather than juggling `server_tools` + `app_functions`, declare everything in one `toolbelt` — built-in
+tools, one **or several** apps' functions, and (reserved, staged) front-end client tools:
+
+```ts
+await SL.ai.chat.responses.create(collectionId, {
+  input: '…',
+  toolbelt: {
+    builtins: ['web.search', 'document.read'],      // true = all, [names] = subset, omit = none
+    appFunctions: [{ appId: 'loyalty' }, { appId: 'catalog' }],  // several apps at once
+    // clientTools: [ … ]  // reserved — the client-tool bridge is staged
+  },
+})
+```
+
+The same `toolbelt` works on `ai.agent.run` and `ai.publicClient.agentRun` (on the public surface
+`builtins` is an explicit allowlist — `true` is treated as none). Precedence on a name clash: a
+built-in wins, then earlier `appFunctions` sources win over later ones.
+
 > Directly (no model): every function is also callable deterministically — `SL.functions.call` /
 > `callAdmin` (above), the same way the built-in tools are callable via `SL.ai.tools.run`.
 

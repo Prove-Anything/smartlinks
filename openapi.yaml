@@ -15574,6 +15574,8 @@ components:
           type: number
         app_functions:
           $ref: "#/components/schemas/AgentAppFunctionsOption"
+        toolbelt:
+          $ref: "#/components/schemas/AgentToolbelt"
       required:
         - enabled
     ResponsesResult:
@@ -16607,6 +16609,8 @@ components:
             type: string
         appFunctions:
           $ref: "#/components/schemas/AgentAppFunctionsOption"
+        toolbelt:
+          $ref: "#/components/schemas/AgentToolbelt"
     AgentAppFunctionsOption:
       type: object
       properties:
@@ -16620,6 +16624,34 @@ components:
             type: string
       required:
         - appId
+    AgentToolbelt:
+      type: object
+      properties:
+        builtins:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        appFunctions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentAppFunctionsOption"
+        clientTools:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClientToolDeclaration"
+    ClientToolDeclaration:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        input:
+          type: object
+          additionalProperties: true
+      required:
+        - name
     PublicAgentRunRequest:
       type: object
       properties:
@@ -16651,6 +16683,8 @@ components:
             $ref: "#/components/schemas/AiToolCapability"
         appFunctions:
           $ref: "#/components/schemas/AgentAppFunctionsOption"
+        toolbelt:
+          $ref: "#/components/schemas/AgentToolbelt"
         userId:
           type: string
     AgentToolResult:

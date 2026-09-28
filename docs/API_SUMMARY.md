@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.27  |  Generated: 2026-09-28T12:51:46.112Z
+Version: 2.0.27  |  Generated: 2026-09-28T13:02:47.201Z
 
 This is a concise summary of all available API functions and types.
 
@@ -595,6 +595,7 @@ interface ResponsesRequest {
   exclude?: AiToolName[]
   maxSteps?: number
   app_functions?: AgentAppFunctionsOption
+  toolbelt?: AgentToolbelt
 }
 ```
 
@@ -1179,6 +1180,7 @@ interface AgentRunRequest {
   only?: string[]
   exclude?: string[]
   appFunctions?: AgentAppFunctionsOption
+  toolbelt?: AgentToolbelt
 }
 ```
 
@@ -1188,6 +1190,24 @@ interface AgentAppFunctionsOption {
   appId: string
   channel?: string
   only?: string[]
+}
+```
+
+**AgentToolbelt** (interface)
+```typescript
+interface AgentToolbelt {
+  builtins?: boolean | AiToolName[]
+  appFunctions?: AgentAppFunctionsOption | AgentAppFunctionsOption[]
+  clientTools?: ClientToolDeclaration[]
+}
+```
+
+**ClientToolDeclaration** (interface)
+```typescript
+interface ClientToolDeclaration {
+  name: string
+  description?: string
+  input?: Record<string, any>
 }
 ```
 
@@ -1204,6 +1224,7 @@ interface PublicAgentRunRequest {
   exclude?: AiToolName[]
   allowCapabilities?: AiToolCapability[]
   appFunctions?: AgentAppFunctionsOption
+  toolbelt?: AgentToolbelt
   userId?: string
 }
 ```

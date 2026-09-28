@@ -158,6 +158,11 @@ export interface ResponsesRequest {
    * enforced unchanged — the agent is just another caller surface.
    */
   app_functions?: AgentAppFunctionsOption
+  /**
+   * Unified toolbelt (preferred over server_tools/app_functions): built-ins + app functions (+ reserved
+   * client tools) in one declaration. Providing it opts the request into the agentic loop.
+   */
+  toolbelt?: AgentToolbelt
 }
 
 /** Response from the Responses API. */
@@ -747,6 +752,8 @@ export interface AgentRunRequest {
   exclude?: string[]
   /** Also offer an installed app's AI-exposed server functions as tools (see AgentAppFunctionsOption). */
   appFunctions?: AgentAppFunctionsOption
+  /** Unified toolbelt (preferred): built-ins + app functions (+ reserved client tools) in one place. */
+  toolbelt?: AgentToolbelt
 }
 
 /**
@@ -761,6 +768,30 @@ export interface AgentAppFunctionsOption {
   channel?: string
   /** Restrict to these function names. */
   only?: string[]
+}
+
+/**
+ * The unified TOOLBELT for an agent run — one declaration spanning every tool KIND:
+ *   - `builtins`     — SmartLinks built-in tools (`true` = all, `[names]` = a subset, omit/`false` = none).
+ *   - `appFunctions` — one or more installed apps' AI-exposed server functions.
+ *   - `clientTools`  — front-end tools executed in the caller's page (RESERVED — the client-tool bridge
+ *                      is staged; declaring them has no effect until it ships).
+ * Precedence on a name clash: a built-in wins, then earlier `appFunctions` sources win over later ones.
+ * On the public surface, `builtins: true` is not honoured (built-ins there are an explicit allowlist).
+ */
+export interface AgentToolbelt {
+  builtins?: boolean | AiToolName[]
+  appFunctions?: AgentAppFunctionsOption | AgentAppFunctionsOption[]
+  /** RESERVED — front-end/client tools (executed via the client-tool bridge; not yet active). */
+  clientTools?: ClientToolDeclaration[]
+}
+
+/** RESERVED (client-tool bridge, staged): a tool the model may call that the caller's page executes. */
+export interface ClientToolDeclaration {
+  name: string
+  description?: string
+  /** JSON Schema for the arguments the model supplies. */
+  input?: Record<string, any>
 }
 
 /**
@@ -786,6 +817,8 @@ export interface PublicAgentRunRequest {
   allowCapabilities?: AiToolCapability[]
   /** Include an installed app's PUBLIC AI functions as tools. */
   appFunctions?: AgentAppFunctionsOption
+  /** Unified toolbelt. On the public surface `builtins` is an explicit allowlist (no `true`=all). */
+  toolbelt?: AgentToolbelt
   /** Rate-limit key for anonymous callers (else derived from the bearer/IP). */
   userId?: string
 }
