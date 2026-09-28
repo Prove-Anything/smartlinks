@@ -1,4 +1,4 @@
-import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, AgentRunRequest, AgentRunResult, AgentToolsQuery, AgentToolsResponse, ToolRunResult, AiToolName, AiToolArgsMap, PublicAgentRunRequest, SkillsListResponse, CatalogResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, AiSession, AiSessionCreate, AiUsageReport, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef } from "../types/ai.js";
+import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, AgentRunRequest, AgentRunResult, AgentToolsQuery, AgentToolsResponse, ToolRunResult, AiToolName, AiToolArgsMap, PublicAgentRunRequest, ClientTool, RunWithClientToolsOptions, SkillsListResponse, CatalogResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, AiSession, AiSessionCreate, AiUsageReport, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef } from "../types/ai.js";
 export type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, AiSession, AiSessionCreate, AiUsageReport, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef, };
 declare namespace aiInternal {
     namespace chat {
@@ -240,6 +240,23 @@ declare namespace aiInternal {
      * Create or warm a cache for AI (admin)
      */
     function createCache(collectionId: string, params: any): Promise<AICacheRef>;
+    /**
+     * Declare a client tool + its browser-side handler. The `declaration` (name/description/input) is
+     * sent to the model; the `handler` runs in the page when the model calls it — so it can touch the
+     * DOM, the user's session, local state, etc. Pair with `runWithClientTools`.
+     */
+    function defineClientTool(name: string, spec: {
+        description?: string;
+        input?: Record<string, any>;
+    }, handler: (args: Record<string, any>) => any | Promise<any>): ClientTool;
+    /**
+     * Run an agent conversation that can call CLIENT tools, resolving them in the browser automatically.
+     * Drives the suspend/resume loop: call the agent → if it suspends on a client tool
+     * (`status:'requires_action'`), run the matching handler(s), append their outputs, and resubmit —
+     * until a final answer. Built-ins + app functions ride along via `toolbelt`. Only declared tools run
+     * (a call for an unknown tool throws), and each runs with the user's own auth.
+     */
+    function runWithClientTools(collectionId: string, opts: RunWithClientToolsOptions): Promise<AgentRunResult>;
 }
 export declare const ai: {
     chat: {
@@ -273,6 +290,7 @@ export declare const ai: {
     };
     public: {
         chat: typeof aiInternal.publicClient.chat;
+        agentRun: typeof aiInternal.publicClient.agentRun;
         getSession: typeof aiInternal.publicClient.getSession;
         clearSession: typeof aiInternal.publicClient.clearSession;
         getRateLimit: typeof aiInternal.publicClient.getRateLimit;
@@ -287,6 +305,11 @@ export declare const ai: {
         run: typeof aiInternal.agent.run;
         listTools: typeof aiInternal.agent.listTools;
     };
+    tools: {
+        run: typeof aiInternal.tools.run;
+    };
+    defineClientTool: typeof aiInternal.defineClientTool;
+    runWithClientTools: typeof aiInternal.runWithClientTools;
     skills: {
         list: typeof aiInternal.skills.list;
         run: typeof aiInternal.skills.run;

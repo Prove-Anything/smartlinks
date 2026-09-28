@@ -69,6 +69,34 @@ The platform derives an **MCP tool list** from your manifest and drives the stan
 → `tools/call` → structured result — with streaming, cancellation, and approval layered on. You don't
 implement the wire protocol; you declare tools and write handlers. (The live loop is the staged part.)
 
+## Client tools (front-end)
+
+For genuinely UI-coupled actions — read a field the user is editing, open a picker, update on-page
+state — declare a **client tool**: the model calls it, but it runs in your page, not on the server.
+Build each with `ai.defineClientTool` and drive the loop with `ai.runWithClientTools`, which resolves
+every client call automatically (suspend → run handler → resubmit) until the assistant answers:
+
+```ts
+const pickDate = SL.ai.defineClientTool(
+  'ui.pickDate',
+  { description: 'Open the date picker and return the chosen ISO date.',
+    input: { type: 'object', properties: { min: { type: 'string' } } } },
+  async ({ min }) => ({ date: await openDatePicker({ min }) })   // runs in the browser
+)
+
+const result = await SL.ai.runWithClientTools(collectionId, {
+  input: 'Book me the earliest slot next week',
+  tools: [pickDate],
+  toolbelt: { builtins: ['web.search'], appFunctions: [{ appId: 'booking' }] }, // mix all three kinds
+  // surface: 'public'  // for a consumer assistant
+})
+```
+
+The handler runs with the user's own session (auto-scoped), and only tools you declared can be called
+(a call for anything else throws). A client-tool name can never collide with a built-in or a server
+function — those always win. This is the third tool **kind**, alongside built-in tools and app
+functions, all declared together in one `toolbelt`.
+
 ## Security
 
 Identical to server functions — nothing new to reason about:

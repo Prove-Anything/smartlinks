@@ -16652,6 +16652,82 @@ components:
           additionalProperties: true
       required:
         - name
+    ClientToolCall:
+      type: object
+      properties:
+        callId:
+          type: string
+        name:
+          type: string
+        args:
+          type: object
+          additionalProperties: true
+      required:
+        - callId
+        - name
+        - args
+    RequiresActionResult:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - requires_action
+        client_tool_calls:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClientToolCall"
+        items:
+          type: array
+          items: {}
+        steps:
+          type: number
+        toolResults:
+          type: array
+          items:
+            $ref: "#/components/schemas/AgentToolResult"
+        availableTools:
+          type: array
+          items:
+            type: string
+      required:
+        - status
+        - client_tool_calls
+        - items
+    ClientTool:
+      type: object
+      properties:
+        declaration:
+          $ref: "#/components/schemas/ClientToolDeclaration"
+      required:
+        - declaration
+    RunWithClientToolsOptions:
+      type: object
+      properties:
+        input:
+          type: string
+        tools:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClientTool"
+        surface:
+          type: string
+          enum:
+            - admin
+            - public
+        instructions:
+          type: string
+        model:
+          type: string
+        maxSteps:
+          type: number
+        toolbelt:
+          $ref: "#/components/schemas/AgentToolbelt"
+        maxRounds:
+          type: number
+      required:
+        - input
+        - tools
     PublicAgentRunRequest:
       type: object
       properties:

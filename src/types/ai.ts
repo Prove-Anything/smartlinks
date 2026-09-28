@@ -786,12 +786,51 @@ export interface AgentToolbelt {
   clientTools?: ClientToolDeclaration[]
 }
 
-/** RESERVED (client-tool bridge, staged): a tool the model may call that the caller's page executes. */
+/** A front-end/client tool the model may call that the caller's page executes (see ai.runWithClientTools). */
 export interface ClientToolDeclaration {
   name: string
   description?: string
   /** JSON Schema for the arguments the model supplies. */
   input?: Record<string, any>
+}
+
+/** A pending client-tool invocation the agent loop suspended on — the caller runs it and resubmits. */
+export interface ClientToolCall {
+  callId: string
+  name: string
+  args: Record<string, any>
+}
+
+/** The suspend response when the model calls a client tool: run each call, then resubmit items+outputs. */
+export interface RequiresActionResult {
+  status: 'requires_action'
+  client_tool_calls: ClientToolCall[]
+  /** The transcript so far — resubmit as `input` with a function_call_output appended per call. */
+  items: any[]
+  steps?: number
+  toolResults?: AgentToolResult[]
+  availableTools?: string[]
+}
+
+/** A client tool bound to its browser-side handler (build with ai.defineClientTool). */
+export interface ClientTool {
+  declaration: ClientToolDeclaration
+  handler: (args: Record<string, any>) => any | Promise<any>
+}
+
+/** Options for ai.runWithClientTools — the browser-side loop that resolves client tools automatically. */
+export interface RunWithClientToolsOptions {
+  input: string
+  tools: ClientTool[]
+  /** Which agent surface to run on: 'admin' (default) or 'public' (consumer). */
+  surface?: 'admin' | 'public'
+  instructions?: string
+  model?: string
+  maxSteps?: number
+  /** Built-ins + app functions to include alongside the client tools. */
+  toolbelt?: AgentToolbelt
+  /** Safety cap on client round-trips (default 8). */
+  maxRounds?: number
 }
 
 /**

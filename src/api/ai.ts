@@ -30,6 +30,10 @@ import type {
   AiToolName,
   AiToolArgsMap,
   PublicAgentRunRequest,
+  AgentToolbelt,
+  ClientTool,
+  ClientToolDeclaration,
+  RunWithClientToolsOptions,
   // Skills + catalog types
   SkillsListResponse,
   CatalogResponse,
@@ -699,6 +703,61 @@ namespace aiInternal {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/createCache`
     return post<AICacheRef>(path, params)
   }
+
+  // ============================================================================
+  // Client tools (kind c) — front-end tools the model calls, executed in the page
+  // ============================================================================
+
+  /**
+   * Declare a client tool + its browser-side handler. The `declaration` (name/description/input) is
+   * sent to the model; the `handler` runs in the page when the model calls it — so it can touch the
+   * DOM, the user's session, local state, etc. Pair with `runWithClientTools`.
+   */
+  export function defineClientTool(
+    name: string,
+    spec: { description?: string; input?: Record<string, any> },
+    handler: (args: Record<string, any>) => any | Promise<any>
+  ): ClientTool {
+    const declaration: ClientToolDeclaration = { name, description: spec?.description, input: spec?.input }
+    return { declaration, handler }
+  }
+
+  /**
+   * Run an agent conversation that can call CLIENT tools, resolving them in the browser automatically.
+   * Drives the suspend/resume loop: call the agent → if it suspends on a client tool
+   * (`status:'requires_action'`), run the matching handler(s), append their outputs, and resubmit —
+   * until a final answer. Built-ins + app functions ride along via `toolbelt`. Only declared tools run
+   * (a call for an unknown tool throws), and each runs with the user's own auth.
+   */
+  export async function runWithClientTools(
+    collectionId: string,
+    opts: RunWithClientToolsOptions
+  ): Promise<AgentRunResult> {
+    const { tools, surface = 'admin', maxRounds = 8 } = opts
+    const byName = new Map(tools.map((t) => [t.declaration.name, t]))
+    const clientTools = tools.map((t) => t.declaration)
+    const toolbelt: AgentToolbelt = { ...(opts.toolbelt || {}), clientTools }
+
+    let input: any = opts.input
+    for (let round = 0; round < maxRounds; round++) {
+      const body: any = { input, instructions: opts.instructions, model: opts.model, maxSteps: opts.maxSteps, toolbelt }
+      const res: any = surface === 'public'
+        ? await publicClient.agentRun(collectionId, body)
+        : await agent.run(collectionId, body as AgentRunRequest)
+
+      if (!res || res.status !== 'requires_action') return res as AgentRunResult
+
+      const outputs: any[] = []
+      for (const call of (res.client_tool_calls || [])) {
+        const tool = byName.get(call.name)
+        if (!tool) throw new Error(`runWithClientTools: model called undeclared client tool "${call.name}"`)
+        const out = await tool.handler(call.args || {})
+        outputs.push({ type: 'function_call_output', call_id: call.callId, output: typeof out === 'string' ? out : JSON.stringify(out ?? null) })
+      }
+      input = [...(res.items || []), ...outputs]
+    }
+    throw new Error('runWithClientTools: exceeded maxRounds without a final answer')
+  }
 }
 
 export const ai = {
@@ -733,6 +792,7 @@ export const ai = {
   },
   public: {
     chat: aiInternal.publicClient.chat,
+    agentRun: aiInternal.publicClient.agentRun,
     getSession: aiInternal.publicClient.getSession,
     clearSession: aiInternal.publicClient.clearSession,
     getRateLimit: aiInternal.publicClient.getRateLimit,
@@ -747,6 +807,11 @@ export const ai = {
     run: aiInternal.agent.run,
     listTools: aiInternal.agent.listTools,
   },
+  tools: {
+    run: aiInternal.tools.run,
+  },
+  defineClientTool: aiInternal.defineClientTool,
+  runWithClientTools: aiInternal.runWithClientTools,
   skills: {
     list: aiInternal.skills.list,
     run: aiInternal.skills.run,

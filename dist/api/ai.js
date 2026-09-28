@@ -495,6 +495,52 @@ var aiInternal;
         return post(path, params);
     }
     aiInternal.createCache = createCache;
+    // ============================================================================
+    // Client tools (kind c) — front-end tools the model calls, executed in the page
+    // ============================================================================
+    /**
+     * Declare a client tool + its browser-side handler. The `declaration` (name/description/input) is
+     * sent to the model; the `handler` runs in the page when the model calls it — so it can touch the
+     * DOM, the user's session, local state, etc. Pair with `runWithClientTools`.
+     */
+    function defineClientTool(name, spec, handler) {
+        const declaration = { name, description: spec === null || spec === void 0 ? void 0 : spec.description, input: spec === null || spec === void 0 ? void 0 : spec.input };
+        return { declaration, handler };
+    }
+    aiInternal.defineClientTool = defineClientTool;
+    /**
+     * Run an agent conversation that can call CLIENT tools, resolving them in the browser automatically.
+     * Drives the suspend/resume loop: call the agent → if it suspends on a client tool
+     * (`status:'requires_action'`), run the matching handler(s), append their outputs, and resubmit —
+     * until a final answer. Built-ins + app functions ride along via `toolbelt`. Only declared tools run
+     * (a call for an unknown tool throws), and each runs with the user's own auth.
+     */
+    async function runWithClientTools(collectionId, opts) {
+        const { tools, surface = 'admin', maxRounds = 8 } = opts;
+        const byName = new Map(tools.map((t) => [t.declaration.name, t]));
+        const clientTools = tools.map((t) => t.declaration);
+        const toolbelt = Object.assign(Object.assign({}, (opts.toolbelt || {})), { clientTools });
+        let input = opts.input;
+        for (let round = 0; round < maxRounds; round++) {
+            const body = { input, instructions: opts.instructions, model: opts.model, maxSteps: opts.maxSteps, toolbelt };
+            const res = surface === 'public'
+                ? await publicClient.agentRun(collectionId, body)
+                : await agent.run(collectionId, body);
+            if (!res || res.status !== 'requires_action')
+                return res;
+            const outputs = [];
+            for (const call of (res.client_tool_calls || [])) {
+                const tool = byName.get(call.name);
+                if (!tool)
+                    throw new Error(`runWithClientTools: model called undeclared client tool "${call.name}"`);
+                const out = await tool.handler(call.args || {});
+                outputs.push({ type: 'function_call_output', call_id: call.callId, output: typeof out === 'string' ? out : JSON.stringify(out !== null && out !== void 0 ? out : null) });
+            }
+            input = [...(res.items || []), ...outputs];
+        }
+        throw new Error('runWithClientTools: exceeded maxRounds without a final answer');
+    }
+    aiInternal.runWithClientTools = runWithClientTools;
 })(aiInternal || (aiInternal = {}));
 export const ai = {
     chat: {
@@ -528,6 +574,7 @@ export const ai = {
     },
     public: {
         chat: aiInternal.publicClient.chat,
+        agentRun: aiInternal.publicClient.agentRun,
         getSession: aiInternal.publicClient.getSession,
         clearSession: aiInternal.publicClient.clearSession,
         getRateLimit: aiInternal.publicClient.getRateLimit,
@@ -542,6 +589,11 @@ export const ai = {
         run: aiInternal.agent.run,
         listTools: aiInternal.agent.listTools,
     },
+    tools: {
+        run: aiInternal.tools.run,
+    },
+    defineClientTool: aiInternal.defineClientTool,
+    runWithClientTools: aiInternal.runWithClientTools,
     skills: {
         list: aiInternal.skills.list,
         run: aiInternal.skills.run,

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.27  |  Generated: 2026-09-28T13:02:47.201Z
+Version: 2.0.27  |  Generated: 2026-09-28T13:15:18.730Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1208,6 +1208,49 @@ interface ClientToolDeclaration {
   name: string
   description?: string
   input?: Record<string, any>
+}
+```
+
+**ClientToolCall** (interface)
+```typescript
+interface ClientToolCall {
+  callId: string
+  name: string
+  args: Record<string, any>
+}
+```
+
+**RequiresActionResult** (interface)
+```typescript
+interface RequiresActionResult {
+  status: 'requires_action'
+  client_tool_calls: ClientToolCall[]
+  items: any[]
+  steps?: number
+  toolResults?: AgentToolResult[]
+  availableTools?: string[]
+}
+```
+
+**ClientTool** (interface)
+```typescript
+interface ClientTool {
+  declaration: ClientToolDeclaration
+  handler: (args: Record<string, any>) => any | Promise<any>
+}
+```
+
+**RunWithClientToolsOptions** (interface)
+```typescript
+interface RunWithClientToolsOptions {
+  input: string
+  tools: ClientTool[]
+  surface?: 'admin' | 'public'
+  instructions?: string
+  model?: string
+  maxSteps?: number
+  toolbelt?: AgentToolbelt
+  maxRounds?: number
 }
 ```
 
