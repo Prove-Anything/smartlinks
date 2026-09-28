@@ -152,6 +152,12 @@ export interface ResponsesRequest {
   exclude?: AiToolName[]
   /** With `server_tools`: cap model round-trips (1–12, default 8). */
   maxSteps?: number
+  /**
+   * With `server_tools`: ALSO offer an installed app's AI-exposed server functions (those declaring
+   * `ai.tool: true`) as tools, alongside the built-ins. Their visibility/authority/capabilities are
+   * enforced unchanged — the agent is just another caller surface.
+   */
+  app_functions?: AgentAppFunctionsOption
 }
 
 /** Response from the Responses API. */
@@ -739,6 +745,22 @@ export interface AgentRunRequest {
   only?: string[]
   /** Drop these tool names. */
   exclude?: string[]
+  /** Also offer an installed app's AI-exposed server functions as tools (see AgentAppFunctionsOption). */
+  appFunctions?: AgentAppFunctionsOption
+}
+
+/**
+ * Include an installed app's AI-exposed server functions (those declaring `ai.tool: true`) in an
+ * agent run as callable tools, alongside the built-in tools. The function's
+ * visibility/authority/capabilities are enforced unchanged — the agent is just another caller.
+ */
+export interface AgentAppFunctionsOption {
+  /** The app whose functions to expose (the master app id). */
+  appId: string
+  /** Release channel to resolve the app's functions from (default 'stable'; pass 'dev' to test). */
+  channel?: string
+  /** Restrict to these function names. */
+  only?: string[]
 }
 
 export interface AgentToolResult {

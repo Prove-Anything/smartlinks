@@ -15540,6 +15540,8 @@ components:
             $ref: "#/components/schemas/AiToolName"
         maxSteps:
           type: number
+        app_functions:
+          $ref: "#/components/schemas/AgentAppFunctionsOption"
       required:
         - enabled
     ResponsesResult:
@@ -16571,6 +16573,21 @@ components:
           type: array
           items:
             type: string
+        appFunctions:
+          $ref: "#/components/schemas/AgentAppFunctionsOption"
+    AgentAppFunctionsOption:
+      type: object
+      properties:
+        appId:
+          type: string
+        channel:
+          type: string
+        only:
+          type: array
+          items:
+            type: string
+      required:
+        - appId
     AgentToolResult:
       type: object
       properties:
@@ -18397,9 +18414,23 @@ components:
           type: string
         handler:
           type: string
+        ai:
+          $ref: "#/components/schemas/AppFunctionAiExposure"
       required:
         - name
         - trigger
+    AppFunctionAiExposure:
+      type: object
+      properties:
+        tool:
+          type: boolean
+        description:
+          type: string
+        parameters:
+          type: object
+          additionalProperties: true
+      required:
+        - tool
     AppManifestFunctions:
       type: object
       properties:

@@ -300,6 +300,27 @@ export interface AppFunctionDef {
   apiVersion?: string;
   /** Exported handler name in the functions bundle. Defaults to `name`. */
   handler?: string;
+  /**
+   * Expose this function to the AI agent as a callable tool. Only `http`-trigger functions can be
+   * exposed. The agent loop becomes just another caller surface, so the function's
+   * visibility/authority/capabilities apply UNCHANGED — nothing new is granted. The model's tool
+   * arguments arrive as the function's http request `body`. See ai.md ("App functions as tools").
+   */
+  ai?: AppFunctionAiExposure;
+}
+
+/** Opt-in that turns a server function into an agent-callable tool. */
+export interface AppFunctionAiExposure {
+  /** When true, offer this `http` function to the agent loop as a tool. */
+  tool: boolean;
+  /** Model-facing description of the tool (falls back to the function's `description`). */
+  description?: string;
+  /**
+   * JSON Schema (`{ type: 'object', properties: … }`) for the tool's arguments. The agent fills
+   * this; the object arrives as the function's http request body. Strongly recommended — without it
+   * the agent is told the tool takes a free-form object.
+   */
+  parameters?: Record<string, any>;
 }
 
 /** The `functions` block in `app.manifest.json`. Presence means the app ships server functions. */

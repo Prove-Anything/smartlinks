@@ -271,6 +271,61 @@ name (a first-party builtin still wins). Always prefer an appId.
 
 ---
 
+## Exposing a function to the AI agent
+
+An `http` function can be offered to the AI agent as a **callable tool**, alongside the built-in
+tools. The model calls it, the server runs it, and the result is fed back into the loop. Opt in from
+the manifest with an `ai` block:
+
+```jsonc
+{
+  "name": "getLoyaltyBalance",
+  "trigger": { "type": "http" },
+  "visibility": "admin",
+  "authority": "caller",
+  "capabilities": ["sl:records:read"],
+  "ai": {
+    "tool": true,
+    "description": "Look up a member's current loyalty points balance.",
+    "parameters": {
+      "type": "object",
+      "properties": { "memberId": { "type": "string" } },
+      "required": ["memberId"]
+    }
+  }
+}
+```
+
+The agent becomes **just another caller surface** — your function's `visibility`, `authority`, and
+`capabilities` are enforced exactly as on the http route. Nothing new is granted. The model's tool
+arguments arrive as the function's request `body`, and whatever you return becomes the tool result the
+model sees.
+
+Include your app's functions in an agent run:
+
+```ts
+// Agentic Responses:
+await SL.ai.chat.responses.create(collectionId, {
+  model: 'balanced', input: 'What is member 42's balance?',
+  server_tools: true,                              // built-in tools
+  app_functions: { appId: 'my-loyalty-app' },      // + this app's ai.tool functions
+})
+
+// Or the one-shot agent loop:
+await SL.ai.agent.run(collectionId, {
+  input: '…', appFunctions: { appId: 'my-loyalty-app' },
+})
+```
+
+`channel` (default `'stable'`, pass `'dev'` to test a dev build) and `only: string[]` narrow which
+functions are exposed. Only `http` functions with `ai.tool: true` are eligible; `event`/`cron`
+functions never are. A built-in tool of the same name wins the clash.
+
+> Directly (no model): every function is also callable deterministically — `SL.functions.call` /
+> `callAdmin` (above), the same way the built-in tools are callable via `SL.ai.tools.run`.
+
+---
+
 ## Runtime — what your function can use
 
 Your function runs in a **web-standard sandbox** (think Cloudflare Workers / Deno), **not
