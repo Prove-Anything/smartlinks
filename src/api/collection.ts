@@ -6,7 +6,10 @@ import {
   CollectionUpdateRequest,
   AppsConfigResponse,
   DomainTarget,
-  HubAvailabilityResponse
+  HubAvailabilityResponse,
+  CollectionUser,
+  CollectionAccessLevel,
+  InviteUserInput
 } from "../types/collection"
 
 export namespace collection {
@@ -270,5 +273,62 @@ export namespace collection {
   ): Promise<any> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/assignSN/${encodeURIComponent(codeId)}`
     return post<any>(path, { value })
+  }
+
+  /**
+   * List the users with access to a collection, each with their access level (admin only). Access is
+   * stored in the collection's `roles` map (userId → level); this resolves each to name/email.
+   * GET /admin/collection/:collectionId/getUsers
+   * @param collectionId - Identifier of the collection
+   * @returns Promise resolving to the collection's users
+   */
+  export async function getUsers(collectionId: string): Promise<CollectionUser[]> {
+    return request<CollectionUser[]>(`/admin/collection/${encodeURIComponent(collectionId)}/getUsers`)
+  }
+
+  /**
+   * Grant, change, or remove a user's access level on a collection (admin only). Pass `null` or
+   * `'None'` to remove access. The server enforces privilege-escalation rules — you cannot grant an
+   * access level above your own, nor change a user whose level is above yours.
+   * POST /admin/collection/:collectionId/updateUserAccess
+   * @param collectionId - Identifier of the collection
+   * @param userId - The user (auth uid) whose access to change
+   * @param access - The new access level, or `null` to remove access
+   */
+  export async function setUserAccess(
+    collectionId: string,
+    userId: string,
+    access: CollectionAccessLevel | null
+  ): Promise<void> {
+    await post<any>(`/admin/collection/${encodeURIComponent(collectionId)}/updateUserAccess`, {
+      userId,
+      access: access ?? 'None'
+    })
+  }
+
+  /**
+   * Invite a user to a collection by email (admin only). Creates or links their account in the login /
+   * auth-kit collection (`loginCollectionId`, default `'global'`) and emails them an invite (new account)
+   * or an added-to-collection notice (existing account); returns their `uid`. This does NOT grant access
+   * on its own — follow with {@link setUserAccess} to set their level (this mirrors the console flow).
+   * POST /user/inviteUser
+   * @param collectionId - The collection the user is being added to (the invite's target)
+   * @param input - Invite details (email, optional name, access level, login collection, origin)
+   * @returns Promise resolving to the invited user's `{ uid }`
+   */
+  export async function inviteUser(
+    collectionId: string,
+    input: InviteUserInput
+  ): Promise<{ uid: string }> {
+    const consoleOrigin =
+      input.consoleOrigin ?? (typeof window !== 'undefined' ? window.location.origin : undefined)
+    return post<{ uid: string }>(`/user/inviteUser`, {
+      email: input.email.trim(),
+      name: input.name,
+      collectionId: input.loginCollectionId ?? 'global',
+      targetCollectionId: collectionId,
+      accessLevel: input.access,
+      consoleOrigin
+    })
   }
 }
