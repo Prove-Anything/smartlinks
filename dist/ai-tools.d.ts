@@ -29,6 +29,8 @@ export declare const AI_TOOL_NAMES: {
     readonly PDF_INSPECT: "pdf.inspect";
     readonly PDF_RENDER: "pdf.render";
     readonly PDF_EXTRACT: "pdf.extract";
+    readonly PDF_DECODE_BARCODES: "pdf.decodeBarcodes";
+    readonly PDF_INSPECT_GRAPHICS: "pdf.inspectGraphics";
     readonly HTTP_REQUEST: "http.request";
     readonly TRANSLATE: "translate";
 };

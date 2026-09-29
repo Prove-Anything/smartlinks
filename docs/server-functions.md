@@ -400,6 +400,12 @@ Prefer the platform primitives above over a dependency; when you do need one, pi
 | Schema validation of inputs | no | `zod` |
 | JWT (sign/verify for a third-party API) | Web Crypto can, verbosely | `jose` |
 | Hash / HMAC / encrypt | **native** — `crypto.subtle` | — |
+| PDF **text** extraction (cheap first-pass, no AI) | no | `unpdf` — a serverless/WASM pdf.js build with no Node deps; `import { extractText } from 'unpdf'`. Text only. |
+
+> **PDFs in a server function:** for a cheap text-layer check use `unpdf` (edge-safe, WASM). For
+> anything heavier — rendering pages, vision extraction, **barcode/QR decode**, or prepress/spot-colour
+> inspection — call the platform tools `pdf.render` / `pdf.extract` / `pdf.decodeBarcodes` /
+> `pdf.inspectGraphics` via `ai.tools.run`; those run in the full platform runtime, not the sandbox.
 
 **The common actions, and how to do each:**
 

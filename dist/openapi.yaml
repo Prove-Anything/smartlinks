@@ -17064,6 +17064,22 @@ components:
           additionalProperties: true
       required:
         - url
+    PdfDecodeBarcodesArgs:
+      type: object
+      properties:
+        url:
+          type: object
+          additionalProperties: true
+      required:
+        - url
+    PdfInspectGraphicsArgs:
+      type: object
+      properties:
+        url:
+          type: object
+          additionalProperties: true
+      required:
+        - url
     HttpRequestArgs:
       type: object
       properties:
@@ -17125,6 +17141,10 @@ components:
           $ref: "#/components/schemas/PdfRenderArgs"
         pdf.extract:
           $ref: "#/components/schemas/PdfExtractArgs"
+        pdf.decodeBarcodes:
+          $ref: "#/components/schemas/PdfDecodeBarcodesArgs"
+        pdf.inspectGraphics:
+          $ref: "#/components/schemas/PdfInspectGraphicsArgs"
         http.request:
           $ref: "#/components/schemas/HttpRequestArgs"
         translate:
@@ -17148,6 +17168,8 @@ components:
         - pdf.inspect
         - pdf.render
         - pdf.extract
+        - pdf.decodeBarcodes
+        - pdf.inspectGraphics
         - http.request
         - translate
     WebSearchResultItem:
@@ -17256,6 +17278,12 @@ components:
           additionalProperties: true
       required:
         - url
+    PdfFieldMeta:
+      type: object
+      properties:
+        confidence:
+          type: object
+          additionalProperties: true
     PdfExtractResult:
       type: object
       properties:
@@ -17264,6 +17292,42 @@ components:
           enum:
             - text
             - vision
+      required:
+        - url
+    PdfBarcode:
+      type: object
+      properties:
+        type:
+          type: object
+          additionalProperties: true
+      required:
+        - type
+    PdfDecodeBarcodesResult:
+      type: object
+      properties:
+        url:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - url
+    PdfGraphicsPage:
+      type: object
+      properties:
+        page:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - page
+    PdfInspectGraphicsResult:
+      type: object
+      properties:
+        url:
+          type: object
+          additionalProperties: true
       required:
         - url
     ResponsesAgentTrace:
@@ -17347,6 +17411,8 @@ components:
         - pdf.inspect
         - pdf.render
         - pdf.extract
+        - pdf.decodeBarcodes
+        - pdf.inspectGraphics
         - http.request
         - translate
     AgentStreamEvent:

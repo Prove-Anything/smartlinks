@@ -848,7 +848,7 @@ export interface CatalogResponse {
 /** Capability tags a tool requires; scope a run with `allowCapabilities`. */
 export type AiToolCapability = 'web:read' | 'ai:vision' | 'ai:image' | 'ai:text' | 'media:image' | 'media:pdf' | 'net:http';
 /** The names of the built-in server-side agent tools (run via `server_tools`). */
-export type AiToolName = 'web.fetchPage' | 'web.extractSchema' | 'web.screenshot' | 'web.search' | 'brand.assets' | 'document.read' | 'data.extract' | 'image.describe' | 'image.generate' | 'image.fromReference' | 'image.searchStock' | 'image.transform' | 'pdf.create' | 'pdf.fill' | 'pdf.merge' | 'pdf.inspect' | 'pdf.render' | 'pdf.extract' | 'http.request' | 'translate';
+export type AiToolName = 'web.fetchPage' | 'web.extractSchema' | 'web.screenshot' | 'web.search' | 'brand.assets' | 'document.read' | 'data.extract' | 'image.describe' | 'image.generate' | 'image.fromReference' | 'image.searchStock' | 'image.transform' | 'pdf.create' | 'pdf.fill' | 'pdf.merge' | 'pdf.inspect' | 'pdf.render' | 'pdf.extract' | 'pdf.decodeBarcodes' | 'pdf.inspectGraphics' | 'http.request' | 'translate';
 export interface WebFetchPageArgs {
     url: string;
     type?: string;
@@ -956,6 +956,17 @@ export interface PdfExtractArgs {
     prompt?: string;
     maxPages?: number;
     dpi?: number;
+    includeConfidence?: boolean;
+    includeBoxes?: boolean;
+}
+export interface PdfDecodeBarcodesArgs {
+    url: string;
+    page?: number;
+    dpi?: number;
+}
+export interface PdfInspectGraphicsArgs {
+    url: string;
+    page?: number;
 }
 export interface HttpRequestArgs {
     url: string;
@@ -988,6 +999,8 @@ export interface AiToolArgsMap {
     'pdf.inspect': PdfInspectArgs;
     'pdf.render': PdfRenderArgs;
     'pdf.extract': PdfExtractArgs;
+    'pdf.decodeBarcodes': PdfDecodeBarcodesArgs;
+    'pdf.inspectGraphics': PdfInspectGraphicsArgs;
     'http.request': HttpRequestArgs;
     'translate': TranslateArgs;
 }
@@ -1077,11 +1090,56 @@ export interface PdfRenderResult {
     width: number;
     height: number;
 }
+/** Per-field metadata from pdf.extract when includeConfidence / includeBoxes is set. */
+export interface PdfFieldMeta {
+    confidence?: number | null;
+    source?: 'text' | 'vision' | 'inferred';
+    bbox?: {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+        page: number;
+    };
+}
 export interface PdfExtractResult {
     url: string;
     method: 'text' | 'vision';
     pagesRead: number;
     fields: Record<string, any>;
+    fieldsMeta?: Record<string, PdfFieldMeta>;
+}
+/** One decoded barcode/QR from pdf.decodeBarcodes. bbox is in PDF points (top-left origin). */
+export interface PdfBarcode {
+    type: string;
+    format: string;
+    value: string;
+    page: number;
+    bbox?: {
+        x: number;
+        y: number;
+        w: number;
+        h: number;
+    };
+    confidence: number;
+}
+export interface PdfDecodeBarcodesResult {
+    url: string;
+    pagesScanned: number;
+    codes: PdfBarcode[];
+}
+export interface PdfGraphicsPage {
+    page: number;
+    paths: number;
+    images: number;
+    textRuns: number;
+    colourSpaces: string[];
+}
+export interface PdfInspectGraphicsResult {
+    url: string;
+    pages: PdfGraphicsPage[];
+    spotColours: string[];
+    note: string;
 }
 /** The `_agent` trace attached to an agentic Responses result. */
 export interface ResponsesAgentTrace {

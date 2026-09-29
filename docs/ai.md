@@ -328,7 +328,9 @@ in `input`.
 | `pdf.merge` | Merge several PDFs into one, in order → hosted URL. |
 | `pdf.inspect` | Cheap, no-AI introspection: page count/sizes, which pages have a real text layer, raster present, and a routing hint (`text` vs `vision`). |
 | `pdf.render` | Rasterize one page to a PNG at a chosen DPI → hosted image URL (feed to vision, or screenshot a page). |
-| `pdf.extract` | PDF → typed JSON in one call (schema and/or prompt). Auto-routes: text-layer pages use cheap text extraction; curve-only/raster pages are rendered and read with vision. |
+| `pdf.extract` | PDF → typed JSON in one call (schema and/or prompt). Auto-routes text vs vision. Optional per-field `confidence`/`source` (`includeConfidence`) and `bbox` (`includeBoxes`) in `fieldsMeta`. |
+| `pdf.decodeBarcodes` | Deterministically decode barcodes/QR on a page (WASM, no AI) → value + symbology + page + bbox + confidence. Use this for barcode digits, never vision. |
+| `pdf.inspectGraphics` | Prepress inspection: per-page path/image/outlined-text counts + colour spaces, plus named SPOT colours (e.g. "PANTONE 871 C"). No AI. |
 | `http.request` | SSRF-guarded outbound HTTP(S) to a public URL (call a REST API). |
 | `translate` | Translate text into one or more languages (generic, model-based). |
 
@@ -339,8 +341,13 @@ in `input`.
   returns typed JSON). It routes itself, but you can drive the route yourself: call `pdf.inspect`
   first (deterministic, no AI) to see whether each page has a real text layer, then `pdf.extract`
   (cheap text path) or `pdf.render` → `image.describe`/vision for curve-only or raster artwork.
-- **Zoom in on small print** (INCI/allergen lists, barcodes) → `pdf.render` at a high DPI (e.g. 300),
-  then read the PNG with vision.
+- **Zoom in on small print** (INCI/allergen lists) → `pdf.render` at a high DPI (e.g. 300), then read
+  the PNG with vision.
+- **Barcodes / QR** → `pdf.decodeBarcodes` (deterministic WASM decode) — never trust vision for barcode
+  digits; it hallucinates them.
+- **Prepress / print QA** (spot colours, colour spaces, vector vs raster) → `pdf.inspectGraphics`.
+- **A review UI that flags guessed fields** → `pdf.extract` with `includeConfidence` (per-field
+  confidence + source) and `includeBoxes` (per-field bbox on text-native pages) in `fieldsMeta`.
 - **Produce a PDF** → `pdf.create` (HTML → PDF), `pdf.fill` (populate an AcroForm's fields),
   `pdf.merge` (combine several). These return a hosted `hostedUrl`.
 

@@ -964,6 +964,8 @@ export type AiToolName =
   | 'pdf.inspect'
   | 'pdf.render'
   | 'pdf.extract'
+  | 'pdf.decodeBarcodes'
+  | 'pdf.inspectGraphics'
   | 'http.request'
   | 'translate'
 
@@ -997,7 +999,9 @@ export interface PdfFillArgs { url: string; fields: Record<string, string | numb
 export interface PdfMergeArgs { urls: string[] }
 export interface PdfInspectArgs { url: string; maxPages?: number; minTextChars?: number }
 export interface PdfRenderArgs { url: string; page?: number; dpi?: number }
-export interface PdfExtractArgs { url: string; schema?: Record<string, any>; prompt?: string; maxPages?: number; dpi?: number }
+export interface PdfExtractArgs { url: string; schema?: Record<string, any>; prompt?: string; maxPages?: number; dpi?: number; includeConfidence?: boolean; includeBoxes?: boolean }
+export interface PdfDecodeBarcodesArgs { url: string; page?: number; dpi?: number }
+export interface PdfInspectGraphicsArgs { url: string; page?: number }
 export interface HttpRequestArgs { url: string; method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD'; headers?: Record<string, string>; body?: any }
 export interface TranslateArgs { text: string; targetLanguages: string[]; sourceLanguage?: string }
 
@@ -1021,6 +1025,8 @@ export interface AiToolArgsMap {
   'pdf.inspect': PdfInspectArgs
   'pdf.render': PdfRenderArgs
   'pdf.extract': PdfExtractArgs
+  'pdf.decodeBarcodes': PdfDecodeBarcodesArgs
+  'pdf.inspectGraphics': PdfInspectGraphicsArgs
   'http.request': HttpRequestArgs
   'translate': TranslateArgs
 }
@@ -1040,7 +1046,14 @@ export interface TranslateResult { translations: Record<string, string>; sourceL
 export interface PdfInspectPage { page: number; width: number; height: number; textChars: number; hasText: boolean; imageCount: number; likelyType: 'text-native' | 'text+raster' | 'raster-only' | 'curve-only' }
 export interface PdfInspectResult { url: string; pageCount: number; inspectedPages: number; totalTextChars: number; isTextNative: boolean; isCurveOnly: boolean; recommendedPath: 'text' | 'vision'; note: string; pages: PdfInspectPage[] }
 export interface PdfRenderResult { url: string | null; page: number; pageCount: number; dpi: number; width: number; height: number }
-export interface PdfExtractResult { url: string; method: 'text' | 'vision'; pagesRead: number; fields: Record<string, any> }
+/** Per-field metadata from pdf.extract when includeConfidence / includeBoxes is set. */
+export interface PdfFieldMeta { confidence?: number | null; source?: 'text' | 'vision' | 'inferred'; bbox?: { x: number; y: number; w: number; h: number; page: number } }
+export interface PdfExtractResult { url: string; method: 'text' | 'vision'; pagesRead: number; fields: Record<string, any>; fieldsMeta?: Record<string, PdfFieldMeta> }
+/** One decoded barcode/QR from pdf.decodeBarcodes. bbox is in PDF points (top-left origin). */
+export interface PdfBarcode { type: string; format: string; value: string; page: number; bbox?: { x: number; y: number; w: number; h: number }; confidence: number }
+export interface PdfDecodeBarcodesResult { url: string; pagesScanned: number; codes: PdfBarcode[] }
+export interface PdfGraphicsPage { page: number; paths: number; images: number; textRuns: number; colourSpaces: string[] }
+export interface PdfInspectGraphicsResult { url: string; pages: PdfGraphicsPage[]; spotColours: string[]; note: string }
 
 // ---- Agentic responses trace + stream events -------------------------------
 /** The `_agent` trace attached to an agentic Responses result. */

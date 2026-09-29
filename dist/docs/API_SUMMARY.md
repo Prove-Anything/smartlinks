@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.28  |  Generated: 2026-09-28T14:37:16.334Z
+Version: 2.0.28  |  Generated: 2026-09-29T10:30:14.367Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1485,7 +1485,21 @@ interface PdfRenderArgs {
 **PdfExtractArgs** (interface)
 ```typescript
 interface PdfExtractArgs {
-  url: string; schema?: Record<string, any>; prompt?: string; maxPages?: number; dpi?: number
+  url: string; schema?: Record<string, any>; prompt?: string; maxPages?: number; dpi?: number; includeConfidence?: boolean; includeBoxes?: boolean
+}
+```
+
+**PdfDecodeBarcodesArgs** (interface)
+```typescript
+interface PdfDecodeBarcodesArgs {
+  url: string; page?: number; dpi?: number
+}
+```
+
+**PdfInspectGraphicsArgs** (interface)
+```typescript
+interface PdfInspectGraphicsArgs {
+  url: string; page?: number
 }
 ```
 
@@ -1524,6 +1538,8 @@ interface AiToolArgsMap {
   'pdf.inspect': PdfInspectArgs
   'pdf.render': PdfRenderArgs
   'pdf.extract': PdfExtractArgs
+  'pdf.decodeBarcodes': PdfDecodeBarcodesArgs
+  'pdf.inspectGraphics': PdfInspectGraphicsArgs
   'http.request': HttpRequestArgs
   'translate': TranslateArgs
 }
@@ -1613,10 +1629,45 @@ interface PdfRenderResult {
 }
 ```
 
+**PdfFieldMeta** (interface)
+```typescript
+interface PdfFieldMeta {
+  confidence?: number | null; source?: 'text' | 'vision' | 'inferred'; bbox?: { x: number; y: number; w: number; h: number; page: number }
+}
+```
+
 **PdfExtractResult** (interface)
 ```typescript
 interface PdfExtractResult {
-  url: string; method: 'text' | 'vision'; pagesRead: number; fields: Record<string, any>
+  url: string; method: 'text' | 'vision'; pagesRead: number; fields: Record<string, any>; fieldsMeta?: Record<string, PdfFieldMeta>
+}
+```
+
+**PdfBarcode** (interface)
+```typescript
+interface PdfBarcode {
+  type: string; format: string; value: string; page: number; bbox?: { x: number; y: number; w: number; h: number }; confidence: number
+}
+```
+
+**PdfDecodeBarcodesResult** (interface)
+```typescript
+interface PdfDecodeBarcodesResult {
+  url: string; pagesScanned: number; codes: PdfBarcode[]
+}
+```
+
+**PdfGraphicsPage** (interface)
+```typescript
+interface PdfGraphicsPage {
+  page: number; paths: number; images: number; textRuns: number; colourSpaces: string[]
+}
+```
+
+**PdfInspectGraphicsResult** (interface)
+```typescript
+interface PdfInspectGraphicsResult {
+  url: string; pages: PdfGraphicsPage[]; spotColours: string[]; note: string
 }
 ```
 
