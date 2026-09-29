@@ -153,3 +153,33 @@ export interface AppsConfigResponse extends Omit<AppConfigSettings, 'id' | 'apps
     /** Array of app catalog definitions for this collection. */
     apps: AppConfig[];
 }
+/**
+ * A user's access level on a collection. Access is stored in the collection's `roles` map
+ * (userId → level). Server-enforced tiers are `User` < `Admin` < `Owner`; `Reporter` / `Assigner`
+ * are legacy values still accepted but not part of the enforced hierarchy. `None` removes access.
+ */
+export type CollectionAccessLevel = 'Owner' | 'Admin' | 'Assigner' | 'Reporter' | 'User' | 'None';
+/** A user who has access to a collection (as returned by {@link collection.getUsers}). */
+export interface CollectionUser {
+    /** The user's id (auth uid). */
+    uid: string;
+    /** The user's access level on this collection. */
+    access: CollectionAccessLevel | string;
+    /** Display name, if known. */
+    name?: string;
+    /** Email address, if known. */
+    email?: string;
+}
+/** Input for {@link collection.inviteUser}. */
+export interface InviteUserInput {
+    /** Email address to invite. */
+    email: string;
+    /** Optional display name (used when creating a brand-new account). */
+    name?: string;
+    /** Access level to grant on the collection. Apply it with {@link collection.setUserAccess} after inviting. */
+    access: CollectionAccessLevel | string;
+    /** The login / auth-kit collection the account lives in (for branding + where the login is created). Default `'global'`. */
+    loginCollectionId?: string;
+    /** Origin used to build the branded invite link. Defaults to `window.location.origin` in the browser. */
+    consoleOrigin?: string;
+}

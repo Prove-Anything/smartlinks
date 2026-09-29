@@ -88,4 +88,51 @@ export var integrations;
         return r.enqueued === true;
     }
     integrations.isRunEnqueued = isRunEnqueued;
+    // --- Run logs -----------------------------------------------------------
+    // A run row is written for every execution (manual, event, scheduled, test). Per-record
+    // request/response detail is captured only while enhanced logging is active for the
+    // connection (see setLogging); otherwise runs carry metadata only.
+    /** List a flow's runs, newest first. GET /integrations/flows/:id/runs */
+    async function listRuns(collectionId, flowId, query = {}) {
+        return request(`${base(collectionId)}/${enc(flowId)}/runs${encodeQuery(query)}`);
+    }
+    integrations.listRuns = listRuns;
+    /** Get one run's summary. GET /integrations/flows/:id/runs/:runId */
+    async function getRun(collectionId, flowId, runId) {
+        return request(`${base(collectionId)}/${enc(flowId)}/runs/${enc(runId)}`);
+    }
+    integrations.getRun = getRun;
+    /**
+     * List a run's per-record items. GET /integrations/flows/:id/runs/:runId/items
+     * `request`/`response` are populated only for items captured while enhanced logging
+     * was active (and before the 24h body purge).
+     */
+    async function listRunItems(collectionId, flowId, runId, query = {}) {
+        return request(`${base(collectionId)}/${enc(flowId)}/runs/${enc(runId)}/items${encodeQuery(query)}`);
+    }
+    integrations.listRunItems = listRunItems;
+    /** Every run touching an entity (e.g. a product), across flows. GET /integrations/runs/entity/:entityId */
+    async function listEntityRuns(collectionId, entityId, query = {}) {
+        return request(`/admin/collection/${enc(collectionId)}/integrations/runs/entity/${enc(entityId)}${encodeQuery(query)}`);
+    }
+    integrations.listEntityRuns = listEntityRuns;
+    // --- Enhanced logging window (per connection) ---------------------------
+    // Full request/response capture is off by default. Turn it on for a connection while
+    // debugging; it applies to every flow on that connection and auto-expires (or runs until
+    // cancelled). Bodies are redacted at capture and purged after 24h.
+    /** Is enhanced logging active for a connection? GET /integrations/logging/:connectionId */
+    async function getLogging(collectionId, connectionId) {
+        return request(`/admin/collection/${enc(collectionId)}/integrations/logging/${enc(connectionId)}`);
+    }
+    integrations.getLogging = getLogging;
+    /** Enable enhanced logging. POST /integrations/logging/:connectionId (omit ttlMinutes = until cancelled) */
+    async function setLogging(collectionId, connectionId, input = {}) {
+        return post(`/admin/collection/${enc(collectionId)}/integrations/logging/${enc(connectionId)}`, input);
+    }
+    integrations.setLogging = setLogging;
+    /** Cancel enhanced logging now. DELETE /integrations/logging/:connectionId */
+    async function cancelLogging(collectionId, connectionId) {
+        return del(`/admin/collection/${enc(collectionId)}/integrations/logging/${enc(connectionId)}`);
+    }
+    integrations.cancelLogging = cancelLogging;
 })(integrations || (integrations = {}));

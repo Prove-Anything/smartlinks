@@ -19,6 +19,13 @@ import type {
   RunFlowSummary,
   RunFlowEnqueued,
   RecordTypesResponse,
+  FlowRun,
+  ListRunsQuery,
+  RunList,
+  ListRunItemsQuery,
+  RunItemList,
+  LoggingWindow,
+  SetLoggingInput,
 } from "../types/integrations"
 
 function enc(v: string) { return encodeURIComponent(v) }
@@ -94,5 +101,62 @@ export namespace integrations {
   /** Type guard: the run was enqueued (async). */
   export function isRunEnqueued(r: RunFlowResult): r is RunFlowEnqueued {
     return (r as RunFlowEnqueued).enqueued === true
+  }
+
+  // --- Run logs -----------------------------------------------------------
+  // A run row is written for every execution (manual, event, scheduled, test). Per-record
+  // request/response detail is captured only while enhanced logging is active for the
+  // connection (see setLogging); otherwise runs carry metadata only.
+
+  /** List a flow's runs, newest first. GET /integrations/flows/:id/runs */
+  export async function listRuns(collectionId: string, flowId: string, query: ListRunsQuery = {}): Promise<RunList> {
+    return request<RunList>(`${base(collectionId)}/${enc(flowId)}/runs${encodeQuery(query as any)}`)
+  }
+
+  /** Get one run's summary. GET /integrations/flows/:id/runs/:runId */
+  export async function getRun(collectionId: string, flowId: string, runId: string): Promise<FlowRun> {
+    return request<FlowRun>(`${base(collectionId)}/${enc(flowId)}/runs/${enc(runId)}`)
+  }
+
+  /**
+   * List a run's per-record items. GET /integrations/flows/:id/runs/:runId/items
+   * `request`/`response` are populated only for items captured while enhanced logging
+   * was active (and before the 24h body purge).
+   */
+  export async function listRunItems(
+    collectionId: string, flowId: string, runId: string, query: ListRunItemsQuery = {}
+  ): Promise<RunItemList> {
+    return request<RunItemList>(`${base(collectionId)}/${enc(flowId)}/runs/${enc(runId)}/items${encodeQuery(query as any)}`)
+  }
+
+  /** Every run touching an entity (e.g. a product), across flows. GET /integrations/runs/entity/:entityId */
+  export async function listEntityRuns(collectionId: string, entityId: string, query: { limit?: number } = {}): Promise<RunList> {
+    return request<RunList>(`/admin/collection/${enc(collectionId)}/integrations/runs/entity/${enc(entityId)}${encodeQuery(query as any)}`)
+  }
+
+  // --- Enhanced logging window (per connection) ---------------------------
+  // Full request/response capture is off by default. Turn it on for a connection while
+  // debugging; it applies to every flow on that connection and auto-expires (or runs until
+  // cancelled). Bodies are redacted at capture and purged after 24h.
+
+  /** Is enhanced logging active for a connection? GET /integrations/logging/:connectionId */
+  export async function getLogging(collectionId: string, connectionId: string): Promise<{ window: LoggingWindow | null }> {
+    return request<{ window: LoggingWindow | null }>(
+      `/admin/collection/${enc(collectionId)}/integrations/logging/${enc(connectionId)}`
+    )
+  }
+
+  /** Enable enhanced logging. POST /integrations/logging/:connectionId (omit ttlMinutes = until cancelled) */
+  export async function setLogging(collectionId: string, connectionId: string, input: SetLoggingInput = {}): Promise<{ window: LoggingWindow }> {
+    return post<{ window: LoggingWindow }>(
+      `/admin/collection/${enc(collectionId)}/integrations/logging/${enc(connectionId)}`, input
+    )
+  }
+
+  /** Cancel enhanced logging now. DELETE /integrations/logging/:connectionId */
+  export async function cancelLogging(collectionId: string, connectionId: string): Promise<{ canceled: boolean }> {
+    return del<{ canceled: boolean }>(
+      `/admin/collection/${enc(collectionId)}/integrations/logging/${enc(connectionId)}`
+    )
   }
 }

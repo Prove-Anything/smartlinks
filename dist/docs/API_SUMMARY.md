@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.29  |  Generated: 2026-09-29T10:33:46.286Z
+Version: 2.0.30  |  Generated: 2026-09-29T18:47:58.067Z
 
 This is a concise summary of all available API functions and types.
 
@@ -4711,6 +4711,27 @@ interface AppConfig {
 }
 ```
 
+**CollectionUser** (interface)
+```typescript
+interface CollectionUser {
+  uid: string
+  access: CollectionAccessLevel | string
+  name?: string
+  email?: string
+}
+```
+
+**InviteUserInput** (interface)
+```typescript
+interface InviteUserInput {
+  email: string
+  name?: string
+  access: CollectionAccessLevel | string
+  loginCollectionId?: string
+  consoleOrigin?: string
+}
+```
+
 **CollectionResponse** = `Collection`
 
 **CollectionCreateRequest** = `Omit<Collection, 'id' | 'shortId'>`
@@ -4718,6 +4739,8 @@ interface AppConfig {
 **CollectionUpdateRequest** = `Partial<Omit<Collection, 'id' | 'shortId'>>`
 
 **DomainTarget** = `"smartlinks" | "hub"`
+
+**CollectionAccessLevel** = `'Owner' | 'Admin' | 'Assigner' | 'Reporter' | 'User' | 'None'`
 
 ### common
 
@@ -6539,6 +6562,7 @@ interface FlowList {
 ```typescript
 interface RunFlowInput {
   entityId?: string
+  trigger?: RunTrigger
 }
 ```
 
@@ -6551,6 +6575,128 @@ interface RunFlowSummary {
   sent: number
   failed: number
   status: RunStatus
+  runId?: string
+}
+```
+
+**CapturedRequest** (interface)
+```typescript
+interface CapturedRequest {
+  transport: string
+  method: string
+  url: string
+  headers: Record<string, string>
+  partitionKey?: string
+  body: unknown
+  bodyBytes: number
+  truncated: boolean
+}
+```
+
+**CapturedResponse** (interface)
+```typescript
+interface CapturedResponse {
+  status: number | null
+  ok: boolean | null
+  headers: Record<string, string>
+  body: unknown
+  bodyBytes: number
+  truncated: boolean
+  error: string | null
+}
+```
+
+**FlowRun** (interface)
+```typescript
+interface FlowRun {
+  id: string
+  flowId: string
+  connectionId?: string | null
+  trigger: RunTrigger
+  triggerEvent?: string | null
+  triggerEntityId?: string | null
+  status: FlowRunStatus
+  records: number
+  sent: number
+  failed: number
+  error?: string | null
+  correlationId?: string | null
+  captureLevel: CaptureLevel
+  bodiesPurged: boolean
+  startedAt: string
+  completedAt?: string | null
+  durationMs?: number | null
+}
+```
+
+**FlowRunItem** (interface)
+```typescript
+interface FlowRunItem {
+  id: string
+  runId: string
+  entityType: string
+  entityId?: string | null
+  entityLabel?: string | null
+  status: FlowRunItemStatus
+  skipReason?: string | null
+  request?: CapturedRequest | null
+  response?: CapturedResponse | null
+  attempt: number
+  durationMs?: number | null
+  createdAt: string
+}
+```
+
+**ListRunsQuery** (interface)
+```typescript
+interface ListRunsQuery {
+  status?: FlowRunStatus
+  trigger?: RunTrigger
+  entityId?: string
+  limit?: number
+  cursor?: string
+}
+```
+
+**RunList** (interface)
+```typescript
+interface RunList {
+  runs: FlowRun[]; nextCursor?: string
+}
+```
+
+**ListRunItemsQuery** (interface)
+```typescript
+interface ListRunItemsQuery {
+  status?: FlowRunItemStatus; limit?: number; cursor?: string
+}
+```
+
+**RunItemList** (interface)
+```typescript
+interface RunItemList {
+  items: FlowRunItem[]; nextCursor?: string
+}
+```
+
+**LoggingWindow** (interface)
+```typescript
+interface LoggingWindow {
+  id: string
+  connectionId: string
+  level: CaptureLevel
+  enabledBy?: string | null
+  enabledAt: string
+  expiresAt?: string | null
+  canceledAt?: string | null
+}
+```
+
+**SetLoggingInput** (interface)
+```typescript
+interface SetLoggingInput {
+  ttlMinutes?: number
+  level?: 'full' | 'errors_only'
 }
 ```
 
@@ -6636,6 +6782,14 @@ interface RecordTypesResponse {
 **FlowAuthMethod** = `'api_key' | 'bearer' | 'basic' | 'webhook' | 'oauth2' | 'none'`
 
 **UpdateFlowInput** = `Partial<Omit<CreateFlowInput, 'direction'>> & {`
+
+**RunTrigger** = `'manual' | 'event' | 'schedule' | 'test'`
+
+**FlowRunStatus** = `'running' | 'success' | 'partial' | 'failed' | 'skipped'`
+
+**FlowRunItemStatus** = `'sent' | 'failed' | 'skipped'`
+
+**CaptureLevel** = `'metadata' | 'errors_only' | 'full'`
 
 **RunFlowResult** = `RunFlowSummary | RunFlowEnqueued`
 
@@ -10433,6 +10587,18 @@ Look up a serial number by code for a collection (admin only).
     value: any) → `Promise<any>`
 Assign a value to a serial number for a collection (admin only).
 
+**getUsers**(collectionId: string) → `Promise<CollectionUser[]>`
+List the users with access to a collection, each with their access level (admin only). Access is stored in the collection's `roles` map (userId → level); this resolves each to name/email. GET /admin/collection/:collectionId/getUsers
+
+**setUserAccess**(collectionId: string,
+    userId: string,
+    access: CollectionAccessLevel | null) → `Promise<void>`
+Grant, change, or remove a user's access level on a collection (admin only). Pass `null` or `'None'` to remove access. The server enforces privilege-escalation rules — you cannot grant an access level above your own, nor change a user whose level is above yours. POST /admin/collection/:collectionId/updateUserAccess
+
+**inviteUser**(collectionId: string,
+    input: InviteUserInput) → `Promise<`
+Invite a user to a collection by email (admin only). Creates or links their account in the login / auth-kit collection (`loginCollectionId`, default `'global'`) and emails them an invite (new account) or an added-to-collection notice (existing account); returns their `uid`. This does NOT grant access on its own — follow with {@link setUserAccess} to set their level (this mirrors the console flow). POST /user/inviteUser
+
 ### comms
 
 **getPushVapidPublicKey**(collectionId: string) → `Promise<import("../types/comms").PushVapidResponse>`
@@ -10814,6 +10980,27 @@ Type guard: the run executed inline and returned a summary.
 
 **isRunEnqueued**(r: RunFlowResult) → `r is RunFlowEnqueued`
 Type guard: the run was enqueued (async).
+
+**listRuns**(collectionId: string, flowId: string, query: ListRunsQuery = {}) → `Promise<RunList>`
+List a flow's runs, newest first. GET /integrations/flows/:id/runs
+
+**getRun**(collectionId: string, flowId: string, runId: string) → `Promise<FlowRun>`
+Get one run's summary. GET /integrations/flows/:id/runs/:runId
+
+**listRunItems**(collectionId: string, flowId: string, runId: string, query: ListRunItemsQuery = {}) → `Promise<RunItemList>`
+List a run's per-record items. GET /integrations/flows/:id/runs/:runId/items `request`/`response` are populated only for items captured while enhanced logging was active (and before the 24h body purge).
+
+**listEntityRuns**(collectionId: string, entityId: string, query: { limit?: number } = {}) → `Promise<RunList>`
+Every run touching an entity (e.g. a product), across flows. GET /integrations/runs/entity/:entityId
+
+**getLogging**(collectionId: string, connectionId: string) → `Promise<`
+Is enhanced logging active for a connection? GET /integrations/logging/:connectionId
+
+**setLogging**(collectionId: string, connectionId: string, input: SetLoggingInput = {}) → `Promise<`
+Enable enhanced logging. POST /integrations/logging/:connectionId (omit ttlMinutes = until cancelled)
+
+**cancelLogging**(collectionId: string, connectionId: string) → `Promise<`
+Cancel enhanced logging now. DELETE /integrations/logging/:connectionId
 
 ### interactions
 

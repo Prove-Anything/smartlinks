@@ -4334,6 +4334,35 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/getUsers:
+    get:
+      tags:
+        - collection
+      summary: List the users with access to a collection, each with their access level (admin only).
+      operationId: collection_getUsers
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CollectionUser"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/hub:
     post:
       tags:
@@ -4409,6 +4438,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RecordTypesResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/integrations/runs/entity/{entityId}:
+    get:
+      tags:
+        - integrations
+      summary: Every run touching an entity (e.g.
+      operationId: integrations_listEntityRuns
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: entityId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RunList"
         400:
           description: Bad request
         401:
@@ -8694,6 +8755,38 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TranslationUpdateRequest"
+  /admin/collection/{collectionId}/updateUserAccess:
+    post:
+      tags:
+        - collection
+      summary: "Grant, change, or remove a user's access level on a collection (admin only)."
+      operationId: collection_setUserAccess
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema: {}
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollectionAccessLevel"
   /admin/collection/{encodedCollectionId}/comm/send:
     post:
       tags:
@@ -22709,6 +22802,38 @@ components:
             $ref: "#/components/schemas/AppConfig"
       required:
         - apps
+    CollectionUser:
+      type: object
+      properties:
+        uid:
+          type: string
+        access:
+          type: object
+          additionalProperties: true
+        name:
+          type: string
+        email:
+          type: string
+      required:
+        - uid
+        - access
+    InviteUserInput:
+      type: object
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+        access:
+          type: object
+          additionalProperties: true
+        loginCollectionId:
+          type: string
+        consoleOrigin:
+          type: string
+      required:
+        - email
+        - access
     CollectionResponse:
       $ref: "#/components/schemas/Collection"
     CollectionCreateRequest:
@@ -22718,6 +22843,15 @@ components:
     DomainTarget:
       type: object
       additionalProperties: true
+    CollectionAccessLevel:
+      type: string
+      enum:
+        - Owner
+        - Admin
+        - Assigner
+        - Reporter
+        - User
+        - None
     IdField:
       type: string
       enum:
@@ -25148,6 +25282,8 @@ components:
       properties:
         entityId:
           type: string
+        trigger:
+          $ref: "#/components/schemas/RunTrigger"
     RunFlowSummary:
       type: object
       properties:
@@ -25163,6 +25299,8 @@ components:
           type: number
         status:
           $ref: "#/components/schemas/RunStatus"
+        runId:
+          type: string
       required:
         - flowId
         - direction
@@ -25170,6 +25308,209 @@ components:
         - sent
         - failed
         - status
+    CapturedRequest:
+      type: object
+      properties:
+        transport:
+          type: string
+        method:
+          type: string
+        url:
+          type: string
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        partitionKey:
+          type: string
+        body: {}
+        bodyBytes:
+          type: number
+        truncated:
+          type: boolean
+      required:
+        - transport
+        - method
+        - url
+        - headers
+        - body
+        - bodyBytes
+        - truncated
+    CapturedResponse:
+      type: object
+      properties:
+        status:
+          type: number
+        ok:
+          type: boolean
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        body: {}
+        bodyBytes:
+          type: number
+        truncated:
+          type: boolean
+        error:
+          type: string
+      required:
+        - status
+        - ok
+        - headers
+        - body
+        - bodyBytes
+        - truncated
+        - error
+    FlowRun:
+      type: object
+      properties:
+        id:
+          type: string
+        flowId:
+          type: string
+        connectionId:
+          type: string
+        trigger:
+          $ref: "#/components/schemas/RunTrigger"
+        triggerEvent:
+          type: string
+        triggerEntityId:
+          type: string
+        status:
+          $ref: "#/components/schemas/FlowRunStatus"
+        records:
+          type: number
+        sent:
+          type: number
+        failed:
+          type: number
+        error:
+          type: string
+        correlationId:
+          type: string
+        captureLevel:
+          $ref: "#/components/schemas/CaptureLevel"
+        bodiesPurged:
+          type: boolean
+        startedAt:
+          type: string
+        completedAt:
+          type: string
+        durationMs:
+          type: number
+      required:
+        - id
+        - flowId
+        - trigger
+        - status
+        - records
+        - sent
+        - failed
+        - captureLevel
+        - bodiesPurged
+        - startedAt
+    FlowRunItem:
+      type: object
+      properties:
+        id:
+          type: string
+        runId:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: string
+        entityLabel:
+          type: string
+        status:
+          $ref: "#/components/schemas/FlowRunItemStatus"
+        skipReason:
+          type: string
+        request:
+          $ref: "#/components/schemas/CapturedRequest"
+        response:
+          $ref: "#/components/schemas/CapturedResponse"
+        attempt:
+          type: number
+        durationMs:
+          type: number
+        createdAt:
+          type: string
+      required:
+        - id
+        - runId
+        - entityType
+        - status
+        - attempt
+        - createdAt
+    ListRunsQuery:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/FlowRunStatus"
+        trigger:
+          $ref: "#/components/schemas/RunTrigger"
+        entityId:
+          type: string
+        limit:
+          type: number
+        cursor:
+          type: string
+    RunList:
+      type: object
+      properties:
+        runs:
+          type: object
+          additionalProperties: true
+      required:
+        - runs
+    ListRunItemsQuery:
+      type: object
+      properties:
+        status:
+          type: object
+          additionalProperties: true
+    RunItemList:
+      type: object
+      properties:
+        items:
+          type: object
+          additionalProperties: true
+      required:
+        - items
+    LoggingWindow:
+      type: object
+      properties:
+        id:
+          type: string
+        connectionId:
+          type: string
+        level:
+          $ref: "#/components/schemas/CaptureLevel"
+        enabledBy:
+          type: string
+        enabledAt:
+          type: string
+        expiresAt:
+          type: string
+        canceledAt:
+          type: string
+      required:
+        - id
+        - connectionId
+        - level
+        - enabledAt
+    SetLoggingInput:
+      type: object
+      properties:
+        ttlMinutes:
+          type: number
+        level:
+          type: string
+          enum:
+            - full
+            - errors_only
     RunFlowEnqueued:
       type: object
       properties:
@@ -25308,6 +25649,33 @@ components:
         - none
     UpdateFlowInput:
       $ref: "#/components/schemas/CreateFlowInput"
+    RunTrigger:
+      type: string
+      enum:
+        - manual
+        - event
+        - schedule
+        - test
+    FlowRunStatus:
+      type: string
+      enum:
+        - running
+        - success
+        - partial
+        - failed
+        - skipped
+    FlowRunItemStatus:
+      type: string
+      enum:
+        - sent
+        - failed
+        - skipped
+    CaptureLevel:
+      type: string
+      enum:
+        - metadata
+        - errors_only
+        - full
     RunFlowResult:
       anyOf:
         - $ref: "#/components/schemas/RunFlowSummary"

@@ -253,4 +253,54 @@ export var collection;
         return post(path, { value });
     }
     collection.assignSN = assignSN;
+    /**
+     * List the users with access to a collection, each with their access level (admin only). Access is
+     * stored in the collection's `roles` map (userId → level); this resolves each to name/email.
+     * GET /admin/collection/:collectionId/getUsers
+     * @param collectionId - Identifier of the collection
+     * @returns Promise resolving to the collection's users
+     */
+    async function getUsers(collectionId) {
+        return request(`/admin/collection/${encodeURIComponent(collectionId)}/getUsers`);
+    }
+    collection.getUsers = getUsers;
+    /**
+     * Grant, change, or remove a user's access level on a collection (admin only). Pass `null` or
+     * `'None'` to remove access. The server enforces privilege-escalation rules — you cannot grant an
+     * access level above your own, nor change a user whose level is above yours.
+     * POST /admin/collection/:collectionId/updateUserAccess
+     * @param collectionId - Identifier of the collection
+     * @param userId - The user (auth uid) whose access to change
+     * @param access - The new access level, or `null` to remove access
+     */
+    async function setUserAccess(collectionId, userId, access) {
+        await post(`/admin/collection/${encodeURIComponent(collectionId)}/updateUserAccess`, {
+            userId,
+            access: access !== null && access !== void 0 ? access : 'None'
+        });
+    }
+    collection.setUserAccess = setUserAccess;
+    /**
+     * Invite a user to a collection by email (admin only). Creates or links their account in the login /
+     * auth-kit collection (`loginCollectionId`, default `'global'`) and emails them an invite (new account)
+     * or an added-to-collection notice (existing account); returns their `uid`. This does NOT grant access
+     * on its own — follow with {@link setUserAccess} to set their level (this mirrors the console flow).
+     * POST /user/inviteUser
+     * @param collectionId - The collection the user is being added to (the invite's target)
+     * @param input - Invite details (email, optional name, access level, login collection, origin)
+     * @returns Promise resolving to the invited user's `{ uid }`
+     */
+    async function inviteUser(collectionId, input) {
+        var _a, _b;
+        const consoleOrigin = (_a = input.consoleOrigin) !== null && _a !== void 0 ? _a : (typeof window !== 'undefined' ? window.location.origin : undefined);
+        return post(`/user/inviteUser`, {
+            email: input.email.trim(),
+            name: input.name,
+            collectionId: (_b = input.loginCollectionId) !== null && _b !== void 0 ? _b : 'global',
+            targetCollectionId: collectionId,
+            accessLevel: input.access,
+            consoleOrigin
+        });
+    }
+    collection.inviteUser = inviteUser;
 })(collection || (collection = {}));

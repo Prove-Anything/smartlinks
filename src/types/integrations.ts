@@ -110,6 +110,8 @@ export interface FlowList {
 export interface RunFlowInput {
   /** Run for a single source entity; omit for the flow's scheduled gather. */
   entityId?: string
+  /** Trigger label recorded on the run (e.g. 'test' for a test send). Default 'manual'. */
+  trigger?: RunTrigger
 }
 
 /** Inline (synchronous) run summary. */
@@ -120,6 +122,106 @@ export interface RunFlowSummary {
   sent: number
   failed: number
   status: RunStatus
+  /** Id of the persisted run row (deep-link into its detail). */
+  runId?: string
+}
+
+// ---------------------------------------------------------------------------
+// Run logs — persisted history of automated + manual runs, with opt-in, redacted
+// request/response detail per record (see the `integrations` run-log endpoints).
+// ---------------------------------------------------------------------------
+
+export type RunTrigger = 'manual' | 'event' | 'schedule' | 'test'
+export type FlowRunStatus = 'running' | 'success' | 'partial' | 'failed' | 'skipped'
+export type FlowRunItemStatus = 'sent' | 'failed' | 'skipped'
+export type CaptureLevel = 'metadata' | 'errors_only' | 'full'
+
+/** A redacted outbound request as captured in a run item (secrets masked, body size-capped). */
+export interface CapturedRequest {
+  transport: string
+  method: string
+  url: string
+  headers: Record<string, string>
+  partitionKey?: string
+  body: unknown
+  bodyBytes: number
+  truncated: boolean
+}
+
+/** A redacted response as captured in a run item. */
+export interface CapturedResponse {
+  status: number | null
+  ok: boolean | null
+  headers: Record<string, string>
+  body: unknown
+  bodyBytes: number
+  truncated: boolean
+  error: string | null
+}
+
+/** One run of a flow. */
+export interface FlowRun {
+  id: string
+  flowId: string
+  connectionId?: string | null
+  trigger: RunTrigger
+  triggerEvent?: string | null
+  triggerEntityId?: string | null
+  status: FlowRunStatus
+  records: number
+  sent: number
+  failed: number
+  error?: string | null
+  correlationId?: string | null
+  captureLevel: CaptureLevel
+  bodiesPurged: boolean
+  startedAt: string
+  completedAt?: string | null
+  durationMs?: number | null
+}
+
+/** One record's attempt within a run (request/response present only when captured at 'full'). */
+export interface FlowRunItem {
+  id: string
+  runId: string
+  entityType: string
+  entityId?: string | null
+  entityLabel?: string | null
+  status: FlowRunItemStatus
+  skipReason?: string | null
+  request?: CapturedRequest | null
+  response?: CapturedResponse | null
+  attempt: number
+  durationMs?: number | null
+  createdAt: string
+}
+
+export interface ListRunsQuery {
+  status?: FlowRunStatus
+  trigger?: RunTrigger
+  entityId?: string
+  limit?: number
+  cursor?: string
+}
+export interface RunList { runs: FlowRun[]; nextCursor?: string }
+export interface ListRunItemsQuery { status?: FlowRunItemStatus; limit?: number; cursor?: string }
+export interface RunItemList { items: FlowRunItem[]; nextCursor?: string }
+
+/** A per-connection enhanced-logging window (full capture) while active. */
+export interface LoggingWindow {
+  id: string
+  connectionId: string
+  level: CaptureLevel
+  enabledBy?: string | null
+  enabledAt: string
+  expiresAt?: string | null
+  canceledAt?: string | null
+}
+export interface SetLoggingInput {
+  /** Minutes until the window auto-expires; omit for on-until-cancelled. */
+  ttlMinutes?: number
+  /** Capture level while active (default 'full'). */
+  level?: 'full' | 'errors_only'
 }
 
 /** Response when a run is enqueued (?async=true). */
