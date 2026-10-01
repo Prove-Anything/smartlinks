@@ -404,8 +404,9 @@ Prefer the platform primitives above over a dependency; when you do need one, pi
 
 > **PDFs in a server function:** for a cheap text-layer check use `unpdf` (edge-safe, WASM). For
 > anything heavier — rendering pages, vision extraction, **barcode/QR decode**, or prepress/spot-colour
-> inspection — call the platform tools `pdf.render` / `pdf.extract` / `pdf.decodeBarcodes` /
-> `pdf.inspectGraphics` via `ai.tools.run`; those run in the full platform runtime, not the sandbox.
+> inspection, **OCR of small print** — call the platform tools `pdf.render` / `pdf.extract` /
+> `pdf.decodeBarcodes` / `pdf.inspectGraphics` / `image.ocr` via `ai.tools.run`; those run in the full
+> platform runtime, not the sandbox.
 
 **The common actions, and how to do each:**
 

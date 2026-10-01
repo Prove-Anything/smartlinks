@@ -640,8 +640,19 @@ export interface RecordListQueryParams extends ListQueryParams {
   variantId?: string
   /** Filter by batchId (indexed flat column) */
   batchId?: string
-  /** Full-text filter on data.label (case-insensitive substring) */
+  /** Full-text filter (case-insensitive substring) on data.label — or on `qFields` (admin) */
   q?: string
+  /**
+   * Admin only: which top-level `data` keys `q` searches (comma-separated, max 5).
+   * Default `label`. Example: `'value,label'`.
+   */
+  qFields?: string
+  /**
+   * Admin only: filter on top-level `data` keys. Each value is an exact match, an
+   * `in:a,b,c` list, or an array of values (any match). Max 10 keys.
+   * Example: `{ versionId: 'v1', zone: 'in:on_pack,unclear' }`.
+   */
+  dataFilter?: Record<string, string | string[]>
   authorId?: string
   parentType?: string
   parentId?: string

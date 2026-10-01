@@ -327,7 +327,8 @@ in `input`.
 | `pdf.fill` | Fill an AcroForm PDF's fields (`{ field: value }`) → hosted URL. |
 | `pdf.merge` | Merge several PDFs into one, in order → hosted URL. |
 | `pdf.inspect` | Cheap, no-AI introspection: page count/sizes, which pages have a real text layer, raster present, and a routing hint (`text` vs `vision`). |
-| `pdf.render` | Rasterize one page to a PNG at a chosen DPI → hosted image URL (feed to vision, or screenshot a page). |
+| `pdf.render` | Rasterize one page — or just a region (`clip: { x0, y0, x1, y1 }`, 0–1 from top-left) — to a PNG at a chosen DPI → hosted image URL (permanent). Max 40 MP per call; larger requests return `code: "too_large"` + `suggestedDpi`. |
+| `image.ocr` | **Deterministic OCR** (Google Vision, no generative model): exact characters with per-word `confidence` (0–1) and pixel `bbox`, plus lines with spacing as printed. Input: `imageUrl`, or a PDF `url` + `page` + `dpi` + optional `clip`. Optional `languages` hints. Use for small print and text outlined to curves. |
 | `pdf.extract` | PDF → typed JSON in one call (schema and/or prompt). Auto-routes text vs vision. Optional per-field `confidence`/`source` (`includeConfidence`) and `bbox` (`includeBoxes`) in `fieldsMeta`. |
 | `pdf.decodeBarcodes` | Deterministically decode barcodes/QR on a page (WASM, no AI) → value + symbology + page + bbox + confidence. Use this for barcode digits, never vision. |
 | `pdf.inspectGraphics` | Prepress inspection: per-page path/image/outlined-text counts + colour spaces, plus named SPOT colours (e.g. "PANTONE 871 C"). No AI. |
@@ -341,18 +342,36 @@ in `input`.
   returns typed JSON). It routes itself, but you can drive the route yourself: call `pdf.inspect`
   first (deterministic, no AI) to see whether each page has a real text layer, then `pdf.extract`
   (cheap text path) or `pdf.render` → `image.describe`/vision for curve-only or raster artwork.
-- **Zoom in on small print** (INCI/allergen lists) → `pdf.render` at a high DPI (e.g. 300), then read
-  the PNG with vision.
+- **Read small print exactly** (INCI/allergen lists, net weight, text outlined to curves) → `image.ocr`
+  with a PDF `url`, `page`, `dpi: 300–400` and a `clip` around the panel. It returns the characters it
+  sees with a per-word confidence — it never "corrects" a misspelling the way a vision model can, so
+  flag words below ~0.9 for human review rather than re-reading them with a model.
+- **Zoom in visually** (layout, artwork) → `pdf.render` with `clip` to rasterise just a region at a high
+  DPI, instead of the whole sheet. Renders over 40 MP return `code: "too_large"` with `suggestedDpi`
+  — retry at that dpi or with a smaller clip, don't blind-retry.
 - **Barcodes / QR** → `pdf.decodeBarcodes` (deterministic WASM decode) — never trust vision for barcode
   digits; it hallucinates them.
 - **Prepress / print QA** (spot colours, colour spaces, vector vs raster) → `pdf.inspectGraphics`.
 - **A review UI that flags guessed fields** → `pdf.extract` with `includeConfidence` (per-field
   confidence + source) and `includeBoxes` (per-field bbox on text-native pages) in `fieldsMeta`.
 - **Produce a PDF** → `pdf.create` (HTML → PDF), `pdf.fill` (populate an AcroForm's fields),
-  `pdf.merge` (combine several). These return a hosted `hostedUrl`.
+  `pdf.merge` (combine several). These return a hosted `hostedUrl` (`pdf.create` also returns it as
+  `url`). `pdf.create` loads remote `<img>` URLs before rendering and honours `page-break-inside`; pass
+  `margin: "0"` when your HTML sets its own body margin (default page margin is 18mm/14mm).
 
 Every tool is also directly callable without the model loop via `ai.tools.run(collectionId, name,
-args)` — e.g. render a page or extract fields straight from a UI, no agent round-trip.
+args)` — e.g. render a page or extract fields straight from a UI, no agent round-trip:
+
+```ts
+// Read the ingredients panel of a sleeve exactly (deterministic OCR of a clipped region)
+const { result } = await SL.ai.tools.run(collectionId, 'image.ocr', {
+  url: sleevePdfUrl, page: 1, dpi: 400,
+  clip: { x0: 0.40, y0: 0.20, x1: 0.60, y1: 0.40 },
+  languages: ['en', 'fr'],
+})
+// result.lines → [{ text: 'INGREDIENTS: Aqua, Glycerin, …', confidence: 0.97, bbox: {…} }]
+const toReview = result.words.filter((w) => w.confidence < 0.9)
+```
 
 Discover tools two ways:
 - **Design time (typed):** import `BUILTIN_AI_TOOLS`, `AI_TOOL_NAMES`, and the per-tool arg types

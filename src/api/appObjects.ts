@@ -617,16 +617,24 @@ export namespace records {
  * Build a query string from an object of parameters
  */
 function buildQueryString(params: Record<string, any>): string {
-  const entries = Object.entries(params).filter(([_, value]) => value !== undefined && value !== null)
-  if (entries.length === 0) return ''
-
-  const queryString = entries
-    .map(([key, value]) => {
-      const encodedKey = encodeURIComponent(key)
-      const encodedValue = encodeURIComponent(String(value))
-      return `${encodedKey}=${encodedValue}`
-    })
-    .join('&')
-
-  return `?${queryString}`
+  const parts: string[] = []
+  const add = (key: string, value: unknown) => {
+    if (value === undefined || value === null) return
+    parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
+  }
+  for (const [key, value] of Object.entries(params)) {
+    if (value === undefined || value === null) continue
+    if (Array.isArray(value)) {
+      add(key, value.join(',')) // unchanged: top-level arrays are sent comma-joined
+    } else if (typeof value === 'object' && !(value instanceof Date)) {
+      // Nested filter objects (e.g. dataFilter: { versionId: 'x', zone: 'in:a,b' }) → dataFilter[versionId]=x
+      for (const [sub, subValue] of Object.entries(value as Record<string, unknown>)) {
+        if (Array.isArray(subValue)) subValue.forEach((v) => add(`${key}[${sub}]`, v))
+        else add(`${key}[${sub}]`, subValue)
+      }
+    } else {
+      add(key, value instanceof Date ? value.toISOString() : value)
+    }
+  }
+  return parts.length ? `?${parts.join('&')}` : ''
 }
