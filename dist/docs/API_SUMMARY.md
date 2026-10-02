@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.32  |  Generated: 2026-10-01T17:18:44.658Z
+Version: 2.0.34  |  Generated: 2026-10-02T16:06:32.154Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1447,10 +1447,32 @@ interface ImageTransformArgs {
 }
 ```
 
+**ImageOcrArgs** (interface)
+```typescript
+interface ImageOcrArgs {
+  imageUrl?: string
+  url?: string
+  page?: number
+  dpi?: number
+  clip?: PdfClip
+  languages?: string[]
+}
+```
+
+**PdfClip** (interface)
+```typescript
+interface PdfClip {
+  x0: number; y0: number; x1: number; y1: number
+}
+```
+
 **PdfCreateArgs** (interface)
 ```typescript
 interface PdfCreateArgs {
-  html: string; format?: string; landscape?: boolean
+  html: string
+  format?: string
+  landscape?: boolean
+  margin?: string
 }
 ```
 
@@ -1478,7 +1500,10 @@ interface PdfInspectArgs {
 **PdfRenderArgs** (interface)
 ```typescript
 interface PdfRenderArgs {
-  url: string; page?: number; dpi?: number
+  url: string
+  page?: number
+  dpi?: number
+  clip?: PdfClip
 }
 ```
 
@@ -1532,6 +1557,7 @@ interface AiToolArgsMap {
   'image.fromReference': ImageFromReferenceArgs
   'image.searchStock': ImageSearchStockArgs
   'image.transform': ImageTransformArgs
+  'image.ocr': ImageOcrArgs
   'pdf.create': PdfCreateArgs
   'pdf.fill': PdfFillArgs
   'pdf.merge': PdfMergeArgs
@@ -1590,7 +1616,7 @@ interface ImageDescribeResult {
 **HostedAssetResult** (interface)
 ```typescript
 interface HostedAssetResult {
-  hostedUrl: string | null; contentType?: string; info?: { width?: number; height?: number; format?: string; size?: number }
+
 }
 ```
 
@@ -1625,7 +1651,51 @@ interface PdfInspectResult {
 **PdfRenderResult** (interface)
 ```typescript
 interface PdfRenderResult {
-  url: string | null; page: number; pageCount: number; dpi: number; width: number; height: number
+  url: string | null; page: number; pageCount: number; dpi: number; width: number; height: number; clip?: PdfClip
+}
+```
+
+**PdfRenderTooLarge** (interface)
+```typescript
+interface PdfRenderTooLarge {
+  error: string; code: 'too_large'; requestedPixels: number; maxPixels: number; suggestedDpi: number; width: number; height: number
+}
+```
+
+**OcrBox** (interface)
+```typescript
+interface OcrBox {
+  x: number; y: number; w: number; h: number
+}
+```
+
+**OcrWord** (interface)
+```typescript
+interface OcrWord {
+  text: string; confidence: number; bbox: OcrBox
+}
+```
+
+**OcrLine** (interface)
+```typescript
+interface OcrLine {
+  text: string; confidence: number; bbox: OcrBox
+}
+```
+
+**ImageOcrResult** (interface)
+```typescript
+interface ImageOcrResult {
+  words: OcrWord[]
+  lines: OcrLine[]
+  text: string
+  width: number | null
+  height: number | null
+  languages: string[]
+  page?: number
+  dpi?: number
+  clip?: PdfClip
+  engine: string
 }
 ```
 

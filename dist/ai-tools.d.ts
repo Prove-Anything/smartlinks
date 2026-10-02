@@ -23,6 +23,7 @@ export declare const AI_TOOL_NAMES: {
     readonly IMAGE_FROM_REFERENCE: "image.fromReference";
     readonly IMAGE_SEARCH_STOCK: "image.searchStock";
     readonly IMAGE_TRANSFORM: "image.transform";
+    readonly IMAGE_OCR: "image.ocr";
     readonly PDF_CREATE: "pdf.create";
     readonly PDF_FILL: "pdf.fill";
     readonly PDF_MERGE: "pdf.merge";

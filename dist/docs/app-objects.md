@@ -747,6 +747,39 @@ const results = await app.records.list(collectionId, appId, {
 
 > `q` is not a full-text index and does not return ranked results. For ranked relevance search over large corpora, use the Elasticsearch integration.
 
+**Admin: search other data fields (`qFields`).** On the admin endpoint, `qFields` chooses which top-level `data` keys `q` searches (comma-separated, max 5; default `label`):
+
+```typescript
+const page = await app.records.list(collectionId, appId, {
+  recordType: 'packaging-field',
+  q: 'best before',
+  qFields: 'value,label',       // match data.value OR data.label
+  limit: 100, offset: 0,
+}, true);
+```
+
+### Filtering on data fields (admin)
+
+On the admin endpoint, `dataFilter` filters on **top-level `data` keys** — an exact match, an `in:a,b,c` list, or an array (any value matches). Up to 10 keys; combine freely with `recordType`, `status`, `q`/`qFields` and pagination:
+
+```typescript
+const page = await app.records.list(collectionId, appId, {
+  recordType: 'packaging-field',
+  dataFilter: {
+    versionId: 'ver_123',               // data.versionId = 'ver_123'
+    zone: 'in:on_pack,unclear',         // data.zone is one of these
+  },
+  limit: 100, offset: 0,
+}, true);
+
+page.pagination.total    // matches across all pages
+page.pagination.hasMore  // keep paging while true
+```
+
+- Values are compared as text (`data->>key`); nested keys and joins aren't supported.
+- `limit` is capped at **100** per page — page with `offset` while `hasMore` is true.
+- `status` also accepts `in:a,b` (e.g. `status: 'in:active,draft'`).
+
 ### External ID / ETL Workflow
 
 `customId` and `sourceSystem` provide a stable external key pair for loading records from external systems (CMS, ERP, PIM, etc.):

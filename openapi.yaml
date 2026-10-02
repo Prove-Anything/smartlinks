@@ -14509,6 +14509,21 @@ paths:
           required: false
           schema:
             type: string
+        - name: qFields
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: dataFilter
+          in: query
+          required: false
+          schema:
+            type: object
+            additionalProperties:
+              type: array
+              items:
+                type: object
+                additionalProperties: true
         - name: authorId
           in: query
           required: false
@@ -17108,12 +17123,42 @@ components:
           type: number
       required:
         - imageUrl
+    ImageOcrArgs:
+      type: object
+      properties:
+        imageUrl:
+          type: string
+        url:
+          type: string
+        page:
+          type: number
+        dpi:
+          type: number
+        clip:
+          $ref: "#/components/schemas/PdfClip"
+        languages:
+          type: array
+          items:
+            type: string
+    PdfClip:
+      type: object
+      properties:
+        x0:
+          type: object
+          additionalProperties: true
+      required:
+        - x0
     PdfCreateArgs:
       type: object
       properties:
         html:
-          type: object
-          additionalProperties: true
+          type: string
+        format:
+          type: string
+        landscape:
+          type: boolean
+        margin:
+          type: string
       required:
         - html
     PdfFillArgs:
@@ -17145,8 +17190,13 @@ components:
       type: object
       properties:
         url:
-          type: object
-          additionalProperties: true
+          type: string
+        page:
+          type: number
+        dpi:
+          type: number
+        clip:
+          $ref: "#/components/schemas/PdfClip"
       required:
         - url
     PdfExtractArgs:
@@ -17222,6 +17272,8 @@ components:
           $ref: "#/components/schemas/ImageSearchStockArgs"
         image.transform:
           $ref: "#/components/schemas/ImageTransformArgs"
+        image.ocr:
+          $ref: "#/components/schemas/ImageOcrArgs"
         pdf.create:
           $ref: "#/components/schemas/PdfCreateArgs"
         pdf.fill:
@@ -17255,6 +17307,7 @@ components:
         - image.fromReference
         - image.searchStock
         - image.transform
+        - image.ocr
         - pdf.create
         - pdf.fill
         - pdf.merge
@@ -17371,6 +17424,75 @@ components:
           additionalProperties: true
       required:
         - url
+    PdfRenderTooLarge:
+      type: object
+      properties:
+        error:
+          type: object
+          additionalProperties: true
+      required:
+        - error
+    OcrBox:
+      type: object
+      properties:
+        x:
+          type: object
+          additionalProperties: true
+      required:
+        - x
+    OcrWord:
+      type: object
+      properties:
+        text:
+          type: object
+          additionalProperties: true
+      required:
+        - text
+    OcrLine:
+      type: object
+      properties:
+        text:
+          type: object
+          additionalProperties: true
+      required:
+        - text
+    ImageOcrResult:
+      type: object
+      properties:
+        words:
+          type: array
+          items:
+            $ref: "#/components/schemas/OcrWord"
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/OcrLine"
+        text:
+          type: string
+        width:
+          type: number
+        height:
+          type: number
+        languages:
+          type: array
+          items:
+            type: string
+        page:
+          type: number
+        dpi:
+          type: number
+        clip:
+          $ref: "#/components/schemas/PdfClip"
+        engine:
+          type: string
+      required:
+        - words
+        - lines
+        - text
+        - width
+        - height
+        - languages
+        - engine
     PdfFieldMeta:
       type: object
       properties:
@@ -17498,6 +17620,7 @@ components:
         - image.fromReference
         - image.searchStock
         - image.transform
+        - image.ocr
         - pdf.create
         - pdf.fill
         - pdf.merge
@@ -20052,6 +20175,15 @@ components:
           type: string
         q:
           type: string
+        qFields:
+          type: string
+        dataFilter:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: object
+              additionalProperties: true
         authorId:
           type: string
         parentType:

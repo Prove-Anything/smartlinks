@@ -848,7 +848,7 @@ export interface CatalogResponse {
 /** Capability tags a tool requires; scope a run with `allowCapabilities`. */
 export type AiToolCapability = 'web:read' | 'ai:vision' | 'ai:image' | 'ai:text' | 'media:image' | 'media:pdf' | 'net:http';
 /** The names of the built-in server-side agent tools (run via `server_tools`). */
-export type AiToolName = 'web.fetchPage' | 'web.extractSchema' | 'web.screenshot' | 'web.search' | 'brand.assets' | 'document.read' | 'data.extract' | 'image.describe' | 'image.generate' | 'image.fromReference' | 'image.searchStock' | 'image.transform' | 'pdf.create' | 'pdf.fill' | 'pdf.merge' | 'pdf.inspect' | 'pdf.render' | 'pdf.extract' | 'pdf.decodeBarcodes' | 'pdf.inspectGraphics' | 'http.request' | 'translate';
+export type AiToolName = 'web.fetchPage' | 'web.extractSchema' | 'web.screenshot' | 'web.search' | 'brand.assets' | 'document.read' | 'data.extract' | 'image.describe' | 'image.generate' | 'image.fromReference' | 'image.searchStock' | 'image.transform' | 'image.ocr' | 'pdf.create' | 'pdf.fill' | 'pdf.merge' | 'pdf.inspect' | 'pdf.render' | 'pdf.extract' | 'pdf.decodeBarcodes' | 'pdf.inspectGraphics' | 'http.request' | 'translate';
 export interface WebFetchPageArgs {
     url: string;
     type?: string;
@@ -927,10 +927,32 @@ export interface ImageTransformArgs {
     format?: 'jpeg' | 'png' | 'webp' | 'avif';
     quality?: number;
 }
+/** Deterministic OCR (Google Vision; no generative model). Give `imageUrl`, or a PDF `url` (+ page/dpi/clip). */
+export interface ImageOcrArgs {
+    imageUrl?: string;
+    url?: string;
+    /** PDF page, 1-based (default 1). */
+    page?: number;
+    /** PDF render dpi (default 300, max 600). */
+    dpi?: number;
+    /** PDF region, normalised 0–1 from the page top-left. */
+    clip?: PdfClip;
+    /** Language hints, e.g. ['en','fr','de','es','it','nl']. Optional — auto-detected otherwise. */
+    languages?: string[];
+}
+/** A region of a PDF page, normalised 0–1 from the page's top-left corner (x1 > x0, y1 > y0). */
+export interface PdfClip {
+    x0: number;
+    y0: number;
+    x1: number;
+    y1: number;
+}
 export interface PdfCreateArgs {
     html: string;
     format?: string;
     landscape?: boolean;
+    /** Page margin for all sides, e.g. "0" or "12mm" (default 18mm/14mm). Use "0" when the HTML sets its own margins. */
+    margin?: string;
 }
 export interface PdfFillArgs {
     url: string;
@@ -948,7 +970,10 @@ export interface PdfInspectArgs {
 export interface PdfRenderArgs {
     url: string;
     page?: number;
+    /** Default 150, max 600. Renders over 40 megapixels return `code: 'too_large'` with `suggestedDpi`. */
     dpi?: number;
+    /** Render only this region (at the requested dpi) — read a panel of a large dieline without rasterising the whole sheet. */
+    clip?: PdfClip;
 }
 export interface PdfExtractArgs {
     url: string;
@@ -993,6 +1018,7 @@ export interface AiToolArgsMap {
     'image.fromReference': ImageFromReferenceArgs;
     'image.searchStock': ImageSearchStockArgs;
     'image.transform': ImageTransformArgs;
+    'image.ocr': ImageOcrArgs;
     'pdf.create': PdfCreateArgs;
     'pdf.fill': PdfFillArgs;
     'pdf.merge': PdfMergeArgs;
@@ -1041,7 +1067,8 @@ export interface ImageDescribeResult {
 }
 /** Result of a tool that produces a hosted binary (image.transform, pdf.*). */
 export interface HostedAssetResult {
-    hostedUrl: string | null;
+    hostedUrl: string | null; /** Same as hostedUrl (pdf.create). */
+    url?: string | null;
     contentType?: string;
     info?: {
         width?: number;
@@ -1082,6 +1109,7 @@ export interface PdfInspectResult {
     note: string;
     pages: PdfInspectPage[];
 }
+/** Hosted URLs are permanent (safe to pass to later tools in the same run). */
 export interface PdfRenderResult {
     url: string | null;
     page: number;
@@ -1089,6 +1117,52 @@ export interface PdfRenderResult {
     dpi: number;
     width: number;
     height: number;
+    clip?: PdfClip;
+}
+/** Error shape when a render would exceed the pixel cap (pdf.render / image.ocr). */
+export interface PdfRenderTooLarge {
+    error: string;
+    code: 'too_large';
+    requestedPixels: number;
+    maxPixels: number;
+    suggestedDpi: number;
+    width: number;
+    height: number;
+}
+/** Pixel box within the OCR'd image (top-left origin). */
+export interface OcrBox {
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+}
+/** One OCR word. Punctuation is usually its own word. `confidence` is 0–1 — flag low values for review. */
+export interface OcrWord {
+    text: string;
+    confidence: number;
+    bbox: OcrBox;
+}
+/** One OCR line, with spacing as printed; `confidence` is the mean of its words. */
+export interface OcrLine {
+    text: string;
+    confidence: number;
+    bbox: OcrBox;
+}
+export interface ImageOcrResult {
+    words: OcrWord[];
+    lines: OcrLine[];
+    /** Full text with line breaks. */
+    text: string;
+    /** Pixel size of the image that was read. */
+    width: number | null;
+    height: number | null;
+    /** Detected languages (BCP-47). */
+    languages: string[];
+    /** Present when a PDF page was rendered. */
+    page?: number;
+    dpi?: number;
+    clip?: PdfClip;
+    engine: string;
 }
 /** Per-field metadata from pdf.extract when includeConfidence / includeBoxes is set. */
 export interface PdfFieldMeta {
