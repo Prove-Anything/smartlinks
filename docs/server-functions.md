@@ -251,10 +251,15 @@ await SL.functions.call(collectionId, 'pressCounter', {}, { appId: 'some-other-a
 **Where it runs.** A function runs on a collection when the app is **installed** there (enabled in
 the collection's apps); or the app is **restricted** to a list of collections (what publishing from
 Forge sets for every developer) and this collection is on it, e.g. your own sandbox; or the app is
-**public**, meaning a registered, non-development app with no restriction list, which only platform
-admins can publish. Anything else gets `404 APP_NOT_INSTALLED`: a function can run with the
-collection's own authority and secrets, so a developer's app can't reach a collection that hasn't
-taken it on.
+**public**, meaning a registered app with no restriction list, which only platform admins can
+publish. Anything else gets `404 APP_NOT_INSTALLED`: a function can run with the collection's own
+authority and secrets, so a developer's app can't reach a collection that hasn't taken it on.
+
+**Who may run server code at all.** Until functions move to an isolated runner, only TRUSTED apps
+execute: public (unrestricted) apps, or apps a platform admin has marked `functionsTrusted: true`.
+Developer apps — restricted to their own collections, which includes every app published from
+self-serve Forge — get `403 FUNCTIONS_NOT_ENABLED` until they're trusted. A platform admin can also
+switch any app's functions off with `functionsTrusted: false`.
 
 **Which release.** With no channel, the server runs the release the collection has **installed** (stable for a
 public app that isn't installed) — what production wants, so app code just calls `SL.functions.call(collectionId, name)`. To run
