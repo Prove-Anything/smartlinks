@@ -55,3 +55,13 @@ test('function names are encoded; no appId → deprecated flat path (no channel)
   setAppChannel('dev')
   assert.equal(functionPath('public', 'c 1', 'a/b'), '/public/collection/c%201/functions/a%2Fb')
 })
+
+test('siteUrl: public address on the collection site host; channel only when asked for', () => {
+  const { functions } = require('../src/api/functions')
+  setUrl('https://box.example/?appChannel=dev') // preview context must NOT leak into a URL handed out
+  assert.equal(functions.siteUrl({ siteHost: 'acme.mysmartlinks.app' }, 'stripeWebhook'), 'https://acme.mysmartlinks.app/_fn/photo-memory/stripeWebhook')
+  assert.equal(functions.siteUrl('c-k7m2x9p4qa.mysmartlinks.app', 'orders', { appId: 'shop', channel: 'dev', path: '/orders/12', query: { a: 'b c' } }),
+    'https://c-k7m2x9p4qa.mysmartlinks.app/_fn/shop/dev/orders/orders/12?a=b+c')
+  assert.equal(functions.siteUrl({ siteHost: 'x.mysmartlinks.app' }, 'hook', { host: 'https://shop.acme.com/' }), 'https://shop.acme.com/_fn/photo-memory/hook')
+  assert.throws(() => functions.siteUrl({ siteHost: null }, 'hook'), /no siteHost/)
+})

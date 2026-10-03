@@ -49,6 +49,13 @@ export interface Collection {
   hubName?: string
   /** The collection's bring-your-own custom Hub domain (e.g. "hub.acme.com") */
   hubCustomDomain?: string
+  /**
+   * The collection's SITE HOST on the tenant domain — computed by the server, never stored:
+   * `<hubName>.mysmartlinks.app` when a name is claimed, else the default `c-<shortId>.mysmartlinks.app`.
+   * Hub serves it, and app functions are reachable under it at `https://<siteHost>/_fn/…`
+   * (see SL.functions.siteUrl).
+   */
+  siteHost?: string | null
   /** The shortId of this collection */
   shortId: string, // The shortId of this collection
   /** if dark mode is enabled for this collection */

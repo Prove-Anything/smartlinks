@@ -74,7 +74,48 @@ export function functionPath(surface: 'public' | 'admin', collectionId: string, 
 }
 const fnPath = functionPath
 
+/** Options for {@link functions.siteUrl}. */
+export interface FunctionSiteUrlOptions {
+  /** Release channel ('dev' | 'alpha' | 'beta' | 'stable'); omit for the collection's installed release. */
+  channel?: string
+  /** Sub-path after the function name, e.g. "/orders/123" (the function must declare trigger.path). */
+  path?: string
+  /** Query parameters to append. */
+  query?: Record<string, string>
+  /** Use this host instead of the collection's siteHost (e.g. its connected custom domain). */
+  host?: string
+}
+
 export namespace functions {
+  /**
+   * The PUBLIC address of an app function on the collection's own site — what you give a third party
+   * as a webhook URL, or call from the collection's public pages:
+   * `https://<siteHost>/_fn/<appId>[/<channel>]/<name>[/<path>]`.
+   * Every HTTP method the function declares works there, with the raw body for signature checks.
+   * Pass the collection (or its siteHost). This address is for public/integration calls; signed-in
+   * calls from your app keep using {@link call} / {@link callAdmin}, so the user's SmartLinks session
+   * never goes to a tenant hostname.
+   *
+   * @example
+   * const col = await SL.collection.get(collectionId)
+   * const hookUrl = SL.functions.siteUrl(col, 'stripeWebhook', { appId: 'my-shop' })
+   * // → https://acme.mysmartlinks.app/_fn/my-shop/stripeWebhook
+   */
+  export function siteUrl(
+    collection: { siteHost?: string | null } | string,
+    name: string,
+    opts: FunctionSiteUrlOptions & { appId?: string } = {}
+  ): string {
+    const host = opts.host || (typeof collection === 'string' ? collection : collection && collection.siteHost)
+    if (!host) throw new Error('functions.siteUrl: the collection has no siteHost (fetch it with SL.collection.get)')
+    const app = opts.appId ?? getAppContext()
+    if (!app) throw new Error('functions.siteUrl: appId required (pass it, or initializeApi({ appId }))')
+    const ch = resolveFunctionChannel({ channel: opts.channel ?? null }, app)
+    const sub = opts.path ? '/' + String(opts.path).replace(/^\/+/, '') : ''
+    const qs = opts.query && Object.keys(opts.query).length ? '?' + new URLSearchParams(opts.query).toString() : ''
+    return `https://${String(host).replace(/^https?:\/\//, '').replace(/\/+$/, '')}/_fn/${encodeURIComponent(app)}${ch ? `/${ch}` : ''}/${encodeURIComponent(name)}${sub}${qs}`
+  }
+
   /**
    * Call a PUBLIC app server function inline (surface `'public'`).
    * App-scoped: `POST /public/collection/:c/app/:appId/functions/:name`.

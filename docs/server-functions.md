@@ -269,6 +269,40 @@ await SL.functions.call(collectionId, 'pressCounter', {}, { channel: 'beta' }) /
 await SL.functions.call(collectionId, 'pressCounter', {}, { channel: null })   // force the installed release
 ```
 
+**Public address on the collection's own site (webhooks, integrations).** Every collection has a
+site host — `<name>.mysmartlinks.app` once a name is claimed, else `c-<shortId>.mysmartlinks.app` —
+returned as `collection.siteHost`. App functions are reachable there:
+
+```
+https://<siteHost>/_fn/<appId>[/<channel>]/<function>[/<sub-path…>]
+```
+
+```ts
+const col = await SL.collection.get(collectionId)
+const webhookUrl = SL.functions.siteUrl(col, 'stripeWebhook', { appId: 'my-shop' })
+// → https://acme.mysmartlinks.app/_fn/my-shop/stripeWebhook   (give this to Stripe)
+```
+
+Built for integrations: **every HTTP method** the function declares in `trigger.methods` (default
+POST only), **any content type** with the exact bytes in `event.rawBody` (verify signatures with
+`crypto.subtle`), **sub-paths** after the name when the function declares `trigger.path` (`"/*"`, or a
+pattern like `"/orders/:id"` → `event.params.id`), and the function's own `Response` — status, headers,
+CORS — goes back unchanged (the platform adds no CORS headers there; declare `OPTIONS` and answer
+preflights yourself if browsers call you cross-origin). Bodies up to 6 MB.
+
+```js
+// manifest: { name: 'orders', trigger: { type: 'http', methods: ['GET', 'PUT'], path: '/orders/:id' }, visibility: 'public' }
+export async function orders(ctx, event) {
+  if (event.method === 'GET') return ctx.sl.appRecords.get(event.params.id)
+  // PUT: verify the sender first — e.g. an HMAC over event.rawBody with a secret
+}
+```
+
+Security: the platform never hands a caller's SmartLinks credential to function code (if it signed
+the caller in from `Authorization`, that header is removed and you get `ctx.caller`); your OWN
+`Authorization` scheme for webhooks passes through. `siteUrl` only includes a channel you ask for —
+point production webhooks at the bare address and test ones at `/dev/`.
+
 The channel is never a query parameter: the function owns its query string (`?channel=sms` reaches
 your handler untouched), and a configured URL — a webhook, a third-party callback — can only ever
 hit the channel it names. Point production webhooks at the bare path and test ones at `/dev/`.
