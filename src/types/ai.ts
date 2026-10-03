@@ -967,6 +967,9 @@ export type AiToolName =
   | 'pdf.extract'
   | 'pdf.decodeBarcodes'
   | 'pdf.inspectGraphics'
+  | 'pdf.edit'
+  | 'pdf.preflight'
+  | 'pdf.printReady'
   | 'http.request'
   | 'translate'
 
@@ -1031,6 +1034,35 @@ export interface PdfRenderArgs {
 export interface PdfExtractArgs { url: string; schema?: Record<string, any>; prompt?: string; maxPages?: number; dpi?: number; includeConfidence?: boolean; includeBoxes?: boolean }
 export interface PdfDecodeBarcodesArgs { url: string; page?: number; dpi?: number }
 export interface PdfInspectGraphicsArgs { url: string; page?: number }
+/** A box as fractions of the page (0-1), top-left origin. */
+export interface PdfBox { x: number; y: number; w: number; h: number }
+/** CMYK as [c, m, y, k] (0-1 or 0-100), '#RRGGBB', 'cmyk(c,m,y,k)' or 'black'. */
+export type PdfColour = string | [number, number, number, number]
+export interface PdfEditArgs {
+  url: string
+  /** Live-text replacements; every occurrence on `page` (or all pages when omitted) is replaced. */
+  replaceText?: { id?: string; page?: number; find: string; replace: string; bold?: boolean; align?: 'left' | 'center' | 'right' }[]
+  addText?: { id?: string; page: number; box: PdfBox; text: string; size?: number; bold?: boolean; colour?: PdfColour; align?: 'left' | 'center' | 'right' }[]
+  addImages?: { id?: string; page: number; box: PdfBox; imageUrl: string; colorSpace?: 'rgb' | 'cmyk' }[]
+  /** Draw replacements in the colour of the text they replace (default true). */
+  preserveColour?: boolean
+}
+export type PdfXProfile = 'pdfx-1a' | 'pdfx-4'
+export interface PdfPreflightArgs { url: string; profile?: PdfXProfile; bleed?: { mm: number }; minDpi?: number }
+export interface PdfPrintReadyArgs {
+  url: string
+  /** Default 'pdfx-4' (keeps live transparency); 'pdfx-1a' = CMYK + spot only, no transparency. */
+  profile?: PdfXProfile
+  /** FOGRA39 (default), FOGRA51, FOGRA52, FOGRA29, GRACoL2006, SWOP2006, JapanColor2011. */
+  outputIntent?: string
+  convertToCmyk?: boolean
+  embedFonts?: boolean
+  /** Checked and reported, never added. */
+  bleed?: { mm: number }
+  /** pdfx-1a only: flatten transparency (affected pages become images). Default false. */
+  flattenTransparency?: boolean
+  minDpi?: number
+}
 export interface HttpRequestArgs { url: string; method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD'; headers?: Record<string, string>; body?: any }
 export interface TranslateArgs { text: string; targetLanguages: string[]; sourceLanguage?: string }
 
@@ -1057,6 +1089,9 @@ export interface AiToolArgsMap {
   'pdf.extract': PdfExtractArgs
   'pdf.decodeBarcodes': PdfDecodeBarcodesArgs
   'pdf.inspectGraphics': PdfInspectGraphicsArgs
+  'pdf.edit': PdfEditArgs
+  'pdf.preflight': PdfPreflightArgs
+  'pdf.printReady': PdfPrintReadyArgs
   'http.request': HttpRequestArgs
   'translate': TranslateArgs
 }
@@ -1109,6 +1144,47 @@ export interface PdfBarcode { type: string; format: string; value: string; page:
 export interface PdfDecodeBarcodesResult { url: string; pagesScanned: number; codes: PdfBarcode[] }
 export interface PdfGraphicsPage { page: number; paths: number; images: number; textRuns: number; colourSpaces: string[] }
 export interface PdfInspectGraphicsResult { url: string; pages: PdfGraphicsPage[]; spotColours: string[]; note: string }
+export interface PdfEditItemResult {
+  id: string
+  status: 'done' | 'failed'
+  note?: string
+  /** replaceText: the new text reads back from the output as live text and the old text is gone. */
+  verified?: boolean
+  /** replaceText: drawn in the embedded fallback font (original font lacked glyphs, or bold was asked). */
+  usedFallbackFont?: boolean
+}
+export interface PdfEditResult { url: string; results: PdfEditItemResult[]; warnings: string[] }
+export interface PdfPreflightFinding { severity: 'error' | 'warning'; code: string; page?: number; message: string }
+export interface PdfPreflightResult {
+  url: string
+  compliant: boolean
+  profile: PdfXProfile | null
+  version: string | null
+  findings: PdfPreflightFinding[]
+  stats: {
+    pageCount: number
+    fonts: { name: string; embedded: boolean; subset: boolean; type: string; pages: number[] }[]
+    spotColours: string[]
+    images: { page: number; dpi: number; width: number; height: number; space: string; placedMm: { w: number; h: number } }[]
+    transparency: boolean
+    outputIntent: { identifier: string | null; hasProfile: boolean } | null
+    [key: string]: any
+  }
+}
+export interface PdfPrintReadyResult {
+  url: string
+  report: {
+    /** From the post-conversion preflight — never assumed. */
+    compliant: boolean
+    profile: PdfXProfile
+    outputIntent: string
+    findings: PdfPreflightFinding[]
+    changes: { code: string; message: string }[]
+    before: { compliant: boolean; errors: number; findings: PdfPreflightFinding[] }
+    stats: Record<string, any>
+    note: string
+  }
+}
 
 // ---- Agentic responses trace + stream events -------------------------------
 /** The `_agent` trace attached to an agentic Responses result. */
