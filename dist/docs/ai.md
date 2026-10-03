@@ -332,6 +332,9 @@ in `input`.
 | `pdf.extract` | PDF → typed JSON in one call (schema and/or prompt). Auto-routes text vs vision. Optional per-field `confidence`/`source` (`includeConfidence`) and `bbox` (`includeBoxes`) in `fieldsMeta`. |
 | `pdf.decodeBarcodes` | Deterministically decode barcodes/QR on a page (WASM, no AI) → value + symbology + page + bbox + confidence. Use this for barcode digits, never vision. |
 | `pdf.inspectGraphics` | Prepress inspection: per-page path/image/outlined-text counts + colour spaces, plus named SPOT colours (e.g. "PANTONE 871 C"). No AI. |
+| `pdf.edit` | Edit an existing PDF: replace **live** text (glyph-exact removal, neighbours never move; original font when it has the glyphs, else an embedded fallback; CMYK/spot colour kept; matches may span lines), add text / images in boxes (`colorSpace: "cmyk"` converts images for print). Per-item `results` with `verified`. |
+| `pdf.preflight` | Prepress preflight, no changes: fonts, RGB/Lab, TrimBox/BleedBox + bleed, effective image dpi, transparency, white overprint, output intent. No AI. |
+| `pdf.printReady` | RGB→CMYK with a press profile (spot colours kept), embed fonts, optional flattening, mark PDF/X-1a or PDF/X-4 with the output intent embedded, then preflight the result → `{ url, report }`. |
 | `http.request` | SSRF-guarded outbound HTTP(S) to a public URL (call a REST API). |
 | `translate` | Translate text into one or more languages (generic, model-based). |
 
@@ -352,6 +355,29 @@ in `input`.
 - **Barcodes / QR** → `pdf.decodeBarcodes` (deterministic WASM decode) — never trust vision for barcode
   digits; it hallucinates them.
 - **Prepress / print QA** (spot colours, colour spaces, vector vs raster) → `pdf.inspectGraphics`.
+- **Change the artwork itself** → `pdf.edit`. `replaceText` edits only LIVE text: the matched glyphs are
+  cut out with an exact-width gap (nothing else moves) and the new text is drawn at the same spot, in the
+  same colour, in the original font if its embedded glyphs cover the new text (otherwise an embedded
+  fallback, reported as `usedFallbackFont`). A replacement longer than the original is flagged in `note`
+  — it may run into neighbouring text. Text outlined to curves can't be edited: the item fails with
+  "not found as live text" — put it on the designer change list. `verified: true` means the new text
+  reads back from the output.
+- **Is it print-ready?** → `pdf.preflight` (report only). **Make it print-ready** → `pdf.printReady`
+  with `profile` (`pdfx-4` default; `pdfx-1a` for CMYK-only workflows), `outputIntent` (e.g. `FOGRA39`)
+  and `bleed: { mm: 3 }`. `report.compliant` comes from preflighting the OUTPUT, so remaining issues
+  (low-res images, missing bleed, white overprint) are reported rather than hidden. Flattening for
+  PDF/X-1a turns affected pages into images — opt in with `flattenTransparency: true`.
+
+```ts
+const edited = await SL.ai.tools.run(collectionId, 'pdf.edit', {
+  url: artworkUrl,
+  replaceText: [{ id: 'f1', page: 1, find: 'Best before: see lid', replace: 'Best before: see base' }],
+})
+const ready = await SL.ai.tools.run(collectionId, 'pdf.printReady', {
+  url: edited.result.url, profile: 'pdfx-4', outputIntent: 'FOGRA39', bleed: { mm: 3 },
+})
+if (!ready.result.report.compliant) showFindings(ready.result.report.findings)
+```
 - **A review UI that flags guessed fields** → `pdf.extract` with `includeConfidence` (per-field
   confidence + source) and `includeBoxes` (per-field bbox on text-native pages) in `fieldsMeta`.
 - **Produce a PDF** → `pdf.create` (HTML → PDF), `pdf.fill` (populate an AcroForm's fields),

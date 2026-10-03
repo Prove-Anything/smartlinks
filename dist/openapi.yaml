@@ -74,6 +74,8 @@ tags:
     description: Product facet querying and aggregation.
   - name: form
     description: Form definitions and submissions.
+  - name: functions
+    description: functions API
   - name: integrations
     description: Third-party integration flows and imports.
   - name: interactions
@@ -10022,6 +10024,26 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /functions:
+    get:
+      tags:
+        - functions
+      summary: List the public functions available for a collection (discovery).
+      operationId: functions_list
+      security: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FunctionListResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /platform/location:
     post:
       tags:
@@ -17223,6 +17245,68 @@ components:
           additionalProperties: true
       required:
         - url
+    PdfBox:
+      type: object
+      properties:
+        x:
+          type: object
+          additionalProperties: true
+      required:
+        - x
+    PdfEditArgs:
+      type: object
+      properties:
+        url:
+          type: string
+        replaceText:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        addText:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        addImages:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        preserveColour:
+          type: boolean
+      required:
+        - url
+    PdfPreflightArgs:
+      type: object
+      properties:
+        url:
+          type: object
+          additionalProperties: true
+      required:
+        - url
+    PdfPrintReadyArgs:
+      type: object
+      properties:
+        url:
+          type: string
+        profile:
+          $ref: "#/components/schemas/PdfXProfile"
+        outputIntent:
+          type: string
+        convertToCmyk:
+          type: boolean
+        embedFonts:
+          type: boolean
+        bleed:
+          type: object
+          additionalProperties: true
+        flattenTransparency:
+          type: boolean
+        minDpi:
+          type: number
+      required:
+        - url
     HttpRequestArgs:
       type: object
       properties:
@@ -17290,6 +17374,12 @@ components:
           $ref: "#/components/schemas/PdfDecodeBarcodesArgs"
         pdf.inspectGraphics:
           $ref: "#/components/schemas/PdfInspectGraphicsArgs"
+        pdf.edit:
+          $ref: "#/components/schemas/PdfEditArgs"
+        pdf.preflight:
+          $ref: "#/components/schemas/PdfPreflightArgs"
+        pdf.printReady:
+          $ref: "#/components/schemas/PdfPrintReadyArgs"
         http.request:
           $ref: "#/components/schemas/HttpRequestArgs"
         translate:
@@ -17316,6 +17406,9 @@ components:
         - pdf.extract
         - pdf.decodeBarcodes
         - pdf.inspectGraphics
+        - pdf.edit
+        - pdf.preflight
+        - pdf.printReady
         - http.request
         - translate
     WebSearchResultItem:
@@ -17545,6 +17638,139 @@ components:
           additionalProperties: true
       required:
         - url
+    PdfEditItemResult:
+      type: object
+      properties:
+        id:
+          type: string
+        status:
+          type: string
+          enum:
+            - done
+            - failed
+        note:
+          type: string
+        verified:
+          type: boolean
+        usedFallbackFont:
+          type: boolean
+      required:
+        - id
+        - status
+    PdfEditResult:
+      type: object
+      properties:
+        url:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - url
+    PdfPreflightFinding:
+      type: object
+      properties:
+        severity:
+          type: string
+          enum:
+            - error
+            - warning
+      required:
+        - severity
+    PdfPreflightResult:
+      type: object
+      properties:
+        url:
+          type: string
+        compliant:
+          type: boolean
+        profile:
+          $ref: "#/components/schemas/PdfXProfile"
+        version:
+          type: string
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/PdfPreflightFinding"
+        stats:
+          type: object
+          additionalProperties: true
+        pageCount:
+          type: number
+        fonts:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        spotColours:
+          type: array
+          items:
+            type: string
+        images:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        transparency:
+          type: boolean
+        outputIntent:
+          type: object
+          additionalProperties: true
+      required:
+        - url
+        - compliant
+        - profile
+        - version
+        - findings
+        - stats
+        - pageCount
+        - fonts
+        - spotColours
+        - images
+        - transparency
+        - outputIntent
+    PdfPrintReadyResult:
+      type: object
+      properties:
+        url:
+          type: string
+        report:
+          type: object
+          additionalProperties: true
+        compliant:
+          type: boolean
+        profile:
+          $ref: "#/components/schemas/PdfXProfile"
+        outputIntent:
+          type: string
+        findings:
+          type: array
+          items:
+            $ref: "#/components/schemas/PdfPreflightFinding"
+        changes:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        before:
+          type: object
+          additionalProperties: true
+        stats:
+          type: object
+          additionalProperties: true
+        note:
+          type: string
+      required:
+        - url
+        - report
+        - compliant
+        - profile
+        - outputIntent
+        - findings
+        - changes
+        - before
+        - stats
+        - note
     ResponsesAgentTrace:
       type: object
       properties:
@@ -17629,8 +17855,19 @@ components:
         - pdf.extract
         - pdf.decodeBarcodes
         - pdf.inspectGraphics
+        - pdf.edit
+        - pdf.preflight
+        - pdf.printReady
         - http.request
         - translate
+    PdfColour:
+      type: object
+      additionalProperties: true
+    PdfXProfile:
+      type: string
+      enum:
+        - pdfx-1a
+        - pdfx-4
     AgentStreamEvent:
       type: object
       additionalProperties: true
@@ -22814,6 +23051,8 @@ components:
         hubName:
           type: string
         hubCustomDomain:
+          type: string
+        siteHost:
           type: string
         shortId:
           type: string
@@ -30302,6 +30541,19 @@ components:
         appId:
           type: object
           additionalProperties: true
+    FunctionSiteUrlOptions:
+      type: object
+      properties:
+        channel:
+          type: string
+        path:
+          type: string
+        query:
+          type: object
+          additionalProperties:
+            type: string
+        host:
+          type: string
     AllocateSequenceInput:
       type: object
       properties:

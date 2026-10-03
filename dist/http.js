@@ -53,6 +53,14 @@ let grantToken = undefined;
  */
 let appContextId = undefined;
 /**
+ * The release CHANNEL this app build is running as ('dev' | 'alpha' | 'beta' | 'stable'), when the
+ * host says so — e.g. Forge's preview of a Test build. SL.functions then calls that channel's
+ * release (/app/:appId/<channel>/functions/:name). Unset = production behaviour: the server runs the
+ * release the collection has installed. Set via initializeApi({ appChannel }) / setAppChannel(), or
+ * picked up from the host's `appChannel` context param (see functions.ts).
+ */
+let appChannelId = undefined;
+/**
  * Auth-ready gate. When an app declares (initializeApi({ awaitAuth: true })) that its bearer token
  * will arrive ASYNCHRONOUSLY — e.g. a dev app embedded in the console that receives its token over
  * postMessage — outgoing requests await this until setBearerToken() is called, so the app's first
@@ -318,6 +326,14 @@ export function getAppContext() {
 export function setAppContext(id) {
     appContextId = id;
 }
+/** The release channel explicitly set for this app build (initializeApi({ appChannel }) / setAppChannel). */
+export function getAppChannel() {
+    return appChannelId;
+}
+/** Set (or clear) the release channel SL.functions calls target. */
+export function setAppChannel(channel) {
+    appChannelId = channel;
+}
 function maskSensitive(value) {
     if (!value)
         return value;
@@ -471,6 +487,8 @@ export function initializeApi(options) {
     // Preserve the app context across re-inits that omit it (mirrors platform/token handling).
     if (options.appId !== undefined)
         appContextId = options.appId;
+    if (options.appChannel !== undefined)
+        appChannelId = options.appChannel;
     // Enable token persistence before restoring the token.
     if (options.persistToken !== undefined)
         tokenPersistenceEnabled = options.persistToken;

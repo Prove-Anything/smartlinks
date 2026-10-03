@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.34  |  Generated: 2026-10-02T16:06:32.154Z
+Version: 2.0.36  |  Generated: 2026-10-03T15:04:37.396Z
 
 This is a concise summary of all available API functions and types.
 
@@ -171,6 +171,12 @@ The current app context (appId), if the SDK was initialized with one.
 
 **setAppContext**(id: string | undefined) → `void`
 Set (or clear) the current app context — the appId used to scope SL.functions calls.
+
+**getAppChannel**() → `string | undefined`
+The release channel explicitly set for this app build (initializeApi({ appChannel }) / setAppChannel).
+
+**setAppChannel**(channel: string | undefined) → `void`
+Set (or clear) the release channel SL.functions calls target.
 
 **initializeApi**(options: {
   baseURL: string
@@ -1528,6 +1534,45 @@ interface PdfInspectGraphicsArgs {
 }
 ```
 
+**PdfBox** (interface)
+```typescript
+interface PdfBox {
+  x: number; y: number; w: number; h: number
+}
+```
+
+**PdfEditArgs** (interface)
+```typescript
+interface PdfEditArgs {
+  url: string
+  replaceText?: { id?: string; page?: number; find: string; replace: string; bold?: boolean; align?: 'left' | 'center' | 'right' }[]
+  addText?: { id?: string; page: number; box: PdfBox; text: string; size?: number; bold?: boolean; colour?: PdfColour; align?: 'left' | 'center' | 'right' }[]
+  addImages?: { id?: string; page: number; box: PdfBox; imageUrl: string; colorSpace?: 'rgb' | 'cmyk' }[]
+  preserveColour?: boolean
+}
+```
+
+**PdfPreflightArgs** (interface)
+```typescript
+interface PdfPreflightArgs {
+  url: string; profile?: PdfXProfile; bleed?: { mm: number }; minDpi?: number
+}
+```
+
+**PdfPrintReadyArgs** (interface)
+```typescript
+interface PdfPrintReadyArgs {
+  url: string
+  profile?: PdfXProfile
+  outputIntent?: string
+  convertToCmyk?: boolean
+  embedFonts?: boolean
+  bleed?: { mm: number }
+  flattenTransparency?: boolean
+  minDpi?: number
+}
+```
+
 **HttpRequestArgs** (interface)
 ```typescript
 interface HttpRequestArgs {
@@ -1566,6 +1611,9 @@ interface AiToolArgsMap {
   'pdf.extract': PdfExtractArgs
   'pdf.decodeBarcodes': PdfDecodeBarcodesArgs
   'pdf.inspectGraphics': PdfInspectGraphicsArgs
+  'pdf.edit': PdfEditArgs
+  'pdf.preflight': PdfPreflightArgs
+  'pdf.printReady': PdfPrintReadyArgs
   'http.request': HttpRequestArgs
   'translate': TranslateArgs
 }
@@ -1741,6 +1789,68 @@ interface PdfInspectGraphicsResult {
 }
 ```
 
+**PdfEditItemResult** (interface)
+```typescript
+interface PdfEditItemResult {
+  id: string
+  status: 'done' | 'failed'
+  note?: string
+  verified?: boolean
+  usedFallbackFont?: boolean
+}
+```
+
+**PdfEditResult** (interface)
+```typescript
+interface PdfEditResult {
+  url: string; results: PdfEditItemResult[]; warnings: string[]
+}
+```
+
+**PdfPreflightFinding** (interface)
+```typescript
+interface PdfPreflightFinding {
+  severity: 'error' | 'warning'; code: string; page?: number; message: string
+}
+```
+
+**PdfPreflightResult** (interface)
+```typescript
+interface PdfPreflightResult {
+  url: string
+  compliant: boolean
+  profile: PdfXProfile | null
+  version: string | null
+  findings: PdfPreflightFinding[]
+  stats: {
+  pageCount: number
+  fonts: { name: string; embedded: boolean; subset: boolean; type: string; pages: number[] }[]
+  spotColours: string[]
+  images: { page: number; dpi: number; width: number; height: number; space: string; placedMm: { w: number; h: number } }[]
+  transparency: boolean
+  outputIntent: { identifier: string | null; hasProfile: boolean } | null
+  [key: string]: any
+  }
+}
+```
+
+**PdfPrintReadyResult** (interface)
+```typescript
+interface PdfPrintReadyResult {
+  url: string
+  report: {
+  compliant: boolean
+  profile: PdfXProfile
+  outputIntent: string
+  findings: PdfPreflightFinding[]
+  changes: { code: string; message: string }[]
+  before: { compliant: boolean; errors: number; findings: PdfPreflightFinding[] }
+  stats: Record<string, any>
+  note: string
+  }
+}
+```
+
 **ResponsesAgentTrace** (interface)
 ```typescript
 interface ResponsesAgentTrace {
@@ -1777,6 +1887,10 @@ interface AgentResponseCompletedEvent {
 **AiToolCapability** = ``
 
 **AiToolName** = ``
+
+**PdfColour** = `string | [number, number, number, number]`
+
+**PdfXProfile** = `'pdfx-1a' | 'pdfx-4'`
 
 **AgentStreamEvent** = ``
 
@@ -4725,6 +4839,7 @@ interface Collection {
   redirectUrl?: string // Whether the collection has a custom domain
   hubName?: string
   hubCustomDomain?: string
+  siteHost?: string | null
   shortId: string, // The shortId of this collection
   dark?: boolean // if dark mode is enabled for this collection
   primaryColor?: string
@@ -9476,7 +9591,17 @@ interface FunctionListResponse {
 **FunctionCallOptions** (interface)
 ```typescript
 interface FunctionCallOptions {
-  appId?: string; channel?: string
+  appId?: string; channel?: string | null
+}
+```
+
+**FunctionSiteUrlOptions** (interface)
+```typescript
+interface FunctionSiteUrlOptions {
+  channel?: string
+  path?: string
+  query?: Record<string, string>
+  host?: string
 }
 ```
 
@@ -10608,16 +10733,16 @@ Retrieves all Collections.
 Retrieve a collection by its shortId (public endpoint).
 
 **getByHub**() → `Promise<CollectionResponse>`
-Resolve the collection for the current Hub domain (public endpoint). The server derives the requesting domain from the request headers (`X-Source-Domain` / `X-Forwarded-Host` / `Host`), so no identifier is passed — this is the call a Hub frontend makes on load to find out which collection it is serving, whether it's reached via `{brand}.mysmartlinks.app` or a bring-your-own custom domain (e.g. `hub.acme.com`).
+Resolve the collection for the current Hub domain (public endpoint). The server derives the requesting domain from the request headers (`X-Source-Domain` / `X-Forwarded-Host` / `Host`), so no identifier is passed — this is the call a Hub frontend makes on load to find out which collection it is serving, whether it's reached via `{brand}.smartlinks.host` or a bring-your-own custom domain (e.g. `hub.acme.com`).
 
 **getByDomain**(domain: string) → `Promise<CollectionResponse>`
-Resolve the collection for an explicit Hub domain (public endpoint). Unlike {@link getByHub}, the domain is passed explicitly rather than derived from request headers — use this for raw/cross-origin calls where the Hub frontend knows its own hostname (e.g. "erbauer.mysmartlinks.app").
+Resolve the collection for an explicit Hub domain (public endpoint). Unlike {@link getByHub}, the domain is passed explicitly rather than derived from request headers — use this for raw/cross-origin calls where the Hub frontend knows its own hostname (e.g. "erbauer.smartlinks.host").
 
 **checkHubAvailability**(collectionId: string, name: string) → `Promise<HubAvailabilityResponse>`
 Check whether a Hub subdomain name is available to claim (admin only).
 
 **claimHub**(collectionId: string, hubName: string) → `Promise<CollectionResponse>`
-Claim or rename the Hub subdomain for a collection (admin only). Maps `{hubName}.mysmartlinks.app` to the collection. If the collection already had a different hub name, the previous subdomain is released automatically.
+Claim or rename the Hub subdomain for a collection (admin only). Maps `{hubName}.smartlinks.host` to the collection. If the collection already had a different hub name, the previous subdomain is released automatically.
 
 **registerDomain**(collectionId: string, domain: string, target: DomainTarget = "smartlinks") → `Promise<any>`
 Register a custom domain for a collection and provision its managed certificate (admin only). `"smartlinks"` (the id.smartlinks.app load balancer). Pass `"hub"` to register a bring-your-own Hub domain.
@@ -10987,6 +11112,17 @@ Update a form for a collection (admin only).
 Delete a form for a collection (admin only).
 
 ### functions
+
+**resolveFunctionChannel**(opts: FunctionCallOptions = {}, appId?: string) → `string | undefined`
+The release channel a call targets, or undefined for "the collection's installed release". A host context `appChannel` can be scoped to ONE app with `appChannelApp` — needed where several apps share a page (Forge's portal preview of a dev component), so only the app under development calls its dev build.
+
+**functionPath**(surface: 'public' | 'admin', collectionId: string, name: string, opts: FunctionCallOptions = {}) → `string`
+The API path a function call goes to (exported for hosts/tests that need the exact URL).
+
+**siteUrl**(collection: { siteHost?: string | null } | string,
+    name: string,
+    opts: FunctionSiteUrlOptions & { appId?: string } = {}) → `string`
+The PUBLIC address of an app function on the collection's own site — what you give a third party as a webhook URL, or call from the collection's public pages: `https://<siteHost>/_fn/<appId>[/<channel>]/<name>[/<path>]`. Every HTTP method the function declares works there, with the raw body for signature checks. Pass the collection (or its siteHost). This address is for public/integration calls; signed-in calls from your app keep using {@link call} / {@link callAdmin}, so the user's SmartLinks session never goes to a tenant hostname. const col = await SL.collection.get(collectionId) const hookUrl = SL.functions.siteUrl(col, 'stripeWebhook', { appId: 'my-shop' }) // → https://acme.smartlinks.host/_fn/my-shop/stripeWebhook
 
 **call**(collectionId: string,
     name: string,

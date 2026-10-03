@@ -31,6 +31,10 @@ export declare function isProxyEnabled(): boolean;
 export declare function getAppContext(): string | undefined;
 /** Set (or clear) the current app context — the appId used to scope SL.functions calls. */
 export declare function setAppContext(id: string | undefined): void;
+/** The release channel explicitly set for this app build (initializeApi({ appChannel }) / setAppChannel). */
+export declare function getAppChannel(): string | undefined;
+/** Set (or clear) the release channel SL.functions calls target. */
+export declare function setAppChannel(channel: string | undefined): void;
 export declare function initializeApi(options: {
     baseURL: string;
     apiKey?: string;
@@ -52,6 +56,13 @@ export declare function initializeApi(options: {
      * Preserved across re-initialization when not supplied.
      */
     appId?: string;
+    /**
+     * The release channel this build is running as ('dev' | 'alpha' | 'beta' | 'stable'). Normally
+     * left unset — hosts that run a non-production build (Forge preview of a Test build) pass
+     * `appChannel` in the app's context and the SDK picks it up. Preserved across re-initialization
+     * when not supplied.
+     */
+    appChannel?: string;
     /**
      * Declares that a bearer token will arrive asynchronously (e.g. handed by the host over
      * postMessage in a dev/direct embed). Until setBearerToken() is called, outgoing requests wait

@@ -3,6 +3,13 @@ export interface SmartLinksContext {
     appId?: string;
     productId?: string;
     proofId?: string;
+    /**
+     * The release channel the host is running this build as (e.g. 'dev' in Forge's preview of a Test
+     * build). SL.functions uses it to call that channel's server functions. Absent in production.
+     */
+    appChannel?: string;
+    /** Limits `appChannel` to one app (where several apps share a page, e.g. a portal preview). */
+    appChannelApp?: string;
     /** Any other declared view params (e.g. pageId, voteId, orientation, tvMode). */
     [key: string]: string | undefined;
 }

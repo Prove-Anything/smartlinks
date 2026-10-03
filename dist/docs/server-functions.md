@@ -248,16 +248,69 @@ To call a *different* app's function, pass the appId explicitly:
 await SL.functions.call(collectionId, 'pressCounter', {}, { appId: 'some-other-app' })
 ```
 
-**The app does NOT have to be enabled on the collection.** Because the appId is explicit, the
-function is resolved directly from the app's release — so you can test an app on any collection
-before installing it (and without it showing up in that collection's menus). Enabling an app is
-currently just a UX courtesy (dropdowns/menus), not a gate on running its functions. For a build
-that isn't the default `stable` channel — e.g. a **dev** app you haven't installed — pass the
-channel:
+**Where it runs.** A function runs on a collection when the app is **installed** there (enabled in
+the collection's apps); or the app is **restricted** to a list of collections (what publishing from
+Forge sets for every developer) and this collection is on it, e.g. your own sandbox; or the app is
+**public**, meaning a registered app with no restriction list, which only platform admins can
+publish. Anything else gets `404 APP_NOT_INSTALLED`: a function can run with the collection's own
+authority and secrets, so a developer's app can't reach a collection that hasn't taken it on.
+
+**Who may run server code at all.** Until functions move to an isolated runner, only TRUSTED apps
+execute: public (unrestricted) apps, or apps a platform admin has marked `functionsTrusted: true`.
+Developer apps — restricted to their own collections, which includes every app published from
+self-serve Forge — get `403 FUNCTIONS_NOT_ENABLED` until they're trusted. A platform admin can also
+switch any app's functions off with `functionsTrusted: false`.
+
+**Which release.** With no channel, the server runs the release the collection has **installed** (stable for a
+public app that isn't installed) — what production wants, so app code just calls `SL.functions.call(collectionId, name)`. To run
+another release, the channel goes **in the path**: `/app/:appId/<dev|alpha|beta|stable>/functions/:name`.
+The SDK adds it for you when the host tells the app which channel it's running as — Forge's preview
+of a Test build passes `appChannel=dev` in the app's context, so the same code calls the dev build
+there and the installed build in production. You can also set it yourself:
 
 ```ts
-await SL.functions.call(collectionId, 'pressCounter', {}, { appId: 'my-counter-app', channel: 'dev' })
+SL.initializeApi({ baseURL, appId: 'my-counter-app', appChannel: 'dev' }) // whole app
+await SL.functions.call(collectionId, 'pressCounter', {}, { channel: 'beta' }) // one call
+await SL.functions.call(collectionId, 'pressCounter', {}, { channel: null })   // force the installed release
 ```
+
+**Public address on the collection's own site (webhooks, integrations).** Every collection has a
+site host — `<name>.smartlinks.host` once a name is claimed, else `c-<shortId>.smartlinks.host` —
+returned as `collection.siteHost`. App functions are reachable there:
+
+```
+https://<siteHost>/_fn/<appId>[/<channel>]/<function>[/<sub-path…>]
+```
+
+```ts
+const col = await SL.collection.get(collectionId)
+const webhookUrl = SL.functions.siteUrl(col, 'stripeWebhook', { appId: 'my-shop' })
+// → https://acme.smartlinks.host/_fn/my-shop/stripeWebhook   (give this to Stripe)
+```
+
+Built for integrations: **every HTTP method** the function declares in `trigger.methods` (default
+POST only), **any content type** with the exact bytes in `event.rawBody` (verify signatures with
+`crypto.subtle`), **sub-paths** after the name when the function declares `trigger.path` (`"/*"`, or a
+pattern like `"/orders/:id"` → `event.params.id`), and the function's own `Response` — status, headers,
+CORS — goes back unchanged (the platform adds no CORS headers there; declare `OPTIONS` and answer
+preflights yourself if browsers call you cross-origin). Bodies up to 6 MB.
+
+```js
+// manifest: { name: 'orders', trigger: { type: 'http', methods: ['GET', 'PUT'], path: '/orders/:id' }, visibility: 'public' }
+export async function orders(ctx, event) {
+  if (event.method === 'GET') return ctx.sl.appRecords.get(event.params.id)
+  // PUT: verify the sender first — e.g. an HMAC over event.rawBody with a secret
+}
+```
+
+Security: the platform never hands a caller's SmartLinks credential to function code (if it signed
+the caller in from `Authorization`, that header is removed and you get `ctx.caller`); your OWN
+`Authorization` scheme for webhooks passes through. `siteUrl` only includes a channel you ask for —
+point production webhooks at the bare address and test ones at `/dev/`.
+
+The channel is never a query parameter: the function owns its query string (`?channel=sms` reaches
+your handler untouched), and a configured URL — a webhook, a third-party callback — can only ever
+hit the channel it names. Point production webhooks at the bare path and test ones at `/dev/`.
 
 If no appId is available (not set on init, none passed), the call falls back to the **deprecated
 flat path** `/collection/:c/functions/:name`, which searches only the collection's **enabled** apps,
@@ -483,23 +536,19 @@ surface that matches its `visibility`:
 POST /admin/collection/:collectionId/app/:appId/functions/:name    # visibility: admin  (collection-admin auth)
 POST /public/collection/:collectionId/app/:appId/functions/:name   # visibility: public (auth optional)
 GET  /{admin|public}/collection/:collectionId/app/:appId/functions # list this app's functions on the surface
+POST /{admin|public}/collection/:collectionId/app/:appId/dev/functions/:name  # a specific channel's release
 ```
 
-The app-scoped route resolves the app **directly by id**, so the app need not be enabled on the
-collection — handy for testing an un-installed (dev) app. Add `?channel=dev` (default `stable`) to
-pick the release. Enablement (`appConfig.apps[]`) currently only controls menus/discovery, not
-whether a function can run.
+Add a channel segment to run a specific release: `/app/:appId/dev/functions/:name` (also `alpha`,
+`beta`, `stable`; anything else is a 404). Without one, the collection's installed release runs.
+The app must be installed on the collection, on the app's restricted list, or a public app (see
+"Where it runs"); otherwise `404 APP_NOT_INSTALLED`.
 
 The bare-name form (`/collection/:c/functions/:name`, no `/app/:appId`) is a **deprecated alias**:
 it searches only the collection's **enabled** apps, resolves by name, lets a first-party builtin
 win, and returns `409 AMBIGUOUS_FUNCTION` when two enabled apps define the same name. Prefer the
 app-scoped route (the SDK emits it automatically once an appId is set — see "Calling a function
 from your app").
-
-> **Security note (first-party model, today):** because enablement is not an auth gate, any app's
-> function can be invoked on any collection by id. That's fine while all apps are first-party and
-> trusted. When untrusted third-party apps arrive, gate *elevated* (`public` + `collection`)
-> invocation of a **non-enabled** app behind install/consent — the app-scoped resolver is the seam.
 
 The handler receives the request as `event`: `event.body` (parsed JSON), `event.query`,
 `event.headers`, `event.rawBody` (raw bytes, for XML/form/other inputs), and `event.contentType`.

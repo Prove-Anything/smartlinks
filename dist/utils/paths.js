@@ -2,7 +2,7 @@
 // URL on any of these is NOT a custom domain, so non-master GTINs still need the
 // `/gc/{shortId}` collection prefix. `portalUrl` is only ever set to the platform
 // default or a collection's custom domain, so exact-host matching is sufficient here.
-const PLATFORM_HOSTS = ['smartlinks.app', 'mysmartlinks.app', 'zt.smartlinks.io'];
+const PLATFORM_HOSTS = ['smartlinks.app', 'smartlinks.host', 'mysmartlinks.app', 'zt.smartlinks.io'];
 /** True when `baseUrl`'s host is a collection's own custom domain (not a platform host). */
 function baseIsCustomDomain(baseUrl) {
     if (!baseUrl)
