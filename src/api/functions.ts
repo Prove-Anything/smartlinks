@@ -13,7 +13,16 @@
 // available, the call falls back to the DEPRECATED flat path `/collection/:c/functions/:name`,
 // which the server resolves by bare name and REJECTS with 409 AMBIGUOUS_FUNCTION when more than one
 // installed app defines that name. Always prefer an appId.
-import { post, request, getAppContext } from "../http"
+//
+// RELEASE CHANNEL. The channel is part of the URL — /collection/:c/app/:appId/<channel>/functions/:name
+// — never a query param (the function owns its query string, and a configured URL such as a webhook
+// can only ever hit the channel it names). With NO channel the server runs the release the collection
+// has installed, which is what production wants. A channel comes from, in order: `opts.channel`, the
+// app's channel (initializeApi({ appChannel }) / setAppChannel), or the host's `appChannel` context
+// param (Forge's preview of a Test build passes appChannel=dev). Pass `channel: null` to force the
+// installed release regardless.
+import { post, request, getAppContext, getAppChannel } from "../http"
+import { readContext } from "../context"
 
 /** A server function's returned value — shape is app-defined, so untyped by default. */
 export type FunctionCallResult = any
@@ -22,21 +31,48 @@ export interface FunctionListResponse { functions: FunctionListEntry[] }
 /**
  * Options for a function call.
  * - `appId` scopes resolution to one app (recommended; falls back to the SDK app context).
- * - `channel` selects which release to run when addressing an app that is NOT enabled on the
- *   collection (enablement isn't required — the app is resolved directly by id). Defaults to
- *   `stable` server-side, so pass `channel: 'dev'` to test a dev build before installing it.
+ * - `channel` runs a specific release ('dev' | 'alpha' | 'beta' | 'stable') instead of the one the
+ *   collection has installed — normally left unset (see RELEASE CHANNEL above); `null` forces the
+ *   installed release even when the app/host set a channel. The app must be installed on the
+ *   collection, restricted to it (e.g. the developer's sandbox), or a platform-approved public app.
  */
-export interface FunctionCallOptions { appId?: string; channel?: string }
+export interface FunctionCallOptions { appId?: string; channel?: string | null }
 
-function fnPath(surface: 'public' | 'admin', collectionId: string, name: string, opts: FunctionCallOptions = {}): string {
-  const c = encodeURIComponent(collectionId)
-  const n = encodeURIComponent(name)
-  const app = opts.appId ?? getAppContext()
-  const q = opts.channel ? `?channel=${encodeURIComponent(opts.channel)}` : ''
-  return app
-    ? `/${surface}/collection/${c}/app/${encodeURIComponent(app)}/functions/${n}${q}`
-    : `/${surface}/collection/${c}/functions/${n}${q}` // deprecated flat alias
+const CHANNELS = ['dev', 'alpha', 'beta', 'stable']
+
+/**
+ * The release channel a call targets, or undefined for "the collection's installed release".
+ * A host context `appChannel` can be scoped to ONE app with `appChannelApp` — needed where several
+ * apps share a page (Forge's portal preview of a dev component), so only the app under development
+ * calls its dev build.
+ */
+export function resolveFunctionChannel(opts: FunctionCallOptions = {}, appId?: string): string | undefined {
+  if (opts.channel === null) return undefined
+  let raw = opts.channel ?? getAppChannel()
+  if (raw == null) {
+    const ctx = readContext()
+    const scopedTo = ctx.appChannelApp
+    if (ctx.appChannel && (!scopedTo || scopedTo === (appId ?? opts.appId ?? getAppContext()))) raw = ctx.appChannel
+  }
+  if (!raw) return undefined
+  const ch = String(raw).trim().toLowerCase()
+  if (!CHANNELS.includes(ch)) throw new Error(`Unknown release channel "${raw}" (expected ${CHANNELS.join(' | ')})`)
+  return ch
 }
+
+function appBase(surface: 'public' | 'admin', collectionId: string, opts: FunctionCallOptions): string {
+  const c = encodeURIComponent(collectionId)
+  const app = opts.appId ?? getAppContext()
+  if (!app) return `/${surface}/collection/${c}` // deprecated flat alias — resolves installed apps only
+  const ch = resolveFunctionChannel(opts, app)
+  return `/${surface}/collection/${c}/app/${encodeURIComponent(app)}${ch ? `/${ch}` : ''}`
+}
+
+/** The API path a function call goes to (exported for hosts/tests that need the exact URL). */
+export function functionPath(surface: 'public' | 'admin', collectionId: string, name: string, opts: FunctionCallOptions = {}): string {
+  return `${appBase(surface, collectionId, opts)}/functions/${encodeURIComponent(name)}`
+}
+const fnPath = functionPath
 
 export namespace functions {
   /**
@@ -76,12 +112,6 @@ export namespace functions {
    * appId is given (or set as the SDK app context): `GET /public/collection/:c[/app/:appId]/functions`.
    */
   export async function list(collectionId: string, opts: FunctionCallOptions = {}): Promise<FunctionListResponse> {
-    const c = encodeURIComponent(collectionId)
-    const app = opts.appId ?? getAppContext()
-    const q = opts.channel ? `?channel=${encodeURIComponent(opts.channel)}` : ''
-    const path = app
-      ? `/public/collection/${c}/app/${encodeURIComponent(app)}/functions${q}`
-      : `/public/collection/${c}/functions${q}`
-    return request<FunctionListResponse>(path)
+    return request<FunctionListResponse>(`${appBase('public', collectionId, opts)}/functions`)
   }
 }
