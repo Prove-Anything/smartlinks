@@ -54,7 +54,7 @@ export namespace collection {
    * The server derives the requesting domain from the request headers
    * (`X-Source-Domain` / `X-Forwarded-Host` / `Host`), so no identifier is
    * passed — this is the call a Hub frontend makes on load to find out which
-   * collection it is serving, whether it's reached via `{brand}.mysmartlinks.app`
+   * collection it is serving, whether it's reached via `{brand}.smartlinks.host`
    * or a bring-your-own custom domain (e.g. `hub.acme.com`).
    *
    * @returns Promise resolving to the CollectionResponse mapped to the domain
@@ -70,9 +70,9 @@ export namespace collection {
    *
    * Unlike {@link getByHub}, the domain is passed explicitly rather than derived
    * from request headers — use this for raw/cross-origin calls where the Hub
-   * frontend knows its own hostname (e.g. "erbauer.mysmartlinks.app").
+   * frontend knows its own hostname (e.g. "erbauer.smartlinks.host").
    *
-   * @param domain – The Hub domain to resolve (custom domain or {brand}.mysmartlinks.app)
+   * @param domain – The Hub domain to resolve (custom domain or {brand}.smartlinks.host)
    * @returns Promise resolving to the CollectionResponse mapped to the domain
    * @throws ErrorResponse (404) if no collection is mapped to the domain
    */
@@ -97,7 +97,7 @@ export namespace collection {
   /**
    * Claim or rename the Hub subdomain for a collection (admin only).
    *
-   * Maps `{hubName}.mysmartlinks.app` to the collection. If the collection
+   * Maps `{hubName}.smartlinks.host` to the collection. If the collection
    * already had a different hub name, the previous subdomain is released
    * automatically.
    *

@@ -45,13 +45,13 @@ export interface Collection {
   groupTags?: string[] // Array of group tag names
   /** Whether the collection has a custom domain */
   redirectUrl?: string // Whether the collection has a custom domain
-  /** The claimed Hub subdomain prefix (e.g. "acme" → acme.mysmartlinks.app) */
+  /** The claimed Hub subdomain prefix (e.g. "acme" → acme.smartlinks.host) */
   hubName?: string
   /** The collection's bring-your-own custom Hub domain (e.g. "hub.acme.com") */
   hubCustomDomain?: string
   /**
    * The collection's SITE HOST on the tenant domain — computed by the server, never stored:
-   * `<hubName>.mysmartlinks.app` when a name is claimed, else the default `c-<shortId>.mysmartlinks.app`.
+   * `<hubName>.smartlinks.host` when a name is claimed, else the default `c-<shortId>.smartlinks.host`.
    * Hub serves it, and app functions are reachable under it at `https://<siteHost>/_fn/…`
    * (see SL.functions.siteUrl).
    */
@@ -116,7 +116,7 @@ export type DomainTarget = "smartlinks" | "hub"
 export interface HubAvailabilityResponse {
   /** Whether the name can be claimed by this collection */
   available: boolean
-  /** The full domain that was checked (e.g. "acme.mysmartlinks.app") */
+  /** The full domain that was checked (e.g. "acme.smartlinks.host") */
   domain: string
 }
 

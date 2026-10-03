@@ -99,7 +99,7 @@ export namespace functions {
    * @example
    * const col = await SL.collection.get(collectionId)
    * const hookUrl = SL.functions.siteUrl(col, 'stripeWebhook', { appId: 'my-shop' })
-   * // → https://acme.mysmartlinks.app/_fn/my-shop/stripeWebhook
+   * // → https://acme.smartlinks.host/_fn/my-shop/stripeWebhook
    */
   export function siteUrl(
     collection: { siteHost?: string | null } | string,

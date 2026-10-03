@@ -275,7 +275,7 @@ await SL.functions.call(collectionId, 'pressCounter', {}, { channel: null })   /
 ```
 
 **Public address on the collection's own site (webhooks, integrations).** Every collection has a
-site host — `<name>.mysmartlinks.app` once a name is claimed, else `c-<shortId>.mysmartlinks.app` —
+site host — `<name>.smartlinks.host` once a name is claimed, else `c-<shortId>.smartlinks.host` —
 returned as `collection.siteHost`. App functions are reachable there:
 
 ```
@@ -285,7 +285,7 @@ https://<siteHost>/_fn/<appId>[/<channel>]/<function>[/<sub-path…>]
 ```ts
 const col = await SL.collection.get(collectionId)
 const webhookUrl = SL.functions.siteUrl(col, 'stripeWebhook', { appId: 'my-shop' })
-// → https://acme.mysmartlinks.app/_fn/my-shop/stripeWebhook   (give this to Stripe)
+// → https://acme.smartlinks.host/_fn/my-shop/stripeWebhook   (give this to Stripe)
 ```
 
 Built for integrations: **every HTTP method** the function declares in `trigger.methods` (default
