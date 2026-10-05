@@ -297,6 +297,14 @@ export interface AppFunctionDef {
    * Per-call `{ scope }` and the `appData.global` / `appData.collection` handles override this.
    */
   dataScope?: 'collection' | 'global';
+  /**
+   * Data the platform fetches BEFORE the run and hands over as `ctx.inputs` — no round trip from your
+   * code (for isolated functions, no network hop). Same authority and capabilities as the equivalent
+   * `ctx.sl` read; a missing, denied or oversized (> 256 KB) input arrives as `null`, never an error.
+   * Event-trigger functions get `entity` (the record the event is about) by default; `entity: false`
+   * opts out. See server-functions.md → "Inputs".
+   */
+  inputs?: AppFunctionInputs;
   /** SDK/manifest API version this function targets (pinned for runtime compatibility). */
   apiVersion?: string;
   /** Exported handler name in the functions bundle. Defaults to `name`. */
@@ -434,6 +442,29 @@ export interface ServerFunctionContext {
   fetch: typeof fetch;
   /** Structured logging captured into run telemetry. */
   log: (message: string, data?: Record<string, any>) => void;
+  /** Data prefetched for this run, per the definition's `inputs` (read-only; `{}` when none). */
+  inputs: Readonly<ServerFunctionInputs>;
+}
+
+/** What a function asks to have prefetched (`AppFunctionDef.inputs`). */
+export interface AppFunctionInputs {
+  /** Event triggers: the record the event is about — product (needs `sl:products:read`), app record of
+   *  this app (`sl:records:read`), or the interaction event itself. On by default; `false` opts out. */
+  entity?: boolean;
+  /** The collection's public record. */
+  collection?: boolean;
+  /** This app's config for the collection — e.g. its `interactionIds`. Needs `sl:data:read`. */
+  appConfig?: boolean;
+  /** Http triggers: a product named by the request. Needs `sl:products:read`. */
+  product?: { from: `body.${string}` | `query.${string}` | 'path' };
+}
+
+/** `ctx.inputs` — what was prefetched for this run (keys you declared; `null` when unavailable). */
+export interface ServerFunctionInputs {
+  entity?: Record<string, any> | null;
+  collection?: Record<string, any> | null;
+  appConfig?: Record<string, any> | null;
+  product?: Record<string, any> | null;
 }
 
 /** The HTTP request handed to an `http`-trigger function as `event`. */

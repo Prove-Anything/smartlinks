@@ -15,7 +15,7 @@
 //    never resolvable locally.
 //  - `ctx.fetch` is gated by the `network` capability just like production.
 
-import type { AppFunctionDef, ServerFunctionContext } from '../types/appManifest'
+import type { AppFunctionDef, ServerFunctionContext, ServerFunctionInputs } from '../types/appManifest'
 
 export class CapabilityError extends Error {
   capability: string
@@ -95,6 +95,8 @@ export interface CreateFunctionTestContextOptions {
   sl?: TestSlImpl
   /** Backing fetch (defaults to global fetch). Still gated by the `network` capability. */
   fetch?: typeof fetch
+  /** What the platform would have prefetched as `ctx.inputs` (e.g. `{ entity: product }`). Default `{}`. */
+  inputs?: ServerFunctionInputs
 }
 
 export interface FunctionTestContext extends ServerFunctionContext {
@@ -212,6 +214,7 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
     log: (message: string, data?: Record<string, any>) => {
       logs.push({ at: new Date().toISOString(), message: String(message), ...(data ? { data } : {}) })
     },
+    inputs: Object.freeze({ ...(opts.inputs || {}) }),
     logs,
   }
 }

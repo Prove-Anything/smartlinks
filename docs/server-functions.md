@@ -324,6 +324,40 @@ name (a first-party builtin still wins). Always prefer an appId.
 
 ---
 
+## Inputs — data handed to your function
+
+Declare what your function needs and the platform fetches it **before** the run: read it from `ctx.inputs` instead of calling `ctx.sl` first. One less round trip — and for functions running in the isolated runner, one less network hop.
+
+```jsonc
+// app.manifest.json → functions.definitions[]
+{
+  "name": "onProductChanged",
+  "trigger": { "type": "event", "eventTypes": ["product.updated"] },
+  "capabilities": ["sl:products:read", "sl:data:read"],
+  "inputs": { "appConfig": true }            // entity is on by default for event triggers
+}
+```
+
+```js
+export async function onProductChanged(ctx, event) {
+  const product = ctx.inputs.entity                     // the product that changed
+  const { interactionIds } = ctx.inputs.appConfig || {} // this app's config for the collection
+}
+```
+
+| Input | What you get | Needs | Triggers |
+|---|---|---|---|
+| `entity` | The record the event is about: the product, your app's record, or the interaction event. **On by default**; `"entity": false` opts out. | read on that resource (`sl:products:read`, `sl:records:read`) | event |
+| `collection` | The collection's public record | — | all |
+| `appConfig` | Your app's config for this collection (where setup like `interactionIds` lives) | `sl:data:read` | all |
+| `product` | A product named by the request: `{ "from": "body.productId" }`, `"query.<field>"` or `"path"` | `sl:products:read` | http |
+
+- **Same rules as `ctx.sl`.** Inputs are fetched with your function's authority and capabilities, scoped to the collection it runs in — a product from another collection is never fetched.
+- **Never an error.** Not found, not allowed or larger than 256 KB → that input is `null`. Check before you use it.
+- **Current state.** Event inputs are fetched when your function runs, so you see the record as it is now; `event` still carries the ids.
+- **Checked at publish.** An unknown input, a bad `from`, or a missing capability fails validation.
+- **Testing:** pass `inputs` to the test context — `createFunctionTestContext({ def, inputs: { entity: { id: 'p1', name: 'Kettle' } } })`.
+
 ## Exposing a function to the AI agent
 
 An `http` function can be offered to the AI agent as a **callable tool**, alongside the built-in
