@@ -23,6 +23,8 @@ export * as utils from './utils'
 // Apps served as websites: per-route head tags + structured data, and the render-ready signal
 export * as seo from './seo'
 export * as site from './site'
+// Headless providers: validate an app's `data` + `headless` declaration
+export * as headless from './headless'
 // Shared dependency contract (host↔app) — one source of truth for externalized deps
 export {
   SHARED_DEPENDENCY_CONTRACT_VERSION,

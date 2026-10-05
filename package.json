@@ -1,6 +1,6 @@
 {
   "name": "@proveanything/smartlinks",
-  "version": "2.0.36",
+  "version": "2.0.37",
   "description": "Official JavaScript/TypeScript SDK for the Smartlinks API",
   "type": "module",
   "main": "dist/index.js",
@@ -30,7 +30,8 @@
   "bin": {
     "smartlinks-register-release": "scripts/register-release.mjs",
     "smartlinks-publish": "scripts/publish.mjs",
-    "smartlinks-doctor": "scripts/doctor.mjs"
+    "smartlinks-doctor": "scripts/doctor.mjs",
+    "smartlinks-headless": "scripts/headless-check.mjs"
   },
   "files": [
     "dist/",
@@ -38,6 +39,7 @@
     "scripts/register-release.mjs",
     "scripts/publish.mjs",
     "scripts/doctor.mjs",
+    "scripts/headless-check.mjs",
     "scripts/lib/",
     "openapi.yaml",
     "README.md"
