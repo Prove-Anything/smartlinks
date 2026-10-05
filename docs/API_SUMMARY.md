@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.37  |  Generated: 2026-10-05T11:58:10.538Z
+Version: 2.0.38  |  Generated: 2026-10-05T12:19:06.279Z
 
 This is a concise summary of all available API functions and types.
 
@@ -26,6 +26,12 @@ For detailed guides on specific features:
 - **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication (incl. hand-rolled streaming protocol)
 - **[Utilities](utils.md)** - Helper functions for building portal paths, URLs, and common tasks
 - **[UI Utils](ui-utils.md)** - Reusable, themeable admin UI React component library for microapps
+- **[Headless Providers](headless-providers.md)** - Declaring an app's content for other sites: the manifest `data` + `headless` blocks (types, storage, public fields, examples, read recipes, categories), `SL.headless.validate`, `smartlinks-headless`, and the procedure for adding a headless mode
+- **[Websites: SEO + GEO](site-seo.md)** - For apps served as websites: platform-generated robots/sitemap/llms.txt, canonical addresses, `SL.seo.head` / `SL.seo.jsonLd` / `SL.seo.schema.*`, `SL.site.ready()`, routes in `sitemap-paths.txt`
+- **[Agent Tools](agent-tools.md)** - Exposing app functions as AI agent tools
+- **[Host Dependency Contract](host-dependency-contract.md)** - The shared dependencies (React, the SDK…) the host provides, and what an app must externalise
+- **[Theme Tokens](theme-tokens.md)** - The `--sl-*` semantic token contract hosts set and apps bind to (`theme.css`)
+- **[CSS Baseline](css-baseline.md)** - The frozen `sl-*` structural helper classes hosts guarantee
 - **[Caching](caching.md)** - Multi-tier caching strategy (in-memory, SessionStorage, IndexedDB) used by the SDK
 - **[Native Facade](native-facade.md)** - Contract layer for accessing device capabilities (share, NFC, haptics) across host shells
 - **[i18n](i18n.md)** - Internationalization and localization

@@ -245,6 +245,12 @@ function generateAPISummary() {
   summary += '- **[iframe Responder](iframe-responder.md)** - iframe integration and cross-origin communication (incl. hand-rolled streaming protocol)\n';
   summary += '- **[Utilities](utils.md)** - Helper functions for building portal paths, URLs, and common tasks\n';
   summary += '- **[UI Utils](ui-utils.md)** - Reusable, themeable admin UI React component library for microapps\n';
+  summary += '- **[Headless Providers](headless-providers.md)** - Declaring an app\'s content for other sites: the manifest `data` + `headless` blocks (types, storage, public fields, examples, read recipes, categories), `SL.headless.validate`, `smartlinks-headless`, and the procedure for adding a headless mode\n';
+  summary += '- **[Websites: SEO + GEO](site-seo.md)** - For apps served as websites: platform-generated robots/sitemap/llms.txt, canonical addresses, `SL.seo.head` / `SL.seo.jsonLd` / `SL.seo.schema.*`, `SL.site.ready()`, routes in `sitemap-paths.txt`\n';
+  summary += '- **[Agent Tools](agent-tools.md)** - Exposing app functions as AI agent tools\n';
+  summary += '- **[Host Dependency Contract](host-dependency-contract.md)** - The shared dependencies (React, the SDK…) the host provides, and what an app must externalise\n';
+  summary += '- **[Theme Tokens](theme-tokens.md)** - The `--sl-*` semantic token contract hosts set and apps bind to (`theme.css`)\n';
+  summary += '- **[CSS Baseline](css-baseline.md)** - The frozen `sl-*` structural helper classes hosts guarantee\n';
   summary += '- **[Caching](caching.md)** - Multi-tier caching strategy (in-memory, SessionStorage, IndexedDB) used by the SDK\n';
   summary += '- **[Native Facade](native-facade.md)** - Contract layer for accessing device capabilities (share, NFC, haptics) across host shells\n';
   summary += '- **[i18n](i18n.md)** - Internationalization and localization\n';
