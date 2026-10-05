@@ -10,6 +10,10 @@ let baseURL: string | null = null
 let apiKey: string | undefined = undefined
 let bearerToken: string | undefined = undefined
 let proxyMode: boolean = false
+// How long a request through the parent (proxyMode) waits for the host's reply. Without a limit, a host
+// that never answers (no responder, a dropped message) leaves the call pending forever: no network
+// request in the frame, no error. 90 s covers the longest platform call (a 60 s function deadline).
+let proxyTimeoutMs: number = 90_000
 let ngrokSkipBrowserWarning: boolean = false
 let extraHeadersGlobal: Record<string, string> = {}
 /**
@@ -517,6 +521,11 @@ export function initializeApi(options: {
   awaitAuth?: boolean
   /** How long (ms) to wait for the async token before letting requests proceed anyway. Default 8000. */
   awaitAuthTimeoutMs?: number
+  /**
+   * proxyMode only: how long (ms) a request waits for the parent host's reply before failing with a
+   * 504 SmartlinksApiError (errorCode PROXY_TIMEOUT). Default 90000. 0 = wait indefinitely.
+   */
+  proxyTimeoutMs?: number
   iframeAutoResize?: boolean // default true when in iframe
   logger?: Logger // optional console-like or function to enable verbose logging
   /**
@@ -585,6 +594,7 @@ export function initializeApi(options: {
   }
 
   proxyMode = !!options.proxyMode
+  if (options.proxyTimeoutMs !== undefined) proxyTimeoutMs = Math.max(0, Number(options.proxyTimeoutMs) || 0)
 
   // Auto-enable ngrok skip header if domain contains .ngrok.io and user did not explicitly set the flag.
   // Infer ngrok usage from common domains (.ngrok.io or .ngrok-free.dev)
@@ -1205,11 +1215,28 @@ async function proxyRequest<T>(
   
   logDebug('[smartlinks] proxy:postMessage', { id, method, path, headers: headers ? redactHeaders(headers) : undefined, hasBody: !!body })
   return new Promise<T>((resolve, reject) => {
-    proxyPending[id] = { resolve, reject }
-    
+    proxyPending[id] = withProxyTimeout(id, `${method} ${path}`, resolve, reject)
     window.parent.postMessage(msg, "*")
-    // Optionally: add a timeout here to reject if no response
   })
+}
+
+/**
+ * Wrap a pending proxy request's resolve/reject with the proxy timeout (proxyTimeoutMs): if the host
+ * hasn't answered by then, the request fails with a 504 PROXY_TIMEOUT instead of hanging forever.
+ */
+function withProxyTimeout(id: string, what: string, resolve: (data: any) => void, reject: (err: any) => void) {
+  if (!(proxyTimeoutMs > 0)) return { resolve, reject }
+  const timer = setTimeout(() => {
+    if (!proxyPending[id]) return
+    delete proxyPending[id]
+    const message = `The host page did not answer ${what} within ${proxyTimeoutMs >= 1000 ? `${Math.round(proxyTimeoutMs / 1000)}s` : `${proxyTimeoutMs}ms`} (proxyMode). The parent may not be handling SmartLinks proxy requests.`
+    logDebug('[smartlinks] proxy:timeout', { id, what })
+    reject(new SmartlinksApiError(message, 504, { code: 504, errorCode: 'PROXY_TIMEOUT', message }))
+  }, proxyTimeoutMs)
+  return {
+    resolve: (data: any) => { clearTimeout(timer); resolve(data) },
+    reject: (err: any) => { clearTimeout(timer); reject(err) },
+  }
 }
 
 /**
@@ -1962,8 +1989,7 @@ export async function sendCustomProxyMessage<T = any>(request: string, params: a
   };
   logDebug('[smartlinks] proxy:custom postMessage', { id, request, params: safeBodyPreview(params) })
   return new Promise<T>((resolve, reject) => {
-    proxyPending[id] = { resolve, reject };
+    proxyPending[id] = withProxyTimeout(id, `custom request ${request}`, resolve, reject);
     window.parent.postMessage(msg, "*");
-    // Optionally: add a timeout here to reject if no response
   });
 }
