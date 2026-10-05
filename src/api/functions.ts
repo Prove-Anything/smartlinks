@@ -14,6 +14,10 @@
 // which the server resolves by bare name and REJECTS with 409 AMBIGUOUS_FUNCTION when more than one
 // installed app defines that name. Always prefer an appId.
 //
+// PREFIX. App-scoped calls go to /fn/{public|admin}/collection/…/functions/… (under the API base,
+// so /api/v1/fn/…): one prefix for all function traffic, which the platform can route to its own
+// service. The same call without /fn still works (older SDKs). The flat alias has no /fn form.
+//
 // RELEASE CHANNEL. The channel is part of the URL — /collection/:c/app/:appId/<channel>/functions/:name
 // — never a query param (the function owns its query string, and a configured URL such as a webhook
 // can only ever hit the channel it names). With NO channel the server runs the release the collection
@@ -65,7 +69,7 @@ function appBase(surface: 'public' | 'admin', collectionId: string, opts: Functi
   const app = opts.appId ?? getAppContext()
   if (!app) return `/${surface}/collection/${c}` // deprecated flat alias — resolves installed apps only
   const ch = resolveFunctionChannel(opts, app)
-  return `/${surface}/collection/${c}/app/${encodeURIComponent(app)}${ch ? `/${ch}` : ''}`
+  return `/fn/${surface}/collection/${c}/app/${encodeURIComponent(app)}${ch ? `/${ch}` : ''}`
 }
 
 /** The API path a function call goes to (exported for hosts/tests that need the exact URL). */
@@ -118,7 +122,7 @@ export namespace functions {
 
   /**
    * Call a PUBLIC app server function inline (surface `'public'`).
-   * App-scoped: `POST /public/collection/:c/app/:appId/functions/:name`.
+   * App-scoped: `POST /fn/public/collection/:c/app/:appId/functions/:name`.
    *
    * @example
    * // App calling its own function (appId from initializeApi({ appId })):
@@ -137,7 +141,7 @@ export namespace functions {
 
   /**
    * Call an ADMIN app server function (surface `'admin'`; requires an admin session).
-   * App-scoped: `POST /admin/collection/:c/app/:appId/functions/:name`.
+   * App-scoped: `POST /fn/admin/collection/:c/app/:appId/functions/:name`.
    */
   export async function callAdmin<T = FunctionCallResult>(
     collectionId: string,

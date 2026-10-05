@@ -18,23 +18,23 @@ beforeEach(() => {
 })
 
 test('production: no channel anywhere → bare app-scoped path', () => {
-  assert.equal(functionPath('public', 'c1', 'venues'), '/public/collection/c1/app/photo-memory/functions/venues')
+  assert.equal(functionPath('public', 'c1', 'venues'), '/fn/public/collection/c1/app/photo-memory/functions/venues')
 })
 
 test('host context appChannel=dev (Forge preview) → /dev/ path', () => {
   setUrl('https://box.example/index.html?collectionId=c1&appChannel=dev')
-  assert.equal(functionPath('public', 'c1', 'venues'), '/public/collection/c1/app/photo-memory/dev/functions/venues')
+  assert.equal(functionPath('public', 'c1', 'venues'), '/fn/public/collection/c1/app/photo-memory/dev/functions/venues')
 })
 
 test('appChannelApp scopes the host channel to one app (shared portal page)', () => {
   setUrl('https://portal.example/p/c1?appChannel=dev&appChannelApp=photo-memory')
-  assert.equal(functionPath('public', 'c1', 'venues'), '/public/collection/c1/app/photo-memory/dev/functions/venues')
-  assert.equal(functionPath('public', 'c1', 'vote', { appId: 'other-app' }), '/public/collection/c1/app/other-app/functions/vote')
+  assert.equal(functionPath('public', 'c1', 'venues'), '/fn/public/collection/c1/app/photo-memory/dev/functions/venues')
+  assert.equal(functionPath('public', 'c1', 'vote', { appId: 'other-app' }), '/fn/public/collection/c1/app/other-app/functions/vote')
 })
 
 test('a page param called "channel" is NOT a release channel', () => {
   setUrl('https://portal.example/?channel=email')
-  assert.equal(functionPath('public', 'c1', 'venues'), '/public/collection/c1/app/photo-memory/functions/venues')
+  assert.equal(functionPath('public', 'c1', 'venues'), '/fn/public/collection/c1/app/photo-memory/functions/venues')
 })
 
 test('explicit app channel beats host context; explicit call option beats both; null forces installed', () => {
@@ -43,7 +43,7 @@ test('explicit app channel beats host context; explicit call option beats both; 
   assert.equal(resolveFunctionChannel(), 'beta')
   assert.equal(resolveFunctionChannel({ channel: 'stable' }), 'stable')
   assert.equal(resolveFunctionChannel({ channel: null }), undefined)
-  assert.equal(functionPath('admin', 'c1', 'x', { channel: null }), '/admin/collection/c1/app/photo-memory/functions/x')
+  assert.equal(functionPath('admin', 'c1', 'x', { channel: null }), '/fn/admin/collection/c1/app/photo-memory/functions/x')
 })
 
 test('unknown channel throws instead of silently calling production', () => {

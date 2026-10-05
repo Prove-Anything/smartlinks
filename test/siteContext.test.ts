@@ -1,4 +1,4 @@
-import { test, beforeEach, after } from 'node:test'
+import { describe, test, beforeEach, after } from 'node:test'
 import assert from 'node:assert/strict'
 import { readContext } from '../src/context'
 import { functionPath } from '../src/api/functions'
@@ -11,6 +11,8 @@ const setUrl = (href: string | null) => {
   ;(globalThis as any).window = href ? { location: new URL(href) } : undefined
 }
 
+// Scoped: node:test runs a file's top-level hooks before EVERY test in the process (all files).
+describe('app site context', () => {
 beforeEach(() => {
   setUrl(null)
   delete (globalThis as any).__SMARTLINKS_SITE__
@@ -37,10 +39,11 @@ test('URL params and props still win over the site', () => {
 test("a dev-installed site calls its own channel's functions", () => {
   setUrl('https://bloom-dev.smartlinks.host/')
   ;(globalThis as any).__SMARTLINKS_SITE__ = { collectionId: 'colBloom', appId: 'acme--booking', channel: 'dev' }
-  assert.equal(functionPath('public', 'colBloom', 'book'), '/public/collection/colBloom/app/acme--booking/dev/functions/book')
+  assert.equal(functionPath('public', 'colBloom', 'book'), '/fn/public/collection/colBloom/app/acme--booking/dev/functions/book')
 })
 
 after(() => {
   delete (globalThis as any).__SMARTLINKS_SITE__
   setUrl(null)
+})
 })
