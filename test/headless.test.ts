@@ -103,3 +103,13 @@ test('standard recipes per storage kind', () => {
   assert.match(standardRecipe({ description: 'x', storage: { kind: 'config', key: 'tips' }, fields: {} }).list, /getConfig.*config\.tips/)
   assert.match(standardRecipe({ description: 'x', storage: { kind: 'thread' }, fields: {} }).list, /SL\.app\.threads\.list/)
 })
+
+test('every recipe says what the call returns and where the fields are — even a custom one', () => {
+  const m: any = good()
+  m.data.types['tip.item'].read = { list: "SL.app.records.list(collectionId, appId, { recordType: 'tip', limit: 200 })" }
+  const r = validate(m).recipes['tip.item']
+  assert.match(r.list, /limit: 200/) // the app's own recipe is kept…
+  assert.match(r.returns, /items are in response\.data \(not response\.items/) // …and the platform's shape is added
+  assert.match(r.item, /record\.data \(e\.g\. record\.data\.title\)/)
+  assert.match(validate(good()).recipes['tip.topic'].item, /record\.data\.name/)
+})
