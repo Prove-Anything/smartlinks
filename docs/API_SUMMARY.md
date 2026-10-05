@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.38  |  Generated: 2026-10-05T12:19:06.279Z
+Version: 2.0.39  |  Generated: 2026-10-05T14:14:46.558Z
 
 This is a concise summary of all available API functions and types.
 
@@ -11207,13 +11207,13 @@ The PUBLIC address of an app function on the collection's own site — what you 
     name: string,
     body: Record<string, any> = {},
     opts: FunctionCallOptions = {}) → `Promise<T>`
-Call a PUBLIC app server function inline (surface `'public'`). App-scoped: `POST /public/collection/:c/app/:appId/functions/:name`. // App calling its own function (appId from initializeApi({ appId })): const { value } = await SL.functions.call<{ value: number }>(collectionId, 'pressCounter') // Or address another app explicitly: await SL.functions.call(collectionId, 'pressCounter', {}, { appId: 'my-counter-app' })
+Call a PUBLIC app server function inline (surface `'public'`). App-scoped: `POST /fn/public/collection/:c/app/:appId/functions/:name`. // App calling its own function (appId from initializeApi({ appId })): const { value } = await SL.functions.call<{ value: number }>(collectionId, 'pressCounter') // Or address another app explicitly: await SL.functions.call(collectionId, 'pressCounter', {}, { appId: 'my-counter-app' })
 
 **callAdmin**(collectionId: string,
     name: string,
     body: Record<string, any> = {},
     opts: FunctionCallOptions = {}) → `Promise<T>`
-Call an ADMIN app server function (surface `'admin'`; requires an admin session). App-scoped: `POST /admin/collection/:c/app/:appId/functions/:name`.
+Call an ADMIN app server function (surface `'admin'`; requires an admin session). App-scoped: `POST /fn/admin/collection/:c/app/:appId/functions/:name`.
 
 **list**(collectionId: string, opts: FunctionCallOptions = {}) → `Promise<FunctionListResponse>`
 List the public functions available for a collection (discovery). Scoped to one app when an appId is given (or set as the SDK app context): `GET /public/collection/:c[/app/:appId]/functions`.

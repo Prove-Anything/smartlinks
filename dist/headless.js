@@ -18,13 +18,36 @@ const PLATFORM_REFS = new Set(['product', 'contact', 'proof']);
 const SEO_HELPERS = new Set(['faqPage', 'product', 'article', 'breadcrumbs', 'organization', 'localBusiness']);
 const STORAGE_KINDS = new Set(['record', 'case', 'thread', 'config']);
 const SEMVER = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
+/**
+ * What a type's read calls return, and where one item's declared fields live — fixed by the storage
+ * kind (see app-objects.md "Paginated List Responses"). Sites must read items from `response.data`.
+ */
+export function responseShape(type) {
+    const s = type.storage;
+    const first = Object.keys(type.fields || {})[0] || 'field';
+    const paged = (name) => `list → { data: ${name}[], pagination: { total, limit, offset, hasMore } }. The items are in response.data (not response.items / response.records); page with offset/limit while pagination.hasMore. get → one ${name}.`;
+    switch (s && s.kind) {
+        case 'record':
+            return { returns: paged('AppRecord'), item: `Each record's declared fields are in record.data (e.g. record.data.${first}); record.id, record.productId, record.status, record.createdAt are top-level.` };
+        case 'case':
+            return { returns: paged('AppCase'), item: `Each case's declared fields are in case.data (e.g. case.data.${first}); id, status, category and dates are top-level.` };
+        case 'thread':
+            return { returns: paged('AppThread'), item: `Each thread's declared fields are in thread.data (e.g. thread.data.${first}); replies are in thread.replies.` };
+        case 'config': {
+            const key = s.key;
+            return { returns: "The app's configuration object for the collection.", item: key ? `The items are in config.${key}; each item's fields are its declared fields.` : 'The declared fields are top-level properties of the config object.' };
+        }
+        default:
+            return { returns: '(unknown storage)', item: '' };
+    }
+}
 /** The standard SDK read calls for a type, from how it's stored. `appId` / `collectionId` are the caller's variables. */
 export function standardRecipe(type) {
     const s = type.storage;
     switch (s && s.kind) {
         case 'record':
             return {
-                list: `SL.app.records.list(collectionId, appId, { recordType: '${s.recordType}', limit: 50 })  // → { data: AppRecord[] }; fields in record.data`,
+                list: `SL.app.records.list(collectionId, appId, { recordType: '${s.recordType}', limit: 50 })`,
                 get: 'SL.app.records.get(collectionId, appId, recordId)',
             };
         case 'case':
@@ -179,7 +202,8 @@ export function validate(manifest, opts = {}) {
             if (samples && samples.length)
                 checkItems('real item', typeId, type, samples, { errors, warnings });
             const std = standardRecipe(type);
-            recipes[typeId] = Object.assign({ list: (type.read && type.read.list) || std.list }, ((type.read && type.read.get) || std.get ? { get: (type.read && type.read.get) || std.get } : {}));
+            const get = (type.read && type.read.get) || std.get;
+            recipes[typeId] = Object.assign(Object.assign({ list: (type.read && type.read.list) || std.list }, (get ? { get } : {})), responseShape(type));
         }
     }
     // ---- headless

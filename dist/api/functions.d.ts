@@ -62,7 +62,7 @@ export declare namespace functions {
     }): string;
     /**
      * Call a PUBLIC app server function inline (surface `'public'`).
-     * App-scoped: `POST /public/collection/:c/app/:appId/functions/:name`.
+     * App-scoped: `POST /fn/public/collection/:c/app/:appId/functions/:name`.
      *
      * @example
      * // App calling its own function (appId from initializeApi({ appId })):
@@ -73,7 +73,7 @@ export declare namespace functions {
     function call<T = FunctionCallResult>(collectionId: string, name: string, body?: Record<string, any>, opts?: FunctionCallOptions): Promise<T>;
     /**
      * Call an ADMIN app server function (surface `'admin'`; requires an admin session).
-     * App-scoped: `POST /admin/collection/:c/app/:appId/functions/:name`.
+     * App-scoped: `POST /fn/admin/collection/:c/app/:appId/functions/:name`.
      */
     function callAdmin<T = FunctionCallResult>(collectionId: string, name: string, body?: Record<string, any>, opts?: FunctionCallOptions): Promise<T>;
     /**

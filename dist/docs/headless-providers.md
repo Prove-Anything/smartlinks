@@ -50,6 +50,14 @@ Site builders (the Forge agent included) read these declarations to decide "inst
 | `thread` | App threads: discussions, Q&A, reviews | `SL.app.threads.list / get` |
 | `config` (+ optional `key`) | App configuration: settings, small fixed lists | `SL.appConfiguration.getConfig({ collectionId, appId })` |
 
+**What the read calls return.** This is fixed by the storage kind, so a provider never needs to describe it, and site builders get it from the checker and `forge-cms describe`:
+
+- **`record`, `case`, `thread`:** `list` returns `{ data: Item[], pagination: { total, limit, offset, hasMore } }`.
+  - The items are in **`response.data`**, never `response.items` or `response.records`.
+  - Each item's declared fields are in **`item.data`** (e.g. `record.data.question`). `id`, `status`, `productId` and the dates are top-level.
+  - Page with `offset` / `limit` while `pagination.hasMore`. `get` returns one item.
+- **`config`:** the configuration object. Items are in `config.<key>` when the type names a `key`.
+
 Products, contacts and proofs are platform data. Reference them with `ref` fields (`"to": "product"`); never redeclare them.
 
 **Field types:** `string`, `text`, `richtext` (HTML), `markdown`, `number`, `boolean`, `date` (YYYY-MM-DD), `datetime`, `enum` (+ `options`), `url`, `image` and `file` (a URL or `{ url, ... }`), `ref` and `ref[]` (+ `to`: a declared type id, or `product` / `contact` / `proof`), `string[]`, `json` (avoid where a typed field fits).
