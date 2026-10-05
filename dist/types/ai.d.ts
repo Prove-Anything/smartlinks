@@ -412,25 +412,22 @@ export interface AiSessionCreate {
     /** Seed items (e.g. a system/instruction turn). */
     items?: ResponseInputItem[];
 }
-/** Per-collection AI usage/cost report. `costUnits` are OPAQUE internal units, never provider currency. */
+/** Per-collection AI usage report (daily totals). Usage only — requests, tokens, images; no cost figures. */
 export interface AiUsageReport {
     groupBy: string[];
     from?: string | null;
     to?: string | null;
-    totals: {
-        promptTokens: number;
-        outputTokens: number;
-        totalTokens: number;
-        requests: number;
-        costUnits: number;
-    };
-    groups: Array<Record<string, any> & {
-        promptTokens: number;
-        outputTokens: number;
-        totalTokens: number;
-        requests: number;
-        costUnits: number;
-    }>;
+    totals: AiUsageTotals;
+    groups: Array<Record<string, any> & AiUsageTotals>;
+}
+/** Summed usage for a report group (or the whole window). */
+export interface AiUsageTotals {
+    promptTokens: number;
+    outputTokens: number;
+    cachedTokens: number;
+    totalTokens: number;
+    requests: number;
+    images: number;
 }
 /** Voice session request */
 export interface VoiceSessionRequest {

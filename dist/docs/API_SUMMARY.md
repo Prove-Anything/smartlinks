@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.36  |  Generated: 2026-10-03T15:04:37.396Z
+Version: 2.0.37  |  Generated: 2026-10-05T11:58:10.538Z
 
 This is a concise summary of all available API functions and types.
 
@@ -918,8 +918,20 @@ interface AiUsageReport {
   groupBy: string[]
   from?: string | null
   to?: string | null
-  totals: { promptTokens: number; outputTokens: number; totalTokens: number; requests: number; costUnits: number }
-  groups: Array<Record<string, any> & { promptTokens: number; outputTokens: number; totalTokens: number; requests: number; costUnits: number }>
+  totals: AiUsageTotals
+  groups: Array<Record<string, any> & AiUsageTotals>
+}
+```
+
+**AiUsageTotals** (interface)
+```typescript
+interface AiUsageTotals {
+  promptTokens: number
+  outputTokens: number
+  cachedTokens: number
+  totalTokens: number
+  requests: number
+  images: number
 }
 ```
 
@@ -2736,6 +2748,8 @@ interface AppManifest {
   publicViews?: PublicView[];
   executor?: AppManifestExecutor;
   functions?: AppManifestFunctions;
+  data?: AppDataDeclaration;
+  headless?: AppHeadlessDeclaration;
   [key: string]: any;
 }
 ```
@@ -6446,6 +6460,65 @@ interface FacetValueGetParams {
 ```
 
 **FacetValueDefinition** = `FacetValue`
+
+### headless
+
+**AppDataField** (interface)
+```typescript
+interface AppDataField {
+  type: AppDataFieldType;
+  label?: string;
+  description?: string;
+  required?: boolean;
+  localized?: boolean;
+  zone?: 'data' | 'owner' | 'admin';
+  public?: boolean;
+  to?: string;
+  options?: string[];
+}
+```
+
+**AppDataType** (interface)
+```typescript
+interface AppDataType {
+  description: string;
+  storage: AppDataStorage;
+  visibility?: 'public' | 'owner' | 'admin';
+  anchors?: Array<'product' | 'variant' | 'batch' | 'proof' | 'contact'>;
+  fields: Record<string, AppDataField>;
+  listing?: { sort?: string[]; filters?: string[] };
+  examples?: Array<Record<string, unknown>>;
+  read?: { list?: string; get?: string; notes?: string };
+  since?: string;
+}
+```
+
+**AppDataDeclaration** (interface)
+```typescript
+interface AppDataDeclaration {
+  schemaVersion: string;
+  types: Record<string, AppDataType>;
+}
+```
+
+**AppHeadlessDeclaration** (interface)
+```typescript
+interface AppHeadlessDeclaration {
+  purpose: string;
+  categories: HeadlessCategory[];
+  primaryTypes: string[];
+  editedIn: { label: string; adminPath?: string; notes?: string };
+  render?: { guidance?: string; seo?: HeadlessSeoHelper[] };
+}
+```
+
+**AppDataFieldType** = ``
+
+**AppDataStorage** = ``
+
+**HeadlessCategory** = ``
+
+**HeadlessSeoHelper** = `'faqPage' | 'product' | 'article' | 'breadcrumbs' | 'organization' | 'localBusiness'`
 
 ### iframeResponder
 

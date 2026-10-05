@@ -1,0 +1,225 @@
+// =============================================================================
+// headless — validate an app's headless-provider declaration (manifest `data` + `headless`).
+//
+//   SL.headless.validate(manifest, { samples })  → { ok, errors, warnings, recipes }
+//
+// Pure (no network): the `smartlinks-headless` CLI and Forge both call it. `samples` are real items
+// (each type's `data` zone JSON) — the check then reports fields the real data has but the
+// declaration doesn't, and values that don't match their declared type.
+// Spec: docs/headless-providers.md.
+// =============================================================================
+import { HEADLESS_CATEGORIES } from './types/headless.js';
+const FIELD_TYPES = new Set([
+    'string', 'text', 'richtext', 'markdown', 'number', 'boolean', 'date', 'datetime', 'enum', 'url',
+    'image', 'file', 'ref', 'string[]', 'ref[]', 'json',
+]);
+const TEXT_TYPES = new Set(['string', 'text', 'richtext', 'markdown']);
+const PLATFORM_REFS = new Set(['product', 'contact', 'proof']);
+const SEO_HELPERS = new Set(['faqPage', 'product', 'article', 'breadcrumbs', 'organization', 'localBusiness']);
+const STORAGE_KINDS = new Set(['record', 'case', 'thread', 'config']);
+const SEMVER = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
+/** The standard SDK read calls for a type, from how it's stored. `appId` / `collectionId` are the caller's variables. */
+export function standardRecipe(type) {
+    const s = type.storage;
+    switch (s && s.kind) {
+        case 'record':
+            return {
+                list: `SL.app.records.list(collectionId, appId, { recordType: '${s.recordType}', limit: 50 })  // → { data: AppRecord[] }; fields in record.data`,
+                get: 'SL.app.records.get(collectionId, appId, recordId)',
+            };
+        case 'case':
+            return { list: 'SL.app.cases.list(collectionId, appId, { limit: 50 })', get: 'SL.app.cases.get(collectionId, appId, caseId)' };
+        case 'thread':
+            return { list: 'SL.app.threads.list(collectionId, appId, { limit: 50 })', get: 'SL.app.threads.get(collectionId, appId, threadId)' };
+        case 'config':
+            return { list: `SL.appConfiguration.getConfig({ collectionId, appId })${s.key ? `  // → config.${s.key}` : ''}` };
+        default:
+            return { list: '(unknown storage)' };
+    }
+}
+function isPlaceholder(v) {
+    return typeof v === 'string' && /lorem ipsum|^(todo|tbd|example|test|foo|bar)$/i.test(v.trim());
+}
+/** Does a value fit a declared field? Returns a reason when it doesn't. */
+function mismatch(field, value) {
+    if (value === null || value === undefined)
+        return null;
+    const t = field.type;
+    const isLocalizedObject = field.localized && typeof value === 'object' && !Array.isArray(value) &&
+        Object.values(value).every((x) => typeof x === 'string');
+    switch (t) {
+        case 'string':
+        case 'text':
+        case 'richtext':
+        case 'markdown':
+            return typeof value === 'string' || isLocalizedObject ? null : `expected ${t} (a string${field.localized ? ' or { lang: string }' : ''})`;
+        case 'url':
+            return typeof value === 'string' ? null : 'expected a URL string';
+        case 'number':
+            return typeof value === 'number' && Number.isFinite(value) ? null : 'expected a number';
+        case 'boolean':
+            return typeof value === 'boolean' ? null : 'expected true/false';
+        case 'date':
+            return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value) ? null : 'expected an ISO date (YYYY-MM-DD)';
+        case 'datetime':
+            return typeof value === 'string' && !Number.isNaN(Date.parse(value)) ? null : 'expected an ISO date-time';
+        case 'enum':
+            return (field.options || []).includes(value) ? null : `expected one of ${(field.options || []).join(', ')}`;
+        case 'image':
+        case 'file':
+            return typeof value === 'string' || (typeof value === 'object' && !Array.isArray(value) && typeof value.url === 'string')
+                ? null : `expected a URL string or { url }`;
+        case 'ref':
+            return typeof value === 'string' ? null : 'expected an id string';
+        case 'string[]':
+        case 'ref[]':
+            return Array.isArray(value) && value.every((x) => typeof x === 'string') ? null : 'expected an array of strings';
+        default:
+            return null;
+    }
+}
+function checkItems(label, typeId, type, items, out) {
+    const fields = type.fields || {};
+    const undeclared = new Map();
+    items.forEach((item, i) => {
+        const at = `data.types.${typeId}.${label === 'example' ? 'examples' : 'realData'}[${i}]`;
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+            out.errors.push({ path: at, message: `${label} must be an object (the item's data JSON)` });
+            return;
+        }
+        for (const [key, field] of Object.entries(fields)) {
+            if ((field.zone || 'data') !== 'data')
+                continue; // examples / samples are the data zone
+            const value = item[key];
+            if (field.required && (value === undefined || value === null || value === '')) {
+                ;
+                (label === 'example' ? out.errors : out.warnings).push({ path: `${at}.${key}`, message: `required field "${key}" is missing` });
+                continue;
+            }
+            const why = mismatch(field, value);
+            if (why)
+                (label === 'example' ? out.errors : out.warnings).push({ path: `${at}.${key}`, message: `"${key}": ${why}` });
+            if (label === 'example' && isPlaceholder(value))
+                out.warnings.push({ path: `${at}.${key}`, message: 'looks like placeholder text — use realistic content' });
+        }
+        for (const key of Object.keys(item))
+            if (!(key in fields))
+                undeclared.set(key, (undeclared.get(key) || 0) + 1);
+    });
+    for (const [key, n] of undeclared) {
+        out.warnings.push({
+            path: `data.types.${typeId}.fields`,
+            message: label === 'example'
+                ? `example uses "${key}", which isn't a declared field`
+                : `real data has "${key}" (in ${n} of ${items.length} items) but it isn't declared — declare it, or confirm it's internal`,
+        });
+    }
+}
+/** Validate a manifest's `data` + `headless` blocks. */
+export function validate(manifest, opts = {}) {
+    const errors = [];
+    const warnings = [];
+    const recipes = {};
+    const err = (path, message) => errors.push({ path, message });
+    const warn = (path, message) => warnings.push({ path, message });
+    const data = manifest && manifest.data;
+    const headless = manifest && manifest.headless;
+    // ---- data
+    if (!data) {
+        err('data', headless ? 'a headless app needs a `data` block declaring its types' : 'no `data` block');
+    }
+    else {
+        if (!data.schemaVersion || !SEMVER.test(data.schemaVersion))
+            err('data.schemaVersion', 'set a semver, e.g. "1.0.0"');
+        const types = data.types || {};
+        if (!Object.keys(types).length)
+            err('data.types', 'declare at least one type');
+        const typeIds = new Set(Object.keys(types));
+        for (const [typeId, type] of Object.entries(types)) {
+            const at = `data.types.${typeId}`;
+            if (!/^[a-z][a-z0-9-]*(\.[a-z][a-z0-9-]*)*$/.test(typeId))
+                err(at, 'type ids are lowercase, dot-separated (e.g. "faq.item")');
+            if (!type.description || type.description.trim().length < 10)
+                err(`${at}.description`, 'say what one item is, in a sentence');
+            const kind = type.storage && type.storage.kind;
+            if (!STORAGE_KINDS.has(kind))
+                err(`${at}.storage`, 'storage.kind must be record, case, thread or config');
+            if (kind === 'record' && !type.storage.recordType)
+                err(`${at}.storage.recordType`, 'record storage needs the recordType the app writes');
+            if (type.visibility && !['public', 'owner', 'admin'].includes(type.visibility))
+                err(`${at}.visibility`, 'public, owner or admin');
+            const fields = type.fields || {};
+            if (!Object.keys(fields).length)
+                err(`${at}.fields`, 'declare the fields');
+            for (const [key, f] of Object.entries(fields)) {
+                const fat = `${at}.fields.${key}`;
+                if (!f || !FIELD_TYPES.has(f.type)) {
+                    err(fat, `unknown type "${f && f.type}" (one of ${[...FIELD_TYPES].join(', ')})`);
+                    continue;
+                }
+                if (f.type === 'enum' && !(f.options && f.options.length))
+                    err(fat, 'an enum needs options');
+                if ((f.type === 'ref' || f.type === 'ref[]') && !(f.to && (typeIds.has(f.to) || PLATFORM_REFS.has(f.to)))) {
+                    err(fat, `"to" must name a declared type or product/contact/proof`);
+                }
+                if (f.localized && !TEXT_TYPES.has(f.type))
+                    warn(fat, 'only text fields can be localized');
+                if (f.public && f.zone && f.zone !== 'data')
+                    err(fat, `a ${f.zone}-zone field can't be public — only the data zone is readable publicly`);
+            }
+            for (const k of (type.listing && type.listing.sort) || [])
+                if (!(k.replace(/^-/, '') in fields))
+                    err(`${at}.listing.sort`, `"${k}" isn't a field`);
+            for (const k of (type.listing && type.listing.filters) || [])
+                if (!(k in fields))
+                    err(`${at}.listing.filters`, `"${k}" isn't a field`);
+            if (type.examples)
+                checkItems('example', typeId, type, type.examples, { errors, warnings });
+            const samples = opts.samples && opts.samples[typeId];
+            if (samples && samples.length)
+                checkItems('real item', typeId, type, samples, { errors, warnings });
+            const std = standardRecipe(type);
+            recipes[typeId] = Object.assign({ list: (type.read && type.read.list) || std.list }, ((type.read && type.read.get) || std.get ? { get: (type.read && type.read.get) || std.get } : {}));
+        }
+    }
+    // ---- headless
+    if (headless) {
+        if (!headless.purpose || headless.purpose.trim().length < 40) {
+            err('headless.purpose', 'explain what content this holds and when a site should use it (a few sentences)');
+        }
+        const cats = headless.categories || [];
+        if (!cats.length)
+            err('headless.categories', `pick at least one: ${HEADLESS_CATEGORIES.join(', ')}`);
+        for (const c of cats)
+            if (!HEADLESS_CATEGORIES.includes(c))
+                err('headless.categories', `"${c}" isn't a category (${HEADLESS_CATEGORIES.join(', ')})`);
+        if (!headless.editedIn || !headless.editedIn.label)
+            err('headless.editedIn.label', 'say where the business edits this content (the app admin screen)');
+        for (const s of (headless.render && headless.render.seo) || [])
+            if (!SEO_HELPERS.has(s))
+                err('headless.render.seo', `"${s}" isn't an SEO helper (${[...SEO_HELPERS].join(', ')})`);
+        const types = (data && data.types) || {};
+        const primary = headless.primaryTypes || [];
+        if (!primary.length)
+            err('headless.primaryTypes', 'name the type(s) a site renders');
+        for (const id of primary) {
+            const type = types[id];
+            if (!type) {
+                err('headless.primaryTypes', `"${id}" isn't a declared type`);
+                continue;
+            }
+            if (type.visibility === 'admin')
+                err(`data.types.${id}.visibility`, 'a primary type must be readable by visitors (visibility public)');
+            const publicFields = Object.entries(type.fields || {}).filter(([, f]) => f.public);
+            if (!publicFields.length)
+                err(`data.types.${id}.fields`, 'mark the fields a visitor may read with "public": true');
+            if (!type.examples || !type.examples.length)
+                err(`data.types.${id}.examples`, 'add at least one realistic example item');
+            if (!type.read)
+                warn(`data.types.${id}.read`, 'no read recipe — the standard one for its storage is used (see recipes)');
+        }
+        if (!(headless.render && headless.render.guidance))
+            warn('headless.render.guidance', 'add a line on how a site should present this content');
+    }
+    return { ok: errors.length === 0, errors, warnings, recipes };
+}

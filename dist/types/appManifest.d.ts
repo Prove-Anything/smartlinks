@@ -1,5 +1,6 @@
 /// <reference types="node" />
 /// <reference types="node" />
+import type { AppDataDeclaration, AppHeadlessDeclaration } from './headless.js';
 /**
  * A bundle (widget or container) as returned by the collection widgets endpoint.
  *
@@ -662,6 +663,16 @@ export interface AppManifest {
      * @see AppManifestFunctions
      */
     functions?: AppManifestFunctions;
+    /**
+     * The app's public data model: its data types, how each is stored, fields, examples and read
+     * recipes. Required for `headless`. @see AppDataDeclaration · docs/headless-providers.md
+     */
+    data?: AppDataDeclaration;
+    /**
+     * Opt-in: other sites and apps may install this app and use its content (a headless content
+     * provider). Validated by `smartlinks-headless`. @see AppHeadlessDeclaration
+     */
+    headless?: AppHeadlessDeclaration;
     [key: string]: any;
 }
 /**

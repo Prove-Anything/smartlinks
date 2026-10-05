@@ -13,6 +13,12 @@ export { cache_1 as cache };
 export { IframeResponder, isAdminFromRoles, buildIframeSrc, } from './iframeResponder.js';
 import * as utils_1 from './utils/index.js';
 export { utils_1 as utils };
+import * as seo_1 from './seo.js';
+export { seo_1 as seo };
+import * as site_1 from './site.js';
+export { site_1 as site };
+import * as headless_1 from './headless.js';
+export { headless_1 as headless };
 // Shared dependency contract (host↔app) — one source of truth for externalized deps
 export { SHARED_DEPENDENCY_CONTRACT_VERSION, SHARED_DEPENDENCIES, SHARED_DEPENDENCY_SPECIFIERS, importMapPathFor, getHostSharedDependencies, } from './shared-dependencies.js';
 // Built-in AI tool catalog (design-time discovery of the core agentic toolset)

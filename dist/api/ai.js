@@ -224,8 +224,8 @@ var aiInternal;
         sessions.clear = clear;
     })(sessions = aiInternal.sessions || (aiInternal.sessions = {}));
     /**
-     * AI usage / cost report for a collection, grouped by any of model/serviceTier/appId/feature/mode
-     * over an optional date window. `costUnits` are OPAQUE internal units, never provider currency.
+     * AI usage for a collection (daily totals), grouped by any of model/appId/feature/mode/surface/provider/day
+     * over an optional date window (YYYY-MM-DD). Usage only — requests, tokens, images; no cost figures.
      */
     async function usage(collectionId, params) {
         const groupBy = Array.isArray(params === null || params === void 0 ? void 0 : params.groupBy) ? params.groupBy.join(',') : params === null || params === void 0 ? void 0 : params.groupBy;

@@ -111,8 +111,8 @@ declare namespace aiInternal {
         }>;
     }
     /**
-     * AI usage / cost report for a collection, grouped by any of model/serviceTier/appId/feature/mode
-     * over an optional date window. `costUnits` are OPAQUE internal units, never provider currency.
+     * AI usage for a collection (daily totals), grouped by any of model/appId/feature/mode/surface/provider/day
+     * over an optional date window (YYYY-MM-DD). Usage only — requests, tokens, images; no cost figures.
      */
     function usage(collectionId: string, params?: {
         groupBy?: string | string[];

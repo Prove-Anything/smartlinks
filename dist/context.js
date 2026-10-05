@@ -40,6 +40,21 @@ export function readContext(overrides) {
             if (window.location.search)
                 readSearchParamsInto(out, new URLSearchParams(window.location.search));
         }
+        // 4. the SITE the page is served as (lowest precedence). When an app runs as a public website at
+        //    its own hostname (an "app site"), the host page injects window.__SMARTLINKS_SITE__ =
+        //    { collectionId, appId, channel, host } — so a site knows its collection with no URL params.
+        const site = globalThis.__SMARTLINKS_SITE__;
+        if (site && typeof site === 'object') {
+            const fill = (key, value) => { if (out[key] == null && typeof value === 'string' && value)
+                out[key] = value; };
+            fill('collectionId', site.collectionId);
+            fill('appId', site.appId);
+            // A site on a pre-release channel calls that channel's server functions (stable needs no channel).
+            if (site.channel && site.channel !== 'stable') {
+                fill('appChannel', site.channel);
+                fill('appChannelApp', site.appId);
+            }
+        }
     }
     catch (_a) {
         /* non-browser / bad URL — return what we have */

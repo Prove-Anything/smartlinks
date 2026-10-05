@@ -42,3 +42,4 @@ export * from "./integrations.js";
 export * from "./research.js";
 export * from "./config.js";
 export * from "./widgets.js";
+export * from "./headless.js";

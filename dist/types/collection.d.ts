@@ -48,7 +48,7 @@ export interface Collection {
     hubCustomDomain?: string;
     /**
      * The collection's SITE HOST on the tenant domain — computed by the server, never stored:
-     * `<hubName>.smartlinks.host` when a name is claimed, else the default `c-<shortId>.smartlinks.host`.
+     * `<hubName>.smartlinks.host` when a name is claimed, else the default `c-<collectionId>.smartlinks.host`.
      * Hub serves it, and app functions are reachable under it at `https://<siteHost>/_fn/…`
      * (see SL.functions.siteUrl).
      */

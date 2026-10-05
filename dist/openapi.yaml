@@ -1347,7 +1347,7 @@ paths:
     get:
       tags:
         - sessions
-      summary: AI usage / cost report for a collection, grouped by any of model/serviceTier/appId/feature/mode over an optional date window.
+      summary: AI usage for a collection (daily totals), grouped by any of model/appId/feature/mode/surface/provider/day over an optional date window (YYYY-MM-DD).
       operationId: sessions_usage
       security:
         - bearerAuth: []
@@ -16327,17 +16327,37 @@ components:
         to:
           type: string
         totals:
-          type: object
-          additionalProperties: true
+          $ref: "#/components/schemas/AiUsageTotals"
         groups:
           type: array
           items:
-            type: object
-            additionalProperties: true
+            $ref: "#/components/schemas/AiUsageTotals"
       required:
         - groupBy
         - totals
         - groups
+    AiUsageTotals:
+      type: object
+      properties:
+        promptTokens:
+          type: number
+        outputTokens:
+          type: number
+        cachedTokens:
+          type: number
+        totalTokens:
+          type: number
+        requests:
+          type: number
+        images:
+          type: number
+      required:
+        - promptTokens
+        - outputTokens
+        - cachedTokens
+        - totalTokens
+        - requests
+        - images
     VoiceSessionRequest:
       type: object
       properties:
@@ -19439,6 +19459,10 @@ components:
           $ref: "#/components/schemas/AppManifestExecutor"
         functions:
           $ref: "#/components/schemas/AppManifestFunctions"
+        data:
+          $ref: "#/components/schemas/AppDataDeclaration"
+        headless:
+          $ref: "#/components/schemas/AppHeadlessDeclaration"
       required:
         - name
         - version
@@ -25135,6 +25159,161 @@ components:
           type: boolean
     FacetValueDefinition:
       $ref: "#/components/schemas/FacetValue"
+    AppDataField:
+      type: object
+      properties:
+        type:
+          $ref: "#/components/schemas/AppDataFieldType"
+        label:
+          type: string
+        description:
+          type: string
+        required:
+          type: boolean
+        localized:
+          type: boolean
+        zone:
+          type: string
+          enum:
+            - data
+            - owner
+            - admin
+        public:
+          type: boolean
+        to:
+          type: string
+        options:
+          type: array
+          items:
+            type: string
+      required:
+        - type
+    AppDataType:
+      type: object
+      properties:
+        description:
+          type: string
+        storage:
+          $ref: "#/components/schemas/AppDataStorage"
+        visibility:
+          type: string
+          enum:
+            - public
+            - owner
+            - admin
+        anchors:
+          type: array
+          items:
+            type: string
+            enum:
+              - product
+              - variant
+              - batch
+              - proof
+              - contact
+        fields:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/AppDataField"
+        listing:
+          type: object
+          additionalProperties: true
+        examples:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        read:
+          type: object
+          additionalProperties: true
+        since:
+          type: string
+      required:
+        - description
+        - storage
+        - fields
+    AppDataDeclaration:
+      type: object
+      properties:
+        schemaVersion:
+          type: string
+        types:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/AppDataType"
+      required:
+        - schemaVersion
+        - types
+    AppHeadlessDeclaration:
+      type: object
+      properties:
+        purpose:
+          type: string
+        categories:
+          type: array
+          items:
+            $ref: "#/components/schemas/HeadlessCategory"
+        primaryTypes:
+          type: array
+          items:
+            type: string
+        editedIn:
+          type: object
+          additionalProperties: true
+        render:
+          type: object
+          additionalProperties: true
+      required:
+        - purpose
+        - categories
+        - primaryTypes
+        - editedIn
+    AppDataFieldType:
+      type: string
+      enum:
+        - string
+        - text
+        - richtext
+        - markdown
+        - number
+        - boolean
+        - date
+        - datetime
+        - enum
+        - url
+        - image
+        - file
+        - ref
+        - "string[]"
+        - "ref[]"
+        - json
+    AppDataStorage:
+      type: object
+      additionalProperties: true
+    HeadlessCategory:
+      type: string
+      enum:
+        - faq
+        - media
+        - pages
+        - articles
+        - catalog
+        - events
+        - locations
+        - people
+        - reviews
+        - documents
+        - forms
+        - other
+    HeadlessSeoHelper:
+      type: string
+      enum:
+        - faqPage
+        - product
+        - article
+        - breadcrumbs
+        - organization
+        - localBusiness
     CachedData:
       type: object
       properties:

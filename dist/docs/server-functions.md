@@ -275,7 +275,7 @@ await SL.functions.call(collectionId, 'pressCounter', {}, { channel: null })   /
 ```
 
 **Public address on the collection's own site (webhooks, integrations).** Every collection has a
-site host — `<name>.smartlinks.host` once a name is claimed, else `c-<shortId>.smartlinks.host` —
+site host — `<name>.smartlinks.host` once a name is claimed, else `c-<collectionId>.smartlinks.host` —
 returned as `collection.siteHost`. App functions are reachable there:
 
 ```
