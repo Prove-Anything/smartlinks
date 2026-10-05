@@ -280,7 +280,7 @@ See `docs/ai.md` for complete documentation.
 
 The `SL.interactions` namespace tracks user engagement — competition entries, votes, form submissions, warranty registrations. Events can trigger automated journeys and communications.
 
-Important: create interaction type definitions first, then submit events using those existing IDs. Do not invent `interactionId` values in client code.
+**The one rule:** you never choose an interaction id. In admin, `SL.interactions.ensureType(collectionId, { appId, key: 'vote', … })` finds-or-creates the type and returns its server-minted `id`; store it in app config (`interactionIds: { vote: type.id }`); everywhere else — public widgets included — read `interactionIds.vote` from config and pass that as `interactionId`. Never write an interactionId as a string literal.
 
 Key functions: `submitPublicEvent()`, `appendEvent()` (admin), `countsByOutcome()`, `query()`.
 

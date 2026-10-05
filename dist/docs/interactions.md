@@ -12,43 +12,50 @@ Interactions have two distinct layers:
 
 | Layer | Purpose |
 |-------|---------|
-| **Interaction Types** | Definitions stored in the database — configure an interaction's ID, permissions, and display metadata once per collection |
-| **Interaction Events** | Individual event records logged each time a user performs that interaction |
+| **Interaction Types** | Definitions stored in the database, once per collection: permissions, display metadata, effects. **The server mints each type's `id` (a UUID).** |
+| **Interaction Events** | Individual event records logged each time a user performs that interaction. Each event's `interactionId` is a type's minted `id`. |
 
-Critical rule: event `interactionId` values must reference an existing interaction type definition in that collection. Do not generate random IDs in app code and submit events against them.
+## The one rule: create in admin → store the id in config → read it everywhere
 
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│ Your App                                                         │
-│                                                                  │
-│  1. Create type once:  interactions.create(collectionId, {       │
-│       id: 'vote', permissions: { uniquePerUser: true } })        │
-│       -> definition exists in platform                           │
-│                                                                  │
-│  2. Log events:        interactions.appendEvent(collectionId, {  │
-│       interactionId: 'vote', outcome: 'option-a', userId })      │
-│       (must match the created definition ID)                     │
-│                                                                  │
-│  3. Read results:      interactions.countsByOutcome(collectionId, │
-│       { interactionId: 'vote' })                                 │
-│       → [{ outcome: 'option-a', count: 42 }, ...]               │
-└──────────────────────────────────────────────────────────────────┘
+**You never choose an interaction id, and you never write one as a string literal.** You choose a readable *key* (e.g. `'vote'`); the server mints the *id* (e.g. `'52bab6fa-…'`). Events must carry the id.
+
+```typescript
+// 1. ADMIN / setup screen — find-or-create the type by your key, then store its minted id in app config.
+const vote = await SL.interactions.ensureType(collectionId, {
+  appId: 'my-app',
+  key: 'vote',                                            // your readable name — NOT the id
+  permissions: { allowPublicSubmit: true, uniquePerUser: true },
+  display: { title: 'Vote' },
+});
+const config = await SL.appConfiguration.getConfig({ collectionId, appId: 'my-app', admin: true });
+await SL.appConfiguration.setConfig({
+  collectionId, appId: 'my-app', admin: true,
+  config: { ...config, interactionIds: { ...config?.interactionIds, vote: vote.id } },
+});
+
+// 2. ANYWHERE ELSE (public widget, container, server function) — read the id from config.
+const { interactionIds } = await SL.appConfiguration.getConfig({ collectionId, appId: 'my-app' });
+await SL.interactions.submitPublicEvent(collectionId, {
+  appId: 'my-app',
+  interactionId: interactionIds.vote,                     // the minted id, from config
+  outcome: 'option-a',
+});
 ```
 
-### Required Workflow (Do Not Invent IDs)
+Why it's split this way:
 
-1. Create an interaction type definition (admin endpoint) before recording any events.
-2. Reuse that same definition ID for every `appendEvent` / `submitPublicEvent` call.
-3. Treat unknown IDs as configuration errors, not as values your app should auto-create.
+- **Types can only be created on the admin surface.** Public code (widgets, the portal) can submit events but can't create types — so the public side can only learn the id from somewhere admin put it. App config is that place.
+- **`ensureType` is safe to re-run.** It returns the existing type when one with that `key` exists for your app, so run it every time your setup screen saves.
+- **Unknown ids are configuration errors.** If `interactionIds.vote` is missing, the app hasn't been set up in this collection: show "not configured", don't submit, and never fall back to a literal like `'vote'`. (`interactions.create()` exists too, but it ignores any `id` you pass — read `id` from the record it returns.)
 
-If your app currently hardcodes strings like `"poll"` or `"entry"`, make sure those IDs are actually created as interaction types during setup.
+The examples below use `interactionIds` — the map you read from config in step 2.
 
 ---
 
 ## Common Use Cases
 
-| Use Case | `interactionId` example | `outcome` example |
-|----------|-------------------------|-------------------|
+| Use Case | type `key` (for `ensureType`) | `outcome` example |
+|----------|-------------------------------|-------------------|
 | Competition entry | `competition-entry` | `"entered"` |
 | Voting / polling | `vote` | `"option-a"` |
 | Mailing list signup | `newsletter-signup` | `"subscribed"` |
@@ -62,12 +69,14 @@ If your app currently hardcodes strings like `"poll"` or `"entry"`, make sure th
 
 Interaction types are defined once per collection and control permissions, display metadata, and uniqueness constraints.
 
-### Create a Type
+### Create a Type (find-or-create)
+
+Admin only. Returns the type record; its `id` is the minted UUID — store it in app config (see [the one rule](#the-one-rule-create-in-admin--store-the-id-in-config--read-it-everywhere)).
 
 ```typescript
-await SL.interactions.create(collectionId, {
-  id: 'vote',
+const vote = await SL.interactions.ensureType(collectionId, {
   appId: 'my-app',
+  key: 'vote',                       // stored as data.interactionType; how ensureType finds it again
   permissions: {
     allowPublicSubmit: true,
     uniquePerUser: true,
@@ -75,35 +84,34 @@ await SL.interactions.create(collectionId, {
     endAt: '2026-06-30T23:59:59Z',
     allowPublicSummary: true,
   },
-  data: {
-    display: {
-      title: 'Vote',
-      description: 'Cast your vote for the competition.',
-    },
+  display: {
+    title: 'Vote',
+    description: 'Cast your vote for the competition.',
   },
 });
+// vote.id → '52bab6fa-d868-4616-9342-6731b0f332b2'
 ```
 
 ### Update / Delete a Type
 
 ```typescript
 // Update permissions or display
-await SL.interactions.update(collectionId, 'vote', {
+await SL.interactions.update(collectionId, interactionIds.vote, {
   permissions: { endAt: '2026-07-15T23:59:59Z' },
 });
 
-// Delete the definition (does not delete existing events)
-await SL.interactions.remove(collectionId, 'vote');
+// Delete the definition (does not delete existing events) — and remove it from your config
+await SL.interactions.remove(collectionId, interactionIds.vote);
 ```
 
 ### List / Get Types
 
 ```typescript
-// Admin: list all types for an app
+// Admin: list all types for an app (each has data.interactionType = its key)
 const { items } = await SL.interactions.list(collectionId, { appId: 'my-app' });
 
 // Admin: get a single type
-const type = await SL.interactions.get(collectionId, 'vote');
+const type = await SL.interactions.get(collectionId, interactionIds.vote);
 
 // Public: list available types (respects permissions)
 const { items } = await SL.interactions.publicList(collectionId, { appId: 'my-app' });
@@ -113,7 +121,7 @@ const { items } = await SL.interactions.publicList(collectionId, { appId: 'my-ap
 
 ## Logging Events
 
-Before logging events, ensure the referenced interaction type already exists. Event ingestion is not intended to create new interaction definitions.
+Every `interactionId` below is a minted type id read from your app config (`interactionIds`, see [the one rule](#the-one-rule-create-in-admin--store-the-id-in-config--read-it-everywhere)). Events never create types: an id that isn't a type defined for this collection and app is a configuration error.
 
 ### Admin Event Append
 
@@ -122,7 +130,7 @@ Use on the server side or in admin flows. Requires `userId` **or** `contactId`.
 ```typescript
 await SL.interactions.appendEvent(collectionId, {
   appId: 'my-app',
-  interactionId: 'vote',
+  interactionId: interactionIds.vote,
   outcome: 'option-a',      // The result / choice — used by countsByOutcome()
   userId: 'user_abc123',    // One of userId or contactId is required
   productId: 'prod_xyz',    // Optional — scope to a specific product
@@ -139,7 +147,7 @@ Use in client-side app code. Hits the public endpoint and respects interaction p
 // Authenticated submission
 await SL.interactions.submitPublicEvent(collectionId, {
   appId: 'my-app',
-  interactionId: 'competition-entry',
+  interactionId: interactionIds.competitionEntry,
   outcome: 'entered',
   contactId: currentUser.contactId,
   metadata: { answer: 'Paris' },
@@ -148,7 +156,7 @@ await SL.interactions.submitPublicEvent(collectionId, {
 // Anonymous submission (interaction must have allowAnonymousSubmit: true)
 const response = await SL.interactions.submitPublicEvent(collectionId, {
   appId: 'my-app',
-  interactionId: 'nps-score',
+  interactionId: interactionIds.npsScore,
   outcome: '9',
   metadata: {
     anonId: SL.utils.getAnonId(),  // device-level dedup signal
@@ -169,7 +177,7 @@ if (!response.success) {
 ```typescript
 await SL.interactions.updateEvent(collectionId, {
   eventId: 'evt_abc123',    // Required — the event to update
-  interactionId: 'vote',
+  interactionId: interactionIds.vote,
   userId: 'user_abc123',
   outcome: 'option-b',      // Override the outcome
   status: 'deleted',        // Soft-delete the event
@@ -180,7 +188,7 @@ await SL.interactions.updateEvent(collectionId, {
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `interactionId` | string | ✅ | Existing interaction type ID (must already be defined in this collection) |
+| `interactionId` | string | ✅ | The type's minted `id` (from `ensureType`, stored in app config) — never a literal you made up |
 | `userId` or `contactId` | string | ✅ (one of) | The actor. `appendEvent` / `updateEvent` require one of these |
 | `appId` | string | ❌ | Scopes the event to your app |
 | `outcome` | string | ❌ | The result or choice — what `countsByOutcome()` aggregates |
@@ -205,7 +213,7 @@ The primary analytics function — returns how many times each outcome was recor
 // Admin (full access, deduplication options)
 const results = await SL.interactions.countsByOutcome(collectionId, {
   appId: 'my-app',
-  interactionId: 'vote',
+  interactionId: interactionIds.vote,
   scope: 'round-1',       // Optional — filter by scope
   from: '2026-06-01',     // Optional — date range
   to: '2026-06-30',
@@ -216,7 +224,7 @@ const results = await SL.interactions.countsByOutcome(collectionId, {
 // Public (respects allowPublicSummary permission)
 const results = await SL.interactions.publicCountsByOutcome(
   collectionId,
-  { appId: 'my-app', interactionId: 'vote' },
+  { appId: 'my-app', interactionId: interactionIds.vote },
   authToken     // Optional — pass if user is authenticated
 );
 ```
@@ -228,7 +236,7 @@ Flexible admin query for raw interaction events:
 ```typescript
 const events = await SL.interactions.query(collectionId, {
   appId: 'my-app',
-  interactionId: 'vote',
+  interactionId: interactionIds.vote,
   userId: 'user_abc123',      // Filter by user
   outcome: 'option-a',        // Filter by outcome
   from: '2026-06-01T00:00Z',
@@ -247,7 +255,7 @@ Lets authenticated users see their own events:
 ```typescript
 const myEvents = await SL.interactions.publicMyInteractions(
   collectionId,
-  { appId: 'my-app', interactionId: 'vote' },
+  { appId: 'my-app', interactionId: interactionIds.vote },
   authToken
 );
 ```
@@ -290,7 +298,7 @@ Platform emits event to Journey trigger
 Journey step runs: send confirmation email, update CRM, award points, etc.
 ```
 
-When defining a journey trigger, reference the `interactionId` that should fire it. The interaction `outcome` and `metadata` are available as variables in journey steps.
+When defining a journey trigger, reference the interaction type (its minted `id`) that should fire it. The interaction `outcome` and `metadata` are available as variables in journey steps.
 
 ---
 
@@ -316,9 +324,9 @@ A failure in one effect is logged and swallowed; subsequent effects still run.
 Pass `data.effects` when creating or updating an interaction type:
 
 ```typescript
-await SL.interactions.create(collectionId, {
-  id: 'donation',
+await SL.interactions.ensureType(collectionId, {
   appId: 'my-app',
+  key: 'donation',
   permissions: { allowPublicSubmit: true },
   data: {
     effects: [
@@ -351,7 +359,7 @@ All effect `config` values support `{{token}}` interpolation resolved from the e
 | `{{eventId}}` | BigQuery event UUID |
 | `{{collectionId}}` | Collection / brand ID |
 | `{{appId}}` | App ID that submitted the event |
-| `{{interactionId}}` | Interaction definition ID |
+| `{{interactionId}}` | Interaction type id (the minted UUID) |
 | `{{contactId}}` | Contact UUID (if resolved) |
 | `{{userId}}` | Firebase UID (if authenticated) |
 | `{{productId}}` | Product ID (if provided with event) |
@@ -496,7 +504,8 @@ import type {
   InteractionPermissions,         // Full permissions config shape
   InteractionTypeRecord,          // Definition record from create() / get()
   InteractionTypeList,            // { items, limit, offset }
-  CreateInteractionTypeBody,      // Body for create()
+  CreateInteractionTypeBody,      // Body for create() — the server mints the id
+  EnsureInteractionTypeInput,     // Input for ensureType() — { appId, key, permissions?, display?, data? }
   UpdateInteractionTypeBody,      // Body for update()
   AdminInteractionsQueryRequest,  // query() filter options
   AdminInteractionsCountsByOutcomeRequest,
@@ -520,7 +529,8 @@ import type {
 
 ## Best Practices
 
-- Use descriptive `interactionId` values: `warranty-registration`, `competition-entry`, `newsletter-vote`
+- Never hardcode an `interactionId`: create types with `ensureType` in admin, keep their ids in app config (`interactionIds.<key>`), read them everywhere else
+- Use descriptive type keys: `warranty-registration`, `competition-entry`, `newsletter-vote`
 - Use `outcome` to capture the choice — it's the key field that `countsByOutcome()` aggregates on
 - Include `metadata` for richer analytics and debugging (`source`, `device`, `region`, etc.)
 - Use `uniquePerUser: true` for actions that should only happen once (votes, registrations)

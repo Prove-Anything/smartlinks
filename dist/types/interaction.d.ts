@@ -195,10 +195,25 @@ export interface InteractionTypeList {
     limit: number;
     offset: number;
 }
+/**
+ * Body for interactions.create(). The SERVER mints the type's id (a UUID) — read it from the
+ * returned record. Prefer interactions.ensureType(), which also finds an existing type by its key.
+ */
 export interface CreateInteractionTypeBody {
-    id: string;
+    /** @deprecated Ignored — the server mints the id. Use the `id` of the returned record (or ensureType). */
+    id?: string;
     appId: string;
     permissions?: InteractionPermissions;
+    data?: Record<string, unknown>;
+}
+/** Input for interactions.ensureType(): find this app's type by `key`, or create it. */
+export interface EnsureInteractionTypeInput {
+    appId: string;
+    /** Your readable, stable name for the type, e.g. 'vote' — stored as data.interactionType. NOT the id. */
+    key: string;
+    permissions?: InteractionPermissions;
+    display?: InteractionDisplay;
+    /** Extra definition data (e.g. effects); merged under data alongside interactionType/display. */
     data?: Record<string, unknown>;
 }
 export interface UpdateInteractionTypeBody {

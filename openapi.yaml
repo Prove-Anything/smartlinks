@@ -26623,8 +26623,24 @@ components:
           type: object
           additionalProperties: true
       required:
-        - id
         - appId
+    EnsureInteractionTypeInput:
+      type: object
+      properties:
+        appId:
+          type: string
+        key:
+          type: string
+        permissions:
+          $ref: "#/components/schemas/InteractionPermissions"
+        display:
+          $ref: "#/components/schemas/InteractionDisplay"
+        data:
+          type: object
+          additionalProperties: true
+      required:
+        - appId
+        - key
     UpdateInteractionTypeBody:
       type: object
       properties:

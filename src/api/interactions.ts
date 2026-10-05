@@ -17,6 +17,7 @@ import type {
   SubmitInteractionError,
   // CRUD
   CreateInteractionTypeBody,
+  EnsureInteractionTypeInput,
   UpdateInteractionTypeBody,
   ListInteractionTypesQuery,
   InteractionTypeRecord,
@@ -150,6 +151,37 @@ export namespace interactions {
     const qs = encodeQuery(query as any)
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/${qs}`
     return request<InteractionTypeList>(path)
+  }
+
+  /**
+   * Find this app's interaction type by its readable `key` (data.interactionType), or create it.
+   * Returns the type record — its `id` is the server-minted UUID every event must use.
+   * ADMIN only (run it in your admin/setup screen), then store the id in your app config so
+   * public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup.
+   *
+   * @example
+   * const vote = await SL.interactions.ensureType(collectionId, {
+   *   appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true },
+   * })
+   * // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId
+   */
+  export async function ensureType(
+    collectionId: string,
+    input: EnsureInteractionTypeInput
+  ): Promise<InteractionTypeRecord> {
+    const { appId, key, permissions, display, data } = input
+    if (!appId || !key) throw new Error('interactions.ensureType: appId and key are required')
+    for (let offset = 0; ; offset += 200) {
+      const page = await list(collectionId, { appId, limit: 200, offset })
+      const found = (page.items || []).find((t) => t.data && t.data.interactionType === key)
+      if (found) return found
+      if (!page.items || page.items.length < 200) break
+    }
+    return create(collectionId, {
+      appId,
+      ...(permissions ? { permissions } : {}),
+      data: { ...(data || {}), interactionType: key, ...(display ? { display } : {}) },
+    })
   }
 
   export async function get(
