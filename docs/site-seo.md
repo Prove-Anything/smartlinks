@@ -8,9 +8,10 @@ get all of this from Hub.
 - **`/robots.txt`, `/sitemap.xml`, `/llms.txt`** are generated on the site's own address. Don't ship
   `robots.txt` or `sitemap.xml`: one build serves many sites, and sitemap URLs must be absolute on
   the site's host, which the build can't know.
-- **Declare your routes** in `public/sitemap-paths.txt`, one path per line (`/`, `/menu`,
-  `/book`). They go into the sitemap and `llms.txt` on the right host. Pre-rendered pages
-  (`about/index.html`) are found automatically.
+- **List every page** in `public/sitemap-paths.txt`, one `<path> [Title]` per line, in menu order
+  (`/ Home`, `/menu Menu`, `/book Book a table`). They go into the sitemap and `llms.txt` (titled)
+  on the right host, and Forge's preview uses the same list as its page menu. Keep it in step with
+  the router. Pre-rendered pages (`about/index.html`) are found automatically.
 - **Canonical address.** A site can answer on its automatic address, a chosen name and a custom
   domain. Every page gets `Link: <https://{canonical}{path}>; rel="canonical"`, so search engines
   consolidate on one: the custom domain, else the chosen name, else the automatic address. Don't set
