@@ -43,11 +43,14 @@ function die(msg) {
 const appDir = resolve(process.argv[2] || process.cwd());
 if (!existsSync(appDir)) die(`app directory not found: ${appDir}`);
 
-// Locate the manifest.
-const manifestPath = ['public/app.manifest.json', 'app.manifest.json', 'dist/app.manifest.json']
+// Locate the manifest. The BUILT one (dist/) first: it's what ships, and the build's hash step renames
+// bundles (mobile-admin.esm.js → mobile-admin-<hash>.esm.js) and rewrites only dist/app.manifest.json —
+// checking the source manifest after a build looked for files that no longer exist under that name.
+// The source manifest is the fallback for a doctor run before any build.
+const manifestPath = ['dist/app.manifest.json', 'public/app.manifest.json', 'app.manifest.json']
   .map((p) => join(appDir, p))
   .find(existsSync);
-if (!manifestPath) die(`no app.manifest.json found under ${appDir} (looked in public/, ., dist/)`);
+if (!manifestPath) die(`no app.manifest.json found under ${appDir} (looked in dist/, public/, .)`);
 
 let manifest;
 try {
