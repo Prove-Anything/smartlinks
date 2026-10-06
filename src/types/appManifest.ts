@@ -239,8 +239,13 @@ export interface AppFunctionTrigger {
   type: AppFunctionTriggerType;
   /** `event`: event types this function subscribes to, e.g. `['interaction.submitted:comp-entry']`. */
   eventTypes?: string[];
-  /** `cron`: standard 5-field crontab expression, evaluated in UTC. */
+  /**
+   * `cron`: standard 5-field crontab expression (`"*/15 * * * *"`, `"0 9 * * MON-FRI"`, or `@hourly` /
+   * `@daily` / `@weekly` / `@monthly`), evaluated in UTC unless `timezone` is set. At most every 5 minutes.
+   */
   schedule?: string;
+  /** `cron`: IANA time zone the schedule is read in, e.g. `"Europe/London"` (follows summer time). Default UTC. */
+  timezone?: string;
   /** `http`: URL path segment the function is exposed at (defaults to the function `name`). */
   route?: string;
   /** `http`: accepted HTTP methods (defaults to `['POST']`). */

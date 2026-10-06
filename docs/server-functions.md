@@ -561,6 +561,57 @@ other secrets, or any other collection.
 
 ---
 
+## Scheduled functions (cron)
+
+A `cron` function runs on a schedule, on **every collection that has the app installed**, with
+`collection` authority (there's no caller). It's the shape for polling another system ("pull new
+orders every 15 minutes"), nightly reconciles, digests and clean-ups.
+
+```jsonc
+{
+  "name": "pullOrders",
+  "trigger": { "type": "cron", "schedule": "*/15 * * * *" },
+  "capabilities": ["sl:records:write", "network:api.example-shop.com", "secrets:shop-api-key"]
+},
+{
+  "name": "morningDigest",
+  "trigger": { "type": "cron", "schedule": "0 9 * * MON-FRI", "timezone": "Europe/London" },
+  "capabilities": ["sl:records:read", "network:hooks.slack.com", "secrets:slack-webhook"]
+}
+```
+
+- **`schedule`** — standard 5-field cron: minute, hour, day-of-month, month, day-of-week. Lists,
+  ranges and steps (`0,30`, `9-17`, `*/15`), month and day names (`JAN`, `MON-FRI`; Sunday is 0 or 7),
+  and `@hourly` / `@daily` / `@weekly` / `@monthly` / `@yearly`. When both day-of-month and
+  day-of-week are restricted, a day matching either fires (as in cron).
+- **`timezone`** *(optional)* — an IANA zone like `"Europe/London"`; the schedule follows its
+  summer time. Default UTC.
+- **At most every 5 minutes.** A faster schedule, a bad expression or an unknown zone fails the
+  release (`SCHEDULE_INVALID`), so it never silently doesn't run.
+
+**What runs:** each installation runs the current release of the channel it's installed on, so a
+test collection with the app on `dev` runs your dev build on its schedule. Disabled installs and
+expired dev installs don't run.
+
+**The event** your handler receives:
+
+```ts
+{ type: 'cron', schedule: '*/15 * * * *', timezone: null, scheduledAt: '2026-10-06T10:15:00.000Z' }
+```
+
+`scheduledAt` is the minute the run was due, which is not always the moment it starts: runs queue,
+and a late one still carries its own minute. Use it, not `Date.now()`, as the end of the window
+you're syncing.
+
+**Write it to be safe to run twice.** Each (collection, function, minute) is enqueued once, but a
+run that fails part-way can be retried, and a slow run can still be going when the next one starts.
+Keep a cursor (last `scheduledAt` or the other system's own cursor) in the app's records or config,
+and upsert by the other system's ID instead of inserting blindly.
+
+Each run is logged like any other function run, and a failure shows in the collection's Errors view.
+
+---
+
 ## Invoking an http function
 
 An `http` function is called by POSTing to the app-scoped functions endpoint on the
