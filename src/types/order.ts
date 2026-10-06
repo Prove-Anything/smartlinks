@@ -217,7 +217,12 @@ export interface QueryOrdersRequest {
       itemId: string
     }>
     metadata?: Record<string, any>
-    sortBy?: string
+    /**
+     * Sort field: `createdAt` (default), `updatedAt`, `status`, `orderRef`, `customerId` or `itemCount`
+     * (snake_case works too). Also accepts `"-updatedAt"` (descending) / `"+status"` (ascending) or
+     * `"status:asc,createdAt:desc"`. Any other field is a 400 listing the allowed ones.
+     */
+    sortBy?: 'createdAt' | 'updatedAt' | 'status' | 'orderRef' | 'customerId' | 'itemCount' | (string & {})
     sortOrder?: 'asc' | 'desc'
   }
   limit?: number                    // Optional: Max results (default: 100)
