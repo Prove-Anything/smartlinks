@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.40  |  Generated: 2026-10-05T14:51:09.158Z
+Version: 2.0.43  |  Generated: 2026-10-06T15:37:31.849Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2523,6 +2523,7 @@ interface AppFunctionTrigger {
   type: AppFunctionTriggerType;
   eventTypes?: string[];
   schedule?: string;
+  timezone?: string;
   route?: string;
   methods?: Array<'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'>;
 }
@@ -2539,6 +2540,7 @@ interface AppFunctionDef {
   elevated?: boolean;
   capabilities?: string[];
   dataScope?: 'collection' | 'global';
+  inputs?: AppFunctionInputs;
   apiVersion?: string;
   handler?: string;
   agent?: AppFunctionAgentExposure;
@@ -2622,6 +2624,27 @@ interface ServerFunctionContext {
   caller: ServerFunctionCaller;
   fetch: typeof fetch;
   log: (message: string, data?: Record<string, any>) => void;
+  inputs: Readonly<ServerFunctionInputs>;
+}
+```
+
+**AppFunctionInputs** (interface)
+```typescript
+interface AppFunctionInputs {
+  entity?: boolean;
+  collection?: boolean;
+  appConfig?: boolean;
+  product?: { from: `body.${string}` | `query.${string}` | 'path' };
+}
+```
+
+**ServerFunctionInputs** (interface)
+```typescript
+interface ServerFunctionInputs {
+  entity?: Record<string, any> | null;
+  collection?: Record<string, any> | null;
+  appConfig?: Record<string, any> | null;
+  product?: Record<string, any> | null;
 }
 ```
 
@@ -9697,6 +9720,15 @@ interface FunctionSiteUrlOptions {
 
 **FunctionCallResult** = `any`
 
+### secrets (api)
+
+**AppSecretOptions** (interface)
+```typescript
+interface AppSecretOptions {
+  appId?: string
+}
+```
+
 ### sequence (api)
 
 **AllocateSequenceInput** (interface)
@@ -12026,11 +12058,20 @@ Fetch + extract a web page: clean markdown, page metadata, and any schema.org JS
 
 ### secrets
 
+**put**(collectionId: string, name: string, value: string, opts: AppSecretOptions = {}) → `Promise<SetSecretResult>`
+Save this app's secret `name` on the collection (create or replace) — what the app's server functions read with `ctx.secrets.get(name)` (declare `secrets:<name>` in the manifest). Call it from your admin screen as a collection admin. Write-only: returns `{ ref: name, hint }`, never the value. PUT /app/:appId/secrets/:name
+
+**listOwn**(collectionId: string, opts: AppSecretOptions = {}) → `Promise<SecretList>`
+This app's secrets on the collection: names + masked hints (never values). GET /app/:appId/secrets
+
+**removeOwn**(collectionId: string, name: string, opts: AppSecretOptions = {}) → `Promise<`
+Delete this app's secret `name`. DELETE /app/:appId/secrets/:name
+
 **list**(collectionId: string, query: ListSecretsQuery = {}) → `Promise<SecretList>`
 List secrets as refs + masked hints + metadata (never values). GET /secrets
 
 **set**(collectionId: string, input: SetSecretInput) → `Promise<SetSecretResult>`
-Create a secret. POST /secrets → { ref, hint }. Store the ref on a flow.
+Create a collection secret with a GENERATED ref. POST /secrets → { ref, hint }. Store the ref on a flow. For a secret your app's server functions read by name, use `put` instead.
 
 **get**(collectionId: string, ref: string) → `Promise<SecretMeta>`
 Metadata for one secret (never the value). GET /secrets/:ref

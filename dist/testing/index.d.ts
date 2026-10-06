@@ -1,4 +1,4 @@
-import type { AppFunctionDef, ServerFunctionContext } from '../types/appManifest.js';
+import type { AppFunctionDef, ServerFunctionContext, ServerFunctionInputs } from '../types/appManifest.js';
 export declare class CapabilityError extends Error {
     capability: string;
     code: string;
@@ -62,6 +62,8 @@ export interface CreateFunctionTestContextOptions {
     sl?: TestSlImpl;
     /** Backing fetch (defaults to global fetch). Still gated by the `network` capability. */
     fetch?: typeof fetch;
+    /** What the platform would have prefetched as `ctx.inputs` (e.g. `{ entity: product }`). Default `{}`. */
+    inputs?: ServerFunctionInputs;
 }
 export interface FunctionTestContext extends ServerFunctionContext {
     /** Captured log lines (also written via ctx.log). */

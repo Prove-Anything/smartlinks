@@ -19086,6 +19086,8 @@ components:
             type: string
         schedule:
           type: string
+        timezone:
+          type: string
         route:
           type: string
         methods:
@@ -19124,6 +19126,8 @@ components:
           enum:
             - collection
             - global
+        inputs:
+          $ref: "#/components/schemas/AppFunctionInputs"
         apiVersion:
           type: string
         handler:
@@ -19233,6 +19237,8 @@ components:
         fetch:
           type: object
           additionalProperties: true
+        inputs:
+          $ref: "#/components/schemas/ServerFunctionInputs"
       required:
         - collectionId
         - appId
@@ -19240,6 +19246,34 @@ components:
         - secrets
         - caller
         - fetch
+        - inputs
+    AppFunctionInputs:
+      type: object
+      properties:
+        entity:
+          type: boolean
+        collection:
+          type: boolean
+        appConfig:
+          type: boolean
+        product:
+          type: object
+          additionalProperties: true
+    ServerFunctionInputs:
+      type: object
+      properties:
+        entity:
+          type: object
+          additionalProperties: true
+        collection:
+          type: object
+          additionalProperties: true
+        appConfig:
+          type: object
+          additionalProperties: true
+        product:
+          type: object
+          additionalProperties: true
     ServerFunctionHttpEvent:
       type: object
       properties:
@@ -30748,6 +30782,11 @@ components:
           additionalProperties:
             type: string
         host:
+          type: string
+    AppSecretOptions:
+      type: object
+      properties:
+        appId:
           type: string
     AllocateSequenceInput:
       type: object

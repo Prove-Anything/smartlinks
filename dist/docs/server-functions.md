@@ -167,10 +167,10 @@ Declare the minimum you need.
 | `sl:<resource>:read` / `sl:<resource>:write` | SDK access to that resource, e.g. `sl:products:read`, `sl:records:write`, `sl:attestations:write`, `sl:contacts:write`. |
 | `network` | `ctx.fetch` to any host. |
 | `network:<host>` | `ctx.fetch` to that host only (repeat for several). Prefer this over blanket `network`. |
-| `secrets:<ref>` | `ctx.secrets.get('<ref>')` for that one secret ref. |
+| `secrets:<name>` | `ctx.secrets.get('<name>')` for that one secret (see [Secrets](#secrets--api-keys-per-collection)). |
 
-If you don't declare `network`, `ctx.fetch` is absent. If you don't declare a `secrets:<ref>`,
-`ctx.secrets.get('<ref>')` returns `null`.
+If you don't declare `network`, `ctx.fetch` is absent. Reading a secret you didn't declare with
+`secrets:<name>` throws.
 
 ---
 
@@ -186,8 +186,8 @@ interface ServerFunctionContext {
    *  data — URLs, flags, counters, arrays), `sl.products`, `sl.attestations`. */
   sl: SmartLinks
 
-  /** Capability-gated secrets (need `secrets:<ref>`). `get(ref)` resolves the collection's OWN
-   *  secret first, then the app-level one; `app(ref)` reads the app-level secret only. */
+  /** Capability-gated secrets (need `secrets:<name>`). `get(name)` reads this app's own secret on the
+   *  collection first, then the app-level one; `app(name)` reads the app-level secret only. */
   secrets: { get(ref: string): Promise<string | null>; app(ref: string): Promise<string | null> }
 
   /** Who invoked this function. */
@@ -323,6 +323,40 @@ name (a first-party builtin still wins). Always prefer an appId.
 > facets (collection + app), with `global` as the sentinel collection.
 
 ---
+
+## Inputs — data handed to your function
+
+Declare what your function needs and the platform fetches it **before** the run: read it from `ctx.inputs` instead of calling `ctx.sl` first. One less round trip — and for functions running in the isolated runner, one less network hop.
+
+```jsonc
+// app.manifest.json → functions.definitions[]
+{
+  "name": "onProductChanged",
+  "trigger": { "type": "event", "eventTypes": ["product.updated"] },
+  "capabilities": ["sl:products:read", "sl:data:read"],
+  "inputs": { "appConfig": true }            // entity is on by default for event triggers
+}
+```
+
+```js
+export async function onProductChanged(ctx, event) {
+  const product = ctx.inputs.entity                     // the product that changed
+  const { interactionIds } = ctx.inputs.appConfig || {} // this app's config for the collection
+}
+```
+
+| Input | What you get | Needs | Triggers |
+|---|---|---|---|
+| `entity` | The record the event is about: the product, your app's record, or the interaction event. **On by default**; `"entity": false` opts out. | read on that resource (`sl:products:read`, `sl:records:read`) | event |
+| `collection` | The collection's public record | — | all |
+| `appConfig` | Your app's config for this collection (where setup like `interactionIds` lives) | `sl:data:read` | all |
+| `product` | A product named by the request: `{ "from": "body.productId" }`, `"query.<field>"` or `"path"` | `sl:products:read` | http |
+
+- **Same rules as `ctx.sl`.** Inputs are fetched with your function's authority and capabilities, scoped to the collection it runs in — a product from another collection is never fetched.
+- **Never an error.** Not found, not allowed or larger than 256 KB → that input is `null`. Check before you use it.
+- **Current state.** Event inputs are fetched when your function runs, so you see the record as it is now; `event` still carries the ids.
+- **Checked at publish.** An unknown input, a bad `from`, or a missing capability fails validation.
+- **Testing:** pass `inputs` to the test context — `createFunctionTestContext({ def, inputs: { entity: { id: 'p1', name: 'Kettle' } } })`.
 
 ## Exposing a function to the AI agent
 
@@ -524,6 +558,102 @@ Declared as `public` + `collection` + `['sl:records:write', 'secrets:recaptcha-s
 'network:api.recaptcha.net']`, this function is publicly callable, verifies the request
 itself, and writes a record no anonymous user could write — but it cannot touch products,
 other secrets, or any other collection.
+
+---
+
+## Secrets — API keys per collection
+
+A function that calls another system needs that system's key, and each collection (each customer)
+has its own. Your app's **admin screen** saves it; your **functions** read it by the same name.
+
+**1. Declare it** on every function that reads it:
+
+```jsonc
+{ "name": "pullOrders", "trigger": { "type": "cron", "schedule": "0,30 * * * *" },
+  "capabilities": ["network:api.example-shop.com", "secrets:shop-api-key"] }
+```
+
+**2. Save it from your admin screen**, signed in as a collection admin:
+
+```ts
+await SL.secrets.put(collectionId, 'shop-api-key', apiKeyFromTheForm)   // create or replace
+const { secrets } = await SL.secrets.listOwn(collectionId)              // names + masked hints, e.g. "••••1234"
+await SL.secrets.removeOwn(collectionId, 'shop-api-key')
+```
+
+The app comes from the SDK's app context (`initializeApi({ appId })`), or pass `{ appId }` as the
+last argument. Secrets are write-only: nothing ever returns the value, so show the hint ("saved,
+ends 1234") and offer "replace", not "edit". Build this into your own settings screen; the platform
+doesn't prompt for it at install.
+
+**3. Read it in the function:**
+
+```ts
+const key = await ctx.secrets.get('shop-api-key')   // null until an admin has saved it
+if (!key) { ctx.log('shop not connected yet'); return { skipped: 'not connected' } }
+```
+
+**Each app's secrets are its own.** `shop-api-key` saved by your app and `shop-api-key` saved by
+another app on the same collection are two different secrets; your functions only ever read yours.
+
+`ctx.secrets.get(name)` looks in this order:
+1. your app's secret on this collection (saved with `SL.secrets.put`);
+2. *SmartLinks' own apps only:* a collection-wide secret of that name. Third-party apps never read these;
+3. your app's shared, app-level secret (the same for every collection), if Forge has one for it.
+
+Don't use `SL.secrets.set` for this. It creates a collection secret with a **generated** ref
+(`sec_…`) for integration flows, which a function can't name in its manifest.
+
+---
+
+## Scheduled functions (cron)
+
+A `cron` function runs on a schedule, on **every collection that has the app installed**, with
+`collection` authority (there's no caller). It's the shape for polling another system ("pull new
+orders every 15 minutes"), nightly reconciles, digests and clean-ups.
+
+```jsonc
+{
+  "name": "pullOrders",
+  "trigger": { "type": "cron", "schedule": "*/15 * * * *" },
+  "capabilities": ["sl:records:write", "network:api.example-shop.com", "secrets:shop-api-key"]
+},
+{
+  "name": "morningDigest",
+  "trigger": { "type": "cron", "schedule": "0 9 * * MON-FRI", "timezone": "Europe/London" },
+  "capabilities": ["sl:records:read", "network:hooks.slack.com", "secrets:slack-webhook"]
+}
+```
+
+- **`schedule`** — standard 5-field cron: minute, hour, day-of-month, month, day-of-week. Lists,
+  ranges and steps (`0,30`, `9-17`, `*/15`), month and day names (`JAN`, `MON-FRI`; Sunday is 0 or 7),
+  and `@hourly` / `@daily` / `@weekly` / `@monthly` / `@yearly`. When both day-of-month and
+  day-of-week are restricted, a day matching either fires (as in cron).
+- **`timezone`** *(optional)* — an IANA zone like `"Europe/London"`; the schedule follows its
+  summer time. Default UTC.
+- **At most every 5 minutes.** A faster schedule, a bad expression or an unknown zone fails the
+  release (`SCHEDULE_INVALID`), so it never silently doesn't run.
+
+**What runs:** each installation runs the current release of the channel it's installed on, so a
+test collection with the app on `dev` runs your dev build on its schedule. Disabled installs and
+expired dev installs don't run.
+
+**The event** your handler receives:
+
+```ts
+{ type: 'cron', schedule: '*/15 * * * *', timezone: null, scheduledAt: '2026-10-06T10:15:00.000Z' }
+```
+
+`scheduledAt` is the minute the run was due, which is not always the moment it starts: runs queue,
+and a late one still carries its own minute. Use it, not `Date.now()`, as the end of the window
+you're syncing.
+
+**Write it to be safe to run twice.** Each (collection, function, minute) is enqueued once, but a
+run that fails part-way can be retried, and a slow run can still be going when the next one starts.
+Keep a cursor (last `scheduledAt` or the other system's own cursor) in the app's records or config,
+and upsert by the other system's ID instead of inserting blindly.
+
+Each run is logged like any other function run, and a failure shows in the collection's Errors view.
 
 ---
 

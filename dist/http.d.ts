@@ -71,6 +71,11 @@ export declare function initializeApi(options: {
     awaitAuth?: boolean;
     /** How long (ms) to wait for the async token before letting requests proceed anyway. Default 8000. */
     awaitAuthTimeoutMs?: number;
+    /**
+     * proxyMode only: how long (ms) a request waits for the parent host's reply before failing with a
+     * 504 SmartlinksApiError (errorCode PROXY_TIMEOUT). Default 90000. 0 = wait indefinitely.
+     */
+    proxyTimeoutMs?: number;
     iframeAutoResize?: boolean;
     logger?: Logger;
     /**

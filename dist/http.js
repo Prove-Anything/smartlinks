@@ -31,6 +31,10 @@ let baseURL = null;
 let apiKey = undefined;
 let bearerToken = undefined;
 let proxyMode = false;
+// How long a request through the parent (proxyMode) waits for the host's reply. Without a limit, a host
+// that never answers (no responder, a dropped message) leaves the call pending forever: no network
+// request in the frame, no error. 90 s covers the longest platform call (a 60 s function deadline).
+let proxyTimeoutMs = 90000;
 let ngrokSkipBrowserWarning = false;
 let extraHeadersGlobal = {};
 /**
@@ -522,6 +526,8 @@ export function initializeApi(options) {
         });
     }
     proxyMode = !!options.proxyMode;
+    if (options.proxyTimeoutMs !== undefined)
+        proxyTimeoutMs = Math.max(0, Number(options.proxyTimeoutMs) || 0);
     // Auto-enable ngrok skip header if domain contains .ngrok.io and user did not explicitly set the flag.
     // Infer ngrok usage from common domains (.ngrok.io or .ngrok-free.dev)
     const inferredNgrok = /(\.ngrok\.io|\.ngrok-free\.dev)(\b|\/)/i.test(baseURL);
@@ -1082,10 +1088,29 @@ async function proxyRequest(method, path, body, headers, options) {
     };
     logDebug('[smartlinks] proxy:postMessage', { id, method, path, headers: headers ? redactHeaders(headers) : undefined, hasBody: !!body });
     return new Promise((resolve, reject) => {
-        proxyPending[id] = { resolve, reject };
+        proxyPending[id] = withProxyTimeout(id, `${method} ${path}`, resolve, reject);
         window.parent.postMessage(msg, "*");
-        // Optionally: add a timeout here to reject if no response
     });
+}
+/**
+ * Wrap a pending proxy request's resolve/reject with the proxy timeout (proxyTimeoutMs): if the host
+ * hasn't answered by then, the request fails with a 504 PROXY_TIMEOUT instead of hanging forever.
+ */
+function withProxyTimeout(id, what, resolve, reject) {
+    if (!(proxyTimeoutMs > 0))
+        return { resolve, reject };
+    const timer = setTimeout(() => {
+        if (!proxyPending[id])
+            return;
+        delete proxyPending[id];
+        const message = `The host page did not answer ${what} within ${proxyTimeoutMs >= 1000 ? `${Math.round(proxyTimeoutMs / 1000)}s` : `${proxyTimeoutMs}ms`} (proxyMode). The parent may not be handling SmartLinks proxy requests.`;
+        logDebug('[smartlinks] proxy:timeout', { id, what });
+        reject(new SmartlinksApiError(message, 504, { code: 504, errorCode: 'PROXY_TIMEOUT', message }));
+    }, proxyTimeoutMs);
+    return {
+        resolve: (data) => { clearTimeout(timer); resolve(data); },
+        reject: (err) => { clearTimeout(timer); reject(err); },
+    };
 }
 /**
  * Upload a FormData payload via proxy with progress events using chunked postMessage.
@@ -1794,8 +1819,7 @@ export async function sendCustomProxyMessage(request, params) {
     };
     logDebug('[smartlinks] proxy:custom postMessage', { id, request, params: safeBodyPreview(params) });
     return new Promise((resolve, reject) => {
-        proxyPending[id] = { resolve, reject };
+        proxyPending[id] = withProxyTimeout(id, `custom request ${request}`, resolve, reject);
         window.parent.postMessage(msg, "*");
-        // Optionally: add a timeout here to reject if no response
     });
 }

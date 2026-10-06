@@ -371,6 +371,8 @@ await manager.loadApp('app-container');
 
 ## Message Protocol
 
+> **Every proxy request needs an answer.** An app in `proxyMode` sends its API calls to this page by `postMessage` and waits for the reply. Since 2.0.41 it gives up after `proxyTimeoutMs` (default 90 s; `initializeApi({ proxyTimeoutMs })`) with a 504 `SmartlinksApiError` (`errorCode: 'PROXY_TIMEOUT'`) — before that, a host that didn't answer left the call hanging with no network request and no error. A host must reply to every `_smartlinksProxyRequest`, with an `error` if it can't serve it.
+
 The responder handles these message types from the iframe:
 
 ### Route Changes

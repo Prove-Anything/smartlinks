@@ -176,6 +176,7 @@ export function createFunctionTestContext(opts) {
         log: (message, data) => {
             logs.push(Object.assign({ at: new Date().toISOString(), message: String(message) }, (data ? { data } : {})));
         },
+        inputs: Object.freeze(Object.assign({}, (opts.inputs || {}))),
         logs,
     };
 }

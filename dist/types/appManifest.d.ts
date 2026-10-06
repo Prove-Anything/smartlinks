@@ -213,8 +213,13 @@ export interface AppFunctionTrigger {
     type: AppFunctionTriggerType;
     /** `event`: event types this function subscribes to, e.g. `['interaction.submitted:comp-entry']`. */
     eventTypes?: string[];
-    /** `cron`: standard 5-field crontab expression, evaluated in UTC. */
+    /**
+     * `cron`: standard 5-field crontab expression (`"0,30 * * * *"`, `"0 9 * * MON-FRI"`, or `@hourly` /
+     * `@daily` / `@weekly` / `@monthly`), evaluated in UTC unless `timezone` is set. At most every 5 minutes.
+     */
     schedule?: string;
+    /** `cron`: IANA time zone the schedule is read in, e.g. `"Europe/London"` (follows summer time). Default UTC. */
+    timezone?: string;
     /** `http`: URL path segment the function is exposed at (defaults to the function `name`). */
     route?: string;
     /** `http`: accepted HTTP methods (defaults to `['POST']`). */
@@ -268,6 +273,14 @@ export interface AppFunctionDef {
      * Per-call `{ scope }` and the `appData.global` / `appData.collection` handles override this.
      */
     dataScope?: 'collection' | 'global';
+    /**
+     * Data the platform fetches BEFORE the run and hands over as `ctx.inputs` — no round trip from your
+     * code (for isolated functions, no network hop). Same authority and capabilities as the equivalent
+     * `ctx.sl` read; a missing, denied or oversized (> 256 KB) input arrives as `null`, never an error.
+     * Event-trigger functions get `entity` (the record the event is about) by default; `entity: false`
+     * opts out. See server-functions.md → "Inputs".
+     */
+    inputs?: AppFunctionInputs;
     /** SDK/manifest API version this function targets (pinned for runtime compatibility). */
     apiVersion?: string;
     /** Exported handler name in the functions bundle. Defaults to `name`. */
@@ -403,6 +416,29 @@ export interface ServerFunctionContext {
     fetch: typeof fetch;
     /** Structured logging captured into run telemetry. */
     log: (message: string, data?: Record<string, any>) => void;
+    /** Data prefetched for this run, per the definition's `inputs` (read-only; `{}` when none). */
+    inputs: Readonly<ServerFunctionInputs>;
+}
+/** What a function asks to have prefetched (`AppFunctionDef.inputs`). */
+export interface AppFunctionInputs {
+    /** Event triggers: the record the event is about — product (needs `sl:products:read`), app record of
+     *  this app (`sl:records:read`), or the interaction event itself. On by default; `false` opts out. */
+    entity?: boolean;
+    /** The collection's public record. */
+    collection?: boolean;
+    /** This app's config for the collection — e.g. its `interactionIds`. Needs `sl:data:read`. */
+    appConfig?: boolean;
+    /** Http triggers: a product named by the request. Needs `sl:products:read`. */
+    product?: {
+        from: `body.${string}` | `query.${string}` | 'path';
+    };
+}
+/** `ctx.inputs` — what was prefetched for this run (keys you declared; `null` when unavailable). */
+export interface ServerFunctionInputs {
+    entity?: Record<string, any> | null;
+    collection?: Record<string, any> | null;
+    appConfig?: Record<string, any> | null;
+    product?: Record<string, any> | null;
 }
 /** The HTTP request handed to an `http`-trigger function as `event`. */
 export interface ServerFunctionHttpEvent<TBody = any> {

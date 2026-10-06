@@ -135,7 +135,7 @@ admin API fires the flow automatically — no manual run needed.
 | `integrations.deleteFlow(collectionId, id)` | `DELETE /integrations/flows/:id` |
 | `integrations.runFlow(collectionId, id, opts?)` | `POST /integrations/flows/:id/run` |
 | `secrets.list(collectionId, query?)` | `GET /secrets` |
-| `secrets.set(collectionId, input)` | `POST /secrets` |
+| `secrets.set(collectionId, input)` | `POST /secrets` (generated ref — for flows; an app's server functions use `secrets.put`, see server-functions.md) |
 | `secrets.get(collectionId, ref)` | `GET /secrets/:ref` |
 | `secrets.rotate(collectionId, ref, input)` | `PUT /secrets/:ref` |
 | `secrets.remove(collectionId, ref)` | `DELETE /secrets/:ref` |
