@@ -240,7 +240,7 @@ export interface AppFunctionTrigger {
   /** `event`: event types this function subscribes to, e.g. `['interaction.submitted:comp-entry']`. */
   eventTypes?: string[];
   /**
-   * `cron`: standard 5-field crontab expression (`"*/15 * * * *"`, `"0 9 * * MON-FRI"`, or `@hourly` /
+   * `cron`: standard 5-field crontab expression (`"0,30 * * * *"`, `"0 9 * * MON-FRI"`, or `@hourly` /
    * `@daily` / `@weekly` / `@monthly`), evaluated in UTC unless `timezone` is set. At most every 5 minutes.
    */
   schedule?: string;

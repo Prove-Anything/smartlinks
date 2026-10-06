@@ -167,10 +167,10 @@ Declare the minimum you need.
 | `sl:<resource>:read` / `sl:<resource>:write` | SDK access to that resource, e.g. `sl:products:read`, `sl:records:write`, `sl:attestations:write`, `sl:contacts:write`. |
 | `network` | `ctx.fetch` to any host. |
 | `network:<host>` | `ctx.fetch` to that host only (repeat for several). Prefer this over blanket `network`. |
-| `secrets:<ref>` | `ctx.secrets.get('<ref>')` for that one secret ref. |
+| `secrets:<name>` | `ctx.secrets.get('<name>')` for that one secret (see [Secrets](#secrets--api-keys-per-collection)). |
 
-If you don't declare `network`, `ctx.fetch` is absent. If you don't declare a `secrets:<ref>`,
-`ctx.secrets.get('<ref>')` returns `null`.
+If you don't declare `network`, `ctx.fetch` is absent. Reading a secret you didn't declare with
+`secrets:<name>` throws.
 
 ---
 
@@ -186,8 +186,8 @@ interface ServerFunctionContext {
    *  data — URLs, flags, counters, arrays), `sl.products`, `sl.attestations`. */
   sl: SmartLinks
 
-  /** Capability-gated secrets (need `secrets:<ref>`). `get(ref)` resolves the collection's OWN
-   *  secret first, then the app-level one; `app(ref)` reads the app-level secret only. */
+  /** Capability-gated secrets (need `secrets:<name>`). `get(name)` reads this app's own secret on the
+   *  collection first, then the app-level one; `app(name)` reads the app-level secret only. */
   secrets: { get(ref: string): Promise<string | null>; app(ref: string): Promise<string | null> }
 
   /** Who invoked this function. */
@@ -558,6 +558,51 @@ Declared as `public` + `collection` + `['sl:records:write', 'secrets:recaptcha-s
 'network:api.recaptcha.net']`, this function is publicly callable, verifies the request
 itself, and writes a record no anonymous user could write — but it cannot touch products,
 other secrets, or any other collection.
+
+---
+
+## Secrets — API keys per collection
+
+A function that calls another system needs that system's key, and each collection (each customer)
+has its own. Your app's **admin screen** saves it; your **functions** read it by the same name.
+
+**1. Declare it** on every function that reads it:
+
+```jsonc
+{ "name": "pullOrders", "trigger": { "type": "cron", "schedule": "0,30 * * * *" },
+  "capabilities": ["network:api.example-shop.com", "secrets:shop-api-key"] }
+```
+
+**2. Save it from your admin screen**, signed in as a collection admin:
+
+```ts
+await SL.secrets.put(collectionId, 'shop-api-key', apiKeyFromTheForm)   // create or replace
+const { secrets } = await SL.secrets.listOwn(collectionId)              // names + masked hints, e.g. "••••1234"
+await SL.secrets.removeOwn(collectionId, 'shop-api-key')
+```
+
+The app comes from the SDK's app context (`initializeApi({ appId })`), or pass `{ appId }` as the
+last argument. Secrets are write-only: nothing ever returns the value, so show the hint ("saved,
+ends 1234") and offer "replace", not "edit". Build this into your own settings screen; the platform
+doesn't prompt for it at install.
+
+**3. Read it in the function:**
+
+```ts
+const key = await ctx.secrets.get('shop-api-key')   // null until an admin has saved it
+if (!key) { ctx.log('shop not connected yet'); return { skipped: 'not connected' } }
+```
+
+**Each app's secrets are its own.** `shop-api-key` saved by your app and `shop-api-key` saved by
+another app on the same collection are two different secrets; your functions only ever read yours.
+
+`ctx.secrets.get(name)` looks in this order:
+1. your app's secret on this collection (saved with `SL.secrets.put`);
+2. *SmartLinks' own apps only:* a collection-wide secret of that name. Third-party apps never read these;
+3. your app's shared, app-level secret (the same for every collection), if Forge has one for it.
+
+Don't use `SL.secrets.set` for this. It creates a collection secret with a **generated** ref
+(`sec_…`) for integration flows, which a function can't name in its manifest.
 
 ---
 
