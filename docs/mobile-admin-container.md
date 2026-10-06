@@ -520,8 +520,26 @@ The mobile admin bundle has its own Vite config: `vite.config.mobile-admin.ts`.
 ```
 dist/mobile-admin.umd.js
 dist/mobile-admin.esm.js
-dist/mobile-admin.css    (if needed)
+dist/mobile-admin.css    the screen's own scoped stylesheet — declare it as mobileAdmin.files.css
 ```
+
+### Styling
+
+The component renders **inside Sidekick's page**, not an iframe. Sidekick already has a CSS reset and
+its own styles, and loads your `mobileAdmin.files.css` alongside the bundle. Don't rely on Sidekick's
+classes: they only cover what Sidekick itself uses. Ship your own stylesheet, and keep it to your screen:
+
+- **No reset.** Build Tailwind's theme + utilities only (no preflight); Sidekick's reset is already there.
+- **Scoped.** Prefix every rule with a wrapper class your component renders (the example uses
+  `.sl-mobile-admin`), and turn `:root` / `html` / `body` into that wrapper, so theme variables and
+  rules can't touch Sidekick's UI.
+- **No cascade layers.** Tailwind 4 emits `@layer`; any unlayered rule on the page beats every layered
+  one, so unwrap the layers or Sidekick's own utilities win clashes inside your screen.
+
+The example app does all three with a small PostCSS step in `vite.config.mobile-admin.ts`
+(`scripts/scope-css.mjs`) over `src/mobile-admin/styles.css`, and shares its theme with the rest of the
+app through `src/tokens.css`. Forge's preview loads the same file, so the screen looks the same there as
+on a phone.
 
 ### Example `vite.config.mobile-admin.ts`
 
