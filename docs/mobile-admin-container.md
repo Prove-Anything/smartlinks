@@ -106,6 +106,9 @@ interface AdminMobileHostContext {
     navigateBack?: () => void
   }
 
+  // UHF RFID reader — only on hosts with one (feature-detect). See "RFID" below.
+  rfid?: AdminMobileRfid
+
   // Network & device info
   network: { isOnline: () => boolean }
   device: { info: () => Promise<{ model: string; platform: string }> }
@@ -368,6 +371,52 @@ controller.abort()
 `requestQrScan()` opens the host's camera scanner (full screen, or the bottom `heightPercent` of it) and
 resolves with the code; `requestCameraPhoto()` opens the camera and resolves with the image. Both reject
 with `HostCancelledError` when the user backs out.
+
+### RFID
+
+`host.rfid` gives a container the same reader abilities the host's own scanner uses — so an app can be
+its own scanner. It's present only when the device has a UHF reader (`hardware.rfid`); check for it.
+There's one reader, so starting any of the three below ends the one before, and everything stops when
+the container unmounts.
+
+**Keep reading** — a stock take, an intake. De-duplicated and batched, so you get each tag once instead
+of hundreds of raw reads a second:
+
+```typescript
+const session = host.rfid?.read({
+  filter: { prefix: '3034' },  // optional: only EPCs starting with this (or { epcs: [...] })
+  dedupe: 'session',           // default — each tag once; { windowMs: 5000 } or 'none' for every read
+  batchMs: 250,                // default — reads arrive in batches; 0 = one at a time
+  mode: 'trigger',             // default — reads while the operator holds the trigger; 'continuous' = now until stop()
+})
+const off = session?.onRead((reads) => {        // [{ epc, tid?, rssi?, timestamp, count }]
+  for (const r of reads) addToCount(r.epc)
+})
+// later
+session?.stop()
+```
+
+**One tag for this step** — tag an item. Resolves with the strongest tag read in the first moment of
+reading, then stops; the RFID counterpart of `requestNfcTap` (non-blocking, abortable, `prompt` hint):
+
+```typescript
+const { epc } = await host.rfid.readOne({ prompt: 'Pull the trigger over the item', signal })
+```
+
+**Find a tag** — a Geiger counter. `strength` runs 0 (not in range) to 100 (right here); by default the
+host plays faster beeps and haptics as you close in (`feedback: false` to do your own):
+
+```typescript
+const hunt = host.rfid?.locate(item.epcs)   // one EPC, or every tag on the item
+hunt?.onUpdate(({ strength, rssi, hitsPerSecond }) => setStrength(strength))
+// hunt.stop() when found
+```
+
+`status()` / `onStatus(cb)` report whether a reader is available and connected, which one (`built-in`,
+`zebra`, `tsl`), whether it's reading, and its power range; `read`/`locate` take a `power` level for the
+session.
+
+Raw reads still arrive as `rfid-burst` events whenever the reader runs, for containers that want them.
 
 ---
 

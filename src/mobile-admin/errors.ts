@@ -76,7 +76,7 @@ export class HostPermissionDeniedError extends Error {
  */
 export class HostTimeoutError extends Error {
   /** The capability that timed out. */
-  capability: Extract<ActionableCapability, 'nfc' | 'qr' | 'geolocation'>;
+  capability: Extract<ActionableCapability, 'nfc' | 'qr' | 'rfid' | 'geolocation'>;
   /** The timeout threshold in milliseconds. */
   timeoutMs: number;
 

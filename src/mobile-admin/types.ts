@@ -85,6 +85,137 @@ export interface QrScanRequestOptions {
   prompt?: string;
 }
 
+// ---------------------------------------------------------------------------------------------------
+// RFID — `host.rfid` (optional: present only on hosts with a UHF reader stack; feature-detect it)
+// ---------------------------------------------------------------------------------------------------
+
+/** One RFID tag read (or, when batched, one tag's reads within the batch). */
+export interface RfidRead {
+  /** The tag's EPC, uppercase hex. */
+  epc: string;
+  /** Manufacturer-burned tag ID, when the reader reports it. */
+  tid?: string;
+  /** Signal strength in dBm (negative; closer = higher). Best (highest) in the batch. */
+  rssi?: number;
+  /** When it was (last) read, ms since epoch. */
+  timestamp: number;
+  /** How many times this tag was read in the batch. */
+  count: number;
+}
+
+/** The reader as the host sees it. */
+export interface RfidReaderStatus {
+  /** A UHF reader is selected on this device. */
+  available: boolean;
+  /** It's connected and ready (a Bluetooth reader may be available but not connected). */
+  connected: boolean;
+  /** Which reader: the device's built-in one or an external one. */
+  reader: 'built-in' | 'zebra' | 'tsl' | 'other' | null;
+  /** The reader is reading right now. */
+  reading: boolean;
+  /** Transmit power, when the reader supports changing it. */
+  power?: { level: number; min: number; max: number };
+}
+
+/** Which tags a session reports. Reads of any other tag are dropped. */
+export interface RfidFilter {
+  /** Only these EPCs. */
+  epcs?: string[];
+  /** Only EPCs starting with this (hex, e.g. your company prefix). */
+  prefix?: string;
+}
+
+/** Options for `host.rfid.read()`. */
+export interface RfidReadOptions {
+  filter?: RfidFilter;
+  /**
+   * `'session'` (default): each tag is reported once per session. `{ windowMs }`: again only after it
+   * hasn't been read for that long. `'none'`: every read.
+   */
+  dedupe?: 'session' | 'none' | { windowMs: number };
+  /** Deliver reads in batches every this many ms (default 250). `0` = each read as it arrives. */
+  batchMs?: number;
+  /**
+   * `'trigger'` (default): the reader runs while the operator holds the handheld's trigger.
+   * `'continuous'`: it runs from now until `stop()`.
+   */
+  mode?: 'trigger' | 'continuous';
+  /** Transmit power for this session (see `status().power`); restored afterwards. */
+  power?: number;
+}
+
+/** A reading session from `host.rfid.read()`. One session at a time: a new one stops the previous. */
+export interface RfidReadSession {
+  /** Reads, batched per `batchMs`. Returns an unsubscribe function. */
+  onRead(cb: (reads: RfidRead[]) => void): () => void;
+  /** Distinct tags reported so far. */
+  readonly count: number;
+  /** Stop reading and end the session. */
+  stop(): void;
+}
+
+/** Options for `host.rfid.readOne()`. */
+export interface RfidReadOneOptions {
+  filter?: RfidFilter;
+  /** Give up after this long with `HostTimeoutError`. Default: until a tag is read or aborted. */
+  timeoutMs?: number;
+  /** Abort (rejects with `HostCancelledError`, `by: 'app'`). */
+  signal?: AbortSignal;
+  /** Short hint the host shows while waiting, e.g. "Pull the trigger over the item". */
+  prompt?: string;
+  /** `'trigger'` (default) waits for the operator's trigger; `'continuous'` reads straight away. */
+  mode?: 'trigger' | 'continuous';
+}
+
+/** Options for `host.rfid.locate()`. */
+export interface RfidLocateOptions {
+  /** The host plays faster beeps and haptics as the tag gets closer (default true). */
+  feedback?: boolean;
+  /** Transmit power while locating (lower narrows the field when you're close). */
+  power?: number;
+}
+
+/** How close the hunted tag is, updated several times a second. */
+export interface RfidLocateUpdate {
+  /** The target tag last read (when hunting several), or null if none read yet. */
+  epc: string | null;
+  /** 0 (not in range) to 100 (right here), from signal strength and read rate. */
+  strength: number;
+  /** Latest signal strength in dBm, or null. */
+  rssi: number | null;
+  /** Reads of the target per second, over the last second. */
+  hitsPerSecond: number;
+  /** When it was last read, ms since epoch, or null. */
+  lastSeen: number | null;
+}
+
+/** A locate session from `host.rfid.locate()`. It reads continuously until `stop()`. */
+export interface RfidLocateSession {
+  onUpdate(cb: (update: RfidLocateUpdate) => void): () => void;
+  stop(): void;
+}
+
+/**
+ * The host's UHF RFID reader — the same reading, single-read and find abilities the host's own scanner
+ * uses, for a container to build its own scanning screens. All three run on the one reader: starting
+ * any of them ends the one before. Everything stops when the container unmounts.
+ */
+export interface AdminMobileRfid {
+  /** The reader's current state. */
+  status(): RfidReaderStatus;
+  /** Called whenever the status changes. Returns an unsubscribe function. */
+  onStatus(cb: (status: RfidReaderStatus) => void): () => void;
+  /** Keep reading tags — a stock take, an intake — de-duplicated and batched. */
+  read(opts?: RfidReadOptions): RfidReadSession;
+  /**
+   * "This step needs a tag": resolve with one tag (the strongest read in the first moment of reading),
+   * then stop. The RFID counterpart of `requestNfcTap`.
+   */
+  readOne(opts?: RfidReadOneOptions): Promise<RfidRead>;
+  /** Find one tag (or any of several, e.g. all tags on one item) by signal strength — a Geiger counter. */
+  locate(epcs: string | string[], opts?: RfidLocateOptions): RfidLocateSession;
+}
+
 /** Options for `host.actions.requestCameraPhoto`. */
 export interface CameraPhotoRequestOptions {
   /** Abandon the capture (rejects with `HostCancelledError`, `by: 'app'`). */
@@ -229,6 +360,13 @@ export interface AdminMobileHostContext {
      */
     navigateBack?: () => void;
   };
+  /**
+   * The UHF RFID reader. Present only on hosts with one (`hardware.rfid`); feature-detect:
+   * @example
+   *   const session = host.rfid?.read({ filter: { prefix: '3034' } });
+   *   session?.onRead((reads) => addToCount(reads));
+   */
+  rfid?: AdminMobileRfid;
   /** Network connectivity helpers. */
   network: {
     /** Returns whether the device currently has network access. */
