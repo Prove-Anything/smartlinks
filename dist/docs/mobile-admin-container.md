@@ -86,11 +86,11 @@ interface AdminMobileHostContext {
   // Unified hardware event stream — callback type: AdminMobileEventCallback
   events: { subscribe: (cb: AdminMobileEventCallback) => () => void }
 
-  // Promise-based hardware actions — reject with a structured error when unavailable
+  // Promise-based hardware actions — reject with a structured error when unavailable or cancelled
   actions: {
-    requestQrScan: () => Promise<string>
-    requestNfcTap: (timeoutMs?: number) => Promise<{ uid: string; ndef?: string }>
-    requestCameraPhoto: () => Promise<Blob>
+    requestQrScan: (opts?: { signal?: AbortSignal; heightPercent?: number; prompt?: string }) => Promise<string>
+    requestNfcTap: (opts?: { timeoutMs?: number; signal?: AbortSignal; prompt?: string } | number) => Promise<{ uid: string; ndef?: string }>
+    requestCameraPhoto: (opts?: { signal?: AbortSignal }) => Promise<Blob>
     share: (payload: { title: string; url: string; text?: string }) => Promise<void>
     clipboard: {
       read: () => Promise<string>
@@ -105,6 +105,9 @@ interface AdminMobileHostContext {
     setHeaderTitle?: (title: string | null) => void
     navigateBack?: () => void
   }
+
+  // UHF RFID reader — only on hosts with one (feature-detect). See "RFID" below.
+  rfid?: AdminMobileRfid
 
   // Network & device info
   network: { isOnline: () => boolean }
@@ -331,6 +334,92 @@ The SmartLinks Mobile launcher loads your `mobileAdmin` bundle through the platf
 
 ---
 
+## Scanning: listening vs asking
+
+Every scan reaches a container in one of two ways. Pick per screen.
+
+| | Listening — `host.events` | Asking — `host.actions.request*` |
+|---|---|---|
+| Use for | "Tap or scan anything, any time" — a stock take, a scan-to-open list | "This step needs a scan" — tag this item, scan the shelf code |
+| What the user sees | Nothing changes | NFC: a small non-blocking hint with Cancel. QR / photo: the host's camera opens |
+| What you get | An event per tap / read / key | A promise for one result |
+
+### NFC: two modes
+
+- **Listening** — subscribe to `nfc-tap`. Fires for every tap while no request is waiting.
+- **Asking** — `await host.actions.requestNfcTap({ prompt: 'Tap the bottle tag', signal })`. The next tap
+  **made after the call** resolves it, and that tap is **not** also sent as an `nfc-tap` event, so
+  nothing handles it twice. The request is non-blocking: the screen stays usable while it waits — show
+  your own "or type the code" path and abort the wait with `signal` if the user takes it. One request at
+  a time: a new call cancels the previous one.
+
+```typescript
+const controller = new AbortController()
+try {
+  const { uid } = await host.actions.requestNfcTap({ prompt: 'Tap the bottle tag', signal: controller.signal })
+  await attachTag(uid)
+} catch (err) {
+  if (err instanceof HostCancelledError) return   // they pressed Cancel, or we aborted
+  throw err
+}
+// elsewhere — the user typed the code instead:
+controller.abort()
+```
+
+### QR and photos
+
+`requestQrScan()` opens the host's camera scanner (full screen, or the bottom `heightPercent` of it) and
+resolves with the code; `requestCameraPhoto()` opens the camera and resolves with the image. Both reject
+with `HostCancelledError` when the user backs out.
+
+### RFID
+
+`host.rfid` gives a container the same reader abilities the host's own scanner uses — so an app can be
+its own scanner. It's present only when the device has a UHF reader (`hardware.rfid`); check for it.
+There's one reader, so starting any of the three below ends the one before, and everything stops when
+the container unmounts.
+
+**Keep reading** — a stock take, an intake. De-duplicated and batched, so you get each tag once instead
+of hundreds of raw reads a second:
+
+```typescript
+const session = host.rfid?.read({
+  filter: { prefix: '3034' },  // optional: only EPCs starting with this (or { epcs: [...] })
+  dedupe: 'session',           // default — each tag once; { windowMs: 5000 } or 'none' for every read
+  batchMs: 250,                // default — reads arrive in batches; 0 = one at a time
+  mode: 'trigger',             // default — reads while the operator holds the trigger; 'continuous' = now until stop()
+})
+const off = session?.onRead((reads) => {        // [{ epc, tid?, rssi?, timestamp, count }]
+  for (const r of reads) addToCount(r.epc)
+})
+// later
+session?.stop()
+```
+
+**One tag for this step** — tag an item. Resolves with the strongest tag read in the first moment of
+reading, then stops; the RFID counterpart of `requestNfcTap` (non-blocking, abortable, `prompt` hint):
+
+```typescript
+const { epc } = await host.rfid.readOne({ prompt: 'Pull the trigger over the item', signal })
+```
+
+**Find a tag** — a Geiger counter. `strength` runs 0 (not in range) to 100 (right here); by default the
+host plays faster beeps and haptics as you close in (`feedback: false` to do your own):
+
+```typescript
+const hunt = host.rfid?.locate(item.epcs)   // one EPC, or every tag on the item
+hunt?.onUpdate(({ strength, rssi, hitsPerSecond }) => setStrength(strength))
+// hunt.stop() when found
+```
+
+`status()` / `onStatus(cb)` report whether a reader is available and connected, which one (`built-in`,
+`zebra`, `tsl`), whether it's reading, and its power range; `read`/`locate` take a `power` level for the
+session.
+
+Raw reads still arrive as `rfid-burst` events whenever the reader runs, for containers that want them.
+
+---
+
 ## Event Stream
 
 For raw scan events (rather than the action-driven `host.actions.requestNfcTap`), subscribe to the unified event stream. Events flow identically on every host — the launcher normalises bridge messages, Capacitor callbacks, and Web API events into the same shape.
@@ -349,6 +438,13 @@ useEffect(() => {
   return unsubscribe
 }, [host.events])
 ```
+
+Event details:
+
+- Every event may carry `timestamp` (ms since epoch).
+- `nfc-tap` — `uid` is uppercase hex without separators (`04A1B2C3D4E5F6`); `ndef` is the tag's NDEF text (usually its URL), `""` when it had none.
+- `rfid-burst` — reads arrive as they happen, typically **one EPC per event, many per second** while the trigger is held. Collect and de-duplicate them yourself. `rssi` (dBm; closer = higher) when the reader reports it.
+- `key-press` — hosts that report both edges send `action: 'down'` then `'up'` for one press; act on `'down'` (or on events without `action`). `293` is the scan trigger.
 
 Lifecycle events (`event.type === 'lifecycle'`) carry a `phase` field: `'pause' | 'resume' | 'offline' | 'online'`. Use these instead of `window` event listeners so your container works identically on all hosts.
 
@@ -372,7 +468,14 @@ class HostTimeoutError extends Error {
   capability: 'nfc' | 'qr'
   timeoutMs: number
 }
+
+class HostCancelledError extends Error {
+  capability: 'nfc' | 'qr' | 'camera'
+  by: 'user' | 'app'   // closed the scanner / pressed Cancel, or aborted by the container
+}
 ```
+
+All four are exported from `@proveanything/smartlinks`; check with `instanceof` or `err.name`.
 
 ```typescript
 try {

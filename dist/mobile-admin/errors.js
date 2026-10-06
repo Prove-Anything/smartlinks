@@ -70,3 +70,26 @@ export class HostTimeoutError extends Error {
         Object.setPrototypeOf(this, new.target.prototype);
     }
 }
+/**
+ * Thrown when a host action ends without a result because someone stopped it: the user closed the
+ * scanner / pressed Cancel on the "tap a tag" hint (`by: 'user'`), or the container aborted it with its
+ * `signal` or replaced it with a newer request (`by: 'app'`). Usually not an error to show — the user
+ * chose to stop.
+ *
+ * @example
+ *   try {
+ *     const code = await host.actions.requestQrScan();
+ *   } catch (err) {
+ *     if (err instanceof HostCancelledError) return; // they closed the scanner
+ *     throw err;
+ *   }
+ */
+export class HostCancelledError extends Error {
+    constructor(capability, by = 'user') {
+        super(`Capability '${capability}' was cancelled by the ${by}`);
+        this.name = 'HostCancelledError';
+        this.capability = capability;
+        this.by = by;
+        Object.setPrototypeOf(this, new.target.prototype);
+    }
+}

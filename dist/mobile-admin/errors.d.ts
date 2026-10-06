@@ -59,8 +59,29 @@ export declare class HostPermissionDeniedError extends Error {
  */
 export declare class HostTimeoutError extends Error {
     /** The capability that timed out. */
-    capability: Extract<ActionableCapability, 'nfc' | 'qr' | 'geolocation'>;
+    capability: Extract<ActionableCapability, 'nfc' | 'qr' | 'rfid' | 'geolocation'>;
     /** The timeout threshold in milliseconds. */
     timeoutMs: number;
     constructor(capability: HostTimeoutError['capability'], timeoutMs: number);
+}
+/**
+ * Thrown when a host action ends without a result because someone stopped it: the user closed the
+ * scanner / pressed Cancel on the "tap a tag" hint (`by: 'user'`), or the container aborted it with its
+ * `signal` or replaced it with a newer request (`by: 'app'`). Usually not an error to show — the user
+ * chose to stop.
+ *
+ * @example
+ *   try {
+ *     const code = await host.actions.requestQrScan();
+ *   } catch (err) {
+ *     if (err instanceof HostCancelledError) return; // they closed the scanner
+ *     throw err;
+ *   }
+ */
+export declare class HostCancelledError extends Error {
+    /** The capability whose action was cancelled. */
+    capability: ActionableCapability;
+    /** Who stopped it. */
+    by: 'user' | 'app';
+    constructor(capability: ActionableCapability, by?: 'user' | 'app');
 }

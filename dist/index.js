@@ -23,4 +23,4 @@ export { headless_1 as headless };
 export { SHARED_DEPENDENCY_CONTRACT_VERSION, SHARED_DEPENDENCIES, SHARED_DEPENDENCY_SPECIFIERS, importMapPathFor, getHostSharedDependencies, } from './shared-dependencies.js';
 // Built-in AI tool catalog (design-time discovery of the core agentic toolset)
 export { AI_TOOL_NAMES, BUILTIN_AI_TOOLS, getBuiltinAiTool } from './ai-tools.js';
-export { HostCapabilityUnavailableError, HostPermissionDeniedError, HostTimeoutError, } from './mobile-admin/errors.js';
+export { HostCapabilityUnavailableError, HostPermissionDeniedError, HostTimeoutError, HostCancelledError, } from './mobile-admin/errors.js';
