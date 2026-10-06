@@ -236,6 +236,9 @@ export type {
   AdminMobileEvent,
   AdminMobileEventCallback,
   AdminMobileEventSubscriber,
+  NfcTapRequestOptions,
+  QrScanRequestOptions,
+  CameraPhotoRequestOptions,
   ScannerEventSubscriber, // @deprecated — use AdminMobileEventCallback
   AdminMobileHostContext,
   AdminMobileComponentManifest,
@@ -247,6 +250,7 @@ export {
   HostCapabilityUnavailableError,
   HostPermissionDeniedError,
   HostTimeoutError,
+  HostCancelledError,
 } from './mobile-admin/errors';
 
 // Native capability facade — contract types only (implementations are host-side)

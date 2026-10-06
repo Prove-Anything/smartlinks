@@ -39,11 +39,57 @@ export type AdminMobileHostId =
  * `AdminMobileHostContext.events.subscribe`.
  */
 export type AdminMobileEvent =
-  | { type: 'nfc-tap'; uid: string; ndef?: string }
-  | { type: 'rfid-burst'; epcs: string[] }
-  | { type: 'qr-scan'; code: string }
-  | { type: 'key-press'; keyCode: number }
-  | { type: 'lifecycle'; phase: 'pause' | 'resume' | 'offline' | 'online' };
+  /**
+   * A tag was tapped while NO `requestNfcTap()` was waiting (a waiting request takes the tap instead).
+   * `uid` is uppercase hex without separators (e.g. `04A1B2C3D4E5F6`); `ndef` is the tag's NDEF text
+   * (usually its URL), `""` when the tag had none or it couldn't be read.
+   */
+  | { type: 'nfc-tap'; uid: string; ndef?: string; timestamp?: number }
+  /**
+   * RFID reads while the reader is running. Hosts deliver reads as they come — typically ONE EPC per
+   * event, many per second while the trigger is held — so collect and de-duplicate them yourself.
+   * `rssi` (dBm, negative; closer = higher) is the signal strength of the read when known.
+   */
+  | { type: 'rfid-burst'; epcs: string[]; rssi?: number; timestamp?: number }
+  | { type: 'qr-scan'; code: string; timestamp?: number }
+  /**
+   * A hardware key. Hosts that report both edges send `action: 'down'` then `'up'` for one press —
+   * act on `'down'` (or on events with no `action`, from hosts that report presses only).
+   * 293 is the handheld scan trigger.
+   */
+  | { type: 'key-press'; keyCode: number; action?: 'down' | 'up'; timestamp?: number }
+  | { type: 'lifecycle'; phase: 'pause' | 'resume' | 'offline' | 'online'; timestamp?: number };
+
+/**
+ * Options for `host.actions.requestNfcTap`.
+ *
+ * The request is NON-BLOCKING: it only waits for a tag. Keep the screen usable while it waits (e.g.
+ * offer "enter the code instead") and abort the wait with `signal` if the user goes another way.
+ */
+export interface NfcTapRequestOptions {
+  /** Give up after this long with `HostTimeoutError`. Default: wait until tapped or aborted. */
+  timeoutMs?: number;
+  /** Abort the wait (rejects with `HostCancelledError`, `by: 'app'`). */
+  signal?: AbortSignal;
+  /** Short hint the host shows while waiting, e.g. "Tap the bottle's tag". Host default if omitted. */
+  prompt?: string;
+}
+
+/** Options for `host.actions.requestQrScan`. */
+export interface QrScanRequestOptions {
+  /** Close the scanner (rejects with `HostCancelledError`, `by: 'app'`). */
+  signal?: AbortSignal;
+  /** Fraction of the screen the camera view covers, from the bottom (0.3–1). Default 1 (full screen). */
+  heightPercent?: number;
+  /** Short hint shown over the camera view. */
+  prompt?: string;
+}
+
+/** Options for `host.actions.requestCameraPhoto`. */
+export interface CameraPhotoRequestOptions {
+  /** Abandon the capture (rejects with `HostCancelledError`, `by: 'app'`). */
+  signal?: AbortSignal;
+}
 
 /** Callback invoked for every hardware event emitted by the host. */
 export type AdminMobileEventCallback = (event: AdminMobileEvent) => void;
@@ -115,21 +161,35 @@ export interface AdminMobileHostContext {
   /** Imperative hardware actions. */
   actions: {
     /**
-     * Open the QR scanner UI and resolve with the decoded string.
-     * Throws `HostCapabilityUnavailableError` if `'qr'` is not in `capabilities`.
-     * Throws `HostTimeoutError` if the user dismisses without scanning.
+     * Open the host's camera scanner and resolve with the decoded QR / barcode text. A deliberate
+     * action: the scanner covers the screen (or `heightPercent` of it) until a code is read.
+     * Rejects with `HostCancelledError` when the user closes the scanner (`by: 'user'`) or `signal`
+     * aborts (`by: 'app'`); `HostCapabilityUnavailableError` / `HostPermissionDeniedError` when there's
+     * no camera or no permission.
      */
-    requestQrScan: () => Promise<string>;
+    requestQrScan: (opts?: QrScanRequestOptions) => Promise<string>;
     /**
-     * Await the next NFC tap and resolve with uid + optional NDEF payload.
-     * @param timeoutMs - Milliseconds before `HostTimeoutError` is thrown (host default if omitted).
+     * "This step needs a tag": wait for the NEXT NFC tap and resolve with its uid + NDEF.
+     *
+     * Two ways to use NFC — pick per screen:
+     *  - Passive: `host.events` `nfc-tap` fires for every tap, whenever. For "tap anything, any time".
+     *  - Active (this): the next tap goes to this request and is NOT also sent as an `nfc-tap` event, so
+     *    nothing handles it twice. The host shows a small non-blocking hint (with Cancel) while waiting;
+     *    the screen stays usable — abort with `signal` if the user takes another route.
+     * Only a tap made AFTER the call counts. One request at a time: a new one cancels the previous
+     * (`HostCancelledError`, `by: 'app'`).
+     * Rejects with `HostTimeoutError` after `timeoutMs`, `HostCancelledError` on Cancel (`by: 'user'`)
+     * or abort (`by: 'app'`), `HostCapabilityUnavailableError` without NFC.
+     *
+     * A bare number is accepted as `{ timeoutMs }` (the earlier signature).
      */
-    requestNfcTap: (timeoutMs?: number) => Promise<{ uid: string; ndef?: string }>;
+    requestNfcTap: (opts?: NfcTapRequestOptions | number) => Promise<{ uid: string; ndef?: string }>;
     /**
-     * Open the camera shutter once and resolve with the captured `Blob`.
-     * Throws `HostCapabilityUnavailableError` if `'camera'` is not in `capabilities`.
+     * Open the camera once and resolve with the photo as a `Blob`.
+     * Rejects with `HostCancelledError` when the user backs out or `signal` aborts;
+     * `HostCapabilityUnavailableError` / `HostPermissionDeniedError` without a camera or permission.
      */
-    requestCameraPhoto: () => Promise<Blob>;
+    requestCameraPhoto: (opts?: CameraPhotoRequestOptions) => Promise<Blob>;
     /**
      * Trigger the native share sheet.
      * Falls back to clipboard write on hosts that do not implement the Web Share API.
