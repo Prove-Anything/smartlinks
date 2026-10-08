@@ -28332,7 +28332,8 @@ components:
           type: object
           additionalProperties: true
         sortBy:
-          type: string
+          type: object
+          additionalProperties: true
         sortOrder:
           type: string
           enum:

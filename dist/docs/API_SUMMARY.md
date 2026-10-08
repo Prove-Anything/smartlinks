@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.44  |  Generated: 2026-10-06T16:46:17.764Z
+Version: 2.0.46  |  Generated: 2026-10-08T08:44:02.480Z
 
 This is a concise summary of all available API functions and types.
 
@@ -8300,7 +8300,7 @@ interface QueryOrdersRequest {
   itemId: string
   }>
   metadata?: Record<string, any>
-  sortBy?: string
+  sortBy?: 'createdAt' | 'updatedAt' | 'status' | 'orderRef' | 'customerId' | 'itemCount' | (string & {})
   sortOrder?: 'asc' | 'desc'
   }
   limit?: number                    // Optional: Max results (default: 100)
