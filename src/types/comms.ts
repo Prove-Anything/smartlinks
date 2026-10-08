@@ -124,7 +124,8 @@ export interface PushSubscribeResponse { ok: true; id: string }
 
 // Public: register a push contact method
 export interface RegisterPushMethodRequest {
-  contactId: string
+  /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+  contactId?: string
   endpoint: string
   keys: { p256dh: string; auth: string }
   meta?: Record<string, any>
@@ -179,7 +180,8 @@ export type CommsSettingsPatchBody = Partial<CommsSettings>
 export interface CommsPublicTopicsResponse { ok: true; topics: Record<string, TopicConfig> }
 
 export interface UnsubscribeQuery {
-  contactId: string
+  /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+  contactId?: string
   topic?: string
   channel?: BroadcastChannel
   token?: string
@@ -192,14 +194,16 @@ export type ConsentChannels = Partial<Record<BroadcastChannel, boolean>>
 type SubjectType = import('./contact').SubjectType
 
 export interface CommsConsentUpsertRequest {
-  contactId: string
+  /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+  contactId?: string
   channels?: ConsentChannels
   topics?: Record<string, boolean>
   topicsByChannel?: Partial<Record<BroadcastChannel, Record<string, boolean>>>
 }
 
 export interface CommsPreferencesUpsertRequest {
-  contactId: string
+  /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+  contactId?: string
   subject?: { type: SubjectType; id: string; productId?: string }
   channels?: ConsentChannels
   topics?: Record<string, boolean>
@@ -207,7 +211,8 @@ export interface CommsPreferencesUpsertRequest {
 }
 
 export interface CommsSubscribeRequest {
-  contactId: string
+  /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+  contactId?: string
   subject: { type: SubjectType; id: string; productId?: string }
   subscribe: boolean
   source?: string
@@ -215,7 +220,8 @@ export interface CommsSubscribeRequest {
 export interface CommsSubscribeResponse { ok: true; subscriptionId: string }
 
 export interface CommsSubscriptionCheckQuery {
-  contactId: string
+  /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+  contactId?: string
   subjectType: SubjectType
   subjectId: string
   productId?: string
@@ -223,7 +229,8 @@ export interface CommsSubscriptionCheckQuery {
 export interface CommsSubscriptionCheckResponse { ok: true; subscribed: boolean }
 
 export interface CommsListMethodsQuery {
-  contactId: string
+  /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+  contactId?: string
   type?: BroadcastChannel
 }
 export interface CommsListMethodsResponse { ok: true; methods: import('./contact').CommMethod[] }

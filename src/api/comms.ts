@@ -19,7 +19,13 @@ import type {
 } from "../types/comms"
 
 /**
- * Communications namespace for sending notifications and managing user communications
+ * Communications namespace for sending notifications and managing user communications.
+ *
+ * The public preference / consent / subscription / method endpoints act only for the SIGNED-IN contact
+ * (their own contact in the collection), or for any contact when the caller is a collection admin —
+ * signed out they answer 401, someone else's contactId 403. `contactId` may be omitted to mean "me".
+ * `unsubscribe` also works signed out with a valid signed unsubscribe `token`. An email/phone
+ * registered here is only marked verified when it's the one the user signed in with.
  */
 export namespace comms {
   
@@ -97,7 +103,7 @@ export namespace comms {
     query: import("../types/comms").UnsubscribeQuery
   ): Promise<import("../types/comms").UnsubscribeResponse> {
     const params = new URLSearchParams()
-    params.set('contactId', query.contactId)
+    if (query.contactId) params.set('contactId', query.contactId)
     if (query.topic) params.set('topic', query.topic)
     if (query.channel) params.set('channel', query.channel)
     if (query.token) params.set('token', query.token)
@@ -151,7 +157,7 @@ export namespace comms {
     query: import("../types/comms").CommsSubscriptionCheckQuery
   ): Promise<import("../types/comms").CommsSubscriptionCheckResponse> {
     const params = new URLSearchParams()
-    params.set('contactId', query.contactId)
+    if (query.contactId) params.set('contactId', query.contactId)
     params.set('subjectType', query.subjectType)
     params.set('subjectId', query.subjectId)
     if (query.productId) params.set('productId', String(query.productId))
@@ -169,7 +175,7 @@ export namespace comms {
     query: import("../types/comms").CommsListMethodsQuery
   ): Promise<import("../types/comms").CommsListMethodsResponse> {
     const params = new URLSearchParams()
-    params.set('contactId', query.contactId)
+    if (query.contactId) params.set('contactId', query.contactId)
     if (query.type) params.set('type', query.type)
     const qs = `?${params.toString()}`
     const path = `/public/collection/${encodeURIComponent(collectionId)}/comm/methods${qs}`
