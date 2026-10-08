@@ -313,9 +313,30 @@ function effectivePolicy(topic: any, channel: 'email' | 'sms' | 'push' | 'wallet
 }
 ```
 
+### Sign-up with double opt-in (newsletters)
+
+For a sign-up form — works signed out. SmartLinks emails the address a "confirm your subscription"
+link; nothing is consented until it's clicked. The answer is always the same, so the form can't be
+used to find out who's registered.
+
+```typescript
+await comms.signup('collectionId', { email: 'sam@example.com', topics: ['newsletter'] })
+// → { ok: true, pending: true }  — tell the visitor to check their inbox
+```
+
+- Topics must exist in the collection's comm settings. Give a newsletter topic
+  `defaults.policy: 'opt-in'`: broadcasts on an opt-in topic only reach people who said yes
+  (confirmed sign-ups), never the whole contact list.
+- Confirming turns on the email channel and the topics, and marks the address verified.
+- Set comm settings `signup.confirmedUrl` (https) to send people to your own "thanks" page after
+  they confirm (`?confirmed=1`, or `0` for an expired link); otherwise SmartLinks shows a short page.
+
 ### Consent (Default)
 
-Record a contact's default channel and topic opt-ins.
+Record a contact's default channel and topic opt-ins. These calls (consent, preferences, subscribe,
+methods, push/email/SMS registration) act for the **signed-in** contact — `contactId` may be omitted
+to mean "me"; only collection admins may name another contact. An email registered here is verified
+only if it's the one the user signed in with; any other address is sent a confirmation link.
 
 ```typescript
 await comms.upsertConsent('collectionId', {

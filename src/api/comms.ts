@@ -113,6 +113,22 @@ export namespace comms {
   }
 
   /**
+   * Public: sign an email address up for topics (a newsletter, updates) — works signed out.
+   * Double opt-in: nothing is consented until the address's owner clicks the confirmation link
+   * SmartLinks emails them. Always answers `{ ok: true, pending: true }` (it never reveals whether
+   * the address is already known). Topics must be ones configured in the collection's comm settings.
+   * Set comm settings `signup.confirmedUrl` to send people to your own page after confirming.
+   * POST /public/collection/:collectionId/comm/signup
+   */
+  export async function signup(
+    collectionId: string,
+    body: import("../types/comms").CommsSignupRequest
+  ): Promise<import("../types/comms").CommsSignupResponse> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/comm/signup`
+    return post<import("../types/comms").CommsSignupResponse>(path, body)
+  }
+
+  /**
    * Public: Upsert default consent for a contact.
    * POST /public/collection/:collectionId/comm/consent
    */

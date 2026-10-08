@@ -189,6 +189,15 @@ export interface UnsubscribeQuery {
 
 export interface UnsubscribeResponse { ok: true; applied?: { channels?: Record<string, boolean>; topics?: Record<string, boolean> } }
 
+// Public sign-up (double opt-in)
+export interface CommsSignupRequest {
+  email: string
+  /** Topic ids from the collection's comm settings (e.g. ["newsletter"]). */
+  topics?: string[]
+  firstName?: string
+}
+export interface CommsSignupResponse { ok: true; pending: true }
+
 // Public consent/preferences/subscribe
 export type ConsentChannels = Partial<Record<BroadcastChannel, boolean>>
 type SubjectType = import('./contact').SubjectType
