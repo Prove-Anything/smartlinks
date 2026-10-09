@@ -651,6 +651,78 @@ Widgets use semantic class names that reference these variables:
 <Button className="bg-blue-500 text-white">
 ```
 
+### Style support — how a widget takes styling from where it's placed
+
+Hosts that place widgets (Link Page, Hub, …) offer per-widget styling: width, alignment, padding,
+scale, corners, border, background, and colours. The host only ever styles the **box** around the
+widget; it never reaches inside (no selector tricks, no `!important`). So a widget **declares** what
+it honours, the host shows only those controls, and colours reach the widget through variables.
+
+**Declare it** on the widget's entry in `app.manifest.json` (`widgets.components[]`):
+
+```jsonc
+{
+  "name": "TapToDonate",
+  "styleSupport": {
+    "accent": true,          // reads --sl-widget-accent / --sl-widget-accent-contrast
+    "text": true,            // reads --sl-widget-text
+    "textAlign": true,       // titles/messages use text-align: inherit
+    "background": "transparent"  // or "own" if it paints its own card
+  }
+}
+```
+
+List only what you actually implemented. No `styleSupport` (older widgets) → the host offers layout
+controls only and says the widget has no colour customisation; nothing breaks.
+
+| Setting | Owner | Works when |
+|---|---|---|
+| width, alignment, padding, scale | Host | always (scale: keep 60–130%) |
+| radius, border | Host | always — visible when the widget is transparent or fills its box |
+| background | Host | the widget is transparent (hidden when `background: "own"`) |
+| text | Widget | declared, and the widget reads `--sl-widget-text` |
+| accent | Widget | declared, and the widget reads `--sl-widget-accent` + `--sl-widget-accent-contrast` |
+| textAlign | Widget | declared, and the widget uses `text-align: inherit` |
+| anything else (shapes, button style…) | Widget | the widget's own `settings` schema — not host styling |
+
+**Variables the host sets** on the box (only the ones chosen):
+
+```css
+--sl-widget-accent            /* hex */
+--sl-widget-accent-contrast   /* readable text on the accent: #111111 or #ffffff */
+--sl-widget-text              /* hex */
+--sl-widget-radius            /* e.g. 12px — use it on your own rounded elements */
+```
+
+**Widget rules**
+
+1. **Transparent by default** — the root element has no background, border or padding of its own.
+   Need a card look? Declare `background: "own"` and make the card one of the widget's own settings.
+2. **Read the variables with fallbacks** to the theme tokens, for every colour that should follow:
+   `background: var(--sl-widget-accent, var(--sl-color-accent));`
+   `color: var(--sl-widget-accent-contrast, var(--sl-color-on-accent));`
+   `color: var(--sl-widget-text, inherit);`
+3. **Inherit text** — `color: inherit` / `text-align: inherit` on headings and messages if you declare
+   `text` / `textAlign`.
+4. **No hardcoded colours** for buttons, links or focus rings — accent + accent-contrast.
+5. **No global CSS** — ship scoped styles; nothing may affect elements outside the widget's box.
+
+**Hosts** use the SDK helpers so every host behaves the same:
+
+```ts
+import { widgetStyleControls, widgetStyleVars } from '@proveanything/smartlinks'
+
+const controls = widgetStyleControls(component.styleSupport)   // which controls to show
+const vars = widgetStyleVars({ accent, text, radius }, component.styleSupport) // CSS vars for the box
+```
+
+Conformance checklist (per widget, in the host's editor preview and live): unstyled looks as before
+(light and dark); Background fills the whole box (unless `own`); Text recolours all text; Accent
+recolours every button, link, focus ring and active state, and labels stay readable (try yellow and
+near-black); undeclared controls are absent; padding 0 and 40 don't clip or double up; radius 0 and
+32 with a border clip cleanly; width 50% at each alignment; scale 60% and 130% don't overlap
+neighbours; dialogs opened from the widget are unaffected; nothing outside the box changes.
+
 ---
 
 ## Best Practices

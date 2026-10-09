@@ -8,6 +8,8 @@ export * from "./types"
 export { iframe } from "./iframe"
 // App context reader (props → hash → search), for pages and containers alike
 export { readContext } from "./context"
+export { widgetStyleVars, widgetStyleControls, readableOn, WIDGET_STYLE_VARS } from "./widgetStyle"
+export type { WidgetStyling } from "./widgetStyle"
 export type { SmartLinksContext } from "./context"
 export type { InvalidateCacheOptions } from "./http"
 // Cache utilities

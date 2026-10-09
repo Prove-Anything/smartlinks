@@ -55,6 +55,27 @@ export interface AppWidgetComponent {
   };
   /** JSON-Schema-style settings the widget accepts */
   settings?: Record<string, any>;
+  /**
+   * What styling this widget honours when a host places it (Link Page, Hub…). The host shows only
+   * these controls and sets the matching `--sl-widget-*` variables. Missing = layout controls only.
+   * See docs/widgets.md → "Style support".
+   */
+  styleSupport?: WidgetStyleSupport;
+}
+
+/** A widget's declared styling support — see {@link AppWidgetComponent.styleSupport}. */
+export interface WidgetStyleSupport {
+  /** Widget reads --sl-widget-accent / --sl-widget-accent-contrast for buttons, links, focus, active states. */
+  accent?: boolean;
+  /** Widget reads --sl-widget-text for its body text, titles and secondary text. */
+  text?: boolean;
+  /** Widget's titles and messages use `text-align: inherit`. */
+  textAlign?: boolean;
+  /**
+   * 'transparent' (recommended): the widget draws no background, so the host's Background shows.
+   * 'own': the widget paints its own card; the host hides Background (padding/border/radius stay).
+   */
+  background?: 'transparent' | 'own';
 }
 
 /** Widget bundle declaration in `app.manifest.json`. */
