@@ -165,6 +165,17 @@ The canonical channels are **`dev` · `alpha` · `beta` · `stable`**. Legacy `p
 A collection chooses which channel it follows, so you can point a test collection at `dev`
 and exercise a build before it reaches `prod`.
 
+### `preview` — server code while you build (Forge)
+
+Forge publishes an app's **server functions only** to a private `preview` channel whenever the
+agent changes them, so the app's own preview can call the new code straight away. It is not a
+channel a collection can follow, release to or promote from. A preview call runs only with the
+**preview pass** Forge gives its preview — for one app on one collection, for a few hours — so
+nobody else ever runs in-progress server code, while the builder can preview against any
+collection they administer. The SDK sends the pass automatically (`SL.functions` with
+`appChannel: 'preview'` and `slPreview` in the context); apps need no code for it. `dev` only
+changes when you choose to release to it.
+
 ---
 
 ## Deploy keys

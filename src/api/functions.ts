@@ -42,7 +42,9 @@ export interface FunctionListResponse { functions: FunctionListEntry[] }
  */
 export interface FunctionCallOptions { appId?: string; channel?: string | null }
 
-const CHANNELS = ['dev', 'alpha', 'beta', 'stable']
+// 'preview' = the app's in-progress server code inside Forge's preview (needs the preview pass Forge
+// puts in the context as `slPreview`; SmartLinks refuses preview calls without it).
+const CHANNELS = ['dev', 'alpha', 'beta', 'stable', 'preview']
 
 /**
  * The release channel a call targets, or undefined for "the collection's installed release".
@@ -64,6 +66,15 @@ export function resolveFunctionChannel(opts: FunctionCallOptions = {}, appId?: s
   return ch
 }
 
+/** Add Forge's preview pass to a preview-channel URL (a query param, so host API proxies keep it). */
+function withPreviewPass(url: string, ch: string | undefined, appId: string | undefined): string {
+  if (ch !== 'preview') return url
+  const ctx = readContext()
+  if (ctx.appChannelApp && appId && ctx.appChannelApp !== appId) return url
+  const pass = ctx.slPreview
+  return pass ? `${url}${url.includes('?') ? '&' : '?'}slPreview=${encodeURIComponent(pass)}` : url
+}
+
 function appBase(surface: 'public' | 'admin', collectionId: string, opts: FunctionCallOptions): string {
   const c = encodeURIComponent(collectionId)
   const app = opts.appId ?? getAppContext()
@@ -74,7 +85,9 @@ function appBase(surface: 'public' | 'admin', collectionId: string, opts: Functi
 
 /** The API path a function call goes to (exported for hosts/tests that need the exact URL). */
 export function functionPath(surface: 'public' | 'admin', collectionId: string, name: string, opts: FunctionCallOptions = {}): string {
-  return `${appBase(surface, collectionId, opts)}/functions/${encodeURIComponent(name)}`
+  const app = opts.appId ?? getAppContext()
+  const ch = app ? resolveFunctionChannel(opts, app) : undefined
+  return withPreviewPass(`${appBase(surface, collectionId, opts)}/functions/${encodeURIComponent(name)}`, ch, app)
 }
 const fnPath = functionPath
 
@@ -157,6 +170,8 @@ export namespace functions {
    * appId is given (or set as the SDK app context): `GET /public/collection/:c[/app/:appId]/functions`.
    */
   export async function list(collectionId: string, opts: FunctionCallOptions = {}): Promise<FunctionListResponse> {
-    return request<FunctionListResponse>(`${appBase('public', collectionId, opts)}/functions`)
+    const app = opts.appId ?? getAppContext()
+    const ch = app ? resolveFunctionChannel(opts, app) : undefined
+    return request<FunctionListResponse>(withPreviewPass(`${appBase('public', collectionId, opts)}/functions`, ch, app))
   }
 }

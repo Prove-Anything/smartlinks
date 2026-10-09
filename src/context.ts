@@ -18,6 +18,11 @@ export interface SmartLinksContext {
   appChannel?: string;
   /** Limits `appChannel` to one app (where several apps share a page, e.g. a portal preview). */
   appChannelApp?: string;
+  /**
+   * Forge's preview pass: lets this preview run the app's in-progress server code
+   * (`appChannel: 'preview'`) on this collection. Set by Forge; never present elsewhere.
+   */
+  slPreview?: string;
   /** Any other declared view params (e.g. pageId, voteId, orientation, tvMode). */
   [key: string]: string | undefined;
 }
@@ -69,6 +74,7 @@ export function readContext(overrides?: Record<string, string | undefined>): Sma
         fill('appChannel', site.channel);
         fill('appChannelApp', site.appId);
       }
+      fill('slPreview', site.previewPass);
     }
   } catch {
     /* non-browser / bad URL — return what we have */
