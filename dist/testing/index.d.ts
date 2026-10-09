@@ -8,12 +8,28 @@ export declare class CapabilityError extends Error {
 export interface TestSlImpl {
     appRecords?: {
         create?(fields: any): any;
+        claim?(fields: any): any;
         update?(id: string, fields: any): any;
         upsert?(fields: any): any;
         delete?(id: string): any;
         get?(id: string): any;
         query?(params: any): any;
         listTypes?(): any;
+    };
+    counters?: {
+        next?(name: string, opts?: any): any;
+        get?(name: string): any;
+    };
+    /** Tag lookup. Default: any `<claimSetId>-<code>` resolves (pass `knownTags` to restrict). */
+    tags?: {
+        resolve?(id: string): any;
+    };
+    contacts?: {
+        upsert?(details: any): any;
+        forCaller?(): any;
+    };
+    interactions?: {
+        record?(event: any): any;
     };
     products?: {
         get?(id: string, opts?: any): any;
@@ -64,7 +80,27 @@ export interface CreateFunctionTestContextOptions {
     fetch?: typeof fetch;
     /** What the platform would have prefetched as `ctx.inputs` (e.g. `{ entity: product }`). Default `{}`. */
     inputs?: ServerFunctionInputs;
+    /** Tags that exist, as `<claimSetId>-<code>` ids — `ctx.sl.tags.resolve` returns null for any other. */
+    knownTags?: string[];
+    /** Interaction type ids that exist for this app — `interactions.record` refuses others. Default: any. */
+    knownInteractionTypes?: string[];
+    /** Share one in-memory store between several contexts (e.g. concurrent callers in one test). */
+    memory?: FunctionTestMemory;
 }
+/** The harness's in-memory platform state (when no impl is injected). */
+export interface FunctionTestMemory {
+    records: any[];
+    counters: Record<string, number>;
+    contacts: Array<{
+        contactId: string;
+        email?: string;
+        phone?: string;
+        [k: string]: any;
+    }>;
+    interactions: any[];
+}
+/** A fresh in-memory store — pass the same one to several test contexts to simulate concurrent callers. */
+export declare function createFunctionTestMemory(): FunctionTestMemory;
 export interface FunctionTestContext extends ServerFunctionContext {
     /** Captured log lines (also written via ctx.log). */
     logs: Array<{
@@ -72,6 +108,8 @@ export interface FunctionTestContext extends ServerFunctionContext {
         message: string;
         data?: Record<string, any>;
     }>;
+    /** The in-memory platform state this context reads and writes. */
+    memory: FunctionTestMemory;
 }
 /**
  * Build a capability-enforcing test ctx for a server function. Run your handler with it:

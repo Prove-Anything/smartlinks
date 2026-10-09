@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.49  |  Generated: 2026-10-09T10:14:16.325Z
+Version: 2.0.51  |  Generated: 2026-10-09T13:30:07.340Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2600,10 +2600,73 @@ interface AppDataHandle {
 }
 ```
 
+**AppRecordClaimResult<T = any>** (interface)
+```typescript
+interface AppRecordClaimResult<T = any> {
+  record: T;
+  created: boolean;
+  conflict?: 'singleton' | 'customId';
+}
+```
+
+**ServerFunctionCounters** (interface)
+```typescript
+interface ServerFunctionCounters {
+  next(name: string, opts?: { start?: number; by?: number }): Promise<number>;
+  get(name: string): Promise<number | null>;
+}
+```
+
+**ResolvedTag** (interface)
+```typescript
+interface ResolvedTag {
+  id: string;
+  claimSetId: string;
+  code: string;
+}
+```
+
+**ContactUpsertDetails** (interface)
+```typescript
+interface ContactUpsertDetails {
+  email?: string;
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
+  displayName?: string;
+  company?: string;
+  locale?: string;
+  timezone?: string;
+  customFields?: Record<string, string | number | boolean>;
+}
+```
+
+**ServerFunctionInteractionEvent** (interface)
+```typescript
+interface ServerFunctionInteractionEvent {
+  interactionId: string;
+  contactId?: string | null;
+  outcome?: string;
+  metadata?: Record<string, any>;
+  productId?: string;
+  proofId?: string;
+  variantId?: string;
+  batchId?: string;
+  eventType?: string;
+}
+```
+
 **ServerFunctionSl** (interface)
 ```typescript
 interface ServerFunctionSl {
-  appRecords: any;
+  appRecords: { claim(fields: Record<string, any>): Promise<AppRecordClaimResult>; [method: string]: any };
+  counters: ServerFunctionCounters;
+  tags: { resolve(id: string): Promise<ResolvedTag | null> };
+  contacts: {
+  upsert(details: ContactUpsertDetails): Promise<{ contactId: string; created: boolean }>;
+  forCaller(): Promise<{ contactId: string } | null>;
+  };
+  interactions: { record(event: ServerFunctionInteractionEvent): Promise<{ eventId: string }> };
   products: any;
   attestations: any;
   appData: AppDataHandle & { global: AppDataHandle; collection: AppDataHandle };
@@ -5229,8 +5292,11 @@ interface UnsubscribeResponse {
 ```typescript
 interface CommsSignupRequest {
   email: string
+  templateId: string
   topics?: string[]
   firstName?: string
+  fields?: { firstName?: string; lastName?: string; displayName?: string; company?: string; locale?: string; timezone?: string; customFields?: Record<string, string | number | boolean> }
+  appId?: string
 }
 ```
 
@@ -5597,9 +5663,23 @@ export interface UnsubscribeResponse { ok: true; applied?: { channels?: Record<s
 // Public sign-up (double opt-in)
 export interface CommsSignupRequest {
   email: string
+  /**
+   * Required: YOUR app's confirmation email — a template in this collection (SL.template) whose body
+   * uses `{{ action_url }}` for the confirm link (`{{ topics }}` lists what they signed up for). The
+   * platform sends no default sign-up email.
+   */
+  templateId: string
   /** Topic ids from the collection's comm settings (e.g. ["newsletter"]). */
   topics?: string[]
   firstName?: string
+  /**
+   * The form's other answers — firstName/lastName/displayName/company/locale/timezone and
+   * `customFields`. Applied to the contact when the address is confirmed, and only where the contact
+   * has no value yet (never overwritten). Small: ~2 KB.
+   */
+  fields?: { firstName?: string; lastName?: string; displayName?: string; company?: string; locale?: string; timezone?: string; customFields?: Record<string, string | number | boolean> }
+  /** Your app id, recorded with the sent email. */
+  appId?: string
 }
 export interface CommsSignupResponse { ok: true; pending: true }
 
@@ -12157,7 +12237,7 @@ Soft-delete a secret. DELETE /secrets/:ref
 ### sequence
 
 **allocate**(collectionId: string, input: AllocateSequenceInput) → `Promise<AllocatedSequence>`
-Allocate (or return the existing) sequence number for a subject. Idempotent — safe to call on load (auto-enter) and on a button tap; a subject that already has a number gets it back with `isNew: false`. const { number, isNew } = await sequence.allocate(collectionId, { appId: 'raffle-app', sequenceId: 'raffle', subjectId: claimSetId, })
+Allocate (or return the existing) sequence number for a subject. Idempotent — safe to call on load (auto-enter) and on a button tap; a subject that already has a number gets it back with `isNew: false`. const { number, isNew } = await sequence.allocate(collectionId, { appId: 'raffle-app', sequenceId: 'raffle', subjectId: claimSetId, }) `ctx.sl.counters.next()` + `ctx.sl.appRecords.claim()` (docs/server-functions.md).
 
 ### sessions
 

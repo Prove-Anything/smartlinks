@@ -1,5 +1,11 @@
 # Sequences & claim-order allocation
 
+> **Retiring — don't build on this.** `SL.sequence.allocate` is being removed. Number things in your
+> app's own server function instead: `ctx.sl.counters.next()` for the next number and
+> `ctx.sl.appRecords.claim()` to key it to a tag/person and make sure no number is ever held twice —
+> see server-functions.md → "Uniqueness, numbering and people". (The counter here lived inside the
+> app config doc, where an admin save could rewind it.)
+
 > **SmartLinks SDK 2.x** (current `latest`). Install `@proveanything/smartlinks@^2`.
 
 A **sequence** hands out a guaranteed-unique, monotonic number — `1, 2, 3, …` — and stamps it

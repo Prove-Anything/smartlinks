@@ -184,9 +184,31 @@ export interface UnsubscribeResponse {
 }
 export interface CommsSignupRequest {
     email: string;
+    /**
+     * Required: YOUR app's confirmation email — a template in this collection (SL.template) whose body
+     * uses `{{ action_url }}` for the confirm link (`{{ topics }}` lists what they signed up for). The
+     * platform sends no default sign-up email.
+     */
+    templateId: string;
     /** Topic ids from the collection's comm settings (e.g. ["newsletter"]). */
     topics?: string[];
     firstName?: string;
+    /**
+     * The form's other answers — firstName/lastName/displayName/company/locale/timezone and
+     * `customFields`. Applied to the contact when the address is confirmed, and only where the contact
+     * has no value yet (never overwritten). Small: ~2 KB.
+     */
+    fields?: {
+        firstName?: string;
+        lastName?: string;
+        displayName?: string;
+        company?: string;
+        locale?: string;
+        timezone?: string;
+        customFields?: Record<string, string | number | boolean>;
+    };
+    /** Your app id, recorded with the sent email. */
+    appId?: string;
 }
 export interface CommsSignupResponse {
     ok: true;

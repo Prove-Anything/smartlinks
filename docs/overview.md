@@ -93,7 +93,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Container Tracking** | `docs/container-tracking.md` | Physical/logical **item** container groupings — *not* app containers (see containers.md) |
 | **Lots** | `docs/lots.md` | Cross-SKU production "Lot" entity |
 | **Loyalty** | `docs/loyalty.md` | Points, members, earning rules |
-| **Sequences** | `docs/sequences.md` | Atomic monotonic number allocation (raffle / queue / edition) |
+| **Sequences** | `docs/sequences.md` | RETIRING — number things in your own server function: `ctx.sl.counters` + `appRecords.claim` (server-functions.md) |
 | **Integrations** | `docs/integrations.md` | Inbound/outbound external-system integration flows |
 | **Item Context** | `docs/item-context.md` | The `itemContext` container prop (serial / NFC authenticity context) |
 | **Native Facade** | `docs/native-facade.md` | `host.native` / `SL.native` device-capability facade |

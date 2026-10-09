@@ -679,7 +679,7 @@ export interface AgentRunRequest {
     prompt?: string;
     /** System instructions. */
     instructions?: string;
-    /** Model id, e.g. 'openai/gpt-5.6-terra'. */
+    /** Model id, e.g. 'openai/gpt-6.1-sol'. */
     model?: string;
     /** Safety cap on model round-trips. */
     maxSteps?: number;

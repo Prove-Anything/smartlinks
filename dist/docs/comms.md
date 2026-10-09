@@ -320,14 +320,30 @@ link; nothing is consented until it's clicked. The answer is always the same, so
 used to find out who's registered.
 
 ```typescript
-await comms.signup('collectionId', { email: 'sam@example.com', topics: ['newsletter'] })
+await comms.signup('collectionId', {
+  email: 'sam@example.com',
+  topics: ['newsletter'],
+  templateId: config.confirmationTemplateId, // YOUR confirmation email (required)
+  fields: { firstName: 'Sam', customFields: { favouriteStore: 'Leeds' } }, // optional
+  appId: 'my-newsletter',
+})
 // → { ok: true, pending: true }  — tell the visitor to check their inbox
 ```
+
+- **The confirmation email is the app's own** (emails belong to the app that runs the flow — there is
+  no platform default): a template in the collection, created and edited in the app's admin, e.g.
+  `SL.template.create(collectionId, { name: 'Confirm your subscription', type: 'email', engine: 'liquid',
+  subject: 'Please confirm your subscription', body: '…<a href="{{ action_url }}">Yes, subscribe me</a>…' })`.
+  It gets `{{ action_url }}` (the confirm link), `{{ topics }}` (labels) and `{{ contact.firstName }}`.
+- **Form answers** (`fields`) are applied only once the address is confirmed, and only to the
+  contact's empty fields — a sign-up can never overwrite someone else's details.
 
 - Topics must exist in the collection's comm settings. Give a newsletter topic
   `defaults.policy: 'opt-in'`: broadcasts on an opt-in topic only reach people who said yes
   (confirmed sign-ups), never the whole contact list.
 - Confirming turns on the email channel and the topics, and marks the address verified.
+- Don't use `contact.publicUpsert` + `comms.upsertConsent` for a signed-out form: consent calls act only
+  for the signed-in contact. `comms.signup` is the signed-out path.
 - Set comm settings `signup.confirmedUrl` (https) to send people to your own "thanks" page after
   they confirm (`?confirmed=1`, or `0` for an expired link); otherwise SmartLinks shows a short page.
 

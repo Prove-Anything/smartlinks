@@ -182,8 +182,9 @@ interface ServerFunctionContext {
   appId: string
 
   /** SmartLinks SDK, pre-scoped to your declared `authority`. Capabilities cap what it may do.
-   *  Key resources: `sl.appRecords` (per-app records), `sl.appData` (general/app-wide config +
-   *  data — URLs, flags, counters, arrays), `sl.products`, `sl.attestations`. */
+   *  Key resources: `sl.appRecords` (per-app records, incl. race-safe `claim`), `sl.appData`
+   *  (general/app-wide config + data — URLs, flags, arrays), `sl.counters` (atomic numbering),
+   *  `sl.tags`, `sl.contacts`, `sl.interactions`, `sl.products`, `sl.attestations`. */
   sl: SmartLinks
 
   /** Capability-gated secrets (need `secrets:<name>`). `get(name)` reads this app's own secret on the
@@ -506,7 +507,11 @@ Prefer the platform primitives above over a dependency; when you do need one, pi
 | Read or write SmartLinks data | `ctx.sl.*` (records, products, attestations, …) | the matching `sl:<res>:<read\|write>` |
 | Read/write your app's own data (config, URLs, counters, arrays) | `ctx.sl.appData.get()` / `ctx.sl.appData.set({…})` — collection-scoped by default; `ctx.sl.appData.global.*` (or `{ scope:'global' }`, or declare `dataScope:'global'`) for the app-wide bucket. It's your OWN namespace, so **any** authority may read/write it | `sl:data:read` / `sl:data:write` |
 | Read ANOTHER app's data (as the caller may see it) | `ctx.sl.app('other-app').data.get()` — caller-authority, this collection, public-filtered, read-only | `sl:data:read` |
-| Guarantee a UNIQUE claim (pool of numbers, one-per-user, idempotency key) | `ctx.sl.appRecords.create({ ref: 'ball:57' })` — the DB unique index rejects a duplicate `ref` (catch = "already taken") | `sl:records:write` |
+| Guarantee a UNIQUE claim (one entry per tag, one-per-user, idempotency key, a number nobody else holds) | `ctx.sl.appRecords.claim({ …, singletonPer, customId })` → `{ record, created, conflict? }` — see below | `sl:records:write` |
+| Hand out the next number (tickets, order numbers) | `ctx.sl.counters.next('tickets')` — atomic, distinct per caller | `sl:data:write` |
+| Check a tapped tag is real | `ctx.sl.tags.resolve(proofId)` → `{ id, claimSetId, code }` or `null` | `sl:tags:read` |
+| Put a visitor's details on a contact | `ctx.sl.contacts.upsert({ email, firstName, … })` → `{ contactId, created }` (fills empty fields only) | `sl:contacts:write` |
+| Record "they did X" | `ctx.sl.interactions.record({ interactionId, contactId, outcome, metadata })` | `sl:interactions:write` |
 
 Notes:
 - **Talking to the SmartLinks core is `ctx.sl`, not HTTP.** The common pattern — *validate /
@@ -522,6 +527,81 @@ Notes:
   rotate secrets from a function — that's an admin/deploy-time operation on the platform.
 - **Signing a webhook / verifying a signature** is `crypto.subtle` with an HMAC key imported
   from a secret — no Node `crypto` needed.
+
+---
+
+## Uniqueness, numbering and people — the race-safe primitives
+
+A public function is called by many people at once. These primitives make the outcome right no matter
+how the calls interleave — the **database** decides, never a read-then-write in your code.
+
+### `appRecords.claim(fields)` — a unique create
+
+Like `create`, but the record names a **unique key**, and it's inserted only if that key is free.
+Otherwise you get the record already holding it back, **unchanged** (never updated):
+
+```ts
+const { record, created, conflict } = await ctx.sl.appRecords.claim({
+  recordType: 'entry',
+  singletonPer: 'proof', proofId: tag.id,   // key 1: one live entry per tag
+  customId: String(number),                 // key 2: one record per number, ever
+  data: { number },
+})
+// created: true  → you got it
+// created: false → conflict 'singleton' (this tag already has an entry: `record` is it)
+//                  or 'customId' (that number is held by someone else: take another)
+```
+
+- **`singletonPer`** — `'collection' | 'product' | 'variant' | 'batch' | 'proof'`, with its anchor id
+  (`productId`, `proofId`, …). One **live** record per key; deleting it frees the key.
+- **`customId`** — unique per `(recordType, scopeType, scopeId, sourceSystem)`, case-insensitive, and
+  **never reused** (deleted records keep theirs). Right for numbers that must never be handed out twice.
+- Give at least one; with both, the record is created only if both are free.
+- Of any number of concurrent claims on one key, **exactly one** gets `created: true`.
+
+### `counters.next(name, { start?, by? })` — the next number
+
+An atomic counter for your app in this collection: every caller gets a distinct value, even under a
+burst (one row, incremented in one statement). The first call returns `start` (default 1). Counters only
+move forward and live apart from your config, so no config save can rewind one. `counters.get(name)`
+reads the last value handed out (`null` before the first). Name a new counter to start again from `start`.
+
+**Counter + claim = a number nobody else can ever hold.** Take `next()`, then `claim` with
+`customId: String(n)`. If the claim says `conflict: 'customId'`, take `next()` again. A failed or raced
+attempt only leaves a gap — never a duplicate.
+
+### `tags.resolve(id)` — is this tap real?
+
+A tap hands your app the virtual-proof id `<claimSetId>-<code>`. `resolve` returns
+`{ id, claimSetId, code }` when that code exists in a claim set of **this** collection, else `null`.
+Key records to the returned canonical `id`, and refuse `null` — otherwise anyone can invent ids.
+
+### `contacts.upsert(details)` / `contacts.forCaller()`
+
+`upsert` finds the contact by `email` or `phone` (one is required) or creates it, and only **fills
+empty fields** — it never overwrites a name or field the contact already has, because a visitor's typed
+details are unverified. It's race-safe: two simultaneous entries with one email end on one contact.
+Returns `{ contactId, created }`. `forCaller()` is the signed-in caller's own contact (`null` when
+anonymous). **Never return contact ids to public callers** — keep them on your records.
+
+This is not consent. A ticked "keep me updated" box is evidence you can record (below); subscribing
+someone to marketing is the double opt-in flow (`comms.signup`, see comms.md).
+
+### `interactions.record(event)` — "they did X"
+
+Records an event of one of **your app's interaction types**: create the type once in admin with
+`SL.interactions.ensureType(collectionId, { appId, key: 'raffle-entry' })`, keep its id in your app
+config, and pass that id. Unknown ids are refused (`INTERACTION_TYPE_NOT_FOUND`). The event runs the
+type's effects and emits `interaction.submitted`, like any submission.
+
+```ts
+await ctx.sl.interactions.record({
+  interactionId: config.interactionIds.entered,
+  contactId,                         // optional
+  outcome: 'entered',
+  metadata: { number, consent: true },
+})
+```
 
 ---
 
@@ -756,6 +836,9 @@ const ctx = createFunctionTestContext({
 
 const res = await submitCompetitionEntry(ctx, { method: 'POST', body: { email: 'a@b.com', answer: '42' } })
 // ctx.sl.appRecords.create(...) throws CapabilityError unless `def` declares sl:records:write
+// With no `sl` impl, records / counters / contacts / interactions run in memory with the platform's
+// uniqueness rules — assert on ctx.memory. Share createFunctionTestMemory() between contexts to
+// simulate concurrent callers; restrict ids with knownTags / knownInteractionTypes.
 ```
 
 Pass the **`def`** (not a hand-typed capability list) so "tested" can't drift from

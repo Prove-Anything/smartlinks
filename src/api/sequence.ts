@@ -44,6 +44,9 @@ export namespace sequence {
    *   const { number, isNew } = await sequence.allocate(collectionId, {
    *     appId: 'raffle-app', sequenceId: 'raffle', subjectId: claimSetId,
    *   })
+    *
+   * @deprecated Being removed. Number things in your app's own server function with
+   * `ctx.sl.counters.next()` + `ctx.sl.appRecords.claim()` (docs/server-functions.md).
    */
   export async function allocate(collectionId: string, input: AllocateSequenceInput): Promise<AllocatedSequence> {
     return post<AllocatedSequence>(`${base(collectionId)}/allocate`, input)

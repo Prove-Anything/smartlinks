@@ -400,9 +400,84 @@ export interface AppDataHandle {
  *  - by CALLER identity — everything else (products, attestations, and `app(id)` cross-app reads)
  *    is bounded by what the invoking user could do through the permissioned API.
  */
+/** `ctx.sl.appRecords.claim` result. `conflict` says which unique key was already held. */
+export interface AppRecordClaimResult<T = any> {
+  record: T;
+  created: boolean;
+  conflict?: 'singleton' | 'customId';
+}
+
+/** `ctx.sl.counters` — this app's atomic named counters in the collection. */
+export interface ServerFunctionCounters {
+  /** The next value — distinct for every caller, even under a burst. First call returns `start` (default 1). */
+  next(name: string, opts?: { start?: number; by?: number }): Promise<number>;
+  /** The last value handed out, or `null` before the first `next`. */
+  get(name: string): Promise<number | null>;
+}
+
+/** A tap's tag, resolved and checked to belong to this collection. */
+export interface ResolvedTag {
+  /** Canonical virtual-proof id `<claimSetId>-<code>` — key things to THIS, not the raw input. */
+  id: string;
+  claimSetId: string;
+  code: string;
+}
+
+/** Contact details a function may pass to `ctx.sl.contacts.upsert` (plain strings, capped). */
+export interface ContactUpsertDetails {
+  email?: string;
+  phone?: string;
+  firstName?: string;
+  lastName?: string;
+  displayName?: string;
+  company?: string;
+  locale?: string;
+  timezone?: string;
+  customFields?: Record<string, string | number | boolean>;
+}
+
+/** An interaction event recorded from a server function. */
+export interface ServerFunctionInteractionEvent {
+  /** The interaction TYPE id — created first in admin with `interactions.ensureType`, kept in config. */
+  interactionId: string;
+  contactId?: string | null;
+  /** e.g. 'entered'. Letters, digits, `. : - _`. Default 'submitted'. */
+  outcome?: string;
+  metadata?: Record<string, any>;
+  productId?: string;
+  proofId?: string;
+  variantId?: string;
+  batchId?: string;
+  eventType?: string;
+}
+
 export interface ServerFunctionSl {
-  /** THIS app's records (own namespace). */
-  appRecords: any;
+  /**
+   * THIS app's records (own namespace): create / update / upsert / delete / get / query / listTypes,
+   * plus `claim(fields)` — a race-safe UNIQUE create. The record names a unique key — `singletonPer`
+   * (+ its anchor, e.g. `{ singletonPer: 'proof', proofId }`) and/or `customId` — and is inserted only
+   * if the key is free; otherwise the record holding it comes back UNCHANGED with `created: false`.
+   * Of any number of concurrent claims on one key, exactly one is created (the database decides).
+   */
+  appRecords: { claim(fields: Record<string, any>): Promise<AppRecordClaimResult>; [method: string]: any };
+  /** Atomic named counters for this app in this collection (`sl:data:write` / `sl:data:read`). */
+  counters: ServerFunctionCounters;
+  /** Tags (`sl:tags:read`): `resolve(id)` → the real tag in THIS collection, or `null` for a made-up id. */
+  tags: { resolve(id: string): Promise<ResolvedTag | null> };
+  /**
+   * Contacts (`sl:contacts:write`). `upsert` finds by email/phone or creates, and only FILLS EMPTY
+   * fields — never overwrites (details typed by a visitor are unverified). `forCaller` is the signed-in
+   * caller's own contact (null when anonymous). Never return contact ids to public callers.
+   */
+  contacts: {
+    upsert(details: ContactUpsertDetails): Promise<{ contactId: string; created: boolean }>;
+    forCaller(): Promise<{ contactId: string } | null>;
+  };
+  /**
+   * Interactions (`sl:interactions:write`). `record` stores an event of one of THIS app's interaction
+   * types (refused if the type doesn't exist), runs the type's effects and emits `interaction.submitted`.
+   */
+  interactions: { record(event: ServerFunctionInteractionEvent): Promise<{ eventId: string }> };
   /** Products, scoped by caller authority + declared capability. */
   products: any;
   /** Attestations, scoped by caller authority + declared capability. */

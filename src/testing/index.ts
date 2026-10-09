@@ -14,6 +14,10 @@
 //  - `ctx.secrets` are FIXTURES you provide; real sealed secrets are server-only and
 //    never resolvable locally.
 //  - `ctx.fetch` is gated by the `network` capability just like production.
+//  - Without an injected impl, appRecords / counters / contacts / interactions run against an
+//    in-memory store with the platform's uniqueness rules (claim: singletonPer + customId; contacts by
+//    email/phone, fill-empty only), so idempotency and "never two of the same number" are testable.
+//    Inspect it via `ctx.memory`.
 
 import type { AppFunctionDef, ServerFunctionContext, ServerFunctionInputs } from '../types/appManifest'
 
@@ -55,9 +59,14 @@ function allowsSl(p: ParsedCaps, resource: string, op: 'read' | 'write'): boolea
 /** The surface `ctx.sl` exposes — mirrors the server facade. Provide the methods your test needs. */
 export interface TestSlImpl {
   appRecords?: {
-    create?(fields: any): any; update?(id: string, fields: any): any; upsert?(fields: any): any
+    create?(fields: any): any; claim?(fields: any): any; update?(id: string, fields: any): any; upsert?(fields: any): any
     delete?(id: string): any; get?(id: string): any; query?(params: any): any; listTypes?(): any
   }
+  counters?: { next?(name: string, opts?: any): any; get?(name: string): any }
+  /** Tag lookup. Default: any `<claimSetId>-<code>` resolves (pass `knownTags` to restrict). */
+  tags?: { resolve?(id: string): any }
+  contacts?: { upsert?(details: any): any; forCaller?(): any }
+  interactions?: { record?(event: any): any }
   products?: {
     get?(id: string, opts?: any): any; query?(body?: any, opts?: any): any
     create?(data: any, opts?: any): any; update?(id: string, data: any, opts?: any): any
@@ -97,11 +106,32 @@ export interface CreateFunctionTestContextOptions {
   fetch?: typeof fetch
   /** What the platform would have prefetched as `ctx.inputs` (e.g. `{ entity: product }`). Default `{}`. */
   inputs?: ServerFunctionInputs
+  /** Tags that exist, as `<claimSetId>-<code>` ids — `ctx.sl.tags.resolve` returns null for any other. */
+  knownTags?: string[]
+  /** Interaction type ids that exist for this app — `interactions.record` refuses others. Default: any. */
+  knownInteractionTypes?: string[]
+  /** Share one in-memory store between several contexts (e.g. concurrent callers in one test). */
+  memory?: FunctionTestMemory
+}
+
+/** The harness's in-memory platform state (when no impl is injected). */
+export interface FunctionTestMemory {
+  records: any[]
+  counters: Record<string, number>
+  contacts: Array<{ contactId: string; email?: string; phone?: string; [k: string]: any }>
+  interactions: any[]
+}
+
+/** A fresh in-memory store — pass the same one to several test contexts to simulate concurrent callers. */
+export function createFunctionTestMemory(): FunctionTestMemory {
+  return { records: [], counters: {}, contacts: [], interactions: [] }
 }
 
 export interface FunctionTestContext extends ServerFunctionContext {
   /** Captured log lines (also written via ctx.log). */
   logs: Array<{ at: string; message: string; data?: Record<string, any> }>
+  /** The in-memory platform state this context reads and writes. */
+  memory: FunctionTestMemory
 }
 
 const stub = (method: string, args: any[]) => ({ __stub: true, method, args })
@@ -127,18 +157,68 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
       return fn ? fn(...args) : stub(`${resource}.${name}`, args)
     }
 
+  const mem: FunctionTestMemory = opts.memory || createFunctionTestMemory()
   const ar = impl.appRecords || {}
   const pr = impl.products || {}
   const at = impl.attestations || {}
+
+  // In-memory records with the platform's unique keys (used when no appRecords impl is injected).
+  const singletonKey = (f: any) => {
+    const t = f.recordType || 'default'
+    switch (f.singletonPer) {
+      case 'collection': return `${t}:collection`
+      case 'product': return f.productId ? `${t}:product:${f.productId}` : null
+      case 'variant': return f.productId && f.variantId ? `${t}:variant:${f.productId}:${f.variantId}` : null
+      case 'batch': return f.productId && f.batchId ? `${t}:batch:${f.productId}:${f.batchId}` : null
+      case 'proof': return f.proofId ? `${t}:proof:${f.proofId}` : null
+      default: return null
+    }
+  }
+  const customKey = (f: any) => {
+    const c = f.customId == null ? '' : String(f.customId).trim().toLowerCase()
+    return c ? [f.recordType || 'default', f.scopeType || '', f.scopeId || '', f.sourceSystem || '', c].join('|') : null
+  }
+  let nextRecordId = 1
+  const memRecords = {
+    create: async (fields: any) => {
+      const rec = { id: `rec-${nextRecordId++}`, recordType: 'default', data: {}, admin: {}, status: 'active', createdAt: new Date().toISOString(), ...fields }
+      mem.records.push(rec)
+      return { ...rec }
+    },
+    claim: async (fields: any) => {
+      const sk = singletonKey(fields)
+      const ck = customKey(fields)
+      if (fields.singletonPer && !sk) throw Object.assign(new Error(`claim: singletonPer "${fields.singletonPer}" needs its anchor id`), { code: 'INVALID_CLAIM' })
+      if (!sk && !ck) throw Object.assign(new Error('claim: give the record a unique key — singletonPer (+ anchor) or customId'), { code: 'INVALID_CLAIM' })
+      const bySingleton = sk ? mem.records.find((r) => !r.deletedAt && singletonKey(r) === sk) : null
+      if (bySingleton) return { record: { ...bySingleton }, created: false, conflict: 'singleton' }
+      const byCustom = ck ? mem.records.find((r) => customKey(r) === ck) : null // deleted records keep their customId
+      if (byCustom) return { record: { ...byCustom }, created: false, conflict: 'customId' }
+      return { record: await memRecords.create(fields), created: true }
+    },
+    get: async (id: string) => { const r = mem.records.find((x) => x.id === id); return r ? { ...r } : null },
+    update: async (id: string, fields: any) => { const r = mem.records.find((x) => x.id === id); if (!r) return null; Object.assign(r, fields); return { ...r } },
+    delete: async (id: string) => { const r = mem.records.find((x) => x.id === id); if (r) r.deletedAt = new Date().toISOString(); return {} },
+    // Simple equality filter on top-level fields (recordType, proofId, customId, status, …).
+    query: async (params: any = {}) => {
+      const { limit, offset, sort, ...where } = params || {}
+      const items = mem.records.filter((r) => !r.deletedAt && Object.entries(where).every(([k, v]) => r[k] === v))
+      return { items: items.slice(offset || 0, (offset || 0) + (limit || 100)).map((r) => ({ ...r })), total: items.length }
+    },
+  }
+  const recordsFn = (name: keyof typeof memRecords | 'upsert' | 'listTypes') =>
+    (ar as any)[name] ? (ar as any)[name].bind(ar) : (impl.appRecords ? undefined : (memRecords as any)[name])
+
   const sl: any = {
     appRecords: {
-      create: gated('records', 'write', ar.create && ar.create.bind(ar), 'create'),
-      update: gated('records', 'write', ar.update && ar.update.bind(ar), 'update'),
-      upsert: gated('records', 'write', ar.upsert && ar.upsert.bind(ar), 'upsert'),
-      delete: gated('records', 'write', ar.delete && ar.delete.bind(ar), 'delete'),
-      get: gated('records', 'read', ar.get && ar.get.bind(ar), 'get'),
-      query: gated('records', 'read', ar.query && ar.query.bind(ar), 'query'),
-      listTypes: gated('records', 'read', ar.listTypes && ar.listTypes.bind(ar), 'listTypes'),
+      create: gated('records', 'write', recordsFn('create'), 'create'),
+      claim: gated('records', 'write', recordsFn('claim'), 'claim'),
+      update: gated('records', 'write', recordsFn('update'), 'update'),
+      upsert: gated('records', 'write', recordsFn('upsert'), 'upsert'),
+      delete: gated('records', 'write', recordsFn('delete'), 'delete'),
+      get: gated('records', 'read', recordsFn('get'), 'get'),
+      query: gated('records', 'read', recordsFn('query'), 'query'),
+      listTypes: gated('records', 'read', recordsFn('listTypes'), 'listTypes'),
     },
     products: {
       get: gated('products', 'read', pr.get && pr.get.bind(pr), 'get'),
@@ -165,6 +245,60 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
     delete: gated('data', 'write', ad.delete ? ad.delete.bind(ad) : (async (opts: any = {}) => { if (opts.dataId) delete memData[opts.dataId]; else for (const k of Object.keys(memConfig)) delete memConfig[k] }), 'delete'),
   })
   sl.appData = Object.assign(makeAppData(), { global: makeAppData(), collection: makeAppData() })
+
+  const cn = impl.counters || {}
+  sl.counters = {
+    next: gated('data', 'write', cn.next ? cn.next.bind(cn) : (async (name: string, o: any = {}) => {
+      const start = o.start ?? 1
+      const by = o.by ?? 1
+      mem.counters[name] = mem.counters[name] == null ? start : mem.counters[name] + by
+      return mem.counters[name]
+    }), 'counters.next'),
+    get: gated('data', 'read', cn.get ? cn.get.bind(cn) : (async (name: string) => mem.counters[name] ?? null), 'counters.get'),
+  }
+
+  const tg = impl.tags || {}
+  sl.tags = {
+    resolve: gated('tags', 'read', tg.resolve ? tg.resolve.bind(tg) : (async (id: string) => {
+      const s = String(id || '')
+      const i = s.indexOf('-')
+      if (i <= 0 || i >= s.length - 1) return null
+      if (opts.knownTags && !opts.knownTags.includes(s)) return null
+      return { id: s, claimSetId: s.slice(0, i), code: s.slice(i + 1) }
+    }), 'tags.resolve'),
+  }
+
+  const ct = impl.contacts || {}
+  const fillable = ['firstName', 'lastName', 'displayName', 'company', 'locale', 'timezone']
+  sl.contacts = {
+    upsert: gated('contacts', 'write', ct.upsert ? ct.upsert.bind(ct) : (async (d: any = {}) => {
+      const email = d.email ? String(d.email).trim().toLowerCase() : undefined
+      const phone = d.phone ? String(d.phone).replace(/[^\d+]/g, '') : undefined
+      if (!email && !phone) throw Object.assign(new Error('contacts.upsert: an email or phone is required'), { code: 'CONTACT_IDENTITY_REQUIRED' })
+      const found = mem.contacts.find((c) => (email && c.email === email) || (phone && c.phone === phone))
+      if (found) {
+        for (const k of fillable) if (d[k] && !found[k]) found[k] = d[k]
+        found.customFields = { ...(d.customFields || {}), ...(found.customFields || {}) }
+        return { contactId: found.contactId, created: false }
+      }
+      const contactId = `contact-${mem.contacts.length + 1}`
+      mem.contacts.push({ ...d, email, phone, contactId })
+      return { contactId, created: true }
+    }), 'contacts.upsert'),
+    forCaller: gated('contacts', 'write', ct.forCaller ? ct.forCaller.bind(ct) : (async () => (opts.caller && opts.caller.userId ? { contactId: `contact-of-${opts.caller.userId}` } : null)), 'contacts.forCaller'),
+  }
+
+  const it = impl.interactions || {}
+  sl.interactions = {
+    record: gated('interactions', 'write', it.record ? it.record.bind(it) : (async (event: any = {}) => {
+      if (!event.interactionId || (opts.knownInteractionTypes && !opts.knownInteractionTypes.includes(event.interactionId))) {
+        throw Object.assign(new Error(`"${event.interactionId}" is not an interaction type of this app`), { code: 'INTERACTION_TYPE_NOT_FOUND' })
+      }
+      const eventId = `event-${mem.interactions.length + 1}`
+      mem.interactions.push({ ...event, eventId, userId: (opts.caller && opts.caller.userId) || null })
+      return { eventId }
+    }), 'interactions.record'),
+  }
   sl.app = (appId: string) => {
     const other = (impl.app && impl.app(appId)) || {}
     const od = other.data || {}
@@ -216,5 +350,6 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
     },
     inputs: Object.freeze({ ...(opts.inputs || {}) }),
     logs,
+    memory: mem,
   }
 }

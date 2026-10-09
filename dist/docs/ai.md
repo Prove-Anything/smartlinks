@@ -408,15 +408,21 @@ Discover tools two ways:
 
 ### Recommended Models
 
-For agentic workflows on `v1/responses`, GPT-5.6 ships in three tiers. Pass either the full model
-id (`openai/gpt-5.6-sol`) or the shorthand tier alias (`'cheap'`, `'balanced'`, `'premium'`) as
-`model` — both resolve through the same server-side model registry.
+Pass either a full model id (`openai/gpt-6.1-sol`) or a tier alias (`'cheap'`, `'balanced'`,
+`'premium'`) as `model` — both resolve through the same server-side model registry. The tiers are the
+GPT-6 family (prices per 1M tokens, input / output, OpenAI list price):
 
-| Tier | Model | Alias | Use for |
-|------|-------|-------|---------|
-| Cheapest (default) | `openai/gpt-5.6-luna` | `'cheap'` / omit `model` | Everyday chat, high-volume/simple turns |
-| Balanced | `openai/gpt-5.6-terra` | `'balanced'` | Admin agent / tool-heavy setup workflows (route default) |
-| Flagship | `openai/gpt-5.6-sol` | `'premium'` | Most demanding reasoning, coding, and multi-step tool use |
+| Tier | Model | Alias | Price | Use for |
+|------|-------|-------|-------|---------|
+| Cheapest (default) | `openai/gpt-6-luna` | `'cheap'` / omit `model` | $0.10 / $0.50 | Everyday chat, high-volume/simple turns |
+| Balanced | `openai/gpt-6.1-sol` | `'balanced'` | $2 / $10 | Admin agent / tool-heavy workflows (the `v1/responses` default) |
+| Most capable | `openai/gpt-6-astra` | `'premium'` | $10 / $50 | The hardest reasoning, coding and long multi-step tool use |
+
+The previous generation stays available by id — `openai/gpt-5.6-luna` ($0.20 / $1.20),
+`openai/gpt-5.6-terra` ($2 / $12) and `openai/gpt-5.6-sol` ($4 / $20) — and `ai.models.list(collectionId)` returns
+the full current set. GPT-6.1 Sol is the same input price as GPT-5.6 Terra with cheaper output, so prefer
+the tiers. If OpenAI refuses a GPT-6 request for a model/option reason, SmartLinks retries it once on the
+GPT-5.6 equivalent, so a call never fails just because a GPT-6 model doesn't accept something yet.
 
 Every tier supports function/tool calling, Programmatic Tool Calling, and Multi-agent (see below), and all
 three accept `service_tier: 'flex'` (≈50% cheaper, Batch-API rates, slower) or `'priority'` (premium, guaranteed
