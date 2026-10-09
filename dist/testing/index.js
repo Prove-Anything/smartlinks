@@ -148,8 +148,12 @@ export function createFunctionTestContext(opts) {
         // Simple equality filter on top-level fields (recordType, proofId, customId, status, …).
         query: async (params = {}) => {
             const _a = params || {}, { limit, offset, sort } = _a, where = __rest(_a, ["limit", "offset", "sort"]);
-            const items = mem.records.filter((r) => !r.deletedAt && Object.entries(where).every(([k, v]) => r[k] === v));
-            return { items: items.slice(offset || 0, (offset || 0) + (limit || 100)).map((r) => (Object.assign({}, r))), total: items.length };
+            const all = mem.records.filter((r) => !r.deletedAt && Object.entries(where).every(([k, v]) => r[k] === v));
+            const from = offset || 0;
+            const size = limit || 200;
+            const data = all.slice(from, from + size).map((r) => (Object.assign({}, r)));
+            // Same envelope as the platform: { data, pagination }.
+            return { data, pagination: { total: all.length, limit: size, offset: from, hasMore: from + data.length < all.length } };
         },
     };
     const recordsFn = (name) => ar[name] ? ar[name].bind(ar) : (impl.appRecords ? undefined : memRecords[name]);
