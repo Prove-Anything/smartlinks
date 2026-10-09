@@ -54,6 +54,7 @@ export function readContext(overrides) {
                 fill('appChannel', site.channel);
                 fill('appChannelApp', site.appId);
             }
+            fill('slPreview', site.previewPass);
         }
     }
     catch (_a) {

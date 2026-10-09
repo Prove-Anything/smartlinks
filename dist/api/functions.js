@@ -27,7 +27,9 @@
 // installed release regardless.
 import { post, request, getAppContext, getAppChannel } from "../http.js";
 import { readContext } from "../context.js";
-const CHANNELS = ['dev', 'alpha', 'beta', 'stable'];
+// 'preview' = the app's in-progress server code inside Forge's preview (needs the preview pass Forge
+// puts in the context as `slPreview`; SmartLinks refuses preview calls without it).
+const CHANNELS = ['dev', 'alpha', 'beta', 'stable', 'preview'];
 /**
  * The release channel a call targets, or undefined for "the collection's installed release".
  * A host context `appChannel` can be scoped to ONE app with `appChannelApp` — needed where several
@@ -52,6 +54,16 @@ export function resolveFunctionChannel(opts = {}, appId) {
         throw new Error(`Unknown release channel "${raw}" (expected ${CHANNELS.join(' | ')})`);
     return ch;
 }
+/** Add Forge's preview pass to a preview-channel URL (a query param, so host API proxies keep it). */
+function withPreviewPass(url, ch, appId) {
+    if (ch !== 'preview')
+        return url;
+    const ctx = readContext();
+    if (ctx.appChannelApp && appId && ctx.appChannelApp !== appId)
+        return url;
+    const pass = ctx.slPreview;
+    return pass ? `${url}${url.includes('?') ? '&' : '?'}slPreview=${encodeURIComponent(pass)}` : url;
+}
 function appBase(surface, collectionId, opts) {
     var _a;
     const c = encodeURIComponent(collectionId);
@@ -63,7 +75,10 @@ function appBase(surface, collectionId, opts) {
 }
 /** The API path a function call goes to (exported for hosts/tests that need the exact URL). */
 export function functionPath(surface, collectionId, name, opts = {}) {
-    return `${appBase(surface, collectionId, opts)}/functions/${encodeURIComponent(name)}`;
+    var _a;
+    const app = (_a = opts.appId) !== null && _a !== void 0 ? _a : getAppContext();
+    const ch = app ? resolveFunctionChannel(opts, app) : undefined;
+    return withPreviewPass(`${appBase(surface, collectionId, opts)}/functions/${encodeURIComponent(name)}`, ch, app);
 }
 const fnPath = functionPath;
 export var functions;
@@ -123,7 +138,10 @@ export var functions;
      * appId is given (or set as the SDK app context): `GET /public/collection/:c[/app/:appId]/functions`.
      */
     async function list(collectionId, opts = {}) {
-        return request(`${appBase('public', collectionId, opts)}/functions`);
+        var _a;
+        const app = (_a = opts.appId) !== null && _a !== void 0 ? _a : getAppContext();
+        const ch = app ? resolveFunctionChannel(opts, app) : undefined;
+        return request(withPreviewPass(`${appBase('public', collectionId, opts)}/functions`, ch, app));
     }
     functions.list = list;
 })(functions || (functions = {}));

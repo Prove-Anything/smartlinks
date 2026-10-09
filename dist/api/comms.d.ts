@@ -1,6 +1,12 @@
 import type { CommunicationEvent, CommsQueryByUser, CommsRecipientIdsQuery, CommsRecipientsWithoutActionQuery, CommsRecipientsWithActionQuery, RecipientId, RecipientWithOutcome, LogCommunicationEventBody, LogBulkCommunicationEventsBody, AppendResult, AppendBulkResult, TransactionalSendRequest, TransactionalSendResult } from "../types/comms.js";
 /**
- * Communications namespace for sending notifications and managing user communications
+ * Communications namespace for sending notifications and managing user communications.
+ *
+ * The public preference / consent / subscription / method endpoints act only for the SIGNED-IN contact
+ * (their own contact in the collection), or for any contact when the caller is a collection admin —
+ * signed out they answer 401, someone else's contactId 403. `contactId` may be omitted to mean "me".
+ * `unsubscribe` also works signed out with a valid signed unsubscribe `token`. An email/phone
+ * registered here is only marked verified when it's the one the user signed in with.
  */
 export declare namespace comms {
     /**
@@ -37,6 +43,15 @@ export declare namespace comms {
      * GET /public/collection/:collectionId/comm/unsubscribe
      */
     function unsubscribe(collectionId: string, query: import("../types/comms.js").UnsubscribeQuery): Promise<import("../types/comms.js").UnsubscribeResponse>;
+    /**
+     * Public: sign an email address up for topics (a newsletter, updates) — works signed out.
+     * Double opt-in: nothing is consented until the address's owner clicks the confirmation link
+     * SmartLinks emails them. Always answers `{ ok: true, pending: true }` (it never reveals whether
+     * the address is already known). Topics must be ones configured in the collection's comm settings.
+     * Set comm settings `signup.confirmedUrl` to send people to your own page after confirming.
+     * POST /public/collection/:collectionId/comm/signup
+     */
+    function signup(collectionId: string, body: import("../types/comms.js").CommsSignupRequest): Promise<import("../types/comms.js").CommsSignupResponse>;
     /**
      * Public: Upsert default consent for a contact.
      * POST /public/collection/:collectionId/comm/consent

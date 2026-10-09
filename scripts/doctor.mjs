@@ -163,6 +163,9 @@ if (meta.cssBaseline) {
       warnings.push(`meta.cssBaseline is "${meta.cssBaseline}" but this SDK ships baseline "${baseline.version}" — the host may serve a different set.`);
     }
     const baseSet = new Set(baseline.classes || []);
+    // SDK-defined names that aren't baseline helpers but are legitimately in bundles: the Sidekick
+    // screen's scope class (mobile-admin-container.md → Styling).
+    for (const c of ['sl-mobile-admin']) baseSet.add(c);
     // Class usage lives in compiled markup strings — present in every bundle regardless
     // of module format, so scan both umd + esm across all surfaces.
     const used = new Set();

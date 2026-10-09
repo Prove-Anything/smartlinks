@@ -2,7 +2,13 @@
 // Communications and notifications API for Smartlinks
 import { post, request, patch } from "../http.js";
 /**
- * Communications namespace for sending notifications and managing user communications
+ * Communications namespace for sending notifications and managing user communications.
+ *
+ * The public preference / consent / subscription / method endpoints act only for the SIGNED-IN contact
+ * (their own contact in the collection), or for any contact when the caller is a collection admin —
+ * signed out they answer 401, someone else's contactId 403. `contactId` may be omitted to mean "me".
+ * `unsubscribe` also works signed out with a valid signed unsubscribe `token`. An email/phone
+ * registered here is only marked verified when it's the one the user signed in with.
  */
 export var comms;
 (function (comms) {
@@ -64,7 +70,8 @@ export var comms;
      */
     async function unsubscribe(collectionId, query) {
         const params = new URLSearchParams();
-        params.set('contactId', query.contactId);
+        if (query.contactId)
+            params.set('contactId', query.contactId);
         if (query.topic)
             params.set('topic', query.topic);
         if (query.channel)
@@ -76,6 +83,19 @@ export var comms;
         return request(path);
     }
     comms.unsubscribe = unsubscribe;
+    /**
+     * Public: sign an email address up for topics (a newsletter, updates) — works signed out.
+     * Double opt-in: nothing is consented until the address's owner clicks the confirmation link
+     * SmartLinks emails them. Always answers `{ ok: true, pending: true }` (it never reveals whether
+     * the address is already known). Topics must be ones configured in the collection's comm settings.
+     * Set comm settings `signup.confirmedUrl` to send people to your own page after confirming.
+     * POST /public/collection/:collectionId/comm/signup
+     */
+    async function signup(collectionId, body) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/comm/signup`;
+        return post(path, body);
+    }
+    comms.signup = signup;
     /**
      * Public: Upsert default consent for a contact.
      * POST /public/collection/:collectionId/comm/consent
@@ -109,7 +129,8 @@ export var comms;
      */
     async function checkSubscription(collectionId, query) {
         const params = new URLSearchParams();
-        params.set('contactId', query.contactId);
+        if (query.contactId)
+            params.set('contactId', query.contactId);
         params.set('subjectType', query.subjectType);
         params.set('subjectId', query.subjectId);
         if (query.productId)
@@ -125,7 +146,8 @@ export var comms;
      */
     async function listMethods(collectionId, query) {
         const params = new URLSearchParams();
-        params.set('contactId', query.contactId);
+        if (query.contactId)
+            params.set('contactId', query.contactId);
         if (query.type)
             params.set('type', query.type);
         const qs = `?${params.toString()}`;

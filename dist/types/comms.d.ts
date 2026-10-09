@@ -116,7 +116,8 @@ export interface PushSubscribeResponse {
     id: string;
 }
 export interface RegisterPushMethodRequest {
-    contactId: string;
+    /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+    contactId?: string;
     endpoint: string;
     keys: {
         p256dh: string;
@@ -168,7 +169,8 @@ export interface CommsPublicTopicsResponse {
     topics: Record<string, TopicConfig>;
 }
 export interface UnsubscribeQuery {
-    contactId: string;
+    /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+    contactId?: string;
     topic?: string;
     channel?: BroadcastChannel;
     token?: string;
@@ -180,16 +182,28 @@ export interface UnsubscribeResponse {
         topics?: Record<string, boolean>;
     };
 }
+export interface CommsSignupRequest {
+    email: string;
+    /** Topic ids from the collection's comm settings (e.g. ["newsletter"]). */
+    topics?: string[];
+    firstName?: string;
+}
+export interface CommsSignupResponse {
+    ok: true;
+    pending: true;
+}
 export type ConsentChannels = Partial<Record<BroadcastChannel, boolean>>;
 type SubjectType = import('./contact.js').SubjectType;
 export interface CommsConsentUpsertRequest {
-    contactId: string;
+    /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+    contactId?: string;
     channels?: ConsentChannels;
     topics?: Record<string, boolean>;
     topicsByChannel?: Partial<Record<BroadcastChannel, Record<string, boolean>>>;
 }
 export interface CommsPreferencesUpsertRequest {
-    contactId: string;
+    /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+    contactId?: string;
     subject?: {
         type: SubjectType;
         id: string;
@@ -200,7 +214,8 @@ export interface CommsPreferencesUpsertRequest {
     topicsByChannel?: Partial<Record<BroadcastChannel, Record<string, boolean>>>;
 }
 export interface CommsSubscribeRequest {
-    contactId: string;
+    /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+    contactId?: string;
     subject: {
         type: SubjectType;
         id: string;
@@ -214,7 +229,8 @@ export interface CommsSubscribeResponse {
     subscriptionId: string;
 }
 export interface CommsSubscriptionCheckQuery {
-    contactId: string;
+    /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+    contactId?: string;
     subjectType: SubjectType;
     subjectId: string;
     productId?: string;
@@ -224,7 +240,8 @@ export interface CommsSubscriptionCheckResponse {
     subscribed: boolean;
 }
 export interface CommsListMethodsQuery {
-    contactId: string;
+    /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+    contactId?: string;
     type?: BroadcastChannel;
 }
 export interface CommsListMethodsResponse {

@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.46  |  Generated: 2026-10-08T08:44:02.480Z
+Version: 2.0.49  |  Generated: 2026-10-09T10:14:16.325Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2401,6 +2401,17 @@ interface AppWidgetComponent {
   optional?: string[];
   };
   settings?: Record<string, any>;
+  styleSupport?: WidgetStyleSupport;
+}
+```
+
+**WidgetStyleSupport** (interface)
+```typescript
+interface WidgetStyleSupport {
+  accent?: boolean;
+  text?: boolean;
+  textAlign?: boolean;
+  background?: 'transparent' | 'own';
 }
 ```
 
@@ -5140,7 +5151,7 @@ interface PushSubscribeResponse {
 **RegisterPushMethodRequest** (interface)
 ```typescript
 interface RegisterPushMethodRequest {
-  contactId: string
+  contactId?: string
   endpoint: string
   keys: { p256dh: string; auth: string }
   meta?: Record<string, any>
@@ -5200,7 +5211,7 @@ interface CommsPublicTopicsResponse {
 **UnsubscribeQuery** (interface)
 ```typescript
 interface UnsubscribeQuery {
-  contactId: string
+  contactId?: string
   topic?: string
   channel?: BroadcastChannel
   token?: string
@@ -5214,10 +5225,26 @@ interface UnsubscribeResponse {
 }
 ```
 
+**CommsSignupRequest** (interface)
+```typescript
+interface CommsSignupRequest {
+  email: string
+  topics?: string[]
+  firstName?: string
+}
+```
+
+**CommsSignupResponse** (interface)
+```typescript
+interface CommsSignupResponse {
+  ok: true; pending: true
+}
+```
+
 **CommsConsentUpsertRequest** (interface)
 ```typescript
 interface CommsConsentUpsertRequest {
-  contactId: string
+  contactId?: string
   channels?: ConsentChannels
   topics?: Record<string, boolean>
   topicsByChannel?: Partial<Record<BroadcastChannel, Record<string, boolean>>>
@@ -5227,7 +5254,7 @@ interface CommsConsentUpsertRequest {
 **CommsPreferencesUpsertRequest** (interface)
 ```typescript
 interface CommsPreferencesUpsertRequest {
-  contactId: string
+  contactId?: string
   subject?: { type: SubjectType; id: string; productId?: string }
   channels?: ConsentChannels
   topics?: Record<string, boolean>
@@ -5238,7 +5265,7 @@ interface CommsPreferencesUpsertRequest {
 **CommsSubscribeRequest** (interface)
 ```typescript
 interface CommsSubscribeRequest {
-  contactId: string
+  contactId?: string
   subject: { type: SubjectType; id: string; productId?: string }
   subscribe: boolean
   source?: string
@@ -5255,7 +5282,7 @@ interface CommsSubscribeResponse {
 **CommsSubscriptionCheckQuery** (interface)
 ```typescript
 interface CommsSubscriptionCheckQuery {
-  contactId: string
+  contactId?: string
   subjectType: SubjectType
   subjectId: string
   productId?: string
@@ -5272,7 +5299,7 @@ interface CommsSubscriptionCheckResponse {
 **CommsListMethodsQuery** (interface)
 ```typescript
 interface CommsListMethodsQuery {
-  contactId: string
+  contactId?: string
   type?: BroadcastChannel
 }
 ```
@@ -5502,7 +5529,8 @@ export interface PushSubscribeResponse { ok: true; id: string }
 
 // Public: register a push contact method
 export interface RegisterPushMethodRequest {
-  contactId: string
+  /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+  contactId?: string
   endpoint: string
   keys: { p256dh: string; auth: string }
   meta?: Record<string, any>
@@ -5557,7 +5585,8 @@ export type CommsSettingsPatchBody = Partial<CommsSettings>
 export interface CommsPublicTopicsResponse { ok: true; topics: Record<string, TopicConfig> }
 
 export interface UnsubscribeQuery {
-  contactId: string
+  /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+  contactId?: string
   topic?: string
   channel?: BroadcastChannel
   token?: string
@@ -5565,19 +5594,30 @@ export interface UnsubscribeQuery {
 
 export interface UnsubscribeResponse { ok: true; applied?: { channels?: Record<string, boolean>; topics?: Record<string, boolean> } }
 
+// Public sign-up (double opt-in)
+export interface CommsSignupRequest {
+  email: string
+  /** Topic ids from the collection's comm settings (e.g. ["newsletter"]). */
+  topics?: string[]
+  firstName?: string
+}
+export interface CommsSignupResponse { ok: true; pending: true }
+
 // Public consent/preferences/subscribe
 export type ConsentChannels = Partial<Record<BroadcastChannel, boolean>>
 type SubjectType = import('./contact').SubjectType
 
 export interface CommsConsentUpsertRequest {
-  contactId: string
+  /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+  contactId?: string
   channels?: ConsentChannels
   topics?: Record<string, boolean>
   topicsByChannel?: Partial<Record<BroadcastChannel, Record<string, boolean>>>
 }
 
 export interface CommsPreferencesUpsertRequest {
-  contactId: string
+  /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+  contactId?: string
   subject?: { type: SubjectType; id: string; productId?: string }
   channels?: ConsentChannels
   topics?: Record<string, boolean>
@@ -5585,7 +5625,8 @@ export interface CommsPreferencesUpsertRequest {
 }
 
 export interface CommsSubscribeRequest {
-  contactId: string
+  /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+  contactId?: string
   subject: { type: SubjectType; id: string; productId?: string }
   subscribe: boolean
   source?: string
@@ -5593,7 +5634,8 @@ export interface CommsSubscribeRequest {
 export interface CommsSubscribeResponse { ok: true; subscriptionId: string }
 
 export interface CommsSubscriptionCheckQuery {
-  contactId: string
+  /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+  contactId?: string
   subjectType: SubjectType
   subjectId: string
   productId?: string
@@ -5601,7 +5643,8 @@ export interface CommsSubscriptionCheckQuery {
 export interface CommsSubscriptionCheckResponse { ok: true; subscribed: boolean }
 
 export interface CommsListMethodsQuery {
-  contactId: string
+  /** Optional: defaults to the signed-in user's own contact. Only collection admins may name another contact. */
+  contactId?: string
   type?: BroadcastChannel
 }
 export interface CommsListMethodsResponse { ok: true; methods: import('./contact').CommMethod[] }
@@ -10939,6 +10982,10 @@ Public: Fetch configured topics for a collection. GET /public/collection/:collec
 **unsubscribe**(collectionId: string,
     query: import("../types/comms") → `void`
 Public: Unsubscribe a contact from a category or channel. GET /public/collection/:collectionId/comm/unsubscribe
+
+**signup**(collectionId: string,
+    body: import("../types/comms") → `void`
+Public: sign an email address up for topics (a newsletter, updates) — works signed out. Double opt-in: nothing is consented until the address's owner clicks the confirmation link SmartLinks emails them. Always answers `{ ok: true, pending: true }` (it never reveals whether the address is already known). Topics must be ones configured in the collection's comm settings. Set comm settings `signup.confirmedUrl` to send people to your own page after confirming. POST /public/collection/:collectionId/comm/signup
 
 **upsertConsent**(collectionId: string,
     body: import("../types/comms") → `void`
