@@ -168,16 +168,26 @@ if (meta.cssBaseline) {
     for (const c of ['sl-mobile-admin']) baseSet.add(c);
     // Class usage lives in compiled markup strings — present in every bundle regardless
     // of module format, so scan both umd + esm across all surfaces.
+    // `sl-…` NOT preceded by a word char or hyphen: a class name, never a CSS custom property
+    // (`var(--sl-color-accent)`, `--sl-widget-accent`) — those are theme tokens, not classes.
+    // Classes the app defines itself (`.sl-foo {…}` in its own CSS) aren't missing either.
     const used = new Set();
+    const defined = new Set();
     for (const [, block] of surfaces) {
-      for (const p of [block?.files?.js?.umd, block?.files?.js?.esm]) {
-        if (!p) continue;
+      for (const p of [block?.files?.js?.umd, block?.files?.js?.esm, block?.files?.css]) {
+        if (!p || typeof p !== 'string') continue;
         const bp = resolveBundle(p);
         if (!bp) continue;
-        for (const m of readFileSync(bp, 'utf8').matchAll(/\bsl-[a-z0-9-]+/g)) used.add(m[0]);
+        const text = readFileSync(bp, 'utf8');
+        for (const m of text.matchAll(/(?<![\w-])sl-[a-z0-9-]+/g)) used.add(m[0]);
+        for (const m of text.matchAll(/\.(sl-[a-z0-9-]+)/g)) defined.add(m[1]);
       }
     }
-    const unknown = [...used].filter((c) => !baseSet.has(c)).sort();
+    const ownSl = [...defined].filter((c) => !baseSet.has(c)).sort();
+    if (ownSl.length) {
+      warnings.push(`the app's own classes use the platform's sl- prefix: ${ownSl.join(', ')} — rename them (e.g. drop the "sl-") so they can't collide with a future baseline class.`);
+    }
+    const unknown = [...used].filter((c) => !baseSet.has(c) && !defined.has(c)).sort();
     if (used.size === 0) {
       console.log(`${DIM}cssBaseline (${baseline.version}) — declared; no sl-* classes found in the bundles.${RESET}`);
     } else if (unknown.length === 0) {
@@ -236,6 +246,30 @@ if (meta.respectsHostTheme) {
     if (offenders.length > 15) console.log(`    ${DIM}…and ${offenders.length - 15} more file(s)${RESET}`);
     warnings.push(`respectsHostTheme is true but ${totalHits} hardcoded palette utilit${totalHits === 1 ? 'y' : 'ies'} found in source — replace with semantic tokens, or drop respectsHostTheme if the app intentionally brings its own look.`);
   }
+}
+
+// ---- package.json scripts point at files that exist ------------------------------------------
+// An upgrade that copies a script LINE but not the script FILE breaks every build at that step
+// (e.g. `postbuild: node scripts/smartlinks-deploy.mjs` with no scripts/smartlinks-deploy.mjs).
+// WARN — the doctor runs inside the build, and a skipped hook (Forge builds skip pre/post) is harmless.
+try {
+  const pkg = JSON.parse(readFileSync(join(appDir, 'package.json'), 'utf8'));
+  const missing = [];
+  for (const [name, cmd] of Object.entries(pkg.scripts || {})) {
+    if (typeof cmd !== 'string') continue;
+    for (const m of cmd.matchAll(/(?:^|[;&|]\s*|\s)(?:node|tsx|ts-node|bash|sh)\s+(?:-{1,2}[\w-]+(?:=\S+)?\s+)*((?:\.{1,2}\/)?[\w./-]+\.(?:mjs|cjs|js|ts|sh))\b/g)) {
+      if (!existsSync(join(appDir, m[1]))) missing.push(`"${name}" runs ${m[1]}`);
+    }
+  }
+  if (missing.length) {
+    console.log(`${YELLOW}⚠${RESET} package.json scripts — ${missing.length} point${missing.length === 1 ? 's' : ''} at a file that doesn't exist:`);
+    for (const x of missing) console.log(`    ${YELLOW}${x}${RESET}`);
+    warnings.push(`package.json ${missing.join('; ')} — but the file is missing. Add the file, or remove the script (a pre/post hook like postbuild fails every \`npm run build\` without it).`);
+  } else {
+    console.log(`${GREEN}✓${RESET} package.json scripts ${DIM}— every script file they run exists${RESET}`);
+  }
+} catch {
+  /* no package.json — not an npm app */
 }
 
 console.log('');
