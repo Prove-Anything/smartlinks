@@ -262,7 +262,7 @@ if (meta.respectsHostTheme) {
     const text = readFileSync(bp, 'utf8');
     const routers = ['MemoryRouter', 'HashRouter', 'BrowserRouter'].filter((r) => new RegExp(`\\b${r}\\b`).test(text));
     if (!routers.length) { console.log(`${GREEN}✓${RESET} containers ${DIM}— no router of their own (the host's is used)${RESET}`); break; }
-    if (/UNSAFE_LocationContext/.test(text)) { console.log(`${GREEN}✓${RESET} containers ${DIM}— own ${routers.join('/')} isolated from the host's router${RESET}`); break; }
+    if (/\bUNSAFE_LocationContext\b/.test(text)) { console.log(`${GREEN}✓${RESET} containers ${DIM}— own ${routers.join('/')} isolated from the host's router${RESET}`); break; }
     console.log(`${YELLOW}⚠${RESET} containers — ${routers.join('/')} without isolating it from the host's router`);
     warnings.push(`containers bundle renders its own ${routers.join('/')} but never resets the host's router context — inside an R5 host that throws "You cannot render a <Router> inside another <Router>". Wrap it in UNSAFE_LocationContext.Provider + UNSAFE_NavigationContext.Provider value={null} (docs/containers.md), or drop the router and use the host's.`);
     break;
