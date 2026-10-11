@@ -248,6 +248,27 @@ if (meta.respectsHostTheme) {
   }
 }
 
+// ---- containers: a router of their own must be isolated from the host's ------------------------
+// Since R5, react-router-dom is SHARED with the host, so a container that wraps itself in a
+// MemoryRouter/HashRouter/BrowserRouter inside the host's router throws "You cannot render a <Router>
+// inside another <Router>" — unless it resets the parent's router context first (docs/containers.md →
+// "Pages that read their context from the URL"). Heuristic on the built bundle names; WARN-only.
+{
+  const block = manifest.containers;
+  for (const p of [block?.files?.js?.esm, block?.files?.js?.umd]) {
+    if (!p) continue;
+    const bp = resolveBundle(p);
+    if (!bp) continue;
+    const text = readFileSync(bp, 'utf8');
+    const routers = ['MemoryRouter', 'HashRouter', 'BrowserRouter'].filter((r) => new RegExp(`\\b${r}\\b`).test(text));
+    if (!routers.length) { console.log(`${GREEN}✓${RESET} containers ${DIM}— no router of their own (the host's is used)${RESET}`); break; }
+    if (/UNSAFE_LocationContext/.test(text)) { console.log(`${GREEN}✓${RESET} containers ${DIM}— own ${routers.join('/')} isolated from the host's router${RESET}`); break; }
+    console.log(`${YELLOW}⚠${RESET} containers — ${routers.join('/')} without isolating it from the host's router`);
+    warnings.push(`containers bundle renders its own ${routers.join('/')} but never resets the host's router context — inside an R5 host that throws "You cannot render a <Router> inside another <Router>". Wrap it in UNSAFE_LocationContext.Provider + UNSAFE_NavigationContext.Provider value={null} (docs/containers.md), or drop the router and use the host's.`);
+    break;
+  }
+}
+
 // ---- package.json scripts point at files that exist ------------------------------------------
 // An upgrade that copies a script LINE but not the script FILE breaks every build at that step
 // (e.g. `postbuild: node scripts/smartlinks-deploy.mjs` with no scripts/smartlinks-deploy.mjs).

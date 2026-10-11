@@ -62,7 +62,39 @@ Iframe Mode:
 **Where routing goes:**
 - ✅ Your **iframe entry point** (`App.tsx` / `main.tsx`) should use `HashRouter` 
 - ✅ Your **exported container** (`PublicContainer.tsx`) should include `<Routes>` and `<Route>` elements
-- ❌ Your **exported container** should NOT include any `<Router>` wrapper
+- ❌ Your **exported container** should NOT include any `<Router>` wrapper — *unless isolated* (below)
+
+### Pages that read their context from the URL: an isolated router
+
+The example app's pages read `collectionId` / `productId` / `proofId` from the URL. The framework's
+router starts at `/` without them, so the example's container keeps **its own** `MemoryRouter` (seeded
+with those params) — and **isolates** it from the host's router first. Since R5, `react-router-dom` is a
+shared dependency (the host's copy), so a plain nested router is the same library as the host's and
+throws _"You cannot render a `<Router>` inside another `<Router>`"_. Resetting the parent's location and
+navigation context gives your container a router of its own — the same isolation portal-framework puts
+around every direct component:
+
+```tsx
+import { MemoryRouter, Routes, Route, UNSAFE_LocationContext, UNSAFE_NavigationContext } from 'react-router-dom';
+
+export const PublicContainer = ({ collectionId, appId, productId, proofId }: SmartLinksContainerProps) => {
+  const q = new URLSearchParams({ collectionId, appId, ...(productId ? { productId } : {}), ...(proofId ? { proofId } : {}) });
+  return (
+    <UNSAFE_LocationContext.Provider value={null as any}>
+      <UNSAFE_NavigationContext.Provider value={null as any}>
+        <MemoryRouter initialEntries={[`/?${q}`]}>
+          <Routes>
+            <Route path="/*" element={<PublicPage />} />
+          </Routes>
+        </MemoryRouter>
+      </UNSAFE_NavigationContext.Provider>
+    </UNSAFE_LocationContext.Provider>
+  );
+};
+```
+
+Your container's own navigation then stays inside it (it isn't mirrored into the portal's deep link).
+`smartlinks-doctor` warns when a containers bundle uses a router without this isolation.
 
 ### The Router Contract
 
