@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.54  |  Generated: 2026-10-12T17:41:45.921Z
+Version: 2.0.55  |  Generated: 2026-10-12T19:47:24.035Z
 
 This is a concise summary of all available API functions and types.
 
@@ -154,7 +154,6 @@ The Smartlinks SDK is organized into the following namespaces:
 - **realtime** - Functions for realtime operations
 - **research** - Functions for research operations
 - **secrets** - Functions for secrets operations
-- **sequence** - Functions for sequence operations
 - **tags** - Functions for tags operations
 - **template** - Functions for template operations
 - **translations** - Functions for translations operations
@@ -9869,26 +9868,6 @@ interface AppSecretOptions {
 }
 ```
 
-### sequence (api)
-
-**AllocateSequenceInput** (interface)
-```typescript
-interface AllocateSequenceInput {
-  appId: string
-  sequenceId: string
-  subjectId: string
-  productId?: string
-}
-```
-
-**AllocatedSequence** (interface)
-```typescript
-interface AllocatedSequence {
-  number: number
-  isNew: boolean
-}
-```
-
 ### conditions (utils)
 
 **BaseCondition** (interface)
@@ -12250,11 +12229,6 @@ Soft-delete a secret. DELETE /secrets/:ref
 **recipients**(collectionId: string,
     id: string,
     query: { limit?: number; offset?: number } = {}) → `Promise<SegmentRecipientsResponse>`
-
-### sequence
-
-**allocate**(collectionId: string, input: AllocateSequenceInput) → `Promise<AllocatedSequence>`
-Allocate (or return the existing) sequence number for a subject. Idempotent — safe to call on load (auto-enter) and on a button tap; a subject that already has a number gets it back with `isNew: false`. const { number, isNew } = await sequence.allocate(collectionId, { appId: 'raffle-app', sequenceId: 'raffle', subjectId: claimSetId, }) `ctx.sl.counters.next()` + `ctx.sl.appRecords.claim()` (docs/server-functions.md).
 
 ### sessions
 
