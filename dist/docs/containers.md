@@ -226,6 +226,13 @@ All standard widget props apply:
 
 ---
 
+### Showing another app's widget
+
+A container can show another installed app's widget inline with the host-provided `EmbeddedWidget` prop:
+`<EmbeddedWidget appId="raffle" size="standard" />`. The host loads it, isolates it and contains any crash.
+See [widgets.md → Using another app's widget](widgets.md#using-another-apps-widget). Don't hand-roll a
+widget loader.
+
 ## Cross-App Navigation
 
 Containers support the same **structured navigation requests** as widgets. When a container needs to navigate to another app within the portal, it emits a `NavigationRequest` via the `onNavigate` callback. The portal orchestrator interprets the request, preserves hierarchy context, and performs the navigation.

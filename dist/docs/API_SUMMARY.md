@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.53  |  Generated: 2026-10-11T13:53:15.029Z
+Version: 2.0.54  |  Generated: 2026-10-12T17:41:45.921Z
 
 This is a concise summary of all available API functions and types.
 
@@ -9744,8 +9744,25 @@ interface SmartLinksWidgetProps {
   size?: 'compact' | 'standard' | 'large'
   lang?: string
   translations?: Record<string, string>
+  EmbeddedWidget?: EmbeddedWidgetComponent
 }
 ```
+
+**EmbeddedWidgetProps** (interface)
+```typescript
+interface EmbeddedWidgetProps {
+  appId: string
+  component?: string
+  size?: 'compact' | 'standard' | 'large'
+  widgetId?: string
+  props?: Record<string, unknown>
+  className?: string
+  fallback?: unknown
+  loading?: unknown
+}
+```
+
+**EmbeddedWidgetComponent** = `(props: EmbeddedWidgetProps) => any`
 
 ### appConfiguration (api)
 
@@ -10380,7 +10397,7 @@ Delete a keyed data item by ID within a scope. Requires admin authentication. ``
 
 **getWidgets**(collectionId: string,
     options?: GetCollectionWidgetsOptions) → `Promise<CollectionWidgetsResponse>`
-Fetches ALL widget data (manifests + bundle files) for a collection in one call. Returns everything needed to render widgets with zero additional requests. This solves N+1 query problems by fetching manifests, JavaScript bundles, and CSS files in parallel on the server. ```typescript // Fetch all widget data for a collection const { apps } = await Api.AppConfiguration.getWidgets(collectionId); // Returns: [{ appId, manifestUrl, manifest, bundleSource, bundleCss }, ...] // Convert bundle source to dynamic imports for (const app of apps) { const blob = new Blob([app.bundleSource], { type: 'application/javascript' }); const blobUrl = URL.createObjectURL(blob); const widgetModule = await import(blobUrl); // Inject CSS if present if (app.bundleCss) { const styleTag = document.createElement('style'); styleTag.textContent = app.bundleCss; document.head.appendChild(styleTag); } } // Force refresh all widgets const { apps } = await Api.AppConfiguration.getWidgets(collectionId, { force: true }); ```
+Fetches ALL widget data (manifests + bundle files) for a collection in one call. Returns everything needed to render widgets with zero additional requests. This solves N+1 query problems by fetching manifests, JavaScript bundles, and CSS files in parallel on the server. ```typescript // Fetch all widget data for a collection const { apps } = await Api.AppConfiguration.getWidgets(collectionId); // Returns: [{ appId, manifest, widget, container, admin }, ...] //   widget / container: { js: { umd?, esm? }, css?, source?, styles? } //     source / styles - the bundle inlined (when small enough); js / css - URLs otherwise. //   admin - URL of the app's app.admin.json (setup / tunable options), or null. // Bundles don't ship React: they resolve shared libraries from the HOST's globals // (host-dependency-contract.md), so loading one is a host's job. // // Inside a host (Portal / Hub), an app showing ANOTHER app's widget should not load // bundles itself - use the host-provided EmbeddedWidget prop: //   <EmbeddedWidget appId="raffle" size="standard" />   (docs/widgets.md) // Force refresh all widgets const { apps } = await Api.AppConfiguration.getWidgets(collectionId, { force: true }); ```
 
 **resolveFeature**(system: SystemBlock | undefined, flag: string) → `boolean`
 Resolve whether a feature flag is on, applying the `accountType` default: `enterprise` accounts default every flag to **on** unless `features[flag]` is explicitly `false`; `standard` accounts (or missing `accountType`) default every flag to **off** unless `features[flag]` is explicitly `true`. An explicit value always wins over the default either way. This is the same logic `isFeatureEnabled()` / `isFeatureEnabledSync()` use internally — call those instead in normal code. `system.features` and `accountType` are public data (no admin-only feature-check path exists), so there's no reason to fetch differently for an admin surface. This is exposed separately only for the rare case where you already have a `system` block in hand from somewhere other than `getAppConfig()` (e.g. server-rendered props) and want to resolve a flag from it directly. ```typescript const enabled = appConfiguration.resolveFeature(someSystemBlock, 'custom_domain'); ```

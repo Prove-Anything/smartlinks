@@ -530,22 +530,17 @@ export namespace appConfiguration {
    * ```typescript
    * // Fetch all widget data for a collection
    * const { apps } = await Api.AppConfiguration.getWidgets(collectionId);
-   * // Returns: [{ appId, manifestUrl, manifest, bundleSource, bundleCss }, ...]
-   * 
-   * // Convert bundle source to dynamic imports
-   * for (const app of apps) {
-   *   const blob = new Blob([app.bundleSource], { type: 'application/javascript' });
-   *   const blobUrl = URL.createObjectURL(blob);
-   *   const widgetModule = await import(blobUrl);
-   *   
-   *   // Inject CSS if present
-   *   if (app.bundleCss) {
-   *     const styleTag = document.createElement('style');
-   *     styleTag.textContent = app.bundleCss;
-   *     document.head.appendChild(styleTag);
-   *   }
-   * }
-   * 
+   * // Returns: [{ appId, manifest, widget, container, admin }, ...]
+   * //   widget / container: { js: { umd?, esm? }, css?, source?, styles? }
+   * //     source / styles - the bundle inlined (when small enough); js / css - URLs otherwise.
+   * //   admin - URL of the app's app.admin.json (setup / tunable options), or null.
+   * // Bundles don't ship React: they resolve shared libraries from the HOST's globals
+   * // (host-dependency-contract.md), so loading one is a host's job.
+   * //
+   * // Inside a host (Portal / Hub), an app showing ANOTHER app's widget should not load
+   * // bundles itself - use the host-provided EmbeddedWidget prop:
+   * //   <EmbeddedWidget appId="raffle" size="standard" />   (docs/widgets.md)
+   *
    * // Force refresh all widgets
    * const { apps } = await Api.AppConfiguration.getWidgets(collectionId, { force: true });
    * ```

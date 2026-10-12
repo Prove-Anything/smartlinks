@@ -30830,10 +30830,36 @@ components:
           type: object
           additionalProperties:
             type: string
+        EmbeddedWidget:
+          $ref: "#/components/schemas/EmbeddedWidgetComponent"
       required:
         - collectionId
         - appId
         - SL
+    EmbeddedWidgetProps:
+      type: object
+      properties:
+        appId:
+          type: string
+        component:
+          type: string
+        size:
+          type: string
+          enum:
+            - compact
+            - standard
+            - large
+        widgetId:
+          type: string
+        props:
+          type: object
+          additionalProperties: true
+        className:
+          type: string
+        fallback: {}
+        loading: {}
+      required:
+        - appId
     AppConfigOptions:
       type: object
       properties:

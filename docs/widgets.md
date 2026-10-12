@@ -146,6 +146,7 @@ interface SmartLinksWidgetProps {
 | `size` | `string?` | Size hint: 'compact', 'standard', or 'large' |
 | `lang` | `string?` | Language code (e.g., 'en', 'de', 'fr') |
 | `translations` | `object?` | Translation overrides |
+| `EmbeddedWidget` | `component?` | Host-provided: show another app's widget inside yours — see [Using another app's widget](#using-another-apps-widget) |
 
 ---
 
@@ -554,6 +555,56 @@ Widget builds are disabled by default to keep builds fast. To enable:
 2. The build script should be: `vite build && vite build --config vite.config.widget.ts`
 
 If `VITE_ENABLE_WIDGETS` is not set to `true`, the build produces a minimal stub file and skips quickly.
+
+---
+
+## Using another app's widget
+
+Your container, page or widget can show **another installed app's widget** inline (a raffle entry, a
+donate button, a loyalty card), natively, with no iframe. **The host does the work.** Portal and Hub pass
+every app they mount an `EmbeddedWidget` component:
+
+```tsx
+export function EventGuide({ EmbeddedWidget, ...props }: SmartLinksContainerProps) {
+  return (
+    <section>
+      <h2>Win a signed shirt</h2>
+      {EmbeddedWidget ? (
+        <EmbeddedWidget appId="raffle" size="standard" fallback={null} />
+      ) : null}
+    </section>
+  );
+}
+```
+
+| Prop | What it does |
+|---|---|
+| `appId` | The app whose widget to show, as installed on this collection. |
+| `component` | Which of its widget components (`widgets.components[].name` in its manifest). Default: the first. |
+| `size` | `'compact' \| 'standard' \| 'large'` — a hint the widget may honour. Default `standard`. |
+| `widgetId` | A configured instance, for apps with widget instances (see [Widget Instance Resolution](#widget-instance-resolution)). |
+| `props` | Extra props for the widget: its documented props and settings. |
+| `fallback` / `loading` | What to show if it can't be shown / while it loads. Default: nothing. |
+
+What the host does for you:
+- Loads the widget through its own bundle cache: the same code that renders the portal's widgets. It
+  provides the shared libraries (React, the SDK, the router, …) and picks the component.
+- Gives it the same context you have: collection, product, proof, user, language, and navigation
+  (`onNavigate` goes straight to the portal, so the widget's links work as they do anywhere else).
+- Mounts it in **its own router**, so it never touches your routes. Don't wrap it in a router.
+- Contains any crash: a broken widget renders `fallback`, never takes down your page.
+- Renders `fallback` when the app isn't installed on this collection, exports no widget, or isn't allowed.
+
+**What can be embedded:** first-party SmartLinks widgets (app IDs without a developer handle), and your
+own publisher's apps (`acme--raffle` from `acme--events`). The host enforces this; anything else renders
+`fallback`, with a console warning. An app can't embed itself, and nesting stops two levels deep.
+
+**Don't build your own loader** (getWidgets → evaluate the bundle → shared globals → require shim). Every
+copy drifts and breaks; `EmbeddedWidget` is absent outside a host, so render nothing there.
+
+**Finding out what's available:** in Forge, `forge-widgets catalog` lists the widgets you can embed
+(apps installed on the preview's collection), and `forge-widgets describe <app>` gives a widget's
+components, sizes, props, settings and setup options.
 
 ---
 

@@ -269,6 +269,50 @@ if (meta.respectsHostTheme) {
   }
 }
 
+// ---- showing another app's widget: use the host's EmbeddedWidget, for widgets it allows -----------
+// Hosts (Portal, Hub) pass every app an `EmbeddedWidget` prop (docs/widgets.md → "Using another app's
+// widget"). A hand-rolled loader (getWidgets → evaluate the bundle) drifts and breaks; and the host only
+// renders first-party widgets and the same publisher's apps, so anything else silently shows nothing.
+// Static scan of the source; WARN-only.
+{
+  const ownId = String(manifest.meta?.appId || '');
+  const handleOf = (id) => { const i = id.indexOf('--'); return i > 0 ? id.slice(0, i) : null; };
+  const EXT = /\.(tsx|ts|jsx|js)$/;
+  const SKIP = new Set(['node_modules', 'dist', '.git', 'public']);
+  const files = [];
+  (function walkSrc(dir) {
+    let entries = [];
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      if (e.isDirectory()) { if (!SKIP.has(e.name)) walkSrc(join(dir, e.name)); }
+      else if (EXT.test(e.name)) files.push(join(dir, e.name));
+    }
+  })(existsSync(join(appDir, 'src')) ? join(appDir, 'src') : appDir);
+  const rel = (f) => (f.startsWith(appDir) ? f.slice(appDir.length + 1) : f);
+  const handRolled = [];
+  const blocked = new Set();
+  let embeds = 0;
+  for (const f of files) {
+    const text = readFileSync(f, 'utf8');
+    if (/\bgetWidgets\s*\(/.test(text) && /(new\s+Blob\s*\(|new\s+Function\s*\(|createRequireShim|import\s*\(\s*\/\*\s*@vite-ignore)/.test(text)) handRolled.push(rel(f));
+    for (const m of text.matchAll(/<EmbeddedWidget\b[^>]*?\bappId\s*=\s*\{?\s*["'`]([A-Za-z0-9._-]+)["'`]/g)) {
+      embeds++;
+      const id = m[1];
+      const owner = handleOf(id);
+      if (id === ownId || (owner !== null && owner !== handleOf(ownId))) blocked.add(id);
+    }
+  }
+  if (handRolled.length) {
+    console.log(`${YELLOW}⚠${RESET} embedded widgets — a hand-rolled widget loader in ${handRolled.slice(0, 3).join(', ')}`);
+    warnings.push(`${handRolled.join(', ')} load${handRolled.length === 1 ? 's' : ''} another app's widget bundle by hand (getWidgets + evaluating it). Use the host's EmbeddedWidget prop instead: <EmbeddedWidget appId="…" /> (docs/widgets.md → "Using another app's widget").`);
+  }
+  if (blocked.size) {
+    console.log(`${YELLOW}⚠${RESET} embedded widgets — the host won't show: ${[...blocked].join(', ')}`);
+    warnings.push(`EmbeddedWidget for ${[...blocked].join(', ')} will render nothing: hosts only show first-party widgets and the same publisher's apps${ownId ? ` (this app is "${ownId}")` : ''}, and never the app itself.`);
+  }
+  if (embeds && !handRolled.length && !blocked.size) console.log(`${GREEN}✓${RESET} embedded widgets ${DIM}— ${embeds} via the host's EmbeddedWidget${RESET}`);
+}
+
 // ---- package.json scripts point at files that exist ------------------------------------------
 // An upgrade that copies a script LINE but not the script FILE breaks every build at that step
 // (e.g. `postbuild: node scripts/smartlinks-deploy.mjs` with no scripts/smartlinks-deploy.mjs).

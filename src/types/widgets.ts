@@ -97,4 +97,35 @@ export interface SmartLinksWidgetProps {
 
   /** Translation key overrides */
   translations?: Record<string, string>
+
+  /**
+   * Show ANOTHER app's widget inside this app, rendered by the host (Portal / Hub):
+   * `<EmbeddedWidget appId="raffle" size="standard" widgetId="…" />`. The host loads it, gives it the
+   * same context you have, keeps it in its own router and contains any crash. Absent outside a host.
+   * Only first-party widgets and your own publisher's apps can be embedded. See docs/widgets.md
+   * "Using another app's widget".
+   */
+  EmbeddedWidget?: EmbeddedWidgetComponent
 }
+
+/** Props of the host-provided `EmbeddedWidget` (see {@link SmartLinksWidgetProps.EmbeddedWidget}). */
+export interface EmbeddedWidgetProps {
+  /** The app whose widget to show, as installed on this collection. */
+  appId: string
+  /** Which of its widget components (its manifest `widgets.components[].name`). Default: the first. */
+  component?: string
+  /** Size hint the widget may honour. */
+  size?: 'compact' | 'standard' | 'large'
+  /** A configured instance of the widget (apps with widget instances — see "Widget Instance Resolution"). */
+  widgetId?: string
+  /** Extra props for the widget: its documented props / settings. */
+  props?: Record<string, unknown>
+  className?: string
+  /** Shown when the widget can't be shown (not installed, no widget, not allowed, failed). Default: nothing. */
+  fallback?: unknown
+  /** Shown while it loads. Default: nothing. */
+  loading?: unknown
+}
+
+/** A React component taking {@link EmbeddedWidgetProps} (typed loosely: the SDK doesn't depend on React). */
+export type EmbeddedWidgetComponent = (props: EmbeddedWidgetProps) => any
