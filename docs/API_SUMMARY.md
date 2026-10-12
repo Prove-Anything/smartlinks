@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.55  |  Generated: 2026-10-12T19:47:24.035Z
+Version: 2.0.56  |  Generated: 2026-10-12T20:38:31.481Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2850,6 +2850,7 @@ interface AppManifest {
   publicViews?: PublicView[];
   executor?: AppManifestExecutor;
   functions?: AppManifestFunctions;
+  realtime?: { channels: RealtimeChannelDeclaration[] };
   data?: AppDataDeclaration;
   headless?: AppHeadlessDeclaration;
   [key: string]: any;
@@ -9141,6 +9142,59 @@ interface AblyTokenRequest {
 }
 ```
 
+**RealtimeScope** (interface)
+```typescript
+interface RealtimeScope {
+  collectionId: string
+  appId?: string
+}
+```
+
+**RealtimeMessage** (interface)
+```typescript
+interface RealtimeMessage {
+  channel: string
+  event: string
+  data: unknown
+  at?: number
+}
+```
+
+**RealtimeChangeEvent** (interface)
+```typescript
+interface RealtimeChangeEvent {
+  type: string
+  id?: string
+  appId?: string
+  recordType?: string
+  productId?: string
+  proofId?: string
+  status?: string
+  at: number
+}
+```
+
+**RealtimeChangeFilter** (interface)
+```typescript
+interface RealtimeChangeFilter {
+  type?: string
+  id?: string
+  appId?: string
+  recordType?: string
+  productId?: string
+  proofId?: string
+}
+```
+
+**RealtimeChannelDeclaration** (interface)
+```typescript
+interface RealtimeChannelDeclaration {
+  name: string
+  subscribe?: "public" | "signedIn" | "admin"
+  publish?: "public" | "signedIn" | "admin" | "server"
+}
+```
+
 **RealtimeChannelPattern** = `string`
 
 ### research
@@ -12168,11 +12222,20 @@ Reset rate limit for a user
 
 ### realtime
 
+**channel**(scope: RealtimeScope & { appId: string }, name: string) → `void`
+One of your app's declared channels (manifest `realtime.channels`). ```ts const draw = realtime.channel({ collectionId, appId }, "draw") const off = draw.subscribe("status", (m) => setStatus(m.data)) await draw.publish("status", { phase: "spinning" }) // if the channel lets this viewer publish ```
+
+**onChange**(scope: RealtimeScope, filter: RealtimeChangeFilter, onChangeFn: (change: RealtimeChangeEvent) → `void`
+Something changed: refetch it. IDs only — never data. Admins of the collection see every change; everyone else sees changes to public things (public app records, products). Filter by `type` ('product' | 'proof' | 'asset' | 'record' | 'collection' | 'collection.apps' | 'settings'), `id`, `appId`, `recordType`, `productId`, `proofId`. ```ts const off = realtime.onChange({ collectionId }, { type: "record", appId, recordType: "entry" }, () => refetch()) ```
+
+**onMine**(scope: RealtimeScope, onMessage: (msg: RealtimeMessage) → `void`
+Messages for the signed-in person only (e.g. "scan" — a tag they just scanned on another device).
+
 **getPublicToken**(params: RealtimeTokenRequest) → `Promise<AblyTokenRequest>`
-Get an Ably token for public (user-scoped) real-time communication. This endpoint returns an Ably TokenRequest that can be used to initialize an Ably client with appropriate permissions for the specified collection and optional app. Requires user authentication (Bearer token). ```ts const tokenRequest = await realtime.getPublicToken({ collectionId: 'my-collection-id', appId: 'my-app-id' }) // Use with Ably const ably = new Ably.Realtime.Promise({ authCallback: async (data, callback) => { callback(null, tokenRequest) } }) // Subscribe to channels matching the pattern const channel = ably.channels.get('collection:my-collection-id:app:my-app-id:chat:general') await channel.subscribe('message', (msg) => console.log(msg.data)) ```
+`collection:{collectionId}:*` (subscribe; publish only for the collection's admins).
 
 **getAdminToken**() → `Promise<AblyTokenRequest>`
-Get an Ably token for admin real-time communication. This endpoint returns an Ably TokenRequest that can be used to initialize an Ably client with admin permissions to receive system notifications and alerts. Admin users get subscribe-only (read-only) access to the interaction:{userId} channel pattern. Requires admin authentication (Bearer token). ```ts const tokenRequest = await realtime.getAdminToken() // Use with Ably const ably = new Ably.Realtime.Promise({ authCallback: async (data, callback) => { callback(null, tokenRequest) } }) // Subscribe to admin interaction channel const userId = 'my-user-id' const channel = ably.channels.get(`interaction:${userId}`) await channel.subscribe((message) => { console.log('Admin notification:', message.data) }) ```
+(subscribe only).
 
 ### research
 

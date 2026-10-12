@@ -1,103 +1,46 @@
-import type { AblyTokenRequest, RealtimeTokenRequest } from "../types/realtime.js";
+import type { AblyTokenRequest, RealtimeTokenRequest, RealtimeChangeEvent, RealtimeChangeFilter, RealtimeMessage, RealtimeScope } from "../types/realtime.js";
 /**
- * Real-Time Communications API
+ * One of your app's declared channels (manifest `realtime.channels`).
  *
- * Provides access to real-time communication channels using Ably.
- * Supports both public (user-scoped) and admin tokens for different permission levels.
- *
- * Channel Patterns:
- * - With appId: collection:{collectionId}:app:{appId}:*
- * - Without appId: collection:{collectionId}:*
- *
- * @example
  * ```ts
- * import { realtime } from '@proveanything/smartlinks'
- *
- * // Get token for public user
- * const tokenRequest = await realtime.getPublicToken({
- *   collectionId: 'abc123',
- *   appId: 'xyz789'
- * })
- *
- * // Initialize Ably client
- * const ably = new Ably.Realtime.Promise({
- *   authCallback: async (data, callback) => {
- *     callback(null, tokenRequest)
- *   }
- * })
- *
- * // Subscribe to a channel
- * const channel = ably.channels.get('collection:abc123:app:xyz789:chat:room-1')
- * await channel.subscribe((message) => {
- *   console.log('Received:', message.data)
- * })
- *
- * // Publish a message
- * await channel.publish('message', { text: 'Hello!', userId: '123' })
+ * const draw = realtime.channel({ collectionId, appId }, "draw")
+ * const off = draw.subscribe("status", (m) => setStatus(m.data))
+ * await draw.publish("status", { phase: "spinning" }) // if the channel lets this viewer publish
  * ```
  */
+export declare function channel(scope: RealtimeScope & {
+    appId: string;
+}, name: string): {
+    /** Listen for an event (or "*" for every event). Returns a function that stops listening. */
+    subscribe(event: string, onMessage: (msg: RealtimeMessage) => void): () => void;
+    /** Send a message. Refused (403) unless the channel's `publish` rule allows this viewer. */
+    publish(event: string, data?: unknown): Promise<{
+        ok: true;
+    }>;
+};
 /**
- * Get an Ably token for public (user-scoped) real-time communication.
+ * Something changed: refetch it. IDs only — never data.
  *
- * This endpoint returns an Ably TokenRequest that can be used to initialize an Ably client
- * with appropriate permissions for the specified collection and optional app.
+ * Admins of the collection see every change; everyone else sees changes to public things (public app
+ * records, products). Filter by `type` ('product' | 'proof' | 'asset' | 'record' | 'collection' |
+ * 'collection.apps' | 'settings'), `id`, `appId`, `recordType`, `productId`, `proofId`.
  *
- * Requires user authentication (Bearer token).
- *
- * @param params - Token request parameters
- * @param params.collectionId - The collection scope (required)
- * @param params.appId - Optional app scope for more specific permissions
- * @returns Ably TokenRequest that can be used with Ably.Realtime client
- *
- * @example
  * ```ts
- * const tokenRequest = await realtime.getPublicToken({
- *   collectionId: 'my-collection-id',
- *   appId: 'my-app-id'
- * })
- *
- * // Use with Ably
- * const ably = new Ably.Realtime.Promise({
- *   authCallback: async (data, callback) => {
- *     callback(null, tokenRequest)
- *   }
- * })
- *
- * // Subscribe to channels matching the pattern
- * const channel = ably.channels.get('collection:my-collection-id:app:my-app-id:chat:general')
- * await channel.subscribe('message', (msg) => console.log(msg.data))
+ * const off = realtime.onChange({ collectionId }, { type: "record", appId, recordType: "entry" }, () => refetch())
  * ```
+ */
+export declare function onChange(scope: RealtimeScope, filter: RealtimeChangeFilter, onChangeFn: (change: RealtimeChangeEvent) => void): () => void;
+/**
+ * Messages for the signed-in person only (e.g. "scan" — a tag they just scanned on another device).
+ */
+export declare function onMine(scope: RealtimeScope, onMessage: (msg: RealtimeMessage) => void): () => void;
+/**
+ * @deprecated Use `realtime.channel()` / `realtime.onChange()`. Returns a raw Ably TokenRequest for
+ * `collection:{collectionId}:*` (subscribe; publish only for the collection's admins).
  */
 export declare function getPublicToken(params: RealtimeTokenRequest): Promise<AblyTokenRequest>;
 /**
- * Get an Ably token for admin real-time communication.
- *
- * This endpoint returns an Ably TokenRequest that can be used to initialize an Ably client
- * with admin permissions to receive system notifications and alerts.
- *
- * Admin users get subscribe-only (read-only) access to the interaction:{userId} channel pattern.
- *
- * Requires admin authentication (Bearer token).
- *
- * @returns Ably TokenRequest that can be used with Ably.Realtime client
- *
- * @example
- * ```ts
- * const tokenRequest = await realtime.getAdminToken()
- *
- * // Use with Ably
- * const ably = new Ably.Realtime.Promise({
- *   authCallback: async (data, callback) => {
- *     callback(null, tokenRequest)
- *   }
- * })
- *
- * // Subscribe to admin interaction channel
- * const userId = 'my-user-id'
- * const channel = ably.channels.get(`interaction:${userId}`)
- * await channel.subscribe((message) => {
- *   console.log('Admin notification:', message.data)
- * })
- * ```
+ * @deprecated Use `realtime.onMine()`. Returns a raw Ably TokenRequest for `interaction:{userId}`
+ * (subscribe only).
  */
 export declare function getAdminToken(): Promise<AblyTokenRequest>;

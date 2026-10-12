@@ -313,6 +313,31 @@ if (meta.respectsHostTheme) {
   if (embeds && !handRolled.length && !blocked.size) console.log(`${GREEN}✓${RESET} embedded widgets ${DIM}— ${embeds} via the host's EmbeddedWidget${RESET}`);
 }
 
+// ---- realtime: SL.realtime, never a provider library or key in the app ---------------------------
+// SmartLinks Realtime (docs/realtime.md) hands out the stream and checks every publish; an app that talks
+// to the provider directly bypasses the channel rules (and a provider key in a bundle is a key for all).
+{
+  const EXT = /\.(tsx|ts|jsx|js)$/;
+  const SKIP = new Set(['node_modules', 'dist', '.git', 'public']);
+  const hitsRt = [];
+  (function walkRt(dir) {
+    let entries = [];
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      if (e.isDirectory()) { if (!SKIP.has(e.name)) walkRt(join(dir, e.name)); }
+      else if (EXT.test(e.name)) {
+        const f = join(dir, e.name);
+        const text = readFileSync(f, 'utf8');
+        if (/from\s+['"]ably(\/[^'"]*)?['"]|require\(\s*['"]ably['"]\s*\)|ABLY_(API_)?KEY/.test(text)) hitsRt.push(f.startsWith(appDir) ? f.slice(appDir.length + 1) : f);
+      }
+    }
+  })(existsSync(join(appDir, 'src')) ? join(appDir, 'src') : appDir);
+  if (hitsRt.length) {
+    console.log(`${YELLOW}⚠${RESET} realtime — talks to the realtime provider directly in ${hitsRt.slice(0, 3).join(', ')}`);
+    warnings.push(`${hitsRt.join(', ')} use${hitsRt.length === 1 ? 's' : ''} the realtime provider (Ably) directly. Use SL.realtime instead — declare channels in the manifest (realtime.channels) and use realtime.channel() / onChange() (docs/realtime.md); never put a provider key in an app.`);
+  }
+}
+
 // ---- package.json scripts point at files that exist ------------------------------------------
 // An upgrade that copies a script LINE but not the script FILE breaks every build at that step
 // (e.g. `postbuild: node scripts/smartlinks-deploy.mjs` with no scripts/smartlinks-deploy.mjs).

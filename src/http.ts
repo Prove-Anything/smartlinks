@@ -221,6 +221,8 @@ function shouldSkipCache(path: string): boolean {
   if (!cacheEnabled) return true
   // Never cache auth, account, or user-identity endpoints — they depend on session state.
   if (/\/(auth|account)\//i.test(path)) return true
+  // Realtime tokens are single-use (a reused one is rejected by the provider) — never cache them.
+  if (/\/(push\/token|realtime\/)/i.test(path)) return true
   // Never cache /me endpoints (contact/me, loyalty/me, etc.) — always user-specific.
   if (/\/me(\?|$)/i.test(path)) return true
   return false

@@ -1,4 +1,5 @@
 import type { AppDataDeclaration, AppHeadlessDeclaration } from './headless'
+import type { RealtimeChannelDeclaration } from './realtime'
 // src/types/appManifest.ts
 
 /**
@@ -839,6 +840,15 @@ export interface AppManifest {
    * @see AppManifestFunctions
    */
   functions?: AppManifestFunctions;
+
+  /**
+   * SmartLinks Realtime: the live channels this app uses, with who may listen and who may send
+   * (docs/realtime.md). Only declared channels exist — anything else is refused.
+   * ```json
+   * "realtime": { "channels": [ { "name": "draw", "subscribe": "public", "publish": "admin" } ] }
+   * ```
+   */
+  realtime?: { channels: RealtimeChannelDeclaration[] };
 
   /**
    * The app's public data model: its data types, how each is stored, fields, examples and read

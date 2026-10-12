@@ -123,7 +123,7 @@ paths:
     get:
       tags:
         - realtime
-      summary: Get an Ably token for admin real-time communication.
+      summary: (subscribe only).
       operationId: realtime_getAdminToken
       security:
         - bearerAuth: []
@@ -13960,7 +13960,7 @@ paths:
     get:
       tags:
         - realtime
-      summary: realtime.getPublicToken
+      summary: "`collection:{collectionId}:*` (subscribe; publish only for the collection's admins)."
       operationId: realtime_getPublicToken
       security: []
       parameters:
@@ -14018,6 +14018,33 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/realtime/publish:
+    post:
+      tags:
+        - realtime
+      summary: "One of your app's declared channels (manifest `realtime.channels`)."
+      operationId: realtime_channel
+      security: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RealtimeScope"
   /public/tags/{tagId}:
     get:
       tags:
@@ -19618,6 +19645,9 @@ components:
           $ref: "#/components/schemas/AppManifestExecutor"
         functions:
           $ref: "#/components/schemas/AppManifestFunctions"
+        realtime:
+          type: object
+          additionalProperties: true
         data:
           $ref: "#/components/schemas/AppDataDeclaration"
         headless:
@@ -29830,6 +29860,79 @@ components:
         - nonce
         - mac
         - clientId
+    RealtimeScope:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        appId:
+          type: string
+      required:
+        - collectionId
+    RealtimeMessage:
+      type: object
+      properties:
+        channel:
+          type: string
+        event:
+          type: string
+        data: {}
+        at:
+          type: number
+      required:
+        - channel
+        - event
+        - data
+    RealtimeChangeEvent:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        appId:
+          type: string
+        recordType:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        status:
+          type: string
+        at:
+          type: number
+      required:
+        - type
+        - at
+    RealtimeChangeFilter:
+      type: object
+      properties:
+        type:
+          type: string
+        id:
+          type: string
+        appId:
+          type: string
+        recordType:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+    RealtimeChannelDeclaration:
+      type: object
+      properties:
+        name:
+          type: string
+        subscribe:
+          type: object
+          additionalProperties: true
+        publish:
+          type: object
+          additionalProperties: true
+      required:
+        - name
     RealtimeChannelPattern:
       type: string
     ResearchFetchRequest:

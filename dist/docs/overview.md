@@ -69,7 +69,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Portal Request Action** | `docs/portal-request-action.md` | Triggering portal built-in actions (__qrScanner, __share, __logout, etc.) from sub-apps |
 | **Interactions** | `docs/interactions.md` | Business events, outcomes, voting, competitions, and journey triggers |
 | **App Config Files** | `docs/app-manifest.md` | Full field-by-field reference for both JSON config files |
-| **Real-time Messaging** | `docs/realtime.md` | Adding Ably real-time features (chat, live updates) |
+| **Realtime** | `docs/realtime.md` | Live updates: change events (refetch when something changes) and declared app channels (a draw, a status) — no provider library or keys |
 | **Liquid Templates** | `docs/liquid-templates.md` | Dynamic content rendering with LiquidJS |
 | **Iframe Responder** | `docs/iframe-responder.md` | Iframe communication and proxy mode internals |
 | **AI Guide Template** | `docs/ai-guide-template.md` | Template for creating `public/ai-guide.md` — customise per app |
@@ -358,7 +358,7 @@ The SmartLinks SDK is organised into namespaces. See `docs/API_SUMMARY.md` for t
 - `contact` — Customer contact management
 - `comms` / `broadcasts` — Notifications and campaigns
 - `asset` — File/image uploads
-- `realtime` — Ably real-time messaging (see `docs/realtime.md`)
+- `realtime` — SmartLinks Realtime: `onChange`, `channel`, `onMine` (see `docs/realtime.md`)
 
 ---
 

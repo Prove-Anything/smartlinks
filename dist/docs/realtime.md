@@ -1,765 +1,118 @@
-# Real-Time Messaging with Ably
+# SmartLinks Realtime
 
-This guide covers adding Ably real-time messaging to SmartLinks apps that need live updates, chat, or presence features.
+Live updates for apps: a big screen showing the raffle draw, an admin list that updates as records
+arrive, a menu that refreshes when an app is installed. **No provider library, no keys, no channel
+strings in your app.** SmartLinks hands out a stream for exactly what the viewer may see, and messages
+you send go through SmartLinks, which checks the channel's rule.
 
----
+There are two kinds of realtime.
 
-## Overview
+| | What it is | Use it for |
+|---|---|---|
+| **Change events** | "this changed, here's its id": ids only, never data | refetching a list or a record when it changes |
+| **App channels** | messages your app sends, on channels it declares | a draw result, a live status, a chat line |
 
-Ably provides real-time pub/sub messaging over WebSockets. It's ideal for:
+## Change events: refetch when something changes
 
-- **Live chat** between users
-- **Real-time vote/poll results** that update instantly
-- **Presence indicators** showing who's online
-- **Live activity feeds** and notifications
-- **Collaborative features** without polling
+```ts
+import { realtime } from '@proveanything/smartlinks'
 
-### Why It's Not in the Base Template
-
-Ably is intentionally excluded from the base template because:
-
-1. **Bundle size**: Ably SDK adds ~50KB+ to the bundle
-2. **Connection overhead**: Initializing Ably opens a WebSocket connection
-3. **Cost**: Ably charges per connection/message
-4. **Not always needed**: Most apps (pamphlets, manuals, warranties) don't need real-time
-
-Apps that need real-time features should add Ably on-demand.
-
----
-
-## Installation
-
-Add Ably to your app:
-
-```bash
-npm install ably
+// Refetch the raffle's entries whenever one is added, changed or removed.
+const off = realtime.onChange(
+  { collectionId },
+  { type: 'record', appId: 'quickRaffle', recordType: `entry:${raffleId}` },
+  () => refetchEntries(),
+)
+// …later
+off()
 ```
 
-This adds the Ably SDK with React hooks support.
+- **Types:** `product`, `proof`, `asset`, `record`, `collection`, `collection.apps` (an app was
+  installed, removed or switched), `settings`.
+- **Filter fields:** `type`, `id`, `appId`, `recordType`, `productId`, `proofId`. Every field you give
+  must match.
+- **Who hears what:**
+  - a collection's **admins** hear every change;
+  - **everyone else** hears changes to public things (public app records, products).
+- **A change carries ids, never data.** Refetch through the normal API, which applies the normal
+  permissions, so realtime can never show someone data they couldn't read anyway.
 
----
+With React Query, invalidate on change:
 
-## Quick Start
-
-### 1. Create the Ably Client
-
-```typescript
-// src/lib/ably.ts
-import Ably from 'ably';
-
-export const createAblyClient = (apiKey: string) => {
-  return new Ably.Realtime({ key: apiKey });
-};
+```ts
+useEffect(() => realtime.onChange({ collectionId }, { type: 'record', appId }, () => {
+  queryClient.invalidateQueries({ queryKey: ['records', appId] })
+}), [collectionId, appId])
 ```
 
-### 2. Add the Provider
+## App channels: declare them, then subscribe and publish
 
-Wrap your app with the Ably provider:
+**1. Declare** each channel in `app.manifest.json`, with who may listen and who may send:
 
-```typescript
-// In PublicApp.tsx or AdminApp.tsx
-import { AblyProvider } from 'ably/react';
-import { createAblyClient } from '@/lib/ably';
-
-const ablyClient = createAblyClient(import.meta.env.VITE_ABLY_API_KEY);
-
-function App() {
-  return (
-    <AblyProvider client={ablyClient}>
-      <YourApp />
-    </AblyProvider>
-  );
+```json
+"realtime": {
+  "channels": [
+    { "name": "draw",  "subscribe": "public",   "publish": "admin"  },
+    { "name": "chat",  "subscribe": "signedIn", "publish": "signedIn" },
+    { "name": "result","subscribe": "public",   "publish": "server" }
+  ]
 }
 ```
 
-### 3. Subscribe to a Channel
+| Level | Who |
+|---|---|
+| `public` | anyone, signed in or not: a big screen, a kiosk |
+| `signedIn` | anyone signed in |
+| `admin` | the collection's admins |
+| `server` (publish only) | only your app's server functions: the authoritative way to announce a result |
 
-```typescript
-import { useChannel } from 'ably/react';
-import { useState } from 'react';
+- **Names:** lowercase letters, numbers, `-` and `_`, up to 40 characters.
+- **Defaults:** if a level is left out, `subscribe` defaults to `admin` and `publish` to `server`.
+- **Undeclared channels don't exist,** and anything sent to them is refused.
 
-export const LiveUpdates = ({ collectionId }: { collectionId: string }) => {
-  const [updates, setUpdates] = useState<string[]>([]);
+**2. Subscribe and publish** from your app:
 
-  const { channel } = useChannel(
-    `collection:${collectionId}:updates`,
-    (message) => {
-      setUpdates(prev => [...prev, message.data.text]);
-    }
-  );
+```ts
+const draw = realtime.channel({ collectionId, appId }, 'draw')
 
-  const sendUpdate = (text: string) => {
-    channel.publish('update', { text });
-  };
-
-  return (
-    <div>
-      {updates.map((update, i) => (
-        <p key={i}>{update}</p>
-      ))}
-      <button onClick={() => sendUpdate('Hello!')}>
-        Send Update
-      </button>
-    </div>
-  );
-};
+const off = draw.subscribe('status', (msg) => setStatus(msg.data))   // or '*' for every event
+await draw.publish('status', { phase: 'spinning' })                  // 403 unless the rule allows it
 ```
 
----
+**3. From a server function**, publish to any of your declared channels. This needs the
+`sl:realtime:write` capability:
 
-## Setup Patterns
-
-### Option A: Direct API Key (Development)
-
-For development or simple apps where the API key can be in environment variables:
-
-```typescript
-// src/lib/ably.ts
-import Ably from 'ably';
-
-export const createAblyClient = () => {
-  const apiKey = import.meta.env.VITE_ABLY_API_KEY;
-  
-  if (!apiKey) {
-    console.warn('VITE_ABLY_API_KEY not set - real-time features disabled');
-    return null;
-  }
-  
-  return new Ably.Realtime({ key: apiKey });
-};
+```ts
+await ctx.sl.realtime.publish('result', 'winner', { number: 42 })
 ```
 
-Add to your `.env`:
+Messages are limited to 32 KB. Keep them small: send ids and status, and let clients fetch the rest.
 
-```env
-VITE_ABLY_API_KEY=your-ably-api-key
-```
+## Messages for one person
 
-### Option B: Token Auth (Production) - SmartLinks SDK
+`realtime.onMine({ collectionId }, (msg) => …)` hears messages meant only for the signed-in person. For
+example, `scan`: a tag they just scanned with Sidekick on another device.
 
-For production apps, use the SmartLinks SDK's built-in token authentication:
+## How it behaves
 
-```typescript
-// src/lib/ably.ts
-import Ably from 'ably';
-import * as SL from '@proveanything/smartlinks';
+- **One connection per page** (per collection and app), shared by everything listening. It opens with the
+  first listener and closes after the last.
+- **It reconnects on its own** and renews its access before it expires.
+- **Anonymous viewers** get public channels only. That's enough for a big screen, with no polling.
+- **Outside a browser** (SSR, tests) there's no stream: listeners simply never fire.
+- **Delivery is best effort.** A message sent while a viewer was offline isn't replayed, so on
+  reconnect, refetch what you show.
 
-/**
- * Create an Ably client using SmartLinks token authentication.
- * This is the recommended approach for production apps.
- */
-export const createAblyClientWithSmartLinks = (collectionId: string, appId?: string) => {
-  return new Ably.Realtime({
-    authCallback: async (tokenParams, callback) => {
-      try {
-        // Use the SmartLinks SDK to get a scoped token
-        const tokenRequest = await SL.realtime.getPublicToken({
-          collectionId,
-          appId,
-        });
-        callback(null, tokenRequest);
-      } catch (error) {
-        callback(error as Error, null);
-      }
-    }
-  });
-};
+## Don't
 
-/**
- * Create an Ably client for admin real-time features.
- * Provides subscribe-only access to interaction channels.
- */
-export const createAblyClientForAdmin = () => {
-  return new Ably.Realtime({
-    authCallback: async (tokenParams, callback) => {
-      try {
-        const tokenRequest = await SL.realtime.getAdminToken();
-        callback(null, tokenRequest);
-      } catch (error) {
-        callback(error as Error, null);
-      }
-    }
-  });
-};
-```
+- **Don't add a realtime provider's library or put an API key in your app.** Apps never talk to the
+  provider directly. A key in a bundle is a key for everyone.
+- **Don't announce authoritative results from the browser.** Use a `server` channel and publish from a
+  server function.
+- **Don't put personal data in messages.** Publish an id; fetch the details with permissions.
 
-### SmartLinks SDK Real-Time Functions
+## Legacy
 
-The SDK provides two token endpoints:
-
-| Function | Use Case | Parameters |
-|----------|----------|------------|
-| `SL.realtime.getPublicToken()` | User-scoped real-time (chat, votes, presence) | `collectionId` (required), `appId` (optional) |
-| `SL.realtime.getAdminToken()` | Admin real-time (interaction monitoring) | None |
-
-Both require the user to be authenticated via the parent SmartLinks platform.
-
-Token auth benefits:
-- API key never exposed to client
-- Tokens can have capability restrictions
-- Tokens expire automatically
-
-### Conditional Provider Setup
-
-Handle cases where Ably isn't configured:
-
-```typescript
-// src/providers/AblyProvider.tsx
-import { AblyProvider as AblyReactProvider } from 'ably/react';
-import { createAblyClient } from '@/lib/ably';
-import { ReactNode, useMemo } from 'react';
-
-interface Props {
-  children: ReactNode;
-}
-
-export const AblyProvider = ({ children }: Props) => {
-  const client = useMemo(() => createAblyClient(), []);
-  
-  // If no client (no API key), render children without provider
-  if (!client) {
-    return <>{children}</>;
-  }
-  
-  return (
-    <AblyReactProvider client={client}>
-      {children}
-    </AblyReactProvider>
-  );
-};
-```
-
----
-
-## Common Patterns
-
-### Subscribing to a Channel
-
-```typescript
-import { useChannel } from 'ably/react';
-
-const MyComponent = () => {
-  const { channel } = useChannel('my-channel', (message) => {
-    console.log('Received:', message.name, message.data);
-  });
-
-  return <div>Listening...</div>;
-};
-```
-
-### Publishing Messages
-
-```typescript
-const { channel } = useChannel('my-channel', handleMessage);
-
-const sendMessage = (text: string) => {
-  channel.publish('message', { 
-    text,
-    timestamp: Date.now(),
-    sender: userId 
-  });
-};
-```
-
-### Presence (Who's Online)
-
-```typescript
-import { usePresence } from 'ably/react';
-
-const OnlineUsers = ({ roomId }: { roomId: string }) => {
-  const { presenceData, updateStatus } = usePresence(roomId, {
-    id: currentUser.id,
-    name: currentUser.name,
-  });
-
-  return (
-    <div>
-      <h3>Online ({presenceData.length})</h3>
-      <ul>
-        {presenceData.map((member) => (
-          <li key={member.clientId}>{member.data.name}</li>
-        ))}
-      </ul>
-    </div>
-  );
-};
-```
-
-### Connection State
-
-```typescript
-import { useConnectionStateListener } from 'ably/react';
-
-const ConnectionStatus = () => {
-  const [status, setStatus] = useState('connecting');
-  
-  useConnectionStateListener((stateChange) => {
-    setStatus(stateChange.current);
-  });
-
-  return (
-    <div className={status === 'connected' ? 'text-green-500' : 'text-yellow-500'}>
-      {status}
-    </div>
-  );
-};
-```
-
----
-
-## SmartLinks Integration
-
-### Channel Naming Conventions
-
-Use consistent channel names that include SmartLinks context:
-
-| Scope | Pattern | Example |
-|-------|---------|---------|
-| Collection | `collection:${collectionId}:${feature}` | `collection:abc123:updates` |
-| Product | `product:${collectionId}:${productId}:${feature}` | `product:abc123:prod456:chat` |
-| Proof | `proof:${collectionId}:${productId}:${proofId}:${feature}` | `proof:abc123:prod456:prf789:activity` |
-
-### Helper for Channel Names
-
-```typescript
-// src/lib/ably-channels.ts
-export const channels = {
-  collectionUpdates: (collectionId: string) => 
-    `collection:${collectionId}:updates`,
-    
-  productChat: (collectionId: string, productId: string) => 
-    `product:${collectionId}:${productId}:chat`,
-    
-  proofActivity: (collectionId: string, productId: string, proofId: string) => 
-    `proof:${collectionId}:${productId}:${proofId}:activity`,
-    
-  voteResults: (collectionId: string, appId: string, interactionId: string) =>
-    `votes:${collectionId}:${appId}:${interactionId}`,
-};
-```
-
-### Usage with SmartLinks Context
-
-```typescript
-import { useChannel } from 'ably/react';
-import { usePersistentQueryParams } from '@/hooks/usePersistentQueryParams';
-import { channels } from '@/lib/ably-channels';
-
-const LiveProductChat = () => {
-  const { persistentQueryParams } = usePersistentQueryParams();
-  const { collectionId, productId } = persistentQueryParams;
-  
-  const channelName = channels.productChat(collectionId!, productId!);
-  
-  const { channel } = useChannel(channelName, (message) => {
-    // Handle incoming chat message
-  });
-
-  // ...
-};
-```
-
----
-
-## Example: Live Chat Component
-
-Full working example of a chat component:
-
-```typescript
-// src/components/LiveChat.tsx
-import { useChannel, usePresence } from 'ably/react';
-import { useState, useRef, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-
-interface ChatMessage {
-  id: string;
-  text: string;
-  sender: string;
-  senderName: string;
-  timestamp: number;
-}
-
-interface LiveChatProps {
-  channelName: string;
-  userId: string;
-  userName: string;
-}
-
-export const LiveChat = ({ channelName, userId, userName }: LiveChatProps) => {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [inputValue, setInputValue] = useState('');
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Subscribe to chat messages
-  const { channel } = useChannel(channelName, (message) => {
-    if (message.name === 'chat') {
-      setMessages(prev => [...prev, message.data as ChatMessage]);
-    }
-  });
-
-  // Track presence
-  const { presenceData } = usePresence(channelName, {
-    id: userId,
-    name: userName,
-  });
-
-  // Auto-scroll to bottom
-  useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
-
-  const sendMessage = () => {
-    if (!inputValue.trim()) return;
-
-    const message: ChatMessage = {
-      id: `${userId}-${Date.now()}`,
-      text: inputValue.trim(),
-      sender: userId,
-      senderName: userName,
-      timestamp: Date.now(),
-    };
-
-    channel.publish('chat', message);
-    setInputValue('');
-  };
-
-  return (
-    <div className="flex flex-col h-[400px] border rounded-lg">
-      {/* Header with presence */}
-      <div className="p-3 border-b bg-muted/50">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-medium">Live Chat</span>
-          <span className="text-xs text-muted-foreground">
-            ({presenceData.length} online)
-          </span>
-        </div>
-      </div>
-
-      {/* Messages */}
-      <ScrollArea className="flex-1 p-4">
-        <div className="space-y-4">
-          {messages.map((msg) => (
-            <div
-              key={msg.id}
-              className={`flex gap-2 ${
-                msg.sender === userId ? 'flex-row-reverse' : ''
-              }`}
-            >
-              <Avatar className="h-8 w-8">
-                <AvatarFallback>
-                  {msg.senderName.charAt(0).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
-              <div
-                className={`rounded-lg px-3 py-2 max-w-[70%] ${
-                  msg.sender === userId
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
-                }`}
-              >
-                <p className="text-sm">{msg.text}</p>
-                <span className="text-xs opacity-70">
-                  {new Date(msg.timestamp).toLocaleTimeString()}
-                </span>
-              </div>
-            </div>
-          ))}
-          <div ref={scrollRef} />
-        </div>
-      </ScrollArea>
-
-      {/* Input */}
-      <div className="p-3 border-t">
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            sendMessage();
-          }}
-          className="flex gap-2"
-        >
-          <Input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1"
-          />
-          <Button type="submit" size="sm">
-            Send
-          </Button>
-        </form>
-      </div>
-    </div>
-  );
-};
-```
-
----
-
-## Example: Live Vote Counter
-
-Display real-time vote tallies:
-
-```typescript
-// src/components/LiveVoteCounter.tsx
-import { useChannel } from 'ably/react';
-import { useState, useEffect } from 'react';
-import { Progress } from '@/components/ui/progress';
-import * as SL from '@proveanything/smartlinks';
-
-interface VoteCounts {
-  [option: string]: number;
-}
-
-interface LiveVoteCounterProps {
-  collectionId: string;
-  appId: string;
-  interactionId: string;
-  options: string[];
-}
-
-export const LiveVoteCounter = ({
-  collectionId,
-  appId,
-  interactionId,
-  options,
-}: LiveVoteCounterProps) => {
-  const [votes, setVotes] = useState<VoteCounts>({});
-  const channelName = `votes:${collectionId}:${appId}:${interactionId}`;
-
-  // Fetch initial counts
-  useEffect(() => {
-    const fetchCounts = async () => {
-      const counts = await SL.interactions.countsByOutcome(collectionId, {
-        appId,
-        interactionId,
-      });
-      setVotes(counts || {});
-    };
-    fetchCounts();
-  }, [collectionId, appId, interactionId]);
-
-  // Subscribe to real-time vote updates
-  useChannel(channelName, (message) => {
-    if (message.name === 'vote') {
-      const { option } = message.data;
-      setVotes(prev => ({
-        ...prev,
-        [option]: (prev[option] || 0) + 1,
-      }));
-    }
-  });
-
-  const totalVotes = Object.values(votes).reduce((sum, n) => sum + n, 0);
-
-  return (
-    <div className="space-y-4 p-4">
-      <h3 className="font-semibold">Live Results</h3>
-      
-      {options.map((option) => {
-        const count = votes[option] || 0;
-        const percentage = totalVotes > 0 ? (count / totalVotes) * 100 : 0;
-
-        return (
-          <div key={option} className="space-y-1">
-            <div className="flex justify-between text-sm">
-              <span>{option}</span>
-              <span className="text-muted-foreground">
-                {count} ({percentage.toFixed(1)}%)
-              </span>
-            </div>
-            <Progress value={percentage} className="h-2" />
-          </div>
-        );
-      })}
-
-      <p className="text-sm text-muted-foreground text-center">
-        Total votes: {totalVotes}
-      </p>
-    </div>
-  );
-};
-```
-
-### Publishing Vote Updates
-
-When a user votes, publish to the channel:
-
-```typescript
-const submitVote = async (option: string) => {
-  // Record in SmartLinks
-  // 'poll' must already exist as an interaction type definition for this collection.
-  await SL.interactions.submitPublicEvent(collectionId, {
-    appId,
-    interactionId: 'poll',
-    outcome: option,
-  });
-
-  // Publish to Ably for real-time updates
-  channel.publish('vote', { option });
-};
-```
-
----
-
-## Best Practices
-
-### 1. Clean Up Subscriptions
-
-React hooks automatically handle cleanup, but for manual subscriptions:
-
-```typescript
-useEffect(() => {
-  const channel = ably.channels.get('my-channel');
-  
-  const handler = (message: Ably.Message) => {
-    // Handle message
-  };
-  
-  channel.subscribe('event', handler);
-  
-  return () => {
-    channel.unsubscribe('event', handler);
-  };
-}, []);
-```
-
-### 2. Handle Connection States
-
-```typescript
-const { channel } = useChannel('my-channel', handleMessage);
-
-useConnectionStateListener((stateChange) => {
-  if (stateChange.current === 'disconnected') {
-    // Show reconnecting UI
-  }
-  if (stateChange.current === 'connected') {
-    // Clear reconnecting UI, maybe refetch missed messages
-  }
-});
-```
-
-### 3. Debounce Rapid Updates
-
-For typing indicators or frequent updates:
-
-```typescript
-import { useDebouncedCallback } from 'use-debounce';
-
-const debouncedPublish = useDebouncedCallback((data) => {
-  channel.publish('typing', data);
-}, 300);
-```
-
-### 4. Message Size Limits
-
-Ably has a 64KB message size limit. For large data:
-- Store in SmartLinks/database
-- Send only the ID via Ably
-- Fetch full data on receive
-
-```typescript
-// Publishing
-channel.publish('update', { recordId: '123' });
-
-// Receiving
-useChannel(channelName, async (message) => {
-  const fullData = await SL.appConfiguration.getDataItem({
-    collectionId,
-    appId,
-    itemId: message.data.recordId,
-  });
-  // Use fullData
-});
-```
-
-### 5. Error Handling
-
-```typescript
-try {
-  await channel.publish('event', data);
-} catch (error) {
-  if (error instanceof Ably.ErrorInfo) {
-    console.error('Ably error:', error.code, error.message);
-    // Handle specific error codes
-  }
-}
-```
-
----
-
-## Environment Variables
-
-For development, add to your local `.env`:
-
-```env
-VITE_ABLY_API_KEY=your-api-key-here
-```
-
-For production, use Lovable Cloud secrets or your deployment platform's environment variables.
-
----
-
-## TypeScript Types
-
-Ably provides full TypeScript support. Key types:
-
-```typescript
-import Ably from 'ably';
-
-// Message type
-interface CustomMessage {
-  text: string;
-  sender: string;
-  timestamp: number;
-}
-
-// Typed channel usage
-const { channel } = useChannel<CustomMessage>('my-channel', (message) => {
-  const data: CustomMessage = message.data;
-  console.log(data.text); // Typed!
-});
-
-// Presence data type
-interface PresenceData {
-  id: string;
-  name: string;
-  status: 'active' | 'away';
-}
-
-const { presenceData } = usePresence<PresenceData>(channelName, {
-  id: userId,
-  name: userName,
-  status: 'active',
-});
-```
-
----
-
-## Troubleshooting
-
-### "Ably is not defined"
-
-Ensure you've installed the package:
-```bash
-npm install ably
-```
-
-### "No API key provided"
-
-Check that `VITE_ABLY_API_KEY` is set in your environment.
-
-### Messages not received
-
-1. Check channel names match exactly
-2. Verify connection state is 'connected'
-3. Check browser console for Ably errors
-4. Ensure you're subscribed before publishing
-
-### Too many connections
-
-Each browser tab opens a new connection. In development:
-- Close unused tabs
-- Use the same client instance across components (provider pattern)
+`realtime.getPublicToken()` and `realtime.getAdminToken()` return raw provider tokens for the old
+`collection:{id}:*` and `interaction:{uid}` channels. They still work, but publishing is now limited to
+the collection's admins. Move to `channel` / `onChange` / `onMine`.
