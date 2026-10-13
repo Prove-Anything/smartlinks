@@ -94,6 +94,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Lots** | `docs/lots.md` | Cross-SKU production "Lot" entity |
 | **Loyalty** | `docs/loyalty.md` | Points, members, earning rules |
 | **Integrations** | `docs/integrations.md` | Inbound/outbound external-system integration flows |
+| **Connectors** | `docs/connectors.md` | Connector apps: the manifest `connector` block + the functions the integration engine calls |
 | **Item Context** | `docs/item-context.md` | The `itemContext` container prop (serial / NFC authenticity context) |
 | **Native Facade** | `docs/native-facade.md` | `host.native` / `SL.native` device-capability facade |
 | **Product Facets** | `docs/PRODUCT_FACETS_SDK.md` | Facet API reference (admin + public endpoints, types) |

@@ -15,6 +15,10 @@ Flows are triggered three ways, all converging on the same executor:
   automatically when that entity changes.
 - **schedule** — a flow carrying a cron/interval `schedule` is run by the scan job. *(next)*
 
+Provider-specific logic (a provider's payload format, its API, its connect form) lives in a
+**connector app**, not in the engine: see **[Connectors](connectors.md)**. A flow uses one with
+`config.connector = { appId }`.
+
 Credentials are **never** stored on the flow. The connection holds an opaque
 `credentialRef` into the **sealed-secret store** (`secrets` namespace); the value is sealed
 at rest and resolved server-side only, at execution.

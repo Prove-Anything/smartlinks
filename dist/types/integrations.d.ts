@@ -29,9 +29,20 @@ export interface FlowConnection {
     defaultHeaders?: Record<string, string>;
     auth?: FlowConnectionAuth;
 }
+/** A flow driven by a connector app (docs/connectors.md). */
+export interface FlowConnectorRef {
+    /** The connector app (manifest `connector` block), installed on the collection. */
+    appId: string;
+    /** The preset the flow was created from, if any. */
+    preset?: string;
+    /** Per-flow settings, layered over the installation's. */
+    settings?: Record<string, unknown>;
+}
 export interface IntegrationFlowConfig {
     connection?: FlowConnection;
     fieldMappings?: FieldMapping[];
+    /** Run this flow through a connector app's functions instead of the built-in mapper/transport. */
+    connector?: FlowConnectorRef;
     [key: string]: any;
 }
 export interface IntegrationFlow {

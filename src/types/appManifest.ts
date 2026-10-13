@@ -1,5 +1,6 @@
 import type { AppDataDeclaration, AppHeadlessDeclaration } from './headless'
 import type { RealtimeChannelDeclaration } from './realtime'
+import type { FieldMapping } from './integrations'
 // src/types/appManifest.ts
 
 /**
@@ -862,7 +863,166 @@ export interface AppManifest {
    */
   headless?: AppHeadlessDeclaration;
 
+  /**
+   * This app is an integration CONNECTOR for one external provider (Syndigo, OneWorldSync, …): the
+   * integrations console lists it, draws its connect form and settings, and the integration engine
+   * calls its server functions to test, describe, sample, transform, send and fetch.
+   * @see AppConnectorDeclaration · docs/connectors.md
+   */
+  connector?: AppConnectorDeclaration;
+
   [key: string]: any;
+}
+
+// =============================================================================
+// INTEGRATION CONNECTORS — docs/connectors.md
+// =============================================================================
+
+/** One field of a connector's "Connect" form. */
+export interface ConnectorConnectionField {
+  /** Key in the installation's connection settings (non-secret fields) — `name` for a secret too. */
+  name: string
+  label: string
+  description?: string
+  /** Store the value as this app's SECRET of this name (sealed, write-only; the function reads it with
+   *  `ctx.secrets.get(secret)`), never in the settings. Declare `secrets:<name>` on the functions. */
+  secret?: string
+  required?: boolean
+  /** Input hint for the form. Default 'text'. */
+  type?: 'text' | 'url' | 'select' | 'number' | 'boolean'
+  options?: Array<{ value: string; label: string }>
+  placeholder?: string
+}
+
+/** A ready-made flow a connector offers ("Products → Syndigo"). */
+export interface ConnectorPreset {
+  id: string
+  title: string
+  description?: string
+  direction: 'inbound' | 'outbound'
+  /** SmartLinks entity: outbound source / inbound target. */
+  entity: string
+  /** Defaults for the flow (event types, schedule, mapping, settings…). */
+  flow?: Record<string, unknown>
+}
+
+/** A panel the connector contributes to the integrations console (e.g. an API explorer). */
+export interface ConnectorPanel {
+  id: string
+  title: string
+  /** Exported component name in the app's widgets bundle (manifest `widgets.files`). */
+  component: string
+}
+
+/**
+ * The connector contract. Every function named here is one of this app's server functions
+ * (manifest `functions.definitions`); the engine calls it with collection authority, capped by the
+ * capabilities the function declares. A connector fills in only what it needs.
+ */
+export interface AppConnectorDeclaration {
+  /** Stable provider key, e.g. 'syndigo', 'oneworldsync'. */
+  provider: string
+  /** Display name of the provider ("1WorldSync"). Defaults to the app name. */
+  title?: string
+  directions: Array<'inbound' | 'outbound'>
+  /** SmartLinks entities it maps, e.g. ['product']. */
+  entities: string[]
+  /** The console's "Connect" form. */
+  connection?: { fields: ConnectorConnectionField[] }
+  /** Per-installation settings: a JSON Schema the console renders as a form. */
+  settings?: Record<string, unknown>
+  presets?: ConnectorPreset[]
+  /** Names of this app's server functions implementing each step. */
+  functions: {
+    /** → ConnectorTestResult. */
+    testConnection?: string
+    /** → ConnectorTargetSchema: the provider's fields for THIS customer (the mapper's right-hand side). */
+    describeTarget?: string
+    /** → ConnectorRecords: real records for the mapper, the AI assistant and dry runs (inbound). */
+    sample?: string
+    /** (ConnectorTransformInput) → ConnectorTransformResult. Must be deterministic — no AI at run time. */
+    transform?: string
+    /** (ConnectorSendInput) → ConnectorSendResult. Omit to use a generic transport (HTTP, Event Hub). */
+    send?: string
+    /** (ConnectorFetchInput) → ConnectorRecords: inbound pull, one page per call. */
+    fetch?: string
+  }
+  panels?: ConnectorPanel[]
+  /** Path (under the app's public files) of a guide the AI mapping assistant reads. */
+  aiGuide?: string
+}
+
+/**
+ * What every connector function receives about the installation it serves. The engine assembles it
+ * from the connector app's config on the collection (`connector.connection` / `connector.settings`)
+ * with the flow's `config.connector.settings` layered on top.
+ */
+export interface ConnectorInstallation {
+  collectionId: string
+  /** The connector app. */
+  appId: string
+  /** The flow being run / configured, when there is one. */
+  flowId?: string | null
+  /** Non-secret connection fields (secrets are read with ctx.secrets.get). */
+  connection: Record<string, unknown>
+  /** Installation settings, overridden per flow. */
+  settings: Record<string, unknown>
+}
+
+export interface ConnectorTestResult {
+  ok: boolean
+  /** Shown to the admin: "Connected as …" or what's wrong. */
+  message: string
+}
+
+export interface ConnectorTargetField {
+  /** Path in the provider payload, e.g. 'attributes.brandName'. */
+  path: string
+  label?: string
+  type?: 'string' | 'number' | 'boolean' | 'date' | 'object' | 'array'
+  required?: boolean
+  description?: string
+  /** Allowed values, when the provider fixes them. */
+  enum?: string[]
+}
+
+export interface ConnectorTargetSchema {
+  fields: ConnectorTargetField[]
+}
+
+export interface ConnectorRecords {
+  records: Array<Record<string, unknown>>
+  /** Inbound paging: pass back to the next fetch; absent when there's no more. */
+  nextCursor?: string | null
+}
+
+export interface ConnectorTransformInput {
+  installation: ConnectorInstallation
+  /** SmartLinks records (outbound) or provider records (inbound). */
+  records: Array<Record<string, unknown>>
+  /** The flow's saved mapping (`config.fieldMappings`) — the same shape the engine's mapper runs. */
+  mapping: FieldMapping[]
+}
+
+export interface ConnectorTransformResult {
+  /** One payload per input record, in the same order (null = skip that record, with a reason). */
+  payloads: Array<unknown | null>
+  skipped?: Array<{ index: number; reason: string }>
+}
+
+export interface ConnectorSendInput {
+  installation: ConnectorInstallation
+  payloads: unknown[]
+}
+
+export interface ConnectorSendResult {
+  results: Array<{ index: number; ok: boolean; status?: number; error?: string; externalId?: string }>
+}
+
+export interface ConnectorFetchInput {
+  installation: ConnectorInstallation
+  cursor?: string | null
+  limit?: number
 }
 
 /**

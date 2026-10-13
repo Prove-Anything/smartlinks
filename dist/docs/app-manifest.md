@@ -436,6 +436,13 @@ this is just the manifest shape.
 | `definitions[].authority` | string | `caller` \| `collection` — whose authority it runs as |
 | `definitions[].capabilities` | string[] | Least-privilege grants (`sl:<res>:<read\|write>`, `network[:<host>]`, `secrets:<ref>`) |
 
+#### `connector`
+
+Marks the app as an integration **connector** for one external provider: the integrations console
+lists it and draws its connect form and settings, and the integration engine calls its server
+functions (`testConnection`, `describeTarget`, `sample`, `transform`, `send`, `fetch`). The full
+contract is in the **[Connectors guide](connectors.md)**.
+
 ---
 
 ## `app.admin.json`

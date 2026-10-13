@@ -19652,6 +19652,8 @@ components:
           $ref: "#/components/schemas/AppDataDeclaration"
         headless:
           $ref: "#/components/schemas/AppHeadlessDeclaration"
+        connector:
+          $ref: "#/components/schemas/AppConnectorDeclaration"
       required:
         - name
         - version
@@ -19659,6 +19661,268 @@ components:
         - function
         - files
         - components
+    ConnectorConnectionField:
+      type: object
+      properties:
+        name:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        secret:
+          type: string
+        required:
+          type: boolean
+        type:
+          type: string
+          enum:
+            - text
+            - url
+            - select
+            - number
+            - boolean
+        options:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        placeholder:
+          type: string
+      required:
+        - name
+        - label
+    ConnectorPreset:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        direction:
+          type: string
+          enum:
+            - inbound
+            - outbound
+        entity:
+          type: string
+        flow:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - title
+        - direction
+        - entity
+    ConnectorPanel:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        component:
+          type: string
+      required:
+        - id
+        - title
+        - component
+    AppConnectorDeclaration:
+      type: object
+      properties:
+        provider:
+          type: string
+        title:
+          type: string
+        directions:
+          type: array
+          items:
+            type: string
+            enum:
+              - inbound
+              - outbound
+        entities:
+          type: array
+          items:
+            type: string
+        connection:
+          type: object
+          additionalProperties: true
+        settings:
+          type: object
+          additionalProperties: true
+        presets:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConnectorPreset"
+        functions:
+          type: object
+          additionalProperties: true
+        testConnection:
+          type: string
+        describeTarget:
+          type: string
+        sample:
+          type: string
+        transform:
+          type: string
+        send:
+          type: string
+        fetch:
+          type: string
+        panels:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConnectorPanel"
+        aiGuide:
+          type: string
+      required:
+        - provider
+        - directions
+        - entities
+        - functions
+    ConnectorInstallation:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        appId:
+          type: string
+        flowId:
+          type: string
+        connection:
+          type: object
+          additionalProperties: true
+        settings:
+          type: object
+          additionalProperties: true
+      required:
+        - collectionId
+        - appId
+        - connection
+        - settings
+    ConnectorTestResult:
+      type: object
+      properties:
+        ok:
+          type: boolean
+        message:
+          type: string
+      required:
+        - ok
+        - message
+    ConnectorTargetField:
+      type: object
+      properties:
+        path:
+          type: string
+        label:
+          type: string
+        type:
+          type: string
+          enum:
+            - string
+            - number
+            - boolean
+            - date
+            - object
+            - array
+        required:
+          type: boolean
+        description:
+          type: string
+        enum:
+          type: array
+          items:
+            type: string
+      required:
+        - path
+    ConnectorTargetSchema:
+      type: object
+      properties:
+        fields:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConnectorTargetField"
+      required:
+        - fields
+    ConnectorRecords:
+      type: object
+      properties:
+        records:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        nextCursor:
+          type: string
+      required:
+        - records
+    ConnectorTransformInput:
+      type: object
+      properties:
+        installation:
+          $ref: "#/components/schemas/ConnectorInstallation"
+        records:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        mapping:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldMapping"
+      required:
+        - installation
+        - records
+        - mapping
+    ConnectorTransformResult:
+      type: object
+      properties:
+        payloads:
+          type: array
+          items: {}
+        skipped:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - payloads
+    ConnectorSendInput:
+      type: object
+      properties:
+        installation:
+          $ref: "#/components/schemas/ConnectorInstallation"
+        payloads:
+          type: array
+          items: {}
+      required:
+        - installation
+        - payloads
+    ConnectorSendResult:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - results
+    ConnectorFetchInput:
+      type: object
+      properties:
+        installation:
+          $ref: "#/components/schemas/ConnectorInstallation"
+        cursor:
+          type: string
+        limit:
+          type: number
+      required:
+        - installation
     CollectionAppWidget:
       type: object
       properties:
@@ -25913,6 +26177,18 @@ components:
             type: string
         auth:
           $ref: "#/components/schemas/FlowConnectionAuth"
+    FlowConnectorRef:
+      type: object
+      properties:
+        appId:
+          type: string
+        preset:
+          type: string
+        settings:
+          type: object
+          additionalProperties: true
+      required:
+        - appId
     IntegrationFlowConfig:
       type: object
       properties:
@@ -25922,6 +26198,8 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/FieldMapping"
+        connector:
+          $ref: "#/components/schemas/FlowConnectorRef"
     IntegrationFlow:
       type: object
       properties:
