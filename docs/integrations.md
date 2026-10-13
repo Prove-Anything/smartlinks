@@ -23,9 +23,14 @@ Provider-specific logic (a provider's payload format, its API, its connect form)
 destination's `Retry-After`); a permanent failure (most 4xx) or one out of attempts is **dead** and
 waits in `integrations.listFailed` for `integrations.retryFailed`. A destination that keeps failing
 **pauses the flow automatically** (`flow.circuitOpenedAt`): edits are held, small probes check for
-recovery, and it resumes on its own (or with `integrations.resumeFlow`). Every product and record
-change is recorded durably before it's dispatched, so an edit can't be missed; scheduled sweeps are
-the reconciliation net.
+recovery, and it resumes on its own (or with `integrations.resumeFlow`).
+
+**Change capture.** Every product and record write is captured where it's saved, whatever made it (the
+admin, an import, a server function). A product change *wakes* each subscribed outbound flow, which then
+sweeps every product changed since its last sweep (deletions included). A burst of edits, such as a big
+import, is one sweep, not one send per product. A reconciliation sweep every 15 minutes catches anything
+a wake missed. Events that need one call each (app functions, flows on record events) are recorded
+durably and retried until they're delivered.
 
 Credentials are **never** stored on the flow. The connection holds an opaque
 `credentialRef` into the **sealed-secret store** (`secrets` namespace); the value is sealed
