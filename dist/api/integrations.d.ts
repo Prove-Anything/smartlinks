@@ -1,4 +1,4 @@
-import type { IntegrationFlow, CreateFlowInput, UpdateFlowInput, ListFlowsQuery, FlowList, RunFlowInput, RunFlowResult, RunFlowSummary, RunFlowEnqueued, RecordTypesResponse, FlowRun, ListRunsQuery, RunList, ListRunItemsQuery, RunItemList, LoggingWindow, SetLoggingInput, InstalledConnector, SaveConnectorInstallationInput, ConnectorConsoleStep } from "../types/integrations.js";
+import type { IntegrationFlow, CreateFlowInput, UpdateFlowInput, ListFlowsQuery, FlowList, RunFlowInput, RunFlowResult, RunFlowSummary, RunFlowEnqueued, RecordTypesResponse, FlowRun, ListRunsQuery, RunList, ListRunItemsQuery, RunItemList, LoggingWindow, SetLoggingInput, InstalledConnector, SaveConnectorInstallationInput, ConnectorConsoleStep, FailedRecordList } from "../types/integrations.js";
 export declare namespace integrations {
     /** List flows in a collection. GET /integrations/flows */
     function listFlows(collectionId: string, query?: ListFlowsQuery): Promise<FlowList>;
@@ -52,6 +52,20 @@ export declare namespace integrations {
     /** Enable enhanced logging. POST /integrations/logging/:connectionId (omit ttlMinutes = until cancelled) */
     function setLogging(collectionId: string, connectionId: string, input?: SetLoggingInput): Promise<{
         window: LoggingWindow;
+    }>;
+    /** A flow's failed / dead records. GET /integrations/flows/:id/failed */
+    function listFailed(collectionId: string, flowId: string, query?: {
+        status?: 'failed' | 'dead';
+        limit?: number;
+        cursor?: string;
+    }): Promise<FailedRecordList>;
+    /** Retry failed / dead records now (all of them when `ids` is omitted). POST /integrations/flows/:id/failed/retry */
+    function retryFailed(collectionId: string, flowId: string, ids?: string[]): Promise<{
+        retrying: number;
+    }>;
+    /** Resume a flow that paused itself (circuit open): held records go out now. POST /integrations/flows/:id/resume */
+    function resumeFlow(collectionId: string, flowId: string): Promise<{
+        resumed: boolean;
     }>;
     /** Cancel enhanced logging now. DELETE /integrations/logging/:connectionId */
     function cancelLogging(collectionId: string, connectionId: string): Promise<{

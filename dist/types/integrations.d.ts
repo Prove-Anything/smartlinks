@@ -71,6 +71,32 @@ export interface IntegrationFlow {
     lastPollAt?: string | null;
     lastCursor?: string | null;
     totalSynced?: number | null;
+    /**
+     * Circuit breaker: set while the flow has paused itself because its destination / provider keeps
+     * failing. Nothing is sent or fetched (edits are held as retries) until a probe gets through —
+     * `circuitProbeAt` is the next one — or someone resumes it (`integrations.resumeFlow`).
+     */
+    circuitOpenedAt?: string | null;
+    circuitProbeAt?: string | null;
+    circuitReason?: string | null;
+}
+/** A record that failed: retried on its own with backoff ('failed'), or given up on ('dead'). */
+export interface FailedRecord {
+    /** Outbound: the SmartLinks entity id. Inbound: the landed record's id (pass it to retryFailed). */
+    id: string;
+    entityId?: string | null;
+    /** Inbound: the provider's id for the record. */
+    externalId?: string;
+    status: 'failed' | 'dead';
+    attempts: number;
+    nextAttemptAt?: string | null;
+    lastError?: string | null;
+    updatedAt?: string;
+}
+export interface FailedRecordList {
+    direction: FlowDirection;
+    items: FailedRecord[];
+    nextCursor: string | null;
 }
 export interface CreateFlowInput {
     appId: string;
@@ -109,10 +135,12 @@ export interface RunFlowSummary {
     /** Outbound: records delivered. */
     sent?: number;
     failed: number;
-    /** Inbound: products created / updated, and records the connector skipped. */
+    /** Inbound: products created / updated, and records the connector skipped (outbound: unchanged). */
     created?: number;
     updated?: number;
     skipped?: number;
+    /** Outbound: changes held because the destination is paused (circuit open); sent after it recovers. */
+    held?: number;
     status: RunStatus;
     /** Id of the persisted run row (deep-link into its detail). */
     runId?: string;

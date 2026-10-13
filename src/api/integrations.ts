@@ -29,6 +29,7 @@ import type {
   InstalledConnector,
   SaveConnectorInstallationInput,
   ConnectorConsoleStep,
+  FailedRecordList,
 } from "../types/integrations"
 
 function enc(v: string) { return encodeURIComponent(v) }
@@ -154,6 +155,29 @@ export namespace integrations {
     return post<{ window: LoggingWindow }>(
       `/admin/collection/${enc(collectionId)}/integrations/logging/${enc(connectionId)}`, input
     )
+  }
+
+  // --- Failed records + resume -----------------------------------------------
+  // A failed record is retried on its own with backoff; a permanent failure, or one out of attempts, is
+  // 'dead' and waits for someone to retry it (or for the record to change).
+
+  /** A flow's failed / dead records. GET /integrations/flows/:id/failed */
+  export async function listFailed(
+    collectionId: string,
+    flowId: string,
+    query: { status?: 'failed' | 'dead'; limit?: number; cursor?: string } = {}
+  ): Promise<FailedRecordList> {
+    return request<FailedRecordList>(`${base(collectionId)}/${enc(flowId)}/failed${encodeQuery(query)}`)
+  }
+
+  /** Retry failed / dead records now (all of them when `ids` is omitted). POST /integrations/flows/:id/failed/retry */
+  export async function retryFailed(collectionId: string, flowId: string, ids?: string[]): Promise<{ retrying: number }> {
+    return post<{ retrying: number }>(`${base(collectionId)}/${enc(flowId)}/failed/retry`, ids ? { ids } : {})
+  }
+
+  /** Resume a flow that paused itself (circuit open): held records go out now. POST /integrations/flows/:id/resume */
+  export async function resumeFlow(collectionId: string, flowId: string): Promise<{ resumed: boolean }> {
+    return post<{ resumed: boolean }>(`${base(collectionId)}/${enc(flowId)}/resume`, {})
   }
 
   /** Cancel enhanced logging now. DELETE /integrations/logging/:connectionId */

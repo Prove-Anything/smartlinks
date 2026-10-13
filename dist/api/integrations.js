@@ -130,6 +130,24 @@ export var integrations;
         return post(`/admin/collection/${enc(collectionId)}/integrations/logging/${enc(connectionId)}`, input);
     }
     integrations.setLogging = setLogging;
+    // --- Failed records + resume -----------------------------------------------
+    // A failed record is retried on its own with backoff; a permanent failure, or one out of attempts, is
+    // 'dead' and waits for someone to retry it (or for the record to change).
+    /** A flow's failed / dead records. GET /integrations/flows/:id/failed */
+    async function listFailed(collectionId, flowId, query = {}) {
+        return request(`${base(collectionId)}/${enc(flowId)}/failed${encodeQuery(query)}`);
+    }
+    integrations.listFailed = listFailed;
+    /** Retry failed / dead records now (all of them when `ids` is omitted). POST /integrations/flows/:id/failed/retry */
+    async function retryFailed(collectionId, flowId, ids) {
+        return post(`${base(collectionId)}/${enc(flowId)}/failed/retry`, ids ? { ids } : {});
+    }
+    integrations.retryFailed = retryFailed;
+    /** Resume a flow that paused itself (circuit open): held records go out now. POST /integrations/flows/:id/resume */
+    async function resumeFlow(collectionId, flowId) {
+        return post(`${base(collectionId)}/${enc(flowId)}/resume`, {});
+    }
+    integrations.resumeFlow = resumeFlow;
     /** Cancel enhanced logging now. DELETE /integrations/logging/:connectionId */
     async function cancelLogging(collectionId, connectionId) {
         return del(`/admin/collection/${enc(collectionId)}/integrations/logging/${enc(connectionId)}`);

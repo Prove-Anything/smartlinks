@@ -19,6 +19,14 @@ Provider-specific logic (a provider's payload format, its API, its connect form)
 **connector app**, not in the engine: see **[Connectors](connectors.md)**. A flow uses one with
 `config.connector = { appId }`.
 
+**Reliability.** A record that fails is retried on its own with exponential backoff (honouring the
+destination's `Retry-After`); a permanent failure (most 4xx) or one out of attempts is **dead** and
+waits in `integrations.listFailed` for `integrations.retryFailed`. A destination that keeps failing
+**pauses the flow automatically** (`flow.circuitOpenedAt`): edits are held, small probes check for
+recovery, and it resumes on its own (or with `integrations.resumeFlow`). Every product and record
+change is recorded durably before it's dispatched, so an edit can't be missed; scheduled sweeps are
+the reconciliation net.
+
 Credentials are **never** stored on the flow. The connection holds an opaque
 `credentialRef` into the **sealed-secret store** (`secrets` namespace); the value is sealed
 at rest and resolved server-side only, at execution.

@@ -19938,12 +19938,26 @@ components:
       type: object
       properties:
         results:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
+          type: object
+          additionalProperties: true
+        index:
+          type: number
+        ok:
+          type: boolean
+        status:
+          type: number
+        error:
+          type: string
+        externalId:
+          type: string
+        retryable:
+          type: boolean
+        retryAfterSeconds:
+          type: number
       required:
         - results
+        - index
+        - ok
     ConnectorFetchInput:
       type: object
       properties:
@@ -26283,6 +26297,12 @@ components:
           type: string
         totalSynced:
           type: number
+        circuitOpenedAt:
+          type: string
+        circuitProbeAt:
+          type: string
+        circuitReason:
+          type: string
       required:
         - id
         - orgId
@@ -26299,6 +26319,47 @@ components:
         - createdBy
         - createdAt
         - updatedAt
+    FailedRecord:
+      type: object
+      properties:
+        id:
+          type: string
+        entityId:
+          type: string
+        externalId:
+          type: string
+        status:
+          type: string
+          enum:
+            - failed
+            - dead
+        attempts:
+          type: number
+        nextAttemptAt:
+          type: string
+        lastError:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - status
+        - attempts
+    FailedRecordList:
+      type: object
+      properties:
+        direction:
+          $ref: "#/components/schemas/FlowDirection"
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/FailedRecord"
+        nextCursor:
+          type: string
+      required:
+        - direction
+        - items
+        - nextCursor
     CreateFlowInput:
       type: object
       properties:
@@ -26369,6 +26430,8 @@ components:
         updated:
           type: number
         skipped:
+          type: number
+        held:
           type: number
         status:
           $ref: "#/components/schemas/RunStatus"

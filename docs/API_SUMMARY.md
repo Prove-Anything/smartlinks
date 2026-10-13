@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.59  |  Generated: 2026-10-13T14:58:59.641Z
+Version: 2.0.60  |  Generated: 2026-10-13T16:19:13.426Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3010,7 +3010,15 @@ interface ConnectorSendInput {
 **ConnectorSendResult** (interface)
 ```typescript
 interface ConnectorSendResult {
-  results: Array<{ index: number; ok: boolean; status?: number; error?: string; externalId?: string }>
+  results: Array<{
+  index: number
+  ok: boolean
+  status?: number
+  error?: string
+  externalId?: string
+  retryable?: boolean
+  retryAfterSeconds?: number
+  }>
 }
 ```
 
@@ -7110,6 +7118,32 @@ interface IntegrationFlow {
   lastPollAt?: string | null
   lastCursor?: string | null
   totalSynced?: number | null
+  circuitOpenedAt?: string | null
+  circuitProbeAt?: string | null
+  circuitReason?: string | null
+}
+```
+
+**FailedRecord** (interface)
+```typescript
+interface FailedRecord {
+  id: string
+  entityId?: string | null
+  externalId?: string
+  status: 'failed' | 'dead'
+  attempts: number
+  nextAttemptAt?: string | null
+  lastError?: string | null
+  updatedAt?: string
+}
+```
+
+**FailedRecordList** (interface)
+```typescript
+interface FailedRecordList {
+  direction: FlowDirection
+  items: FailedRecord[]
+  nextCursor: string | null
 }
 ```
 
@@ -7163,6 +7197,7 @@ interface RunFlowSummary {
   created?: number
   updated?: number
   skipped?: number
+  held?: number
   status: RunStatus
   runId?: string
 }
@@ -11705,6 +11740,17 @@ Is enhanced logging active for a connection? GET /integrations/logging/:connecti
 
 **setLogging**(collectionId: string, connectionId: string, input: SetLoggingInput = {}) → `Promise<`
 Enable enhanced logging. POST /integrations/logging/:connectionId (omit ttlMinutes = until cancelled)
+
+**listFailed**(collectionId: string,
+    flowId: string,
+    query: { status?: 'failed' | 'dead'; limit?: number; cursor?: string } = {}) → `Promise<FailedRecordList>`
+A flow's failed / dead records. GET /integrations/flows/:id/failed
+
+**retryFailed**(collectionId: string, flowId: string, ids?: string[]) → `Promise<`
+Retry failed / dead records now (all of them when `ids` is omitted). POST /integrations/flows/:id/failed/retry
+
+**resumeFlow**(collectionId: string, flowId: string) → `Promise<`
+Resume a flow that paused itself (circuit open): held records go out now. POST /integrations/flows/:id/resume
 
 **cancelLogging**(collectionId: string, connectionId: string) → `Promise<`
 Cancel enhanced logging now. DELETE /integrations/logging/:connectionId

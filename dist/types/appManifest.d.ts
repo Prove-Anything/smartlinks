@@ -1018,6 +1018,10 @@ export interface ConnectorSendResult {
         status?: number;
         error?: string;
         externalId?: string;
+        /** Worth retrying? Default: by status (408/425/429/5xx/none yes; other 4xx no). */
+        retryable?: boolean;
+        /** The provider asked to wait this long before retrying (e.g. its Retry-After). */
+        retryAfterSeconds?: number;
     }>;
 }
 export interface ConnectorFetchInput {
