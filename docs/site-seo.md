@@ -5,13 +5,17 @@ get all of this from Hub.
 
 ## What the platform does for you
 
+- **Every page is server-rendered.** A website runs on the SmartLinks site runtime (see
+  [websites.md](websites.md)): the first response for any URL is the finished HTML, with its title,
+  description, link-preview image, structured data and real status codes (404s are 404s). Search
+  engines, AI crawlers and link previews read it without running JavaScript.
 - **`/robots.txt`, `/sitemap.xml`, `/llms.txt`** are generated on the site's own address. Don't ship
   `robots.txt` or `sitemap.xml`: one build serves many sites, and sitemap URLs must be absolute on
   the site's host, which the build can't know.
 - **List every page** in `public/sitemap-paths.txt`, one `<path> [Title]` per line, in menu order
   (`/ Home`, `/menu Menu`, `/book Book a table`). They go into the sitemap and `llms.txt` (titled)
   on the right host, and Forge's preview uses the same list as its page menu. Keep it in step with
-  the router. Pre-rendered pages (`about/index.html`) are found automatically.
+  the router.
 - **Canonical address.** A site can answer on its automatic address, a chosen name and a custom
   domain. Every page gets `Link: <https://{canonical}{path}>; rel="canonical"`, so search engines
   consolidate on one: the custom domain, else the chosen name, else the automatic address. Don't set
@@ -38,8 +42,6 @@ SL.seo.jsonLd('page', SL.seo.schema.product(product, { url: location.href, brand
 SL.seo.jsonLd('faq', SL.seo.schema.faqPage(faqs.map((f) => ({ question: f.q, answer: f.a }))))
 SL.seo.jsonLd('org', SL.seo.schema.organization(collection))
 
-// When the page's data has rendered:
-SL.site.ready()
 ```
 
 | Builder | For |
@@ -52,11 +54,10 @@ SL.site.ready()
 | `schema.article({ headline, datePublished, … })` | posts, guides, news |
 
 `seo.head` removes tags a previous route set and the next one doesn't. Both are no-ops without a
-`document` (SSR, tests).
+`document`. In a server-rendered site, prefer the router's own head support (TanStack Start's route
+`head()`), so the tags are in the server's HTML; use `SL.seo.schema.*` to build the JSON-LD for it.
 
-`site.ready()` tells the platform's page renderer the page is complete, so it can snapshot the
-content for crawlers that don't run JavaScript. Without it, the renderer waits for the network to go
-quiet.
+`SL.site.ready()` is no longer needed: pages arrive finished from the server.
 
 ## Content that gets found
 

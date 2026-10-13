@@ -22,7 +22,7 @@ export {
 } from './iframeResponder'
 // Utility functions
 export * as utils from './utils'
-// Apps served as websites: per-route head tags + structured data, and the render-ready signal
+// Apps served as websites: per-route head tags + structured data, and the site a request renders
 export * as seo from './seo'
 export * as site from './site'
 // Headless providers: validate an app's `data` + `headless` declaration

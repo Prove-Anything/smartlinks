@@ -98,3 +98,16 @@ test('site.ready marks the page rendered', () => {
   site.ready()
   assert.equal((globalThis as any).__SL_READY__, true)
 })
+
+test('site.fromRequest reads the router header; current() reads the page; junk is null', () => {
+  const ctx = { host: 'acme.smartlinks.host', collectionId: 'c1', appId: 'acme', channel: 'stable', canonicalHost: 'www.acme.com' }
+  const req = new Request('https://acme.smartlinks.host/', { headers: { 'x-sl-site': JSON.stringify(ctx) } })
+  assert.deepEqual(site.fromRequest(req), ctx)
+  assert.deepEqual(site.fromRequest({ headers: { 'x-sl-site': JSON.stringify({ collectionId: 'c2', host: 'h' }) } }), { host: 'h', collectionId: 'c2', appId: '', channel: 'stable', canonicalHost: 'h' })
+  assert.equal(site.fromRequest(new Request('https://x/')), null)
+  assert.equal(site.fromRequest({ headers: { 'x-sl-site': '{bad' } }), null)
+  ;(globalThis as any).__SMARTLINKS_SITE__ = ctx
+  assert.deepEqual(site.current(), ctx)
+  delete (globalThis as any).__SMARTLINKS_SITE__
+  assert.equal(site.current(), null)
+})
