@@ -30,6 +30,9 @@ import type {
   SaveConnectorInstallationInput,
   ConnectorConsoleStep,
   FailedRecordList,
+  FlowHealth,
+  IntegrationHealth,
+  ProductLineage,
 } from "../types/integrations"
 
 function enc(v: string) { return encodeURIComponent(v) }
@@ -173,6 +176,28 @@ export namespace integrations {
   /** Retry failed / dead records now (all of them when `ids` is omitted). POST /integrations/flows/:id/failed/retry */
   export async function retryFailed(collectionId: string, flowId: string, ids?: string[]): Promise<{ retrying: number }> {
     return post<{ retrying: number }>(`${base(collectionId)}/${enc(flowId)}/failed/retry`, ids ? { ids } : {})
+  }
+
+  // --- Health + lineage ---------------------------------------------------------
+
+  /** Every flow at a glance: paused?, running?, last 24h, backlog. GET /integrations/health */
+  export async function getHealth(collectionId: string): Promise<IntegrationHealth> {
+    return request<IntegrationHealth>(`/admin/collection/${enc(collectionId)}/integrations/health`)
+  }
+
+  /** One flow's health. GET /integrations/flows/:id/health */
+  export async function getFlowHealth(collectionId: string, flowId: string): Promise<FlowHealth> {
+    return request<FlowHealth>(`${base(collectionId)}/${enc(flowId)}/health`)
+  }
+
+  /**
+   * Where a product's data came from (the provider record, when it was fetched and imported, by which
+   * run, with the current mapping or an older one) and where it went (each outbound flow's last
+   * delivery). `payload: true` includes the provider records as received.
+   * GET /integrations/lineage/product/:productId
+   */
+  export async function getProductLineage(collectionId: string, productId: string, opts: { payload?: boolean } = {}): Promise<ProductLineage> {
+    return request<ProductLineage>(`/admin/collection/${enc(collectionId)}/integrations/lineage/product/${enc(productId)}${opts.payload ? '?payload=1' : ''}`)
   }
 
   /** Resume a flow that paused itself (circuit open): held records go out now. POST /integrations/flows/:id/resume */

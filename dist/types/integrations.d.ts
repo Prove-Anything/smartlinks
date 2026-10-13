@@ -93,6 +93,103 @@ export interface FailedRecord {
     lastError?: string | null;
     updatedAt?: string;
 }
+/** How one flow is doing (GET /integrations/flows/:id/health). */
+export interface FlowHealth {
+    flowId: string;
+    name: string;
+    direction: FlowDirection;
+    status: FlowStatus;
+    /** Set while the flow has paused itself (its destination / provider keeps failing). */
+    paused: {
+        since: string;
+        nextCheckAt: string | null;
+        reason: string | null;
+    } | null;
+    /** The sweep in progress, if any (progress counts grow as it goes). */
+    running: {
+        runId: string;
+        startedAt: string;
+        heartbeatAt: string | null;
+        trigger: string;
+        progress: Record<string, number | string>;
+    } | null;
+    lastRun: {
+        at: string | null;
+        status: string | null;
+        error: string | null;
+    };
+    last24h: {
+        runs: number;
+        byStatus: Record<string, number>;
+        records: number;
+        /** Outbound: sent; inbound: created + updated. */
+        delivered: number;
+        failed: number;
+        /** failed / records, 0..1 */
+        failureRate: number;
+        avgRunMs: number | null;
+        recordsPerSecond: number | null;
+    };
+    /** Inbound: landed / waiting / oldestWaitingSince / retrying / retriesDue / gaveUp. Outbound: delivered / retrying / retriesDue / gaveUp. */
+    backlog: {
+        landed?: number;
+        waiting?: number;
+        oldestWaitingSince?: string | null;
+        delivered?: number;
+        retrying: number;
+        retriesDue: number;
+        gaveUp: number;
+    };
+}
+/** Every flow in the collection (GET /integrations/health). */
+export interface IntegrationHealth {
+    flows: FlowHealth[];
+    summary: {
+        flows: number;
+        active: number;
+        paused: number;
+        running: number;
+        failedLast24h: number;
+        gaveUp: number;
+    };
+}
+/** Where a product's data came from and where it went (GET /integrations/lineage/product/:id). */
+export interface ProductLineage {
+    productId: string;
+    sources: Array<{
+        /** 'connector:<appId>' or 'flow:<flowId>' */
+        source: string;
+        /** The provider's id for the record. */
+        externalId: string;
+        flow: {
+            id: string;
+            name: string;
+        };
+        fetchedAt: string;
+        processedAt: string | null;
+        processedRunId: string | null;
+        status: string;
+        lastError: string | null;
+        /** Written with the flow's current mapping and settings (false: an earlier version). */
+        currentMapping: boolean;
+        mapping: FieldMapping[];
+        /** The provider record as received (with `payload: true`). */
+        payload?: unknown;
+    }>;
+    deliveries: Array<{
+        flow: {
+            id: string;
+            name: string;
+        };
+        status: 'sent' | 'failed' | 'dead';
+        lastSentAt: string | null;
+        attempts: number;
+        nextAttemptAt: string | null;
+        lastError: string | null;
+        lastRunId: string | null;
+    }>;
+    recentRuns: FlowRun[];
+}
 export interface FailedRecordList {
     direction: FlowDirection;
     items: FailedRecord[];

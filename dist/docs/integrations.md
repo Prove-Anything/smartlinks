@@ -25,6 +25,12 @@ waits in `integrations.listFailed` for `integrations.retryFailed`. A destination
 **pauses the flow automatically** (`flow.circuitOpenedAt`): edits are held, small probes check for
 recovery, and it resumes on its own (or with `integrations.resumeFlow`).
 
+**Observability.** `integrations.getHealth` shows every flow at a glance (paused?, running?, last 24h,
+backlog); `getFlowHealth` one flow; `getProductLineage` where a product's data came from and where it
+went. Every run and every record is kept in BigQuery (`analytics.integration_runs`,
+`analytics.integration_run_items`); the API's run history is a 7-day window. Outbound sends carry
+`X-SmartLinks-Run` (the run) and an `Idempotency-Key` (same record, same content → same key).
+
 **Change capture.** Every product and record write is captured where it's saved, whatever made it (the
 admin, an import, a server function). A product change *wakes* each subscribed outbound flow, which then
 sweeps every product changed since its last sweep (deletions included). A burst of edits, such as a big

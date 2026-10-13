@@ -4417,6 +4417,65 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/integrations/health:
+    get:
+      tags:
+        - integrations
+      summary: "Every flow at a glance: paused?, running?, last 24h, backlog."
+      operationId: integrations_getHealth
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IntegrationHealth"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/integrations/lineage/product/{productId}:
+    get:
+      tags:
+        - integrations
+      summary: "Where a product's data came from (the provider record, when it was fetched and imported, by which run, with the current mapping or an older one) and where it went (each outbound flow's last delivery)."
+      operationId: integrations_getProductLineage
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductLineage"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/integrations/record-types:
     get:
       tags:
@@ -26345,6 +26404,169 @@ components:
         - id
         - status
         - attempts
+    FlowHealth:
+      type: object
+      properties:
+        flowId:
+          type: string
+        name:
+          type: string
+        direction:
+          $ref: "#/components/schemas/FlowDirection"
+        status:
+          $ref: "#/components/schemas/FlowStatus"
+        paused:
+          type: object
+          additionalProperties: true
+        running:
+          type: object
+          additionalProperties: true
+        lastRun:
+          type: object
+          additionalProperties: true
+        last24h:
+          type: object
+          additionalProperties: true
+        runs:
+          type: number
+        byStatus:
+          type: object
+          additionalProperties:
+            type: number
+        records:
+          type: number
+        delivered:
+          type: number
+        failed:
+          type: number
+        failureRate:
+          type: number
+        avgRunMs:
+          type: number
+        recordsPerSecond:
+          type: number
+        backlog:
+          type: object
+          additionalProperties: true
+        landed:
+          type: number
+        waiting:
+          type: number
+        oldestWaitingSince:
+          type: string
+        retrying:
+          type: number
+        retriesDue:
+          type: number
+        gaveUp:
+          type: number
+      required:
+        - flowId
+        - name
+        - direction
+        - status
+        - paused
+        - running
+        - lastRun
+        - last24h
+        - runs
+        - byStatus
+        - records
+        - delivered
+        - failed
+        - failureRate
+        - avgRunMs
+        - recordsPerSecond
+        - backlog
+        - retrying
+        - retriesDue
+        - gaveUp
+    IntegrationHealth:
+      type: object
+      properties:
+        flows:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlowHealth"
+        summary:
+          type: object
+          additionalProperties: true
+      required:
+        - flows
+        - summary
+    ProductLineage:
+      type: object
+      properties:
+        productId:
+          type: string
+        sources:
+          type: object
+          additionalProperties: true
+        source:
+          type: string
+        externalId:
+          type: string
+        flow:
+          type: object
+          additionalProperties: true
+        fetchedAt:
+          type: string
+        processedAt:
+          type: string
+        processedRunId:
+          type: string
+        status:
+          type: string
+          enum:
+            - sent
+            - failed
+            - dead
+        lastError:
+          type: string
+        currentMapping:
+          type: boolean
+        mapping:
+          type: array
+          items:
+            $ref: "#/components/schemas/FieldMapping"
+        payload: {}
+        deliveries:
+          type: object
+          additionalProperties: true
+        lastSentAt:
+          type: string
+        attempts:
+          type: number
+        nextAttemptAt:
+          type: string
+        lastRunId:
+          type: string
+        recentRuns:
+          type: array
+          items:
+            $ref: "#/components/schemas/FlowRun"
+      required:
+        - productId
+        - sources
+        - source
+        - externalId
+        - flow
+        - fetchedAt
+        - processedAt
+        - processedRunId
+        - status
+        - lastError
+        - currentMapping
+        - mapping
+        - deliveries
+        - flow
+        - status
+        - lastSentAt
+        - attempts
+        - nextAttemptAt
+        - lastError
+        - lastRunId
+        - recentRuns
     FailedRecordList:
       type: object
       properties:

@@ -1,4 +1,4 @@
-import type { IntegrationFlow, CreateFlowInput, UpdateFlowInput, ListFlowsQuery, FlowList, RunFlowInput, RunFlowResult, RunFlowSummary, RunFlowEnqueued, RecordTypesResponse, FlowRun, ListRunsQuery, RunList, ListRunItemsQuery, RunItemList, LoggingWindow, SetLoggingInput, InstalledConnector, SaveConnectorInstallationInput, ConnectorConsoleStep, FailedRecordList } from "../types/integrations.js";
+import type { IntegrationFlow, CreateFlowInput, UpdateFlowInput, ListFlowsQuery, FlowList, RunFlowInput, RunFlowResult, RunFlowSummary, RunFlowEnqueued, RecordTypesResponse, FlowRun, ListRunsQuery, RunList, ListRunItemsQuery, RunItemList, LoggingWindow, SetLoggingInput, InstalledConnector, SaveConnectorInstallationInput, ConnectorConsoleStep, FailedRecordList, FlowHealth, IntegrationHealth, ProductLineage } from "../types/integrations.js";
 export declare namespace integrations {
     /** List flows in a collection. GET /integrations/flows */
     function listFlows(collectionId: string, query?: ListFlowsQuery): Promise<FlowList>;
@@ -63,6 +63,19 @@ export declare namespace integrations {
     function retryFailed(collectionId: string, flowId: string, ids?: string[]): Promise<{
         retrying: number;
     }>;
+    /** Every flow at a glance: paused?, running?, last 24h, backlog. GET /integrations/health */
+    function getHealth(collectionId: string): Promise<IntegrationHealth>;
+    /** One flow's health. GET /integrations/flows/:id/health */
+    function getFlowHealth(collectionId: string, flowId: string): Promise<FlowHealth>;
+    /**
+     * Where a product's data came from (the provider record, when it was fetched and imported, by which
+     * run, with the current mapping or an older one) and where it went (each outbound flow's last
+     * delivery). `payload: true` includes the provider records as received.
+     * GET /integrations/lineage/product/:productId
+     */
+    function getProductLineage(collectionId: string, productId: string, opts?: {
+        payload?: boolean;
+    }): Promise<ProductLineage>;
     /** Resume a flow that paused itself (circuit open): held records go out now. POST /integrations/flows/:id/resume */
     function resumeFlow(collectionId: string, flowId: string): Promise<{
         resumed: boolean;

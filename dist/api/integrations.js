@@ -143,6 +143,27 @@ export var integrations;
         return post(`${base(collectionId)}/${enc(flowId)}/failed/retry`, ids ? { ids } : {});
     }
     integrations.retryFailed = retryFailed;
+    // --- Health + lineage ---------------------------------------------------------
+    /** Every flow at a glance: paused?, running?, last 24h, backlog. GET /integrations/health */
+    async function getHealth(collectionId) {
+        return request(`/admin/collection/${enc(collectionId)}/integrations/health`);
+    }
+    integrations.getHealth = getHealth;
+    /** One flow's health. GET /integrations/flows/:id/health */
+    async function getFlowHealth(collectionId, flowId) {
+        return request(`${base(collectionId)}/${enc(flowId)}/health`);
+    }
+    integrations.getFlowHealth = getFlowHealth;
+    /**
+     * Where a product's data came from (the provider record, when it was fetched and imported, by which
+     * run, with the current mapping or an older one) and where it went (each outbound flow's last
+     * delivery). `payload: true` includes the provider records as received.
+     * GET /integrations/lineage/product/:productId
+     */
+    async function getProductLineage(collectionId, productId, opts = {}) {
+        return request(`/admin/collection/${enc(collectionId)}/integrations/lineage/product/${enc(productId)}${opts.payload ? '?payload=1' : ''}`);
+    }
+    integrations.getProductLineage = getProductLineage;
     /** Resume a flow that paused itself (circuit open): held records go out now. POST /integrations/flows/:id/resume */
     async function resumeFlow(collectionId, flowId) {
         return post(`${base(collectionId)}/${enc(flowId)}/resume`, {});

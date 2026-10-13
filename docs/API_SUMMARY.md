@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.60  |  Generated: 2026-10-13T16:19:13.426Z
+Version: 2.0.61  |  Generated: 2026-10-13T16:56:20.822Z
 
 This is a concise summary of all available API functions and types.
 
@@ -7138,6 +7138,76 @@ interface FailedRecord {
 }
 ```
 
+**FlowHealth** (interface)
+```typescript
+interface FlowHealth {
+  flowId: string
+  name: string
+  direction: FlowDirection
+  status: FlowStatus
+  paused: { since: string; nextCheckAt: string | null; reason: string | null } | null
+  running: { runId: string; startedAt: string; heartbeatAt: string | null; trigger: string; progress: Record<string, number | string> } | null
+  lastRun: { at: string | null; status: string | null; error: string | null }
+  last24h: {
+  runs: number
+  byStatus: Record<string, number>
+  records: number
+  delivered: number
+  failed: number
+  failureRate: number
+  avgRunMs: number | null
+  recordsPerSecond: number | null
+  }
+  backlog: {
+  landed?: number
+  waiting?: number
+  oldestWaitingSince?: string | null
+  delivered?: number
+  retrying: number
+  retriesDue: number
+  gaveUp: number
+  }
+}
+```
+
+**IntegrationHealth** (interface)
+```typescript
+interface IntegrationHealth {
+  flows: FlowHealth[]
+  summary: { flows: number; active: number; paused: number; running: number; failedLast24h: number; gaveUp: number }
+}
+```
+
+**ProductLineage** (interface)
+```typescript
+interface ProductLineage {
+  productId: string
+  sources: Array<{
+  source: string
+  externalId: string
+  flow: { id: string; name: string }
+  fetchedAt: string
+  processedAt: string | null
+  processedRunId: string | null
+  status: string
+  lastError: string | null
+  currentMapping: boolean
+  mapping: FieldMapping[]
+  payload?: unknown
+  }>
+  deliveries: Array<{
+  flow: { id: string; name: string }
+  status: 'sent' | 'failed' | 'dead'
+  lastSentAt: string | null
+  attempts: number
+  nextAttemptAt: string | null
+  lastError: string | null
+  lastRunId: string | null
+  }>
+  recentRuns: FlowRun[]
+}
+```
+
 **FailedRecordList** (interface)
 ```typescript
 interface FailedRecordList {
@@ -11748,6 +11818,15 @@ A flow's failed / dead records. GET /integrations/flows/:id/failed
 
 **retryFailed**(collectionId: string, flowId: string, ids?: string[]) → `Promise<`
 Retry failed / dead records now (all of them when `ids` is omitted). POST /integrations/flows/:id/failed/retry
+
+**getHealth**(collectionId: string) → `Promise<IntegrationHealth>`
+Every flow at a glance: paused?, running?, last 24h, backlog. GET /integrations/health
+
+**getFlowHealth**(collectionId: string, flowId: string) → `Promise<FlowHealth>`
+One flow's health. GET /integrations/flows/:id/health
+
+**getProductLineage**(collectionId: string, productId: string, opts: { payload?: boolean } = {}) → `Promise<ProductLineage>`
+Where a product's data came from (the provider record, when it was fetched and imported, by which run, with the current mapping or an older one) and where it went (each outbound flow's last delivery). `payload: true` includes the provider records as received. GET /integrations/lineage/product/:productId
 
 **resumeFlow**(collectionId: string, flowId: string) → `Promise<`
 Resume a flow that paused itself (circuit open): held records go out now. POST /integrations/flows/:id/resume
