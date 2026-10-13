@@ -27,6 +27,10 @@ export * as seo from './seo'
 export * as site from './site'
 // Headless providers: validate an app's `data` + `headless` declaration
 export * as headless from './headless'
+// Admin cards: the shared renderer (bind it to your React) and the payload trimmer — docs/admin-cards.md
+export { createAdminCardViews, collectAdminCardTodo, adminCardAge, injectAdminCardStyles, ADMIN_CARD_CSS } from './adminCardsView'
+export type { AdminCardViewProps, AdminCardTodoItem } from './adminCardsView'
+export { normaliseAdminCardPayload, ADMIN_CARD_MAX_BYTES } from './adminCardPayload'
 // Shared dependency contract (host↔app) — one source of truth for externalized deps
 export {
   SHARED_DEPENDENCY_CONTRACT_VERSION,

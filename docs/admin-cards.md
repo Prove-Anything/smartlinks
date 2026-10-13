@@ -146,6 +146,26 @@ realtime.onChange({ collectionId }, { type: 'cards' }, () => reload())  // a car
 await adminCards.refresh(collectionId, 'faq', 'unanswered')             // the card's refresh button
 ```
 
+Draw them with the SDK's renderer, so every host (Studio, Forge's preview) shows a card the same
+way. Pass your React in; the SDK doesn't bundle React:
+
+```tsx
+import React from 'react'
+import { createAdminCardViews } from '@proveanything/smartlinks'
+const { AdminCardView, AdminCardGrid, AdminCardTodo } = createAdminCardViews(React)
+
+<AdminCardTodo cards={cards} onAction={open} />
+<AdminCardGrid>
+  {cards.map((c) => <AdminCardView key={c.key} card={c} onAction={open} onRefresh={refresh} />)}
+</AdminCardGrid>
+```
+
+`onAction(action, card)`: `action.path` opens the card's app admin at that path; `action.url` opens a
+link. Colours follow the SDK theme tokens (`--sl-color-*`); override with `--slc-bg`, `--slc-fg`,
+`--slc-muted`, `--slc-border`, `--slc-accent`, `--slc-ok`, `--slc-attention`, `--slc-error`,
+`--slc-radius`. `normaliseAdminCardPayload(raw)` trims a raw function result exactly as the server
+does (for previews).
+
 Each card has `state`: `fresh`, `stale` (last payload, a newer one is coming), `pending` (first
 computation still running) or `error` (last attempt failed; `payload` is the last good one).
 

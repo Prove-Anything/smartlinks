@@ -20,6 +20,9 @@ import * as site_1 from './site.js';
 export { site_1 as site };
 import * as headless_1 from './headless.js';
 export { headless_1 as headless };
+// Admin cards: the shared renderer (bind it to your React) and the payload trimmer — docs/admin-cards.md
+export { createAdminCardViews, collectAdminCardTodo, adminCardAge, injectAdminCardStyles, ADMIN_CARD_CSS } from './adminCardsView.js';
+export { normaliseAdminCardPayload, ADMIN_CARD_MAX_BYTES } from './adminCardPayload.js';
 // Shared dependency contract (host↔app) — one source of truth for externalized deps
 export { SHARED_DEPENDENCY_CONTRACT_VERSION, SHARED_DEPENDENCIES, SHARED_DEPENDENCY_SPECIFIERS, importMapPathFor, getHostSharedDependencies, } from './shared-dependencies.js';
 // Built-in AI tool catalog (design-time discovery of the core agentic toolset)
