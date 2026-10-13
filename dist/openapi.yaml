@@ -15533,6 +15533,212 @@ components:
       name: X-API-Key
       description: API key for server-to-server calls
   schemas:
+    AdminCardRefresh:
+      type: object
+      properties:
+        on:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCardRefreshOn"
+        maxAge:
+          type: object
+          additionalProperties: true
+    AdminCardDeclaration:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        kind:
+          type: string
+          enum:
+            - data
+            - component
+        function:
+          type: string
+        component:
+          type: string
+        sizes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCardSize"
+        priority:
+          type: number
+        levels:
+          type: array
+          items:
+            type: string
+            enum:
+              - collection
+        refresh:
+          $ref: "#/components/schemas/AdminCardRefresh"
+      required:
+        - id
+        - title
+    AppManifestAdminCards:
+      type: object
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCardDeclaration"
+        files:
+          type: object
+          additionalProperties: true
+        js:
+          type: object
+          additionalProperties: true
+        css:
+          type: string
+      required:
+        - cards
+        - js
+    AdminCardAction:
+      type: object
+      properties:
+        label:
+          type: string
+        path:
+          type: string
+        url:
+          type: string
+      required:
+        - label
+    AdminCardPayload:
+      type: object
+      properties:
+        title:
+          type: string
+        value:
+          type: object
+          additionalProperties: true
+        label:
+          type: string
+        unit:
+          type: string
+        trend:
+          type: object
+          additionalProperties: true
+        status:
+          type: object
+          additionalProperties: true
+        progress:
+          type: object
+          additionalProperties: true
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        todo:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCardAction"
+        empty:
+          type: object
+          additionalProperties: true
+    AdminCard:
+      type: object
+      properties:
+        key:
+          type: string
+        appId:
+          type: string
+        cardId:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        kind:
+          type: string
+          enum:
+            - data
+            - component
+        sizes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCardSize"
+        size:
+          $ref: "#/components/schemas/AdminCardSize"
+        priority:
+          type: number
+        state:
+          $ref: "#/components/schemas/AdminCardState"
+        payload:
+          $ref: "#/components/schemas/AdminCardPayload"
+        computedAt:
+          type: number
+        error:
+          type: string
+        component:
+          type: object
+          additionalProperties: true
+      required:
+        - key
+        - appId
+        - cardId
+        - title
+        - kind
+        - sizes
+        - size
+        - priority
+        - state
+        - payload
+        - computedAt
+    StudioHomeLayout:
+      type: object
+      properties:
+        version:
+          type: object
+          additionalProperties: true
+        cards:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - version
+        - cards
+    AdminCardsResponse:
+      type: object
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCard"
+        hidden:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminCard"
+        layout:
+          $ref: "#/components/schemas/StudioHomeLayout"
+      required:
+        - cards
+        - hidden
+        - layout
+    AdminCardSize:
+      type: string
+      enum:
+        - small
+        - medium
+        - wide
+        - full
+    AdminCardRefreshOn:
+      type: object
+      additionalProperties: true
+    AdminCardState:
+      type: string
+      enum:
+        - fresh
     ContentPart:
       type: object
       properties:
@@ -19707,6 +19913,8 @@ components:
         realtime:
           type: object
           additionalProperties: true
+        adminCards:
+          $ref: "#/components/schemas/AppManifestAdminCards"
         data:
           $ref: "#/components/schemas/AppDataDeclaration"
         headless:

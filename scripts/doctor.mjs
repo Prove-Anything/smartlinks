@@ -338,6 +338,54 @@ if (meta.respectsHostTheme) {
   }
 }
 
+// ---- admin cards: declared right, cached, and backed by an admin function ---------------------
+// docs/admin-cards.md. A data card with no function (or a public one) can't load; a card with no
+// refresh rule falls back to a 6h maxAge, which is rarely what's wanted.
+if (manifest.adminCards) {
+  const cards = Array.isArray(manifest.adminCards.cards) ? manifest.adminCards.cards : [];
+  const fns = new Map(((manifest.functions && manifest.functions.definitions) || []).map((f) => [f && f.name, f]));
+  const SIZES = new Set(['small', 'medium', 'wide', 'full']);
+  const ON = /^(records(:[A-Za-z0-9._-]{1,60})?|products|proofs|assets|apps|collection|settings(:[A-Za-z0-9._-]{1,60})?)$/;
+  const cardProblems = [];
+  const before = warnings.length;
+  const seen = new Set();
+  if (!cards.length) warnings.push('adminCards is declared but has no cards.');
+  for (const c of cards) {
+    const id = c && typeof c.id === 'string' ? c.id : '';
+    const label = `admin card "${id || '?'}"`;
+    if (!/^[A-Za-z0-9_-]{1,40}$/.test(id)) { cardProblems.push(`${label}: id must be 1–40 letters, digits, "-" or "_".`); continue; }
+    if (seen.has(id)) cardProblems.push(`${label}: declared twice.`);
+    seen.add(id);
+    if (!c.title) warnings.push(`${label}: has no title.`);
+    const kind = c.kind || 'data';
+    if (kind !== 'data' && kind !== 'component') cardProblems.push(`${label}: kind must be "data" or "component".`);
+    if (kind === 'data' && !c.function) cardProblems.push(`${label}: a data card needs a "function" (an admin server function returning its payload).`);
+    if (c.function) {
+      const fn = fns.get(c.function);
+      if (!fn) cardProblems.push(`${label}: function "${c.function}" isn't in functions.definitions.`);
+      else if ((fn.trigger && fn.trigger.type) !== 'http') cardProblems.push(`${label}: function "${c.function}" must be an http function.`);
+      else if ((fn.visibility || 'admin') !== 'admin') cardProblems.push(`${label}: function "${c.function}" must have visibility "admin" — card data is for the collection's admins.`);
+    }
+    if (kind === 'component') {
+      if (!c.component) cardProblems.push(`${label}: a component card needs "component" (the export name in the adminCards bundle).`);
+      if (!manifest.adminCards.files || !manifest.adminCards.files.js) cardProblems.push(`${label}: component cards need adminCards.files (the adminCards bundle).`);
+      if (!c.function) warnings.push(`${label}: give the component a "function" too — it then gets cached data as a prop instead of fetching on every dashboard load.`);
+    }
+    for (const s of c.sizes || []) if (!SIZES.has(s)) cardProblems.push(`${label}: unknown size "${s}" (small, medium, wide, full).`);
+    const refresh = c.refresh || {};
+    for (const on of refresh.on || []) if (!ON.test(String(on))) cardProblems.push(`${label}: refresh.on "${on}" isn't a change kind (records, records:<type>, products, proofs, assets, apps, collection, settings, settings:<group>).`);
+    if (!(refresh.on || []).length && refresh.maxAge == null) {
+      warnings.push(`${label}: no refresh rule — it's recomputed every 6h. Add refresh.on (what its data depends on, e.g. "records:question") so it updates when that changes and never otherwise.`);
+    }
+  }
+  for (const msg of cardProblems) problems.push({ surface: 'adminCards', spec: null, msg });
+  if (cardProblems.length) {
+    console.log(`${RED}✗${RESET} admin cards`);
+    for (const msg of cardProblems) console.log(`    ${RED}${msg}${RESET}`);
+  } else if (warnings.length === before) console.log(`${GREEN}✓${RESET} admin cards ${DIM}— ${cards.length} card${cards.length === 1 ? '' : 's'}, each backed and cached${RESET}`);
+  else console.log(`${YELLOW}⚠${RESET} admin cards — see below`);
+}
+
 // ---- package.json scripts point at files that exist ------------------------------------------
 // An upgrade that copies a script LINE but not the script FILE breaks every build at that step
 // (e.g. `postbuild: node scripts/smartlinks-deploy.mjs` with no scripts/smartlinks-deploy.mjs).
@@ -366,8 +414,13 @@ console.log('');
 for (const w of warnings) console.log(`${YELLOW}⚠ ${w}${RESET}`);
 
 if (problems.length) {
-  console.log(`\n${RED}${BOLD}FAIL${RESET} — ${problems.length} problem${problems.length === 1 ? '' : 's'} outside the shared-dependency contract.`);
-  console.log(`${DIM}Externalize only the ${CONTRACT.size} contract specifiers (import { SHARED_DEPENDENCY_SPECIFIERS } from '@proveanything/smartlinks'); bundle everything else.${RESET}`);
+  const contractProblems = problems.filter((p) => p.surface !== 'adminCards').length;
+  const cardCount = problems.length - contractProblems;
+  if (contractProblems) {
+    console.log(`\n${RED}${BOLD}FAIL${RESET} — ${contractProblems} problem${contractProblems === 1 ? '' : 's'} outside the shared-dependency contract.`);
+    console.log(`${DIM}Externalize only the ${CONTRACT.size} contract specifiers (import { SHARED_DEPENDENCY_SPECIFIERS } from '@proveanything/smartlinks'); bundle everything else.${RESET}`);
+  }
+  if (cardCount) console.log(`\n${RED}${BOLD}FAIL${RESET} — ${cardCount} admin card problem${cardCount === 1 ? '' : 's'} (docs/admin-cards.md).`);
   process.exit(1);
 }
 

@@ -1,5 +1,6 @@
 import type { AppDataDeclaration, AppHeadlessDeclaration } from './headless'
 import type { RealtimeChannelDeclaration } from './realtime'
+import type { AppManifestAdminCards } from './adminCards'
 // src/types/appManifest.ts
 
 /**
@@ -849,6 +850,20 @@ export interface AppManifest {
    * ```
    */
   realtime?: { channels: RealtimeChannelDeclaration[] };
+
+  /**
+   * Cards this app adds to the collection's dashboard in Studio. A `data` card names an ADMIN server
+   * function returning an `AdminCardPayload`; Studio draws it, from a cache, recomputing only when
+   * something in `refresh.on` changed. @see AdminCardDeclaration · docs/admin-cards.md
+   *
+   * ```json
+   * "adminCards": { "cards": [
+   *   { "id": "unanswered", "title": "FAQ", "function": "cardUnanswered", "sizes": ["small", "medium"],
+   *     "refresh": { "on": ["records:question"], "maxAge": "1d" } }
+   * ] }
+   * ```
+   */
+  adminCards?: AppManifestAdminCards;
 
   /**
    * The app's public data model: its data types, how each is stored, fields, examples and read

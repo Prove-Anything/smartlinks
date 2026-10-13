@@ -28,6 +28,7 @@ If you're new to the SDK, this is the easiest path:
 - [docs/translations.md](docs/translations.md) — runtime translation lookup, browser-side caching, and translation admin flows
 - [docs/widgets.md](docs/widgets.md) — embeddable React components
 - [docs/realtime.md](docs/realtime.md) — subscriptions and live updates
+- [docs/admin-cards.md](docs/admin-cards.md) — cards on the collection's Studio dashboard
 - [docs/iframe-responder.md](docs/iframe-responder.md) — iframe integration and parent/child messaging
 - [docs/utils.md](docs/utils.md) — helper utilities and portal path generation
 

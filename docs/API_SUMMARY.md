@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.61  |  Generated: 2026-10-13T16:56:20.822Z
+Version: 2.0.62  |  Generated: 2026-10-13T19:54:40.518Z
 
 This is a concise summary of all available API functions and types.
 
@@ -135,6 +135,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **serialNumber** - Assign, lookup, and manage serial numbers across scopes.
 
 — Other —
+- **adminCards** - Functions for adminCards operations
 - **analytics** - Functions for analytics operations
 - **async** - Functions for async operations
 - **attestation** - Functions for attestation operations
@@ -473,6 +474,112 @@ Examples include:
 *Note: Server error codes use either `UPPERCASE_UNDERSCORE` or `dotted.notation` format. Both are supported.*
 
 ## Types
+
+### adminCards
+
+**AdminCardRefresh** (interface)
+```typescript
+interface AdminCardRefresh {
+  on?: AdminCardRefreshOn[]
+  maxAge?: number | string
+}
+```
+
+**AdminCardDeclaration** (interface)
+```typescript
+interface AdminCardDeclaration {
+  id: string
+  title: string
+  description?: string
+  kind?: 'data' | 'component'
+  function?: string
+  component?: string
+  sizes?: AdminCardSize[]
+  priority?: number
+  levels?: Array<'collection'>
+  refresh?: AdminCardRefresh
+}
+```
+
+**AppManifestAdminCards** (interface)
+```typescript
+interface AppManifestAdminCards {
+  cards: AdminCardDeclaration[]
+  files?: {
+  js: { umd: string; esm?: string }
+  css?: string
+  }
+}
+```
+
+**AdminCardAction** (interface)
+```typescript
+interface AdminCardAction {
+  label: string
+  path?: string
+  url?: string
+}
+```
+
+**AdminCardPayload** (interface)
+```typescript
+interface AdminCardPayload {
+  title?: string
+  value?: number | string
+  label?: string
+  unit?: string
+  trend?: { direction: 'up' | 'down' | 'flat'; label?: string; good?: boolean }
+  status?: { tone: 'ok' | 'attention' | 'neutral' | 'error'; text: string }
+  progress?: { done: number; total: number; label?: string }
+  items?: Array<{ title: string; subtitle?: string; meta?: string; path?: string }>
+  todo?: Array<{ text: string; action?: AdminCardAction }>
+  actions?: AdminCardAction[]
+  empty?: { text: string; action?: AdminCardAction }
+}
+```
+
+**AdminCard** (interface)
+```typescript
+interface AdminCard {
+  key: string
+  appId: string
+  cardId: string
+  title: string
+  description?: string
+  kind: 'data' | 'component'
+  sizes: AdminCardSize[]
+  size: AdminCardSize
+  priority: number
+  state: AdminCardState
+  payload: AdminCardPayload | null
+  computedAt: number | null
+  error?: string
+  component?: { name: string; files: NonNullable<AppManifestAdminCards['files']> }
+}
+```
+
+**StudioHomeLayout** (interface)
+```typescript
+interface StudioHomeLayout {
+  version: 1
+  cards: Array<{ key: string; size?: AdminCardSize; hidden?: boolean }>
+}
+```
+
+**AdminCardsResponse** (interface)
+```typescript
+interface AdminCardsResponse {
+  cards: AdminCard[]
+  hidden: AdminCard[]
+  layout: StudioHomeLayout | null
+}
+```
+
+**AdminCardSize** = `'small' | 'medium' | 'wide' | 'full'`
+
+**AdminCardRefreshOn** = ``
+
+**AdminCardState** = ``
 
 ### ai
 
@@ -2852,6 +2959,7 @@ interface AppManifest {
   executor?: AppManifestExecutor;
   functions?: AppManifestFunctions;
   realtime?: { channels: RealtimeChannelDeclaration[] };
+  adminCards?: AppManifestAdminCards;
   data?: AppDataDeclaration;
   headless?: AppHeadlessDeclaration;
   connector?: AppConnectorDeclaration;
@@ -10389,6 +10497,17 @@ interface Gs1DigitalLinkParams {
 ```
 
 ## API Functions
+
+### adminCards
+
+**list**(collectionId: string) → `Promise<AdminCardsResponse>`
+The collection's dashboard: every card, in display order, with its cached payload and how fresh it is (`state`). Never waits on slow cards — those come back `stale` / `pending` and arrive later as a realtime `cards` change.
+
+**refresh**(collectionId: string, appId: string, cardId: string) → `Promise<AdminCard>`
+Recompute one card now (the card's "refresh" button). Rate-limited per card.
+
+**saveLayout**(collectionId: string, layout: StudioHomeLayout) → `Promise<StudioHomeLayout>`
+Save the collection's dashboard layout (order, sizes, hidden cards) — every admin sees it.
 
 ### agent
 

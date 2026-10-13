@@ -27,6 +27,7 @@ export * from "./analytics.js";
 export * from "./location.js";
 export * from "./jobs.js";
 export * from "./realtime.js";
+export * from "./adminCards.js";
 export * from "./tags.js";
 export * from "./navigation.js";
 export * from "./order.js";

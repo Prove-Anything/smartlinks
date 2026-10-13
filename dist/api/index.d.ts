@@ -30,6 +30,7 @@ export { analytics } from "./analytics.js";
 export { functions } from "./functions.js";
 export { location } from "./location.js";
 export * as realtime from "./realtime.js";
+export { adminCards } from "./adminCards.js";
 export { tags } from "./tags.js";
 export { order } from "./order.js";
 export { app } from "./appObjects.js";
