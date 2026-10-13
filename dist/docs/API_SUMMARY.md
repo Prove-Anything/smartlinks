@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.57  |  Generated: 2026-10-13T10:48:18.308Z
+Version: 2.0.58  |  Generated: 2026-10-13T14:02:27.401Z
 
 This is a concise summary of all available API functions and types.
 
@@ -65,7 +65,7 @@ For detailed guides on specific features:
 - **[Analytics Metadata Conventions](analytics-metadata-conventions.md)** - Standard recommended keys and conventions for analytics metadata fields
 - **[Loyalty: Points, Members & Earning Rules](loyalty.md)** - Loyalty schemes, automatic point earning via interaction rules, member balances, transaction history, and manual adjustments
 - **[Integrations](integrations.md)** - Inbound/outbound integration flows + the sealed-secret store; triggers (manual/event/schedule), field mappings, and the Syndigo/Event Hub outbound path
-- **[Connectors](connectors.md)** - Connector apps: a manifest `connector` block + server functions (testConnection/describeTarget/sample/transform/send/fetch) that the integration engine and console call for one external provider
+- **[Connectors](connectors.md)** - Connector apps (adapters for one external provider): a manifest `connector` block + server functions (testConnection/describeTarget/sample/fetch/shape/serialize/send); core does the mapping
 - **[AI Tools & Skills](ai-tools-and-skills.md)** - The AI capability catalog: skills apps invoke by name (e.g. research.brand), the tools the AI reaches for (web fetch/screenshot/brand assets/image gen), the agent loop, and how apps discover them
 - **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration
 - **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide
@@ -2908,7 +2908,8 @@ interface AppConnectorDeclaration {
   testConnection?: string
   describeTarget?: string
   sample?: string
-  transform?: string
+  shape?: string
+  serialize?: string
   send?: string
   fetch?: string
   }
@@ -2963,18 +2964,34 @@ interface ConnectorRecords {
 }
 ```
 
-**ConnectorTransformInput** (interface)
+**ConnectorShapeInput** (interface)
 ```typescript
-interface ConnectorTransformInput {
+interface ConnectorShapeInput {
   installation: ConnectorInstallation
   records: Array<Record<string, unknown>>
-  mapping: FieldMapping[]
 }
 ```
 
-**ConnectorTransformResult** (interface)
+**ConnectorShapeResult** (interface)
 ```typescript
-interface ConnectorTransformResult {
+interface ConnectorShapeResult {
+  documents: Array<Record<string, unknown> | null>
+  skipped?: Array<{ index: number; reason: string }>
+}
+```
+
+**ConnectorSerializeInput** (interface)
+```typescript
+interface ConnectorSerializeInput {
+  installation: ConnectorInstallation
+  documents: Array<Record<string, unknown>>
+  eventType?: string
+}
+```
+
+**ConnectorSerializeResult** (interface)
+```typescript
+interface ConnectorSerializeResult {
   payloads: Array<unknown | null>
   skipped?: Array<{ index: number; reason: string }>
 }
@@ -7374,7 +7391,7 @@ interface RecordTypesResponse {
 
 **UpdateFlowInput** = `Partial<Omit<CreateFlowInput, 'direction'>> & {`
 
-**ConnectorConsoleStep** = `'testConnection' | 'describeTarget' | 'sample' | 'transform'`
+**ConnectorConsoleStep** = `'testConnection' | 'describeTarget' | 'sample' | 'shape' | 'serialize'`
 
 **RunTrigger** = `'manual' | 'event' | 'schedule' | 'test'`
 
@@ -11702,7 +11719,7 @@ Save a connector's non-secret Connect-form values and/or settings. PUT /integrat
     appId: string,
     step: ConnectorConsoleStep,
     input: Record<string, unknown> & { flowId?: string } = {}) → `Promise<T>`
-Run a connector step from the console: `testConnection` → ConnectorTestResult, `describeTarget` → ConnectorTargetSchema, `sample` → ConnectorRecords, `transform` (a dry run) → ConnectorTransformResult. The server adds the installation; pass `flowId` to layer that flow's settings. POST /integrations/connectors/:appId/steps/:step
+Run a connector step from the console: `testConnection` → ConnectorTestResult, `describeTarget` → ConnectorTargetSchema, `sample` → ConnectorRecords, and dry runs of `shape` ({ records }) → ConnectorShapeResult and `serialize` ({ documents }) → ConnectorSerializeResult. The server adds the installation; pass `flowId` to layer that flow's settings. POST /integrations/connectors/:appId/steps/:step
 
 ### interactions
 

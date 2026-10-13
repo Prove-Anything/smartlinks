@@ -440,7 +440,7 @@ this is just the manifest shape.
 
 Marks the app as an integration **connector** for one external provider: the integrations console
 lists it and draws its connect form and settings, and the integration engine calls its server
-functions (`testConnection`, `describeTarget`, `sample`, `transform`, `send`, `fetch`). The full
+functions (`testConnection`, `describeTarget`, `sample`, `fetch`, `shape`, `serialize`, `send`). It adapts the provider's format; core does each customer's mapping. The full
 contract is in the **[Connectors guide](connectors.md)**.
 
 ---

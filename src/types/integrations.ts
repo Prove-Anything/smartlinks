@@ -167,8 +167,8 @@ export interface SaveConnectorInstallationInput {
   settings?: Record<string, unknown>
 }
 
-/** Steps the console may run directly (send and fetch only run inside a flow). */
-export type ConnectorConsoleStep = 'testConnection' | 'describeTarget' | 'sample' | 'transform'
+/** Steps the console may run directly (send and fetch only run inside a flow; shape/serialize as dry runs). */
+export type ConnectorConsoleStep = 'testConnection' | 'describeTarget' | 'sample' | 'shape' | 'serialize'
 
 // ---------------------------------------------------------------------------
 // Run logs — persisted history of automated + manual runs, with opt-in, redacted

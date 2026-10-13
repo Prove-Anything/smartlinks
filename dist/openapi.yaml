@@ -19766,7 +19766,9 @@ components:
           type: string
         sample:
           type: string
-        transform:
+        shape:
+          type: string
+        serialize:
           type: string
         send:
           type: string
@@ -19860,7 +19862,7 @@ components:
           type: string
       required:
         - records
-    ConnectorTransformInput:
+    ConnectorShapeInput:
       type: object
       properties:
         installation:
@@ -19870,15 +19872,40 @@ components:
           items:
             type: object
             additionalProperties: true
-        mapping:
-          type: array
-          items:
-            $ref: "#/components/schemas/FieldMapping"
       required:
         - installation
         - records
-        - mapping
-    ConnectorTransformResult:
+    ConnectorShapeResult:
+      type: object
+      properties:
+        documents:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        skipped:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - documents
+    ConnectorSerializeInput:
+      type: object
+      properties:
+        installation:
+          $ref: "#/components/schemas/ConnectorInstallation"
+        documents:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        eventType:
+          type: string
+      required:
+        - installation
+        - documents
+    ConnectorSerializeResult:
       type: object
       properties:
         payloads:
@@ -26734,7 +26761,8 @@ components:
         - testConnection
         - describeTarget
         - sample
-        - transform
+        - shape
+        - serialize
     RunTrigger:
       type: string
       enum:

@@ -141,8 +141,8 @@ export interface SaveConnectorInstallationInput {
     connection?: Record<string, unknown>;
     settings?: Record<string, unknown>;
 }
-/** Steps the console may run directly (send and fetch only run inside a flow). */
-export type ConnectorConsoleStep = 'testConnection' | 'describeTarget' | 'sample' | 'transform';
+/** Steps the console may run directly (send and fetch only run inside a flow; shape/serialize as dry runs). */
+export type ConnectorConsoleStep = 'testConnection' | 'describeTarget' | 'sample' | 'shape' | 'serialize';
 export type RunTrigger = 'manual' | 'event' | 'schedule' | 'test';
 export type FlowRunStatus = 'running' | 'success' | 'partial' | 'failed' | 'skipped';
 export type FlowRunItemStatus = 'sent' | 'failed' | 'skipped';

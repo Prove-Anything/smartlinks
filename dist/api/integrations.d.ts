@@ -70,7 +70,8 @@ export declare namespace integrations {
     }>;
     /**
      * Run a connector step from the console: `testConnection` → ConnectorTestResult, `describeTarget` →
-     * ConnectorTargetSchema, `sample` → ConnectorRecords, `transform` (a dry run) → ConnectorTransformResult.
+     * ConnectorTargetSchema, `sample` → ConnectorRecords, and dry runs of `shape` ({ records }) →
+     * ConnectorShapeResult and `serialize` ({ documents }) → ConnectorSerializeResult.
      * The server adds the installation; pass `flowId` to layer that flow's settings.
      * POST /integrations/connectors/:appId/steps/:step
      */

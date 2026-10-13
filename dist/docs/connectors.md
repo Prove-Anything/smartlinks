@@ -9,16 +9,22 @@ Three layers, each with one job:
 
 | Layer | Holds |
 |---|---|
-| **Engine** (the API) | [Integration flows](integrations.md), runs and their logs, triggers (events, schedule, Run now), the secret store, the deterministic field mapper, generic transports (HTTP, Event Hub). No provider code. |
+| **Engine** (the API) | [Integration flows](integrations.md), runs and their logs, triggers (events, schedule, Run now), the secret store, **the mapping** (each customer's field mappings and rules), generic transports (HTTP, Event Hub). No provider code. |
 | **Integrations console** (a core app) | The one admin screen: installed connectors, connect forms, settings, the mapper with AI assist, flows, runs. |
-| **Connector apps** | One per provider: its connect form, settings, target schema, transform, send/fetch, and any provider-specific panels. |
+| **Connector apps** | One per provider: an **adapter**. Talks to the provider and converts between its format and a clean, provider-neutral document. |
+
+**A connector adapts; core maps.** A connector never holds a customer's mapping. It turns the
+provider's records into provider-neutral documents (`shape`), or provider-ready payloads out of
+documents core has already mapped (`serialize`). Every customer's mapping, routing and rules live in
+core, so they work the same for every provider and can be replayed and traced. This is the line
+SnapLogic (endpoint Snaps vs the Mapper), MuleSoft and Airbyte all draw.
 
 A flow that only posts JSON to a webhook or an Event Hub needs no connector; it uses the engine's
 generic transports (see [integrations.md](integrations.md)).
 
 **No AI at run time.** The AI helps an admin *author* a mapping in the console (from the connector's
 target schema plus real sample records); a person approves it, and it is saved as data and runs
-deterministically. A connector's `transform` must be deterministic too.
+deterministically. A connector's `shape` and `serialize` must be deterministic too.
 
 ---
 
@@ -33,8 +39,10 @@ deterministically. A connector's `transform` must be deterministic too.
   "entities": ["product"],
   "connection": {
     "fields": [
-      { "name": "appId",     "label": "App ID",     "secret": "oneworldsync-app-id",     "required": true },
-      { "name": "secretKey", "label": "Secret key", "secret": "oneworldsync-secret-key", "required": true },
+      // Optional: SmartLinks' own credentials are the default; a customer may enter theirs.
+      { "name": "appId",     "label": "App ID",     "secret": "oneworldsync-app-id" },
+      { "name": "secretKey", "label": "Secret key", "secret": "oneworldsync-secret-key" },
+      { "name": "gln", "label": "GLN", "required": true },
       { "name": "environment", "label": "Environment", "type": "select",
         "options": [ { "value": "preprod", "label": "Pre-production" }, { "value": "production", "label": "Production" } ] }
     ]
@@ -44,12 +52,14 @@ deterministically. A connector's `transform` must be deterministic too.
     "properties": { "targetMarket": { "type": "string", "default": "GB" } }
   },
   "presets": [
-    { "id": "import-products", "title": "Import products", "direction": "inbound", "entity": "product" }
+    { "id": "import-products", "title": "Import products", "direction": "inbound", "entity": "product",
+      "flow": { "config": { "fieldMappings": [ /* a suggested mapping the customer can edit */ ] } } }
   ],
   "functions": {                      // names of this app's server functions
     "testConnection": "testConnection",
     "describeTarget": "describeTarget",
     "sample": "sample",
+    "shape": "shape",
     "fetch": "fetch"
   },
   "panels": [ { "id": "explorer", "title": "Explorer", "component": "Explorer" } ],
@@ -74,9 +84,9 @@ Types: `AppConnectorDeclaration` and friends in `@proveanything/smartlinks` (`sr
 | `title` | Provider display name; defaults to the app name. |
 | `directions` | `inbound` (provider → SmartLinks), `outbound` (SmartLinks → provider), or both. |
 | `entities` | SmartLinks entities it maps, e.g. `["product"]`. |
-| `connection.fields[]` | The console's **Connect** form. A field with `secret` is stored as this app's secret of that name (write-only; never returned to the browser). Other fields are saved in the installation's connection settings. |
+| `connection.fields[]` | The console's **Connect** form. A field with `secret` is stored as this app's secret of that name on the collection (write-only; never returned to the browser). Other fields are saved in the installation's connection settings. |
 | `settings` | JSON Schema for installation settings; the console renders it as a form. |
-| `presets[]` | Ready-made flows ("Products → provider") with flow defaults. |
+| `presets[]` | Ready-made flows ("Products → provider"). A preset's `flow.config.fieldMappings` is a **suggested** mapping: the connector's knowledge of the provider, which the customer accepts or edits in core. |
 | `functions` | Which of this app's server functions implement each step (below). Fill in only what applies. |
 | `panels[]` | Provider-specific screens the console mounts (an API explorer, a status page). |
 | `aiGuide` | A guide the mapping assistant reads: the provider's quirks, required fields, good defaults. |
@@ -87,27 +97,36 @@ Types: `AppConnectorDeclaration` and friends in `@proveanything/smartlinks` (`sr
 
 Each step names one of the app's server functions. Declare them as **http POST, `visibility:
 "admin"`, `authority: "collection"`**: the engine calls them with no signed-in user (a product edit, a
-schedule), and the console calls the same functions while an admin configures the flow
-(`functions.callAdmin(collectionId, name, input, { appId })`). The input arrives as `event.body`;
-return the result as JSON. Capabilities still cap what each one can do: declare the provider's hosts
-(`network:<host>`) and the secrets it reads (`secrets:<name>`).
+schedule), and the console calls the same functions while an admin configures the flow. The input
+arrives as `event.body`; return the result as JSON. Capabilities still cap what each one can do:
+declare the provider's hosts (`network:<host>`) and the secrets it reads (`secrets:<name>`).
 
 | Step | Called by | Input (`event.body`) | Returns |
 |---|---|---|---|
 | `testConnection` | Connect form, **Test** | `{ installation }` | `ConnectorTestResult` `{ ok, message }` |
-| `describeTarget` | Mapper opens | `{ installation }` | `ConnectorTargetSchema` `{ fields: [{ path, label, type, required, enum }] }`: the provider's fields *for this customer* |
+| `describeTarget` | Mapper opens | `{ installation }` | `ConnectorTargetSchema` `{ fields: [{ path, label, type, required, enum }] }`: the provider's fields *for this customer*. Outbound mappings target these paths. |
 | `sample` | Mapper, AI assist, dry run | `{ installation, limit }` | `ConnectorRecords` `{ records }`: real provider records |
-| `transform` | Every run | `ConnectorTransformInput` `{ installation, records, mapping }` | `ConnectorTransformResult` `{ payloads, skipped }`: one payload per record, same order; `null` skips one |
-| `send` | Every outbound run | `ConnectorSendInput` `{ installation, payloads }` | `ConnectorSendResult` `{ results: [{ index, ok, status, error, externalId }] }` |
 | `fetch` | Every inbound run | `ConnectorFetchInput` `{ installation, cursor, limit }` | `ConnectorRecords` `{ records, nextCursor }`: one page per call |
+| `shape` | Every inbound run (and sample dry runs) | `ConnectorShapeInput` `{ installation, records }` | `ConnectorShapeResult` `{ documents, skipped }`: one provider-neutral document per record, same order; `null` skips one |
+| `serialize` | Every outbound run | `ConnectorSerializeInput` `{ installation, documents, eventType? }`: documents core mapped to `describeTarget` paths; a deletion arrives as `{ id, _deleted: true }` | `ConnectorSerializeResult` `{ payloads, skipped }`: one provider payload per document, same order; `null` skips one |
+| `send` | Every outbound run | `ConnectorSendInput` `{ installation, payloads }` | `ConnectorSendResult` `{ results: [{ index, ok, status, error, externalId }] }` |
 
-What happens when a step is left out:
+**How a run flows:**
+- **Inbound:** `fetch` (paged) → `shape` → core maps the documents with the flow's mapping → upsert.
+- **Outbound:** gather the SmartLinks records → core maps them to the provider's fields → `serialize`
+  → `send` (or a generic transport).
 
-- **No `transform`:** the engine's own mapper runs the flow's `fieldMappings` (direct, static, Liquid
-  template).
-- **No `send`:** the flow's own transport: HTTP (`config.connection`), or Azure Event Hub with
+**What happens when a step is left out:**
+- **No `shape`:** core maps the provider records as they come.
+- **No `serialize`:** the mapped documents are sent as they are.
+- **No `send`:** the flow's own transport is used: HTTP (`config.connection`), or Azure Event Hub with
   `config.transport: 'eventhub'` and `config.eventHub`.
 - **No `describeTarget`:** the mapper offers free-text target paths.
+
+**What `shape` should produce:** plain, predictable JSON a person can map without reading the
+provider's documentation. Flatten the provider's envelopes, name things plainly, keep codes alongside
+their meanings, and put repeated sections (ingredients, allergens, nutrients, images) in arrays. The
+same provider record always gives the same document.
 
 ### `installation`
 
@@ -124,13 +143,15 @@ interface ConnectorInstallation {
 ```
 
 Secrets are never in it. Read them in the function with `ctx.secrets.get('<name>')`, which needs the
-matching `secrets:<name>` capability.
+matching `secrets:<name>` capability. A secret the customer set on their collection wins; otherwise the
+connector's own app-level secret of that name (set in Forge) is used, so a connector can ship with
+SmartLinks' credentials as the default.
 
-### Example: `fetch`
+### Example: `fetch` and `shape`
 
 ```ts
 // src/functions/index.ts (the app's functions bundle)
-import type { ConnectorFetchInput, ConnectorRecords } from '@proveanything/smartlinks'
+import type { ConnectorFetchInput, ConnectorRecords, ConnectorShapeInput, ConnectorShapeResult } from '@proveanything/smartlinks'
 
 export async function fetch(ctx: any, event: any): Promise<ConnectorRecords> {
   const { installation, cursor, limit = 50 } = event.body as ConnectorFetchInput
@@ -140,6 +161,18 @@ export async function fetch(ctx: any, event: any): Promise<ConnectorRecords> {
   const page = await res.json()
   return { records: page.items, nextCursor: page.next ?? null }
 }
+
+export async function shape(_ctx: any, event: any): Promise<ConnectorShapeResult> {
+  const { records } = event.body as ConnectorShapeInput
+  return {
+    documents: records.map((r: any) => ({
+      gtin: r.item?.gtin,
+      name: r.item?.tradeItemDescription?.[0]?.value,
+      brand: r.item?.brandName,
+      ingredients: (r.item?.ingredients ?? []).map((i: any) => ({ name: i.name, percent: i.percentage })),
+    })),
+  }
+}
 ```
 
 ---
@@ -148,9 +181,9 @@ export async function fetch(ctx: any, event: any): Promise<ConnectorRecords> {
 
 | What | Where |
 |---|---|
-| Connect-form values (non-secret), installation settings | The connector app's config on the collection: `appConfiguration` for `appId`, under `connector.connection` and `connector.settings`. |
-| Credentials | The connector app's secrets, by the names its fields declare. |
-| One flow's use of the connector | The flow: `config.connector = { appId, preset?, settings? }` (per-flow settings override the installation's), plus `config.fieldMappings`. |
+| Connect-form values (non-secret), installation settings | The connector app's config on the collection, in its admin-only zone (`admin.connector.connection`, `admin.connector.settings`). |
+| Credentials | The connector app's secrets, by the names its fields declare (the customer's on their collection, else the connector's default). |
+| One flow's use of the connector | The flow: `config.connector = { appId, preset?, settings? }` (per-flow settings override the installation's), plus `config.fieldMappings`, which core runs. |
 
 ```ts
 await integrations.createFlow(collectionId, {
@@ -162,7 +195,8 @@ await integrations.createFlow(collectionId, {
   targetEntity: 'product',
   config: {
     connector: { appId: 'oneworldsync', preset: 'import-products' },
-    fieldMappings: [ { targetPath: 'name', sourcePath: 'item.tradeItemDescription', transformType: 'direct' } ],
+    // Maps the connector's shaped documents (not the raw provider records) onto the product.
+    fieldMappings: [ { targetPath: 'name', sourcePath: 'name', transformType: 'direct' } ],
   },
 })
 ```
@@ -181,7 +215,9 @@ await secrets.put(collectionId, 'provider-key', value, { appId })              /
 await integrations.saveConnectorInstallation(collectionId, appId, { connection: { environment: 'production' } })
 const test = await integrations.runConnectorStep(collectionId, appId, 'testConnection')
 const target = await integrations.runConnectorStep(collectionId, appId, 'describeTarget')
-const dryRun = await integrations.runConnectorStep(collectionId, appId, 'transform', { records, mapping })
+const { records } = await integrations.runConnectorStep(collectionId, appId, 'sample', { limit: 5 })
+const shaped = await integrations.runConnectorStep(collectionId, appId, 'shape', { records })      // dry run
+const wire = await integrations.runConnectorStep(collectionId, appId, 'serialize', { documents })  // dry run
 ```
 
 `send` and `fetch` only run inside a flow. A flow run's summary carries `sent` (outbound) or
@@ -192,8 +228,9 @@ const dryRun = await integrations.runConnectorStep(collectionId, appId, 'transfo
 ## Panels
 
 A connector can contribute screens to the integrations console (an API explorer, say). Each
-`panels[]` entry names a component exported from the app's widgets bundle; the console mounts it host-side and passes it the
-collection and the installation. Panels are admin-only and call the connector's own functions.
+`panels[]` entry names a component exported from the app's widgets bundle; the console mounts it
+host-side and passes it the collection and the installation. Panels are admin-only and call the
+connector's own functions.
 
 ---
 

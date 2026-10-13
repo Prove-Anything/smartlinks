@@ -2,7 +2,6 @@
 /// <reference types="node" />
 import type { AppDataDeclaration, AppHeadlessDeclaration } from './headless.js';
 import type { RealtimeChannelDeclaration } from './realtime.js';
-import type { FieldMapping } from './integrations.js';
 /**
  * A bundle (widget or container) as returned by the collection widgets endpoint.
  *
@@ -831,7 +830,9 @@ export interface AppManifest {
     /**
      * This app is an integration CONNECTOR for one external provider (Syndigo, OneWorldSync, …): the
      * integrations console lists it, draws its connect form and settings, and the integration engine
-     * calls its server functions to test, describe, sample, transform, send and fetch.
+     * calls its server functions to test, describe, sample, shape, serialize, send and fetch. The
+     * customer's mapping is NOT the connector's job: core maps between the connector's provider-neutral
+     * documents and SmartLinks (docs/connectors.md).
      * @see AppConnectorDeclaration · docs/connectors.md
      */
     connector?: AppConnectorDeclaration;
@@ -877,6 +878,9 @@ export interface ConnectorPanel {
  * The connector contract. Every function named here is one of this app's server functions
  * (manifest `functions.definitions`); the engine calls it with collection authority, capped by the
  * capabilities the function declares. A connector fills in only what it needs.
+ *
+ * A connector is an ADAPTER: it talks to the provider and converts between the provider's format and
+ * a clean, provider-neutral document. Each customer's mapping, routing and rules live in core.
  */
 export interface AppConnectorDeclaration {
     /** Stable provider key, e.g. 'syndigo', 'oneworldsync'. */
@@ -892,6 +896,7 @@ export interface AppConnectorDeclaration {
     };
     /** Per-installation settings: a JSON Schema the console renders as a form. */
     settings?: Record<string, unknown>;
+    /** Ready-made flows; a preset's `flow.config.fieldMappings` is a suggested mapping the customer can edit. */
     presets?: ConnectorPreset[];
     /** Names of this app's server functions implementing each step. */
     functions: {
@@ -901,8 +906,18 @@ export interface AppConnectorDeclaration {
         describeTarget?: string;
         /** → ConnectorRecords: real records for the mapper, the AI assistant and dry runs (inbound). */
         sample?: string;
-        /** (ConnectorTransformInput) → ConnectorTransformResult. Must be deterministic — no AI at run time. */
-        transform?: string;
+        /**
+         * Inbound: (ConnectorShapeInput) → ConnectorShapeResult. Provider records → provider-neutral
+         * documents, the same for every customer (no customer mapping). Deterministic — no AI, network or
+         * clock. Omit to hand core the provider records as they are.
+         */
+        shape?: string;
+        /**
+         * Outbound: (ConnectorSerializeInput) → ConnectorSerializeResult. Documents core has mapped to this
+         * provider's fields (`describeTarget` paths) → the provider's wire format (an envelope, a batch).
+         * Deterministic. Omit to send the mapped documents as they are.
+         */
+        serialize?: string;
         /** (ConnectorSendInput) → ConnectorSendResult. Omit to use a generic transport (HTTP, Event Hub). */
         send?: string;
         /** (ConnectorFetchInput) → ConnectorRecords: inbound pull, one page per call. */
@@ -951,15 +966,31 @@ export interface ConnectorRecords {
     /** Inbound paging: pass back to the next fetch; absent when there's no more. */
     nextCursor?: string | null;
 }
-export interface ConnectorTransformInput {
+/** Inbound: provider records, as fetch / sample returned them. */
+export interface ConnectorShapeInput {
     installation: ConnectorInstallation;
-    /** SmartLinks records (outbound) or provider records (inbound). */
     records: Array<Record<string, unknown>>;
-    /** The flow's saved mapping (`config.fieldMappings`) — the same shape the engine's mapper runs. */
-    mapping: FieldMapping[];
 }
-export interface ConnectorTransformResult {
-    /** One payload per input record, in the same order (null = skip that record, with a reason). */
+export interface ConnectorShapeResult {
+    /** One provider-neutral document per record, in the same order (null = skip it, with a reason). */
+    documents: Array<Record<string, unknown> | null>;
+    skipped?: Array<{
+        index: number;
+        reason: string;
+    }>;
+}
+/**
+ * Outbound: documents core has mapped to this provider's fields (keyed by `describeTarget` paths).
+ * A deleted SmartLinks entity arrives as `{ id, _deleted: true }`.
+ */
+export interface ConnectorSerializeInput {
+    installation: ConnectorInstallation;
+    documents: Array<Record<string, unknown>>;
+    /** The event that triggered the run, e.g. 'product.updated' (absent for manual / scheduled runs). */
+    eventType?: string;
+}
+export interface ConnectorSerializeResult {
+    /** One provider payload per document, in the same order (null = skip it, with a reason). */
     payloads: Array<unknown | null>;
     skipped?: Array<{
         index: number;
