@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.58  |  Generated: 2026-10-13T14:02:27.401Z
+Version: 2.0.59  |  Generated: 2026-10-13T14:58:59.641Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2915,6 +2915,8 @@ interface AppConnectorDeclaration {
   }
   panels?: ConnectorPanel[]
   aiGuide?: string
+  recordId?: string
+  limits?: { requestsPerSecond?: number }
 }
 ```
 

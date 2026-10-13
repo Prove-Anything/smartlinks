@@ -926,6 +926,16 @@ export interface AppConnectorDeclaration {
     panels?: ConnectorPanel[];
     /** Path (under the app's public files) of a guide the AI mapping assistant reads. */
     aiGuide?: string;
+    /**
+     * Path of the provider's own id in a fetched record (e.g. 'gtin', 'item.id'). Inbound records are
+     * landed and matched to SmartLinks entities by it, so a re-import updates rather than duplicates.
+     * Default 'id'; a flow can override it with `config.upsert.externalIdPath`.
+     */
+    recordId?: string;
+    /** Requests per second toward the provider, shared by every SmartLinks worker. */
+    limits?: {
+        requestsPerSecond?: number;
+    };
 }
 /**
  * What every connector function receives about the installation it serves. The engine assembles it

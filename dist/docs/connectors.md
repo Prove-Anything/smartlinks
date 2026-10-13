@@ -90,6 +90,8 @@ Types: `AppConnectorDeclaration` and friends in `@proveanything/smartlinks` (`sr
 | `functions` | Which of this app's server functions implement each step (below). Fill in only what applies. |
 | `panels[]` | Provider-specific screens the console mounts (an API explorer, a status page). |
 | `aiGuide` | A guide the mapping assistant reads: the provider's quirks, required fields, good defaults. |
+| `recordId` | Path of the provider's own id in a fetched record (e.g. `gtin`). Inbound records are landed and matched by it, so a re-import updates the same product instead of creating another. Default `id`; a flow can override it (`config.upsert.externalIdPath`). |
+| `limits` | `{ requestsPerSecond }` toward the provider, enforced across every SmartLinks worker. |
 
 ---
 
@@ -112,9 +114,12 @@ declare the provider's hosts (`network:<host>`) and the secrets it reads (`secre
 | `send` | Every outbound run | `ConnectorSendInput` `{ installation, payloads }` | `ConnectorSendResult` `{ results: [{ index, ok, status, error, externalId }] }` |
 
 **How a run flows:**
-- **Inbound:** `fetch` (paged) → `shape` → core maps the documents with the flow's mapping → upsert.
+- **Inbound:** `fetch` (paged; every record is landed as received) → `shape` → core maps the documents
+  with the flow's mapping → upsert, matched by `recordId`. Unchanged records aren't processed again; a
+  changed flow configuration replays the landed records without fetching.
 - **Outbound:** gather the SmartLinks records → core maps them to the provider's fields → `serialize`
-  → `send` (or a generic transport).
+  → `send` (or a generic transport). A record identical to its last successful delivery isn't sent again.
+- Large runs are processed in short slices that resume after an interruption; there's no record cap.
 
 **What happens when a step is left out:**
 - **No `shape`:** core maps the provider records as they come.

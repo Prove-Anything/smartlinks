@@ -19780,6 +19780,11 @@ components:
             $ref: "#/components/schemas/ConnectorPanel"
         aiGuide:
           type: string
+        recordId:
+          type: string
+        limits:
+          type: object
+          additionalProperties: true
       required:
         - provider
         - directions
