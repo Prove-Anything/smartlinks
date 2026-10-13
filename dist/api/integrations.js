@@ -135,4 +135,29 @@ export var integrations;
         return del(`/admin/collection/${enc(collectionId)}/integrations/logging/${enc(connectionId)}`);
     }
     integrations.cancelLogging = cancelLogging;
+    // --- Connectors (docs/connectors.md) ------------------------------------
+    // Connector apps installed on the collection: their declared contract, the installation's
+    // non-secret settings, and which secrets are set. Secrets themselves go through
+    // `secrets.put(collectionId, name, value, { appId })` for the connector's appId.
+    const connectorsBase = (collectionId) => `/admin/collection/${enc(collectionId)}/integrations/connectors`;
+    /** The collection's installed connector apps. GET /integrations/connectors */
+    async function listConnectors(collectionId) {
+        return request(connectorsBase(collectionId));
+    }
+    integrations.listConnectors = listConnectors;
+    /** Save a connector's non-secret Connect-form values and/or settings. PUT /integrations/connectors/:appId/installation */
+    async function saveConnectorInstallation(collectionId, appId, input) {
+        return put(`${connectorsBase(collectionId)}/${enc(appId)}/installation`, input);
+    }
+    integrations.saveConnectorInstallation = saveConnectorInstallation;
+    /**
+     * Run a connector step from the console: `testConnection` → ConnectorTestResult, `describeTarget` →
+     * ConnectorTargetSchema, `sample` → ConnectorRecords, `transform` (a dry run) → ConnectorTransformResult.
+     * The server adds the installation; pass `flowId` to layer that flow's settings.
+     * POST /integrations/connectors/:appId/steps/:step
+     */
+    async function runConnectorStep(collectionId, appId, step, input = {}) {
+        return post(`${connectorsBase(collectionId)}/${enc(appId)}/steps/${enc(step)}`, input);
+    }
+    integrations.runConnectorStep = runConnectorStep;
 })(integrations || (integrations = {}));

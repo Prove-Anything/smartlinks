@@ -105,7 +105,8 @@ What happens when a step is left out:
 
 - **No `transform`:** the engine's own mapper runs the flow's `fieldMappings` (direct, static, Liquid
   template).
-- **No `send`:** the flow's own `connection` (HTTP or Event Hub) is used.
+- **No `send`:** the flow's own transport: HTTP (`config.connection`), or Azure Event Hub with
+  `config.transport: 'eventhub'` and `config.eventHub`.
 - **No `describeTarget`:** the mapper offers free-text target paths.
 
 ### `installation`
@@ -165,6 +166,26 @@ await integrations.createFlow(collectionId, {
   },
 })
 ```
+
+---
+
+## From the console
+
+```ts
+import { integrations, secrets } from '@proveanything/smartlinks'
+
+const { connectors } = await integrations.listConnectors(collectionId)
+// → [{ appId, name, version, connector, installation: { connection, settings }, secrets: { 'provider-key': { set, hint } } }]
+
+await secrets.put(collectionId, 'provider-key', value, { appId })              // a secret field
+await integrations.saveConnectorInstallation(collectionId, appId, { connection: { environment: 'production' } })
+const test = await integrations.runConnectorStep(collectionId, appId, 'testConnection')
+const target = await integrations.runConnectorStep(collectionId, appId, 'describeTarget')
+const dryRun = await integrations.runConnectorStep(collectionId, appId, 'transform', { records, mapping })
+```
+
+`send` and `fetch` only run inside a flow. A flow run's summary carries `sent` (outbound) or
+`created` / `updated` / `skipped` (inbound), and every run, inbound or outbound, is in the run history.
 
 ---
 

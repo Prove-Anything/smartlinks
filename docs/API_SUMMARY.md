@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.57  |  Generated: 2026-10-13T10:14:28.853Z
+Version: 2.0.57  |  Generated: 2026-10-13T10:48:18.308Z
 
 This is a concise summary of all available API functions and types.
 
@@ -7139,10 +7139,34 @@ interface RunFlowSummary {
   flowId: string
   direction: FlowDirection
   records: number
-  sent: number
+  sent?: number
   failed: number
+  created?: number
+  updated?: number
+  skipped?: number
   status: RunStatus
   runId?: string
+}
+```
+
+**InstalledConnector** (interface)
+```typescript
+interface InstalledConnector {
+  appId: string
+  name: string
+  channel: string
+  version: string | null
+  connector: import('./appManifest').AppConnectorDeclaration
+  installation: { connection: Record<string, unknown>; settings: Record<string, unknown> }
+  secrets: Record<string, { set: boolean; hint?: string | null }>
+}
+```
+
+**SaveConnectorInstallationInput** (interface)
+```typescript
+interface SaveConnectorInstallationInput {
+  connection?: Record<string, unknown>
+  settings?: Record<string, unknown>
 }
 ```
 
@@ -7349,6 +7373,8 @@ interface RecordTypesResponse {
 **FlowAuthMethod** = `'api_key' | 'bearer' | 'basic' | 'webhook' | 'oauth2' | 'none'`
 
 **UpdateFlowInput** = `Partial<Omit<CreateFlowInput, 'direction'>> & {`
+
+**ConnectorConsoleStep** = `'testConnection' | 'describeTarget' | 'sample' | 'transform'`
 
 **RunTrigger** = `'manual' | 'event' | 'schedule' | 'test'`
 
@@ -11663,6 +11689,20 @@ Enable enhanced logging. POST /integrations/logging/:connectionId (omit ttlMinut
 
 **cancelLogging**(collectionId: string, connectionId: string) → `Promise<`
 Cancel enhanced logging now. DELETE /integrations/logging/:connectionId
+
+**listConnectors**(collectionId: string) → `Promise<`
+The collection's installed connector apps. GET /integrations/connectors
+
+**saveConnectorInstallation**(collectionId: string,
+    appId: string,
+    input: SaveConnectorInstallationInput) → `Promise<`
+Save a connector's non-secret Connect-form values and/or settings. PUT /integrations/connectors/:appId/installation
+
+**runConnectorStep**(collectionId: string,
+    appId: string,
+    step: ConnectorConsoleStep,
+    input: Record<string, unknown> & { flowId?: string } = {}) → `Promise<T>`
+Run a connector step from the console: `testConnection` → ConnectorTestResult, `describeTarget` → ConnectorTargetSchema, `sample` → ConnectorRecords, `transform` (a dry run) → ConnectorTransformResult. The server adds the installation; pass `flowId` to layer that flow's settings. POST /integrations/connectors/:appId/steps/:step
 
 ### interactions
 

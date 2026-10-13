@@ -26332,6 +26332,12 @@ components:
           type: number
         failed:
           type: number
+        created:
+          type: number
+        updated:
+          type: number
+        skipped:
+          type: number
         status:
           $ref: "#/components/schemas/RunStatus"
         runId:
@@ -26340,9 +26346,47 @@ components:
         - flowId
         - direction
         - records
-        - sent
         - failed
         - status
+    InstalledConnector:
+      type: object
+      properties:
+        appId:
+          type: string
+        name:
+          type: string
+        channel:
+          type: string
+        version:
+          type: string
+        connector:
+          type: object
+          additionalProperties: true
+        installation:
+          type: object
+          additionalProperties: true
+        secrets:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+      required:
+        - appId
+        - name
+        - channel
+        - version
+        - connector
+        - installation
+        - secrets
+    SaveConnectorInstallationInput:
+      type: object
+      properties:
+        connection:
+          type: object
+          additionalProperties: true
+        settings:
+          type: object
+          additionalProperties: true
     CapturedRequest:
       type: object
       properties:
@@ -26684,6 +26728,13 @@ components:
         - none
     UpdateFlowInput:
       $ref: "#/components/schemas/CreateFlowInput"
+    ConnectorConsoleStep:
+      type: string
+      enum:
+        - testConnection
+        - describeTarget
+        - sample
+        - transform
     RunTrigger:
       type: string
       enum:

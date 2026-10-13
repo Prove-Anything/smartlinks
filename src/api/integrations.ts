@@ -26,6 +26,9 @@ import type {
   RunItemList,
   LoggingWindow,
   SetLoggingInput,
+  InstalledConnector,
+  SaveConnectorInstallationInput,
+  ConnectorConsoleStep,
 } from "../types/integrations"
 
 function enc(v: string) { return encodeURIComponent(v) }
@@ -158,5 +161,42 @@ export namespace integrations {
     return del<{ canceled: boolean }>(
       `/admin/collection/${enc(collectionId)}/integrations/logging/${enc(connectionId)}`
     )
+  }
+
+  // --- Connectors (docs/connectors.md) ------------------------------------
+  // Connector apps installed on the collection: their declared contract, the installation's
+  // non-secret settings, and which secrets are set. Secrets themselves go through
+  // `secrets.put(collectionId, name, value, { appId })` for the connector's appId.
+
+  const connectorsBase = (collectionId: string) =>
+    `/admin/collection/${enc(collectionId)}/integrations/connectors`
+
+  /** The collection's installed connector apps. GET /integrations/connectors */
+  export async function listConnectors(collectionId: string): Promise<{ connectors: InstalledConnector[] }> {
+    return request<{ connectors: InstalledConnector[] }>(connectorsBase(collectionId))
+  }
+
+  /** Save a connector's non-secret Connect-form values and/or settings. PUT /integrations/connectors/:appId/installation */
+  export async function saveConnectorInstallation(
+    collectionId: string,
+    appId: string,
+    input: SaveConnectorInstallationInput
+  ): Promise<{ installation: { connection: Record<string, unknown>; settings: Record<string, unknown> } }> {
+    return put(`${connectorsBase(collectionId)}/${enc(appId)}/installation`, input)
+  }
+
+  /**
+   * Run a connector step from the console: `testConnection` → ConnectorTestResult, `describeTarget` →
+   * ConnectorTargetSchema, `sample` → ConnectorRecords, `transform` (a dry run) → ConnectorTransformResult.
+   * The server adds the installation; pass `flowId` to layer that flow's settings.
+   * POST /integrations/connectors/:appId/steps/:step
+   */
+  export async function runConnectorStep<T = unknown>(
+    collectionId: string,
+    appId: string,
+    step: ConnectorConsoleStep,
+    input: Record<string, unknown> & { flowId?: string } = {}
+  ): Promise<T> {
+    return post<T>(`${connectorsBase(collectionId)}/${enc(appId)}/steps/${enc(step)}`, input)
   }
 }

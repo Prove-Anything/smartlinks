@@ -131,12 +131,44 @@ export interface RunFlowSummary {
   flowId: string
   direction: FlowDirection
   records: number
-  sent: number
+  /** Outbound: records delivered. */
+  sent?: number
   failed: number
+  /** Inbound: products created / updated, and records the connector skipped. */
+  created?: number
+  updated?: number
+  skipped?: number
   status: RunStatus
   /** Id of the persisted run row (deep-link into its detail). */
   runId?: string
 }
+
+// ---------------------------------------------------------------------------
+// Connectors — the connector apps installed on a collection (docs/connectors.md)
+// ---------------------------------------------------------------------------
+
+/** One installed connector app, as the integrations console sees it. */
+export interface InstalledConnector {
+  appId: string
+  name: string
+  /** The release channel installed on this collection. */
+  channel: string
+  version: string | null
+  connector: import('./appManifest').AppConnectorDeclaration
+  /** Non-secret Connect-form values + installation settings. */
+  installation: { connection: Record<string, unknown>; settings: Record<string, unknown> }
+  /** Each secret the Connect form declares: whether it is set (+ masked hint). Never a value. */
+  secrets: Record<string, { set: boolean; hint?: string | null }>
+}
+
+export interface SaveConnectorInstallationInput {
+  /** Non-secret fields only; secret fields are set with `secrets.put` for the connector's appId. */
+  connection?: Record<string, unknown>
+  settings?: Record<string, unknown>
+}
+
+/** Steps the console may run directly (send and fetch only run inside a flow). */
+export type ConnectorConsoleStep = 'testConnection' | 'describeTarget' | 'sample' | 'transform'
 
 // ---------------------------------------------------------------------------
 // Run logs — persisted history of automated + manual runs, with opt-in, redacted

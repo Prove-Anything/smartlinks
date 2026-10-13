@@ -1,4 +1,4 @@
-import type { IntegrationFlow, CreateFlowInput, UpdateFlowInput, ListFlowsQuery, FlowList, RunFlowInput, RunFlowResult, RunFlowSummary, RunFlowEnqueued, RecordTypesResponse, FlowRun, ListRunsQuery, RunList, ListRunItemsQuery, RunItemList, LoggingWindow, SetLoggingInput } from "../types/integrations.js";
+import type { IntegrationFlow, CreateFlowInput, UpdateFlowInput, ListFlowsQuery, FlowList, RunFlowInput, RunFlowResult, RunFlowSummary, RunFlowEnqueued, RecordTypesResponse, FlowRun, ListRunsQuery, RunList, ListRunItemsQuery, RunItemList, LoggingWindow, SetLoggingInput, InstalledConnector, SaveConnectorInstallationInput, ConnectorConsoleStep } from "../types/integrations.js";
 export declare namespace integrations {
     /** List flows in a collection. GET /integrations/flows */
     function listFlows(collectionId: string, query?: ListFlowsQuery): Promise<FlowList>;
@@ -57,4 +57,24 @@ export declare namespace integrations {
     function cancelLogging(collectionId: string, connectionId: string): Promise<{
         canceled: boolean;
     }>;
+    /** The collection's installed connector apps. GET /integrations/connectors */
+    function listConnectors(collectionId: string): Promise<{
+        connectors: InstalledConnector[];
+    }>;
+    /** Save a connector's non-secret Connect-form values and/or settings. PUT /integrations/connectors/:appId/installation */
+    function saveConnectorInstallation(collectionId: string, appId: string, input: SaveConnectorInstallationInput): Promise<{
+        installation: {
+            connection: Record<string, unknown>;
+            settings: Record<string, unknown>;
+        };
+    }>;
+    /**
+     * Run a connector step from the console: `testConnection` → ConnectorTestResult, `describeTarget` →
+     * ConnectorTargetSchema, `sample` → ConnectorRecords, `transform` (a dry run) → ConnectorTransformResult.
+     * The server adds the installation; pass `flowId` to layer that flow's settings.
+     * POST /integrations/connectors/:appId/steps/:step
+     */
+    function runConnectorStep<T = unknown>(collectionId: string, appId: string, step: ConnectorConsoleStep, input?: Record<string, unknown> & {
+        flowId?: string;
+    }): Promise<T>;
 }
