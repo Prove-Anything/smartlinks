@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.66  |  Generated: 2026-10-14T14:32:29.220Z
+Version: 2.0.66  |  Generated: 2026-10-14T17:08:38.634Z
 
 This is a concise summary of all available API functions and types.
 
@@ -12815,7 +12815,7 @@ Create a single tag mapping (admin). If `productId` is set without `proofId`, a 
 
 **createBatch**(collectionId: string,
     data: BatchCreateTagRequest) → `Promise<BatchCreateResult>`
-Batch-create tags (admin). Tags with `productId` but no `proofId` automatically get serial numbers. Serial number generation is grouped by `(productId, variantId, batchId)` for efficiency.  Partial success is possible â€” check `results` for individual outcomes. ```typescript const result = await tags.createBatch('coll_123', { tags: [ { tagId: 'NFC-001', productId: 'prod_456', batchId: 'batch_2026_01' }, { tagId: 'NFC-002', productId: 'prod_456', batchId: 'batch_2026_01' }, ], }) console.log(`Created: ${result.summary.created}, Conflicts: ${result.summary.conflicts}`) ```
+Batch-create tags (admin). Tags with `productId` but no `proofId` automatically get serial numbers. Serial number generation is grouped by `(productId, variantId, batchId)` for efficiency.  Partial success is possible — check `results` for individual outcomes. ```typescript const result = await tags.createBatch('coll_123', { tags: [ { tagId: 'NFC-001', productId: 'prod_456', batchId: 'batch_2026_01' }, { tagId: 'NFC-002', productId: 'prod_456', batchId: 'batch_2026_01' }, ], }) console.log(`Created: ${result.summary.created}, Conflicts: ${result.summary.conflicts}`) ```
 
 **get**(collectionId: string,
     tagId: string) → `Promise<GetTagResponse>`
@@ -12824,7 +12824,7 @@ Get a single tag by `tagId` (admin).
 **update**(collectionId: string,
     tagId: string,
     data: UpdateTagRequest) → `Promise<UpdateTagResponse>`
-Update a tag (admin). Partial update â€” only provided fields are changed.  `metadata` is deep-merged with the existing value.  Pass `refType: null, refId: null` to clear the polymorphic ref. ```typescript const updated = await tags.update('coll_123', 'NFC-001', { variantId: 'var_premium', metadata:  { notes: 'Updated to premium variant' }, }) // Clear polymorphic ref await tags.update('coll_123', 'NFC-001', { refType: null, refId: null }) ```
+Update a tag (admin). Partial update — only provided fields are changed.  `metadata` is deep-merged with the existing value.  Pass `refType: null, refId: null` to clear the polymorphic ref. ```typescript const updated = await tags.update('coll_123', 'NFC-001', { variantId: 'var_premium', metadata:  { notes: 'Updated to premium variant' }, }) // Clear polymorphic ref await tags.update('coll_123', 'NFC-001', { refType: null, refId: null }) ```
 
 **remove**(collectionId: string,
     tagId: string) → `Promise<DeleteTagResponse>`
@@ -12836,15 +12836,15 @@ List tags with optional filters and pagination (admin). ```typescript // All tag
 
 **byRef**(collectionId: string,
     params: ReverseTagLookupParams) → `Promise<ReverseTagLookupResponse>`
-Reverse lookup â€” find all tags linked to a given object (admin). Uses a compound index on `(orgId, refType, refId)` on the per-org shard. No embed support on the admin side. ```typescript const { tags: linked } = await tags.byRef('coll_123', { refType: 'container', refId:   'container-uuid', }) ```
+Reverse lookup — find all tags linked to a given object (admin). Uses a compound index on `(orgId, refType, refId)` on the per-org shard. No embed support on the admin side. ```typescript const { tags: linked } = await tags.byRef('coll_123', { refType: 'container', refId:   'container-uuid', }) ```
 
 **resolveTag**(tagId: string) → `Promise<TagIndexEntry>`
-Global tag resolve â€” returns `{ tagId, collectionId }` only. Use this **only** when you have a raw `tagId` and do not yet know which collection it belongs to.  Queries the shared `tag_index` shard. Once `collectionId` is resolved, call `publicGetByCollection` for full data. > The global `/public/tags/by-ref` endpoint has been removed. > Use the collection-scoped `publicByRef` instead. ```typescript // Step 1: resolve collection const { collectionId } = await tags.resolveTag('NFC-001') // Step 2: full lookup with embedded data const { tag, embedded } = await tags.publicGetByCollection( collectionId, 'NFC-001', 'product,proof' ) ```
+Global tag resolve — returns `{ tagId, collectionId }` only. Use this **only** when you have a raw `tagId` and do not yet know which collection it belongs to.  Queries the shared `tag_index` shard. Once `collectionId` is resolved, call `publicGetByCollection` for full data. > The global `/public/tags/by-ref` endpoint has been removed. > Use the collection-scoped `publicByRef` instead. ```typescript // Step 1: resolve collection const { collectionId } = await tags.resolveTag('NFC-001') // Step 2: full lookup with embedded data const { tag, embedded } = await tags.publicGetByCollection( collectionId, 'NFC-001', 'product,proof' ) ```
 
 **publicGetByCollection**(collectionId: string,
     tagId: string,
     embed?: string) → `Promise<PublicGetTagResponse>`
-Single tag lookup with optional embedded data (public). `GET /public/collection/:collectionId/tags/:tagId?embed=product,proof,container,ref` Supported `embed` values: `'product'`, `'proof'`, `'container'`, `'ref'` (`'collection'` is not supported â€” the collection is already known from the URL). ```typescript const { tag, embedded } = await tags.publicGetByCollection( 'coll_123', 'NFC-001', 'product,proof' ) const product = embedded.products?.[tag.productId!] const proof   = embedded.proofs?.[tag.proofId!] ```
+Single tag lookup with optional embedded data (public). `GET /public/collection/:collectionId/tags/:tagId?embed=product,proof,container,ref` Supported `embed` values: `'product'`, `'proof'`, `'container'`, `'ref'` (`'collection'` is not supported — the collection is already known from the URL). ```typescript const { tag, embedded } = await tags.publicGetByCollection( 'coll_123', 'NFC-001', 'product,proof' ) const product = embedded.products?.[tag.productId!] const proof   = embedded.proofs?.[tag.proofId!] ```
 
 **lookupTags**(collectionId: string,
     data: LookupTagsRequest) → `Promise<TagLookupResponse>`
