@@ -1061,17 +1061,37 @@ export type PdfXProfile = 'pdfx-1a' | 'pdfx-4'
 export interface PdfPreflightArgs { url: string; profile?: PdfXProfile; bleed?: { mm: number }; minDpi?: number }
 export interface PdfPrintReadyArgs {
   url: string
-  /** Default 'pdfx-4' (keeps live transparency); 'pdfx-1a' = CMYK + spot only, no transparency. */
-  profile?: PdfXProfile
+  /** Default 'pdfx-4' (keeps live transparency); 'pdfx-1a' = CMYK + spot only, no transparency; 'none' = convert without PDF/X marking. */
+  profile?: PdfXProfile | 'none'
   /** FOGRA39 (default), FOGRA51, FOGRA52, FOGRA29, GRACoL2006, SWOP2006, JapanColor2011. */
   outputIntent?: string
-  convertToCmyk?: boolean
+  /** 'cmyk' (default: RGB/Lab → CMYK with the press profile), 'gray' (single-colour jobs), 'keep'. */
+  colour?: 'cmyk' | 'gray' | 'keep'
+  /** 'keep' (default) the spot plates (Pantone, varnish, white, dieline) or 'convert' them to process colour. */
+  spotColours?: 'keep' | 'convert'
+  /** Convert all text to vector curves so no fonts are needed (default true). false keeps live text. */
+  outlineFonts?: boolean
+  /** With outlineFonts false: embed (subset) every font (default true). */
   embedFonts?: boolean
-  /** Checked and reported, never added. */
+  /** Resample images placed above 1.5× this resolution down to it (e.g. { dpi: 300 }). Off by default. */
+  downsample?: { dpi: number }
+  /** Pages to keep, e.g. "1-3,5" (default all). */
+  pages?: string
+  /** Comments, links and form fields: 'remove' (default), 'flatten' (drawn into the artwork), 'keep'. */
+  annotations?: 'remove' | 'flatten' | 'keep'
+  /** Choose which layers print, by name (case-insensitive), e.g. { hide: ['Dieline'] }. Layers are merged into the artwork; hidden ones are left out. */
+  layers?: { hide?: string[]; show?: string[] }
+  /** Required bleed — checked and reported, never added. */
   bleed?: { mm: number }
+  /** The artwork already includes this much bleed (page = finished size + bleed): sets TrimBox/BleedBox (pages without a TrimBox; all with force). */
+  bleedIncluded?: { mm: number; force?: boolean }
+  /** Add crop marks outside the bleed in registration colour; {} for defaults (3 mm offset, 5 mm long, 0.25 pt). */
+  cropMarks?: { offsetMm?: number; lengthMm?: number; weightPt?: number }
   /** pdfx-1a only: flatten transparency (affected pages become images). Default false. */
   flattenTransparency?: boolean
   minDpi?: number
+  /** Document title written into the file (default: the source title). */
+  title?: string
 }
 export interface HttpRequestArgs { url: string; method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD'; headers?: Record<string, string>; body?: any }
 export interface TranslateArgs { text: string; targetLanguages: string[]; sourceLanguage?: string }
@@ -1178,6 +1198,10 @@ export interface PdfPreflightResult {
     images: { page: number; dpi: number; width: number; height: number; space: string; placedMm: { w: number; h: number } }[]
     transparency: boolean
     outputIntent: { identifier: string | null; hasProfile: boolean } | null
+    /** Comments, links and form fields on the pages (printer's marks / trapping excluded). */
+    annotations: number
+    /** Optional content (layers) and whether each is visible in the default view. */
+    layers: { name: string; visible: boolean }[]
     [key: string]: any
   }
 }
@@ -1186,9 +1210,10 @@ export interface PdfPrintReadyResult {
   report: {
     /** From the post-conversion preflight — never assumed. */
     compliant: boolean
-    profile: PdfXProfile
+    profile: PdfXProfile | 'none'
     outputIntent: string
     findings: PdfPreflightFinding[]
+    /** What was done, measured on the result: FONTS_OUTLINED, CONVERTED_TO_CMYK, SPOT_COLOURS_CONVERTED, IMAGES_DOWNSAMPLED, PAGES_SELECTED, ANNOTATIONS_REMOVED, LAYERS_MERGED, BOXES_FROM_BLEED, CROP_MARKS, OUTPUT_INTENT, PDFX_IDENTIFIED… */
     changes: { code: string; message: string }[]
     before: { compliant: boolean; errors: number; findings: PdfPreflightFinding[] }
     stats: Record<string, any>

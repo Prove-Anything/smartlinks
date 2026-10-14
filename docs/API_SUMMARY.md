@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.64  |  Generated: 2026-10-14T09:08:10.563Z
+Version: 2.0.65  |  Generated: 2026-10-14T11:49:23.323Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1688,13 +1688,22 @@ interface PdfPreflightArgs {
 ```typescript
 interface PdfPrintReadyArgs {
   url: string
-  profile?: PdfXProfile
+  profile?: PdfXProfile | 'none'
   outputIntent?: string
-  convertToCmyk?: boolean
+  colour?: 'cmyk' | 'gray' | 'keep'
+  spotColours?: 'keep' | 'convert'
+  outlineFonts?: boolean
   embedFonts?: boolean
+  downsample?: { dpi: number }
+  pages?: string
+  annotations?: 'remove' | 'flatten' | 'keep'
+  layers?: { hide?: string[]; show?: string[] }
   bleed?: { mm: number }
+  bleedIncluded?: { mm: number; force?: boolean }
+  cropMarks?: { offsetMm?: number; lengthMm?: number; weightPt?: number }
   flattenTransparency?: boolean
   minDpi?: number
+  title?: string
 }
 ```
 
@@ -1954,6 +1963,8 @@ interface PdfPreflightResult {
   images: { page: number; dpi: number; width: number; height: number; space: string; placedMm: { w: number; h: number } }[]
   transparency: boolean
   outputIntent: { identifier: string | null; hasProfile: boolean } | null
+  annotations: number
+  layers: { name: string; visible: boolean }[]
   [key: string]: any
   }
 }
@@ -1965,7 +1976,7 @@ interface PdfPrintReadyResult {
   url: string
   report: {
   compliant: boolean
-  profile: PdfXProfile
+  profile: PdfXProfile | 'none'
   outputIntent: string
   findings: PdfPreflightFinding[]
   changes: { code: string; message: string }[]

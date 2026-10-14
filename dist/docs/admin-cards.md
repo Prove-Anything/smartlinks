@@ -86,7 +86,9 @@ Data that changes without an event (visit counts, "due this week") — use `maxA
 
 ## Return the payload
 
-The function returns an `AdminCardPayload` — every field optional; return what the card needs:
+The function returns an `AdminCardPayload` — every field optional; return what the card needs.
+It's called with **POST** (an http function's default method — no `trigger.methods` needed) and the body
+`{ "card": "<card id>" }`, so one function can serve several cards:
 
 ```ts
 import type { AdminCardPayload } from '@proveanything/smartlinks'

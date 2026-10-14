@@ -333,8 +333,8 @@ in `input`.
 | `pdf.decodeBarcodes` | Deterministically decode barcodes/QR on a page (WASM, no AI) → value + symbology + page + bbox + confidence. Use this for barcode digits, never vision. |
 | `pdf.inspectGraphics` | Prepress inspection: per-page path/image/outlined-text counts + colour spaces, plus named SPOT colours (e.g. "PANTONE 871 C"). No AI. |
 | `pdf.edit` | Edit an existing PDF: replace **live** text (glyph-exact removal, neighbours never move; original font when it has the glyphs, else an embedded fallback; CMYK/spot colour kept; matches may span lines), add text / images in boxes (`colorSpace: "cmyk"` converts images for print). Per-item `results` with `verified`. |
-| `pdf.preflight` | Prepress preflight, no changes: fonts, RGB/Lab, TrimBox/BleedBox + bleed, effective image dpi, transparency, white overprint, output intent. No AI. |
-| `pdf.printReady` | RGB→CMYK with a press profile (spot colours kept), embed fonts, optional flattening, mark PDF/X-1a or PDF/X-4 with the output intent embedded, then preflight the result → `{ url, report }`. |
+| `pdf.preflight` | Prepress preflight, no changes: fonts, RGB/Lab, TrimBox/BleedBox + bleed, effective image dpi, transparency, white overprint, annotations, hidden layers, output intent. No AI. |
+| `pdf.printReady` | Text outlined to curves, RGB→CMYK with a press profile (spot colours kept), comments removed, layers merged as chosen, mark PDF/X-1a or PDF/X-4 with the output intent embedded, then preflight the result → `{ url, report }`. Options for grey, spot conversion, downsampling, pages, crop marks and more (below). |
 | `http.request` | SSRF-guarded outbound HTTP(S) to a public URL (call a REST API). |
 | `translate` | Translate text into one or more languages (generic, model-based). |
 
@@ -362,11 +362,31 @@ in `input`.
   — it may run into neighbouring text. Text outlined to curves can't be edited: the item fails with
   "not found as live text" — put it on the designer change list. `verified: true` means the new text
   reads back from the output.
-- **Is it print-ready?** → `pdf.preflight` (report only). **Make it print-ready** → `pdf.printReady`
-  with `profile` (`pdfx-4` default; `pdfx-1a` for CMYK-only workflows), `outputIntent` (e.g. `FOGRA39`)
-  and `bleed: { mm: 3 }`. `report.compliant` comes from preflighting the OUTPUT, so remaining issues
-  (low-res images, missing bleed, white overprint) are reported rather than hidden. Flattening for
-  PDF/X-1a turns affected pages into images — opt in with `flattenTransparency: true`.
+- **Is it print-ready?** → `pdf.preflight` (report only; `stats.layers` lists the file's layers).
+  **Make it print-ready** → `pdf.printReady`. By default it outlines all text to curves, converts
+  RGB/Lab to CMYK for the `outputIntent` (e.g. `FOGRA39`), keeps spot colours, removes comments and
+  links, merges layers as the file shows them (hidden layers left out) and marks the file PDF/X-4.
+  `report.changes` says what was done, measured on the output; `report.compliant` comes from
+  preflighting the OUTPUT, so remaining issues (low-res images, missing bleed, white overprint) are
+  reported rather than hidden. Options:
+
+  | Option | Values |
+  |---|---|
+  | `profile` | `pdfx-4` (default), `pdfx-1a` (CMYK + spot only), `none` (convert, no PDF/X marking) |
+  | `outputIntent` | `FOGRA39` (default), `FOGRA51`, `FOGRA52`, `FOGRA29`, `GRACoL2006`, `SWOP2006`, `JapanColor2011` |
+  | `colour` | `cmyk` (default), `gray`, `keep` |
+  | `spotColours` | `keep` (default) or `convert` to process colour |
+  | `outlineFonts` | `true` (default) text → curves; `false` keeps live text (fonts embedded with `embedFonts`, default true) |
+  | `layers` | `{ hide: ['Dieline'], show: [...] }` by name — e.g. print without the dieline |
+  | `annotations` | `remove` (default), `flatten` (draw into the artwork), `keep` |
+  | `pages` | `"1-3,5"` (default all) |
+  | `downsample` | `{ dpi: 300 }` — resample images placed above 1.5× that; off by default |
+  | `bleed` | `{ mm: 3 }` — required bleed, checked and reported, never added |
+  | `bleedIncluded` | `{ mm: 3 }` — the artwork already includes its bleed: sets TrimBox/BleedBox |
+  | `cropMarks` | `{}` or `{ offsetMm, lengthMm, weightPt }` — crop marks outside the bleed |
+  | `flattenTransparency` | PDF/X-1a only: affected pages become images. Default false |
+
+  Outlined text can't be edited or searched afterwards: keep the source PDF for changes and regenerate.
 
 ```ts
 const edited = await SL.ai.tools.run(collectionId, 'pdf.edit', {
@@ -375,6 +395,7 @@ const edited = await SL.ai.tools.run(collectionId, 'pdf.edit', {
 })
 const ready = await SL.ai.tools.run(collectionId, 'pdf.printReady', {
   url: edited.result.url, profile: 'pdfx-4', outputIntent: 'FOGRA39', bleed: { mm: 3 },
+  layers: { hide: ['Dieline'] }, cropMarks: {},
 })
 if (!ready.result.report.compliant) showFindings(ready.result.report.findings)
 ```

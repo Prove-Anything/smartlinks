@@ -17615,20 +17615,55 @@ components:
         url:
           type: string
         profile:
-          $ref: "#/components/schemas/PdfXProfile"
+          type: string
+          enum:
+            - none
         outputIntent:
           type: string
-        convertToCmyk:
+        colour:
+          type: string
+          enum:
+            - cmyk
+            - gray
+            - keep
+        spotColours:
+          type: string
+          enum:
+            - keep
+            - convert
+        outlineFonts:
           type: boolean
         embedFonts:
           type: boolean
+        downsample:
+          type: object
+          additionalProperties: true
+        pages:
+          type: string
+        annotations:
+          type: string
+          enum:
+            - remove
+            - flatten
+            - keep
+        layers:
+          type: object
+          additionalProperties: true
         bleed:
+          type: object
+          additionalProperties: true
+        bleedIncluded:
+          type: object
+          additionalProperties: true
+        cropMarks:
           type: object
           additionalProperties: true
         flattenTransparency:
           type: boolean
         minDpi:
           type: number
+        title:
+          type: string
       required:
         - url
     HttpRequestArgs:
@@ -18040,6 +18075,13 @@ components:
         outputIntent:
           type: object
           additionalProperties: true
+        annotations:
+          type: number
+        layers:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
       required:
         - url
         - compliant
@@ -18053,6 +18095,8 @@ components:
         - images
         - transparency
         - outputIntent
+        - annotations
+        - layers
     PdfPrintReadyResult:
       type: object
       properties:
@@ -18064,7 +18108,9 @@ components:
         compliant:
           type: boolean
         profile:
-          $ref: "#/components/schemas/PdfXProfile"
+          type: string
+          enum:
+            - none
         outputIntent:
           type: string
         findings:
