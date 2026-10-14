@@ -22,8 +22,9 @@
  */
 import type { AdminCard, AdminCardAction, AdminCardPayload } from './types/adminCards'
 
-// The few React APIs the views use — the host's React satisfies this.
-type Node = unknown
+// The few React APIs the views use — the host's React satisfies this. Elements are the host's own
+// (any), so the components drop straight into a host's JSX.
+type Node = any
 interface ReactLike {
   createElement: (type: any, props?: any, ...children: any[]) => Node
   Fragment: any
@@ -95,7 +96,8 @@ const CSS = `
 .slc-spin{animation:slc-spin 1s linear infinite}
 @keyframes slc-spin{to{transform:rotate(360deg)}}
 .slc-valuerow{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 10px}
-.slc-value{font-size:2rem;line-height:1.1;font-weight:700;letter-spacing:-.02em}
+.slc-value{font-size:2rem;line-height:1.1;font-weight:700;letter-spacing:-.02em;min-width:0;overflow-wrap:anywhere}
+.slc-value.slc-text{font-size:1.375rem;letter-spacing:-.01em}
 .slc-unit{font-size:1rem;font-weight:600;margin-left:2px;color:var(--_muted)}
 .slc-label{font-size:.875rem;color:var(--_muted)}
 .slc-trend{font-size:.75rem;font-weight:600;padding:2px 8px;border-radius:999px;background:color-mix(in srgb,var(--_muted) 12%,transparent);color:var(--_muted)}
@@ -208,7 +210,7 @@ export function createAdminCardViews(React: ReactLike) {
       body = h(React.Fragment, null,
         p.value != null && !showEmpty
           ? h('div', { className: 'slc-valuerow' },
-              h('span', { className: 'slc-value' }, formatValue(p.value, lang), p.unit ? h('span', { className: 'slc-unit' }, p.unit) : null),
+              h('span', { className: `slc-value${typeof p.value === 'string' && p.value.length > 8 ? ' slc-text' : ''}` }, formatValue(p.value, lang), p.unit ? h('span', { className: 'slc-unit' }, p.unit) : null),
               p.label ? h('span', { className: 'slc-label' }, p.label) : null,
               p.trend ? h('span', { className: `slc-trend${trendClass}` }, arrow + (p.trend.label || '')) : null)
           : null,
