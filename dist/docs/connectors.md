@@ -110,7 +110,7 @@ declare the provider's hosts (`network:<host>`) and the secrets it reads (`secre
 | `sample` | Mapper, AI assist, dry run | `{ installation, limit }` | `ConnectorRecords` `{ records }`: real provider records |
 | `fetch` | Every inbound run | `ConnectorFetchInput` `{ installation, cursor, limit }` | `ConnectorRecords` `{ records, nextCursor }`: one page per call |
 | `shape` | Every inbound run (and sample dry runs) | `ConnectorShapeInput` `{ installation, records }` | `ConnectorShapeResult` `{ documents, skipped }`: one provider-neutral document per record, same order; `null` skips one |
-| `serialize` | Every outbound run | `ConnectorSerializeInput` `{ installation, documents, eventType? }`: documents core mapped to `describeTarget` paths; a deletion arrives as `{ id, _deleted: true }` | `ConnectorSerializeResult` `{ payloads, skipped }`: one provider payload per document, same order; `null` skips one |
+| `serialize` | Every outbound run | `ConnectorSerializeInput` `{ installation, documents, entities, targetOptions, eventType? }`: documents core mapped to `describeTarget` paths; `entities` = the SmartLinks record each came from (id, name); `targetOptions` = per-field options the mapping carries (e.g. locale, unit); a deletion arrives as `{ id, _deleted: true }` | `ConnectorSerializeResult` `{ payloads, skipped }`: one provider payload per document, same order; `null` skips one |
 | `send` | Every outbound run | `ConnectorSendInput` `{ installation, payloads }` | `ConnectorSendResult` `{ results: [{ index, ok, status, error, externalId }] }` |
 
 **How a run flows:**

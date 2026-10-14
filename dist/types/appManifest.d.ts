@@ -1010,6 +1010,17 @@ export interface ConnectorShapeResult {
 export interface ConnectorSerializeInput {
     installation: ConnectorInstallation;
     documents: Array<Record<string, unknown>>;
+    /** The SmartLinks record each document came from (same order): its id and name, e.g. for an envelope's own id. */
+    entities?: Array<{
+        id: string | null;
+        name?: string | null;
+        deleted?: boolean;
+    }>;
+    /**
+     * Options the flow's mapping carries per target field (keyed by target path), beyond the mapping
+     * itself — e.g. { "brand": { "locale": "en-GB", "uom": "kg" } }. Data for the wire format, not mapping logic.
+     */
+    targetOptions?: Record<string, Record<string, unknown>>;
     /** The event that triggered the run, e.g. 'product.updated' (absent for manual / scheduled runs). */
     eventType?: string;
 }

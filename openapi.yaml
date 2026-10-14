@@ -20172,6 +20172,16 @@ components:
           items:
             type: object
             additionalProperties: true
+        entities:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        targetOptions:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
         eventType:
           type: string
       required:

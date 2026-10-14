@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.63  |  Generated: 2026-10-13T20:27:39.283Z
+Version: 2.0.64  |  Generated: 2026-10-14T09:08:10.563Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3095,6 +3095,8 @@ interface ConnectorShapeResult {
 interface ConnectorSerializeInput {
   installation: ConnectorInstallation
   documents: Array<Record<string, unknown>>
+  entities?: Array<{ id: string | null; name?: string | null; deleted?: boolean }>
+  targetOptions?: Record<string, Record<string, unknown>>
   eventType?: string
 }
 ```

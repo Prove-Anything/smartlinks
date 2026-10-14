@@ -167,6 +167,7 @@ Declare the minimum you need.
 | `sl:<resource>:read` / `sl:<resource>:write` | SDK access to that resource, e.g. `sl:products:read`, `sl:records:write`, `sl:attestations:write`, `sl:contacts:write`. |
 | `network` | `ctx.fetch` to any host. |
 | `network:<host>` | `ctx.fetch` to that host only (repeat for several). Prefer this over blanket `network`. |
+| `network:*.<domain>` | `ctx.fetch` to any subdomain of `<domain>` (not `<domain>` itself), for a customer's own endpoint at a provider, e.g. `network:*.servicebus.windows.net`. `<domain>` needs at least two labels (`*.com` is not honoured). |
 | `secrets:<name>` | `ctx.secrets.get('<name>')` for that one secret (see [Secrets](#secrets--api-keys-per-collection)). |
 
 If you don't declare `network`, `ctx.fetch` is absent. Reading a secret you didn't declare with
