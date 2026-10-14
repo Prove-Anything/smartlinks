@@ -620,4 +620,36 @@ export var appConfiguration;
         return resolveFeature(cfg.system, flag);
     }
     appConfiguration.isFeatureEnabledSync = isFeatureEnabledSync;
+    /**
+     * Has the collection SWITCHED ON this part of the platform (`appConfig.enabled[key]`)? A missing
+     * key is on — only an explicit `false` is off. This is "does this business use it", not "does the
+     * plan allow it": for something a plan gates, check `resolveFeature()` as well. docs/appConfig.md §8a.
+     */
+    function resolveEnabled(cfg, key) {
+        var _a;
+        return ((_a = cfg === null || cfg === void 0 ? void 0 : cfg.enabled) === null || _a === void 0 ? void 0 : _a[key]) !== false;
+    }
+    appConfiguration.resolveEnabled = resolveEnabled;
+    /**
+     * Has the collection switched on `key` (`products`, `crm`, `analytics`, `hub`, `portal`,
+     * `printStudio`, or an app's own key)? Hide what's off: a website-only business switches off
+     * products and the CRM, so menus, cards and setup steps for them shouldn't appear.
+     *
+     * @example
+     * ```typescript
+     * if (await appConfiguration.isEnabled(collectionId, 'products')) showProductsMenu();
+     * ```
+     */
+    async function isEnabled(collectionId, key, options) {
+        return resolveEnabled(await getAppConfig(collectionId, options), key);
+    }
+    appConfiguration.isEnabled = isEnabled;
+    /** Cache-only `isEnabled` — `undefined` until `getAppConfig()` has been read this page load. */
+    function isEnabledSync(collectionId, key) {
+        const cfg = cache.peek(appConfigCacheKey(collectionId));
+        if (!cfg)
+            return undefined;
+        return resolveEnabled(cfg, key);
+    }
+    appConfiguration.isEnabledSync = isEnabledSync;
 })(appConfiguration || (appConfiguration = {}));

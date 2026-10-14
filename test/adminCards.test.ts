@@ -98,3 +98,15 @@ describe('createAdminCardViews', () => {
     assert.equal(AdminCardTodo({ cards: [] }), null)
   })
 })
+
+import { appConfiguration } from '../src/api/appConfiguration'
+
+describe('appConfiguration.resolveEnabled (what a collection has switched on)', () => {
+  test('a missing map or key is on; only an explicit false is off', () => {
+    assert.equal(appConfiguration.resolveEnabled(undefined, 'products'), true)
+    assert.equal(appConfiguration.resolveEnabled({}, 'products'), true)
+    assert.equal(appConfiguration.resolveEnabled({ enabled: { crm: false } }, 'products'), true)
+    assert.equal(appConfiguration.resolveEnabled({ enabled: { products: false } }, 'products'), false)
+    assert.equal(appConfiguration.resolveEnabled({ enabled: { products: true } }, 'products'), true)
+  })
+})

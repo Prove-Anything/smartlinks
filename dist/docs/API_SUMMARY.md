@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.65  |  Generated: 2026-10-14T11:49:23.323Z
+Version: 2.0.66  |  Generated: 2026-10-14T14:32:29.220Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2479,6 +2479,7 @@ interface AppConfigSettings {
   addOns?: string[]
   requestedBasePlanId?: string
   itemRecordMode?: 'registered' | 'owned' | null
+  enabled?: Record<string, boolean>
   system?: SystemBlock
 }
 ```
@@ -10885,6 +10886,15 @@ Check whether a feature flag is enabled for a collection, per `appConfig.system.
 
 **isFeatureEnabledSync**(collectionId: string, flag: string) → `boolean | undefined`
 Synchronous, cache-only check for a feature flag. Returns `undefined` if `getAppConfig()` / `isFeatureEnabled()` hasn't been called yet for this collection this page load (i.e. nothing to read without an await) — treat `undefined` as "not yet known", not as "disabled". ```typescript // Warm the cache once, e.g. in a top-level effect: useEffect(() => { appConfiguration.isFeatureEnabled(collectionId, 'custom_domain') }, [collectionId]); // Elsewhere, read synchronously without an await: const enabled = appConfiguration.isFeatureEnabledSync(collectionId, 'custom_domain'); if (enabled === undefined) { // not warmed yet — fall back to a loading state or the async version } ```
+
+**resolveEnabled**(cfg: { enabled?: Record<string, boolean> } | null | undefined, key: string) → `boolean`
+Has the collection SWITCHED ON this part of the platform (`appConfig.enabled[key]`)? A missing key is on — only an explicit `false` is off. This is "does this business use it", not "does the plan allow it": for something a plan gates, check `resolveFeature()` as well. docs/appConfig.md §8a.
+
+**isEnabled**(collectionId: string, key: string, options?: { force?: boolean }) → `Promise<boolean>`
+Has the collection switched on `key` (`products`, `crm`, `analytics`, `hub`, `portal`, `printStudio`, or an app's own key)? Hide what's off: a website-only business switches off products and the CRM, so menus, cards and setup steps for them shouldn't appear. ```typescript if (await appConfiguration.isEnabled(collectionId, 'products')) showProductsMenu(); ```
+
+**isEnabledSync**(collectionId: string, key: string) → `boolean | undefined`
+Cache-only `isEnabled` — `undefined` until `getAppConfig()` has been read this page load.
 
 ### asset
 

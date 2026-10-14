@@ -147,6 +147,15 @@ export interface AppConfigSettings {
   /** How the account handles individual physical items. */
   itemRecordMode?: 'registered' | 'owned' | null
 
+  /**
+   * What this collection has SWITCHED ON — separate from what its plan allows (`system.features`).
+   * A missing key means on, so collections that never set it behave as they always have. A website
+   * sign-up switches off what it doesn't use, e.g. `{ products: false, crm: false, hub: false }`.
+   * Known keys: `products`, `crm`, `analytics`, `hub`, `portal`, `printStudio`; the map is open.
+   * Read it with `appConfiguration.isEnabled()` / `resolveEnabled()` — docs/appConfig.md §8a.
+   */
+  enabled?: Record<string, boolean>
+
   // ─── SYSTEM-OWNED, PUBLIC (reconcile writes; client read-only) ───────
   /** Resolved entitlement truth. Read this to gate features. */
   system?: SystemBlock

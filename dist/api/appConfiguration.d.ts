@@ -483,4 +483,27 @@ export declare namespace appConfiguration {
      * ```
      */
     function isFeatureEnabledSync(collectionId: string, flag: string): boolean | undefined;
+    /**
+     * Has the collection SWITCHED ON this part of the platform (`appConfig.enabled[key]`)? A missing
+     * key is on — only an explicit `false` is off. This is "does this business use it", not "does the
+     * plan allow it": for something a plan gates, check `resolveFeature()` as well. docs/appConfig.md §8a.
+     */
+    function resolveEnabled(cfg: {
+        enabled?: Record<string, boolean>;
+    } | null | undefined, key: string): boolean;
+    /**
+     * Has the collection switched on `key` (`products`, `crm`, `analytics`, `hub`, `portal`,
+     * `printStudio`, or an app's own key)? Hide what's off: a website-only business switches off
+     * products and the CRM, so menus, cards and setup steps for them shouldn't appear.
+     *
+     * @example
+     * ```typescript
+     * if (await appConfiguration.isEnabled(collectionId, 'products')) showProductsMenu();
+     * ```
+     */
+    function isEnabled(collectionId: string, key: string, options?: {
+        force?: boolean;
+    }): Promise<boolean>;
+    /** Cache-only `isEnabled` — `undefined` until `getAppConfig()` has been read this page load. */
+    function isEnabledSync(collectionId: string, key: string): boolean | undefined;
 }

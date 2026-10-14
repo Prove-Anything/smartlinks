@@ -36,6 +36,8 @@ export interface AppConfigSettings {
 
   /** How the account handles individual physical items. */
   itemRecordMode?: 'registered' | 'owned' | null;
+  /** What the collection has switched on (absent key = on) — see §8a. */
+  enabled?: Record<string, boolean>;
 
   // ── SYSTEM-OWNED, PUBLIC (reconcile writes; client read-only) ─────
   /** Resolved entitlement truth. Read this to gate features. */
@@ -500,6 +502,41 @@ changes are forward-only per record — existing items keep their tier.
 the customer add-ons page (`src/components/pricing/ItemHandlingSection`)
 because these settings change the whole UX shape (claim, ownership,
 CRM visibility), not just a capability flag.
+
+## 8a. What's switched on (`enabled`)
+
+A root-level, user-owned map (like `itemRecordMode`; reconcile never touches it) saying which parts of
+the platform this collection **uses** — separate from what its plan **allows** (`system.features`):
+
+| | Plan allows (`system.features`) | Switched on (`enabled`) |
+|---|---|---|
+| Written by | billing (`entitlements-reconcile`) | the collection: sign-up wizards, admins |
+| Means | "you may have this" | "this business uses this" |
+| Missing key | standard: off · enterprise: on | **on** |
+
+```json
+{ "enabled": { "products": false, "crm": false, "hub": false, "portal": false, "printStudio": false } }
+```
+
+**A missing key is on**, so a collection that never set `enabled` behaves exactly as before. Only an
+explicit `false` switches something off. A website-only sign-up switches off what it doesn't use
+(products, CRM, Hub, Portal…), and Studio hides the menus, dashboard cards and setup steps for them;
+an admin can switch them back on.
+
+Known keys: `products`, `crm`, `analytics`, `hub`, `portal`, `printStudio`. The map is open — an app
+may define its own key.
+
+```ts
+if (await SL.appConfiguration.isEnabled(collectionId, 'products')) showProducts()
+// already have the config:
+SL.appConfiguration.resolveEnabled(cfg, 'crm')
+```
+
+For something a plan gates, show it only when both hold: `resolveEnabled(cfg, key)` **and**
+`resolveFeature(cfg.system, flag)`.
+
+Write it through the admin settings route (`collection.updateSettings(collectionId, 'appConfig',
+{ enabled: { products: true } })`) — keys merge, so set only the ones you change.
 
 ## 9. Migration notes
 
