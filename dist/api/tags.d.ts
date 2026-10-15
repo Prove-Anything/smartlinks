@@ -6,9 +6,9 @@ import type { TagIndexEntry, CreateTagRequest, CreateTagResponse, BatchCreateTag
  * etc.) and products, proofs, or any polymorphic object in the platform.
  *
  * ### Two-tier architecture
- * - **Per-org shard** (`tags` table) â€” full tag data; used for all collection-scoped
+ * - **Per-org shard** (`tags` table) — full tag data; used for all collection-scoped
  *   queries.
- * - **Shared shard** (`tag_index` table) â€” `tagId â†’ collectionId` routing only; used
+ * - **Shared shard** (`tag_index` table) — `tagId → collectionId` routing only; used
  *   when the collection is not yet known.
  *
  * 99% of callers will know the collection and should use collection-scoped endpoints
@@ -49,7 +49,7 @@ export declare namespace tags {
      *
      * Tags with `productId` but no `proofId` automatically get serial numbers.
      * Serial number generation is grouped by `(productId, variantId, batchId)` for
-     * efficiency.  Partial success is possible â€” check `results` for individual outcomes.
+     * efficiency.  Partial success is possible — check `results` for individual outcomes.
      *
      * @param collectionId - Collection context
      * @param data - Batch payload; `force` applies to all tags in the batch
@@ -78,7 +78,7 @@ export declare namespace tags {
     /**
      * Update a tag (admin).
      *
-     * Partial update â€” only provided fields are changed.  `metadata` is
+     * Partial update — only provided fields are changed.  `metadata` is
      * deep-merged with the existing value.  Pass `refType: null, refId: null`
      * to clear the polymorphic ref.
      *
@@ -130,7 +130,7 @@ export declare namespace tags {
      */
     function list(collectionId: string, params?: ListTagsRequest): Promise<ListTagsResponse>;
     /**
-     * Reverse lookup â€” find all tags linked to a given object (admin).
+     * Reverse lookup — find all tags linked to a given object (admin).
      *
      * Uses a compound index on `(orgId, refType, refId)` on the per-org shard.
      * No embed support on the admin side.
@@ -149,7 +149,7 @@ export declare namespace tags {
      */
     function byRef(collectionId: string, params: ReverseTagLookupParams): Promise<ReverseTagLookupResponse>;
     /**
-     * Global tag resolve â€” returns `{ tagId, collectionId }` only.
+     * Global tag resolve — returns `{ tagId, collectionId }` only.
      *
      * Use this **only** when you have a raw `tagId` and do not yet know which
      * collection it belongs to.  Queries the shared `tag_index` shard.
@@ -159,7 +159,7 @@ export declare namespace tags {
      * > Use the collection-scoped `publicByRef` instead.
      *
      * @param tagId - Physical tag identifier
-     * @returns `{ tagId, collectionId }` â€” routing info only, no full tag data
+     * @returns `{ tagId, collectionId }` — routing info only, no full tag data
      *
      * @example
      * ```typescript
@@ -179,7 +179,7 @@ export declare namespace tags {
      * `GET /public/collection/:collectionId/tags/:tagId?embed=product,proof,container,ref`
      *
      * Supported `embed` values: `'product'`, `'proof'`, `'container'`, `'ref'`
-     * (`'collection'` is not supported â€” the collection is already known from the URL).
+     * (`'collection'` is not supported — the collection is already known from the URL).
      *
      * @param collectionId - Collection context
      * @param tagId - Physical tag identifier

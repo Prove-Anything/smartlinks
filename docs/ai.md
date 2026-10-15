@@ -323,7 +323,7 @@ in `input`.
 | `image.fromReference` | Image-to-image: generate guided by reference image(s). |
 | `image.searchStock` | Search real stock photos (Unsplash). |
 | `image.transform` | Resize / crop / rotate / grayscale / format-convert / compress → hosted URL. |
-| `pdf.create` | Render HTML → PDF → hosted URL. |
+| `pdf.create` | Render HTML (or one fragment per page) → PDF, 1:1: exact `width`/`height`/`unit` for labels, `pages[]` for many pages in one render, no scripts, only SmartLinks/Google Fonts/data: resources. `return`: `url` (public), `signedUrl` (expiring), `base64`. Cached by input. |
 | `pdf.fill` | Fill an AcroForm PDF's fields (`{ field: value }`) → hosted URL. |
 | `pdf.merge` | Merge several PDFs into one, in order → hosted URL. |
 | `pdf.inspect` | Cheap, no-AI introspection: page count/sizes, which pages have a real text layer, raster present, and a routing hint (`text` vs `vision`). |
@@ -402,9 +402,11 @@ if (!ready.result.report.compliant) showFindings(ready.result.report.findings)
 - **A review UI that flags guessed fields** → `pdf.extract` with `includeConfidence` (per-field
   confidence + source) and `includeBoxes` (per-field bbox on text-native pages) in `fieldsMeta`.
 - **Produce a PDF** → `pdf.create` (HTML → PDF), `pdf.fill` (populate an AcroForm's fields),
-  `pdf.merge` (combine several). These return a hosted `hostedUrl` (`pdf.create` also returns it as
-  `url`). `pdf.create` loads remote `<img>` URLs before rendering and honours `page-break-inside`; pass
-  `margin: "0"` when your HTML sets its own body margin (default page margin is 18mm/14mm).
+  `pdf.merge` (combine several). `pdf.create` takes an exact page size (`width`, `height`, `unit`) or a
+  `format`, `html` or `pages: [html, …]` (one per page, sharing `head`), and returns `url` (public),
+  a `signedUrl` that expires, or `base64` (`return`). JavaScript doesn't run, and images, fonts and
+  stylesheets load only from SmartLinks hosts, Google Fonts or `data:` URIs. From a server function:
+  `ctx.sl.tools.run('pdf.create', …)` with the `tools:pdf.create` capability (server-functions.md).
 
 Every tool is also directly callable without the model loop via `ai.tools.run(collectionId, name,
 args)` — e.g. render a page or extract fields straight from a UI, no agent round-trip:

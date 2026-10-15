@@ -169,6 +169,7 @@ Declare the minimum you need.
 | `network:<host>` | `ctx.fetch` to that host only (repeat for several). Prefer this over blanket `network`. |
 | `network:*.<domain>` | `ctx.fetch` to any subdomain of `<domain>` (not `<domain>` itself), for a customer's own endpoint at a provider, e.g. `network:*.servicebus.windows.net`. `<domain>` needs at least two labels (`*.com` is not honoured). |
 | `secrets:<name>` | `ctx.secrets.get('<name>')` for that one secret (see [Secrets](#secrets--api-keys-per-collection)). |
+| `tools:<name>` / `tools:<family>.*` | `ctx.sl.tools.run('<name>', args)` for a platform tool, e.g. `tools:pdf.create`, or `tools:pdf.*` for every PDF tool (see [Platform tools](#platform-tools--pdfs-labels-barcodes)). |
 
 If you don't declare `network`, `ctx.fetch` is absent. Reading a secret you didn't declare with
 `secrets:<name>` throws.
@@ -603,6 +604,58 @@ await ctx.sl.interactions.record({
   metadata: { number, consent: true },
 })
 ```
+
+---
+
+## Platform tools — PDFs, labels, barcodes
+
+`ctx.sl.tools.run(name, args)` runs one of the platform's deterministic tools from your function: no
+model, no agent loop. Declare each tool as a capability: `tools:pdf.create`, or `tools:pdf.*` for the
+whole family. Open to functions: `pdf.create`, `pdf.merge`, `pdf.fill`, `pdf.inspect`, `pdf.render`,
+`pdf.decodeBarcodes`, `pdf.inspectGraphics`, `pdf.preflight`, `pdf.printReady`, `pdf.edit`,
+`image.transform` (arguments as in [ai.md](ai.md)).
+
+- **Identity:** the call runs as the function's collection, whatever the caller. An anonymous caller
+  holding only your own key gets the same result; the work is attributed and billed to the collection.
+- **Rate:** per collection (10 calls a second by default); bursts wait rather than fail.
+- **Failure:** throws an `Error` with `code` (`bad_args`, `too_large`, `too_many_pages`,
+  `resource_timeout`, `timeout`, `busy`, `TOOL_NOT_AVAILABLE`, or a capability denial).
+
+**Labels with `pdf.create`.** Exact page sizes, many pages in one render, and bytes straight back:
+
+```ts
+// capabilities: ["tools:pdf.create", "tools:pdf.decodeBarcodes"]
+export async function printLabel(ctx, event) {
+  const { gtin, lot, expiry, qty = 1 } = event.body
+  const barcode = bwipjs.toSVG({ bcid: 'gs1-128', text: `(01)${gtin}(10)${lot}(17)${expiry}` }) // inline SVG
+  const pdf = await ctx.sl.tools.run('pdf.create', {
+    width: 100, height: 50, unit: 'mm',                      // exact; output is 1:1
+    head: '<style>.l{position:absolute;font:3mm Arial}</style>',
+    pages: Array.from({ length: qty }, () => `<div class="l" style="left:4mm;top:3mm">Lot ${lot}</div>
+      <div style="position:absolute;left:4mm;top:10mm;width:92mm">${barcode}</div>`),
+    return: 'base64',                                        // or 'signedUrl' + expiresIn
+  })
+  return { pdf: pdf.base64, pages: pdf.pageCount }
+}
+```
+
+- **Page size:** `width` + `height` (+ `unit`: mm, cm, in, pt, px) is exact to the point. Otherwise
+  `format` ("A4", "Letter"), or the document's own CSS `@page { size }` when neither is given.
+- **Pages:** `pages: [html, …]` lays one fragment per page; with an exact size and no margin each page
+  box is that size (overflow hidden), so a long value can't push onto the next label. Up to 2000 pages
+  and 10 MB of HTML per render.
+- **Output:** 1:1 at scale 1 with backgrounds; text stays text and SVG stays vector (render barcodes as
+  inline SVG, e.g. bwip-js `toSVG`, never as a canvas bitmap). Colour is RGB; for CMYK pass the result
+  through `pdf.printReady`.
+- **What loads:** JavaScript does not run. Images, fonts and stylesheets load only from SmartLinks hosts
+  (our CDN), Google Fonts or inline `data:` URIs; anything else is skipped and listed in `warnings`.
+  Embed brand fonts as `data:` URIs in `@font-face`, or host them on the SmartLinks CDN.
+- **Delivery:** `return: 'base64'` (nothing stored), `'signedUrl'` (private link that expires after
+  `expiresIn` seconds, default 900, max 7 days — use this for anything with lot, expiry or serial
+  data), or `'url'` (public and permanent — artwork and documents meant to be shared).
+- **Cache:** the same inputs return the earlier render without rendering again (`cached: true`).
+- **Verify:** `pdf.decodeBarcodes` on a `signedUrl` reads the codes back deterministically, so you can
+  confirm the digits before answering.
 
 ---
 

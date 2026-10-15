@@ -8339,7 +8339,7 @@ paths:
     get:
       tags:
         - tags
-      summary: Reverse lookup â€” find all tags linked to a given object (admin).
+      summary: Reverse lookup — find all tags linked to a given object (admin).
       operationId: tags_byRef
       security:
         - bearerAuth: []
@@ -14108,7 +14108,7 @@ paths:
     get:
       tags:
         - tags
-      summary: "Global tag resolve â€” returns `{ tagId, collectionId }` only."
+      summary: "Global tag resolve — returns `{ tagId, collectionId }` only."
       operationId: tags_resolveTag
       security: []
       parameters:
@@ -17499,14 +17499,74 @@ components:
       properties:
         html:
           type: string
+        pages:
+          type: array
+          items:
+            type: string
+        head:
+          type: string
+        width:
+          type: number
+        height:
+          type: number
+        unit:
+          type: string
+          enum:
+            - mm
+            - cm
+            - in
+            - pt
+            - px
         format:
           type: string
         landscape:
           type: boolean
         margin:
           type: string
+        return:
+          type: string
+          enum:
+            - url
+            - signedUrl
+            - base64
+        expiresIn:
+          type: number
+        filename:
+          type: string
+        cache:
+          type: boolean
+    PdfCreateResult:
+      type: object
+      properties:
+        url:
+          type: string
+        hostedUrl:
+          type: string
+        base64:
+          type: string
+        expiresAt:
+          type: string
+        contentType:
+          type: string
+          enum:
+            - application/pdf
+        size:
+          type: number
+        pageCount:
+          type: number
+        cached:
+          type: boolean
+        renderer:
+          type: string
+        warnings:
+          type: array
+          items:
+            type: string
       required:
-        - html
+        - contentType
+        - size
+        - pageCount
+        - cached
     PdfFillArgs:
       type: object
       properties:
@@ -19657,6 +19717,9 @@ components:
         interactions:
           type: object
           additionalProperties: true
+        tools:
+          type: object
+          additionalProperties: true
         products: {}
         attestations: {}
         appData:
@@ -19667,6 +19730,7 @@ components:
         - tags
         - contacts
         - interactions
+        - tools
         - products
         - attestations
         - appData

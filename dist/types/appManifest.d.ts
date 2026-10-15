@@ -457,6 +457,16 @@ export interface ServerFunctionSl {
             eventId: string;
         }>;
     };
+    /**
+     * Platform tools (`tools:<name>` or `tools:<family>.*`, e.g. `tools:pdf.create`, `tools:pdf.*`):
+     * pdf.create, pdf.merge, pdf.fill, pdf.inspect, pdf.render, pdf.decodeBarcodes, pdf.inspectGraphics,
+     * pdf.preflight, pdf.printReady, pdf.edit, image.transform. Runs as THIS collection whatever the caller
+     * (authorised by the declaration, billed to the collection), rate-limited per collection. Returns the
+     * tool's result; a failure throws an Error with `code` (e.g. bad_args, busy, too_many_pages).
+     */
+    tools: {
+        run<T = any>(name: string, args?: Record<string, any>): Promise<T>;
+    };
     /** Products, scoped by caller authority + declared capability. */
     products: any;
     /** Attestations, scoped by caller authority + declared capability. */

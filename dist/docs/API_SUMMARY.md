@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.66  |  Generated: 2026-10-14T17:08:38.634Z
+Version: 2.0.67  |  Generated: 2026-10-15T14:10:35.734Z
 
 This is a concise summary of all available API functions and types.
 
@@ -1600,10 +1600,35 @@ interface PdfClip {
 **PdfCreateArgs** (interface)
 ```typescript
 interface PdfCreateArgs {
-  html: string
+  html?: string
+  pages?: string[]
+  head?: string
+  width?: number
+  height?: number
+  unit?: 'mm' | 'cm' | 'in' | 'pt' | 'px'
   format?: string
   landscape?: boolean
   margin?: string
+  return?: 'url' | 'signedUrl' | 'base64'
+  expiresIn?: number
+  filename?: string
+  cache?: boolean
+}
+```
+
+**PdfCreateResult** (interface)
+```typescript
+interface PdfCreateResult {
+  url?: string
+  hostedUrl?: string
+  base64?: string
+  expiresAt?: string
+  contentType: 'application/pdf'
+  size: number
+  pageCount: number
+  cached: boolean
+  renderer?: string
+  warnings?: string[]
 }
 ```
 
@@ -2786,6 +2811,7 @@ interface ServerFunctionSl {
   forCaller(): Promise<{ contactId: string } | null>;
   };
   interactions: { record(event: ServerFunctionInteractionEvent): Promise<{ eventId: string }> };
+  tools: { run<T = any>(name: string, args?: Record<string, any>): Promise<T> };
   products: any;
   attestations: any;
   appData: AppDataHandle & { global: AppDataHandle; collection: AppDataHandle };

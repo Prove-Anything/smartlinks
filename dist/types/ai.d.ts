@@ -945,11 +945,49 @@ export interface PdfClip {
     y1: number;
 }
 export interface PdfCreateArgs {
-    html: string;
+    /** One HTML document (inline CSS). Give `html` or `pages`. */
+    html?: string;
+    /** One HTML fragment per page, laid out one per page (sharing `head`). With width/height and no margin each page box is exactly that size, overflow hidden. 500 labels = one call. */
+    pages?: string[];
+    /** With `pages`: shared <head> content (<style>, @font-face). */
+    head?: string;
+    /** Exact page size (labels, rolls, sheets) — exact to the point. Give both. */
+    width?: number;
+    height?: number;
+    /** Unit for width/height (default 'mm'). */
+    unit?: 'mm' | 'cm' | 'in' | 'pt' | 'px';
+    /** Named page size ("A4", "Letter") when not giving width/height. With neither, the document's CSS @page size is used (else A4). */
     format?: string;
     landscape?: boolean;
-    /** Page margin for all sides, e.g. "0" or "12mm" (default 18mm/14mm). Use "0" when the HTML sets its own margins. */
+    /** Page margin for all sides, e.g. "0" or "12mm". Default 0 with width/height or pages; 18mm/14mm for named formats. */
     margin?: string;
+    /** 'url' (public, permanent; default), 'signedUrl' (private link that expires), 'base64' (bytes in the response, nothing stored). */
+    return?: 'url' | 'signedUrl' | 'base64';
+    /** signedUrl lifetime in seconds: 30 to 604800 (7 days); default 900. */
+    expiresIn?: number;
+    /** File name for signedUrl downloads (default document.pdf). */
+    filename?: string;
+    /** Reuse an identical earlier render (default true). */
+    cache?: boolean;
+}
+export interface PdfCreateResult {
+    /** return 'url' or 'signedUrl'. */
+    url?: string;
+    /** return 'url': same as url. */
+    hostedUrl?: string;
+    /** return 'base64'. */
+    base64?: string;
+    /** return 'signedUrl': when the link stops working. */
+    expiresAt?: string;
+    contentType: 'application/pdf';
+    size: number;
+    pageCount: number;
+    /** An identical earlier render was reused (no new render). */
+    cached: boolean;
+    /** The renderer, e.g. "Chrome/141.0…". */
+    renderer?: string;
+    /** Resources that were not loaded (only images, fonts and stylesheets from SmartLinks hosts, Google Fonts or data: URIs load). */
+    warnings?: string[];
 }
 export interface PdfFillArgs {
     url: string;

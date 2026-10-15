@@ -62,7 +62,7 @@ export const BUILTIN_AI_TOOLS = [
     { name: 'image.transform', group: 'media', capabilities: ['media:image'],
         description: 'Transform an image: resize/crop/rotate/flip/grayscale/tint/format-convert/compress → hosted URL.' },
     { name: 'pdf.create', group: 'media', capabilities: ['media:pdf'],
-        description: 'Render HTML to a PDF and return a hosted URL.' },
+        description: 'Render HTML (or one fragment per page) to a PDF, 1:1: exact page sizes (width/height/unit) for labels, many pages per call, text and SVG kept vector, no scripts. Returns a public URL, an expiring private link, or base64; identical inputs reuse the cached render.' },
     { name: 'pdf.fill', group: 'media', capabilities: ['media:pdf'],
         description: 'Fill an AcroForm PDF\'s fields from a { field: value } map → hosted URL.' },
     { name: 'pdf.merge', group: 'media', capabilities: ['media:pdf'],
