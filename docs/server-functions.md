@@ -33,7 +33,7 @@ in a bundle alongside your widgets/containers:
 ```jsonc
 {
   "functions": {
-    "files": { "js": { "umd": "dist/functions.umd.js" } },
+    "files": { "js": { "umd": "functions.umd.js" } },
     "definitions": [
       {
         "name": "submitCompetitionEntry",
@@ -98,9 +98,12 @@ export default defineConfig({
 }
 ```
 
-That emits `dist/functions.umd.js` (matching `functions.files.js.umd`), whose named exports the
-platform pairs with your manifest `definitions`. Then **deploy** it — for dev,
-`smartlinks-publish` uploads `dist/` and registers in one step (see
+That emits `dist/functions.umd.js`, whose named exports the platform pairs with your manifest
+`definitions`. In the manifest, `functions.files.js.umd` is **`functions.umd.js`** — relative to the
+published build (the contents of `dist/`), like the widget and container files; not
+`dist/functions.umd.js`. Publishing refuses a release whose functions bundle isn't there.
+
+Then **deploy** it — for dev, `smartlinks-publish` uploads `dist/` and registers in one step (see
 [Deploying & registering](deploying-apps.md)).
 
 ---

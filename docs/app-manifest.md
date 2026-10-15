@@ -428,7 +428,7 @@ this is just the manifest shape.
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `files.js.umd` | string | UMD bundle path (e.g. `dist/functions.umd.js`) — a self-contained bundle exporting each handler by name |
+| `files.js.umd` | string | UMD bundle path, relative to the published build like the other bundles (e.g. `functions.umd.js`, built to `dist/functions.umd.js`) — a self-contained bundle exporting each handler by name |
 | `definitions[]` | object[] | One entry per function |
 | `definitions[].name` | string | Function name; also the handler export name (override with `handler`) |
 | `definitions[].trigger` | object | `{ type: "http"|"event"|"cron", … }` |
