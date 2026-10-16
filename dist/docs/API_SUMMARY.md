@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.67  |  Generated: 2026-10-15T14:10:35.734Z
+Version: 2.0.68  |  Generated: 2026-10-16T18:41:47.466Z
 
 This is a concise summary of all available API functions and types.
 
@@ -5362,7 +5362,7 @@ interface InviteUserInput {
 
 **CollectionUpdateRequest** = `Partial<Omit<Collection, 'id' | 'shortId'>>`
 
-**DomainTarget** = `"smartlinks" | "hub"`
+**DomainTarget** = `"links" | "site"`
 
 **CollectionAccessLevel** = `'Owner' | 'Admin' | 'Assigner' | 'Reporter' | 'User' | 'None'`
 
@@ -11514,11 +11514,14 @@ Check whether a Hub subdomain name is available to claim (admin only).
 **claimHub**(collectionId: string, hubName: string) → `Promise<CollectionResponse>`
 Claim or rename the Hub subdomain for a collection (admin only). Maps `{hubName}.smartlinks.host` to the collection. If the collection already had a different hub name, the previous subdomain is released automatically.
 
-**registerDomain**(collectionId: string, domain: string, target: DomainTarget = "smartlinks") → `Promise<any>`
-Register a custom domain for a collection and provision its managed certificate (admin only). `"smartlinks"` (the id.smartlinks.app load balancer). Pass `"hub"` to register a bring-your-own Hub domain.
+**registerDomain**(collectionId: string, domain: string, target: DomainTarget = "links") → `Promise<any>`
+Connect one of the collection's own domains and start its certificate (admin only). or `"site"` for the collection's Hub domain.
 
-**getDomainStatus**(collectionId: string, target: DomainTarget = "smartlinks") → `Promise<any>`
-Get the managed-certificate status for a collection's custom domain (admin only). or `"hub"` (uses `hubCustomDomain`)
+**getDomainStatus**(collectionId: string, target: DomainTarget = "links") → `Promise<any>`
+Get the certificate status of the collection's own domain (admin only). or `"site"` (its Hub domain, `hubCustomDomain`)
+
+**releaseDomain**(collectionId: string, domain: string) → `Promise<`
+Remove the collection's links domain (admin only). It stops working straight away: QR codes, GS1 Digital Links and short links printed with it no longer open. Its certificate goes and `redirectUrl` is cleared. (Site domains are removed from the site's settings.)
 
 **getSettings**(collectionId: string, settingGroup: string, admin?: boolean) → `Promise<any>`
 Retrieve a specific settings group for a collection. Public reads return the public view of the settings group. If the stored payload contains a top-level `admin` object, that block is omitted from public responses and included when `admin === true`.

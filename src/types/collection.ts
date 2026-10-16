@@ -104,11 +104,13 @@ export type CollectionCreateRequest = Omit<Collection, 'id' | 'shortId'>
 export type CollectionUpdateRequest = Partial<Omit<Collection, 'id' | 'shortId'>>
 
 /**
- * Which load balancer / certificate map a custom domain registration targets.
- * - `"smartlinks"` (default): the id.smartlinks.app load balancer (legacy behaviour)
- * - `"hub"`: the SmartLinks Hub load balancer
+ * What a collection's own domain is for:
+ * - `"links"` (default): a links domain (e.g. `id.brand.com`) — GS1 Digital Links, short links and QR
+ *   codes, the portal, and the API and sign-in on the brand's domain. Stored as `redirectUrl`.
+ * - `"site"`: a site domain — the collection's Hub (`hubCustomDomain`), or an app website when an
+ *   `appId` is given. Served through the site runtime (CNAME to `cname.smartlinks.host`).
  */
-export type DomainTarget = "smartlinks" | "hub"
+export type DomainTarget = "links" | "site"
 
 /**
  * Response from checking whether a Hub subdomain name is available.

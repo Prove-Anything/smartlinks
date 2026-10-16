@@ -29,7 +29,7 @@ needs to call it — a description and an input schema:
 ```jsonc
 {
   "functions": {
-    "files": { "js": { "umd": "dist/functions.umd.js" } },
+    "files": { "js": { "umd": "functions.umd.js" } },
     "definitions": [
       {
         "name": "createFaq",

@@ -68,27 +68,37 @@ export declare namespace collection {
      */
     function claimHub(collectionId: string, hubName: string): Promise<CollectionResponse>;
     /**
-     * Register a custom domain for a collection and provision its managed
-     * certificate (admin only).
+     * Connect one of the collection's own domains and start its certificate (admin only).
      *
      * @param collectionId – Identifier of the collection
-     * @param domain – The fully-qualified domain to register (e.g. "hub.acme.com")
-     * @param target – Which load balancer / certificate map to use. Defaults to
-     *   `"smartlinks"` (the id.smartlinks.app load balancer). Pass `"hub"` to
-     *   register a bring-your-own Hub domain.
+     * @param domain – The fully-qualified domain (e.g. "id.acme.com", "hub.acme.com")
+     * @param target – `"links"` (default) for a links domain (GS1 Digital Links, short links, portal),
+     *   or `"site"` for the collection's Hub domain.
      * @returns Promise resolving when registration has been initiated
-     * @throws ErrorResponse if the request fails
+     * @throws ErrorResponse if the request fails (409 DOMAIN_IN_USE when it's already the other kind)
      */
     function registerDomain(collectionId: string, domain: string, target?: DomainTarget): Promise<any>;
     /**
-     * Get the managed-certificate status for a collection's custom domain (admin only).
+     * Get the certificate status of the collection's own domain (admin only).
      * @param collectionId – Identifier of the collection
-     * @param target – Which domain to check: `"smartlinks"` (default, uses `redirectUrl`)
-     *   or `"hub"` (uses `hubCustomDomain`)
-     * @returns Promise resolving to the certificate details
+     * @param target – Which domain to check: `"links"` (default, its `redirectUrl`)
+     *   or `"site"` (its Hub domain, `hubCustomDomain`)
+     * @returns Promise resolving to the certificate / custom hostname details
      * @throws ErrorResponse (404) if the relevant domain is not set
      */
     function getDomainStatus(collectionId: string, target?: DomainTarget): Promise<any>;
+    /**
+     * Remove the collection's links domain (admin only). It stops working straight away: QR codes,
+     * GS1 Digital Links and short links printed with it no longer open. Its certificate goes and
+     * `redirectUrl` is cleared. (Site domains are removed from the site's settings.)
+     * @param collectionId – Identifier of the collection
+     * @param domain – The links domain to remove
+     * @returns Promise resolving to `{ released }`
+     * @throws ErrorResponse (409 SITE_DOMAIN) if the domain is a site's domain
+     */
+    function releaseDomain(collectionId: string, domain: string): Promise<{
+        released: string;
+    }>;
     /**
      * Retrieve a specific settings group for a collection.
      * Public reads return the public view of the settings group. If the stored payload contains

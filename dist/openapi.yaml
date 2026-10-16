@@ -3715,7 +3715,7 @@ paths:
     get:
       tags:
         - collection
-      summary: "Get the managed-certificate status for a collection's custom domain (admin only)."
+      summary: "Get the certificate status of the collection's own domain (admin only)."
       operationId: collection_getDomainStatus
       security:
         - bearerAuth: []
@@ -3740,7 +3740,7 @@ paths:
     post:
       tags:
         - collection
-      summary: Register a custom domain for a collection and provision its managed certificate (admin only).
+      summary: "Connect one of the collection's own domains and start its certificate (admin only)."
       operationId: collection_registerDomain
       security:
         - bearerAuth: []

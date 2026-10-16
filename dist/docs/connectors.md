@@ -66,7 +66,7 @@ deterministically. A connector's `shape` and `serialize` must be deterministic t
   "aiGuide": "connector-ai-guide.md"
 },
 "functions": {
-  "files": { "js": { "umd": "dist/functions.umd.js" } },
+  "files": { "js": { "umd": "functions.umd.js" } },
   "definitions": [
     { "name": "testConnection", "trigger": { "type": "http", "method": "POST" },
       "visibility": "admin", "authority": "collection",
