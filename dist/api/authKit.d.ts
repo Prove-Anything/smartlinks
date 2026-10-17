@@ -1,4 +1,4 @@
-import type { AuthLoginResponse, AppleLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, AuthKitConfigInput, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse, MfaChallengeSendResponse, MfaFinalizeResponse, MfaEnrollSendResponse, MfaEnrolledResponse, MfaFactorsResponse, TrustedDevice } from "../types/authKit.js";
+import type { AuthLoginResponse, AppleLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, AuthKitConfigInput, AuthKitSetIdentityResponse, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse, MfaChallengeSendResponse, MfaFinalizeResponse, MfaEnrollSendResponse, MfaEnrolledResponse, MfaFactorsResponse, TrustedDevice } from "../types/authKit.js";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
@@ -268,5 +268,18 @@ export declare namespace authKit {
      * back via {@link load}.
      */
     function update(collectionId: string, authKitId: string, data: AuthKitConfigInput): Promise<AuthKitConfig>;
+    /**
+     * Give this AuthKit its **own logins** (admin): its members become accounts of this site only —
+     * the same email can be a separate account, with its own password, on another site — rather than
+     * SmartLinks accounts shared across sites. One way: a site with its own members can't go back to the
+     * shared pool. Members who signed up before keep their SmartLinks account until moved across.
+     *
+     * Errors: `MEMBER_POOL_CONFLICT` (409) when another AuthKit already gives one of its collections its
+     * own logins (one per collection); `PERMISSION_DENIED` (403) unless you administer every collection
+     * it serves.
+     */
+    function setIdentity(collectionId: string, authKitId: string, body: {
+        mode: 'own';
+    }): Promise<AuthKitSetIdentityResponse>;
     function remove(collectionId: string, authKitId: string): Promise<void>;
 }

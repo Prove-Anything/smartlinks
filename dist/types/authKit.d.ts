@@ -407,6 +407,26 @@ export interface AuthKitConfig {
      * server-side. See {@link AuthKitSecurityConfig}.
      */
     security?: AuthKitSecurityConfig;
+    /** The collections this AuthKit serves. */
+    collectionIds?: string[];
+    /**
+     * Which user pool this site's members sign in to. Absent or `shared` = the SmartLinks account (the
+     * same account on every site that uses it). `own` = the site's own members (a separate account per
+     * site, its own passwords). Switch with {@link authKit.setIdentity}; never via create/update.
+     */
+    identity?: AuthKitIdentity;
+}
+/** An AuthKit's member pool. */
+export interface AuthKitIdentity {
+    mode: 'shared' | 'own';
+    /** The site's own pool (set by the platform). */
+    tenantId?: string;
+    createdAt?: string;
+}
+/** Result of {@link authKit.setIdentity}. */
+export interface AuthKitSetIdentityResponse {
+    identity: AuthKitIdentity;
+    message: string;
 }
 /**
  * Writable shape for `authKit.create` / `authKit.update` (admin). Known fields are
@@ -424,7 +444,7 @@ export interface AuthKitConfig {
  * })
  * ```
  */
-export type AuthKitConfigInput = Partial<Omit<AuthKitConfig, 'id' | 'updatedAt'>> & Record<string, any>;
+export type AuthKitConfigInput = Partial<Omit<AuthKitConfig, 'id' | 'updatedAt' | 'identity'>> & Record<string, any>;
 /**
  * Per-collection account-security policy. The API **enforces** all of this; the
  * client uses `passwordPolicy` (live checklist) and `session` (idle sign-out) for UX.

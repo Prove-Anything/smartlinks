@@ -337,6 +337,8 @@ export type {
   AuthKitConfig,
   AuthKitConfigInput,
   AuthKitSecurityConfig,
+  AuthKitIdentity,
+  AuthKitSetIdentityResponse,
   AuthKitPasswordPolicy,
   AuthKitSessionPolicy,
   AuthKitLockoutPolicy,

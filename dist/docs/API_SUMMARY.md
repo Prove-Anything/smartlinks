@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.68  |  Generated: 2026-10-16T18:41:47.466Z
+Version: 2.0.68  |  Generated: 2026-10-17T08:24:26.255Z
 
 This is a concise summary of all available API functions and types.
 
@@ -4864,6 +4864,25 @@ interface AuthKitConfig {
   redirectUrl?: string
   updatedAt?: string
   security?: AuthKitSecurityConfig
+  collectionIds?: string[]
+  identity?: AuthKitIdentity
+}
+```
+
+**AuthKitIdentity** (interface)
+```typescript
+interface AuthKitIdentity {
+  mode: 'shared' | 'own'
+  tenantId?: string
+  createdAt?: string
+}
+```
+
+**AuthKitSetIdentityResponse** (interface)
+```typescript
+interface AuthKitSetIdentityResponse {
+  identity: AuthKitIdentity
+  message: string
 }
 ```
 
@@ -11323,8 +11342,11 @@ Create an AuthKit client config (admin). Accepts the account `security` policy �
 **update**(collectionId: string, authKitId: string, data: AuthKitConfigInput) → `Promise<AuthKitConfig>`
 Update an AuthKit client config (admin). This is how the account **security policy** is written — pass a `security` block ({@link AuthKitSecurityConfig}). The server validates it and enforces it; the login UI reads the public subset back via {@link load}.
 
+**setIdentity**(collectionId: string, authKitId: string, body: { mode: 'own' }) → `Promise<AuthKitSetIdentityResponse>`
+Give this AuthKit its **own logins** (admin): its members become accounts of this site only — the same email can be a separate account, with its own password, on another site — rather than SmartLinks accounts shared across sites. One way: a site with its own members can't go back to the shared pool. Members who signed up before keep their SmartLinks account until moved across. Errors: `MEMBER_POOL_CONFLICT` (409) when another AuthKit already gives one of its collections its own logins (one per collection); `PERMISSION_DENIED` (403) unless you administer every collection it serves.
+
 **remove**(collectionId: string, authKitId: string) → `Promise<void>`
-Update an AuthKit client config (admin). This is how the account **security policy** is written — pass a `security` block ({@link AuthKitSecurityConfig}). The server validates it and enforces it; the login UI reads the public subset back via {@link load}.
+Give this AuthKit its **own logins** (admin): its members become accounts of this site only — the same email can be a separate account, with its own password, on another site — rather than SmartLinks accounts shared across sites. One way: a site with its own members can't go back to the shared pool. Members who signed up before keep their SmartLinks account until moved across. Errors: `MEMBER_POOL_CONFLICT` (409) when another AuthKit already gives one of its collections its own logins (one per collection); `PERMISSION_DENIED` (403) unless you administer every collection it serves.
 
 ### batch
 

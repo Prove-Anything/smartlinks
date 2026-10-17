@@ -2077,6 +2077,45 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/authKit/{authKitId}/identity:
+    post:
+      tags:
+        - authKit
+      summary: "Give this AuthKit its **own logins** (admin): its members become accounts of this site only — the same email can be a separate account, with its own password, on another site — rather than SmartLinks accounts shared across sites."
+      operationId: authKit_setIdentity
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: authKitId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthKitSetIdentityResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
   /admin/collection/{collectionId}/batch:
     get:
       tags:
@@ -9207,7 +9246,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: authKit.linkedInLogin
+      summary: Sign in with LinkedIn (OpenID Connect) via a server-side authorization code (public).
       operationId: authKit_linkedInLogin
       security: []
       parameters:
@@ -23327,8 +23366,38 @@ components:
           type: string
         security:
           $ref: "#/components/schemas/AuthKitSecurityConfig"
+        collectionIds:
+          type: array
+          items:
+            type: string
+        identity:
+          $ref: "#/components/schemas/AuthKitIdentity"
       required:
         - id
+    AuthKitIdentity:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum:
+            - shared
+            - own
+        tenantId:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - mode
+    AuthKitSetIdentityResponse:
+      type: object
+      properties:
+        identity:
+          $ref: "#/components/schemas/AuthKitIdentity"
+        message:
+          type: string
+      required:
+        - identity
+        - message
     AuthKitSecurityConfig:
       type: object
       properties:

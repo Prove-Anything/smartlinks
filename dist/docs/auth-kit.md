@@ -609,6 +609,30 @@ catch (err) {
 
 ---
 
+## Own logins (a site's own members)
+
+By default an Auth Kit signs people in with their **SmartLinks account**: one account, the same
+everywhere a site uses the shared login. A site that manages its own members (a club, a league, a
+membership site) can instead have **its own logins**: its members are accounts of that site only. The
+same email can be a separate account, with a different password, on another site, and signing in on
+one site doesn't sign anyone in elsewhere.
+
+```ts
+await authKit.setIdentity(collectionId, authKitId, { mode: 'own' })
+// → { identity: { mode: 'own', tenantId }, message }
+```
+
+- **One way.** A site with its own members can't go back to the shared login (they would lose their
+  accounts).
+- **New sign-ups** after the switch go to the site's own members. People who signed up before keep their
+  SmartLinks account until they are moved across.
+- **One per collection.** Only one Auth Kit can give a collection its own logins (`MEMBER_POOL_CONFLICT`,
+  409, otherwise). You must administer every collection the kit serves (`PERMISSION_DENIED`, 403).
+- **Tokens stay on their site.** A member's session works on that site's Auth Kit and collections only.
+- Every flow above (password, magic link, phone, Google, Apple, LinkedIn, WhatsApp, SMS, MFA, profile,
+  resets) works the same way; nothing changes in the login UI or your code.
+- `identity` is read-only on `create` / `update`; it is shown on the config (`authKit.get`).
+
 ## Relationship to other parts of the SDK
 
 | Concern | Where it lives |

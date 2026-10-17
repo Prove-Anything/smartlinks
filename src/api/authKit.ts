@@ -13,6 +13,7 @@ import type {
   EmailVerifyTokenResponse,
   AuthKitConfig,
   AuthKitConfigInput,
+  AuthKitSetIdentityResponse,
   MagicLinkSendResponse,
   MagicLinkVerifyResponse,
   UserProfile,
@@ -513,6 +514,21 @@ export namespace authKit {
   export async function update(collectionId: string, authKitId: string, data: AuthKitConfigInput): Promise<AuthKitConfig> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}`
     return put<AuthKitConfig>(path, data)
+  }
+
+  /**
+   * Give this AuthKit its **own logins** (admin): its members become accounts of this site only —
+   * the same email can be a separate account, with its own password, on another site — rather than
+   * SmartLinks accounts shared across sites. One way: a site with its own members can't go back to the
+   * shared pool. Members who signed up before keep their SmartLinks account until moved across.
+   *
+   * Errors: `MEMBER_POOL_CONFLICT` (409) when another AuthKit already gives one of its collections its
+   * own logins (one per collection); `PERMISSION_DENIED` (403) unless you administer every collection
+   * it serves.
+   */
+  export async function setIdentity(collectionId: string, authKitId: string, body: { mode: 'own' }): Promise<AuthKitSetIdentityResponse> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/identity`
+    return post<AuthKitSetIdentityResponse>(path, body)
   }
 
   export async function remove(collectionId: string, authKitId: string): Promise<void> {
