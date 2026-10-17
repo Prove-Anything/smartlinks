@@ -94,6 +94,15 @@ Env: `SMARTLINKS_APP_ID`, `SMARTLINKS_DEPLOY_KEY` (dev key — dev-only, safe to
 optional `SMARTLINKS_API` / `--dir`. It POSTs the files to `POST /apps/{appId}/publish?channel=dev`;
 the server validates and writes them to `smartlinks.app/apps/{appId}/dev/…` (`no-store`).
 
+- **Big bundles** go in batches (`/publish/files`), and any file of 4 MB or more goes straight to
+  storage through a one-off upload URL (`/publish/uploads`), so no file is too large to publish. The
+  final `/publish` call registers the release only once every file has landed.
+- **Source maps (`.map`) are never published.** A release is promoted to beta and stable byte for byte,
+  so a map would serve the app's original source to anyone; the server drops any it's sent. Debug in
+  Forge's preview, where the dev server has full source. In Forge, **Release to dev** builds readable
+  (unminified) code; **Release to beta / stable** builds minified code (the build sees
+  `SMARTLINKS_BUILD=debug` or `production`).
+
 **Which to use:** building in Lovable → **A** (ping, no key). Building anywhere you control →
 **B** (push with a local key). For beta/stable, see the register-a-URL flow below.
 
