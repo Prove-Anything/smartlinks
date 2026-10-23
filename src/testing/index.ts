@@ -289,7 +289,7 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
       mem.contacts.push({ ...d, email, phone, contactId })
       return { contactId, created: true }
     }), 'contacts.upsert'),
-    forCaller: gated('contacts', 'write', ct.forCaller ? ct.forCaller.bind(ct) : (async () => (opts.caller && opts.caller.userId ? { contactId: `contact-of-${opts.caller.userId}` } : null)), 'contacts.forCaller'),
+    forCaller: gated('contacts', 'write', ct.forCaller ? ct.forCaller.bind(ct) : (async () => (opts.caller && opts.caller.userId ? { contactId: `contact-of-${opts.caller.userId}`, email: null, phone: null, firstName: null, lastName: null, displayName: null, tags: [], customFields: {} } : null)), 'contacts.forCaller'),
   }
 
   const it = impl.interactions || {}

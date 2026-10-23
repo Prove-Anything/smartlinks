@@ -587,7 +587,10 @@ Key records to the returned canonical `id`, and refuse `null` — otherwise anyo
 empty fields** — it never overwrites a name or field the contact already has, because a visitor's typed
 details are unverified. It's race-safe: two simultaneous entries with one email end on one contact.
 Returns `{ contactId, created }`. `forCaller()` is the signed-in caller's own contact (`null` when
-anonymous). **Never return contact ids to public callers** — keep them on your records.
+anonymous): `{ contactId, email, phone, firstName, lastName, displayName, tags, customFields }`. Use it
+to check what a member is before returning member-only content — a level the staff set
+(`customFields.level`), a tag. It includes staff-only fields, so return only what the caller may see
+(see members.md). **Never return contact ids to public callers** — keep them on your records.
 
 This is not consent. A ticked "keep me updated" box is evidence you can record (below); subscribing
 someone to marketing is the double opt-in flow (`comms.signup`, see comms.md).

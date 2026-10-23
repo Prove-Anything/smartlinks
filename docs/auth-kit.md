@@ -646,5 +646,6 @@ await authKit.setIdentity(collectionId, authKitId, { mode: 'own' })
 
 ## Further reading
 
+- [members.md](members.md) — members with a level: clubs, leagues, members-only content
 - [app-data-storage.md](app-data-storage.md) — storing user-specific data after login
 - [app-manifest.md](app-manifest.md) — `app.admin.json` setup questions for configuring `clientId`

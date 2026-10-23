@@ -469,11 +469,13 @@ export interface ServerFunctionSl {
   /**
    * Contacts (`sl:contacts:write`). `upsert` finds by email/phone or creates, and only FILLS EMPTY
    * fields — never overwrites (details typed by a visitor are unverified). `forCaller` is the signed-in
-   * caller's own contact (null when anonymous). Never return contact ids to public callers.
+   * caller's own contact with its tags and custom fields (null when anonymous) — check a member's level
+   * (`customFields.level`) here before returning member-only content. It includes staff-only fields:
+   * return only what the caller may see. Never return contact ids to public callers.
    */
   contacts: {
     upsert(details: ContactUpsertDetails): Promise<{ contactId: string; created: boolean }>;
-    forCaller(): Promise<{ contactId: string } | null>;
+    forCaller(): Promise<CallerContact | null>;
   };
   /**
    * Interactions (`sl:interactions:write`). `record` stores an event of one of THIS app's interaction
@@ -518,6 +520,19 @@ export interface ServerFunctionCaller {
   ip?: string | null;
   /** How the function was triggered. */
   via: AppFunctionTriggerType;
+}
+
+/** The signed-in caller's own contact, as a server function sees it (`ctx.sl.contacts.forCaller()`). */
+export interface CallerContact {
+  contactId: string;
+  email: string | null;
+  phone: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string | null;
+  tags: string[];
+  /** The collection's custom contact fields — including staff-only ones (a member's level, a paid-until date). */
+  customFields: Record<string, unknown>;
 }
 
 /**
