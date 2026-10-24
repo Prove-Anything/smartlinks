@@ -35,7 +35,9 @@ import type {
   MfaChallengeSendResponse,
   MfaFinalizeResponse,
   MfaEnrollSendResponse,
+  MfaTotpEnrollResponse,
   MfaEnrolledResponse,
+  MfaFactor,
   MfaFactorsResponse,
   TrustedDevice,
 } from "../types/authKit"
@@ -390,8 +392,11 @@ export namespace authKit {
    * switch factors or resend.
    * =================================== */
 
-  /** Send (or resend) an MFA challenge code to the given factor (public). */
-  export async function mfaChallengeSend(clientId: string, mfaSessionToken: string, factor: 'email' | 'sms'): Promise<MfaChallengeSendResponse> {
+  /**
+   * Send (or resend) an MFA challenge code to the given factor (public). For `totp` nothing is sent —
+   * it tells the server the code will come from their authenticator app; then {@link mfaChallengeVerify}.
+   */
+  export async function mfaChallengeSend(clientId: string, mfaSessionToken: string, factor: MfaFactor): Promise<MfaChallengeSendResponse> {
     return post<MfaChallengeSendResponse>(`/authkit/${encodeURIComponent(clientId)}/mfa/challenge/send`, { mfaSessionToken, factor })
   }
 
@@ -448,6 +453,21 @@ export namespace authKit {
   }
 
   /**
+   * Begin authenticator-app enrollment (authenticated): a new secret for Google Authenticator,
+   * Microsoft Authenticator, 1Password and the like. Show `otpauthUri` as a QR code (and `secret` for
+   * typing in), then {@link confirmTotpMfa} with the code the app shows. Nothing is kept until then;
+   * setting up again replaces the previous app once confirmed.
+   */
+  export async function enrollTotpMfa(clientId: string): Promise<MfaTotpEnrollResponse> {
+    return post<MfaTotpEnrollResponse>(`/authkit/${encodeURIComponent(clientId)}/mfa/factors/totp/enroll`, {})
+  }
+
+  /** Confirm authenticator-app enrollment with the 6-digit code the app shows (authenticated). */
+  export async function confirmTotpMfa(clientId: string, mfaSessionToken: string, code: string): Promise<MfaEnrolledResponse> {
+    return post<MfaEnrolledResponse>(`/authkit/${encodeURIComponent(clientId)}/mfa/factors/totp/confirm`, { mfaSessionToken, code })
+  }
+
+  /**
    * Generate a fresh set of recovery codes, invalidating any previous set (authenticated).
    * Returned **in plaintext, exactly once** — nothing else in the API ever returns them
    * again, so the caller must display/export them immediately.
@@ -457,7 +477,7 @@ export namespace authKit {
   }
 
   /** Remove an enrolled MFA factor (authenticated). Server route is DELETE with a body. */
-  export async function removeMfaFactor(clientId: string, factor: 'email' | 'sms', password: string): Promise<SuccessResponse> {
+  export async function removeMfaFactor(clientId: string, factor: MfaFactor, password: string): Promise<SuccessResponse> {
     const path = `/authkit/${encodeURIComponent(clientId)}/mfa/factors/${factor}`
     return requestWithOptions<SuccessResponse>(path, { method: 'DELETE', body: JSON.stringify({ password }) })
   }

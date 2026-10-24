@@ -305,11 +305,16 @@ clearPersistedTokens();
 
 ---
 
-## Step-up MFA (Phase 1)
+## Step-up MFA
 
-Backend-only for now — **no admin-console UI and no challenge UI ship with this pass.**
-Factors: **email OTP, SMS OTP, recovery codes**. WhatsApp OTP, TOTP, and passkeys as
-*factors* are deferred to a later phase; don't build against them yet.
+Factors: **email code, SMS code, authenticator app (`totp`), recovery codes**. The shared login UI
+(`@proveanything/smartlinks-auth-ui`) has the challenge and the Settings → Security screens. WhatsApp
+codes and passkeys are planned; don't build against them yet.
+
+**Authenticator apps** (Google Authenticator, Microsoft Authenticator, 1Password, Authy…) are the
+recommended second step: nothing is sent (no SMS cost, nothing to intercept), and they are offered first
+when someone has one. A client can switch any factor off with `mfa.factorsEnabled` (e.g.
+`{ totp: false }`).
 
 The step-up gate applies to **every login method that issues a session**:
 
@@ -408,14 +413,24 @@ await authKit.confirmEmailMfa(clientId, mfaSessionToken, code);
 const { mfaSessionToken: smsToken } = await authKit.enrollSmsMfa(clientId, '+61400000000');
 await authKit.confirmSmsMfa(clientId, smsToken, code);
 
+// Enroll an authenticator app: show otpauthUri as a QR code (and secret for typing in),
+// then confirm with the 6-digit code the app shows
+const { mfaSessionToken: appToken, otpauthUri, secret } = await authKit.enrollTotpMfa(clientId);
+await authKit.confirmTotpMfa(clientId, appToken, codeFromApp);
+
 // Recovery codes — plaintext, shown exactly once; nothing else in the API returns them again
 const { recoveryCodes } = await authKit.generateMfaRecoveryCodes(clientId, password);
 
 // Inspect / remove
 const factors = await authKit.getMfaFactors(clientId);
-// factors: { enrolledFactors: { email?, sms? }, recoveryCodesRemaining, mfaEnabledForClient }
+// factors: { enrolledFactors: { email?, sms?, totp? }, recoveryCodesRemaining, mfaEnabledForClient }
 await authKit.removeMfaFactor(clientId, 'sms', password);
 ```
+
+At sign-in, `MFA_REQUIRED` lists `availableFactors` with `preferredFactor` (`totp`, then `sms`, then
+`email`). For `totp`, `mfaChallengeSend(clientId, token, 'totp')` sends nothing; it just says the code
+comes from the app. Then call `mfaChallengeVerify` with that code, as for the others. Each authenticator
+code works once. The secret is sealed on the server and never returned after `enrollTotpMfa`.
 
 > Enrollment endpoints don't currently check the client's `mfa.mode` — enrolling is possible
 > even when MFA is configured `'off'` for a client. Those factors simply won't be challenged

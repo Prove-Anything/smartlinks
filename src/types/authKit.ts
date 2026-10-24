@@ -158,9 +158,12 @@ export type AuthKitErrorCode =
  * appleLogin, verifyPhoneCode, verifyMagicLink, and exchangeWhatsAppSession. It does NOT
  * apply to register() (a brand-new user has no enrolled factors to challenge against) or
  * verifyWhatsApp() (that endpoint only confirms a code — it never issues a session, so
- * there's nothing to gate). WhatsApp OTP, TOTP, and passkeys as *factors* are deferred to
- * a later phase.
+ * there's nothing to gate). Factors: email code, SMS code, authenticator app (`totp`), recovery
+ * codes. WhatsApp OTP and passkeys are planned.
  * =================================== */
+
+/** A second-step method: a code by email or text message, or from an authenticator app. */
+export type MfaFactor = 'email' | 'sms' | 'totp'
 
 /**
  * Details carried on the `MFA_REQUIRED` error thrown by any session-issuing login method
@@ -172,16 +175,17 @@ export interface MfaRequiredDetails {
   /** Short-lived (10 min) and single-use. Pass it to every challenge/finalize call below. */
   mfaSessionToken: string
   /** Only factors the user actually enrolled. */
-  availableFactors: Array<'email' | 'sms'>
-  /** `sms` is preferred over `email` when both are enrolled. */
-  preferredFactor: 'email' | 'sms'
-  maskedDestinations: { email?: string; sms?: string }
+  availableFactors: MfaFactor[]
+  /** `totp`, then `sms`, then `email`: the first one the user enrolled. */
+  preferredFactor: MfaFactor
+  /** `totp` is "your authenticator app" (nothing is sent for it). */
+  maskedDestinations: { email?: string; sms?: string; totp?: string }
 }
 
 /** Response from {@link authKit.mfaChallengeSend}. */
 export interface MfaChallengeSendResponse {
   success: true
-  factor: 'email' | 'sms'
+  factor: MfaFactor
   /** Masked, e.g. `"j***@x.com"` or `"+1******1234"`. */
   destination: string
   /** ISO timestamp, 10 minutes from send. */
@@ -213,10 +217,23 @@ export interface MfaEnrollSendResponse {
   expiresAt: string
 }
 
-/** Response from {@link authKit.confirmEmailMfa} / {@link authKit.confirmSmsMfa}. */
+/** Response from {@link authKit.enrollTotpMfa}: show `otpauthUri` as a QR code, and `secret` for typing in. */
+export interface MfaTotpEnrollResponse {
+  mfaSessionToken: string
+  /** Base32, for people who type it into their app instead of scanning. Returned only here. */
+  secret: string
+  /** `otpauth://totp/…` — render it as a QR code for the app to scan. */
+  otpauthUri: string
+  /** What the app shows the entry as: the site, and the account. */
+  issuer: string
+  account: string
+  expiresAt: string
+}
+
+/** Response from {@link authKit.confirmEmailMfa} / {@link authKit.confirmSmsMfa} / {@link authKit.confirmTotpMfa}. */
 export interface MfaEnrolledResponse {
   enrolled: true
-  factor: 'email' | 'sms'
+  factor: MfaFactor
 }
 
 /** Response from {@link authKit.getMfaFactors}. */
@@ -224,6 +241,8 @@ export interface MfaFactorsResponse {
   enrolledFactors: {
     email?: { enrolledAt: string; destination: string }
     sms?: { enrolledAt: string; destination: string }
+    /** `destination` is "Authenticator app". */
+    totp?: { enrolledAt: string; destination: string }
   }
   recoveryCodesRemaining: number
   mfaEnabledForClient: boolean
