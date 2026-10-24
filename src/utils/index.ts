@@ -7,3 +7,4 @@
 export * from './paths'
 export * from './conditions'
 export * from './anonId'
+export * from './freeTimes'

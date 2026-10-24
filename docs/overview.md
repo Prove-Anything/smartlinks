@@ -88,6 +88,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Proof Ownership Transfer** | `docs/proof-ownership-transfer.md` | Moving a proof's single owner (directed transfer / open release), accept/cancel, and the state machine |
 | **appConfig / Feature Flags** | `docs/appConfig.md` | `appConfig` settings contract — installed apps, `system.features`/`entitledAppGroups`/`meters`, `isFeatureEnabled()` helper |
 | **App Objects** | `docs/app-objects.md` | Queryable domain objects — `app.records` / `app.cases` / `app.threads`: JSONB zones, visibility, policies, aggregations |
+| **Bookings** | `docs/bookings.md` | Slots, bookings and allocations for events and appointments: no double-booking, holds, per-app public rules, `utils.freeTimes` |
 | **App Data Storage** | `docs/app-data-storage.md` | Decision guide: pick between `appConfiguration` / `userAppData` / `app.records` |
 | **Attestations** | `docs/attestations.md` | Postgres attestations API (proof-level user/admin data; replaces the legacy Firestore path) |
 | **Caching** | `docs/caching.md` | SDK GET cache tiers + TTLs, `invalidateCache({ exact })`, and `force`/push guidance |

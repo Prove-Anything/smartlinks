@@ -225,6 +225,8 @@ function shouldSkipCache(path: string): boolean {
   if (/\/(push\/token|realtime\/)/i.test(path)) return true
   // Never cache /me endpoints (contact/me, loyalty/me, etc.) — always user-specific.
   if (/\/me(\?|$)/i.test(path)) return true
+  // Bookings change by the second (places left, busy times, a booking's status) — never serve them stale.
+  if (/\/app\/[^/]+\/bookings(\/|\?|$)/i.test(path)) return true
   return false
 }
 
