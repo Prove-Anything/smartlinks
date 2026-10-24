@@ -444,6 +444,15 @@ export namespace asset {
   }
 
   /**
+   * Give an existing asset its permanent address (`permanentUrl`). New and replaced assets get one
+   * automatically; this is for assets made before permanent addresses existed. Safe to call again.
+   */
+  export async function ensurePermanent(collectionId: string, assetId: string): Promise<Asset> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/asset/${encodeURIComponent(assetId)}/permanent`
+    return post<Asset>(path, {})
+  }
+
+  /**
    * Soft-delete multiple assets in one request.
    */
   export async function bulkDelete(options: BulkDeleteAssetsOptions): Promise<{ deleted: number }> {
@@ -674,6 +683,7 @@ export namespace asset {
     }
     if (scope.type !== 'collection') startBody.productId = scope.productId
     if (scope.type === 'proof') startBody.proofId = scope.proofId
+    if (options.replaceAssetId) startBody.replaceAssetId = options.replaceAssetId
 
     const started = await post<{ uploadId: string; sessionUrl: string; expiresAt: string }>(
       base,

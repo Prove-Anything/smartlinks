@@ -5,8 +5,14 @@
 export interface AssetRef {
   /** Postgres UUID — use to fetch the full Asset */
   id: string
-  /** CDN URL of the original file */
+  /** CDN URL of the current file — a versioned address that changes when the file is replaced */
   url: string
+  /**
+   * The asset's permanent address: always serves its current file, so a replace shows wherever it's used
+   * (sites, pages, emails) with no redeploy. Use this in front ends. Null for an outside link, or an asset made
+   * before permanent addresses until it's given one ({@link asset.ensurePermanent}).
+   */
+  permanentUrl: string | null
   /** WebP thumbnail URL (max 512px longest edge), or null if not yet generated */
   thumbnail: string | null
 }
@@ -344,6 +350,11 @@ export interface CreateResumableUploadOptions {
    * uploads. When provided, the public resumable route is used.
    */
   token?: string
+  /**
+   * Replace this asset's file instead of creating a new asset (admin). The id and permanent address stay;
+   * the previous file goes into `versions[]`. Any size — use this to replace a large video.
+   */
+  replaceAssetId?: string
 }
 
 export interface ResumableStartOptions {

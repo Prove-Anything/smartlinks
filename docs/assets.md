@@ -17,7 +17,8 @@ interface Asset {
   appId:        string | null     // app that owns this asset, e.g. 'homepage'
 
   // File
-  url:          string            // CDN URL of the original file
+  url:          string            // CDN URL of the current file (versioned — changes on replace)
+  permanentUrl: string | null     // the asset's permanent address — use this in front ends (see below)
   thumbnail:    string | null     // CDN URL of WebP thumbnail (max 512px longest edge, no crop)
                                   // Always .webp — null until thumbnail generation has run
   name:         string            // original filename
@@ -185,7 +186,9 @@ await Api.asset.updateAdmin({
 POST /asset/:assetId/replace
 ```
 
-Replaces the file; the previous URL is snapshotted into `versions[]`.
+Replaces the file; the previous URL is snapshotted into `versions[]`. The id and `permanentUrl` stay the
+same, and the permanent address serves the new file straight away — see [Permanent addresses](#permanent-addresses).
+For a large file, use a resumable upload with `replaceAssetId`.
 
 ```typescript
 await Api.asset.replaceFile({
@@ -304,6 +307,7 @@ interface CreateResumableUploadOptions {
   appId?: string
   admin?: boolean          // admin route (default is the public route)
   token?: string           // upload token for public/unauthenticated uploads
+  replaceAssetId?: string  // admin: replace this asset's file (any size) instead of creating a new asset
 }
 
 interface ResumableUploadHandle {
@@ -321,6 +325,33 @@ interface ResumableUploadHandle {
 - On completion, `start()`/`resume()` resolves to the finalized `Asset` record.
 - `pause()` causes the in-flight `start()`/`resume()` promise to reject with an `UploadPausedError`; call `resume()` to continue.
 - `asset.upload()` also now accepts an `AbortSignal` (`upload({ ..., signal })`) for cancelling a stalled single-shot upload.
+- With `replaceAssetId`, the completed upload becomes a new version of that asset (same id and `permanentUrl`), so a
+  200 MB video can be swapped without touching the pages that show it.
+
+---
+
+## Permanent addresses
+
+Every asset has one address for its whole life:
+
+```
+https://cdn.smartlinks.app/sites/{collectionId}/a/{assetId}
+```
+
+It always serves the asset's **current** file. Replace the file and every site, page or email using
+`permanentUrl` shows the new one — no redeploy, no second API call. Deleting the asset withdraws the address, and
+restoring it brings the address back.
+
+- **Use `permanentUrl` in front ends.** `url` is the versioned address of the current file; `versions[]` holds the
+  older ones (for version history).
+- **Caching:** the CDN copy is cleared when the file is replaced; browsers re-check within a minute.
+- `permanentUrl` is `null` for an outside link. It's also `null` for an asset made before permanent addresses
+  existed, until it's given one:
+
+```typescript
+const a = await Api.asset.ensurePermanent('my-collection', 'abc123')
+a.permanentUrl  // https://cdn.smartlinks.app/sites/my-collection/a/abc123
+```
 
 ---
 
