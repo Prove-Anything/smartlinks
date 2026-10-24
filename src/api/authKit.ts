@@ -14,6 +14,8 @@ import type {
   AuthKitConfig,
   AuthKitConfigInput,
   AuthKitSetIdentityResponse,
+  AuthKitInviteRequest,
+  AuthKitInviteResponse,
   MagicLinkSendResponse,
   MagicLinkVerifyResponse,
   UserProfile,
@@ -529,6 +531,22 @@ export namespace authKit {
   export async function setIdentity(collectionId: string, authKitId: string, body: { mode: 'own' }): Promise<AuthKitSetIdentityResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/identity`
     return post<AuthKitSetIdentityResponse>(path, body)
+  }
+
+  /**
+   * Invite someone to be a member of a site with its own logins (admin). Makes their account if they have
+   * none (the only way in when the site is invitation only — `signUp: 'invite'`), finds or creates their
+   * contact in this collection with the `customFields` you pass (their level), links the two, and emails
+   * them a sign-in link to the site (`redirectUrl`, default the kit's) that works once for 7 days. The page
+   * it opens handles it like any magic link: `mode=magicLink&token=…` → {@link verifyMagicLink}.
+   * Inviting someone again sends a fresh link.
+   *
+   * Errors: `OWN_LOGINS_REQUIRED` (409), `INVALID_EMAIL` (400), `INVALID_REDIRECT_URL` (400, not one of
+   * this site's addresses), `TOO_MANY_INVITES` (429, 5 an hour per address).
+   */
+  export async function invite(collectionId: string, authKitId: string, body: AuthKitInviteRequest): Promise<AuthKitInviteResponse> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/invite`
+    return post<AuthKitInviteResponse>(path, body)
   }
 
   export async function remove(collectionId: string, authKitId: string): Promise<void> {

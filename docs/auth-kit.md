@@ -633,6 +633,31 @@ await authKit.setIdentity(collectionId, authKitId, { mode: 'own' })
   resets) works the same way; nothing changes in the login UI or your code.
 - `identity` is read-only on `create` / `update`; it is shown on the config (`authKit.get`).
 
+### Invitation only
+
+A site with its own logins can let in only the people it invites:
+
+```ts
+await authKit.update(collectionId, authKitId, { signUp: 'invite' })   // 'open' (default) | 'invite'
+await authKit.invite(collectionId, authKitId, { email: 'jo@example.com', firstName: 'Jo', customFields: { level: 'member' } })
+```
+
+- **Enforced on the server, for every route.** Nobody without an account can get one: `register`,
+  `verifyMagicLink`, `verifyPhoneCode`, Google, Apple, LinkedIn and WhatsApp answer `SIGN_UP_CLOSED`
+  (403). `sendMagicLink` and `sendPhoneCode` answer as if sent, but send nothing to someone who isn't a
+  member, so nobody can find out who is.
+- **`invite`** makes the person's account if they have none, finds or creates their contact in that
+  collection with the fields you pass, links the two, and emails a sign-in link to the site (`redirectUrl`,
+  default the kit's) that works once for 7 days. It lands like any magic link (`mode=magicLink&token=…`).
+  Inviting someone again sends a fresh link. The link is never returned to the admin.
+- **Invited members then sign in any way the site offers.** A magic link, "forgot password" to set a
+  password, or Google/Apple/LinkedIn with the same verified email: an invited account nobody has signed
+  in to yet can be claimed that way.
+- `signUp` is on the public config (`load`): hide "Create an account" when it's `invite`. Setting it
+  needs own logins first (`OWN_LOGINS_REQUIRED`, 409).
+- On any site, a member signing in with a verified email or phone is attached to the contact the
+  collection already has for it, so fields the staff set beforehand (a level) are theirs.
+
 ## Relationship to other parts of the SDK
 
 | Concern | Where it lives |

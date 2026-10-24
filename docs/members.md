@@ -23,7 +23,8 @@ the site.
 
 Ask these before building, because they change what you build:
 
-1. **Who can join?** Anyone, or only people the club accepts?
+1. **Who can join?** Anyone; anyone, but the club confirms them; or **only people the club invites**
+   (no sign-up at all)?
 2. **Who sets the level?** The owner (people sign up, then the owner confirms them), or the person
    themselves? Let people choose only a level that unlocks nothing, like "junior / adult".
 3. **What does each level get?** Pages, results, discounts, early access, booking.
@@ -46,8 +47,34 @@ Ask these before building, because they change what you build:
 - On sign-in, the SDK keeps the member's session (`setBearerToken`). Persist `session.token`
   (respect `rememberMe`), restore it on load with `SL.setBearerToken(token)`, and clear it on sign-out.
 
-Anyone can create a login. **Being a member is the level, not the login**, so an approval club is
-just "signed in, no level yet".
+By default anyone can create a login, and **being a member is the level, not the login**: an approval
+club is just "signed in, no level yet".
+
+**Invitation only.** A site with its own logins can turn sign-up off: `SL.authKit.update(collectionId,
+authKitId, { signUp: 'invite' })` (or the owner, in the Customer Login app: Members → Who can join). Then nobody can
+create an account by any route: password, magic link, phone, Google and the rest refuse with
+`SIGN_UP_CLOSED`, and "email me a link" answers the same for strangers without sending anything. The
+site's admins invite people instead:
+
+```ts
+// admin session (the site's admin page, Studio): their account, their contact with a level, and an email
+await SL.authKit.invite(collectionId, authKitId, {
+  email: "jo@example.com", firstName: "Jo",
+  customFields: { level: "member" },
+  redirectUrl: "https://club.example.com/sign-in", // the site's sign-in page (one of its own addresses)
+})
+```
+
+The email's link works once for 7 days and opens the sign-in page with `mode=magicLink&token=…`: handle
+it with `SL.authKit.verifyMagicLink(clientId, token)`, as for any magic link. After that the member
+signs in however the site offers (a magic link to their email, "forgot password" to set one, Google
+with the same email). Build the sign-in page with no "Create an account" option when the kit's
+`signUp` is `invite` (it's on the public config, `SL.authKit.load(authKitId)`), and say "Members only.
+Ask the club for an invitation."
+
+**Added by the staff first?** When someone signs in with a verified email or phone, their login is
+attached to the contact the site already has for it: an invite, someone the staff added in Studio, a
+form they filled in. So the level set on that contact is theirs from the first sign-in.
 
 ## 2. The level field
 
@@ -120,6 +147,7 @@ export async function memberNews(ctx, event) {
 |---|---|
 | **Open** (sign up = member) | Signed in is enough; no level needed, or a `level` the site never gates on |
 | **Approval** ("sign up and I'll add you") | Anyone signs up; the owner sets `level` in Studio → Customers; until then the site says "We'll confirm your membership" |
+| **Invite only** (no sign-up) | `signUp: 'invite'`; the owner invites people with their level (`SL.authKit.invite`): the Customer Login app's Members card, or an "Invite a member" screen on the site's admin page; the sign-in page has no sign-up |
 | **Tiers** (silver, gold) | `level` with an `enum`; each gated function lists the levels it allows |
 | **Paid** | By hand: the owner sets `level` (and `memberUntil`) once paid. Online: a memberships app or connector writes the same fields after payment |
 
@@ -130,6 +158,8 @@ Record joining as an interaction (`ctx.sl.interactions.record`, e.g. `member-joi
 
 - **Studio → Customers**: everyone who signed up, their level, and when they joined. Filter by level
   and set it on the contact.
+- **Inviting**: the Customer Login app's Members card (Who can join, Invite a member), or the site's own
+  admin screen calling `SL.authKit.invite`; inviting someone again sends a fresh link.
 - **Email a level**: a segment on `customFields.level`, sent from Studio (comms.md).
 - **Tags** suit many-valued labels (`committee`, `coach`); a member has one `level`.
 
@@ -140,6 +170,7 @@ Record joining as an interaction (`ctx.sl.interactions.record`, e.g. `member-joi
 - Let a member set a level that unlocks anything (`public: "editable"`).
 - Return contact ids, other members' details, or staff-only fields to the browser.
 - Build payments into a site. A memberships app or connector owns fees.
+- Hide the sign-up button and call that invitation only. Set `signUp: 'invite'`, so the server refuses.
 
 ## Example: a tennis box league
 

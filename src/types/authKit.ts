@@ -149,6 +149,7 @@ export type AuthKitErrorCode =
   | 'INVALID_APPLE_TOKEN'         // 401 — signature / issuer / audience / expiry / nonce check failed
   | 'ACCOUNT_EXISTS_UNVERIFIED'   // 409 — an unverified account already owns this email (Apple OR Google)
   | 'APPLE_AUTH_FAILED'           // 500 — unexpected server error
+  | 'SIGN_UP_CLOSED'              // 403 — an invitation-only site (signUp: 'invite'): this person has no account and wasn't invited
 
 /* ===================================
  * Step-up MFA (Phase 1: email OTP, SMS OTP, recovery codes)
@@ -478,6 +479,38 @@ export interface AuthKitConfig {
    * site, its own passwords). Switch with {@link authKit.setIdentity}; never via create/update.
    */
   identity?: AuthKitIdentity
+  /**
+   * Who may join a site with its own logins. `open` (default): anyone can create an account.
+   * `invite`: only people the site's admins invite ({@link authKit.invite}). Every way of signing up
+   * (password, magic link, phone, Google, Apple, LinkedIn, WhatsApp) then refuses anyone else with
+   * `SIGN_UP_CLOSED` (403), and "send me a link / a code" answers as if sent without sending anything,
+   * so nobody can find out who is a member. Hide your "Create an account" option when it's `invite`.
+   * Setting `invite` needs own logins first (`OWN_LOGINS_REQUIRED`, 409).
+   */
+  signUp?: 'open' | 'invite'
+}
+
+/** Body of {@link authKit.invite}. */
+export interface AuthKitInviteRequest {
+  email: string
+  firstName?: string
+  lastName?: string
+  displayName?: string
+  /** Set on their contact in this collection, e.g. `{ level: 'member' }` (staff-only and visible fields alike). */
+  customFields?: Record<string, unknown>
+  /** Where the emailed link opens: the site's sign-in page (one of its own addresses). Default: the kit's `redirectUrl`. */
+  redirectUrl?: string
+}
+
+/** Result of {@link authKit.invite}. The sign-in link itself only goes to their inbox. */
+export interface AuthKitInviteResponse {
+  ok: true
+  userId: string
+  contactId: string
+  /** true when their account was made by this invite; false when they had one (they got a new link). */
+  created: boolean
+  /** When the emailed link stops working (it works once). */
+  expiresAt: string
 }
 
 /** An AuthKit's member pool. */
