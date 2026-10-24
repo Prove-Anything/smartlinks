@@ -1,6 +1,12 @@
 import type { AppDataDeclaration, AppHeadlessDeclaration } from './headless'
 import type { RealtimeChannelDeclaration } from './realtime'
 import type { AppManifestAdminCards } from './adminCards'
+import type { PaginatedResponse } from './appObjects'
+import type {
+  Booking, BookingSlot, BookingAllocation, CreateBookingInput, UpdateBookingInput, MoveBookingInput,
+  BookingListQueryParams, CreateSlotInput, UpdateSlotInput, SlotListQueryParams, CreateBlockInput,
+  BlockListQueryParams, FreeBusyQuery, FreeBusyResponse,
+} from './bookings'
 // src/types/appManifest.ts
 
 /**
@@ -453,7 +459,51 @@ export interface ServerFunctionInteractionEvent {
   eventType?: string;
 }
 
+/**
+ * `ctx.sl.bookings` — THIS app's own bookings, slots and blocks (docs/bookings.md, "In a server
+ * function"). Gated by `sl:bookings:read` / `sl:bookings:write` only. Writes are admin-side: any
+ * status, the admin zone, any contact — the app's `publicCreate.bookings` rules don't apply, because
+ * the function IS the app's rules (hours, queue tokens, payment). The platform's guarantees still do:
+ * a clash fails with an Error carrying `code` (SLOT_FULL, RESOURCE_TAKEN, PER_CONTACT_LIMIT,
+ * HOLD_EXPIRED, …), `status` and `details`.
+ */
+export interface ServerFunctionBookings {
+  /** Book; pass `idempotencyKey` (e.g. the payment intent id) so a retry returns the first booking (`replayed: true`). */
+  create(input: CreateBookingInput): Promise<Booking & { replayed: boolean }>;
+  get(bookingId: string): Promise<Booking | null>;
+  query(params?: BookingListQueryParams): Promise<PaginatedResponse<Booking>>;
+  /** The signed-in caller's own bookings (empty when anonymous). */
+  mine(params?: BookingListQueryParams): Promise<PaginatedResponse<Booking>>;
+  update(bookingId: string, fields: UpdateBookingInput): Promise<Booking>;
+  /** held / pending / waitlisted → confirmed (idempotent). */
+  confirm(bookingId: string): Promise<Booking>;
+  /** Cancel and give the places back (idempotent). */
+  cancel(bookingId: string, opts?: { reason?: string }): Promise<Booking>;
+  /** All-or-nothing move to new claims. */
+  move(bookingId: string, input: MoveBookingInput): Promise<Booking>;
+  extendHold(bookingId: string, holdMinutes: number): Promise<Booking>;
+  complete(bookingId: string): Promise<Booking>;
+  noShow(bookingId: string): Promise<Booking>;
+  /** Busy intervals per resource — feed them to `utils.freeTimes` with your schedule. */
+  freebusy(q: FreeBusyQuery): Promise<FreeBusyResponse>;
+  slots: {
+    create(input: CreateSlotInput): Promise<BookingSlot>;
+    createMany(inputs: CreateSlotInput[], opts?: { seriesId?: string }): Promise<BookingSlot[]>;
+    get(slotId: string): Promise<BookingSlot | null>;
+    query(params?: SlotListQueryParams): Promise<PaginatedResponse<BookingSlot>>;
+    update(slotId: string, fields: UpdateSlotInput): Promise<BookingSlot>;
+    delete(slotId: string): Promise<{ success: boolean }>;
+  };
+  blocks: {
+    create(input: CreateBlockInput): Promise<BookingAllocation>;
+    query(params?: BlockListQueryParams): Promise<PaginatedResponse<BookingAllocation>>;
+    delete(blockId: string): Promise<{ success: boolean }>;
+  };
+}
+
 export interface ServerFunctionSl {
+  /** THIS app's bookings, slots and blocks (`sl:bookings:read` / `sl:bookings:write`). */
+  bookings: ServerFunctionBookings;
   /**
    * THIS app's records (own namespace): create / update / upsert / delete / get / query / listTypes,
    * plus `claim(fields)` — a race-safe UNIQUE create. The record names a unique key — `singletonPer`

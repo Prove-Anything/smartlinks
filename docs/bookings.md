@@ -248,6 +248,33 @@ Off by default — most apps serve free times through their own function.
 
 ---
 
+## In a server function — `ctx.sl.bookings`
+
+When public booking is off, your app books through its own server function. `ctx.sl.bookings` is
+the same API, admin-side, for **your app's** bookings only (`sl:bookings:read` / `sl:bookings:write`):
+
+```ts
+// manifest: { name: 'book', trigger: { type: 'http' }, visibility: 'public', authority: 'collection',
+//             capabilities: ['sl:bookings:write', 'sl:contacts:write'] }
+export async function book(ctx, req) {
+  const me = await ctx.sl.contacts.forCaller()          // null when signed out
+  // … your rules: hours (utils.withinSchedule), a queue token, a member level, a price …
+  const b = await ctx.sl.bookings.create({
+    resourceType: 'record', resourceId: req.body.staffId,
+    startsAt: req.body.startsAt, endsAt: req.body.endsAt, bufferAfter: 10,
+    contactId: me?.contactId, status: 'confirmed', idempotencyKey: req.body.requestId,
+  })
+  return Response.json({ id: b.id, startsAt: b.startsAt })
+}
+```
+
+`create`, `get`, `query`, `mine` (the caller's own), `update`, `confirm`, `cancel`, `move`,
+`extendHold`, `complete`, `noShow`, `freebusy`, `slots.*`, `blocks.*`. Errors carry `code`,
+`status` and `details` exactly as over HTTP. The local test harness
+(`@proveanything/smartlinks/testing`) runs bookings in memory with the same rules.
+
+---
+
 ## Payments and high-demand sales
 
 The platform takes no payments. It gives you what a payment or credits flow needs:

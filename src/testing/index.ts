@@ -14,12 +14,14 @@
 //  - `ctx.secrets` are FIXTURES you provide; real sealed secrets are server-only and
 //    never resolvable locally.
 //  - `ctx.fetch` is gated by the `network` capability just like production.
-//  - Without an injected impl, appRecords / counters / contacts / interactions run against an
-//    in-memory store with the platform's uniqueness rules (claim: singletonPer + customId; contacts by
-//    email/phone, fill-empty only), so idempotency and "never two of the same number" are testable.
-//    Inspect it via `ctx.memory`.
+//  - Without an injected impl, appRecords / counters / contacts / interactions / bookings run against
+//    an in-memory store with the platform's rules (claim: singletonPer + customId; contacts by
+//    email/phone, fill-empty only; bookings: capacity, per-person limits, no overlapping time,
+//    idempotent creates), so idempotency, "never two of the same number" and "never oversold" are
+//    testable. Inspect it via `ctx.memory`.
 
 import type { AppFunctionDef, ServerFunctionContext, ServerFunctionInputs } from '../types/appManifest'
+import { bookingsMemoryImpl, createBookingsMemory, type BookingsMemory } from './bookingsMemory'
 
 export class CapabilityError extends Error {
   capability: string
@@ -83,10 +85,17 @@ export interface TestSlImpl {
   }
   /** Cross-app reads: return another app's data as the caller would see it. Keyed by appId. */
   app?: (appId: string) => { data?: { get?(opts?: any): any; getData?(opts?: any): any } }
+  /**
+   * Bookings. Omit to use the built-in in-memory engine (capacity, per-person limits, no overlapping
+   * time, idempotent creates, holds) — inspect it via `ctx.memory.bookings`.
+   */
+  bookings?: Record<string, any>
 }
 
 export interface TestCaller {
   userId?: string | null
+  /** The caller's contact id, for `ctx.sl.bookings.mine()`. Default: `contact-of-<userId>` when signed in. */
+  contactId?: string | null
   anonymous?: boolean
   origin?: string | null
   ip?: string | null
@@ -120,11 +129,13 @@ export interface FunctionTestMemory {
   counters: Record<string, number>
   contacts: Array<{ contactId: string; email?: string; phone?: string; [k: string]: any }>
   interactions: any[]
+  /** Slots, bookings and allocations of the in-memory bookings engine. */
+  bookings: BookingsMemory
 }
 
 /** A fresh in-memory store — pass the same one to several test contexts to simulate concurrent callers. */
 export function createFunctionTestMemory(): FunctionTestMemory {
-  return { records: [], counters: {}, contacts: [], interactions: [] }
+  return { records: [], counters: {}, contacts: [], interactions: [], bookings: createBookingsMemory() }
 }
 
 export interface FunctionTestContext extends ServerFunctionContext {
@@ -312,6 +323,25 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
         getData: gated('data', 'read', od.getData ? od.getData.bind(od) : (async () => []), 'app.getData'),
       },
     }
+  }
+
+  // Bookings — an injected impl, else the in-memory engine (same rules as the platform).
+  if (!mem.bookings) mem.bookings = createBookingsMemory() // a memory made before bookings existed
+  const callerContactId = opts.caller?.contactId ?? (opts.caller?.userId ? `contact-of-${opts.caller.userId}` : null)
+  const bk: any = impl.bookings || bookingsMemoryImpl(mem.bookings, { contactId: callerContactId })
+  const bkFn = (obj: any, name: string) => (obj && typeof obj[name] === 'function' ? obj[name].bind(obj) : undefined)
+  const BOOKING_READS = new Set(['get', 'query', 'mine', 'freebusy'])
+  sl.bookings = {}
+  for (const m of ['create', 'get', 'query', 'mine', 'update', 'confirm', 'cancel', 'move', 'extendHold', 'complete', 'noShow', 'freebusy']) {
+    sl.bookings[m] = gated('bookings', BOOKING_READS.has(m) ? 'read' : 'write', bkFn(bk, m), `bookings.${m}`)
+  }
+  sl.bookings.slots = {}
+  for (const m of ['create', 'createMany', 'get', 'query', 'update', 'delete']) {
+    sl.bookings.slots[m] = gated('bookings', m === 'get' || m === 'query' ? 'read' : 'write', bkFn(bk.slots, m), `bookings.slots.${m}`)
+  }
+  sl.bookings.blocks = {}
+  for (const m of ['create', 'query', 'delete']) {
+    sl.bookings.blocks[m] = gated('bookings', m === 'query' ? 'read' : 'write', bkFn(bk.blocks, m), `bookings.blocks.${m}`)
   }
 
   const secretsMap = opts.secrets || {}

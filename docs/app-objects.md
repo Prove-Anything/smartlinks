@@ -927,6 +927,9 @@ The server reads this document at request time — no cache invalidation or serv
 
 ### Policy Structure
 
+Bookings use the same policy as a fourth object type, `publicCreate.bookings`, with booking-specific
+`limits` and `rules` — see [bookings.md](bookings.md).
+
 Each object type (`cases`, `threads`, `records`) has **independent branches** for anonymous and authenticated callers. Each branch carries its own `allow` flag, optional field overrides (`enforce`), and — for records — optional edit-token config (`edit`).
 
 ```typescript

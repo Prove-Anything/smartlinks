@@ -167,7 +167,7 @@ Declare the minimum you need.
 
 | Capability | Grants |
 |---|---|
-| `sl:<resource>:read` / `sl:<resource>:write` | SDK access to that resource, e.g. `sl:products:read`, `sl:records:write`, `sl:attestations:write`, `sl:contacts:write`. |
+| `sl:<resource>:read` / `sl:<resource>:write` | SDK access to that resource, e.g. `sl:products:read`, `sl:records:write`, `sl:attestations:write`, `sl:contacts:write`, `sl:bookings:write`. |
 | `network` | `ctx.fetch` to any host. |
 | `network:<host>` | `ctx.fetch` to that host only (repeat for several). Prefer this over blanket `network`. |
 | `network:*.<domain>` | `ctx.fetch` to any subdomain of `<domain>` (not `<domain>` itself), for a customer's own endpoint at a provider, e.g. `network:*.servicebus.windows.net`. `<domain>` needs at least two labels (`*.com` is not honoured). |
@@ -517,6 +517,7 @@ Prefer the platform primitives above over a dependency; when you do need one, pi
 | Check a tapped tag is real | `ctx.sl.tags.resolve(proofId)` → `{ id, claimSetId, code }` or `null` | `sl:tags:read` |
 | Put a visitor's details on a contact | `ctx.sl.contacts.upsert({ email, firstName, … })` → `{ contactId, created }` (fills empty fields only) | `sl:contacts:write` |
 | Record "they did X" | `ctx.sl.interactions.record({ interactionId, contactId, outcome, metadata })` | `sl:interactions:write` |
+| Take a booking with your own checks (hours, queue token, payment) | `ctx.sl.bookings.create({ slotId \| resource + time, contactId, status, idempotencyKey })` — never oversold, never double-booked; also `confirm` / `cancel` / `move` / `mine` / `freebusy` / `slots.*` / `blocks.*` (see [bookings.md](bookings.md)) | `sl:bookings:write` (`sl:bookings:read` to read) |
 
 Notes:
 - **Talking to the SmartLinks core is `ctx.sl`, not HTTP.** The common pattern — *validate /
@@ -610,6 +611,33 @@ await ctx.sl.interactions.record({
   metadata: { number, consent: true },
 })
 ```
+
+### `bookings.*` — places and time that can't be oversold
+
+`ctx.sl.bookings` is your app's own bookings, slots and blocks (`sl:bookings:read` / `write`). A
+function books **admin-side**: any status, the admin zone, any contact — your app's public booking
+rules (`publicCreate.bookings`) don't apply, because the function *is* your rules. The platform still
+guarantees no overbooking and no overlapping time, so a clash throws (`code`: `SLOT_FULL`,
+`RESOURCE_TAKEN`, `PER_CONTACT_LIMIT`, `HOLD_EXPIRED`, …; with `status` and `details`). Pass an
+`idempotencyKey` so a retried request returns the first booking (`replayed: true`).
+
+```ts
+const me = await ctx.sl.contacts.forCaller()
+if (!me) return Response.json({ error: 'sign in' }, { status: 401 })
+try {
+  const booking = await ctx.sl.bookings.create({
+    slotId: body.slotId, quantity: body.quantity, contactId: me.contactId,
+    status: 'held', holdMinutes: 15, idempotencyKey: body.requestId,
+  })
+  return Response.json({ id: booking.id, holdExpiresAt: booking.holdExpiresAt })
+} catch (e: any) {
+  if (e.code === 'SLOT_FULL') return Response.json({ error: 'sold out', remaining: e.details?.remaining }, { status: 409 })
+  throw e
+}
+```
+
+The local harness runs bookings in memory with the same rules (capacity, per-person limits, no
+overlaps, idempotency, holds): `ctx.memory.bookings`.
 
 ---
 
