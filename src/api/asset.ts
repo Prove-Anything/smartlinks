@@ -444,11 +444,11 @@ export namespace asset {
   }
 
   /**
-   * Give an existing asset its permanent address (`permanentUrl`). New and replaced assets get one
-   * automatically; this is for assets made before permanent addresses existed. Safe to call again.
+   * Give an existing asset its own address (`assetUrl`). New and replaced assets get one automatically;
+   * this is for assets made before asset addresses existed. Safe to call again. → the asset, with `assetUrl`.
    */
-  export async function ensurePermanent(collectionId: string, assetId: string): Promise<Asset> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/asset/${encodeURIComponent(assetId)}/permanent`
+  export async function ensureAssetUrl(collectionId: string, assetId: string): Promise<Asset> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/asset/${encodeURIComponent(assetId)}/asset-url`
     return post<Asset>(path, {})
   }
 

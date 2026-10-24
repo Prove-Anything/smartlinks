@@ -5,14 +5,8 @@
 export interface AssetRef {
   /** Postgres UUID — use to fetch the full Asset */
   id: string
-  /** CDN URL of the current file — a versioned address that changes when the file is replaced */
+  /** CDN URL of the original file */
   url: string
-  /**
-   * The asset's permanent address: always serves its current file, so a replace shows wherever it's used
-   * (sites, pages, emails) with no redeploy. Use this in front ends. Null for an outside link, or an asset made
-   * before permanent addresses until it's given one ({@link asset.ensurePermanent}).
-   */
-  permanentUrl: string | null
   /** WebP thumbnail URL (max 512px longest edge), or null if not yet generated */
   thumbnail: string | null
 }
@@ -50,8 +44,26 @@ export interface Asset {
   appId: string | null
 
   // File
-  /** CDN URL of the original file */
+  /**
+   * Address of the asset's current **file**. Versioned: it changes when the file is replaced (the old one moves
+   * to `versions[]`). For static content, use `assetUrl` instead.
+   */
   url: string
+  /**
+   * The **asset's** own address: `https://cdn.smartlinks.app/sites/{collectionId}/a/{assetId}`.
+   *
+   * It's the address of the asset (the named thing, e.g. "Hero image"), not of one file. It always serves the
+   * asset's current file: replace the file and everything using `assetUrl` shows the new one, with no redeploy
+   * and no extra API call (the CDN copy is cleared; browsers re-check within a minute). Deleting the asset takes
+   * the address down; restoring it brings it back.
+   *
+   * Use it in static content: a built site's HTML and CSS, emails, banners. Product and collection images are
+   * different: they are references in the record (`AssetRef`), and a new image is a record change.
+   *
+   * `null` for an outside link, and for an asset made before asset addresses existed until it's given one
+   * ({@link asset.ensureAssetUrl}).
+   */
+  assetUrl: string | null
   /**
    * CDN URL of the WebP thumbnail (max 512px longest edge, no crop).
    * Always .webp — null until thumbnail generation has run.
@@ -351,8 +363,9 @@ export interface CreateResumableUploadOptions {
    */
   token?: string
   /**
-   * Replace this asset's file instead of creating a new asset (admin). The id and permanent address stay;
-   * the previous file goes into `versions[]`. Any size — use this to replace a large video.
+   * Replace this asset's file instead of creating a new asset (admin). The id and `assetUrl` stay the same,
+   * so everything using `assetUrl` shows the new file; the previous file goes into `versions[]`. Any size —
+   * use this to replace a large video.
    */
   replaceAssetId?: string
 }

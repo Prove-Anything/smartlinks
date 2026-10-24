@@ -2,6 +2,10 @@
 
 Reference for asset types, endpoints, and public (token-based) uploads.
 
+> **Showing an asset in a page, email or other static content? Use `assetUrl`.** It's the asset's own
+> address and always shows its current file, so replacing the file needs no code change or redeploy. See
+> [Asset addresses: `assetUrl` vs `url`](#asset-addresses-asseturl-vs-url).
+
 ---
 
 ## Asset object
@@ -17,8 +21,9 @@ interface Asset {
   appId:        string | null     // app that owns this asset, e.g. 'homepage'
 
   // File
-  url:          string            // CDN URL of the current file (versioned — changes on replace)
-  permanentUrl: string | null     // the asset's permanent address — use this in front ends (see below)
+  url:          string            // address of the current FILE — versioned, changes when the file is replaced
+  assetUrl:     string | null     // the ASSET's own address — always its current file; use in static content
+                                  // (see "Asset addresses" below)
   thumbnail:    string | null     // CDN URL of WebP thumbnail (max 512px longest edge, no crop)
                                   // Always .webp — null until thumbnail generation has run
   name:         string            // original filename
@@ -84,6 +89,12 @@ interface AssetRef {
   thumbnail: string | null // WebP thumbnail URL, or null if not yet generated
 }
 ```
+
+An `AssetRef` has no `assetUrl`, on purpose. A product's image is part of the product record: to change it,
+point the record at a new asset (upload, then save the product). That's a record change, so the product's
+change event fires and integrations and syndication pick it up. Retailers cache images by URL, so the new
+address is what makes them fetch the new image. Show product images from the record, never copied into
+static HTML.
 
 Render the thumbnail wherever a compact preview is needed; fall back to `url` if null:
 
@@ -186,9 +197,10 @@ await Api.asset.updateAdmin({
 POST /asset/:assetId/replace
 ```
 
-Replaces the file; the previous URL is snapshotted into `versions[]`. The id and `permanentUrl` stay the
-same, and the permanent address serves the new file straight away — see [Permanent addresses](#permanent-addresses).
-For a large file, use a resumable upload with `replaceAssetId`.
+Replaces the file; the previous URL is snapshotted into `versions[]`. The id and `assetUrl` stay the same,
+and `assetUrl` serves the new file straight away. `url` becomes the new file's address. See
+[Asset addresses](#asset-addresses-asseturl-vs-url). For a large file, use a resumable upload with
+`replaceAssetId`.
 
 ```typescript
 await Api.asset.replaceFile({
@@ -325,32 +337,50 @@ interface ResumableUploadHandle {
 - On completion, `start()`/`resume()` resolves to the finalized `Asset` record.
 - `pause()` causes the in-flight `start()`/`resume()` promise to reject with an `UploadPausedError`; call `resume()` to continue.
 - `asset.upload()` also now accepts an `AbortSignal` (`upload({ ..., signal })`) for cancelling a stalled single-shot upload.
-- With `replaceAssetId`, the completed upload becomes a new version of that asset (same id and `permanentUrl`), so a
+- With `replaceAssetId`, the completed upload becomes a new version of that asset (same id and `assetUrl`), so a
   200 MB video can be swapped without touching the pages that show it.
 
 ---
 
-## Permanent addresses
+## Asset addresses: `assetUrl` vs `url`
 
-Every asset has one address for its whole life:
+An asset is a named thing in the library, such as "Hero image". Its file can be replaced over time, so it has
+two addresses:
 
+| Field | Is the address of | When the file is replaced |
+|---|---|---|
+| `assetUrl` | the **asset**: `https://cdn.smartlinks.app/sites/{collectionId}/a/{assetId}` | stays the same, and shows the new file |
+| `url` | the asset's current **file** | becomes the new file's address (the old one moves to `versions[]`) |
+
+### Which to use
+
+| You're showing it in… | Use |
+|---|---|
+| Static content: a built site's HTML or CSS, an email, a banner, anything written once and published | `assetUrl` |
+| A product or collection image (`heroImage`, `additionalImages`, `logoImage`, `headerImage`) | the record's `AssetRef`, read from the record (see [AssetRef](#assetref--slim-embedded-shape)) |
+| Version history, a "compare versions" view, an exact file for an audit | `url` and `versions[]` |
+
+```html
+<!-- In a built page: swap "Hero image" in the library and this shows the new one, no rebuild -->
+<img src="https://cdn.smartlinks.app/sites/my-collection/a/3f0c…" alt="…">
 ```
-https://cdn.smartlinks.app/sites/{collectionId}/a/{assetId}
-```
-
-It always serves the asset's **current** file. Replace the file and every site, page or email using
-`permanentUrl` shows the new one — no redeploy, no second API call. Deleting the asset withdraws the address, and
-restoring it brings the address back.
-
-- **Use `permanentUrl` in front ends.** `url` is the versioned address of the current file; `versions[]` holds the
-  older ones (for version history).
-- **Caching:** the CDN copy is cleared when the file is replaced; browsers re-check within a minute.
-- `permanentUrl` is `null` for an outside link. It's also `null` for an asset made before permanent addresses
-  existed, until it's given one:
 
 ```typescript
-const a = await Api.asset.ensurePermanent('my-collection', 'abc123')
-a.permanentUrl  // https://cdn.smartlinks.app/sites/my-collection/a/abc123
+const hero = await Api.asset.getAdmin('my-collection', heroId)
+const src = hero.assetUrl ?? hero.url   // fall back for outside links and older assets
+```
+
+### How it behaves
+
+- **Replace** (`replaceFile`, or a resumable upload with `replaceAssetId`): `assetUrl` shows the new file. The CDN
+  copy is cleared at once, and browsers re-check within a minute. There's no redeploy and no extra API call.
+- **Delete**: `assetUrl` stops serving (the asset is withdrawn). **Restore** brings it back.
+- `assetUrl` is `null` for an outside link (an asset that is a link to someone else's file). Fall back to `url`.
+- Assets made before asset addresses existed have `assetUrl: null` until they're given one:
+
+```typescript
+const a = await Api.asset.ensureAssetUrl('my-collection', 'abc123')
+a.assetUrl  // https://cdn.smartlinks.app/sites/my-collection/a/abc123
 ```
 
 ---
