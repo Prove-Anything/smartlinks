@@ -128,7 +128,9 @@ export interface AppleLoginOptions {
  * `ACCOUNT_EXISTS_UNVERIFIED` case also carries `requiresEmailVerification: true`
  * in `SmartlinksApiError.details`.
  */
-export type AuthKitErrorCode = 'MISSING_APPLE_TOKEN' | 'APPLE_AUTH_NOT_CONFIGURED' | 'INVALID_APPLE_TOKEN' | 'ACCOUNT_EXISTS_UNVERIFIED' | 'APPLE_AUTH_FAILED';
+export type AuthKitErrorCode = 'MISSING_APPLE_TOKEN' | 'APPLE_AUTH_NOT_CONFIGURED' | 'INVALID_APPLE_TOKEN' | 'ACCOUNT_EXISTS_UNVERIFIED' | 'APPLE_AUTH_FAILED' | 'SIGN_UP_CLOSED';
+/** A second-step method: a code by email or text message, or from an authenticator app. */
+export type MfaFactor = 'email' | 'sms' | 'totp';
 /**
  * Details carried on the `MFA_REQUIRED` error thrown by any session-issuing login method
  * (see the gate list above) when the client's MFA policy requires a step-up. Surfaced as
@@ -139,18 +141,20 @@ export interface MfaRequiredDetails {
     /** Short-lived (10 min) and single-use. Pass it to every challenge/finalize call below. */
     mfaSessionToken: string;
     /** Only factors the user actually enrolled. */
-    availableFactors: Array<'email' | 'sms'>;
-    /** `sms` is preferred over `email` when both are enrolled. */
-    preferredFactor: 'email' | 'sms';
+    availableFactors: MfaFactor[];
+    /** `totp`, then `sms`, then `email`: the first one the user enrolled. */
+    preferredFactor: MfaFactor;
+    /** `totp` is "your authenticator app" (nothing is sent for it). */
     maskedDestinations: {
         email?: string;
         sms?: string;
+        totp?: string;
     };
 }
 /** Response from {@link authKit.mfaChallengeSend}. */
 export interface MfaChallengeSendResponse {
     success: true;
-    factor: 'email' | 'sms';
+    factor: MfaFactor;
     /** Masked, e.g. `"j***@x.com"` or `"+1******1234"`. */
     destination: string;
     /** ISO timestamp, 10 minutes from send. */
@@ -179,10 +183,22 @@ export interface MfaEnrollSendResponse {
     destination: string;
     expiresAt: string;
 }
-/** Response from {@link authKit.confirmEmailMfa} / {@link authKit.confirmSmsMfa}. */
+/** Response from {@link authKit.enrollTotpMfa}: show `otpauthUri` as a QR code, and `secret` for typing in. */
+export interface MfaTotpEnrollResponse {
+    mfaSessionToken: string;
+    /** Base32, for people who type it into their app instead of scanning. Returned only here. */
+    secret: string;
+    /** `otpauth://totp/…` — render it as a QR code for the app to scan. */
+    otpauthUri: string;
+    /** What the app shows the entry as: the site, and the account. */
+    issuer: string;
+    account: string;
+    expiresAt: string;
+}
+/** Response from {@link authKit.confirmEmailMfa} / {@link authKit.confirmSmsMfa} / {@link authKit.confirmTotpMfa}. */
 export interface MfaEnrolledResponse {
     enrolled: true;
-    factor: 'email' | 'sms';
+    factor: MfaFactor;
 }
 /** Response from {@link authKit.getMfaFactors}. */
 export interface MfaFactorsResponse {
@@ -192,6 +208,11 @@ export interface MfaFactorsResponse {
             destination: string;
         };
         sms?: {
+            enrolledAt: string;
+            destination: string;
+        };
+        /** `destination` is "Authenticator app". */
+        totp?: {
             enrolledAt: string;
             destination: string;
         };
@@ -415,6 +436,36 @@ export interface AuthKitConfig {
      * site, its own passwords). Switch with {@link authKit.setIdentity}; never via create/update.
      */
     identity?: AuthKitIdentity;
+    /**
+     * Who may join a site with its own logins. `open` (default): anyone can create an account.
+     * `invite`: only people the site's admins invite ({@link authKit.invite}). Every way of signing up
+     * (password, magic link, phone, Google, Apple, LinkedIn, WhatsApp) then refuses anyone else with
+     * `SIGN_UP_CLOSED` (403), and "send me a link / a code" answers as if sent without sending anything,
+     * so nobody can find out who is a member. Hide your "Create an account" option when it's `invite`.
+     * Setting `invite` needs own logins first (`OWN_LOGINS_REQUIRED`, 409).
+     */
+    signUp?: 'open' | 'invite';
+}
+/** Body of {@link authKit.invite}. */
+export interface AuthKitInviteRequest {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    displayName?: string;
+    /** Set on their contact in this collection, e.g. `{ level: 'member' }` (staff-only and visible fields alike). */
+    customFields?: Record<string, unknown>;
+    /** Where the emailed link opens: the site's sign-in page (one of its own addresses). Default: the kit's `redirectUrl`. */
+    redirectUrl?: string;
+}
+/** Result of {@link authKit.invite}. The sign-in link itself only goes to their inbox. */
+export interface AuthKitInviteResponse {
+    ok: true;
+    userId: string;
+    contactId: string;
+    /** true when their account was made by this invite; false when they had one (they got a new link). */
+    created: boolean;
+    /** When the emailed link stops working (it works once). */
+    expiresAt: string;
 }
 /** An AuthKit's member pool. */
 export interface AuthKitIdentity {

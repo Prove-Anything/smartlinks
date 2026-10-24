@@ -56,6 +56,12 @@ tags:
     description: AuthKit hosted authentication flows.
   - name: batch
     description: Batch (production run) management.
+  - name: bookings
+    description: bookings API
+  - name: slots
+    description: slots API
+  - name: blocks
+    description: blocks API
   - name: broadcasts
     description: Broadcast messaging campaigns.
   - name: collection
@@ -1466,6 +1472,38 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/asset/{assetId}/asset-url:
+    post:
+      tags:
+        - asset
+      summary: "Give an existing asset its own address (`assetUrl`)."
+      operationId: asset_ensureAssetUrl
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: assetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/asset/{assetId}/restore:
     post:
       tags:
@@ -2116,6 +2154,44 @@ paths:
             schema:
               type: object
               additionalProperties: true
+  /admin/collection/{collectionId}/authKit/{authKitId}/invite:
+    post:
+      tags:
+        - authKit
+      summary: Invite someone to be a member of a site with its own logins (admin).
+      operationId: authKit_invite
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: authKitId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthKitInviteResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthKitInviteRequest"
   /admin/collection/{collectionId}/batch:
     get:
       tags:
@@ -9898,10 +9974,7 @@ paths:
         content:
           application/json:
             schema:
-              type: string
-              enum:
-                - email
-                - sms
+              $ref: "#/components/schemas/MfaFactor"
   /authkit/{clientId}/mfa/challenge/verify:
     post:
       tags:
@@ -10058,6 +10131,58 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /authkit/{clientId}/mfa/factors/totp/confirm:
+    post:
+      tags:
+        - authKit
+      summary: Confirm authenticator-app enrollment with the 6-digit code the app shows (authenticated).
+      operationId: authKit_confirmTotpMfa
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaEnrolledResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /authkit/{clientId}/mfa/factors/totp/enroll:
+    post:
+      tags:
+        - authKit
+      summary: "Begin authenticator-app enrollment (authenticated): a new secret for Google Authenticator, Microsoft Authenticator, 1Password and the like."
+      operationId: authKit_enrollTotpMfa
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MfaTotpEnrollResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /authkit/{clientId}/mfa/factors/{factor}:
     get:
       tags:
@@ -10114,6 +10239,52 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /blocks:
+    post:
+      tags:
+        - blocks
+      summary: blocks.create
+      operationId: blocks_create
+      security: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingAllocation"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateBlockInput"
+  /freebusy:
+    get:
+      tags:
+        - bookings
+      summary: "Busy intervals per resource (bookings, blocks, slots' own blocks) — never booking details."
+      operationId: bookings_freebusy
+      security: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FreeBusyResponse"
         400:
           description: Bad request
         401:
@@ -14217,6 +14388,320 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/TemplatePublic"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /slots:
+    post:
+      tags:
+        - slots
+      summary: Create a slot (admin).
+      operationId: slots_create
+      security: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingSlot"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSlotInput"
+  /slots/{slotId}:
+    get:
+      tags:
+        - slots
+      summary: "GET /bookings/slots/:slotId"
+      operationId: slots_get
+      security: []
+      parameters:
+        - name: slotId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingSlot"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    patch:
+      tags:
+        - slots
+      summary: Update a slot (admin).
+      operationId: slots_update
+      security: []
+      parameters:
+        - name: slotId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookingSlot"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSlotInput"
+  /{bookingId}:
+    get:
+      tags:
+        - bookings
+      summary: Get one booking.
+      operationId: bookings_get
+      security: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    patch:
+      tags:
+        - bookings
+      summary: Update zones and descriptive fields (admin).
+      operationId: bookings_update
+      security: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBookingInput"
+  /{bookingId}/cancel:
+    post:
+      tags:
+        - bookings
+      summary: Cancel and give the places back (idempotent).
+      operationId: bookings_cancel
+      security: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingAccessOptions"
+  /{bookingId}/complete:
+    post:
+      tags:
+        - bookings
+      summary: confirmed → completed (admin).
+      operationId: bookings_complete
+      security: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /{bookingId}/confirm:
+    post:
+      tags:
+        - bookings
+      summary: held / pending / waitlisted → confirmed (idempotent).
+      operationId: bookings_confirm
+      security: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BookingAccessOptions"
+  /{bookingId}/extend-hold:
+    post:
+      tags:
+        - bookings
+      summary: "Extend a hold by `holdMinutes` from now (admin; capped at 24h after the booking was made)."
+      operationId: bookings_extendHold
+      security: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /{bookingId}/move:
+    post:
+      tags:
+        - bookings
+      summary: Move to a new slot / time, all-or-nothing (a failed move leaves the booking as it was).
+      operationId: bookings_move
+      security: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MoveBookingInput"
+  /{bookingId}/no-show:
+    post:
+      tags:
+        - bookings
+      summary: confirmed → no_show (admin).
+      operationId: bookings_noShow
+      security: []
+      parameters:
+        - name: bookingId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Booking"
         400:
           description: Bad request
         401:
@@ -19739,9 +20224,23 @@ components:
           type: string
       required:
         - interactionId
+    ServerFunctionBookings:
+      type: object
+      properties:
+        slots:
+          type: object
+          additionalProperties: true
+        blocks:
+          type: object
+          additionalProperties: true
+      required:
+        - slots
+        - blocks
     ServerFunctionSl:
       type: object
       properties:
+        bookings:
+          $ref: "#/components/schemas/ServerFunctionBookings"
         appRecords:
           type: object
           additionalProperties: true
@@ -19764,6 +20263,7 @@ components:
         appData:
           $ref: "#/components/schemas/AppDataHandle"
       required:
+        - bookings
         - appRecords
         - counters
         - tags
@@ -19790,6 +20290,37 @@ components:
         - userId
         - anonymous
         - via
+    CallerContact:
+      type: object
+      properties:
+        contactId:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        displayName:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string
+        customFields:
+          type: object
+          additionalProperties: true
+      required:
+        - contactId
+        - email
+        - phone
+        - firstName
+        - lastName
+        - displayName
+        - tags
+        - customFields
     ServerFunctionContext:
       type: object
       properties:
@@ -21663,6 +22194,8 @@ components:
           type: string
         url:
           type: string
+        assetUrl:
+          type: string
         thumbnail:
           type: string
         name:
@@ -21740,6 +22273,7 @@ components:
         - proofId
         - appId
         - url
+        - assetUrl
         - thumbnail
         - name
         - cleanName
@@ -22062,6 +22596,8 @@ components:
         admin:
           type: boolean
         token:
+          type: string
+        replaceAssetId:
           type: string
       required:
         - file
@@ -22894,15 +23430,9 @@ components:
         availableFactors:
           type: array
           items:
-            type: string
-            enum:
-              - email
-              - sms
+            $ref: "#/components/schemas/MfaFactor"
         preferredFactor:
-          type: string
-          enum:
-            - email
-            - sms
+          $ref: "#/components/schemas/MfaFactor"
         maskedDestinations:
           type: object
           additionalProperties: true
@@ -22918,10 +23448,7 @@ components:
           type: object
           additionalProperties: true
         factor:
-          type: string
-          enum:
-            - email
-            - sms
+          $ref: "#/components/schemas/MfaFactor"
         destination:
           type: string
         expiresAt:
@@ -22951,6 +23478,28 @@ components:
         - mfaSessionToken
         - destination
         - expiresAt
+    MfaTotpEnrollResponse:
+      type: object
+      properties:
+        mfaSessionToken:
+          type: string
+        secret:
+          type: string
+        otpauthUri:
+          type: string
+        issuer:
+          type: string
+        account:
+          type: string
+        expiresAt:
+          type: string
+      required:
+        - mfaSessionToken
+        - secret
+        - otpauthUri
+        - issuer
+        - account
+        - expiresAt
     MfaEnrolledResponse:
       type: object
       properties:
@@ -22958,10 +23507,7 @@ components:
           type: object
           additionalProperties: true
         factor:
-          type: string
-          enum:
-            - email
-            - sms
+          $ref: "#/components/schemas/MfaFactor"
       required:
         - enrolled
         - factor
@@ -22975,6 +23521,9 @@ components:
           type: object
           additionalProperties: true
         sms:
+          type: object
+          additionalProperties: true
+        totp:
           type: object
           additionalProperties: true
         recoveryCodesRemaining:
@@ -23372,8 +23921,51 @@ components:
             type: string
         identity:
           $ref: "#/components/schemas/AuthKitIdentity"
+        signUp:
+          type: string
+          enum:
+            - open
+            - invite
       required:
         - id
+    AuthKitInviteRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        displayName:
+          type: string
+        customFields:
+          type: object
+          additionalProperties: true
+        redirectUrl:
+          type: string
+      required:
+        - email
+    AuthKitInviteResponse:
+      type: object
+      properties:
+        ok:
+          type: object
+          additionalProperties: true
+        userId:
+          type: string
+        contactId:
+          type: string
+        created:
+          type: boolean
+        expiresAt:
+          type: string
+      required:
+        - ok
+        - userId
+        - contactId
+        - created
+        - expiresAt
     AuthKitIdentity:
       type: object
       properties:
@@ -23465,6 +24057,13 @@ components:
         - INVALID_APPLE_TOKEN
         - ACCOUNT_EXISTS_UNVERIFIED
         - APPLE_AUTH_FAILED
+        - SIGN_UP_CLOSED
+    MfaFactor:
+      type: string
+      enum:
+        - email
+        - sms
+        - totp
     MfaErrorCode:
       type: string
       enum:
@@ -23579,6 +24178,639 @@ components:
       required:
         - code
         - claimSetId
+    BookingAllocation:
+      type: object
+      properties:
+        id:
+          type: string
+        bookingId:
+          type: string
+        slotId:
+          type: string
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+        startsAt:
+          type: string
+        endsAt:
+          type: string
+        quantity:
+          type: number
+        mode:
+          type: string
+          enum:
+            - exclusive
+            - capacity
+        active:
+          type: boolean
+        sourceSystem:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - bookingId
+        - slotId
+        - resourceType
+        - resourceId
+        - startsAt
+        - endsAt
+        - quantity
+        - mode
+        - active
+        - data
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+        collectionId:
+          type: string
+        appId:
+          type: string
+        visibility:
+          $ref: "#/components/schemas/BookingVisibility"
+        contactId:
+          type: string
+        status:
+          $ref: "#/components/schemas/BookingStatus"
+        startsAt:
+          type: string
+        endsAt:
+          type: string
+        timezone:
+          type: string
+        quantity:
+          type: number
+        holdExpiresAt:
+          type: string
+        flags:
+          type: array
+          items:
+            type: string
+        cancelReason:
+          type: string
+        idempotencyKey:
+          type: string
+        seriesId:
+          type: string
+        ref:
+          type: string
+        customId:
+          type: string
+        sourceSystem:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        parentType:
+          type: string
+        parentId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        cancelledAt:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        owner:
+          type: object
+          additionalProperties: true
+        admin:
+          type: object
+          additionalProperties: true
+        allocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/BookingAllocation"
+        editToken:
+          type: string
+      required:
+        - id
+        - collectionId
+        - appId
+        - visibility
+        - status
+        - startsAt
+        - endsAt
+        - quantity
+        - flags
+        - createdAt
+        - updatedAt
+        - data
+        - allocations
+    BookingSlot:
+      type: object
+      properties:
+        id:
+          type: string
+        collectionId:
+          type: string
+        appId:
+          type: string
+        visibility:
+          $ref: "#/components/schemas/BookingVisibility"
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+        startsAt:
+          type: string
+        endsAt:
+          type: string
+        timezone:
+          type: string
+        capacity:
+          type: number
+        booked:
+          type: number
+        remaining:
+          type: number
+        perContactLimit:
+          type: number
+        status:
+          type: string
+          enum:
+            - open
+            - closed
+            - cancelled
+        seriesId:
+          type: string
+        ref:
+          type: string
+        customId:
+          type: string
+        sourceSystem:
+          type: string
+        productId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        owner:
+          type: object
+          additionalProperties: true
+        admin:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - collectionId
+        - appId
+        - visibility
+        - startsAt
+        - endsAt
+        - capacity
+        - booked
+        - remaining
+        - status
+        - createdAt
+        - updatedAt
+        - data
+    CreateBookingInput:
+      type: object
+      properties:
+        slotId:
+          type: string
+        quantity:
+          type: number
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+        resource:
+          type: object
+          additionalProperties: true
+        startsAt:
+          type: object
+          additionalProperties: true
+        endsAt:
+          type: object
+          additionalProperties: true
+        allocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/BookingClaimInput"
+        status:
+          type: string
+          enum:
+            - held
+            - pending
+            - confirmed
+            - waitlisted
+        holdMinutes:
+          type: number
+        bufferBefore:
+          type: number
+        bufferAfter:
+          type: number
+        idempotencyKey:
+          type: string
+        contactId:
+          type: string
+        timezone:
+          type: string
+        visibility:
+          $ref: "#/components/schemas/BookingVisibility"
+        ref:
+          type: string
+        customId:
+          type: string
+        sourceSystem:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        parentType:
+          type: string
+        parentId:
+          type: string
+        seriesId:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        owner:
+          type: object
+          additionalProperties: true
+        admin:
+          type: object
+          additionalProperties: true
+    UpdateBookingInput:
+      type: object
+      properties:
+        data:
+          type: object
+          additionalProperties: true
+        owner:
+          type: object
+          additionalProperties: true
+        admin:
+          type: object
+          additionalProperties: true
+        visibility:
+          $ref: "#/components/schemas/BookingVisibility"
+        ref:
+          type: string
+        timezone:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        contactId:
+          type: string
+        sourceSystem:
+          type: string
+        customId:
+          type: string
+        flags:
+          type: array
+          items:
+            type: string
+    MoveBookingInput:
+      type: object
+      properties:
+        slotId:
+          type: string
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+        resource:
+          type: object
+          additionalProperties: true
+        startsAt:
+          type: object
+          additionalProperties: true
+        endsAt:
+          type: object
+          additionalProperties: true
+        allocations:
+          type: array
+          items:
+            $ref: "#/components/schemas/BookingClaimInput"
+        bufferBefore:
+          type: number
+        bufferAfter:
+          type: number
+    BookingListQueryParams:
+      type: object
+      properties:
+        status:
+          type: string
+        contactId:
+          type: string
+        slotId:
+          type: string
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+        from:
+          type: object
+          additionalProperties: true
+        to:
+          type: object
+          additionalProperties: true
+        ref:
+          type: string
+        customId:
+          type: string
+        sourceSystem:
+          type: string
+        productId:
+          type: string
+        seriesId:
+          type: string
+        sort:
+          type: string
+        limit:
+          type: number
+        offset:
+          type: number
+    CreateSlotInput:
+      type: object
+      properties:
+        startsAt:
+          type: object
+          additionalProperties: true
+        endsAt:
+          type: object
+          additionalProperties: true
+        capacity:
+          type: number
+        perContactLimit:
+          type: number
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+        blockResource:
+          type: boolean
+        status:
+          type: string
+          enum:
+            - open
+            - closed
+            - cancelled
+        timezone:
+          type: string
+        visibility:
+          $ref: "#/components/schemas/BookingVisibility"
+        seriesId:
+          type: string
+        ref:
+          type: string
+        customId:
+          type: string
+        sourceSystem:
+          type: string
+        productId:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        owner:
+          type: object
+          additionalProperties: true
+        admin:
+          type: object
+          additionalProperties: true
+      required:
+        - startsAt
+        - endsAt
+        - capacity
+    SlotListQueryParams:
+      type: object
+      properties:
+        status:
+          type: string
+        available:
+          type: boolean
+        from:
+          type: object
+          additionalProperties: true
+        to:
+          type: object
+          additionalProperties: true
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+        productId:
+          type: string
+        seriesId:
+          type: string
+        ref:
+          type: string
+        customId:
+          type: string
+        sort:
+          type: string
+        limit:
+          type: number
+        offset:
+          type: number
+    CreateBlockInput:
+      type: object
+      properties:
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+        startsAt:
+          type: object
+          additionalProperties: true
+        endsAt:
+          type: object
+          additionalProperties: true
+        sourceSystem:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+      required:
+        - resourceType
+        - resourceId
+        - startsAt
+        - endsAt
+    BlockListQueryParams:
+      type: object
+      properties:
+        resourceType:
+          type: string
+        resourceId:
+          type: string
+        from:
+          type: object
+          additionalProperties: true
+        to:
+          type: object
+          additionalProperties: true
+        limit:
+          type: number
+        offset:
+          type: number
+    FreeBusyQuery:
+      type: object
+      properties:
+        resources:
+          type: array
+          items:
+            $ref: "#/components/schemas/BookingResourceRef"
+        from:
+          type: object
+          additionalProperties: true
+        to:
+          type: object
+          additionalProperties: true
+      required:
+        - resources
+        - from
+        - to
+    FreeBusyInterval:
+      type: object
+      properties:
+        start:
+          type: string
+        end:
+          type: string
+      required:
+        - start
+        - end
+    FreeBusyResponse:
+      type: object
+      properties:
+        from:
+          type: string
+        to:
+          type: string
+        resources:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - from
+        - to
+        - resources
+    BookingAccessOptions:
+      type: object
+      properties:
+        editToken:
+          type: string
+    ScheduleHours:
+      type: object
+      properties:
+        start:
+          type: string
+        end:
+          type: string
+      required:
+        - start
+        - end
+    ScheduleOverride:
+      type: object
+      properties:
+        date:
+          type: string
+        from:
+          type: string
+        to:
+          type: string
+        hours:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduleHours"
+      required:
+        - hours
+    StandardSchedule:
+      type: object
+      properties:
+        timezone:
+          type: string
+        weekly:
+          $ref: "#/components/schemas/ScheduleDay"
+        overrides:
+          type: array
+          items:
+            $ref: "#/components/schemas/ScheduleOverride"
+      required:
+        - timezone
+    BookingResourceRef:
+      type: object
+      properties:
+        type:
+          type: object
+          additionalProperties: true
+      required:
+        - type
+    BookingStatus:
+      type: string
+      enum:
+        - held
+    BookingVisibility:
+      type: string
+      enum:
+        - public
+        - owner
+        - admin
+    BookingClaimInput:
+      type: object
+      additionalProperties: true
+    UpdateSlotInput:
+      $ref: "#/components/schemas/CreateSlotInput"
+    BookingList:
+      $ref: "#/components/schemas/PaginatedResponse"
+    SlotList:
+      $ref: "#/components/schemas/PaginatedResponse"
+    BlockList:
+      $ref: "#/components/schemas/PaginatedResponse"
+    BookingErrorCode:
+      type: string
+      enum:
+        - SLOT_FULL
+        - SLOT_CLOSED
+        - RESOURCE_TAKEN
+        - PER_CONTACT_LIMIT
+        - QUANTITY_LIMIT
+        - HOLD_EXPIRED
+        - INVALID_STATE
+        - SLOT_OVERBOOKED
+        - SLOT_HAS_BOOKINGS
+        - TOO_SOON
+        - TOO_FAR_AHEAD
+        - IN_THE_PAST
+        - DURATION_NOT_ALLOWED
+        - OUTSIDE_SCHEDULE
+        - NO_SCHEDULE
+        - SCHEDULE_INVALID
+        - CUTOFF_PASSED
+        - FORBIDDEN
+        - NOT_FOUND
+        - BAD_REQUEST
+    ScheduleDay:
+      type: string
+      enum:
+        - mon
+        - tue
+        - wed
+        - thu
+        - fri
+        - sat
+        - sun
     ListBroadcastsQuery:
       type: object
       properties:

@@ -3,6 +3,8 @@
 import type { AppDataDeclaration, AppHeadlessDeclaration } from './headless.js';
 import type { RealtimeChannelDeclaration } from './realtime.js';
 import type { AppManifestAdminCards } from './adminCards.js';
+import type { PaginatedResponse } from './appObjects.js';
+import type { Booking, BookingSlot, BookingAllocation, CreateBookingInput, UpdateBookingInput, MoveBookingInput, BookingListQueryParams, CreateSlotInput, UpdateSlotInput, SlotListQueryParams, CreateBlockInput, BlockListQueryParams, FreeBusyQuery, FreeBusyResponse } from './bookings.js';
 /**
  * A bundle (widget or container) as returned by the collection widgets endpoint.
  *
@@ -416,7 +418,60 @@ export interface ServerFunctionInteractionEvent {
     batchId?: string;
     eventType?: string;
 }
+/**
+ * `ctx.sl.bookings` — THIS app's own bookings, slots and blocks (docs/bookings.md, "In a server
+ * function"). Gated by `sl:bookings:read` / `sl:bookings:write` only. Writes are admin-side: any
+ * status, the admin zone, any contact — the app's `publicCreate.bookings` rules don't apply, because
+ * the function IS the app's rules (hours, queue tokens, payment). The platform's guarantees still do:
+ * a clash fails with an Error carrying `code` (SLOT_FULL, RESOURCE_TAKEN, PER_CONTACT_LIMIT,
+ * HOLD_EXPIRED, …), `status` and `details`.
+ */
+export interface ServerFunctionBookings {
+    /** Book; pass `idempotencyKey` (e.g. the payment intent id) so a retry returns the first booking (`replayed: true`). */
+    create(input: CreateBookingInput): Promise<Booking & {
+        replayed: boolean;
+    }>;
+    get(bookingId: string): Promise<Booking | null>;
+    query(params?: BookingListQueryParams): Promise<PaginatedResponse<Booking>>;
+    /** The signed-in caller's own bookings (empty when anonymous). */
+    mine(params?: BookingListQueryParams): Promise<PaginatedResponse<Booking>>;
+    update(bookingId: string, fields: UpdateBookingInput): Promise<Booking>;
+    /** held / pending / waitlisted → confirmed (idempotent). */
+    confirm(bookingId: string): Promise<Booking>;
+    /** Cancel and give the places back (idempotent). */
+    cancel(bookingId: string, opts?: {
+        reason?: string;
+    }): Promise<Booking>;
+    /** All-or-nothing move to new claims. */
+    move(bookingId: string, input: MoveBookingInput): Promise<Booking>;
+    extendHold(bookingId: string, holdMinutes: number): Promise<Booking>;
+    complete(bookingId: string): Promise<Booking>;
+    noShow(bookingId: string): Promise<Booking>;
+    /** Busy intervals per resource — feed them to `utils.freeTimes` with your schedule. */
+    freebusy(q: FreeBusyQuery): Promise<FreeBusyResponse>;
+    slots: {
+        create(input: CreateSlotInput): Promise<BookingSlot>;
+        createMany(inputs: CreateSlotInput[], opts?: {
+            seriesId?: string;
+        }): Promise<BookingSlot[]>;
+        get(slotId: string): Promise<BookingSlot | null>;
+        query(params?: SlotListQueryParams): Promise<PaginatedResponse<BookingSlot>>;
+        update(slotId: string, fields: UpdateSlotInput): Promise<BookingSlot>;
+        delete(slotId: string): Promise<{
+            success: boolean;
+        }>;
+    };
+    blocks: {
+        create(input: CreateBlockInput): Promise<BookingAllocation>;
+        query(params?: BlockListQueryParams): Promise<PaginatedResponse<BookingAllocation>>;
+        delete(blockId: string): Promise<{
+            success: boolean;
+        }>;
+    };
+}
 export interface ServerFunctionSl {
+    /** THIS app's bookings, slots and blocks (`sl:bookings:read` / `sl:bookings:write`). */
+    bookings: ServerFunctionBookings;
     /**
      * THIS app's records (own namespace): create / update / upsert / delete / get / query / listTypes,
      * plus `claim(fields)` — a race-safe UNIQUE create. The record names a unique key — `singletonPer`
@@ -437,16 +492,16 @@ export interface ServerFunctionSl {
     /**
      * Contacts (`sl:contacts:write`). `upsert` finds by email/phone or creates, and only FILLS EMPTY
      * fields — never overwrites (details typed by a visitor are unverified). `forCaller` is the signed-in
-     * caller's own contact (null when anonymous). Never return contact ids to public callers.
+     * caller's own contact with its tags and custom fields (null when anonymous) — check a member's level
+     * (`customFields.level`) here before returning member-only content. It includes staff-only fields:
+     * return only what the caller may see. Never return contact ids to public callers.
      */
     contacts: {
         upsert(details: ContactUpsertDetails): Promise<{
             contactId: string;
             created: boolean;
         }>;
-        forCaller(): Promise<{
-            contactId: string;
-        } | null>;
+        forCaller(): Promise<CallerContact | null>;
     };
     /**
      * Interactions (`sl:interactions:write`). `record` stores an event of one of THIS app's interaction
@@ -501,6 +556,18 @@ export interface ServerFunctionCaller {
     ip?: string | null;
     /** How the function was triggered. */
     via: AppFunctionTriggerType;
+}
+/** The signed-in caller's own contact, as a server function sees it (`ctx.sl.contacts.forCaller()`). */
+export interface CallerContact {
+    contactId: string;
+    email: string | null;
+    phone: string | null;
+    firstName: string | null;
+    lastName: string | null;
+    displayName: string | null;
+    tags: string[];
+    /** The collection's custom contact fields — including staff-only ones (a member's level, a paid-until date). */
+    customFields: Record<string, unknown>;
 }
 /**
  * The context handed to every SmartLinks server function. The platform builds a

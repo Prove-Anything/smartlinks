@@ -37,6 +37,7 @@ export * from "./iframeResponder.js";
 export * from "./ai.js";
 export * from "./appManifest.js";
 export * from "./appObjects.js";
+export * from "./bookings.js";
 export * from "./loyalty.js";
 export * from "./translations.js";
 export * from "./integrations.js";

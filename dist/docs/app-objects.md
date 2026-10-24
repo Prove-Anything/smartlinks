@@ -12,6 +12,10 @@ SmartLinks provides three generic data models scoped to your app that can be ada
 - **Threads** — Manage discussions, comments, or any reply-based content
 - **Records** — Store structured data with flexible lifecycles
 
+> **Bookings** (anything that claims time or a place — events, classes, appointments, rooms) have
+> their own objects with no-double-booking and capacity guarantees: see [bookings.md](bookings.md).
+> A booking app still uses records for its schedules, staff and settings.
+
 Each object type supports:
 - **JSONB zones** (`data`, `owner`, `admin`) for granular access control
 - **Visibility levels** (`public`, `owner`, `admin`) for content exposure
@@ -922,6 +926,9 @@ POST /api/v1/admin/collection/:collectionId/apps/:appId
 The server reads this document at request time — no cache invalidation or service restart is required.
 
 ### Policy Structure
+
+Bookings use the same policy as a fourth object type, `publicCreate.bookings`, with booking-specific
+`limits` and `rules` — see [bookings.md](bookings.md).
 
 Each object type (`cases`, `threads`, `records`) has **independent branches** for anonymous and authenticated callers. Each branch carries its own `allow` flag, optional field overrides (`enforce`), and — for records — optional edit-token config (`edit`).
 

@@ -5,3 +5,4 @@
 export * from './paths.js';
 export * from './conditions.js';
 export * from './anonId.js';
+export * from './freeTimes.js';

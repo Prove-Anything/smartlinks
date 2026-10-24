@@ -34,6 +34,7 @@ export { adminCards } from "./adminCards.js";
 export { tags } from "./tags.js";
 export { order } from "./order.js";
 export { app } from "./appObjects.js";
+export { bookings } from "./bookings.js";
 export { attestations } from "./attestations.js";
 export { containers } from "./containers.js";
 export { lots } from "./lots.js";

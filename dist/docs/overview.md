@@ -76,6 +76,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **AI Guide Template** | `docs/ai-guide-template.md` | Template for creating `public/ai-guide.md` — customise per app |
 | **Forms** | `docs/forms.md` | Form definitions, schema-driven rendering, submission patterns |
 | **Auth Kit** | `docs/auth-kit.md` | End-user sign-in: email/password, magic links, phone OTP, Google OAuth |
+| **Members** | `docs/members.md` | Signed-in members with a level (clubs, leagues, members' areas): the level field, members-only functions, joining rules |
 | **Portal Request Login** | `docs/portal-request-login.md` | How sub-apps ask the portal to authenticate the user; hook and iframe postMessage contracts |
 | **Portal Auth Broadcast** | `docs/portal-auth-broadcast.md` | Publishing custom auth flows to the portal; syncing sessions across containers and iframes |
 | **Contact Search** | `docs/contact-search.md` | Admin contact search: free-text, typeahead, identity/tag/JSONB filters, and pagination |
@@ -87,6 +88,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Proof Ownership Transfer** | `docs/proof-ownership-transfer.md` | Moving a proof's single owner (directed transfer / open release), accept/cancel, and the state machine |
 | **appConfig / Feature Flags** | `docs/appConfig.md` | `appConfig` settings contract — installed apps, `system.features`/`entitledAppGroups`/`meters`, `isFeatureEnabled()` helper |
 | **App Objects** | `docs/app-objects.md` | Queryable domain objects — `app.records` / `app.cases` / `app.threads`: JSONB zones, visibility, policies, aggregations |
+| **Bookings** | `docs/bookings.md` | Slots, bookings and allocations for events and appointments: no double-booking, holds, per-app public rules, `utils.freeTimes` |
 | **App Data Storage** | `docs/app-data-storage.md` | Decision guide: pick between `appConfiguration` / `userAppData` / `app.records` |
 | **Attestations** | `docs/attestations.md` | Postgres attestations API (proof-level user/admin data; replaces the legacy Firestore path) |
 | **Caching** | `docs/caching.md` | SDK GET cache tiers + TTLs, `invalidateCache({ exact })`, and `force`/push guidance |

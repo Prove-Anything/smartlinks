@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.0.69  |  Generated: 2026-10-20T19:38:11.744Z
+Version: 2.1.0  |  Generated: 2026-10-24T18:23:39.079Z
 
 This is a concise summary of all available API functions and types.
 
@@ -140,6 +140,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **async** - Functions for async operations
 - **attestation** - Functions for attestation operations
 - **attestations** - Functions for attestations operations
+- **bookings** - Functions for bookings operations
 - **config** - Functions for config operations
 - **containers** - Functions for containers operations
 - **facets** - Functions for facets operations
@@ -2800,15 +2801,47 @@ interface ServerFunctionInteractionEvent {
 }
 ```
 
+**ServerFunctionBookings** (interface)
+```typescript
+interface ServerFunctionBookings {
+  create(input: CreateBookingInput): Promise<Booking & { replayed: boolean }>;
+  get(bookingId: string): Promise<Booking | null>;
+  query(params?: BookingListQueryParams): Promise<PaginatedResponse<Booking>>;
+  mine(params?: BookingListQueryParams): Promise<PaginatedResponse<Booking>>;
+  update(bookingId: string, fields: UpdateBookingInput): Promise<Booking>;
+  confirm(bookingId: string): Promise<Booking>;
+  cancel(bookingId: string, opts?: { reason?: string }): Promise<Booking>;
+  move(bookingId: string, input: MoveBookingInput): Promise<Booking>;
+  extendHold(bookingId: string, holdMinutes: number): Promise<Booking>;
+  complete(bookingId: string): Promise<Booking>;
+  noShow(bookingId: string): Promise<Booking>;
+  freebusy(q: FreeBusyQuery): Promise<FreeBusyResponse>;
+  slots: {
+  create(input: CreateSlotInput): Promise<BookingSlot>;
+  createMany(inputs: CreateSlotInput[], opts?: { seriesId?: string }): Promise<BookingSlot[]>;
+  get(slotId: string): Promise<BookingSlot | null>;
+  query(params?: SlotListQueryParams): Promise<PaginatedResponse<BookingSlot>>;
+  update(slotId: string, fields: UpdateSlotInput): Promise<BookingSlot>;
+  delete(slotId: string): Promise<{ success: boolean }>;
+  };
+  blocks: {
+  create(input: CreateBlockInput): Promise<BookingAllocation>;
+  query(params?: BlockListQueryParams): Promise<PaginatedResponse<BookingAllocation>>;
+  delete(blockId: string): Promise<{ success: boolean }>;
+  };
+}
+```
+
 **ServerFunctionSl** (interface)
 ```typescript
 interface ServerFunctionSl {
+  bookings: ServerFunctionBookings;
   appRecords: { claim(fields: Record<string, any>): Promise<AppRecordClaimResult>; [method: string]: any };
   counters: ServerFunctionCounters;
   tags: { resolve(id: string): Promise<ResolvedTag | null> };
   contacts: {
   upsert(details: ContactUpsertDetails): Promise<{ contactId: string; created: boolean }>;
-  forCaller(): Promise<{ contactId: string } | null>;
+  forCaller(): Promise<CallerContact | null>;
   };
   interactions: { record(event: ServerFunctionInteractionEvent): Promise<{ eventId: string }> };
   tools: { run<T = any>(name: string, args?: Record<string, any>): Promise<T> };
@@ -2827,6 +2860,20 @@ interface ServerFunctionCaller {
   origin?: string | null;
   ip?: string | null;
   via: AppFunctionTriggerType;
+}
+```
+
+**CallerContact** (interface)
+```typescript
+interface CallerContact {
+  contactId: string;
+  email: string | null;
+  phone: string | null;
+  firstName: string | null;
+  lastName: string | null;
+  displayName: string | null;
+  tags: string[];
+  customFields: Record<string, unknown>;
 }
 ```
 
@@ -3803,6 +3850,7 @@ interface Asset {
   proofId: string | null
   appId: string | null
   url: string
+  assetUrl: string | null
   thumbnail: string | null
   name: string
   cleanName: string | null
@@ -4040,6 +4088,7 @@ interface CreateResumableUploadOptions {
   appId?: string
   admin?: boolean
   token?: string
+  replaceAssetId?: string
 }
 ```
 
@@ -4565,9 +4614,9 @@ interface AppleLoginOptions {
 ```typescript
 interface MfaRequiredDetails {
   mfaSessionToken: string
-  availableFactors: Array<'email' | 'sms'>
-  preferredFactor: 'email' | 'sms'
-  maskedDestinations: { email?: string; sms?: string }
+  availableFactors: MfaFactor[]
+  preferredFactor: MfaFactor
+  maskedDestinations: { email?: string; sms?: string; totp?: string }
 }
 ```
 
@@ -4575,7 +4624,7 @@ interface MfaRequiredDetails {
 ```typescript
 interface MfaChallengeSendResponse {
   success: true
-  factor: 'email' | 'sms'
+  factor: MfaFactor
   destination: string
   expiresAt: string
 }
@@ -4590,11 +4639,23 @@ interface MfaEnrollSendResponse {
 }
 ```
 
+**MfaTotpEnrollResponse** (interface)
+```typescript
+interface MfaTotpEnrollResponse {
+  mfaSessionToken: string
+  secret: string
+  otpauthUri: string
+  issuer: string
+  account: string
+  expiresAt: string
+}
+```
+
 **MfaEnrolledResponse** (interface)
 ```typescript
 interface MfaEnrolledResponse {
   enrolled: true
-  factor: 'email' | 'sms'
+  factor: MfaFactor
 }
 ```
 
@@ -4604,6 +4665,7 @@ interface MfaFactorsResponse {
   enrolledFactors: {
   email?: { enrolledAt: string; destination: string }
   sms?: { enrolledAt: string; destination: string }
+  totp?: { enrolledAt: string; destination: string }
   }
   recoveryCodesRemaining: number
   mfaEnabledForClient: boolean
@@ -4866,6 +4928,30 @@ interface AuthKitConfig {
   security?: AuthKitSecurityConfig
   collectionIds?: string[]
   identity?: AuthKitIdentity
+  signUp?: 'open' | 'invite'
+}
+```
+
+**AuthKitInviteRequest** (interface)
+```typescript
+interface AuthKitInviteRequest {
+  email: string
+  firstName?: string
+  lastName?: string
+  displayName?: string
+  customFields?: Record<string, unknown>
+  redirectUrl?: string
+}
+```
+
+**AuthKitInviteResponse** (interface)
+```typescript
+interface AuthKitInviteResponse {
+  ok: true
+  userId: string
+  contactId: string
+  created: boolean
+  expiresAt: string
 }
 ```
 
@@ -4933,6 +5019,8 @@ interface AuthKitLockoutPolicy {
 **RefreshErrorCode** = ``
 
 **AuthKitErrorCode** = ``
+
+**MfaFactor** = `'email' | 'sms' | 'totp'`
 
 **MfaErrorCode** = ``
 
@@ -5011,6 +5099,329 @@ interface BatchTag {
   index?: number                  // Position in claim set
 }
 ```
+
+### bookings
+
+**BookingAllocation** (interface)
+```typescript
+interface BookingAllocation {
+  id: string
+  bookingId: string | null
+  slotId: string | null
+  resourceType: string
+  resourceId: string
+  startsAt: string
+  endsAt: string
+  quantity: number
+  mode: 'exclusive' | 'capacity'
+  active: boolean
+  sourceSystem?: string | null
+  data: Record<string, any>
+}
+```
+
+**Booking** (interface)
+```typescript
+interface Booking {
+  id: string
+  collectionId: string
+  appId: string
+  visibility: BookingVisibility
+  contactId?: string
+  status: BookingStatus
+  startsAt: string
+  endsAt: string
+  timezone?: string | null
+  quantity: number
+  holdExpiresAt?: string | null
+  flags: string[]
+  cancelReason?: string | null
+  idempotencyKey?: string | null
+  seriesId?: string | null
+  ref?: string | null
+  customId?: string | null
+  sourceSystem?: string | null
+  productId?: string | null
+  proofId?: string
+  parentType?: string | null
+  parentId?: string | null
+  createdAt: string
+  updatedAt: string
+  cancelledAt?: string | null
+  data: Record<string, any>
+  owner?: Record<string, any>
+  admin?: Record<string, any>
+  allocations: BookingAllocation[]
+  editToken?: string
+}
+```
+
+**BookingSlot** (interface)
+```typescript
+interface BookingSlot {
+  id: string
+  collectionId: string
+  appId: string
+  visibility: BookingVisibility
+  resourceType?: string | null
+  resourceId?: string | null
+  startsAt: string
+  endsAt: string
+  timezone?: string | null
+  capacity: number
+  booked: number
+  remaining: number
+  perContactLimit?: number | null
+  status: 'open' | 'closed' | 'cancelled'
+  seriesId?: string | null
+  ref?: string | null
+  customId?: string | null
+  sourceSystem?: string | null
+  productId?: string | null
+  createdAt: string
+  updatedAt: string
+  data: Record<string, any>
+  owner?: Record<string, any>
+  admin?: Record<string, any>
+}
+```
+
+**CreateBookingInput** (interface)
+```typescript
+interface CreateBookingInput {
+  slotId?: string
+  quantity?: number
+  resourceType?: string
+  resourceId?: string
+  resource?: { type: string; id: string }
+  startsAt?: string | Date
+  endsAt?: string | Date
+  allocations?: BookingClaimInput[]
+  status?: 'held' | 'pending' | 'confirmed' | 'waitlisted'
+  holdMinutes?: number
+  bufferBefore?: number
+  bufferAfter?: number
+  idempotencyKey?: string
+  contactId?: string
+  timezone?: string
+  visibility?: BookingVisibility
+  ref?: string
+  customId?: string
+  sourceSystem?: string
+  productId?: string
+  proofId?: string
+  parentType?: string
+  parentId?: string
+  seriesId?: string
+  data?: Record<string, any>
+  owner?: Record<string, any>
+  admin?: Record<string, any>
+}
+```
+
+**UpdateBookingInput** (interface)
+```typescript
+interface UpdateBookingInput {
+  data?: Record<string, any>
+  owner?: Record<string, any>
+  admin?: Record<string, any>
+  visibility?: BookingVisibility
+  ref?: string
+  timezone?: string
+  productId?: string
+  proofId?: string
+  contactId?: string
+  sourceSystem?: string
+  customId?: string
+  flags?: string[]
+}
+```
+
+**MoveBookingInput** (interface)
+```typescript
+interface MoveBookingInput {
+  slotId?: string
+  resourceType?: string
+  resourceId?: string
+  resource?: { type: string; id: string }
+  startsAt?: string | Date
+  endsAt?: string | Date
+  allocations?: BookingClaimInput[]
+  bufferBefore?: number
+  bufferAfter?: number
+}
+```
+
+**BookingListQueryParams** (interface)
+```typescript
+interface BookingListQueryParams {
+  status?: string
+  contactId?: string
+  slotId?: string
+  resourceType?: string
+  resourceId?: string
+  from?: string | Date
+  to?: string | Date
+  ref?: string
+  customId?: string
+  sourceSystem?: string
+  productId?: string
+  seriesId?: string
+  sort?: string
+  limit?: number
+  offset?: number
+}
+```
+
+**CreateSlotInput** (interface)
+```typescript
+interface CreateSlotInput {
+  startsAt: string | Date
+  endsAt: string | Date
+  capacity: number
+  perContactLimit?: number
+  resourceType?: string
+  resourceId?: string
+  blockResource?: boolean
+  status?: 'open' | 'closed' | 'cancelled'
+  timezone?: string
+  visibility?: BookingVisibility
+  seriesId?: string
+  ref?: string
+  customId?: string
+  sourceSystem?: string
+  productId?: string
+  data?: Record<string, any>
+  owner?: Record<string, any>
+  admin?: Record<string, any>
+}
+```
+
+**SlotListQueryParams** (interface)
+```typescript
+interface SlotListQueryParams {
+  status?: string
+  available?: boolean
+  from?: string | Date
+  to?: string | Date
+  resourceType?: string
+  resourceId?: string
+  productId?: string
+  seriesId?: string
+  ref?: string
+  customId?: string
+  sort?: string
+  limit?: number
+  offset?: number
+}
+```
+
+**CreateBlockInput** (interface)
+```typescript
+interface CreateBlockInput {
+  resourceType: string
+  resourceId: string
+  startsAt: string | Date
+  endsAt: string | Date
+  sourceSystem?: string
+  data?: Record<string, any>
+}
+```
+
+**BlockListQueryParams** (interface)
+```typescript
+interface BlockListQueryParams {
+  resourceType?: string
+  resourceId?: string
+  from?: string | Date
+  to?: string | Date
+  limit?: number
+  offset?: number
+}
+```
+
+**FreeBusyQuery** (interface)
+```typescript
+interface FreeBusyQuery {
+  resources: BookingResourceRef[]
+  from: string | Date
+  to: string | Date
+}
+```
+
+**FreeBusyInterval** (interface)
+```typescript
+interface FreeBusyInterval {
+  start: string
+  end: string
+}
+```
+
+**FreeBusyResponse** (interface)
+```typescript
+interface FreeBusyResponse {
+  from: string
+  to: string
+  resources: Array<{ resourceType: string; resourceId: string; busy: FreeBusyInterval[] }>
+}
+```
+
+**BookingAccessOptions** (interface)
+```typescript
+interface BookingAccessOptions {
+  editToken?: string
+}
+```
+
+**ScheduleHours** (interface)
+```typescript
+interface ScheduleHours {
+  start: string
+  end: string
+}
+```
+
+**ScheduleOverride** (interface)
+```typescript
+interface ScheduleOverride {
+  date?: string
+  from?: string
+  to?: string
+  hours: ScheduleHours[]
+}
+```
+
+**StandardSchedule** (interface)
+```typescript
+interface StandardSchedule {
+  timezone: string
+  weekly?: Partial<Record<ScheduleDay, ScheduleHours[]>>
+  overrides?: ScheduleOverride[]
+}
+```
+
+**BookingStatus** = ``
+
+**BookingVisibility** = `'public' | 'owner' | 'admin'`
+
+**BookingClaimInput** = ``
+
+**UpdateSlotInput** = `Partial<Omit<CreateSlotInput, 'blockResource' | 'seriesId' | 'resourceType' | 'resourceId'>>`
+
+**BookingResourceRef** (type)
+```typescript
+type BookingResourceRef = { type: string; id: string }
+```
+
+**BookingList** = `PaginatedResponse<Booking>`
+
+**SlotList** = `PaginatedResponse<BookingSlot>`
+
+**BlockList** = `PaginatedResponse<BookingAllocation>`
+
+**BookingErrorCode** = ``
+
+**ScheduleDay** = `'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'`
 
 ### broadcasts
 
@@ -10515,6 +10926,41 @@ interface ConditionDebugOptions {
 
 **ConditionDebugLogger** = `(...args: any[]) => void`
 
+### freeTimes (utils)
+
+**TimeInterval** (interface)
+```typescript
+interface TimeInterval {
+  start: number
+  end: number
+}
+```
+
+**FreeTimesOptions** (interface)
+```typescript
+interface FreeTimesOptions {
+  hours: StandardSchedule | TimeInterval[]
+  busy?: Array<FreeBusyInterval | TimeInterval>
+  from: string | number | Date
+  to: string | number | Date
+  duration: number
+  step?: number
+  bufferBefore?: number
+  bufferAfter?: number
+  minNotice?: number
+  now?: number
+  buffersWithinHours?: boolean
+}
+```
+
+**FreeTimeSlot** (interface)
+```typescript
+interface FreeTimeSlot {
+  start: string
+  end: string
+}
+```
+
 ### paths (utils)
 
 **PortalPathParams** (interface)
@@ -11012,6 +11458,9 @@ Soft-delete an asset. Schedules CDN purge after `graceDays` (default 30). Recove
 **restoreAdmin**(collectionId: string, assetId: string) → `Promise<Asset>`
 Restore a soft-deleted asset (clears `deletedAt`).
 
+**ensureAssetUrl**(collectionId: string, assetId: string) → `Promise<Asset>`
+Give an existing asset its own address (`assetUrl`). New and replaced assets get one automatically; this is for assets made before asset addresses existed. Safe to call again. → the asset, with `assetUrl`.
+
 **bulkDelete**(options: BulkDeleteAssetsOptions) → `Promise<`
 Soft-delete multiple assets in one request.
 
@@ -11291,8 +11740,8 @@ Update the authenticated user's profile and replace the bearer token when refres
 **deleteAccount**(clientId: string, password: string, confirmText: string) → `Promise<SuccessResponse>`
 Update the authenticated user's profile and replace the bearer token when refreshed claims are returned.
 
-**mfaChallengeSend**(clientId: string, mfaSessionToken: string, factor: 'email' | 'sms') → `Promise<MfaChallengeSendResponse>`
-Send (or resend) an MFA challenge code to the given factor (public).
+**mfaChallengeSend**(clientId: string, mfaSessionToken: string, factor: MfaFactor) → `Promise<MfaChallengeSendResponse>`
+Send (or resend) an MFA challenge code to the given factor (public). For `totp` nothing is sent — it tells the server the code will come from their authenticator app; then {@link mfaChallengeVerify}.
 
 **mfaChallengeVerify**(clientId: string, mfaSessionToken: string, code: string, trustDevice?: boolean, deviceLabel?: string) → `Promise<MfaFinalizeResponse>`
 Verify an MFA challenge code and finalize the login (public). On success this behaves like {@link login} — the bearer token is adopted and the cache invalidated. it and pass it to future {@link login} calls to skip the challenge on this device.
@@ -11315,10 +11764,16 @@ Begin SMS-factor enrollment; sends a code to the given phone number (authenticat
 **confirmSmsMfa**(clientId: string, mfaSessionToken: string, code: string) → `Promise<MfaEnrolledResponse>`
 Confirm SMS-factor enrollment with the code sent by {@link enrollSmsMfa} (authenticated).
 
+**enrollTotpMfa**(clientId: string) → `Promise<MfaTotpEnrollResponse>`
+Begin authenticator-app enrollment (authenticated): a new secret for Google Authenticator, Microsoft Authenticator, 1Password and the like. Show `otpauthUri` as a QR code (and `secret` for typing in), then {@link confirmTotpMfa} with the code the app shows. Nothing is kept until then; setting up again replaces the previous app once confirmed.
+
+**confirmTotpMfa**(clientId: string, mfaSessionToken: string, code: string) → `Promise<MfaEnrolledResponse>`
+Confirm authenticator-app enrollment with the 6-digit code the app shows (authenticated).
+
 **generateMfaRecoveryCodes**(clientId: string, password: string) → `Promise<`
 Generate a fresh set of recovery codes, invalidating any previous set (authenticated). Returned **in plaintext, exactly once** — nothing else in the API ever returns them again, so the caller must display/export them immediately.
 
-**removeMfaFactor**(clientId: string, factor: 'email' | 'sms', password: string) → `Promise<SuccessResponse>`
+**removeMfaFactor**(clientId: string, factor: MfaFactor, password: string) → `Promise<SuccessResponse>`
 Remove an enrolled MFA factor (authenticated). Server route is DELETE with a body.
 
 **listTrustedDevices**(clientId: string) → `Promise<`
@@ -11345,8 +11800,11 @@ Update an AuthKit client config (admin). This is how the account **security poli
 **setIdentity**(collectionId: string, authKitId: string, body: { mode: 'own' }) → `Promise<AuthKitSetIdentityResponse>`
 Give this AuthKit its **own logins** (admin): its members become accounts of this site only — the same email can be a separate account, with its own password, on another site — rather than SmartLinks accounts shared across sites. One way: a site with its own members can't go back to the shared pool. Members who signed up before keep their SmartLinks account until moved across. Errors: `MEMBER_POOL_CONFLICT` (409) when another AuthKit already gives one of its collections its own logins (one per collection); `PERMISSION_DENIED` (403) unless you administer every collection it serves.
 
+**invite**(collectionId: string, authKitId: string, body: AuthKitInviteRequest) → `Promise<AuthKitInviteResponse>`
+Invite someone to be a member of a site with its own logins (admin). Makes their account if they have none (the only way in when the site is invitation only — `signUp: 'invite'`), finds or creates their contact in this collection with the `customFields` you pass (their level), links the two, and emails them a sign-in link to the site (`redirectUrl`, default the kit's) that works once for 7 days. The page it opens handles it like any magic link: `mode=magicLink&token=…` → {@link verifyMagicLink}. Inviting someone again sends a fresh link. Errors: `OWN_LOGINS_REQUIRED` (409), `INVALID_EMAIL` (400), `INVALID_REDIRECT_URL` (400, not one of this site's addresses), `TOO_MANY_INVITES` (429, 5 an hour per address).
+
 **remove**(collectionId: string, authKitId: string) → `Promise<void>`
-Give this AuthKit its **own logins** (admin): its members become accounts of this site only — the same email can be a separate account, with its own password, on another site — rather than SmartLinks accounts shared across sites. One way: a site with its own members can't go back to the shared pool. Members who signed up before keep their SmartLinks account until moved across. Errors: `MEMBER_POOL_CONFLICT` (409) when another AuthKit already gives one of its collections its own logins (one per collection); `PERMISSION_DENIED` (403) unless you administer every collection it serves.
+Invite someone to be a member of a site with its own logins (admin). Makes their account if they have none (the only way in when the site is invitation only — `signUp: 'invite'`), finds or creates their contact in this collection with the `customFields` you pass (their level), links the two, and emails them a sign-in link to the site (`redirectUrl`, default the kit's) that works once for 7 days. The page it opens handles it like any magic link: `mode=magicLink&token=…` → {@link verifyMagicLink}. Inviting someone again sends a fresh link. Errors: `OWN_LOGINS_REQUIRED` (409), `INVALID_EMAIL` (400), `INVALID_REDIRECT_URL` (400, not one of this site's addresses), `TOO_MANY_INVITES` (429, 5 an hour per address).
 
 ### batch
 
@@ -11405,6 +11863,72 @@ Find a specific batch by ID across all products in a collection. Returns the bat
     batchId: string,
     claimSetId?: string) → `Promise<BatchTag[]>`
 Get all tags/codes assigned to a specific batch. Shows which claim set codes have been assigned to this batch. ```typescript // Get all tags assigned to a batch const tags = await batch.getBatchTags('coll_123', 'BATCH-2024-001') console.log(`Batch has ${tags.length} tags assigned`) tags.forEach(tag => { console.log(`Code: ${tag.code}, ClaimSet: ${tag.claimSetId}, TagID: ${tag.tagId}`) }) // Get tags from a specific claim set const claimSetTags = await batch.getBatchTags('coll_123', 'BATCH-2024-001', '000001') ```
+
+### bookings
+
+**create**(collectionId: string, appId: string, input: CreateBookingInput, admin: boolean = false) → `Promise<Booking>`
+Book. All claims succeed together or nothing is written; a clash fails with 409 (`SLOT_FULL`, `RESOURCE_TAKEN`, `PER_CONTACT_LIMIT`, …). Pass `idempotencyKey` so a retry never books twice. Public (admin = false): the app's `publicCreate.bookings` rules decide the status and limits; an anonymous guest may get `editToken` back (once) to manage the booking later. POST /bookings
+
+**list**(collectionId: string, appId: string, params?: BookingListQueryParams, admin: boolean = true) → `Promise<PaginatedResponse<Booking>>`
+List bookings (admin). GET /bookings
+
+**mine**(collectionId: string, appId: string, params?: BookingListQueryParams) → `Promise<PaginatedResponse<Booking>>`
+The signed-in caller's own bookings (public). GET /bookings/mine
+
+**get**(collectionId: string, appId: string, bookingId: string, admin: boolean = false, opts?: BookingAccessOptions) → `Promise<Booking>`
+Get one booking. Public: the signed-in booker, or a guest passing `{ editToken }`. GET /bookings/:bookingId
+
+**update**(collectionId: string, appId: string, bookingId: string, input: UpdateBookingInput, admin: boolean = true) → `Promise<Booking>`
+Update zones and descriptive fields (admin). PATCH /bookings/:bookingId
+
+**confirm**(collectionId: string, appId: string, bookingId: string, admin: boolean = false, opts?: BookingAccessOptions) → `Promise<Booking>`
+held / pending / waitlisted → confirmed (idempotent). A held booking whose hold has run out fails with HOLD_EXPIRED. Public: only the booker's own hold, when `ownerActions.bookings.confirm` allows. POST /bookings/:bookingId/confirm
+
+**cancel**(collectionId: string, appId: string, bookingId: string, admin: boolean = false, opts?: BookingAccessOptions & { reason?: string }) → `Promise<Booking>`
+Cancel and give the places back (idempotent). Public: per `ownerActions.bookings.cancel` and its cutoff. `reason` is admin-only (public cancels record 'owner'). POST /bookings/:bookingId/cancel
+
+**move**(collectionId: string, appId: string, bookingId: string, input: MoveBookingInput, admin: boolean = false, opts?: BookingAccessOptions) → `Promise<Booking>`
+Move to a new slot / time, all-or-nothing (a failed move leaves the booking as it was). Public: per `ownerActions.bookings.move`; the create rules are re-checked for the new time. POST /bookings/:bookingId/move
+
+**extendHold**(collectionId: string, appId: string, bookingId: string, holdMinutes: number) → `Promise<Booking>`
+Extend a hold by `holdMinutes` from now (admin; capped at 24h after the booking was made).
+
+**complete**(collectionId: string, appId: string, bookingId: string) → `Promise<Booking>`
+confirmed → completed (admin).
+
+**noShow**(collectionId: string, appId: string, bookingId: string) → `Promise<Booking>`
+confirmed → no_show (admin).
+
+**freebusy**(collectionId: string, appId: string, q: FreeBusyQuery, admin: boolean = false) → `Promise<FreeBusyResponse>`
+Busy intervals per resource (bookings, blocks, slots' own blocks) — never booking details. Public only when the app sets `publicRead.bookings.freebusy: true`. GET /bookings/freebusy
+
+### bookings.blocks
+
+**create**(collectionId: string, appId: string, input: CreateBlockInput) → `Promise<BookingAllocation>`
+
+**list**(collectionId: string, appId: string, params?: BlockListQueryParams) → `Promise<PaginatedResponse<BookingAllocation>>`
+
+**remove**(collectionId: string, appId: string, blockId: string) → `Promise<`
+
+### bookings.slots
+
+**create**(collectionId: string, appId: string, input: CreateSlotInput) → `Promise<BookingSlot>`
+Create a slot (admin). POST /bookings/slots
+
+**createMany**(collectionId: string, appId: string, slots: CreateSlotInput[], opts?: { seriesId?: string }) → `Promise<`
+Create many slots at once — a series — all-or-nothing (admin, max 500). POST /bookings/slots/batch
+
+**list**(collectionId: string, appId: string, params?: SlotListQueryParams, admin: boolean = false) → `Promise<PaginatedResponse<BookingSlot>>`
+List slots. Public: open, public slots only, each with `remaining`. GET /bookings/slots
+
+**get**(collectionId: string, appId: string, slotId: string, admin: boolean = false) → `Promise<BookingSlot>`
+GET /bookings/slots/:slotId
+
+**update**(collectionId: string, appId: string, slotId: string, input: UpdateSlotInput) → `Promise<BookingSlot>`
+Update a slot (admin). Capacity can't drop below what's booked (SLOT_OVERBOOKED); times can't change once anything is booked (SLOT_HAS_BOOKINGS).
+
+**remove**(collectionId: string, appId: string, slotId: string) → `Promise<`
+Delete a slot (admin; refused while places are booked).
 
 ### broadcasts
 

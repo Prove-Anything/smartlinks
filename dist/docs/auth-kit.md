@@ -305,11 +305,16 @@ clearPersistedTokens();
 
 ---
 
-## Step-up MFA (Phase 1)
+## Step-up MFA
 
-Backend-only for now — **no admin-console UI and no challenge UI ship with this pass.**
-Factors: **email OTP, SMS OTP, recovery codes**. WhatsApp OTP, TOTP, and passkeys as
-*factors* are deferred to a later phase; don't build against them yet.
+Factors: **email code, SMS code, authenticator app (`totp`), recovery codes**. The shared login UI
+(`@proveanything/smartlinks-auth-ui`) has the challenge and the Settings → Security screens. WhatsApp
+codes and passkeys are planned; don't build against them yet.
+
+**Authenticator apps** (Google Authenticator, Microsoft Authenticator, 1Password, Authy…) are the
+recommended second step: nothing is sent (no SMS cost, nothing to intercept), and they are offered first
+when someone has one. A client can switch any factor off with `mfa.factorsEnabled` (e.g.
+`{ totp: false }`).
 
 The step-up gate applies to **every login method that issues a session**:
 
@@ -408,14 +413,24 @@ await authKit.confirmEmailMfa(clientId, mfaSessionToken, code);
 const { mfaSessionToken: smsToken } = await authKit.enrollSmsMfa(clientId, '+61400000000');
 await authKit.confirmSmsMfa(clientId, smsToken, code);
 
+// Enroll an authenticator app: show otpauthUri as a QR code (and secret for typing in),
+// then confirm with the 6-digit code the app shows
+const { mfaSessionToken: appToken, otpauthUri, secret } = await authKit.enrollTotpMfa(clientId);
+await authKit.confirmTotpMfa(clientId, appToken, codeFromApp);
+
 // Recovery codes — plaintext, shown exactly once; nothing else in the API returns them again
 const { recoveryCodes } = await authKit.generateMfaRecoveryCodes(clientId, password);
 
 // Inspect / remove
 const factors = await authKit.getMfaFactors(clientId);
-// factors: { enrolledFactors: { email?, sms? }, recoveryCodesRemaining, mfaEnabledForClient }
+// factors: { enrolledFactors: { email?, sms?, totp? }, recoveryCodesRemaining, mfaEnabledForClient }
 await authKit.removeMfaFactor(clientId, 'sms', password);
 ```
+
+At sign-in, `MFA_REQUIRED` lists `availableFactors` with `preferredFactor` (`totp`, then `sms`, then
+`email`). For `totp`, `mfaChallengeSend(clientId, token, 'totp')` sends nothing; it just says the code
+comes from the app. Then call `mfaChallengeVerify` with that code, as for the others. Each authenticator
+code works once. The secret is sealed on the server and never returned after `enrollTotpMfa`.
 
 > Enrollment endpoints don't currently check the client's `mfa.mode` — enrolling is possible
 > even when MFA is configured `'off'` for a client. Those factors simply won't be challenged
@@ -633,6 +648,31 @@ await authKit.setIdentity(collectionId, authKitId, { mode: 'own' })
   resets) works the same way; nothing changes in the login UI or your code.
 - `identity` is read-only on `create` / `update`; it is shown on the config (`authKit.get`).
 
+### Invitation only
+
+A site with its own logins can let in only the people it invites:
+
+```ts
+await authKit.update(collectionId, authKitId, { signUp: 'invite' })   // 'open' (default) | 'invite'
+await authKit.invite(collectionId, authKitId, { email: 'jo@example.com', firstName: 'Jo', customFields: { level: 'member' } })
+```
+
+- **Enforced on the server, for every route.** Nobody without an account can get one: `register`,
+  `verifyMagicLink`, `verifyPhoneCode`, Google, Apple, LinkedIn and WhatsApp answer `SIGN_UP_CLOSED`
+  (403). `sendMagicLink` and `sendPhoneCode` answer as if sent, but send nothing to someone who isn't a
+  member, so nobody can find out who is.
+- **`invite`** makes the person's account if they have none, finds or creates their contact in that
+  collection with the fields you pass, links the two, and emails a sign-in link to the site (`redirectUrl`,
+  default the kit's) that works once for 7 days. It lands like any magic link (`mode=magicLink&token=…`).
+  Inviting someone again sends a fresh link. The link is never returned to the admin.
+- **Invited members then sign in any way the site offers.** A magic link, "forgot password" to set a
+  password, or Google/Apple/LinkedIn with the same verified email: an invited account nobody has signed
+  in to yet can be claimed that way.
+- `signUp` is on the public config (`load`): hide "Create an account" when it's `invite`. Setting it
+  needs own logins first (`OWN_LOGINS_REQUIRED`, 409).
+- On any site, a member signing in with a verified email or phone is attached to the contact the
+  collection already has for it, so fields the staff set beforehand (a level) are theirs.
+
 ## Relationship to other parts of the SDK
 
 | Concern | Where it lives |
@@ -646,5 +686,6 @@ await authKit.setIdentity(collectionId, authKitId, { mode: 'own' })
 
 ## Further reading
 
+- [members.md](members.md) — members with a level: clubs, leagues, members-only content
 - [app-data-storage.md](app-data-storage.md) — storing user-specific data after login
 - [app-manifest.md](app-manifest.md) — `app.admin.json` setup questions for configuring `clientId`

@@ -425,6 +425,15 @@ export var asset;
     }
     asset.restoreAdmin = restoreAdmin;
     /**
+     * Give an existing asset its own address (`assetUrl`). New and replaced assets get one automatically;
+     * this is for assets made before asset addresses existed. Safe to call again. → the asset, with `assetUrl`.
+     */
+    async function ensureAssetUrl(collectionId, assetId) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/asset/${encodeURIComponent(assetId)}/asset-url`;
+        return post(path, {});
+    }
+    asset.ensureAssetUrl = ensureAssetUrl;
+    /**
      * Soft-delete multiple assets in one request.
      */
     async function bulkDelete(options) {
@@ -673,6 +682,8 @@ export var asset;
             startBody.productId = scope.productId;
         if (scope.type === 'proof')
             startBody.proofId = scope.proofId;
+        if (options.replaceAssetId)
+            startBody.replaceAssetId = options.replaceAssetId;
         const started = await post(base, startBody, token ? { 'X-Upload-Token': token } : undefined);
         const finalizePath = `${base}/${encodeURIComponent(started.uploadId)}/complete`;
         const finalizeBody = {};

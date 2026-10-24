@@ -1,4 +1,5 @@
 import type { AppFunctionDef, ServerFunctionContext, ServerFunctionInputs } from '../types/appManifest.js';
+import { type BookingsMemory } from './bookingsMemory.js';
 export declare class CapabilityError extends Error {
     capability: string;
     code: string;
@@ -59,9 +60,16 @@ export interface TestSlImpl {
             getData?(opts?: any): any;
         };
     };
+    /**
+     * Bookings. Omit to use the built-in in-memory engine (capacity, per-person limits, no overlapping
+     * time, idempotent creates, holds) — inspect it via `ctx.memory.bookings`.
+     */
+    bookings?: Record<string, any>;
 }
 export interface TestCaller {
     userId?: string | null;
+    /** The caller's contact id, for `ctx.sl.bookings.mine()`. Default: `contact-of-<userId>` when signed in. */
+    contactId?: string | null;
     anonymous?: boolean;
     origin?: string | null;
     ip?: string | null;
@@ -98,6 +106,8 @@ export interface FunctionTestMemory {
         [k: string]: any;
     }>;
     interactions: any[];
+    /** Slots, bookings and allocations of the in-memory bookings engine. */
+    bookings: BookingsMemory;
 }
 /** A fresh in-memory store — pass the same one to several test contexts to simulate concurrent callers. */
 export declare function createFunctionTestMemory(): FunctionTestMemory;

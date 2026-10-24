@@ -1,4 +1,4 @@
-import type { AuthLoginResponse, AppleLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, AuthKitConfigInput, AuthKitSetIdentityResponse, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse, MfaChallengeSendResponse, MfaFinalizeResponse, MfaEnrollSendResponse, MfaEnrolledResponse, MfaFactorsResponse, TrustedDevice } from "../types/authKit.js";
+import type { AuthLoginResponse, AppleLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, AuthKitConfigInput, AuthKitSetIdentityResponse, AuthKitInviteRequest, AuthKitInviteResponse, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse, MfaChallengeSendResponse, MfaFinalizeResponse, MfaEnrollSendResponse, MfaTotpEnrollResponse, MfaEnrolledResponse, MfaFactor, MfaFactorsResponse, TrustedDevice } from "../types/authKit.js";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
@@ -208,8 +208,11 @@ export declare namespace authKit {
     function verifyEmailChange(clientId: string, token: string): Promise<SuccessResponse>;
     function updatePhone(clientId: string, phoneNumber: string, verificationCode: string): Promise<SuccessResponse>;
     function deleteAccount(clientId: string, password: string, confirmText: string): Promise<SuccessResponse>;
-    /** Send (or resend) an MFA challenge code to the given factor (public). */
-    function mfaChallengeSend(clientId: string, mfaSessionToken: string, factor: 'email' | 'sms'): Promise<MfaChallengeSendResponse>;
+    /**
+     * Send (or resend) an MFA challenge code to the given factor (public). For `totp` nothing is sent —
+     * it tells the server the code will come from their authenticator app; then {@link mfaChallengeVerify}.
+     */
+    function mfaChallengeSend(clientId: string, mfaSessionToken: string, factor: MfaFactor): Promise<MfaChallengeSendResponse>;
     /**
      * Verify an MFA challenge code and finalize the login (public). On success this behaves
      * like {@link login} — the bearer token is adopted and the cache invalidated.
@@ -234,6 +237,15 @@ export declare namespace authKit {
     /** Confirm SMS-factor enrollment with the code sent by {@link enrollSmsMfa} (authenticated). */
     function confirmSmsMfa(clientId: string, mfaSessionToken: string, code: string): Promise<MfaEnrolledResponse>;
     /**
+     * Begin authenticator-app enrollment (authenticated): a new secret for Google Authenticator,
+     * Microsoft Authenticator, 1Password and the like. Show `otpauthUri` as a QR code (and `secret` for
+     * typing in), then {@link confirmTotpMfa} with the code the app shows. Nothing is kept until then;
+     * setting up again replaces the previous app once confirmed.
+     */
+    function enrollTotpMfa(clientId: string): Promise<MfaTotpEnrollResponse>;
+    /** Confirm authenticator-app enrollment with the 6-digit code the app shows (authenticated). */
+    function confirmTotpMfa(clientId: string, mfaSessionToken: string, code: string): Promise<MfaEnrolledResponse>;
+    /**
      * Generate a fresh set of recovery codes, invalidating any previous set (authenticated).
      * Returned **in plaintext, exactly once** — nothing else in the API ever returns them
      * again, so the caller must display/export them immediately.
@@ -242,7 +254,7 @@ export declare namespace authKit {
         recoveryCodes: string[];
     }>;
     /** Remove an enrolled MFA factor (authenticated). Server route is DELETE with a body. */
-    function removeMfaFactor(clientId: string, factor: 'email' | 'sms', password: string): Promise<SuccessResponse>;
+    function removeMfaFactor(clientId: string, factor: MfaFactor, password: string): Promise<SuccessResponse>;
     /** List devices trusted to skip MFA challenges for the current user (authenticated). */
     function listTrustedDevices(clientId: string): Promise<{
         devices: TrustedDevice[];
@@ -281,5 +293,17 @@ export declare namespace authKit {
     function setIdentity(collectionId: string, authKitId: string, body: {
         mode: 'own';
     }): Promise<AuthKitSetIdentityResponse>;
+    /**
+     * Invite someone to be a member of a site with its own logins (admin). Makes their account if they have
+     * none (the only way in when the site is invitation only — `signUp: 'invite'`), finds or creates their
+     * contact in this collection with the `customFields` you pass (their level), links the two, and emails
+     * them a sign-in link to the site (`redirectUrl`, default the kit's) that works once for 7 days. The page
+     * it opens handles it like any magic link: `mode=magicLink&token=…` → {@link verifyMagicLink}.
+     * Inviting someone again sends a fresh link.
+     *
+     * Errors: `OWN_LOGINS_REQUIRED` (409), `INVALID_EMAIL` (400), `INVALID_REDIRECT_URL` (400, not one of
+     * this site's addresses), `TOO_MANY_INVITES` (429, 5 an hour per address).
+     */
+    function invite(collectionId: string, authKitId: string, body: AuthKitInviteRequest): Promise<AuthKitInviteResponse>;
     function remove(collectionId: string, authKitId: string): Promise<void>;
 }

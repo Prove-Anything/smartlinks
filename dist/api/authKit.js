@@ -380,7 +380,10 @@ export var authKit;
      * challenge/send can be called again on the same token (while unexpired/unburned) to
      * switch factors or resend.
      * =================================== */
-    /** Send (or resend) an MFA challenge code to the given factor (public). */
+    /**
+     * Send (or resend) an MFA challenge code to the given factor (public). For `totp` nothing is sent —
+     * it tells the server the code will come from their authenticator app; then {@link mfaChallengeVerify}.
+     */
     async function mfaChallengeSend(clientId, mfaSessionToken, factor) {
         return post(`/authkit/${encodeURIComponent(clientId)}/mfa/challenge/send`, { mfaSessionToken, factor });
     }
@@ -442,6 +445,21 @@ export var authKit;
         return post(`/authkit/${encodeURIComponent(clientId)}/mfa/factors/sms/confirm`, { mfaSessionToken, code });
     }
     authKit.confirmSmsMfa = confirmSmsMfa;
+    /**
+     * Begin authenticator-app enrollment (authenticated): a new secret for Google Authenticator,
+     * Microsoft Authenticator, 1Password and the like. Show `otpauthUri` as a QR code (and `secret` for
+     * typing in), then {@link confirmTotpMfa} with the code the app shows. Nothing is kept until then;
+     * setting up again replaces the previous app once confirmed.
+     */
+    async function enrollTotpMfa(clientId) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/mfa/factors/totp/enroll`, {});
+    }
+    authKit.enrollTotpMfa = enrollTotpMfa;
+    /** Confirm authenticator-app enrollment with the 6-digit code the app shows (authenticated). */
+    async function confirmTotpMfa(clientId, mfaSessionToken, code) {
+        return post(`/authkit/${encodeURIComponent(clientId)}/mfa/factors/totp/confirm`, { mfaSessionToken, code });
+    }
+    authKit.confirmTotpMfa = confirmTotpMfa;
     /**
      * Generate a fresh set of recovery codes, invalidating any previous set (authenticated).
      * Returned **in plaintext, exactly once** — nothing else in the API ever returns them
@@ -525,6 +543,22 @@ export var authKit;
         return post(path, body);
     }
     authKit.setIdentity = setIdentity;
+    /**
+     * Invite someone to be a member of a site with its own logins (admin). Makes their account if they have
+     * none (the only way in when the site is invitation only — `signUp: 'invite'`), finds or creates their
+     * contact in this collection with the `customFields` you pass (their level), links the two, and emails
+     * them a sign-in link to the site (`redirectUrl`, default the kit's) that works once for 7 days. The page
+     * it opens handles it like any magic link: `mode=magicLink&token=…` → {@link verifyMagicLink}.
+     * Inviting someone again sends a fresh link.
+     *
+     * Errors: `OWN_LOGINS_REQUIRED` (409), `INVALID_EMAIL` (400), `INVALID_REDIRECT_URL` (400, not one of
+     * this site's addresses), `TOO_MANY_INVITES` (429, 5 an hour per address).
+     */
+    async function invite(collectionId, authKitId, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/invite`;
+        return post(path, body);
+    }
+    authKit.invite = invite;
     async function remove(collectionId, authKitId) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}`;
         return del(path);

@@ -102,6 +102,11 @@ export declare namespace asset {
      */
     function restoreAdmin(collectionId: string, assetId: string): Promise<Asset>;
     /**
+     * Give an existing asset its own address (`assetUrl`). New and replaced assets get one automatically;
+     * this is for assets made before asset addresses existed. Safe to call again. → the asset, with `assetUrl`.
+     */
+    function ensureAssetUrl(collectionId: string, assetId: string): Promise<Asset>;
+    /**
      * Soft-delete multiple assets in one request.
      */
     function bulkDelete(options: BulkDeleteAssetsOptions): Promise<{

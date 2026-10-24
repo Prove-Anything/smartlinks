@@ -14,10 +14,11 @@
 //  - `ctx.secrets` are FIXTURES you provide; real sealed secrets are server-only and
 //    never resolvable locally.
 //  - `ctx.fetch` is gated by the `network` capability just like production.
-//  - Without an injected impl, appRecords / counters / contacts / interactions run against an
-//    in-memory store with the platform's uniqueness rules (claim: singletonPer + customId; contacts by
-//    email/phone, fill-empty only), so idempotency and "never two of the same number" are testable.
-//    Inspect it via `ctx.memory`.
+//  - Without an injected impl, appRecords / counters / contacts / interactions / bookings run against
+//    an in-memory store with the platform's rules (claim: singletonPer + customId; contacts by
+//    email/phone, fill-empty only; bookings: capacity, per-person limits, no overlapping time,
+//    idempotent creates), so idempotency, "never two of the same number" and "never oversold" are
+//    testable. Inspect it via `ctx.memory`.
 var __rest = (this && this.__rest) || function (s, e) {
     var t = {};
     for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
@@ -29,6 +30,7 @@ var __rest = (this && this.__rest) || function (s, e) {
         }
     return t;
 };
+import { bookingsMemoryImpl, createBookingsMemory } from './bookingsMemory.js';
 export class CapabilityError extends Error {
     constructor(capability, message) {
         super(message || `capability not granted: ${capability}`);
@@ -75,7 +77,7 @@ function allowsSl(p, resource, op) {
 }
 /** A fresh in-memory store — pass the same one to several test contexts to simulate concurrent callers. */
 export function createFunctionTestMemory() {
-    return { records: [], counters: {}, contacts: [], interactions: [] };
+    return { records: [], counters: {}, contacts: [], interactions: [], bookings: createBookingsMemory() };
 }
 const stub = (method, args) => ({ __stub: true, method, args });
 /**
@@ -88,7 +90,7 @@ const stub = (method, args) => ({ __stub: true, method, args });
  * CapabilityError — exactly as it would in production.
  */
 export function createFunctionTestContext(opts) {
-    var _a, _b, _c, _d;
+    var _a, _b, _c, _d, _e, _f, _g;
     const def = opts.def || {};
     const parsed = parseCapabilities(def.capabilities || []);
     const impl = opts.sl || {};
@@ -241,7 +243,7 @@ export function createFunctionTestContext(opts) {
             mem.contacts.push(Object.assign(Object.assign({}, d), { email, phone, contactId }));
             return { contactId, created: true };
         }), 'contacts.upsert'),
-        forCaller: gated('contacts', 'write', ct.forCaller ? ct.forCaller.bind(ct) : (async () => (opts.caller && opts.caller.userId ? { contactId: `contact-of-${opts.caller.userId}` } : null)), 'contacts.forCaller'),
+        forCaller: gated('contacts', 'write', ct.forCaller ? ct.forCaller.bind(ct) : (async () => (opts.caller && opts.caller.userId ? { contactId: `contact-of-${opts.caller.userId}`, email: null, phone: null, firstName: null, lastName: null, displayName: null, tags: [], customFields: {} } : null)), 'contacts.forCaller'),
     };
     const it = impl.interactions || {};
     sl.interactions = {
@@ -264,6 +266,25 @@ export function createFunctionTestContext(opts) {
             },
         };
     };
+    // Bookings — an injected impl, else the in-memory engine (same rules as the platform).
+    if (!mem.bookings)
+        mem.bookings = createBookingsMemory(); // a memory made before bookings existed
+    const callerContactId = (_b = (_a = opts.caller) === null || _a === void 0 ? void 0 : _a.contactId) !== null && _b !== void 0 ? _b : (((_c = opts.caller) === null || _c === void 0 ? void 0 : _c.userId) ? `contact-of-${opts.caller.userId}` : null);
+    const bk = impl.bookings || bookingsMemoryImpl(mem.bookings, { contactId: callerContactId });
+    const bkFn = (obj, name) => (obj && typeof obj[name] === 'function' ? obj[name].bind(obj) : undefined);
+    const BOOKING_READS = new Set(['get', 'query', 'mine', 'freebusy']);
+    sl.bookings = {};
+    for (const m of ['create', 'get', 'query', 'mine', 'update', 'confirm', 'cancel', 'move', 'extendHold', 'complete', 'noShow', 'freebusy']) {
+        sl.bookings[m] = gated('bookings', BOOKING_READS.has(m) ? 'read' : 'write', bkFn(bk, m), `bookings.${m}`);
+    }
+    sl.bookings.slots = {};
+    for (const m of ['create', 'createMany', 'get', 'query', 'update', 'delete']) {
+        sl.bookings.slots[m] = gated('bookings', m === 'get' || m === 'query' ? 'read' : 'write', bkFn(bk.slots, m), `bookings.slots.${m}`);
+    }
+    sl.bookings.blocks = {};
+    for (const m of ['create', 'query', 'delete']) {
+        sl.bookings.blocks[m] = gated('bookings', m === 'query' ? 'read' : 'write', bkFn(bk.blocks, m), `bookings.blocks.${m}`);
+    }
     const secretsMap = opts.secrets || {};
     const baseFetch = opts.fetch || (typeof fetch !== 'undefined' ? fetch : undefined);
     const via = (def.trigger && def.trigger.type) || 'http';
@@ -286,10 +307,10 @@ export function createFunctionTestContext(opts) {
             },
         },
         caller: {
-            userId: (_a = caller.userId) !== null && _a !== void 0 ? _a : null,
-            anonymous: (_b = caller.anonymous) !== null && _b !== void 0 ? _b : !caller.userId,
-            origin: (_c = caller.origin) !== null && _c !== void 0 ? _c : null,
-            ip: (_d = caller.ip) !== null && _d !== void 0 ? _d : null,
+            userId: (_d = caller.userId) !== null && _d !== void 0 ? _d : null,
+            anonymous: (_e = caller.anonymous) !== null && _e !== void 0 ? _e : !caller.userId,
+            origin: (_f = caller.origin) !== null && _f !== void 0 ? _f : null,
+            ip: (_g = caller.ip) !== null && _g !== void 0 ? _g : null,
             via,
         },
         fetch: (async (input, init) => {
