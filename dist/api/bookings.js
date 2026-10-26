@@ -122,6 +122,15 @@ export var bookings;
         return request(`${basePath(collectionId, appId, admin)}/freebusy${query(params)}`);
     }
     bookings.freebusy = freebusy;
+    /**
+     * Message the people booked (admin): a template to everyone on a slot, or everyone booked in a date
+     * range (optionally with one person / room), each send hydrated with their booking ({{ booking }}).
+     * No segment to make. POST /bookings/message
+     */
+    async function message(collectionId, appId, input) {
+        return post(`${basePath(collectionId, appId, true)}/message`, input);
+    }
+    bookings.message = message;
     // ==================== SLOTS ====================
     let slots;
     (function (slots_1) {

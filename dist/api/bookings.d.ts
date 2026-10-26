@@ -1,4 +1,4 @@
-import type { Booking, BookingSlot, BookingAllocation, CreateBookingInput, UpdateBookingInput, MoveBookingInput, BookingListQueryParams, CreateSlotInput, UpdateSlotInput, SlotListQueryParams, CreateBlockInput, BlockListQueryParams, FreeBusyQuery, FreeBusyResponse, BookingAccessOptions } from '../types/bookings.js';
+import type { Booking, BookingSlot, BookingAllocation, CreateBookingInput, UpdateBookingInput, MoveBookingInput, BookingListQueryParams, CreateSlotInput, UpdateSlotInput, SlotListQueryParams, CreateBlockInput, BlockListQueryParams, FreeBusyQuery, FreeBusyResponse, BookingAccessOptions, MessageBookersInput, MessageBookersResult } from '../types/bookings.js';
 import type { PaginatedResponse } from '../types/appObjects.js';
 export declare namespace bookings {
     /**
@@ -55,6 +55,12 @@ export declare namespace bookings {
      * GET /bookings/freebusy
      */
     function freebusy(collectionId: string, appId: string, q: FreeBusyQuery, admin?: boolean): Promise<FreeBusyResponse>;
+    /**
+     * Message the people booked (admin): a template to everyone on a slot, or everyone booked in a date
+     * range (optionally with one person / room), each send hydrated with their booking ({{ booking }}).
+     * No segment to make. POST /bookings/message
+     */
+    function message(collectionId: string, appId: string, input: MessageBookersInput): Promise<MessageBookersResult>;
     namespace slots {
         /** Create a slot (admin). POST /bookings/slots */
         function create(collectionId: string, appId: string, input: CreateSlotInput): Promise<BookingSlot>;

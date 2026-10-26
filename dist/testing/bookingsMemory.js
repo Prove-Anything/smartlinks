@@ -280,6 +280,28 @@ export function bookingsMemoryImpl(mem, caller = {}) {
             b.holdExpiresAt = iso(Math.min(now() + (holdMinutes !== null && holdMinutes !== void 0 ? holdMinutes : 15) * 60000, ms(b.createdAt) + 24 * 3600000));
             return copy(withAllocations(b));
         },
+        /** Counts who would be messaged (no sends in memory); inject `sl.bookings.message` to assert sends. */
+        async message(input = {}) {
+            const list = input.slotId
+                ? (await this.query({ slotId: input.slotId, status: (input.statuses || ['held', 'pending', 'confirmed']).join(',') })).data
+                : (await this.query({ from: input.from, to: input.to, status: (input.statuses || ['held', 'pending', 'confirmed']).join(',') })).data;
+            const seen = new Set();
+            const out = { matched: list.length, sent: 0, skipped: { noContact: 0, duplicate: 0, failed: 0 }, failures: [] };
+            for (const b of list) {
+                if (!b.contactId) {
+                    out.skipped.noContact++;
+                    continue;
+                }
+                const key = input.slotId ? b.contactId : `${b.contactId}:${b.id}`;
+                if (seen.has(key)) {
+                    out.skipped.duplicate++;
+                    continue;
+                }
+                seen.add(key);
+                out.sent++;
+            }
+            return out;
+        },
         async complete(bookingId) { return outcome(find(bookingId), 'completed'); },
         async noShow(bookingId) { return outcome(find(bookingId), 'no_show'); },
         async freebusy(q = {}) {

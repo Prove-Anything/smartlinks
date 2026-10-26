@@ -324,8 +324,80 @@ Recorded after each write commits, for flows and app functions (`trigger: { type
 `booking.no_show`, `booking.hold_expired`, `slot.full`, `slot.place_freed` (for waitlist promotion).
 Context: `{ appId, status, slotIds }` (bookings) / `{ appId, remaining }` (slots).
 
-Reminders before a booking (`booking.starts_in`) are coming; until then, use a cron function that lists
-upcoming bookings.
+Reminders before a booking (`booking.starts_in`) are coming; until then, send a reminder template to
+tomorrow's bookers with `bookings.message` (below) from a cron function.
+
+---
+
+## Confirmations and messages
+
+Nothing is emailed by default: your app decides what goes out, in **flows on booking events**, with
+**templates the business can reword in Studio** (Comms → Templates). The platform does the sending,
+the hydration and the consent.
+
+### Flows on booking events
+
+A site, or an app on behalf of a business, sets them up through the cloud blueprint
+(`cloud/flows.json` in a site; `POST /admin/collection/:cId/blueprint/apply` with
+`{ appId, blueprint: { templates, flows } }` from an app's admin screen). Additive: re-applying never
+removes what is there, and a template edited in Studio keeps its edits unless the blueprint sends new
+wording.
+
+```json
+{
+  "templates": {
+    "booking-confirmed": { "name": "You're booked", "email": { "subject": "{{ booking.serviceName }} on {{ booking.when.date }}", "body": "<p>Hi {{ contact.firstName }}, see you at {{ booking.when.time }}.</p>" }, "sms": { "body": "Booked: {{ booking.when.shortDate }} {{ booking.when.time }}" } },
+    "booking-requested": { "name": "Request received", "email": { "subject": "We got your request", "body": "<p>We'll confirm shortly.</p>" } },
+    "staff-new-booking": { "name": "You've been booked", "email": { "subject": "New appointment", "body": "<p>{{ booking.customer.name }}, {{ booking.when.dateTime }}</p>" } }
+  },
+  "flows": [
+    { "when": { "event": "booking.confirmed" }, "do": [{ "send": "booking-confirmed", "to": "contact" }, { "send": "staff-new-booking", "to": "resource" }, { "send": "team-new-booking", "to": "team" }] },
+    { "when": { "event": "booking.created", "status": "pending" }, "do": [{ "send": "booking-requested", "to": "contact" }] }
+  ]
+}
+```
+
+- `when.event`: `booking.created` / `confirmed` / `cancelled` / `moved` / `completed` / `no_show` /
+  `hold_expired`, `slot.full` / `slot.place_freed`; `when.status` narrows to the booking's status at the
+  time (`"pending"` for "request received").
+- `to`: `contact` — the booker, by their preferred channel (`channel` to force one; a template needs an
+  `sms` part to go by text); `team` — the collection's team addresses; `resource` — the booked
+  person or room: a resource that is a contact, or a record with `data.email` / `data.contactId`.
+  A **public** resource record (a staff profile the booking page lists) keeps its address on a
+  **private child record** instead (`visibility: 'admin'`, `parentType: 'record'`, `parentId` = the
+  resource) — the platform looks there too, and the address never ships with the public listing.
+- Who gets what, in templates: `{{ booking }}` is the booking **ready-formatted**: its fields and
+  `data`, plus `serviceName`, `staffName`, `customer`, `durationMinutes`, `when` (`date`,
+  `shortDate`, `time`, `endTime`, `dateTime`, `timezone` — in the business's timezone) and, when the
+  recipient's timezone is known and differs, `whenFor` (the same in theirs); `editToken` only when the
+  recipient is the booker (a guest's manage link). `{{ contact }}` is the recipient; `{{ appConfig }}`
+  the app's public config (a booking page's address, the business name) for sends to the contact.
+
+### Who is reachable
+
+A **guest** who books with an email or phone gets a **contact** (found by that identity or made,
+filling only empty fields: a form's details never overwrite a known contact), and so does a customer
+**staff book in by hand** (`customer: { name, email, phone }` on the body or in `data`). Admin
+creates may pass `contactId` instead. A booking with no contact gets no messages: show the booker why
+an email is worth giving.
+
+### Messaging everyone booked — `bookings.message`
+
+No list to build, no segment to save: send a template to everyone on a slot, or everyone booked in a
+window (optionally with one resource), each hydrated with **their own** booking.
+
+```ts
+// Everyone on tomorrow's 10:00 class
+await SL.bookings.message(collectionId, appId, { templateId, slotId })
+// Everyone booked with Sam next week, by email even if they prefer texts
+await SL.bookings.message(collectionId, appId, { templateId, channel: 'email', from, to, resourceType: 'record', resourceId: samId })
+// → { matched, sent, skipped: { noContact, duplicate, failed }, failures: [{ bookingId, reason }] }
+```
+
+Statuses default to held, pending and confirmed; at most 500 recipients per call (narrow the window
+for more). One message per contact on a slot, one per booking in a window. Also
+`ctx.sl.bookings.message(input)` in a server function (`sl:bookings:write`) — a cron function that
+messages tomorrow's bookers is a reminder system in five lines.
 
 ---
 
@@ -343,6 +415,7 @@ All take `(collectionId, appId, …)`; `admin` is the last parameter where both 
 | `bookings.confirm / cancel / move(…, admin?, { editToken }?)` | ✓ | per `ownerActions.bookings` |
 | `bookings.extendHold / complete / noShow` | ✓ | — |
 | `bookings.freebusy(q, admin?)` | ✓ | if `publicRead.bookings.freebusy` |
+| `bookings.message(input)` | ✓ | — |
 | `bookings.slots.create / createMany / update / remove` | ✓ | — |
 | `bookings.slots.list / get(…, admin?)` | ✓ | open, public slots |
 | `bookings.blocks.create / list / remove` | ✓ | — |

@@ -282,6 +282,32 @@ export interface FreeBusyResponse {
   resources: Array<{ resourceType: string; resourceId: string; busy: FreeBusyInterval[] }>
 }
 
+/** `bookings.message`: a template to everyone booked on a slot, or in a date range. */
+export interface MessageBookersInput {
+  /** A comms template of the collection (edited in Studio). */
+  templateId: string
+  channel?: 'email' | 'sms' | 'whatsapp' | 'push' | 'preferred'
+  /** Extra Liquid variables, on top of {{ booking }}, {{ contact }} and {{ appConfig }}. */
+  props?: Record<string, any>
+  /** Everyone on this slot … */
+  slotId?: string
+  /** … or everyone booked in [from, to), optionally with one resource. */
+  from?: string | Date
+  to?: string | Date
+  resourceType?: string
+  resourceId?: string
+  /** Default: held, pending, confirmed. */
+  statuses?: BookingStatus[]
+  ref?: string
+}
+
+export interface MessageBookersResult {
+  matched: number
+  sent: number
+  skipped: { noContact: number; duplicate: number; failed: number }
+  failures: Array<{ bookingId: string; error: string }>
+}
+
 /** Public calls on a booking made by an anonymous guest: pass the edit token returned at create. */
 export interface BookingAccessOptions {
   editToken?: string

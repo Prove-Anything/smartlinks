@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.0  |  Generated: 2026-10-24T18:23:39.079Z
+Version: 2.1.1  |  Generated: 2026-10-26T10:44:21.840Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2816,6 +2816,7 @@ interface ServerFunctionBookings {
   complete(bookingId: string): Promise<Booking>;
   noShow(bookingId: string): Promise<Booking>;
   freebusy(q: FreeBusyQuery): Promise<FreeBusyResponse>;
+  message(input: MessageBookersInput): Promise<MessageBookersResult>;
   slots: {
   create(input: CreateSlotInput): Promise<BookingSlot>;
   createMany(inputs: CreateSlotInput[], opts?: { seriesId?: string }): Promise<BookingSlot[]>;
@@ -5363,6 +5364,32 @@ interface FreeBusyResponse {
   from: string
   to: string
   resources: Array<{ resourceType: string; resourceId: string; busy: FreeBusyInterval[] }>
+}
+```
+
+**MessageBookersInput** (interface)
+```typescript
+interface MessageBookersInput {
+  templateId: string
+  channel?: 'email' | 'sms' | 'whatsapp' | 'push' | 'preferred'
+  props?: Record<string, any>
+  slotId?: string
+  from?: string | Date
+  to?: string | Date
+  resourceType?: string
+  resourceId?: string
+  statuses?: BookingStatus[]
+  ref?: string
+}
+```
+
+**MessageBookersResult** (interface)
+```typescript
+interface MessageBookersResult {
+  matched: number
+  sent: number
+  skipped: { noContact: number; duplicate: number; failed: number }
+  failures: Array<{ bookingId: string; error: string }>
 }
 ```
 
@@ -11901,6 +11928,9 @@ confirmed → no_show (admin).
 
 **freebusy**(collectionId: string, appId: string, q: FreeBusyQuery, admin: boolean = false) → `Promise<FreeBusyResponse>`
 Busy intervals per resource (bookings, blocks, slots' own blocks) — never booking details. Public only when the app sets `publicRead.bookings.freebusy: true`. GET /bookings/freebusy
+
+**message**(collectionId: string, appId: string, input: MessageBookersInput) → `Promise<MessageBookersResult>`
+Message the people booked (admin): a template to everyone on a slot, or everyone booked in a date range (optionally with one person / room), each send hydrated with their booking ({{ booking }}). No segment to make. POST /bookings/message
 
 ### bookings.blocks
 

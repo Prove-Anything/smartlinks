@@ -4,7 +4,7 @@ import type { AppDataDeclaration, AppHeadlessDeclaration } from './headless.js';
 import type { RealtimeChannelDeclaration } from './realtime.js';
 import type { AppManifestAdminCards } from './adminCards.js';
 import type { PaginatedResponse } from './appObjects.js';
-import type { Booking, BookingSlot, BookingAllocation, CreateBookingInput, UpdateBookingInput, MoveBookingInput, BookingListQueryParams, CreateSlotInput, UpdateSlotInput, SlotListQueryParams, CreateBlockInput, BlockListQueryParams, FreeBusyQuery, FreeBusyResponse } from './bookings.js';
+import type { Booking, BookingSlot, BookingAllocation, CreateBookingInput, UpdateBookingInput, MoveBookingInput, BookingListQueryParams, CreateSlotInput, UpdateSlotInput, SlotListQueryParams, CreateBlockInput, BlockListQueryParams, FreeBusyQuery, FreeBusyResponse, MessageBookersInput, MessageBookersResult } from './bookings.js';
 /**
  * A bundle (widget or container) as returned by the collection widgets endpoint.
  *
@@ -449,6 +449,8 @@ export interface ServerFunctionBookings {
     noShow(bookingId: string): Promise<Booking>;
     /** Busy intervals per resource — feed them to `utils.freeTimes` with your schedule. */
     freebusy(q: FreeBusyQuery): Promise<FreeBusyResponse>;
+    /** A template to everyone booked on a slot / in a range, each hydrated with their booking. */
+    message(input: MessageBookersInput): Promise<MessageBookersResult>;
     slots: {
         create(input: CreateSlotInput): Promise<BookingSlot>;
         createMany(inputs: CreateSlotInput[], opts?: {

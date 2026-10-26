@@ -32,6 +32,17 @@ export declare function bookingsMemoryImpl(mem: BookingsMemory, caller?: {
     cancel(bookingId: string, opts?: any): Promise<any>;
     move(bookingId: string, input?: any): Promise<any>;
     extendHold(bookingId: string, holdMinutes: number): Promise<any>;
+    /** Counts who would be messaged (no sends in memory); inject `sl.bookings.message` to assert sends. */
+    message(input?: any): Promise<{
+        matched: number;
+        sent: number;
+        skipped: {
+            noContact: number;
+            duplicate: number;
+            failed: number;
+        };
+        failures: any[];
+    }>;
     complete(bookingId: string): Promise<any>;
     noShow(bookingId: string): Promise<any>;
     freebusy(q?: any): Promise<{

@@ -24,6 +24,8 @@ import type {
   FreeBusyResponse,
   BookingAccessOptions,
   BookingResourceRef,
+  MessageBookersInput,
+  MessageBookersResult,
 } from '../types/bookings'
 import type { PaginatedResponse } from '../types/appObjects'
 
@@ -141,6 +143,15 @@ export namespace bookings {
   export async function freebusy(collectionId: string, appId: string, q: FreeBusyQuery, admin: boolean = false): Promise<FreeBusyResponse> {
     const params = { resources: q.resources.map(refString).join(','), from: q.from, to: q.to }
     return request<FreeBusyResponse>(`${basePath(collectionId, appId, admin)}/freebusy${query(params)}`)
+  }
+
+  /**
+   * Message the people booked (admin): a template to everyone on a slot, or everyone booked in a date
+   * range (optionally with one person / room), each send hydrated with their booking ({{ booking }}).
+   * No segment to make. POST /bookings/message
+   */
+  export async function message(collectionId: string, appId: string, input: MessageBookersInput): Promise<MessageBookersResult> {
+    return post<MessageBookersResult>(`${basePath(collectionId, appId, true)}/message`, input)
   }
 
   // ==================== SLOTS ====================

@@ -332,7 +332,7 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
   const bkFn = (obj: any, name: string) => (obj && typeof obj[name] === 'function' ? obj[name].bind(obj) : undefined)
   const BOOKING_READS = new Set(['get', 'query', 'mine', 'freebusy'])
   sl.bookings = {}
-  for (const m of ['create', 'get', 'query', 'mine', 'update', 'confirm', 'cancel', 'move', 'extendHold', 'complete', 'noShow', 'freebusy']) {
+  for (const m of ['create', 'get', 'query', 'mine', 'update', 'confirm', 'cancel', 'move', 'extendHold', 'complete', 'noShow', 'freebusy', 'message']) {
     sl.bookings[m] = gated('bookings', BOOKING_READS.has(m) ? 'read' : 'write', bkFn(bk, m), `bookings.${m}`)
   }
   sl.bookings.slots = {}

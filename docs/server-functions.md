@@ -517,7 +517,7 @@ Prefer the platform primitives above over a dependency; when you do need one, pi
 | Check a tapped tag is real | `ctx.sl.tags.resolve(proofId)` → `{ id, claimSetId, code }` or `null` | `sl:tags:read` |
 | Put a visitor's details on a contact | `ctx.sl.contacts.upsert({ email, firstName, … })` → `{ contactId, created }` (fills empty fields only) | `sl:contacts:write` |
 | Record "they did X" | `ctx.sl.interactions.record({ interactionId, contactId, outcome, metadata })` | `sl:interactions:write` |
-| Take a booking with your own checks (hours, queue token, payment) | `ctx.sl.bookings.create({ slotId \| resource + time, contactId, status, idempotencyKey })` — never oversold, never double-booked; also `confirm` / `cancel` / `move` / `mine` / `freebusy` / `slots.*` / `blocks.*` (see [bookings.md](bookings.md)) | `sl:bookings:write` (`sl:bookings:read` to read) |
+| Take a booking with your own checks (hours, queue token, payment) | `ctx.sl.bookings.create({ slotId \| resource + time, contactId, status, idempotencyKey })` — never oversold, never double-booked; also `confirm` / `cancel` / `move` / `mine` / `freebusy` / `message` (everyone booked, hydrated) / `slots.*` / `blocks.*` (see [bookings.md](bookings.md)) | `sl:bookings:write` (`sl:bookings:read` to read) |
 
 Notes:
 - **Talking to the SmartLinks core is `ctx.sl`, not HTTP.** The common pattern — *validate /
@@ -633,6 +633,18 @@ try {
 } catch (e: any) {
   if (e.code === 'SLOT_FULL') return Response.json({ error: 'sold out', remaining: e.details?.remaining }, { status: 409 })
   throw e
+}
+```
+
+`ctx.sl.bookings.message({ templateId, slotId | from, to, resourceType?, resourceId?, channel? })` sends a
+template to everyone booked (each hydrated with their own booking) — the five-line reminder cron:
+
+```ts
+// manifest: { name: 'remind', trigger: { type: 'cron', schedule: '0 17 * * *' }, capabilities: ['sl:bookings:write'] }
+export async function remind(ctx) {
+  const from = new Date(); from.setDate(from.getDate() + 1); from.setHours(0, 0, 0, 0)
+  const to = new Date(from); to.setDate(to.getDate() + 1)
+  return ctx.sl.bookings.message({ templateId: 'bp.' + ctx.collectionId + '.reminder', from, to })
 }
 ```
 
