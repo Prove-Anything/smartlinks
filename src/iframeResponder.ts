@@ -208,7 +208,12 @@ export class IframeResponder {
     }
 
     const params = new URLSearchParams();
-    
+
+    // The page's own params first: the platform's context below always wins.
+    for (const [key, value] of Object.entries(this.options.params ?? {})) {
+      if (value != null && value !== '') params.set(key, String(value));
+    }
+
     // Required context
     params.set('collectionId', this.options.collectionId);
     params.set('appId', this.options.appId);
@@ -262,7 +267,8 @@ export class IframeResponder {
         const path = this.options.initialPath.startsWith('/') ? this.options.initialPath : '/' + this.options.initialPath;
         // Insert path before the ?
         const [beforeHash, afterHash] = baseWithHash.split('#');
-        finalUrl = `${beforeHash}#${afterHash || ''}${path}?${existingParams.toString()}`;
+        // App addresses end in "#/": join without doubling the slash ("#//my-bookings" matches no route).
+        finalUrl = `${beforeHash}#${(afterHash || '').replace(/\/+$/, '')}${path}?${existingParams.toString()}`;
       } else {
         finalUrl = `${baseWithHash}?${existingParams.toString()}`;
       }
@@ -937,9 +943,14 @@ export function buildIframeSrc(options: {
   dark?: boolean;
   theme?: { primary?: string; secondary?: string };
   initialPath?: string;
+  /** The page's own params; the context params above always win. */
+  params?: Record<string, string>;
 }): string {
   const params = new URLSearchParams();
-  
+  for (const [key, value] of Object.entries(options.params ?? {})) {
+    if (value != null && value !== '') params.set(key, String(value));
+  }
+
   params.set('collectionId', options.collectionId);
   params.set('appId', options.appId);
   if (options.productId) params.set('productId', options.productId);

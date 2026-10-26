@@ -100,4 +100,6 @@ export declare function buildIframeSrc(options: {
         secondary?: string;
     };
     initialPath?: string;
+    /** The page's own params; the context params above always win. */
+    params?: Record<string, string>;
 }): string;

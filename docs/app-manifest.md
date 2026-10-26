@@ -326,11 +326,28 @@ Static deep-linkable states built into the app — fixed routes that exist regar
 
 See the [Deep Link Discovery guide](deep-link-discovery.md) for the full dual-source pattern (static manifest routes + dynamic `appConfig.linkable`).
 
+These are the app's **pages that a host opens**: portal menus and tabs, and websites that embed the app
+(websites.md → "Using another app's pages"). A host opens them with its own signed-in session, so one
+app can offer several pages that each know the visitor: book, upcoming bookings, past bookings, change a
+booking.
+
+```json
+"linkable": [
+  { "id": "book", "title": "Book an appointment", "path": "/",
+    "accepts": { "optional": ["service", "staff", "date"] } },
+  { "id": "upcoming", "title": "Your upcoming bookings", "path": "/my-bookings" },
+  { "id": "change", "title": "Change a booking", "path": "/booking",
+    "accepts": { "required": ["id"] } }
+]
+```
+
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
+| `id` | string | ❌ | Stable id, unique within the app: hosts and sites refer to the page by it |
 | `title` | string | ✅ | Human-readable label shown in menus and offered to AI agents |
 | `path` | string | ❌ | Hash route within the app (defaults to `"/"` if omitted) |
-| `params` | object | ❌ | App-specific query params appended to the URL — do **not** include platform params (`collectionId`, `productId`, etc.) |
+| `params` | object | ❌ | Params this entry PINS, appended to the URL — do **not** include platform params (`collectionId`, `productId`, etc.) |
+| `accepts` | `{ required?: string[]; optional?: string[] }` | ❌ | The params a host may supply when it opens the page (e.g. which service to start on) |
 
 #### `publicViews`
 
@@ -371,7 +388,7 @@ An app can have any combination of three setup styles. Only public views are ext
 | Style | Declared by | Lives | Context |
 |-------|-------------|-------|---------|
 | **Portal components** — where the app renders inside portal (collection / product / batch / variant / proof) | module registry `components.*` (set at publish) | Inside portal | Physical twin (QR/NFC scan) |
-| **Portal deep links** — the entry points portal menus/tabs/side-menus link to (e.g. list view vs calendar view) | `linkable` / `DeepLinkEntry` | Inside portal | Portal (menu picks the entry) |
+| **App pages** — the entry points portal menus/tabs link to and websites embed (e.g. list vs calendar; book vs my bookings) | `linkable` / `DeepLinkEntry` | Inside a host: portal or a website | The host: its signed-in session, plus the page's `accepts` params |
 | **Public views** — standalone external screens | `publicViews` (this block) | Outside portal | URL params only |
 
 #### `records`

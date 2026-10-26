@@ -103,6 +103,7 @@ interface IframeResponderOptions {
   version?: 'stable' | 'development'; // App version (default: 'stable')
   appUrl?: string;              // Override URL (for local dev)
   initialPath?: string;         // Initial hash path (e.g., '/settings')
+  params?: Record<string, string>; // The page's own params (e.g. { service: 'svc_123' }); context params win
   
   // Data
   cache?: CachedData;           // Pre-cached data

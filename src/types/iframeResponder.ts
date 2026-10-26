@@ -47,6 +47,13 @@ export interface IframeResponderOptions {
   
   /** Initial hash path (e.g., '/settings') */
   initialPath?: string;
+
+  /**
+   * The page's own params (a `linkable` entry's pinned `params` plus what it `accepts`), e.g.
+   * `{ service: 'svc_123' }`. Added to the app's URL alongside the platform's context params, which
+   * always win (collectionId, appId, productId, proofId, isAdmin, dark, theme, parentUrl).
+   */
+  params?: Record<string, string>;
   
   /** Is user an admin of this collection */
   isAdmin?: boolean;

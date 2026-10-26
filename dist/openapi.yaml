@@ -19909,6 +19909,8 @@ components:
     DeepLinkEntry:
       type: object
       properties:
+        id:
+          type: string
         title:
           type: string
         path:
@@ -19917,6 +19919,8 @@ components:
           type: object
           additionalProperties:
             type: string
+        accepts:
+          $ref: "#/components/schemas/PublicViewParams"
         widget:
           type: object
           additionalProperties: true
@@ -27652,6 +27656,10 @@ components:
           type: string
         initialPath:
           type: string
+        params:
+          type: object
+          additionalProperties:
+            type: string
         isAdmin:
           type: boolean
         cache:

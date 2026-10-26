@@ -155,11 +155,16 @@ export class IframeResponder {
     // URL Building
     // ===========================================================================
     buildIframeSrc() {
-        var _a, _b;
+        var _a, _b, _c;
         if (!this.appUrl) {
             throw new Error('App URL not resolved');
         }
         const params = new URLSearchParams();
+        // The page's own params first: the platform's context below always wins.
+        for (const [key, value] of Object.entries((_a = this.options.params) !== null && _a !== void 0 ? _a : {})) {
+            if (value != null && value !== '')
+                params.set(key, String(value));
+        }
         // Required context
         params.set('collectionId', this.options.collectionId);
         params.set('appId', this.options.appId);
@@ -171,13 +176,13 @@ export class IframeResponder {
         if (this.options.isAdmin)
             params.set('isAdmin', 'true');
         // Dark mode from collection
-        const isDark = (_b = (_a = this.cache.collection) === null || _a === void 0 ? void 0 : _a.dark) !== null && _b !== void 0 ? _b : false;
+        const isDark = (_c = (_b = this.cache.collection) === null || _b === void 0 ? void 0 : _b.dark) !== null && _c !== void 0 ? _c : false;
         params.set('dark', isDark ? '1' : '0');
         // Parent URL for redirects
         try {
             params.set('parentUrl', window.location.href);
         }
-        catch (_c) {
+        catch (_d) {
             // Ignore if can't access location
         }
         // Encode theme from collection
@@ -192,7 +197,7 @@ export class IframeResponder {
                     params.set('theme', btoa(JSON.stringify(themeData)));
                 }
             }
-            catch (_d) {
+            catch (_e) {
                 // Ignore encoding errors
             }
         }
@@ -210,7 +215,8 @@ export class IframeResponder {
                 const path = this.options.initialPath.startsWith('/') ? this.options.initialPath : '/' + this.options.initialPath;
                 // Insert path before the ?
                 const [beforeHash, afterHash] = baseWithHash.split('#');
-                finalUrl = `${beforeHash}#${afterHash || ''}${path}?${existingParams.toString()}`;
+                // App addresses end in "#/": join without doubling the slash ("#//my-bookings" matches no route).
+                finalUrl = `${beforeHash}#${(afterHash || '').replace(/\/+$/, '')}${path}?${existingParams.toString()}`;
             }
             else {
                 finalUrl = `${baseWithHash}?${existingParams.toString()}`;
@@ -765,8 +771,12 @@ export function isAdminFromRoles(user, collection, proof) {
  * Standalone helper for cases where you don't need the full IframeResponder.
  */
 export function buildIframeSrc(options) {
-    var _a, _b;
+    var _a, _b, _c;
     const params = new URLSearchParams();
+    for (const [key, value] of Object.entries((_a = options.params) !== null && _a !== void 0 ? _a : {})) {
+        if (value != null && value !== '')
+            params.set(key, String(value));
+    }
     params.set('collectionId', options.collectionId);
     params.set('appId', options.appId);
     if (options.productId)
@@ -776,14 +786,14 @@ export function buildIframeSrc(options) {
     if (options.isAdmin)
         params.set('isAdmin', 'true');
     params.set('dark', options.dark ? '1' : '0');
-    if (((_a = options.theme) === null || _a === void 0 ? void 0 : _a.primary) || ((_b = options.theme) === null || _b === void 0 ? void 0 : _b.secondary)) {
+    if (((_b = options.theme) === null || _b === void 0 ? void 0 : _b.primary) || ((_c = options.theme) === null || _c === void 0 ? void 0 : _c.secondary)) {
         const themeData = { p: options.theme.primary, s: options.theme.secondary };
         params.set('theme', btoa(JSON.stringify(themeData)));
     }
     try {
         params.set('parentUrl', window.location.href);
     }
-    catch (_c) {
+    catch (_d) {
         // Ignore
     }
     let base = options.appUrl.replace(/#\/?$/, '').replace(/\/$/, '');

@@ -172,6 +172,9 @@ Both sources use the same entry shape:
 
 ```typescript
 interface DeepLinkEntry {
+  /** Stable id, unique within the app (optional): hosts and websites refer to the page by it */
+  id?: string;
+
   /** Human-readable label for this state (required) */
   title: string;
 
@@ -194,6 +197,13 @@ interface DeepLinkEntry {
   params?: Record<string, string>;
 
   /**
+   * The params a host may supply when it opens this page (optional), e.g. a booking page that can
+   * start on one service: `{ optional: ['service', 'staff', 'date'] }`. `params` are pinned by the
+   * entry; `accepts` are filled in by whoever opens it.
+   */
+  accepts?: { required?: string[]; optional?: string[] };
+
+  /**
    * When `true`, this entry is also available as a dynamic data context for widgets.
    *
    * Entries with `widget: true` appear in the widget config picker so an admin can
@@ -211,7 +221,9 @@ interface DeepLinkEntry {
 |-------|----------|-------|
 | `title` | ✅ | Displayed in menus and offered to AI agents. Should be concise and human-readable. |
 | `path` | ❌ | Hash route within the app. Defaults to `/` if omitted. |
+| `id` | ❌ | Stable id for hosts and websites to refer to the page by. |
 | `params` | ❌ | App-specific query params only. Platform params are injected automatically. |
+| `accepts` | ❌ | The params whoever opens the page may supply (`required` / `optional`). |
 | `widget` | ❌ | Set to `true` to make this entry selectable in the widget config picker as a dynamic data context. |
 
 > **Tip:** Different entries can share the same `path` if they differ by `params` — for example, two entries pointing at `/settings` with different `tab` params.

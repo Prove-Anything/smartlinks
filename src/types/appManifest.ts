@@ -119,6 +119,12 @@ export interface AppContainerComponent {
  *   { "title": "About Us", "params": { "pageId": "about-us" } }
  */
 export interface DeepLinkEntry {
+  /**
+   * Stable id for this page, unique within the app (optional). Hosts and websites refer to the page
+   * by it (e.g. a site embeds `{ app: 'appointments', page: 'book' }`), so a renamed `title` or a moved
+   * `path` doesn't break them.
+   */
+  id?: string;
   /** Human-readable label shown in menus and offered to AI agents */
   title: string;
   /**
@@ -133,6 +139,12 @@ export interface DeepLinkEntry {
    * those are injected by the platform automatically.
    */
   params?: Record<string, string>;
+  /**
+   * The params a host may supply when it opens this page (in addition to the platform's own), e.g. a
+   * booking page that can start on one service: `{ optional: ['service', 'staff', 'date'] }`. `params`
+   * above are the values this entry PINS; `accepts` are the ones the caller fills in.
+   */
+  accepts?: PublicViewParams;
   /**
    * When `true`, this entry is also available as a dynamic data context for widgets
    * (in addition to being a navigable page / container route).
@@ -882,10 +894,10 @@ export interface AppManifest {
   };
 
   /**
-   * PORTAL deep-linkable states built into this app — the entry points the portal's menu system
-   * (bottom menu, side menus, tabs) can link to. Use these when one app has several ways to enter/load
-   * its portal component (e.g. a list view and a calendar view, or a viewer and an editor) that
-   * different parts of portal should link to independently. These live INSIDE portal.
+   * The app's PAGES that a host opens — portal menus (bottom menu, side menus, tabs) and WEBSITES that
+   * embed the app (IframeResponder). Use these when one app has several ways in (a list view and a
+   * calendar view; book, upcoming bookings, change a booking). A host opens them with its own signed-in
+   * session: the page's API calls go through the host, so it acts as the person signed in there.
    * Fixed routes are declared here at build time; dynamic content entries (e.g. CMS pages) are stored
    * separately in `appConfig.linkable` — merge both for the full navigable set.
    * @see DeepLinkEntry

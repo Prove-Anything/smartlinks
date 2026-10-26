@@ -66,6 +66,32 @@ bytes. `_server/` is never served to visitors.
   doing work that belongs in a server function or a scheduled job.
 - **No secrets** in the server bundle and no Node built-ins beyond `nodejs_compat`.
 
+## Using another app's pages
+
+Some apps do a job a site shouldn't rebuild: a booking journey holds the time rules, the clash
+handling and the confirmation; "my bookings" holds who may change what. Those apps declare their pages
+in `linkable` (app-manifest.md), each with a stable `id`, a `path` and the params it `accepts`. A site
+embeds one with **`IframeResponder`** (iframe-responder.md), from the browser:
+
+```typescript
+const site = SL.site.current()
+const responder = new SL.IframeResponder({
+  collectionId: site.collectionId,
+  appId: 'appointments',            // the app's id on this collection
+  initialPath: '/my-bookings',      // the page's `path`
+  params: { service: 'svc_123' },   // what the page `accepts`
+  onResize: (h) => { iframe.style.height = `${h}px` },
+})
+iframe.src = await responder.attach(iframe)
+```
+
+- **The visitor's session goes with it.** The page's API calls are proxied through the site, so it
+  acts as whoever is signed in to the site (or as a guest). Never pass a token in the URL.
+- **The app must be installed** on the site's collection; its address comes from there.
+- **Show the app's content natively where you can** (its `headless` data: services, staff, events)
+  for your own design and SEO, and embed the page only for the part that does the work.
+- Pages render on the client, after load: they aren't part of the server-rendered HTML.
+
 ## Caching
 
 The router keeps a rendered page at the edge when your response says it may:

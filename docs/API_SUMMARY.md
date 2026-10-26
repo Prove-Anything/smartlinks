@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.2  |  Generated: 2026-10-26T14:59:45.583Z
+Version: 2.1.3  |  Generated: 2026-10-26T19:53:16.899Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2585,9 +2585,11 @@ interface AppContainerComponent {
 **DeepLinkEntry** (interface)
 ```typescript
 interface DeepLinkEntry {
+  id?: string;
   title: string;
   path?: string;
   params?: Record<string, string>;
+  accepts?: PublicViewParams;
   widget?: true;
 }
 ```
@@ -7479,6 +7481,7 @@ interface IframeResponderOptions {
   version?: string;
   appUrl?: string;
   initialPath?: string;
+  params?: Record<string, string>;
   isAdmin?: boolean;
   cache?: CachedData;
   onAuthLogin?: (
