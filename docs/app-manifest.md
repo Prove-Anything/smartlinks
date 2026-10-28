@@ -460,6 +460,30 @@ lists it and draws its connect form and settings, and the integration engine cal
 functions (`testConnection`, `describeTarget`, `sample`, `fetch`, `shape`, `serialize`, `send`). It adapts the provider's format; core does each customer's mapping. The full
 contract is in the **[Connectors guide](connectors.md)**.
 
+#### `assistant`
+
+What the **Studio assistant** (the admin's own agent) knows about this app: skills and knowledge files
+shipped with the build and loaded into its box on demand, and an optional page that renders a planned
+change set before it is applied.
+
+```jsonc
+"assistant": {
+  "skills": [
+    { "name": "theme", "description": "Changing the Hub's colours, fonts or logo", "file": "assistant/skills/theme.md" },
+    { "name": "pages", "description": "Adding, ordering and editing pages and the menu", "file": "assistant/skills/pages.md" }
+  ],
+  "knowledge": [
+    { "name": "settings-schema", "description": "JSON Schema of the hub settings group", "file": "assistant/knowledge/settings.schema.json" }
+  ],
+  "preview": "/admin/preview?changeSet={id}"
+}
+```
+
+The files live under `public/assistant/` and ship with every release like any other static file. The
+assistant sees one line per skill (its description) and reads the file only when the job calls for it,
+so a big app can carry many skills at no cost to the conversation. Full guide, including what a skill
+should say and how the assistant changes config with undo: **[assistant-apps.md](assistant-apps.md)**.
+
 ---
 
 ## `app.admin.json`
