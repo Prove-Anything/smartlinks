@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.3  |  Generated: 2026-10-26T19:53:16.899Z
+Version: 2.1.5  |  Generated: 2026-10-30T13:44:09.513Z
 
 This is a concise summary of all available API functions and types.
 
@@ -2713,6 +2713,7 @@ interface AppFunctionAgentExposure {
   description?: string;
   input?: Record<string, any>;
   approval?: 'auto' | 'require';
+  audience?: Array<'app' | 'public' | 'assistant'>;
 }
 ```
 
@@ -3051,7 +3052,26 @@ interface AppManifest {
   data?: AppDataDeclaration;
   headless?: AppHeadlessDeclaration;
   connector?: AppConnectorDeclaration;
+  assistant?: AppAssistantDeclaration;
   [key: string]: any;
+}
+```
+
+**AppAssistantFile** (interface)
+```typescript
+interface AppAssistantFile {
+  name: string;
+  description?: string;
+  file: string;
+}
+```
+
+**AppAssistantDeclaration** (interface)
+```typescript
+interface AppAssistantDeclaration {
+  skills?: AppAssistantFile[];
+  knowledge?: AppAssistantFile[];
+  preview?: string;
 }
 ```
 

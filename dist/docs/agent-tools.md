@@ -44,7 +44,8 @@ needs to call it — a description and an input schema:
           "title": "Create an FAQ entry",
           "description": "Add a question/answer to this collection's FAQ. Use when the user asks to add or draft an FAQ.",
           "input": { /* JSON Schema for the arguments the agent supplies as event.body */ },
-          "approval": "auto"        // auto | require  (require = human confirmation before the call)
+          "approval": "auto",       // auto | require  (require = human confirmation before the call)
+          "audience": ["app"]       // optional: app | public | assistant — where it is offered (absent = everywhere)
         }
       }
     ]
@@ -103,6 +104,10 @@ Identical to server functions — nothing new to reason about:
 - **`visibility`** — who may call (admin/public).
 - **`authority`** — whose identity `ctx.sl` carries (`caller` vs `collection`).
 - **`capabilities`** — least-privilege, capped even when elevated.
+- **`agent.audience`** — where the tool is offered: `'app'` (the app's own agent runs, admin surface),
+  `'public'` (public assistants), `'assistant'` (the Studio assistant, the admin's agent —
+  [assistant-apps.md](assistant-apps.md)). Absent = everywhere the function's visibility allows. An
+  assistant-only tool declares `["assistant"]` and never joins an in-app or public run.
 - **`agent.approval: "require"`** — the agent must get human confirmation before invoking (use for
   destructive or public-facing actions).
 

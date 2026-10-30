@@ -20138,6 +20138,14 @@ components:
           enum:
             - auto
             - require
+        audience:
+          type: array
+          items:
+            type: string
+            enum:
+              - app
+              - public
+              - assistant
       required:
         - tool
     AppManifestFunctions:
@@ -20635,6 +20643,8 @@ components:
           $ref: "#/components/schemas/AppHeadlessDeclaration"
         connector:
           $ref: "#/components/schemas/AppConnectorDeclaration"
+        assistant:
+          $ref: "#/components/schemas/AppAssistantDeclaration"
       required:
         - name
         - version
@@ -20642,6 +20652,31 @@ components:
         - function
         - files
         - components
+    AppAssistantFile:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        file:
+          type: string
+      required:
+        - name
+        - file
+    AppAssistantDeclaration:
+      type: object
+      properties:
+        skills:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppAssistantFile"
+        knowledge:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppAssistantFile"
+        preview:
+          type: string
     ConnectorConnectionField:
       type: object
       properties:

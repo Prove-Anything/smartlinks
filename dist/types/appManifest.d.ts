@@ -349,6 +349,13 @@ export interface AppFunctionAgentExposure {
      * the autonomous server-side loop (they'd otherwise run unconfirmed).
      */
     approval?: 'auto' | 'require';
+    /**
+     * Where the tool is offered. `'app'` = the app's own agent runs (admin surface), `'public'` = public
+     * assistants, `'assistant'` = the Studio assistant (the admin's agent, docs/assistant-apps.md).
+     * Absent = everywhere the function's visibility allows. An assistant-only tool (logic the assistant
+     * needs that lives in your code) declares `['assistant']` and never shows in an in-app or public run.
+     */
+    audience?: Array<'app' | 'public' | 'assistant'>;
 }
 /** The `functions` block in `app.manifest.json`. Presence means the app ships server functions. */
 export interface AppManifestFunctions {
@@ -941,7 +948,51 @@ export interface AppManifest {
      * @see AppConnectorDeclaration · docs/connectors.md
      */
     connector?: AppConnectorDeclaration;
+    /**
+     * What the Studio assistant (the admin's agent) knows about this app: skills and knowledge files
+     * shipped with the build and loaded into its box on demand, and an optional page that renders a
+     * planned change set. See docs/assistant-apps.md. @see AppAssistantDeclaration
+     */
+    assistant?: AppAssistantDeclaration;
     [key: string]: any;
+}
+/** One skill or knowledge file the app ships for the assistant. */
+export interface AppAssistantFile {
+    /** Short id, unique within the app (`theme`, `pages`, `settings-schema`). */
+    name: string;
+    /**
+     * One line: what it covers and when to reach for it. For a skill this is what the assistant sees
+     * before deciding to read the file, so say when it applies ("Changing the Hub's colours, fonts or
+     * logo"). A knowledge file's description says what is in it.
+     */
+    description?: string;
+    /**
+     * Path of the file in the published build, relative to the app's root (`public/` in the project):
+     * `assistant/skills/theme.md`. Markdown for skills; markdown or JSON (a JSON Schema) for knowledge.
+     */
+    file: string;
+}
+/** The `assistant` block in `app.manifest.json`. */
+export interface AppAssistantDeclaration {
+    /**
+     * Skills: plain-words procedures for one area of the app's admin side — what the settings mean,
+     * which calls read and change them, what a good result looks like, what to check. Several for a big
+     * app (identity and theme; pages and navigation; domains and SEO). A skill file may start with
+     * YAML frontmatter (`name`, `description`); if it doesn't, these entries supply it.
+     */
+    skills?: AppAssistantFile[];
+    /**
+     * Knowledge the skills refer to: the settings schema (generate it from your config types — never
+     * by hand), object definitions, worked examples, a glossary. Loaded only when a skill reaches for it.
+     */
+    knowledge?: AppAssistantFile[];
+    /**
+     * A page of the app that renders a PLANNED change set over the live config, so the admin can see a
+     * change before it is applied. `{id}` is replaced with the change-set id; the page reads
+     * `GET /admin/collection/:cid/assistant/changesets/:id/preview` and renders `targets[].after`.
+     * Relative to the app's admin surface, e.g. `"/admin/preview?changeSet={id}"`.
+     */
+    preview?: string;
 }
 /** One field of a connector's "Connect" form. */
 export interface ConnectorConnectionField {
