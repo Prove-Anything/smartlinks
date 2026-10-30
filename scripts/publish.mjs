@@ -18,6 +18,7 @@
 
 import { readFileSync, readdirSync, statSync, watch } from 'node:fs'
 import { join, relative, sep } from 'node:path'
+import { createHash } from 'node:crypto'
 
 const args = process.argv.slice(2)
 const flag = (name, def) => { const i = args.indexOf(name); return i >= 0 ? (args[i + 1] && !args[i + 1].startsWith('--') ? args[i + 1] : true) : def }
@@ -65,6 +66,69 @@ const BATCH_FILES = 150
 // A file at least this big goes straight to storage (a session URL from /publish/uploads) instead of
 // through an API request, so no single file is ever too large to publish (e.g. a readable dev build).
 const DIRECT_BYTES = 4 * 1024 * 1024
+
+// A large bundle sends only what changed, and straight to storage (POST /publish/plan): the API compares
+// each file's MD5 with what the dev folder already holds and hands out an upload session for the rest, which
+// go up in parallel, never through the API. A site with 1,500 files, mostly images, sent all of them through
+// the API on every publish (about two minutes); a text fix now sends the few files the build changed.
+const PLAN_FILES = 500
+const PARALLEL_UPLOADS = 8
+const md5Of = (buf) => createHash('md5').update(buf).digest('base64')
+
+async function pool(items, size, fn) {
+  let i = 0
+  await Promise.all(Array.from({ length: Math.min(size, items.length) }, async () => {
+    while (i < items.length) { const k = i++; await fn(items[k]) }
+  }))
+}
+
+// PUT one file to its upload session; a failed upload asks for a fresh session and tries again (3 tries).
+async function putFile(path, buf, url, qs) {
+  let at = url
+  for (let attempt = 1; ; attempt++) {
+    const put = await fetch(at, { method: 'PUT', body: buf }).catch((e) => ({ ok: false, status: 0, text: async () => e.message }))
+    if (put.ok) return true
+    const why = `${put.status}: ${(await put.text().catch(() => '')).slice(0, 200)}`
+    if (attempt >= 3) { console.error(`❌ upload of ${path} failed (${why})`); return false }
+    const { res, b } = await post(`/publish/uploads${qs}`, { files: [{ path, size: buf.length }] })
+    if (!res.ok || !b.ok || !b.uploads || !b.uploads[0]) { console.error(`❌ upload of ${path} failed (${why}); no new upload session`); return false }
+    at = b.uploads[0].url
+  }
+}
+
+// → the paths now in the dev folder (unchanged + uploaded), null when this API has no plans yet (an older
+// API: the caller sends batches, as before), or false when an upload failed.
+async function publishByPlan(rest, qs) {
+  // Empty files can't take an upload session: they go in a batch (they cost nothing).
+  const planned = rest.filter(([, buf]) => buf.length > 0)
+  const have = []
+  const uploads = []
+  for (let i = 0; i < planned.length; i += PLAN_FILES) {
+    const part = planned.slice(i, i + PLAN_FILES)
+    const { res, b } = await post(`/publish/plan${qs}`, { files: part.map(([p, buf]) => ({ path: p, size: buf.length, md5: md5Of(buf) })) })
+    if (res.status === 404 && i === 0) return null
+    if (!res.ok || !b.ok) { reportFailure(res, b); return false }
+    have.push(...(b.have || []))
+    uploads.push(...(b.uploads || []))
+  }
+  const bytes = new Map(rest)
+  const sendBytes = uploads.reduce((n, u) => n + (bytes.get(u.path) || []).length, 0)
+  console.log(`📦 ${APP_ID}: ${planned.length} files — ${have.length} unchanged, ${uploads.length} to send (${(sendBytes / 1048576).toFixed(1)} MB, straight to storage)`)
+  let sent = 0
+  let failed = false
+  await pool(uploads, PARALLEL_UPLOADS, async (u) => {
+    if (failed) return
+    if (!(await putFile(u.path, bytes.get(u.path), u.url, qs))) { failed = true; return }
+    if (++sent % 100 === 0 || sent === uploads.length) console.log(`   ↑ ${sent}/${uploads.length}`)
+  })
+  if (failed) return false
+  const empty = rest.filter(([, buf]) => buf.length === 0)
+  if (empty.length) {
+    const { res, b } = await post(`/publish/files${qs}`, { files: toB64(empty) })
+    if (!res.ok || !b.ok) { reportFailure(res, b); return false }
+  }
+  return rest.map(([p]) => p)
+}
 
 // Big files → storage directly. Returns the paths uploaded, or null when the server has no direct
 // uploads yet (an older API: the caller falls back to batches).
@@ -122,37 +186,45 @@ async function publishOnce() {
   if (totalBytes <= BATCH_BYTES && entries.length <= BATCH_FILES) {
     finalBody = { files: toB64(entries) } // small bundle: one request, as before
   } else {
-    // Large bundle: upload everything except the manifest in batches, then send the manifest last —
-    // the server only registers the release once every referenced file is confirmed uploaded.
+    // Large bundle: everything except the manifest first (only what changed, straight to storage; or in
+    // batches on an older API), then the manifest last — the server only registers the release once every
+    // referenced file is confirmed uploaded.
     const rest = entries.filter(([p]) => p !== 'app.manifest.json').sort((a, b) => b[1].length - a[1].length)
-    const big = rest.filter(([, buf]) => buf.length >= DIRECT_BYTES)
-    let direct = []
-    if (big.length) {
-      const done = await uploadDirect(big, qs)
-      if (done === false) { if (WATCH) return false; process.exit(1) }
-      if (done) direct = done
-      else console.warn('   ⚠︎ this SmartLinks API has no direct uploads yet — sending big files in batches')
-    }
-    const viaBatches = rest.filter(([p]) => !direct.includes(p))
-    const batches = []
-    let cur = [], curBytes = 0
-    for (const e of viaBatches) {
-      if (cur.length && (curBytes + e[1].length > BATCH_BYTES || cur.length >= BATCH_FILES)) { batches.push(cur); cur = []; curBytes = 0 }
-      if (e[1].length > BATCH_BYTES) console.warn(`   ⚠︎ ${e[0]} is ${(e[1].length / 1048576).toFixed(1)} MB — larger than one request allows; the server will likely reject it`)
-      cur.push(e); curBytes += e[1].length
-    }
-    if (cur.length) batches.push(cur)
-    console.log(`📦 ${APP_ID}: ${(totalBytes / 1048576).toFixed(1)} MB in ${entries.length} files — ${direct.length ? `${direct.length} sent directly, ` : ''}${batches.length} batch(es)`)
-    for (let i = 0; i < batches.length; i++) {
-      const { res, b } = await post(`/publish/files${qs}`, { files: toB64(batches[i]) })
-      if (!res.ok || !b.ok) {
-        reportFailure(res, b)
-        if (WATCH) return false
-        process.exit(1)
+    const byPlan = await publishByPlan(rest, qs)
+    if (byPlan === false) { if (WATCH) return false; process.exit(1) }
+    if (byPlan) {
+      finalBody = { files: toB64([['app.manifest.json', files['app.manifest.json']]]), uploaded: byPlan }
+    } else {
+      console.warn('   ⚠︎ this SmartLinks API has no publish plans yet — sending every file in batches')
+      const big = rest.filter(([, buf]) => buf.length >= DIRECT_BYTES)
+      let direct = []
+      if (big.length) {
+        const done = await uploadDirect(big, qs)
+        if (done === false) { if (WATCH) return false; process.exit(1) }
+        if (done) direct = done
+        else console.warn('   ⚠︎ this SmartLinks API has no direct uploads yet — sending big files in batches')
       }
-      console.log(`   ↑ batch ${i + 1}/${batches.length} (${batches[i].length} files)`)
+      const viaBatches = rest.filter(([p]) => !direct.includes(p))
+      const batches = []
+      let cur = [], curBytes = 0
+      for (const e of viaBatches) {
+        if (cur.length && (curBytes + e[1].length > BATCH_BYTES || cur.length >= BATCH_FILES)) { batches.push(cur); cur = []; curBytes = 0 }
+        if (e[1].length > BATCH_BYTES) console.warn(`   ⚠︎ ${e[0]} is ${(e[1].length / 1048576).toFixed(1)} MB — larger than one request allows; the server will likely reject it`)
+        cur.push(e); curBytes += e[1].length
+      }
+      if (cur.length) batches.push(cur)
+      console.log(`📦 ${APP_ID}: ${(totalBytes / 1048576).toFixed(1)} MB in ${entries.length} files — ${direct.length ? `${direct.length} sent directly, ` : ''}${batches.length} batch(es)`)
+      for (let i = 0; i < batches.length; i++) {
+        const { res, b } = await post(`/publish/files${qs}`, { files: toB64(batches[i]) })
+        if (!res.ok || !b.ok) {
+          reportFailure(res, b)
+          if (WATCH) return false
+          process.exit(1)
+        }
+        console.log(`   ↑ batch ${i + 1}/${batches.length} (${batches[i].length} files)`)
+      }
+      finalBody = { files: toB64([['app.manifest.json', files['app.manifest.json']]]), uploaded: rest.map(([p]) => p) }
     }
-    finalBody = { files: toB64([['app.manifest.json', files['app.manifest.json']]]), uploaded: rest.map(([p]) => p) }
   }
 
   const { res, b } = await post(`/publish${qs}`, finalBody)
