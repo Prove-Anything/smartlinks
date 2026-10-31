@@ -703,6 +703,35 @@ export async function printLabel(ctx, event) {
 - **Verify:** `pdf.decodeBarcodes` on a `signedUrl` reads the codes back deterministically, so you can
   confirm the digits before answering.
 
+### Making an email attachment
+
+A flow step can attach a file your function makes: `"attach": [{ "function": "receiptPdf" }]` in a
+site's `cloud/flows.json` (or an app's blueprint). When the email goes, the platform calls your function
+(your app's, in this collection, as the collection, like a connector step) with:
+
+```ts
+event.body = { purpose: 'attachment', eventType, interactionId, outcome, contactId, metadata, booking? } // booking: ready-formatted
+```
+
+and attaches what it returns:
+
+```ts
+// capabilities: ["tools:pdf.create"]
+export async function receiptPdf(ctx, event) {
+  const b = event.body.booking
+  const pdf = await ctx.sl.tools.run('pdf.create', { format: 'A4', html: `<h1>Receipt</h1><p>${b.serviceName}, ${b.when.dateTime}</p>`, return: 'signedUrl' })
+  return { filename: `receipt-${b.id}.pdf`, file: pdf.url }          // a private file you made
+  // or { filename, contentType: 'application/pdf', content: '<base64>' }, a list of those, or null for none
+}
+```
+
+- Files: PDF, calendar (`.ics`), images, text / CSV and Office documents; at most 5 per email and 10 MB
+  in all. A private file must be one this platform made (`return: 'signedUrl'`), never an outside URL.
+- If your function fails or returns something else, the email still goes without it (the reason is in
+  your function's runs).
+- Other sources need no code: `"calendar"` (a booking event's calendar invite) and
+  `{ "asset": "<assetId>" }` (a file in the collection's assets) — see bookings.md, "Flows on booking events".
+
 ---
 
 ## Worked example — a public competition entry

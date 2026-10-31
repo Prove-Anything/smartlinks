@@ -373,6 +373,12 @@ wording.
   same rules as `to`, counted in the same daily cap; over it the person still gets their email, without the
   copies). A site's `cloud/email.json` (`{ "fromName", "replyTo" }`) sets the name the business's emails come
   from and their default reply-to; the From address is the business's verified domain.
+- `attach` on a step adds files (at most 5, 10 MB in all): `"calendar"` — the booking as an `.ics` invite
+  that drops straight into the person's calendar (a cancelled booking's invite cancels it there);
+  `{ "asset": "<assetId>" }` — a file in the collection's assets (terms, a price list);
+  `{ "function": "<name>" }` — your app's own function makes it (a receipt PDF: server-functions.md,
+  "Making an email attachment"). E.g. `{ "send": "booking-confirmed", "to": "contact", "attach": ["calendar"] }`.
+  One that can't be made is left out; the email still goes.
 - Who gets what, in templates: `{{ booking }}` is the booking **ready-formatted**: its fields and
   `data`, plus `serviceName`, `staffName`, `customer`, `durationMinutes`, `when` (`date`,
   `shortDate`, `time`, `endTime`, `dateTime`, `timezone` — in the business's timezone) and, when the
