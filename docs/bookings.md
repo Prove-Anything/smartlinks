@@ -361,7 +361,9 @@ wording.
   `hold_expired`, `slot.full` / `slot.place_freed`; `when.status` narrows to the booking's status at the
   time (`"pending"` for "request received").
 - `to`: `contact` — the booker, by their preferred channel (`channel` to force one; a template needs an
-  `sms` part to go by text); `team` — the collection's team addresses; `resource` — the booked
+  `sms` part to go by text); `team` — the collection's team addresses; an **address** (`"hello@bloom.com"`,
+  or a list of up to 10) — a particular inbox, written out: never built from what someone sent
+  (`{{ … }}` is refused), at most 200 a day per template; `resource` — the booked
   person or room: a resource that is a contact, or a record with `data.email` / `data.contactId`.
   A **public** resource record (a staff profile the booking page lists) keeps its address on a
   **private child record** instead (`visibility: 'admin'`, `parentType: 'record'`, `parentId` = the
