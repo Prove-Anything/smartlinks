@@ -368,6 +368,11 @@ wording.
   A **public** resource record (a staff profile the booking page lists) keeps its address on a
   **private child record** instead (`visibility: 'admin'`, `parentType: 'record'`, `parentId` = the
   resource) — the platform looks there too, and the address never ships with the public listing.
+- Any step can also take `replyTo` — an address, or `"contact"` (replies go to the person the event is
+  about: a team notification answered straight to the booker) — and `cc` / `bcc` (written-out addresses,
+  same rules as `to`, counted in the same daily cap; over it the person still gets their email, without the
+  copies). A site's `cloud/email.json` (`{ "fromName", "replyTo" }`) sets the name the business's emails come
+  from and their default reply-to; the From address is the business's verified domain.
 - Who gets what, in templates: `{{ booking }}` is the booking **ready-formatted**: its fields and
   `data`, plus `serviceName`, `staffName`, `customer`, `durationMinutes`, `when` (`date`,
   `shortDate`, `time`, `endTime`, `dateTime`, `timezone` — in the business's timezone) and, when the
