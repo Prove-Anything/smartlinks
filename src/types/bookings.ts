@@ -299,6 +299,8 @@ export interface MessageBookersInput {
   /** Default: held, pending, confirmed. */
   statuses?: BookingStatus[]
   ref?: string
+  /** Files on each email, as comms.sendTransactional — `'calendar'` is each person's own booking. */
+  attach?: import('./comms').EmailAttachmentSpec[]
 }
 
 export interface MessageBookersResult {

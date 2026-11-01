@@ -404,8 +404,13 @@ window (optionally with one resource), each hydrated with **their own** booking.
 await SL.bookings.message(collectionId, appId, { templateId, slotId })
 // Everyone booked with Sam next week, by email even if they prefer texts
 await SL.bookings.message(collectionId, appId, { templateId, channel: 'email', from, to, resourceType: 'record', resourceId: samId })
+// Everyone on the class, each with their own calendar invite
+await SL.bookings.message(collectionId, appId, { templateId, slotId, attach: ['calendar'] })
 // → { matched, sent, skipped: { noContact, duplicate, failed }, failures: [{ bookingId, reason }] }
 ```
+
+`attach` takes the same files as `comms.sendTransactional` (comms.md, "Attachments"); `'calendar'` is
+each person's own booking.
 
 Statuses default to held, pending and confirmed; at most 500 recipients per call (narrow the window
 for more). One message per contact on a slot, one per booking in a window. Also
