@@ -37,12 +37,11 @@ async function attached(options: Record<string, unknown>, frame: any, listeners:
 
 const resize = (r: any, height: number) => r.handleStandardMessage({ type: 'smartlinks:resize', payload: { height } }, {} as any)
 
-test('autoHeight: the iframe is as tall as the content plus its own border, and never scrolls', async () => {
+test('autoHeight: the iframe is as tall as the content plus its own border', async () => {
   const listeners: string[] = []
   const frame = stubFrame({ boxSizing: 'border-box', borderTopWidth: '1px', borderBottomWidth: '1px' })
   const r = await attached({ autoHeight: true }, frame, listeners)
-  assert.equal(frame.attrs.scrolling, 'no')
-  assert.equal(frame.style.overflow, 'hidden')
+  assert.equal(frame.attrs.scrolling, undefined, 'scrolling stays on: a fallback for an app that under-reports')
   assert.ok(!listeners.includes('resize'), 'no window-filling height for an app in a page')
   await resize(r, 1040)
   assert.equal(frame.style.height, '1042px', 'a 1px border would otherwise leave the page 2px short')

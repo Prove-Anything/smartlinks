@@ -124,7 +124,8 @@ interface IframeResponderOptions {
 - **`autoHeight`** — for an app placed in a page (a website, a section of a dashboard). The responder sets
   the iframe's height from the height the app reports, adds the iframe's own border and padding (an
   element with `box-sizing: border-box`, Tailwind's default, otherwise ends up short by its border — a
-  pointless scrollbar), sets `scrolling="no"`, and never uses the window-filling height. `minHeight`
+  pointless scrollbar), and never uses the window-filling height. The iframe's own scrolling stays on as a
+  fallback for an app on an older SDK that under-reports its height. `minHeight`
   is the least height it gives. `onResize` still hears each content height.
 - **`onResize`** without `autoHeight` — for a full-screen host that sizes the iframe itself. It receives
   the app's content height whenever the app reports one, **and** on every window resize the window's

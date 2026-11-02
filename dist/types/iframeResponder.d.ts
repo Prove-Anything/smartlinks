@@ -39,8 +39,8 @@ export interface IframeResponderOptions {
     /**
      * Size the iframe to the app's content, for an app placed in a page (a booking form in a website, a
      * widget in a section): the page scrolls, never the iframe. The responder sets the iframe's height from
-     * the height the app reports, adding the iframe's own border and padding, turns off the iframe's own
-     * scrolling, and never uses the window-filling height. `minHeight`: the least height (px) it's given.
+     * the height the app reports, adding the iframe's own border and padding, and never uses the
+     * window-filling height. `minHeight`: the least height (px) it's given.
      * Leave off for a full-screen host, which sizes the iframe itself from `onResize`.
      */
     autoHeight?: boolean | {

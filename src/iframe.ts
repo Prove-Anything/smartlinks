@@ -102,33 +102,59 @@ function scheduleManualPolling() {
   }, interval)
 }
 
+let measureQueued = false
+/**
+ * Measure once, a moment after a burst of changes, however many asked for it. A timer, not
+ * requestAnimationFrame: frames are paused in a hidden page and in an off-screen cross-origin iframe (an
+ * app below the fold), so the height wasn't reported until it was scrolled into view; timers only slow down.
+ */
+function queueMeasure() {
+  if (measureQueued || !isBrowser()) return
+  measureQueued = true
+  const run = () => {
+    measureQueued = false
+    if (!resizeOptions) return
+    const h = measureHeight()
+    if (resizeOptions.alwaysSend || h !== lastHeight) {
+      lastHeight = h
+      sendHeight(h)
+    }
+  }
+  setTimeout(run, 30)
+}
+
+let lastWidth = 0
+/** The frame got wider or narrower: the page reflows. (Its height is ours to set — not a reason.) */
+function onWindowResize() {
+  if (window.innerWidth === lastWidth) return
+  lastWidth = window.innerWidth
+  queueMeasure()
+}
+
+const CONTENT_EVENTS = ['load', 'transitionend', 'animationend'] as const
+
+/**
+ * Re-measure when something that changes the page's height happens: its content (any DOM change — a step
+ * rendered, times loaded), an image or font arriving, a transition or animation ending, the frame's width.
+ * Never the frame's own height: an app held at the frame's height (html/body/root at 100%, a 100vh
+ * wrapper — common in app templates) changes size whenever the host resizes the frame, so watching it
+ * re-measured after every resize and, with a few px beyond 100vh, grew the frame step by step. Content
+ * growing INSIDE such a pinned body never resized it either, so it was never reported (the booking app
+ * said "700" once while loading and nothing after).
+ */
 function setupObservers() {
   if (!isBrowser()) return
-  // Prefer ResizeObserver for layout changes
-  if (typeof ResizeObserver !== 'undefined') {
-    resizeObserver = new ResizeObserver(() => {
-      const h = measureHeight()
-      if (resizeOptions?.alwaysSend || h !== lastHeight) {
-        lastHeight = h
-        sendHeight(h)
-      }
-    })
-    resizeObserver.observe(document.body)
-    // A body held at the frame's height (height: 100%) doesn't resize when its content does.
-    resizeObserver.observe(document.documentElement)
+  if (typeof MutationObserver !== 'undefined') {
+    mutationObserver = new MutationObserver(queueMeasure)
+    mutationObserver.observe(document.documentElement, { childList: true, subtree: true, attributes: true, characterData: true })
   } else {
-    // Fallback: MutationObserver for DOM changes
-    mutationObserver = new MutationObserver(() => {
-      const h = measureHeight()
-      if (resizeOptions?.alwaysSend || h !== lastHeight) {
-        lastHeight = h
-        sendHeight(h)
-      }
-    })
-    mutationObserver.observe(document.body, { childList: true, subtree: true, attributes: true })
-    // Manual polling as additional safeguard
     scheduleManualPolling()
   }
+  for (const e of CONTENT_EVENTS) document.addEventListener(e, queueMeasure, true)
+  const fonts = (document as any).fonts
+  if (fonts && typeof fonts.addEventListener === 'function') fonts.addEventListener('loadingdone', queueMeasure)
+  lastWidth = window.innerWidth
+  window.addEventListener('resize', onWindowResize)
 }
 
 /** Enable automatic height reporting to parent iframe. */
@@ -138,17 +164,19 @@ export function enableAutoIframeResize(options?: IframeResizeOptions) {
   lastHeight = measureHeight()
   sendHeight(lastHeight)
   setupObservers()
-  if (!resizeObserver) {
-    // If no ResizeObserver, MutationObserver is active and we also poll
-    scheduleManualPolling()
-  }
 }
 
 /** Disable automatic height reporting. */
 export function disableAutoIframeResize() {
   if (resizeObserver) resizeObserver.disconnect()
   if (mutationObserver) mutationObserver.disconnect()
-  if (isBrowser()) clearInterval(autoResizeTimer)
+  if (isBrowser()) {
+    for (const e of CONTENT_EVENTS) document.removeEventListener(e, queueMeasure, true)
+    const fonts = (document as any).fonts
+    if (fonts && typeof fonts.removeEventListener === 'function') fonts.removeEventListener('loadingdone', queueMeasure)
+    window.removeEventListener('resize', onWindowResize)
+    clearInterval(autoResizeTimer)
+  }
   resizeObserver = undefined
   mutationObserver = undefined
   autoResizeTimer = undefined

@@ -86,7 +86,7 @@ iframe.src = await responder.attach(iframe)
 ```
 
 - **Size it with `autoHeight`, not by hand.** The responder sets the iframe's height from the page's own
-  height, counts the iframe's border and padding, and turns off its scrolling. Setting
+  height and counts the iframe's border and padding, so there's nothing left to scroll. Setting
   `iframe.style.height` from `onResize` yourself goes wrong in a site: `onResize` also fires on every
   window resize with "the window below the iframe" (for a full-screen host), and a bordered iframe
   (Tailwind's border-box) ends up a few pixels short — a scrollbar inside the frame.

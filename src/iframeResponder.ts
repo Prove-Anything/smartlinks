@@ -108,11 +108,10 @@ export class IframeResponder {
     this.messageHandler = this.handleMessage.bind(this);
     window.addEventListener('message', this.messageHandler);
     
-    if (this.options.autoHeight) {
-      // Sized to the app's content: the page scrolls, the iframe never does.
-      iframe.setAttribute('scrolling', 'no');
-      iframe.style.overflow = 'hidden';
-    } else {
+    // autoHeight: sized to the app's content, so the iframe has nothing to scroll. Its own scrolling is
+    // left on: an app on an older SDK may still under-report its height, and a scrollbar beats content
+    // cut off.
+    if (!this.options.autoHeight) {
       // Set up resize listener for viewport-based calculations (a full-screen host)
       this.resizeHandler = this.calculateViewportHeight.bind(this);
       window.addEventListener('resize', this.resizeHandler);
