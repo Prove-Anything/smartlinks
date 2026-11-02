@@ -361,11 +361,24 @@ wording.
   `hold_expired`, `slot.full` / `slot.place_freed`; `when.status` narrows to the booking's status at the
   time (`"pending"` for "request received").
 - `to`: `contact` — the booker, by their preferred channel (`channel` to force one; a template needs an
-  `sms` part to go by text); `team` — the collection's team addresses; `resource` — the booked
+  `sms` part to go by text); `team` — the collection's team addresses; an **address** (`"hello@bloom.com"`,
+  or a list of up to 10) — a particular inbox, written out: never built from what someone sent
+  (`{{ … }}` is refused), at most 200 a day per template; `resource` — the booked
   person or room: a resource that is a contact, or a record with `data.email` / `data.contactId`.
   A **public** resource record (a staff profile the booking page lists) keeps its address on a
   **private child record** instead (`visibility: 'admin'`, `parentType: 'record'`, `parentId` = the
   resource) — the platform looks there too, and the address never ships with the public listing.
+- Any step can also take `replyTo` — an address, or `"contact"` (replies go to the person the event is
+  about: a team notification answered straight to the booker) — and `cc` / `bcc` (written-out addresses,
+  same rules as `to`, counted in the same daily cap; over it the person still gets their email, without the
+  copies). A site's `cloud/email.json` (`{ "fromName", "replyTo" }`) sets the name the business's emails come
+  from and their default reply-to; the From address is the business's verified domain.
+- `attach` on a step adds files (at most 5, 10 MB in all): `"calendar"` — the booking as an `.ics` invite
+  that drops straight into the person's calendar (a cancelled booking's invite cancels it there);
+  `{ "asset": "<assetId>" }` — a file in the collection's assets (terms, a price list);
+  `{ "function": "<name>" }` — your app's own function makes it (a receipt PDF: server-functions.md,
+  "Making an email attachment"). E.g. `{ "send": "booking-confirmed", "to": "contact", "attach": ["calendar"] }`.
+  One that can't be made is left out; the email still goes.
 - Who gets what, in templates: `{{ booking }}` is the booking **ready-formatted**: its fields and
   `data`, plus `serviceName`, `staffName`, `customer`, `durationMinutes`, `when` (`date`,
   `shortDate`, `time`, `endTime`, `dateTime`, `timezone` — in the business's timezone) and, when the
@@ -391,8 +404,13 @@ window (optionally with one resource), each hydrated with **their own** booking.
 await SL.bookings.message(collectionId, appId, { templateId, slotId })
 // Everyone booked with Sam next week, by email even if they prefer texts
 await SL.bookings.message(collectionId, appId, { templateId, channel: 'email', from, to, resourceType: 'record', resourceId: samId })
+// Everyone on the class, each with their own calendar invite
+await SL.bookings.message(collectionId, appId, { templateId, slotId, attach: ['calendar'] })
 // → { matched, sent, skipped: { noContact, duplicate, failed }, failures: [{ bookingId, reason }] }
 ```
+
+`attach` takes the same files as `comms.sendTransactional` (comms.md, "Attachments"); `'calendar'` is
+each person's own booking.
 
 Statuses default to held, pending and confirmed; at most 500 recipients per call (narrow the window
 for more). One message per contact on a slot, one per booking in a window. Also

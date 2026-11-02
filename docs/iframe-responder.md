@@ -35,10 +35,8 @@ const responder = new smartlinks.IframeResponder({
     smartlinks.setBearerToken(token);
     console.log('User logged in:', user);
   },
-  onResize: (height) => {
-    // Update iframe height
-    iframeElement.style.height = `${height}px`;
-  },
+  // An app in a page: the iframe is as tall as the app's content — the page scrolls, never the iframe.
+  autoHeight: { minHeight: 480 },
 });
 
 // Attach to iframe element
@@ -115,8 +113,22 @@ interface IframeResponderOptions {
   onResize?: (height: number) => void;
   onError?: (error: Error) => void;
   onReady?: () => void;
+
+  // Height
+  autoHeight?: boolean | { minHeight?: number }; // size the iframe to the app's content (an app in a page)
 }
 ```
+
+**Height: `autoHeight` or `onResize`.**
+
+- **`autoHeight`** — for an app placed in a page (a website, a section of a dashboard). The responder sets
+  the iframe's height from the height the app reports, adds the iframe's own border and padding (an
+  element with `box-sizing: border-box`, Tailwind's default, otherwise ends up short by its border — a
+  pointless scrollbar), sets `scrolling="no"`, and never uses the window-filling height. `minHeight`
+  is the least height it gives. `onResize` still hears each content height.
+- **`onResize`** without `autoHeight` — for a full-screen host that sizes the iframe itself. It receives
+  the app's content height whenever the app reports one, **and** on every window resize the window's
+  height below the iframe's container.
 
 ## Advanced Examples
 
@@ -174,6 +186,8 @@ const responder = new smartlinks.IframeResponder({
 ```
 
 ### Responsive Height Management
+
+An app in a page: `autoHeight` (above) does it all. A full-screen host that manages the height itself:
 
 ```typescript
 const responder = new smartlinks.IframeResponder({
@@ -442,7 +456,7 @@ import type {
 3. **Clean up** responder with `destroy()` when unmounting
 4. **Use version control** to test against development versions
 5. **Validate tokens** server-side for security
-6. **Set height dynamically** based on content using `onResize`
+6. **Size the iframe to its content** with `autoHeight` (an app in a page) or `onResize` (a full-screen host)
 7. **Sync routes** with parent navigation for better UX
 8. **Set `parentPath`** for routes that have a meaningful parent screen in the app hierarchy
 
@@ -458,8 +472,9 @@ import type {
 - Verify token is being set with `setBearerToken()`
 - Check that auth messages are being received
 
-### Height not updating
-- Implement `onResize` callback
+### Height not updating, or a scrollbar inside the iframe
+- An app in a page: use `autoHeight` instead of setting the height yourself
+- A full-screen host: implement the `onResize` callback
 - Ensure iframe has CSS styling for height changes
 - Check that iframe is sending resize messages
 

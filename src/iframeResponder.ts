@@ -108,10 +108,16 @@ export class IframeResponder {
     this.messageHandler = this.handleMessage.bind(this);
     window.addEventListener('message', this.messageHandler);
     
-    // Set up resize listener for viewport-based calculations
-    this.resizeHandler = this.calculateViewportHeight.bind(this);
-    window.addEventListener('resize', this.resizeHandler);
-    window.addEventListener('orientationchange', this.resizeHandler);
+    if (this.options.autoHeight) {
+      // Sized to the app's content: the page scrolls, the iframe never does.
+      iframe.setAttribute('scrolling', 'no');
+      iframe.style.overflow = 'hidden';
+    } else {
+      // Set up resize listener for viewport-based calculations (a full-screen host)
+      this.resizeHandler = this.calculateViewportHeight.bind(this);
+      window.addEventListener('resize', this.resizeHandler);
+      window.addEventListener('orientationchange', this.resizeHandler);
+    }
     
     const src = this.buildIframeSrc();
     return src;
@@ -294,6 +300,28 @@ export class IframeResponder {
   // Viewport Resize Calculation
   // ===========================================================================
 
+  /**
+   * autoHeight: the iframe exactly as tall as the app's content. The height set on an element with
+   * box-sizing: border-box (Tailwind's default) includes its border and padding, so those are added — a
+   * 1px border otherwise left the page 2px short and the iframe showed a pointless scrollbar.
+   */
+  private applyContentHeight(contentHeight: number): void {
+    const iframe = this.iframe;
+    if (!iframe) return;
+    const min = typeof this.options.autoHeight === 'object' ? this.options.autoHeight.minHeight ?? 0 : 0;
+    let extra = 0;
+    try {
+      const cs = window.getComputedStyle(iframe);
+      if (cs.boxSizing === 'border-box') {
+        extra = ['borderTopWidth', 'borderBottomWidth', 'paddingTop', 'paddingBottom']
+          .reduce((n, k) => n + (parseFloat((cs as any)[k]) || 0), 0);
+      }
+    } catch {
+      /* no computed style (not in a document): the content height as it is */
+    }
+    iframe.style.height = `${Math.ceil(Math.max(min, contentHeight + extra))}px`;
+  }
+
   private calculateViewportHeight(): void {
     if (!this.iframe) return;
     
@@ -407,6 +435,7 @@ export class IframeResponder {
       case 'smartlinks:resize': {
         const contentHeight = data.payload?.height;
         if (typeof contentHeight === 'number' && contentHeight > 0) {
+          if (this.options.autoHeight) this.applyContentHeight(contentHeight);
           this.options.onResize?.(contentHeight);
         }
         break;

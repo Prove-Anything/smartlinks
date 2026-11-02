@@ -56,6 +56,7 @@ if (result.ok) {
 | `include` | object | Hydration flags — see table below. |
 | `ref` | `string` | Arbitrary reference string stored with the event. |
 | `appId` | `string` | App identifier, used for context/logging. |
+| `attach` | `EmailAttachmentSpec[]` | Files on the email — see [Attachments](#attachments). |
 
 **`include` fields:**
 
@@ -73,11 +74,35 @@ if (result.ok) {
 
 ```typescript
 // Success
-{ ok: true; channel: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet'; messageId?: string }
+{ ok: true; channel: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet'; messageId?: string; attachmentsLeftOut?: string[] }
 
 // Failure
 { ok: false; error: string }
 ```
+
+### Attachments
+
+`attach` puts files on the email (email only — ignored when the send goes by text or push). At most 5
+files and 10 MB in all; PDF, Word / Excel / PowerPoint, images, text, CSV and calendar files.
+
+```typescript
+await comms.sendTransactional(collectionId, {
+  contactId, templateId: 'booking-confirmed', appId: 'appointment-booking',
+  include: { booking: bookingId },
+  attach: [
+    'calendar',                                   // the booking's .ics invite (needs include.booking + appId)
+    { asset: 'a1b2c3' },                          // a file uploaded to the collection's assets
+    { function: 'receiptPdf' },                   // the app's own server function makes it
+    { filename: 'Quote.pdf', contentType: 'application/pdf', content: base64 },  // a file you made
+    { filename: 'Report.pdf', file: signedUrl },  // a private file you made (pdf.create return: 'signedUrl')
+  ],
+})
+```
+
+A malformed list is refused (`transactional.attach_invalid`). A file that can't be made at send time
+(a missing asset, a function that fails) is left out and listed in `attachmentsLeftOut` — the email
+still goes. The request body is capped at 10 MB, so for big files make a private file and pass `file`.
+`bookings.message` takes the same `attach` (`'calendar'` is each person's own booking).
 
 ---
 
@@ -149,11 +174,12 @@ Consent resolution order (per recipient, per channel):
 3. `preferences._default.topics[topic]`
 4. Subject-specific preferences (when hydrating a subject context)
 
-Minimal broadcast data shape:
+Minimal broadcast data shape (`attach` is optional — uploaded assets only, the same files on every email):
 ```json
 {
   "data": {
     "topic": "newsletter",
+    "attach": [{ "asset": "a1b2c3" }],
     "channelSettings": {
       "mode": "preferred",
       "channels": [

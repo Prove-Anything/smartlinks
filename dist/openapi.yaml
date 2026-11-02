@@ -24805,6 +24805,11 @@ components:
             $ref: "#/components/schemas/BookingStatus"
         ref:
           type: string
+        attach:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
       required:
         - templateId
     MessageBookersResult:
@@ -24999,6 +25004,11 @@ components:
           type: boolean
         priority:
           type: number
+        attach:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
         createdAt:
           type: string
       required:
@@ -26130,6 +26140,10 @@ components:
           type: string
         appId:
           type: string
+        attach:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAttachmentSpec"
       required:
         - contactId
         - templateId
@@ -26149,6 +26163,10 @@ components:
             - wallet
         messageId:
           type: string
+        attachmentsLeftOut:
+          type: array
+          items:
+            type: string
       required:
         - ok
         - channel
@@ -26172,6 +26190,9 @@ components:
       $ref: "#/components/schemas/CommsSettings"
     ConsentChannels:
       $ref: "#/components/schemas/BroadcastChannel"
+    EmailAttachmentSpec:
+      type: object
+      additionalProperties: true
     TransactionalSendResult:
       anyOf:
         - $ref: "#/components/schemas/TransactionalSendResponse"
@@ -27706,6 +27727,9 @@ components:
           type: string
         user: {}
         accountData:
+          type: object
+          additionalProperties: true
+        autoHeight:
           type: object
           additionalProperties: true
       required:

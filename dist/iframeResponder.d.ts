@@ -61,6 +61,12 @@ export declare class IframeResponder {
     private resolveAppUrl;
     private getVersionUrl;
     private buildIframeSrc;
+    /**
+     * autoHeight: the iframe exactly as tall as the app's content. The height set on an element with
+     * box-sizing: border-box (Tailwind's default) includes its border and padding, so those are added — a
+     * 1px border otherwise left the page 2px short and the iframe showed a pointless scrollbar.
+     */
+    private applyContentHeight;
     private calculateViewportHeight;
     private handleMessage;
     private handleRouteChange;

@@ -80,10 +80,16 @@ const responder = new SL.IframeResponder({
   appId: 'appointments',            // the app's id on this collection
   initialPath: '/my-bookings',      // the page's `path`
   params: { service: 'svc_123' },   // what the page `accepts`
-  onResize: (h) => { iframe.style.height = `${h}px` },
+  autoHeight: { minHeight: 480 },   // the iframe is as tall as the page: your page scrolls, never the iframe
 })
 iframe.src = await responder.attach(iframe)
 ```
+
+- **Size it with `autoHeight`, not by hand.** The responder sets the iframe's height from the page's own
+  height, counts the iframe's border and padding, and turns off its scrolling. Setting
+  `iframe.style.height` from `onResize` yourself goes wrong in a site: `onResize` also fires on every
+  window resize with "the window below the iframe" (for a full-screen host), and a bordered iframe
+  (Tailwind's border-box) ends up a few pixels short — a scrollbar inside the frame.
 
 - **The visitor's session goes with it.** The page's API calls are proxied through the site, so it
   acts as whoever is signed in to the site (or as a guest). Never pass a token in the URL.

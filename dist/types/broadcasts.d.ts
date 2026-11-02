@@ -34,6 +34,10 @@ export interface BroadcastRecord {
                 priority?: number;
             }>;
         };
+        /** Files on every email of the broadcast (at most 5, 10 MB in all): uploaded assets only. */
+        attach?: Array<{
+            asset: string;
+        }>;
         [key: string]: unknown;
     };
     createdAt: string;

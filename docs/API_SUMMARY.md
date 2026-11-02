@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.5  |  Generated: 2026-10-30T13:44:09.513Z
+Version: 2.1.6  |  Generated: 2026-11-02T11:29:30.927Z
 
 This is a concise summary of all available API functions and types.
 
@@ -5402,6 +5402,7 @@ interface MessageBookersInput {
   resourceId?: string
   statuses?: BookingStatus[]
   ref?: string
+  attach?: import('./comms').EmailAttachmentSpec[]
 }
 ```
 
@@ -5512,6 +5513,7 @@ interface BroadcastRecord {
   priority?: number
   }>
   }
+  attach?: Array<{ asset: string }>
   [key: string]: unknown
   }
   createdAt: string
@@ -6242,6 +6244,7 @@ interface TransactionalSendRequest {
   }
   ref?: string
   appId?: string
+  attach?: EmailAttachmentSpec[]
 }
 ```
 
@@ -6251,6 +6254,7 @@ interface TransactionalSendResponse {
   ok: true
   channel: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet'
   messageId?: string
+  attachmentsLeftOut?: string[]
 }
 ```
 
@@ -6269,6 +6273,8 @@ interface TransactionalSendError {
 **CommsSettingsPatchBody** = `Partial<CommsSettings>`
 
 **ConsentChannels** = `Partial<Record<BroadcastChannel, boolean>>`
+
+**EmailAttachmentSpec** = ``
 
 **TransactionalSendResult** = `// src/types/comms.ts
 // Communication and notification types for the Smartlinks API
@@ -6595,7 +6601,27 @@ export interface TransactionalSendRequest {
   ref?: string
   /** App context stored on the comms-events row */
   appId?: string
+  /**
+   * Files to attach (email only; at most 5, 10 MB in all). What can't be made is left out and listed in
+   * `attachmentsLeftOut` — the email still goes.
+   */
+  attach?: EmailAttachmentSpec[]
 }
+
+/**
+ * One file for an email:
+ * - `'calendar'` — the booking's `.ics` calendar invite (needs `include.booking` and `appId`)
+ * - `{ asset }` — a file uploaded to this collection's assets
+ * - `{ function }` — the app's (`appId`) own server function makes it (see server-functions.md, "Making an email attachment")
+ * - `{ filename, contentType, content }` — a file you made, base64 (PDF, Office documents, images, text, CSV, calendar)
+ * - `{ filename, file }` — a private file you made (e.g. `pdf.create` with `return: 'signedUrl'`)
+ */
+export type EmailAttachmentSpec =
+  | 'calendar'
+  | { asset: string }
+  | { function: string }
+  | { filename: string; contentType: string; content: string }
+  | { filename: string; contentType?: string; file: string }
 
 export interface TransactionalSendResponse {
   ok: true
@@ -6603,6 +6629,8 @@ export interface TransactionalSendResponse {
   channel: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet'
   /** Provider message ID (email/SMS/WhatsApp); absent for push/wallet */
   messageId?: string
+  /** Attachments that couldn't be made, and why (the email went without them) */
+  attachmentsLeftOut?: string[]
 }
 
 export interface TransactionalSendError {
@@ -7511,6 +7539,7 @@ interface IframeResponderOptions {
   ) => Promise<void>;
   onAuthLogout?: () => Promise<void>;
   onRouteChange?: (path: string, state: Record<string, string>) => void;
+  autoHeight?: boolean | { minHeight?: number };
   onResize?: (height: number) => void;
   onError?: (error: Error) => void;
   onReady?: () => void;

@@ -36,16 +36,29 @@ export var iframe;
     function sendHeight(height, extra) {
         if (!inIframe())
             return;
-        const h = height !== null && height !== void 0 ? height : document.documentElement.scrollHeight;
+        const h = height !== null && height !== void 0 ? height : measureHeight();
         postParentMessage((resizeOptions === null || resizeOptions === void 0 ? void 0 : resizeOptions.messageType) || 'smartlinks:resize', Object.assign(Object.assign({ height: h }, resizeOptions === null || resizeOptions === void 0 ? void 0 : resizeOptions.extra), extra));
     }
     iframe.sendHeight = sendHeight;
+    /**
+     * The page's own height — not the frame's. scrollHeight and clientHeight are never less than the iframe's
+     * viewport, so a page that got shorter (a step done, a list emptied) was still reported at the frame's old
+     * height and the frame never shrank. When the page overflows the frame, its scrollHeight is the real
+     * height (absolutely positioned content included); when it fits, the document's own box is.
+     */
     function measureHeight() {
         if (!isBrowser())
             return 0;
         const doc = document.documentElement;
-        // Use max of several properties for robustness
-        return Math.max(doc.scrollHeight, doc.offsetHeight, doc.clientHeight, document.body ? document.body.scrollHeight : 0, document.body ? document.body.offsetHeight : 0);
+        if (doc.scrollHeight > doc.clientHeight + 1)
+            return doc.scrollHeight;
+        const body = document.body;
+        let bodyHeight = 0;
+        if (body) {
+            const cs = window.getComputedStyle(body);
+            bodyHeight = body.offsetHeight + (parseFloat(cs.marginTop) || 0) + (parseFloat(cs.marginBottom) || 0);
+        }
+        return Math.ceil(Math.max(doc.offsetHeight, bodyHeight));
     }
     function scheduleManualPolling() {
         var _a;
@@ -74,6 +87,8 @@ export var iframe;
                 }
             });
             resizeObserver.observe(document.body);
+            // A body held at the frame's height (height: 100%) doesn't resize when its content does.
+            resizeObserver.observe(document.documentElement);
         }
         else {
             // Fallback: MutationObserver for DOM changes
