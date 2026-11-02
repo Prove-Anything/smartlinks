@@ -99,6 +99,14 @@ renders correctly even against a host that sets none of them.
 
 Dark mode is a *theme* (a different value-set), not a separate token set — the host swaps the values.
 
+- **Host:** in dark mode, send a dark value-set — in the iframe address (`#slt=` with `theme: "dark"`, and the
+  legacy `theme=` payload with `m: "d"`) or on the mount root. Sending only the hook (`dark=1`, `.dark`)
+  leaves the app to guess.
+- **App:** `theme.css` has dark fallbacks under `.dark` / `[data-theme="dark"]`, so an app built on it stays
+  readable even when a host sends the hook and no values. An app with its own CSS variables should do the
+  same: a light fallback at the root, a dark one under the hook — never a light colour that also stands
+  in for dark.
+
 ---
 
 ## 3. Theme value-sets (what the AI emits, what the lookbook stores)

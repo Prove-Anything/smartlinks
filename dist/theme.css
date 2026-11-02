@@ -41,6 +41,26 @@
   --shadow-md: var(--sl-shadow-md, 0 0 #0000);
 }
 
+/* Dark mode without values. A host in dark mode should send a dark value-set (the --sl-* tokens); one
+ * that only sets the hook (.dark / data-theme="dark") left every colour on its light fallback — white
+ * cards and near-black text on a dark page. Under the hook the fallbacks are dark too; whatever the host
+ * does send still wins. (Re-declared on the hook's element, so it works wherever the host puts it.) */
+.dark,
+[data-theme="dark"] {
+  --color-background:    var(--sl-color-bg, #09090b);
+  --color-surface:       var(--sl-color-surface, #18181b);
+  --color-surface-raised:var(--sl-color-surface-raised, var(--sl-color-surface, #27272a));
+  --color-foreground:    var(--sl-color-fg, #fafafa);
+  --color-muted:         var(--sl-color-muted, #a1a1aa);
+  --color-border:        var(--sl-color-border, #3f3f46);
+  --color-primary:       var(--sl-color-accent, #6366f1);
+  --color-on-primary:    var(--sl-color-on-accent, #ffffff);
+  --color-primary-soft:  var(--sl-color-accent-soft, color-mix(in oklab, var(--sl-color-accent, #6366f1) 20%, transparent));
+  --color-success:       var(--sl-color-success, #22c55e);
+  --color-danger:        var(--sl-color-danger, #f87171);
+  color-scheme: dark;
+}
+
 /* shadcn bridge (optional): if the app uses shadcn's --primary/--background/etc. HSL variables,
  * uncomment to drive them from the SmartLinks tokens too. Left commented so it never overrides an
  * app that has deliberately customised its shadcn palette — opt in per app (see migration step 17).
