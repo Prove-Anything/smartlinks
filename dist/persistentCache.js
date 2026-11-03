@@ -5,10 +5,15 @@
 // isIdbAvailable() and wrapped in try/catch so that failures in private-
 // browsing, quota-exceeded situations, or server-side environments are always
 // silent — they never propagate errors to the caller.
+//
+// The connection itself is managed by idbConnection.ts, which re-opens it when
+// the browser closes it behind our back (iOS Safari does this when the tab is
+// backgrounded) instead of leaving the cache dead for the rest of the page.
+import { createIdbConnection } from './idbConnection.js';
 const DB_NAME = 'smartlinks-sdk-cache';
 const STORE_NAME = 'responses';
 const DB_VERSION = 1;
-let dbPromise = null;
+const connection = createIdbConnection(DB_NAME, STORE_NAME, DB_VERSION);
 /**
  * Returns true only in environments where IndexedDB is genuinely available.
  * False in Node.js, and in some private-browsing contexts that stub indexedDB
@@ -22,36 +27,13 @@ export function isIdbAvailable() {
         return false;
     }
 }
-function openDb() {
-    if (dbPromise)
-        return dbPromise;
-    dbPromise = new Promise((resolve, reject) => {
-        try {
-            const req = indexedDB.open(DB_NAME, DB_VERSION);
-            req.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains(STORE_NAME)) {
-                    db.createObjectStore(STORE_NAME);
-                }
-            };
-            req.onsuccess = (event) => {
-                resolve(event.target.result);
-            };
-            req.onerror = () => {
-                dbPromise = null;
-                reject(req.error);
-            };
-            req.onblocked = () => {
-                dbPromise = null;
-                reject(new Error('[smartlinks] IndexedDB open blocked'));
-            };
-        }
-        catch (err) {
-            dbPromise = null;
-            reject(err);
-        }
+/** Resolve when the transaction settles, whatever the outcome. */
+function settled(tx) {
+    return new Promise((resolve) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve(); // quota exceeded etc — fail silently
+        tx.onabort = () => resolve();
     });
-    return dbPromise;
 }
 /**
  * Read an entry from IndexedDB.
@@ -62,18 +44,11 @@ export async function idbGet(key) {
     if (!isIdbAvailable())
         return null;
     try {
-        const db = await openDb();
-        return new Promise((resolve) => {
-            try {
-                const tx = db.transaction(STORE_NAME, 'readonly');
-                const req = tx.objectStore(STORE_NAME).get(key);
-                req.onsuccess = () => { var _a; return resolve((_a = req.result) !== null && _a !== void 0 ? _a : null); };
-                req.onerror = () => resolve(null);
-            }
-            catch (_a) {
-                resolve(null);
-            }
-        });
+        return await connection.run('readonly', (store) => new Promise((resolve) => {
+            const req = store.get(key);
+            req.onsuccess = () => { var _a; return resolve((_a = req.result) !== null && _a !== void 0 ? _a : null); };
+            req.onerror = () => resolve(null);
+        }));
     }
     catch (_a) {
         return null;
@@ -88,18 +63,9 @@ export async function idbSet(key, entry) {
     if (!isIdbAvailable())
         return;
     try {
-        const db = await openDb();
-        await new Promise((resolve) => {
-            try {
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                tx.objectStore(STORE_NAME).put(entry, key);
-                tx.oncomplete = () => resolve();
-                tx.onerror = () => resolve(); // quota exceeded etc — fail silently
-                tx.onabort = () => resolve();
-            }
-            catch (_a) {
-                resolve();
-            }
+        await connection.run('readwrite', (store, tx) => {
+            store.put(entry, key);
+            return settled(tx);
         });
     }
     catch (_a) {
@@ -114,18 +80,9 @@ export async function idbDelete(key) {
     if (!isIdbAvailable())
         return;
     try {
-        const db = await openDb();
-        await new Promise((resolve) => {
-            try {
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                tx.objectStore(STORE_NAME).delete(key);
-                tx.oncomplete = () => resolve();
-                tx.onerror = () => resolve();
-                tx.onabort = () => resolve();
-            }
-            catch (_a) {
-                resolve();
-            }
+        await connection.run('readwrite', (store, tx) => {
+            store.delete(key);
+            return settled(tx);
         });
     }
     catch (_a) { }
@@ -138,41 +95,25 @@ export async function idbClear(pattern) {
     if (!isIdbAvailable())
         return;
     try {
-        const db = await openDb();
         if (!pattern) {
-            await new Promise((resolve) => {
-                try {
-                    const tx = db.transaction(STORE_NAME, 'readwrite');
-                    tx.objectStore(STORE_NAME).clear();
-                    tx.oncomplete = () => resolve();
-                    tx.onerror = () => resolve();
-                    tx.onabort = () => resolve();
-                }
-                catch (_a) {
-                    resolve();
-                }
+            await connection.run('readwrite', (store, tx) => {
+                store.clear();
+                return settled(tx);
             });
             return;
         }
         // Pattern-based: enumerate all keys and delete matching ones.
-        await new Promise((resolve) => {
-            try {
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                const store = tx.objectStore(STORE_NAME);
-                const req = store.getAllKeys();
-                req.onsuccess = () => {
-                    for (const key of req.result) {
-                        if (key.includes(pattern))
-                            store.delete(key);
-                    }
-                    resolve();
-                };
-                req.onerror = () => resolve();
-            }
-            catch (_a) {
+        await connection.run('readwrite', (store) => new Promise((resolve) => {
+            const req = store.getAllKeys();
+            req.onsuccess = () => {
+                for (const key of req.result) {
+                    if (key.includes(pattern))
+                        store.delete(key);
+                }
                 resolve();
-            }
-        });
+            };
+            req.onerror = () => resolve();
+        }));
     }
     catch (_a) { }
 }

@@ -3,6 +3,7 @@ import type {
   TranslationContext,
   TranslationHashOptions,
 } from './types/translations'
+import { createIdbConnection } from './idbConnection'
 
 const DB_NAME = 'smartlinks-sdk-translations'
 const STORE_NAME = 'translations'
@@ -21,7 +22,7 @@ interface LocalTranslationCacheEntry {
   expiresAt: number
 }
 
-let dbPromise: Promise<IDBDatabase> | null = null
+const connection = createIdbConnection(DB_NAME, STORE_NAME, DB_VERSION)
 const memoryTranslationCache = new Map<string, LocalTranslationCacheEntry>()
 
 export function getDefaultTranslationCacheTtlMs(): number {
@@ -36,34 +37,13 @@ function isIndexedDbAvailable(): boolean {
   }
 }
 
-function openDb(): Promise<IDBDatabase> {
-  if (dbPromise) return dbPromise
-  dbPromise = new Promise((resolve, reject) => {
-    try {
-      const request = indexedDB.open(DB_NAME, DB_VERSION)
-      request.onupgradeneeded = (event) => {
-        const db = (event.target as IDBOpenDBRequest).result
-        if (!db.objectStoreNames.contains(STORE_NAME)) {
-          db.createObjectStore(STORE_NAME)
-        }
-      }
-      request.onsuccess = (event) => {
-        resolve((event.target as IDBOpenDBRequest).result)
-      }
-      request.onerror = () => {
-        dbPromise = null
-        reject(request.error)
-      }
-      request.onblocked = () => {
-        dbPromise = null
-        reject(new Error('[smartlinks] Translation IndexedDB open blocked'))
-      }
-    } catch (error) {
-      dbPromise = null
-      reject(error)
-    }
+/** Resolve when the transaction settles, whatever the outcome. */
+function settled(tx: IDBTransaction): Promise<void> {
+  return new Promise<void>((resolve) => {
+    tx.oncomplete = () => resolve()
+    tx.onerror = () => resolve()
+    tx.onabort = () => resolve()
   })
-  return dbPromise
 }
 
 function stableContextKey(context?: TranslationContext): string | null {
@@ -174,11 +154,9 @@ async function getEntry(key: string): Promise<LocalTranslationCacheEntry | null>
   if (!isIndexedDbAvailable()) return null
 
   try {
-    const db = await openDb()
-    return await new Promise<LocalTranslationCacheEntry | null>((resolve) => {
-      try {
-        const tx = db.transaction(STORE_NAME, 'readonly')
-        const request = tx.objectStore(STORE_NAME).get(key)
+    return await connection.run('readonly', (store) =>
+      new Promise<LocalTranslationCacheEntry | null>((resolve) => {
+        const request = store.get(key)
         request.onsuccess = () => {
           const result = (request.result as LocalTranslationCacheEntry | undefined) ?? null
           if (!result) {
@@ -197,10 +175,8 @@ async function getEntry(key: string): Promise<LocalTranslationCacheEntry | null>
           resolve(result)
         }
         request.onerror = () => resolve(null)
-      } catch {
-        resolve(null)
-      }
-    })
+      })
+    )
   } catch {
     return null
   }
@@ -231,20 +207,11 @@ async function setEntries(entries: Array<[string, LocalTranslationCacheEntry]>):
   if (!isIndexedDbAvailable()) return
 
   try {
-    const db = await openDb()
-    await new Promise<void>((resolve) => {
-      try {
-        const tx = db.transaction(STORE_NAME, 'readwrite')
-        const store = tx.objectStore(STORE_NAME)
-        for (const [key, entry] of entries) {
-          store.put(entry, key)
-        }
-        tx.oncomplete = () => resolve()
-        tx.onerror = () => resolve()
-        tx.onabort = () => resolve()
-      } catch {
-        resolve()
+    await connection.run('readwrite', (store, tx) => {
+      for (const [key, entry] of entries) {
+        store.put(entry, key)
       }
+      return settled(tx)
     })
   } catch {
     // Best-effort persistence only.
@@ -302,20 +269,11 @@ async function deleteEntries(keys: string[]): Promise<void> {
   if (!isIndexedDbAvailable() || keys.length === 0) return
 
   try {
-    const db = await openDb()
-    await new Promise<void>((resolve) => {
-      try {
-        const tx = db.transaction(STORE_NAME, 'readwrite')
-        const store = tx.objectStore(STORE_NAME)
-        for (const key of keys) {
-          store.delete(key)
-        }
-        tx.oncomplete = () => resolve()
-        tx.onerror = () => resolve()
-        tx.onabort = () => resolve()
-      } catch {
-        resolve()
+    await connection.run('readwrite', (store, tx) => {
+      for (const key of keys) {
+        store.delete(key)
       }
+      return settled(tx)
     })
   } catch {
     // Ignore deletion failures.
@@ -333,26 +291,16 @@ export async function clearCachedTranslations(collectionId?: string): Promise<vo
   if (!isIndexedDbAvailable()) return
 
   try {
-    const db = await openDb()
     if (!collectionId) {
-      await new Promise<void>((resolve) => {
-        try {
-          const tx = db.transaction(STORE_NAME, 'readwrite')
-          tx.objectStore(STORE_NAME).clear()
-          tx.oncomplete = () => resolve()
-          tx.onerror = () => resolve()
-          tx.onabort = () => resolve()
-        } catch {
-          resolve()
-        }
+      await connection.run('readwrite', (store, tx) => {
+        store.clear()
+        return settled(tx)
       })
       return
     }
 
-    await new Promise<void>((resolve) => {
-      try {
-        const tx = db.transaction(STORE_NAME, 'readwrite')
-        const store = tx.objectStore(STORE_NAME)
+    await connection.run('readwrite', (store) =>
+      new Promise<void>((resolve) => {
         const request = store.getAllKeys()
         request.onsuccess = () => {
           for (const key of request.result as string[]) {
@@ -363,10 +311,8 @@ export async function clearCachedTranslations(collectionId?: string): Promise<vo
           resolve()
         }
         request.onerror = () => resolve()
-      } catch {
-        resolve()
-      }
-    })
+      })
+    )
   } catch {
     // Ignore deletion failures.
   }

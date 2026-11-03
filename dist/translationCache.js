@@ -1,8 +1,9 @@
+import { createIdbConnection } from './idbConnection.js';
 const DB_NAME = 'smartlinks-sdk-translations';
 const STORE_NAME = 'translations';
 const DB_VERSION = 1;
 const DEFAULT_LOCAL_TRANSLATION_TTL_MS = 90 * 24 * 60 * 60000;
-let dbPromise = null;
+const connection = createIdbConnection(DB_NAME, STORE_NAME, DB_VERSION);
 const memoryTranslationCache = new Map();
 export function getDefaultTranslationCacheTtlMs() {
     return DEFAULT_LOCAL_TRANSLATION_TTL_MS;
@@ -15,36 +16,13 @@ function isIndexedDbAvailable() {
         return false;
     }
 }
-function openDb() {
-    if (dbPromise)
-        return dbPromise;
-    dbPromise = new Promise((resolve, reject) => {
-        try {
-            const request = indexedDB.open(DB_NAME, DB_VERSION);
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains(STORE_NAME)) {
-                    db.createObjectStore(STORE_NAME);
-                }
-            };
-            request.onsuccess = (event) => {
-                resolve(event.target.result);
-            };
-            request.onerror = () => {
-                dbPromise = null;
-                reject(request.error);
-            };
-            request.onblocked = () => {
-                dbPromise = null;
-                reject(new Error('[smartlinks] Translation IndexedDB open blocked'));
-            };
-        }
-        catch (error) {
-            dbPromise = null;
-            reject(error);
-        }
+/** Resolve when the transaction settles, whatever the outcome. */
+function settled(tx) {
+    return new Promise((resolve) => {
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => resolve();
+        tx.onabort = () => resolve();
     });
-    return dbPromise;
 }
 function stableContextKey(context) {
     if (!context)
@@ -123,33 +101,26 @@ async function getEntry(key) {
     if (!isIndexedDbAvailable())
         return null;
     try {
-        const db = await openDb();
-        return await new Promise((resolve) => {
-            try {
-                const tx = db.transaction(STORE_NAME, 'readonly');
-                const request = tx.objectStore(STORE_NAME).get(key);
-                request.onsuccess = () => {
-                    var _a;
-                    const result = (_a = request.result) !== null && _a !== void 0 ? _a : null;
-                    if (!result) {
-                        resolve(null);
-                        return;
-                    }
-                    if (isExpired(result)) {
-                        memoryTranslationCache.delete(key);
-                        void deleteEntries([key]);
-                        resolve(null);
-                        return;
-                    }
-                    memoryTranslationCache.set(key, result);
-                    resolve(result);
-                };
-                request.onerror = () => resolve(null);
-            }
-            catch (_a) {
-                resolve(null);
-            }
-        });
+        return await connection.run('readonly', (store) => new Promise((resolve) => {
+            const request = store.get(key);
+            request.onsuccess = () => {
+                var _a;
+                const result = (_a = request.result) !== null && _a !== void 0 ? _a : null;
+                if (!result) {
+                    resolve(null);
+                    return;
+                }
+                if (isExpired(result)) {
+                    memoryTranslationCache.delete(key);
+                    void deleteEntries([key]);
+                    resolve(null);
+                    return;
+                }
+                memoryTranslationCache.set(key, result);
+                resolve(result);
+            };
+            request.onerror = () => resolve(null);
+        }));
     }
     catch (_a) {
         return null;
@@ -170,21 +141,11 @@ async function setEntries(entries) {
     if (!isIndexedDbAvailable())
         return;
     try {
-        const db = await openDb();
-        await new Promise((resolve) => {
-            try {
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                const store = tx.objectStore(STORE_NAME);
-                for (const [key, entry] of entries) {
-                    store.put(entry, key);
-                }
-                tx.oncomplete = () => resolve();
-                tx.onerror = () => resolve();
-                tx.onabort = () => resolve();
+        await connection.run('readwrite', (store, tx) => {
+            for (const [key, entry] of entries) {
+                store.put(entry, key);
             }
-            catch (_a) {
-                resolve();
-            }
+            return settled(tx);
         });
     }
     catch (_a) {
@@ -226,21 +187,11 @@ async function deleteEntries(keys) {
     if (!isIndexedDbAvailable() || keys.length === 0)
         return;
     try {
-        const db = await openDb();
-        await new Promise((resolve) => {
-            try {
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                const store = tx.objectStore(STORE_NAME);
-                for (const key of keys) {
-                    store.delete(key);
-                }
-                tx.oncomplete = () => resolve();
-                tx.onerror = () => resolve();
-                tx.onabort = () => resolve();
+        await connection.run('readwrite', (store, tx) => {
+            for (const key of keys) {
+                store.delete(key);
             }
-            catch (_a) {
-                resolve();
-            }
+            return settled(tx);
         });
     }
     catch (_a) {
@@ -256,41 +207,25 @@ export async function clearCachedTranslations(collectionId) {
     if (!isIndexedDbAvailable())
         return;
     try {
-        const db = await openDb();
         if (!collectionId) {
-            await new Promise((resolve) => {
-                try {
-                    const tx = db.transaction(STORE_NAME, 'readwrite');
-                    tx.objectStore(STORE_NAME).clear();
-                    tx.oncomplete = () => resolve();
-                    tx.onerror = () => resolve();
-                    tx.onabort = () => resolve();
-                }
-                catch (_a) {
-                    resolve();
-                }
+            await connection.run('readwrite', (store, tx) => {
+                store.clear();
+                return settled(tx);
             });
             return;
         }
-        await new Promise((resolve) => {
-            try {
-                const tx = db.transaction(STORE_NAME, 'readwrite');
-                const store = tx.objectStore(STORE_NAME);
-                const request = store.getAllKeys();
-                request.onsuccess = () => {
-                    for (const key of request.result) {
-                        if (key.startsWith(`${collectionId}::`)) {
-                            store.delete(key);
-                        }
+        await connection.run('readwrite', (store) => new Promise((resolve) => {
+            const request = store.getAllKeys();
+            request.onsuccess = () => {
+                for (const key of request.result) {
+                    if (key.startsWith(`${collectionId}::`)) {
+                        store.delete(key);
                     }
-                    resolve();
-                };
-                request.onerror = () => resolve();
-            }
-            catch (_a) {
+                }
                 resolve();
-            }
-        });
+            };
+            request.onerror = () => resolve();
+        }));
     }
     catch (_a) {
         // Ignore deletion failures.
