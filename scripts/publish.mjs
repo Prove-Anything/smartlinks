@@ -30,23 +30,28 @@ const CHANNEL = flag('--channel', process.env.SMARTLINKS_CHANNEL || 'dev')
 const DIR = flag('--dir', 'dist')
 const WATCH = args.includes('--watch')
 
-// Mirror of the server's write allowlist — a bundle is static web assets only. Source maps (.map) are
-// never published: a release is promoted to beta and stable as-is, so a map would serve the app's
-// original source publicly (and maps are most of a bundle's size). Debug in Forge's preview; a
-// Release to dev is a readable, unminified build instead.
-const ALLOWED = new Set(['.js', '.mjs', '.css', '.json', '.wasm', '.html', '.txt',
-  '.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.ico', '.woff', '.woff2', '.ttf', '.otf',
-  // An app's own media: sounds, video, captions, 3D models, a printable guide.
-  '.mp3', '.ogg', '.oga', '.opus', '.wav', '.m4a', '.aac', '.flac', '.weba',
-  '.mp4', '.m4v', '.webm', '.ogv', '.vtt', '.glb', '.gltf', '.pdf'])
+// Every built file is published except two kinds. Source maps (.map): a release is promoted to beta and
+// stable as-is, so a map would serve the app's original source publicly (and maps are most of a bundle's
+// size); debug in Forge's preview, and a Release to dev is a readable, unminified build instead. And the
+// server's block list (prove services/apps/appBucket.js — keep in step): programs and installers, server
+// config, keys. SmartLinks serves web types as themselves and anything else as a download.
+const BLOCKED_EXT = new Set(['.exe', '.msi', '.msix', '.dll', '.com', '.scr', '.bat', '.cmd', '.ps1', '.psm1', '.vbs', '.vbe',
+  '.wsf', '.hta', '.lnk', '.reg', '.cpl', '.jar', '.apk', '.aab', '.ipa', '.dmg', '.pkg', '.deb', '.rpm', '.appimage', '.sh',
+  '.bash', '.php', '.phtml', '.asp', '.aspx', '.jsp', '.cgi', '.pl', '.py', '.pem', '.key', '.p12', '.pfx', '.jks', '.keystore'])
+const BLOCKED_NAMES = new Set(['_headers', '_redirects', '.htaccess', '.htpasswd', 'web.config', '.npmrc', '.yarnrc', '.ds_store'])
 const extOf = (p) => { const i = p.lastIndexOf('.'); return i < 0 ? '' : p.slice(i).toLowerCase() }
+const isBlocked = (rel) => {
+  const base = rel.slice(rel.lastIndexOf('/') + 1).toLowerCase()
+  if (BLOCKED_NAMES.has(base) || BLOCKED_EXT.has(extOf(base))) return true
+  return /^\.env(\.|$)/.test(base) || rel.toLowerCase().split('/').some((seg) => seg === '.git' || seg === '.ssh')
+}
 
 function fail(msg) { console.error(`❌ ${msg}`); process.exit(1) }
 if (!APP_ID) fail('SMARTLINKS_APP_ID is required')
 if (!KEY) fail('SMARTLINKS_DEPLOY_KEY is required')
 
 let skippedMaps = 0
-/** Built files of a type SmartLinks doesn't take — said out loud: an app that loads one would 404. */
+/** Built files SmartLinks never serves (the block list) — said out loud: an app that loads one would 404. */
 let skippedOther = []
 
 function collectFiles(dir) {
@@ -56,7 +61,8 @@ function collectFiles(dir) {
       const full = join(d, e.name)
       if (e.isDirectory()) { walk(full); continue }
       const rel = relative(dir, full).split(sep).join('/') // forward slashes for the bucket
-      if (!ALLOWED.has(extOf(e.name))) { if (extOf(e.name) === '.map') skippedMaps++; else skippedOther.push(rel); continue }
+      if (extOf(e.name) === '.map') { skippedMaps++; continue }
+      if (isBlocked(rel)) { skippedOther.push(rel); continue }
       out[rel] = readFileSync(full)
     }
   }
@@ -183,7 +189,7 @@ async function publishOnce() {
   if (!files['app.manifest.json']) fail(`${DIR}/app.manifest.json not found — is this a built app bundle?`)
   if (skippedMaps) console.log(`   (${skippedMaps} source map${skippedMaps === 1 ? '' : 's'} left out — maps are never published)`)
   if (skippedOther.length) {
-    console.warn(`⚠️  ${skippedOther.length} file${skippedOther.length === 1 ? '' : 's'} left out — SmartLinks doesn't publish this type, so the app can't load ${skippedOther.length === 1 ? 'it' : 'them'}: ${skippedOther.slice(0, 8).join(', ')}${skippedOther.length > 8 ? ', …' : ''}`)
+    console.warn(`⚠️  ${skippedOther.length} file${skippedOther.length === 1 ? '' : 's'} left out — SmartLinks never serves programs, server config or keys, so the app can't load ${skippedOther.length === 1 ? 'it' : 'them'}: ${skippedOther.slice(0, 8).join(', ')}${skippedOther.length > 8 ? ', …' : ''}`)
   }
 
   const t0 = Date.now()
