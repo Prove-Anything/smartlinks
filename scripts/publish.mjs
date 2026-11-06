@@ -35,7 +35,10 @@ const WATCH = args.includes('--watch')
 // original source publicly (and maps are most of a bundle's size). Debug in Forge's preview; a
 // Release to dev is a readable, unminified build instead.
 const ALLOWED = new Set(['.js', '.mjs', '.css', '.json', '.wasm', '.html', '.txt',
-  '.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.ico', '.woff', '.woff2', '.ttf', '.otf'])
+  '.svg', '.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.ico', '.woff', '.woff2', '.ttf', '.otf',
+  // An app's own media: sounds, video, captions, 3D models, a printable guide.
+  '.mp3', '.ogg', '.oga', '.opus', '.wav', '.m4a', '.aac', '.flac', '.weba',
+  '.mp4', '.m4v', '.webm', '.ogv', '.vtt', '.glb', '.gltf', '.pdf'])
 const extOf = (p) => { const i = p.lastIndexOf('.'); return i < 0 ? '' : p.slice(i).toLowerCase() }
 
 function fail(msg) { console.error(`❌ ${msg}`); process.exit(1) }
@@ -43,6 +46,8 @@ if (!APP_ID) fail('SMARTLINKS_APP_ID is required')
 if (!KEY) fail('SMARTLINKS_DEPLOY_KEY is required')
 
 let skippedMaps = 0
+/** Built files of a type SmartLinks doesn't take — said out loud: an app that loads one would 404. */
+let skippedOther = []
 
 function collectFiles(dir) {
   const out = {}
@@ -50,8 +55,8 @@ function collectFiles(dir) {
     for (const e of readdirSync(d, { withFileTypes: true })) {
       const full = join(d, e.name)
       if (e.isDirectory()) { walk(full); continue }
-      if (!ALLOWED.has(extOf(e.name))) { if (extOf(e.name) === '.map') skippedMaps++; continue }
       const rel = relative(dir, full).split(sep).join('/') // forward slashes for the bucket
+      if (!ALLOWED.has(extOf(e.name))) { if (extOf(e.name) === '.map') skippedMaps++; else skippedOther.push(rel); continue }
       out[rel] = readFileSync(full)
     }
   }
@@ -173,9 +178,13 @@ async function publishOnce() {
   if (!stat.isDirectory()) fail(`${DIR} is not a directory`)
 
   skippedMaps = 0
+  skippedOther = []
   const files = collectFiles(DIR)
   if (!files['app.manifest.json']) fail(`${DIR}/app.manifest.json not found — is this a built app bundle?`)
   if (skippedMaps) console.log(`   (${skippedMaps} source map${skippedMaps === 1 ? '' : 's'} left out — maps are never published)`)
+  if (skippedOther.length) {
+    console.warn(`⚠️  ${skippedOther.length} file${skippedOther.length === 1 ? '' : 's'} left out — SmartLinks doesn't publish this type, so the app can't load ${skippedOther.length === 1 ? 'it' : 'them'}: ${skippedOther.slice(0, 8).join(', ')}${skippedOther.length > 8 ? ', …' : ''}`)
+  }
 
   const t0 = Date.now()
   const entries = Object.entries(files)
