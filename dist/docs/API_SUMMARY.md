@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.10  |  Generated: 2026-11-03T16:13:25.707Z
+Version: 2.1.11  |  Generated: 2026-11-05T11:47:28.828Z
 
 This is a concise summary of all available API functions and types.
 
@@ -153,6 +153,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **lots** - Functions for lots operations
 - **navigation** - Functions for navigation operations
 - **order** - Functions for order operations
+- **partner** - Functions for partner operations
 - **products** - Functions for products operations
 - **realtime** - Functions for realtime operations
 - **research** - Functions for research operations
@@ -5730,6 +5731,188 @@ interface CreateClaimSetTagResponse {
   data?: Record<string, unknown>
 }
 ```
+
+**ClaimSetRange** (interface)
+```typescript
+interface ClaimSetRange {
+  id: string
+  claimSetId: string
+  namespace: string
+  name: string
+  notes: string | null
+  startIndex: number
+  endIndex: number
+  quantity: number
+  tagType: ClaimSetTagType
+  fulfilment: 'printer' | 'sidekick'
+  stage: 'minting' | 'minted' | 'sent' | 'received'
+  status: ClaimSetRangeStatus
+  intendedCollectionId: string | null
+  intendedProductId: string | null
+  intendedBatchId: string | null
+  manufacturer: string | null
+  orderRef: string | null
+  counts: { programmed: number; assigned: number; claimed: number }
+  sentAt: string | null
+  receivedAt: string | null
+  createdBy: string | null
+  createdAt: string
+  updatedAt: string
+}
+```
+
+**CreateClaimSetRangeRequest** (interface)
+```typescript
+interface CreateClaimSetRangeRequest {
+  name: string
+  quantity: number
+  intendedCollectionId?: string
+  intendedProductId?: string
+  intendedBatchId?: string
+  fulfilment?: 'printer' | 'sidekick'
+  notes?: string
+  manufacturer?: string
+  orderRef?: string
+}
+```
+
+**UpdateClaimSetRangeRequest** (interface)
+```typescript
+interface UpdateClaimSetRangeRequest {
+  name?: string
+  notes?: string | null
+  manufacturer?: string | null
+  orderRef?: string | null
+  fulfilment?: 'printer' | 'sidekick'
+  stage?: 'minted' | 'sent' | 'received'
+}
+```
+
+**ClaimSetRangeTag** (interface)
+```typescript
+interface ClaimSetRangeTag {
+  code: string
+  printed: string
+  index: number
+  uid: string | null
+  key?: string
+  collectionId: string | null
+  productId: string | null
+  batchId: string | null
+  proofId: string | null
+  programmedAt: string | null
+  scans: number
+}
+```
+
+**ClaimSetRangeTagsPage** (interface)
+```typescript
+interface ClaimSetRangeTagsPage {
+  tags: ClaimSetRangeTag[]
+  next: number | null
+}
+```
+
+**ImportClaimSetRangeUidsRequest** (interface)
+```typescript
+interface ImportClaimSetRangeUidsRequest {
+  csv?: string
+  rows?: Array<Record<string, string | number>>
+  commit?: boolean
+}
+```
+
+**ImportClaimSetRangeUidsResponse** (interface)
+```typescript
+interface ImportClaimSetRangeUidsResponse {
+  summary: { rows: number; ok: number; unchanged: number; problems: number; notInFile: number; committed: boolean }
+  rows: Array<{ line: number; code: string; index: number | null; uid: string; result: ClaimSetImportResult; message?: string }>
+  range: ClaimSetRange
+}
+```
+
+**AssignClaimSetRangeRequest** (interface)
+```typescript
+interface AssignClaimSetRangeRequest {
+  collectionId?: string
+  productId?: string
+  batchId?: string
+  start?: number
+  end?: number
+  clear?: boolean
+  data?: Record<string, unknown>
+}
+```
+
+**AssignClaimSetRangeResponse** (interface)
+```typescript
+interface AssignClaimSetRangeResponse {
+  changed: number
+  skipped: Array<{ code: string; index: number; reason: 'other_range' | 'has_proof' | 'assigned_elsewhere'; collectionId?: string }>
+  range: ClaimSetRange
+}
+```
+
+**ClaimSetRangeFile** (interface)
+```typescript
+interface ClaimSetRangeFile {
+  filename: string
+  contentType: string
+  csv?: string
+  base64?: string
+  markdown?: string
+}
+```
+
+**Partner** (interface)
+```typescript
+interface Partner {
+  id: string
+  name: string
+  status: 'active' | 'suspended'
+  tapDomains: string[]
+  features: Record<string, boolean>
+  role?: 'owner' | 'admin' | 'assigner'
+  members?: Array<{ userId: string; role: 'owner' | 'admin' | 'assigner'; grantedBy: string | null; grantedAt: string }>
+  createdAt: string
+  updatedAt: string
+}
+```
+
+**PartnerClaimSet** (interface)
+```typescript
+interface PartnerClaimSet {
+  id: string
+  namespace: string
+  name: string | null
+  tagType: ClaimSetTagType
+  tapDomain: string
+  owner: { type: 'platform' | 'partner' | 'collection' | 'user'; id: string | null }
+  codes: number
+  deleted: boolean
+  createdAt: string | null
+}
+```
+
+**CreatePartnerClaimSetRequest** (interface)
+```typescript
+interface CreatePartnerClaimSetRequest {
+  name: string
+  tagType: ClaimSetTagType
+  tapDomain?: string
+}
+```
+
+**ClaimSetScope** (type)
+```typescript
+type ClaimSetScope = { collectionId: string }
+```
+
+**ClaimSetTagType** = `'ntag424' | 'ntag21x' | 'qr'`
+
+**ClaimSetRangeStatus** = `'minting' | 'minted' | 'sent' | 'received' | 'assigned'`
+
+**ClaimSetImportResult** = ``
 
 ### collection
 
@@ -12119,6 +12302,46 @@ Assign claims to codes or ranges within a collection.
 **updateClaimData**(collectionId: string, data: UpdateClaimDataRequest) → `Promise<any>`
 Update claim data for a claim set (collection-scoped).
 
+### claimSet.ranges
+
+**list**(scope: ClaimSetScope, claimSetId: string) → `Promise<ClaimSetRange[]>`
+The ranges in a set, lowest index first.
+
+**create**(scope: ClaimSetScope, claimSetId: string, params: CreateClaimSetRangeRequest) → `Promise<ClaimSetRange>`
+Reserve the set's next indexes and mint a code (and, for NTAG 424, a key) for each.
+
+**get**(scope: ClaimSetScope, claimSetId: string, rangeId: string) → `Promise<ClaimSetRange>`
+One range, with its counts refreshed.
+
+**update**(scope: ClaimSetScope, claimSetId: string, rangeId: string, params: UpdateClaimSetRangeRequest) → `Promise<ClaimSetRange>`
+Name, notes, order details, or a stage move (sent to the printer, received).
+
+**resume**(scope: ClaimSetScope, claimSetId: string, rangeId: string) → `Promise<ClaimSetRange>`
+Finish minting a range that was interrupted.
+
+**tags**(scope: ClaimSetScope, claimSetId: string, rangeId: string,
+      options: { from?: number; limit?: number; keys?: boolean } = {}) → `Promise<ClaimSetRangeTagsPage>`
+The range's tags in index order, a page at a time (keys: owners/admins only).
+
+**next**(scope: ClaimSetScope, claimSetId: string, rangeId: string) → `Promise<ClaimSetRangeNextTag>`
+The next tag to program on a phone (lowest index without a chip), with its URL and key.
+
+**recordTag**(scope: ClaimSetScope, claimSetId: string, rangeId: string, code: string,
+      params: { uid: string; data?: Record<string, unknown> }) → `Promise<`
+Record the chip a phone just programmed with this code.
+
+**exportFile**(scope: ClaimSetScope, claimSetId: string, rangeId: string) → `Promise<ClaimSetRangeFile>`
+The printer file (CSV text in `csv`). Carries the tags' keys: don't keep it around.
+
+**instructions**(scope: ClaimSetScope, claimSetId: string, rangeId: string, format: 'pdf' | 'md' = 'pdf') → `Promise<ClaimSetRangeFile>`
+The manufacturer's instruction sheet: PDF (base64) or Markdown.
+
+**importUids**(scope: ClaimSetScope, claimSetId: string, rangeId: string, params: ImportClaimSetRangeUidsRequest) → `Promise<ImportClaimSetRangeUidsResponse>`
+The manufacturer's file back: check it (commit false), then write the chip UIDs (commit true).
+
+**assign**(scope: ClaimSetScope, claimSetId: string, rangeId: string, params: AssignClaimSetRangeRequest) → `Promise<AssignClaimSetRangeResponse>`
+Point the range (or from–to within it) at a collection / product / batch, or clear it.
+
 ### collection
 
 **get**(collectionId: string, admin?: boolean) → `Promise<CollectionResponse>`
@@ -13029,6 +13252,23 @@ Get individual order items for a specific product. Returns all matching items wi
     value: string,
     params?: GetOrderIdsParams) → `Promise<GetOrderIdsResponse>`
 Get unique order IDs containing items for a specific product. Lightweight query that only returns order IDs, not full order objects. ```typescript // Get order IDs for a product const productOrders = await order.getOrderIdsByAttribute( 'coll_123', 'productId', 'prod_789', { limit: 500 } ) ```
+
+### partner
+
+**list**() → `Promise<Partner[]>`
+The partners you belong to, with your role in each. Empty for everyone else.
+
+**get**(partnerId: string) → `Promise<Partner>`
+One partner (owners also see its members).
+
+**claimSets**(partnerId: string) → `Promise<PartnerClaimSet[]>`
+The partner's claim sets.
+
+**getClaimSet**(partnerId: string, claimSetId: string) → `Promise<PartnerClaimSet>`
+One of the partner's claim sets.
+
+**createClaimSet**(partnerId: string, params: CreatePartnerClaimSetRequest) → `Promise<PartnerClaimSet>`
+A new claim set for the partner, on one of its tap domains (owners and admins).
 
 ### podcast
 

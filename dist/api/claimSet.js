@@ -1,4 +1,4 @@
-import { request, post, put, del } from "../http.js";
+import { request, post, put, patch, del } from "../http.js";
 /**
  * Returns the base path for claim set endpoints.
  * When collectionId is provided, routes to the collection-scoped admin API.
@@ -8,6 +8,13 @@ function base(collectionId) {
     return collectionId
         ? `/admin/collection/${encodeURIComponent(collectionId)}/claimSet`
         : `/admin/claimSet`;
+}
+/** The range API's base for a scope: a collection's own sets, or a partner's sets. */
+function rangesBase(scope, claimSetId) {
+    const root = 'partnerId' in scope
+        ? `/admin/partner/${encodeURIComponent(scope.partnerId)}/claimSet`
+        : base(scope.collectionId);
+    return `${root}/${encodeURIComponent(claimSetId)}/ranges`;
 }
 export var claimSet;
 (function (claimSet) {
@@ -152,4 +159,79 @@ export var claimSet;
         return post(`${base(collectionId)}/updateClaimData`, data);
     }
     claimSet.updateClaimData = updateClaimData;
+    // ─── Ranges: mint, print, receive, assign ──────────────────────────────────────────────────────
+    // A range is a named, contiguous block of tags in one claim set. Scope: { collectionId } for a
+    // collection's own sets, { partnerId } for a partner's sets (see partner.*). Owners and admins mint,
+    // export, import and program; assigners assign. Responses are never cached (they carry keys).
+    let ranges;
+    (function (ranges) {
+        /** The ranges in a set, lowest index first. */
+        async function list(scope, claimSetId) {
+            return request(rangesBase(scope, claimSetId));
+        }
+        ranges.list = list;
+        /** Reserve the set's next indexes and mint a code (and, for NTAG 424, a key) for each. */
+        async function create(scope, claimSetId, params) {
+            return post(rangesBase(scope, claimSetId), params);
+        }
+        ranges.create = create;
+        /** One range, with its counts refreshed. */
+        async function get(scope, claimSetId, rangeId) {
+            return request(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}`);
+        }
+        ranges.get = get;
+        /** Name, notes, order details, or a stage move (sent to the printer, received). */
+        async function update(scope, claimSetId, rangeId, params) {
+            return patch(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}`, params);
+        }
+        ranges.update = update;
+        /** Finish minting a range that was interrupted. */
+        async function resume(scope, claimSetId, rangeId) {
+            return post(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/resume`, {});
+        }
+        ranges.resume = resume;
+        /** The range's tags in index order, a page at a time (keys: owners/admins only). */
+        async function tags(scope, claimSetId, rangeId, options = {}) {
+            const q = new URLSearchParams();
+            if (options.from !== undefined)
+                q.set('from', String(options.from));
+            if (options.limit !== undefined)
+                q.set('limit', String(options.limit));
+            if (options.keys)
+                q.set('keys', '1');
+            const qs = q.toString();
+            return request(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/tags${qs ? `?${qs}` : ''}`);
+        }
+        ranges.tags = tags;
+        /** The next tag to program on a phone (lowest index without a chip), with its URL and key. */
+        async function next(scope, claimSetId, rangeId) {
+            return request(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/next`);
+        }
+        ranges.next = next;
+        /** Record the chip a phone just programmed with this code. */
+        async function recordTag(scope, claimSetId, rangeId, code, params) {
+            return put(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/tags/${encodeURIComponent(code)}`, params);
+        }
+        ranges.recordTag = recordTag;
+        /** The printer file (CSV text in `csv`). Carries the tags' keys: don't keep it around. */
+        async function exportFile(scope, claimSetId, rangeId) {
+            return request(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/export?as=json`);
+        }
+        ranges.exportFile = exportFile;
+        /** The manufacturer's instruction sheet: PDF (base64) or Markdown. */
+        async function instructions(scope, claimSetId, rangeId, format = 'pdf') {
+            return request(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/instructions?format=${format}&as=json`);
+        }
+        ranges.instructions = instructions;
+        /** The manufacturer's file back: check it (commit false), then write the chip UIDs (commit true). */
+        async function importUids(scope, claimSetId, rangeId, params) {
+            return post(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/import`, params);
+        }
+        ranges.importUids = importUids;
+        /** Point the range (or from–to within it) at a collection / product / batch, or clear it. */
+        async function assign(scope, claimSetId, rangeId, params) {
+            return post(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/assign`, params);
+        }
+        ranges.assign = assign;
+    })(ranges = claimSet.ranges || (claimSet.ranges = {}));
 })(claimSet || (claimSet = {}));

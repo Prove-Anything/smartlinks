@@ -64,6 +64,8 @@ tags:
     description: blocks API
   - name: broadcasts
     description: Broadcast messaging campaigns.
+  - name: ranges
+    description: ranges API
   - name: collection
     description: Collection (tenant) configuration and resources.
   - name: comms
@@ -100,6 +102,8 @@ tags:
     description: NFC tag encoding and lookup.
   - name: order
     description: Order records and line items.
+  - name: partner
+    description: partner API
   - name: product
     description: Single product operations.
   - name: products
@@ -8994,6 +8998,149 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TransactionalSendRequest"
+  /admin/partner:
+    get:
+      tags:
+        - partner
+      summary: The partners you belong to, with your role in each.
+      operationId: partner_list
+      security:
+        - bearerAuth: []
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Partner"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/partner/{partnerId}:
+    get:
+      tags:
+        - partner
+      summary: One partner (owners also see its members).
+      operationId: partner_get
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Partner"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/partner/{partnerId}/claimSet:
+    get:
+      tags:
+        - partner
+      summary: "The partner's claim sets."
+      operationId: partner_claimSets
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PartnerClaimSet"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    post:
+      tags:
+        - partner
+      summary: A new claim set for the partner, on one of its tap domains (owners and admins).
+      operationId: partner_createClaimSet
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerClaimSet"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePartnerClaimSetRequest"
+  /admin/partner/{partnerId}/claimSet/{claimSetId}:
+    get:
+      tags:
+        - partner
+      summary: "One of the partner's claim sets."
+      operationId: partner_getClaimSet
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: claimSetId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PartnerClaimSet"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /authKit/{authKitId}/config:
     get:
       tags:
@@ -14728,6 +14875,278 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Booking"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /{rangeId}:
+    get:
+      tags:
+        - ranges
+      summary: One range, with its counts refreshed.
+      operationId: ranges_get
+      security: []
+      parameters:
+        - name: rangeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimSetRange"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    patch:
+      tags:
+        - ranges
+      summary: Name, notes, order details, or a stage move (sent to the printer, received).
+      operationId: ranges_update
+      security: []
+      parameters:
+        - name: rangeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimSetRange"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateClaimSetRangeRequest"
+  /{rangeId}/assign:
+    post:
+      tags:
+        - ranges
+      summary: Point the range (or from–to within it) at a collection / product / batch, or clear it.
+      operationId: ranges_assign
+      security: []
+      parameters:
+        - name: rangeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AssignClaimSetRangeResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssignClaimSetRangeRequest"
+  /{rangeId}/export:
+    get:
+      tags:
+        - ranges
+      summary: "The printer file (CSV text in `csv`)."
+      operationId: ranges_exportFile
+      security: []
+      parameters:
+        - name: rangeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimSetRangeFile"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /{rangeId}/import:
+    post:
+      tags:
+        - ranges
+      summary: "The manufacturer's file back: check it (commit false), then write the chip UIDs (commit true)."
+      operationId: ranges_importUids
+      security: []
+      parameters:
+        - name: rangeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportClaimSetRangeUidsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ImportClaimSetRangeUidsRequest"
+  /{rangeId}/instructions:
+    get:
+      tags:
+        - ranges
+      summary: "The manufacturer's instruction sheet: PDF (base64) or Markdown."
+      operationId: ranges_instructions
+      security: []
+      parameters:
+        - name: rangeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimSetRangeFile"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /{rangeId}/next:
+    get:
+      tags:
+        - ranges
+      summary: The next tag to program on a phone (lowest index without a chip), with its URL and key.
+      operationId: ranges_next
+      security: []
+      parameters:
+        - name: rangeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimSetRangeNextTag"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /{rangeId}/resume:
+    post:
+      tags:
+        - ranges
+      summary: Finish minting a range that was interrupted.
+      operationId: ranges_resume
+      security: []
+      parameters:
+        - name: rangeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimSetRange"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimSetScope"
+  /{rangeId}/tags:
+    get:
+      tags:
+        - ranges
+      summary: "The range's tags in index order, a page at a time (keys: owners/admins only)."
+      operationId: ranges_tags
+      security: []
+      parameters:
+        - name: rangeId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: keys
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimSetRangeTagsPage"
         400:
           description: Bad request
         401:
@@ -25352,6 +25771,401 @@ components:
         - id
         - claimSetId
         - createdAt
+    ClaimSetRange:
+      type: object
+      properties:
+        id:
+          type: string
+        claimSetId:
+          type: string
+        namespace:
+          type: string
+        name:
+          type: string
+        notes:
+          type: string
+        startIndex:
+          type: number
+        endIndex:
+          type: number
+        quantity:
+          type: number
+        tagType:
+          $ref: "#/components/schemas/ClaimSetTagType"
+        fulfilment:
+          type: string
+          enum:
+            - printer
+            - sidekick
+        stage:
+          type: string
+          enum:
+            - minting
+            - minted
+            - sent
+            - received
+        status:
+          $ref: "#/components/schemas/ClaimSetRangeStatus"
+        intendedCollectionId:
+          type: string
+        intendedProductId:
+          type: string
+        intendedBatchId:
+          type: string
+        manufacturer:
+          type: string
+        orderRef:
+          type: string
+        counts:
+          type: object
+          additionalProperties: true
+        sentAt:
+          type: string
+        receivedAt:
+          type: string
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - claimSetId
+        - namespace
+        - name
+        - notes
+        - startIndex
+        - endIndex
+        - quantity
+        - tagType
+        - fulfilment
+        - stage
+        - status
+        - intendedCollectionId
+        - intendedProductId
+        - intendedBatchId
+        - manufacturer
+        - orderRef
+        - counts
+        - sentAt
+        - receivedAt
+        - createdBy
+        - createdAt
+        - updatedAt
+    CreateClaimSetRangeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        quantity:
+          type: number
+        intendedCollectionId:
+          type: string
+        intendedProductId:
+          type: string
+        intendedBatchId:
+          type: string
+        fulfilment:
+          type: string
+          enum:
+            - printer
+            - sidekick
+        notes:
+          type: string
+        manufacturer:
+          type: string
+        orderRef:
+          type: string
+      required:
+        - name
+        - quantity
+    UpdateClaimSetRangeRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        notes:
+          type: string
+        manufacturer:
+          type: string
+        orderRef:
+          type: string
+        fulfilment:
+          type: string
+          enum:
+            - printer
+            - sidekick
+        stage:
+          type: string
+          enum:
+            - minted
+            - sent
+            - received
+    ClaimSetRangeTag:
+      type: object
+      properties:
+        code:
+          type: string
+        printed:
+          type: string
+        index:
+          type: number
+        uid:
+          type: string
+        key:
+          type: string
+        collectionId:
+          type: string
+        productId:
+          type: string
+        batchId:
+          type: string
+        proofId:
+          type: string
+        programmedAt:
+          type: string
+        scans:
+          type: number
+      required:
+        - code
+        - printed
+        - index
+        - uid
+        - collectionId
+        - productId
+        - batchId
+        - proofId
+        - programmedAt
+        - scans
+    ClaimSetRangeTagsPage:
+      type: object
+      properties:
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/ClaimSetRangeTag"
+        next:
+          type: number
+      required:
+        - tags
+        - next
+    ClaimSetRangeNextTag:
+      type: object
+      properties:
+        url:
+          type: string
+        piccOffset:
+          type: number
+        mirrorOffset:
+          type: number
+        remaining:
+          type: number
+      required:
+        - url
+        - remaining
+    ImportClaimSetRangeUidsRequest:
+      type: object
+      properties:
+        csv:
+          type: string
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: object
+              additionalProperties: true
+        commit:
+          type: boolean
+    ImportClaimSetRangeUidsResponse:
+      type: object
+      properties:
+        summary:
+          type: object
+          additionalProperties: true
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        range:
+          $ref: "#/components/schemas/ClaimSetRange"
+      required:
+        - summary
+        - rows
+        - range
+    AssignClaimSetRangeRequest:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        productId:
+          type: string
+        batchId:
+          type: string
+        start:
+          type: number
+        end:
+          type: number
+        clear:
+          type: boolean
+        data:
+          type: object
+          additionalProperties: true
+    AssignClaimSetRangeResponse:
+      type: object
+      properties:
+        changed:
+          type: number
+        skipped:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        range:
+          $ref: "#/components/schemas/ClaimSetRange"
+      required:
+        - changed
+        - skipped
+        - range
+    ClaimSetRangeFile:
+      type: object
+      properties:
+        filename:
+          type: string
+        contentType:
+          type: string
+        csv:
+          type: string
+        base64:
+          type: string
+        markdown:
+          type: string
+      required:
+        - filename
+        - contentType
+    Partner:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum:
+            - active
+            - suspended
+        tapDomains:
+          type: array
+          items:
+            type: string
+        features:
+          type: object
+          additionalProperties:
+            type: boolean
+        role:
+          type: string
+          enum:
+            - owner
+            - admin
+            - assigner
+        members:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - name
+        - status
+        - tapDomains
+        - features
+        - createdAt
+        - updatedAt
+    PartnerClaimSet:
+      type: object
+      properties:
+        id:
+          type: string
+        namespace:
+          type: string
+        name:
+          type: string
+        tagType:
+          $ref: "#/components/schemas/ClaimSetTagType"
+        tapDomain:
+          type: string
+        owner:
+          type: object
+          additionalProperties: true
+        codes:
+          type: number
+        deleted:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - namespace
+        - name
+        - tagType
+        - tapDomain
+        - owner
+        - codes
+        - deleted
+        - createdAt
+    CreatePartnerClaimSetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        tagType:
+          $ref: "#/components/schemas/ClaimSetTagType"
+        tapDomain:
+          type: string
+      required:
+        - name
+        - tagType
+    ClaimSetScope:
+      type: object
+      properties:
+        collectionId:
+          type: string
+      required:
+        - collectionId
+    ClaimSetTagType:
+      type: string
+      enum:
+        - ntag424
+        - ntag21x
+        - qr
+    ClaimSetRangeStatus:
+      type: string
+      enum:
+        - minting
+        - minted
+        - sent
+        - received
+        - assigned
+    ClaimSetImportResult:
+      type: string
+      enum:
+        - ok
+        - unchanged
+        - unknown_code
+        - duplicate_row
+        - index_mismatch
+        - no_uid
+        - bad_uid
+        - duplicate_uid
+        - uid_in_use
+        - uid_conflict
     Collection:
       type: object
       properties:

@@ -219,6 +219,9 @@ function shouldSkipCache(path) {
     // Bookings change by the second (places left, busy times, a booking's status) — never serve them stale.
     if (/\/app\/[^/]+\/bookings(\/|\?|$)/i.test(path))
         return true;
+    // Tag ranges change as tags are programmed, and carry the tags' keys — never cached, never persisted.
+    if (/\/claimSet\/[^/]+\/ranges(\/|\?|$)/i.test(path))
+        return true;
     return false;
 }
 /** Evict the oldest (LRU) entry when the cache is at capacity. */

@@ -1,4 +1,4 @@
-import { UpdateClaimDataRequest, AssignClaimsRequest, CreateClaimSetTagRequest, CreateClaimSetTagResponse, CreateClaimSetRequest, ImportClaimSetTagsRequest, ImportClaimSetTagsResponse } from "../types/index.js";
+import { ClaimSetScope, ClaimSetRange, CreateClaimSetRangeRequest, UpdateClaimSetRangeRequest, ClaimSetRangeTagsPage, ClaimSetRangeTag, ClaimSetRangeNextTag, ImportClaimSetRangeUidsRequest, ImportClaimSetRangeUidsResponse, AssignClaimSetRangeRequest, AssignClaimSetRangeResponse, ClaimSetRangeFile, UpdateClaimDataRequest, AssignClaimsRequest, CreateClaimSetTagRequest, CreateClaimSetTagResponse, CreateClaimSetRequest, ImportClaimSetTagsRequest, ImportClaimSetTagsResponse } from "../types/index.js";
 export declare namespace claimSet {
     /**
      * Get all claim sets.
@@ -95,4 +95,40 @@ export declare namespace claimSet {
      * @param data – Claim data to update
      */
     function updateClaimData(collectionId: string, data: UpdateClaimDataRequest): Promise<any>;
+    namespace ranges {
+        /** The ranges in a set, lowest index first. */
+        function list(scope: ClaimSetScope, claimSetId: string): Promise<ClaimSetRange[]>;
+        /** Reserve the set's next indexes and mint a code (and, for NTAG 424, a key) for each. */
+        function create(scope: ClaimSetScope, claimSetId: string, params: CreateClaimSetRangeRequest): Promise<ClaimSetRange>;
+        /** One range, with its counts refreshed. */
+        function get(scope: ClaimSetScope, claimSetId: string, rangeId: string): Promise<ClaimSetRange>;
+        /** Name, notes, order details, or a stage move (sent to the printer, received). */
+        function update(scope: ClaimSetScope, claimSetId: string, rangeId: string, params: UpdateClaimSetRangeRequest): Promise<ClaimSetRange>;
+        /** Finish minting a range that was interrupted. */
+        function resume(scope: ClaimSetScope, claimSetId: string, rangeId: string): Promise<ClaimSetRange>;
+        /** The range's tags in index order, a page at a time (keys: owners/admins only). */
+        function tags(scope: ClaimSetScope, claimSetId: string, rangeId: string, options?: {
+            from?: number;
+            limit?: number;
+            keys?: boolean;
+        }): Promise<ClaimSetRangeTagsPage>;
+        /** The next tag to program on a phone (lowest index without a chip), with its URL and key. */
+        function next(scope: ClaimSetScope, claimSetId: string, rangeId: string): Promise<ClaimSetRangeNextTag>;
+        /** Record the chip a phone just programmed with this code. */
+        function recordTag(scope: ClaimSetScope, claimSetId: string, rangeId: string, code: string, params: {
+            uid: string;
+            data?: Record<string, unknown>;
+        }): Promise<{
+            tag: ClaimSetRangeTag;
+            range: ClaimSetRange;
+        }>;
+        /** The printer file (CSV text in `csv`). Carries the tags' keys: don't keep it around. */
+        function exportFile(scope: ClaimSetScope, claimSetId: string, rangeId: string): Promise<ClaimSetRangeFile>;
+        /** The manufacturer's instruction sheet: PDF (base64) or Markdown. */
+        function instructions(scope: ClaimSetScope, claimSetId: string, rangeId: string, format?: 'pdf' | 'md'): Promise<ClaimSetRangeFile>;
+        /** The manufacturer's file back: check it (commit false), then write the chip UIDs (commit true). */
+        function importUids(scope: ClaimSetScope, claimSetId: string, rangeId: string, params: ImportClaimSetRangeUidsRequest): Promise<ImportClaimSetRangeUidsResponse>;
+        /** Point the range (or from–to within it) at a collection / product / batch, or clear it. */
+        function assign(scope: ClaimSetScope, claimSetId: string, rangeId: string, params: AssignClaimSetRangeRequest): Promise<AssignClaimSetRangeResponse>;
+    }
 }

@@ -122,3 +122,188 @@ export interface CreateClaimSetTagResponse {
     /** Arbitrary extra fields */
     data?: Record<string, unknown>;
 }
+/** Who a range call acts as: a collection on its own sets, or a partner on the partner's sets. */
+export type ClaimSetScope = {
+    collectionId: string;
+} | {
+    partnerId: string;
+};
+export type ClaimSetTagType = 'ntag424' | 'ntag21x' | 'qr';
+export type ClaimSetRangeStatus = 'minting' | 'minted' | 'sent' | 'received' | 'assigned';
+export interface ClaimSetRange {
+    id: string;
+    claimSetId: string;
+    namespace: string;
+    name: string;
+    notes: string | null;
+    startIndex: number;
+    endIndex: number;
+    quantity: number;
+    tagType: ClaimSetTagType;
+    fulfilment: 'printer' | 'sidekick';
+    /** The stored step: minting | minted | sent | received */
+    stage: 'minting' | 'minted' | 'sent' | 'received';
+    /** What to show: the stage, or 'assigned' once every tag is assigned */
+    status: ClaimSetRangeStatus;
+    intendedCollectionId: string | null;
+    intendedProductId: string | null;
+    intendedBatchId: string | null;
+    manufacturer: string | null;
+    orderRef: string | null;
+    counts: {
+        programmed: number;
+        assigned: number;
+        claimed: number;
+    };
+    sentAt: string | null;
+    receivedAt: string | null;
+    createdBy: string | null;
+    createdAt: string;
+    updatedAt: string;
+}
+export interface CreateClaimSetRangeRequest {
+    name: string;
+    /** 1 to 10,000 */
+    quantity: number;
+    /** Pre-assign every tag at mint time (you must administer the collection) */
+    intendedCollectionId?: string;
+    intendedProductId?: string;
+    intendedBatchId?: string;
+    fulfilment?: 'printer' | 'sidekick';
+    notes?: string;
+    manufacturer?: string;
+    orderRef?: string;
+}
+export interface UpdateClaimSetRangeRequest {
+    name?: string;
+    notes?: string | null;
+    manufacturer?: string | null;
+    orderRef?: string | null;
+    fulfilment?: 'printer' | 'sidekick';
+    stage?: 'minted' | 'sent' | 'received';
+}
+export interface ClaimSetRangeTag {
+    code: string;
+    /** The printed code: 3-character set id + code */
+    printed: string;
+    index: number;
+    uid: string | null;
+    /** Only for owners/admins, and only when asked for */
+    key?: string;
+    collectionId: string | null;
+    productId: string | null;
+    batchId: string | null;
+    proofId: string | null;
+    programmedAt: string | null;
+    scans: number;
+}
+export interface ClaimSetRangeTagsPage {
+    tags: ClaimSetRangeTag[];
+    /** The index to pass as `from` for the next page, or null */
+    next: number | null;
+}
+/** The next tag to program on a phone, with what to write. */
+export interface ClaimSetRangeNextTag extends ClaimSetRangeTag {
+    url: string;
+    piccOffset?: number;
+    mirrorOffset?: number;
+    remaining: number;
+}
+export type ClaimSetImportResult = 'ok' | 'unchanged' | 'unknown_code' | 'duplicate_row' | 'index_mismatch' | 'no_uid' | 'bad_uid' | 'duplicate_uid' | 'uid_in_use' | 'uid_conflict';
+export interface ImportClaimSetRangeUidsRequest {
+    /** The manufacturer's file as CSV text (the file we sent, with UID filled in) */
+    csv?: string;
+    /** …or already-parsed rows: [{ Code, Index?, UID }] */
+    rows?: Array<Record<string, string | number>>;
+    /** false (default) only checks; true writes the UIDs that matched */
+    commit?: boolean;
+}
+export interface ImportClaimSetRangeUidsResponse {
+    summary: {
+        rows: number;
+        ok: number;
+        unchanged: number;
+        problems: number;
+        notInFile: number;
+        committed: boolean;
+    };
+    rows: Array<{
+        line: number;
+        code: string;
+        index: number | null;
+        uid: string;
+        result: ClaimSetImportResult;
+        message?: string;
+    }>;
+    range: ClaimSetRange;
+}
+export interface AssignClaimSetRangeRequest {
+    /** Required unless clear */
+    collectionId?: string;
+    productId?: string;
+    batchId?: string;
+    /** Default: the whole range */
+    start?: number;
+    end?: number;
+    /** Unassign instead (tags bound to a proof are never cleared) */
+    clear?: boolean;
+    data?: Record<string, unknown>;
+}
+export interface AssignClaimSetRangeResponse {
+    changed: number;
+    skipped: Array<{
+        code: string;
+        index: number;
+        reason: 'other_range' | 'has_proof' | 'assigned_elsewhere';
+        collectionId?: string;
+    }>;
+    range: ClaimSetRange;
+}
+export interface ClaimSetRangeFile {
+    filename: string;
+    contentType: string;
+    /** export: the printer file */
+    csv?: string;
+    /** instructions as PDF: the file, base64 */
+    base64?: string;
+    /** instructions as Markdown */
+    markdown?: string;
+}
+export interface Partner {
+    id: string;
+    name: string;
+    status: 'active' | 'suspended';
+    tapDomains: string[];
+    features: Record<string, boolean>;
+    /** Your role (from partner.list / partner.get) */
+    role?: 'owner' | 'admin' | 'assigner';
+    /** Owners only */
+    members?: Array<{
+        userId: string;
+        role: 'owner' | 'admin' | 'assigner';
+        grantedBy: string | null;
+        grantedAt: string;
+    }>;
+    createdAt: string;
+    updatedAt: string;
+}
+export interface PartnerClaimSet {
+    id: string;
+    namespace: string;
+    name: string | null;
+    tagType: ClaimSetTagType;
+    tapDomain: string;
+    owner: {
+        type: 'platform' | 'partner' | 'collection' | 'user';
+        id: string | null;
+    };
+    codes: number;
+    deleted: boolean;
+    createdAt: string | null;
+}
+export interface CreatePartnerClaimSetRequest {
+    name: string;
+    tagType: ClaimSetTagType;
+    /** One of the partner's tap domains; default smartlinks.app */
+    tapDomain?: string;
+}

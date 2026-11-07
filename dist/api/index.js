@@ -12,6 +12,7 @@ export { auth } from "./auth.js";
 export { form } from "./form.js";
 export { authKit } from "./authKit.js";
 export { claimSet } from "./claimSet.js";
+export { partner } from "./partner.js";
 export { crate } from "./crate.js";
 export { batch } from "./batch.js";
 export { variant } from "./variant.js";
