@@ -25,6 +25,10 @@ export interface NfcValidateRequest {
   codeId: string
   /* Optional mirror params to validate and NFC*/
   mirror?: string
+  /** NTAG 424 DNA: the encrypted PICC block from the tag's URL (`?p=`, 32 hex) */
+  d?: string
+  /** NTAG 424 DNA: the tag's SDM MAC from its URL (`&c=`, 16 hex). Verified by the server when present; always forward it. */
+  c?: string
   /* Optional user ID for context */
   userId?: string
 }
