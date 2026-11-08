@@ -1,5 +1,5 @@
 import { request, post } from "../http";
-import { Partner, PartnerClaimSet, CreatePartnerClaimSetRequest } from "../types";
+import { Partner, PartnerClaimSet, CreatePartnerClaimSetRequest, PartnerTagHit } from "../types";
 
 /**
  * Partners: organisations above collections (FanConnect, Zenith Coins, …) that own NFC claim sets and
@@ -31,5 +31,13 @@ export namespace partner {
   /** A new claim set for the partner, on one of its tap domains (owners and admins). */
   export async function createClaimSet(partnerId: string, params: CreatePartnerClaimSetRequest): Promise<PartnerClaimSet> {
     return post<PartnerClaimSet>(`/admin/partner/${encodeURIComponent(partnerId)}/claimSet`, params)
+  }
+
+  /** Find a tag across the partner's sets by its chip UID (8 or 14 hex) or its code (printed or bare). Never returns keys. */
+  export async function lookupTags(partnerId: string, query: { uid?: string; code?: string }): Promise<PartnerTagHit[]> {
+    const q = new URLSearchParams()
+    if (query.uid) q.set('uid', query.uid)
+    if (query.code) q.set('code', query.code)
+    return request<PartnerTagHit[]>(`/admin/partner/${encodeURIComponent(partnerId)}/tags/lookup?${q}`)
   }
 }

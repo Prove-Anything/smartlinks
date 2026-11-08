@@ -299,6 +299,15 @@ export interface PartnerClaimSet {
   createdAt: string | null
 }
 
+/** One hit from partner.lookupTags */
+export interface PartnerTagHit {
+  namespace: string
+  claimSetId: string
+  set: PartnerClaimSet | null
+  tag: ClaimSetRangeTag & { url: string | null }
+  range: ClaimSetRange | null
+}
+
 export interface CreatePartnerClaimSetRequest {
   name: string
   tagType: ClaimSetTagType

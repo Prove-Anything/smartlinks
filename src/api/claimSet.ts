@@ -248,7 +248,7 @@ export namespace claimSet {
     /** Record the chip a phone just programmed with this code. */
     export async function recordTag(
       scope: ClaimSetScope, claimSetId: string, rangeId: string, code: string,
-      params: { uid: string; data?: Record<string, unknown> }
+      params: { uid: string; data?: Record<string, unknown>; /** A plain (NTAG 21x) tag's write password, kept with the tag */ password?: string }
     ): Promise<{ tag: ClaimSetRangeTag; range: ClaimSetRange }> {
       return put<{ tag: ClaimSetRangeTag; range: ClaimSetRange }>(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/tags/${encodeURIComponent(code)}`, params)
     }

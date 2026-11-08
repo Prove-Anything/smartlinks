@@ -51,7 +51,9 @@ await claimSet.ranges.assign(scope, set.id, range.id, { collectionId: 'reading-f
 ```
 
 **Programming on a phone instead of a manufacturer** (Sidekick): `ranges.next()` gives the lowest
-tag without a chip, with its URL and key; write it, then `ranges.recordTag(scope, set.id, range.id, code, { uid })`.
+tag without a chip, with its URL and key; write it, then `ranges.recordTag(scope, set.id, range.id, code, { uid })` (add `password` for a plain tag's write password).
+
+To find where a chip or code went, `partner.lookupTags(partner.id, { uid })` or `{ code }` searches every set the partner owns and returns each hit's set, tag and range, never a key.
 
 ## The printer file
 
