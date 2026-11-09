@@ -118,6 +118,7 @@ mapped with the flow's field mappings (or handed to a connector's `serialize`):
 
 ```jsonc
 {
+  "specVersion": 1,                            // bumped only when a consumer could break
   "id": "0b2b…",                               // the event's id — stable across retries; use it as the destination's idempotency / transaction id
   "type": "interaction.submitted:quiz-1",
   "entityType": "interaction", "entityId": "0b2b…",
@@ -126,12 +127,14 @@ mapped with the flow's field mappings (or handed to a connector's `serialize`):
   "identity": {
     "contactId": "…", "userId": "…",
     "externalIds": { "acme-loyalty": "M-9", "crm": "C-1" },     // ids other systems know this person by
+    "anonymousId": "v-77", "sessionId": "s-1",                  // the visitor / device and session, before anyone signed in (every policy)
     "emailHash": "…", "phoneHash": "…", "hashAlgorithm": "hmac-sha256"   // policy 'hashed' (default)
     // "email", "phone": only under policy 'raw'
   },
   "identityPolicy": "hashed",
   "product": { "id": "P1", "name": "Widget", "sku": "W-1", "gtin": "0500…", "variantId": null, "batchId": null },
   "proof": { "id": "…" },
+  "consent": { "channels": { "email": "opted_in", "sms": "suppressed", "push": "unknown", "whatsapp": "unknown" }, "topics": { "offers": true }, "updatedAt": "…" },   // null when about nobody we hold
   "subject": { "interactionId": "quiz-1", "outcome": "completed", "metadata": { "score": 9 }, "source": "hub" },
   "event": { "name": "engagement_completed", "attributes": { "kind": "quiz", "score": 9 }, "rule": "quiz" },   // from eventMapping
   "attributes": {}
@@ -141,6 +144,11 @@ mapped with the flow's field mappings (or handed to a connector's `serialize`):
 Field mappings read envelope paths (`identity.externalIds.acme-loyalty`, `subject.outcome`,
 `event.name`, `product.sku`). With no mappings the envelope itself is sent. A failed event delivery
 keeps its envelope and is retried from it; a product is re-read instead.
+
+**CloudEvents.** `config.envelopeFormat: 'cloudevents'` wraps each delivered body (mapped or not) as a
+CloudEvents 1.0 structured event — `{ specversion: '1.0', id, type, source: 'urn:smartlinks:collection:<id>',
+subject, time, datacontenttype, dataschema: 'urn:smartlinks:envelope:v1', data }` — the shape every event
+bus, lake and serverless tool already consumes.
 
 ```ts
 const flow = await integrations.createFlow(collectionId, {

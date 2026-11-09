@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.14  |  Generated: 2026-11-09T13:01:05.900Z
+Version: 2.1.15  |  Generated: 2026-11-09T15:17:42.472Z
 
 This is a concise summary of all available API functions and types.
 
@@ -65,7 +65,7 @@ For detailed guides on specific features:
 - **[Analytics Metadata Conventions](analytics-metadata-conventions.md)** - Standard recommended keys and conventions for analytics metadata fields
 - **[Loyalty: Points, Members & Earning Rules](loyalty.md)** - Loyalty schemes, automatic point earning via interaction rules, member balances, transaction history, and manual adjustments
 - **[Integrations](integrations.md)** - Inbound/outbound integration flows + the sealed-secret store; triggers (manual/event/schedule), event patterns, the event envelope (interaction/contact/event sources), identity policy, event mapping, signed deliveries, contact as a target, field mappings
-- **[Connectors](connectors.md)** - Connector apps (adapters for one external provider): a manifest `connector` block + server functions (testConnection/describeTarget/sample/fetch/shape/serialize/send/describeEvents/lookup); loyalty and CRM connectors; core does the mapping
+- **[Connectors](connectors.md)** - Connector apps (adapters for one external provider): a manifest `connector` block + server functions (testConnection/describeTarget/sample/fetch/shape/serialize/send/describeEvents/lookup); loyalty and CRM connectors; actions (provider operations on demand); core does the mapping
 - **[Entitlements](entitlements.md)** - "Is this person gold or above?" answered on demand from signed claims, a connector lookup (cached), or the contact — never a mirrored member base; gates on interaction types and in server functions
 - **[AI Tools & Skills](ai-tools-and-skills.md)** - The AI capability catalog: skills apps invoke by name (e.g. research.brand), the tools the AI reaches for (web fetch/screenshot/brand assets/image gen), the agent loop, and how apps discover them
 - **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration
@@ -3112,6 +3112,19 @@ interface ConnectorPanel {
 }
 ```
 
+**ConnectorAction** (interface)
+```typescript
+interface ConnectorAction {
+  name: string
+  title?: string
+  description?: string
+  function: string
+  visibility?: 'admin' | 'member' | 'public'
+  input?: Record<string, unknown>
+  output?: Record<string, unknown>
+}
+```
+
 **AppConnectorDeclaration** (interface)
 ```typescript
 interface AppConnectorDeclaration {
@@ -3134,6 +3147,7 @@ interface AppConnectorDeclaration {
   lookup?: string
   }
   panels?: ConnectorPanel[]
+  actions?: ConnectorAction[]
   aiGuide?: string
   recordId?: string
   limits?: { requestsPerSecond?: number; maxEvents?: number; maxAttributes?: number }
@@ -7980,6 +7994,7 @@ interface IntegrationFlowConfig {
   signing?: { credentialRef: string; previousCredentialRef?: string }
   identity?: { policy?: IdentityPolicy; hashKeyCredentialRef?: string }
   eventMapping?: EventMapping
+  envelopeFormat?: 'cloudevents'
   connection?: FlowConnection
   fieldMappings?: FieldMapping[]
   connector?: FlowConnectorRef
@@ -8222,6 +8237,7 @@ interface ConnectorLookupResult {
 **EventEnvelope** (interface)
 ```typescript
 interface EventEnvelope {
+  specVersion: number
   id: string
   type: string
   entityType: string | null
@@ -8234,6 +8250,8 @@ interface EventEnvelope {
   contactId: string | null
   userId: string | null
   externalIds: Record<string, string>
+  anonymousId: string | null
+  sessionId: string | null
   emailHash?: string | null
   phoneHash?: string | null
   hashAlgorithm?: 'hmac-sha256' | null
@@ -8243,6 +8261,7 @@ interface EventEnvelope {
   identityPolicy: IdentityPolicy
   product: { id: string; name?: string | null; sku?: string | null; gtin?: string | null; variantId?: string | null; batchId?: string | null } | null
   proof: { id: string } | null
+  consent: { channels: Record<'email' | 'sms' | 'push' | 'whatsapp', 'opted_in' | 'opted_out' | 'suppressed' | 'unknown'>; topics: Record<string, boolean>; updatedAt: string | null } | null
   subject: Record<string, unknown>
   event?: { name: string; attributes: Record<string, unknown>; rule: string | null }
   attributes: Record<string, unknown>
@@ -12983,6 +13002,22 @@ Save a connector's non-secret Connect-form values and/or settings. PUT /integrat
     step: ConnectorConsoleStep,
     input: Record<string, unknown> & { flowId?: string } = {}) → `Promise<T>`
 Run a connector step from the console: `testConnection` → ConnectorTestResult, `describeTarget` → ConnectorTargetSchema, `sample` → ConnectorRecords, and dry runs of `shape` ({ records }) → ConnectorShapeResult and `serialize` ({ documents }) → ConnectorSerializeResult. The server adds the installation; pass `flowId` to layer that flow's settings. POST /integrations/connectors/:appId/steps/:step
+
+**runConnectorAction**(collectionId: string,
+    appId: string,
+    action: string,
+    input: Record<string, unknown> = {}) → `Promise<T>`
+Invoke a connector ACTION from the console (any visibility): redeem, enrol, adjust points, issue a coupon… The connector's function runs with its own credentials and is told who asked. POST /integrations/connectors/:appId/actions/:action { input }
+
+**listConnectorActions**(collectionId: string,
+    appId: string) → `Promise<`
+PUBLIC (the Hub, a site): the connector actions the caller may invoke — those declared `public`, plus `member` ones when signed in. GET /public/collection/:collectionId/connectors/:appId/actions
+
+**callConnectorAction**(collectionId: string,
+    appId: string,
+    action: string,
+    input: Record<string, unknown> = {}) → `Promise<T>`
+PUBLIC (the Hub, a site): invoke a connector action — e.g. redeem a reward for the signed-in member. 401 SIGN_IN_REQUIRED for a `member` action without a session; 403 for an admin-only one; 400 with `missing[]` when a required input is absent. POST /public/collection/:collectionId/connectors/:appId/actions/:action { input }
 
 ### interactions
 

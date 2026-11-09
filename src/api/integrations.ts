@@ -249,4 +249,45 @@ export namespace integrations {
   ): Promise<T> {
     return post<T>(`${connectorsBase(collectionId)}/${enc(appId)}/steps/${enc(step)}`, input)
   }
+
+  /**
+   * Invoke a connector ACTION from the console (any visibility): redeem, enrol, adjust points, issue a
+   * coupon… The connector's function runs with its own credentials and is told who asked.
+   * POST /integrations/connectors/:appId/actions/:action { input }
+   */
+  export async function runConnectorAction<T = unknown>(
+    collectionId: string,
+    appId: string,
+    action: string,
+    input: Record<string, unknown> = {}
+  ): Promise<T> {
+    return post<T>(`${connectorsBase(collectionId)}/${enc(appId)}/actions/${enc(action)}`, { input })
+  }
+
+  /**
+   * PUBLIC (the Hub, a site): the connector actions the caller may invoke — those declared `public`,
+   * plus `member` ones when signed in.
+   * GET /public/collection/:collectionId/connectors/:appId/actions
+   */
+  export async function listConnectorActions(
+    collectionId: string,
+    appId: string
+  ): Promise<{ actions: Array<{ name: string; title: string; description?: string; visibility: 'public' | 'member' | 'admin'; input?: Record<string, unknown>; output?: Record<string, unknown> }> }> {
+    return request(`/public/collection/${enc(collectionId)}/connectors/${enc(appId)}/actions`)
+  }
+
+  /**
+   * PUBLIC (the Hub, a site): invoke a connector action — e.g. redeem a reward for the signed-in member.
+   * 401 SIGN_IN_REQUIRED for a `member` action without a session; 403 for an admin-only one;
+   * 400 with `missing[]` when a required input is absent.
+   * POST /public/collection/:collectionId/connectors/:appId/actions/:action { input }
+   */
+  export async function callConnectorAction<T = unknown>(
+    collectionId: string,
+    appId: string,
+    action: string,
+    input: Record<string, unknown> = {}
+  ): Promise<T> {
+    return post<T>(`/public/collection/${enc(collectionId)}/connectors/${enc(appId)}/actions/${enc(action)}`, { input })
+  }
 }

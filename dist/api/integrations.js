@@ -200,4 +200,32 @@ export var integrations;
         return post(`${connectorsBase(collectionId)}/${enc(appId)}/steps/${enc(step)}`, input);
     }
     integrations.runConnectorStep = runConnectorStep;
+    /**
+     * Invoke a connector ACTION from the console (any visibility): redeem, enrol, adjust points, issue a
+     * coupon… The connector's function runs with its own credentials and is told who asked.
+     * POST /integrations/connectors/:appId/actions/:action { input }
+     */
+    async function runConnectorAction(collectionId, appId, action, input = {}) {
+        return post(`${connectorsBase(collectionId)}/${enc(appId)}/actions/${enc(action)}`, { input });
+    }
+    integrations.runConnectorAction = runConnectorAction;
+    /**
+     * PUBLIC (the Hub, a site): the connector actions the caller may invoke — those declared `public`,
+     * plus `member` ones when signed in.
+     * GET /public/collection/:collectionId/connectors/:appId/actions
+     */
+    async function listConnectorActions(collectionId, appId) {
+        return request(`/public/collection/${enc(collectionId)}/connectors/${enc(appId)}/actions`);
+    }
+    integrations.listConnectorActions = listConnectorActions;
+    /**
+     * PUBLIC (the Hub, a site): invoke a connector action — e.g. redeem a reward for the signed-in member.
+     * 401 SIGN_IN_REQUIRED for a `member` action without a session; 403 for an admin-only one;
+     * 400 with `missing[]` when a required input is absent.
+     * POST /public/collection/:collectionId/connectors/:appId/actions/:action { input }
+     */
+    async function callConnectorAction(collectionId, appId, action, input = {}) {
+        return post(`/public/collection/${enc(collectionId)}/connectors/${enc(appId)}/actions/${enc(action)}`, { input });
+    }
+    integrations.callConnectorAction = callConnectorAction;
 })(integrations || (integrations = {}));

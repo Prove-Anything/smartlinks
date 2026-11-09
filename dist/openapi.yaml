@@ -21235,6 +21235,32 @@ components:
         - id
         - title
         - component
+    ConnectorAction:
+      type: object
+      properties:
+        name:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        function:
+          type: string
+        visibility:
+          type: string
+          enum:
+            - admin
+            - member
+            - public
+        input:
+          type: object
+          additionalProperties: true
+        output:
+          type: object
+          additionalProperties: true
+      required:
+        - name
+        - function
     AppConnectorDeclaration:
       type: object
       properties:
@@ -21288,6 +21314,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ConnectorPanel"
+        actions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ConnectorAction"
         aiGuide:
           type: string
         recordId:
@@ -29060,6 +29090,10 @@ components:
           additionalProperties: true
         eventMapping:
           $ref: "#/components/schemas/EventMapping"
+        envelopeFormat:
+          type: string
+          enum:
+            - cloudevents
         connection:
           $ref: "#/components/schemas/FlowConnection"
         fieldMappings:
@@ -29520,6 +29554,8 @@ components:
     EventEnvelope:
       type: object
       properties:
+        specVersion:
+          type: number
         id:
           type: string
         type:
@@ -29547,6 +29583,10 @@ components:
           type: object
           additionalProperties:
             type: string
+        anonymousId:
+          type: string
+        sessionId:
+          type: string
         emailHash:
           type: string
         phoneHash:
@@ -29567,6 +29607,9 @@ components:
         proof:
           type: object
           additionalProperties: true
+        consent:
+          type: object
+          additionalProperties: true
         subject:
           type: object
           additionalProperties: true
@@ -29577,6 +29620,7 @@ components:
           type: object
           additionalProperties: true
       required:
+        - specVersion
         - id
         - type
         - entityType
@@ -29589,9 +29633,12 @@ components:
         - contactId
         - userId
         - externalIds
+        - anonymousId
+        - sessionId
         - identityPolicy
         - product
         - proof
+        - consent
         - subject
         - attributes
     CapturedRequest:

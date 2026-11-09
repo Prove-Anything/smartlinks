@@ -97,6 +97,12 @@ export interface IntegrationFlowConfig {
   identity?: { policy?: IdentityPolicy; hashKeyCredentialRef?: string }
   /** Event-sourced flows: fold SmartLinks events into the provider's registered events. */
   eventMapping?: EventMapping
+  /**
+   * Wrap each delivered body as a CloudEvents 1.0 structured event
+   * ({ specversion, id, type, source, subject, time, datacontenttype, dataschema, data }) — the shape
+   * event buses, lakes and serverless tools consume without custom code.
+   */
+  envelopeFormat?: 'cloudevents'
   connection?: FlowConnection
   fieldMappings?: FieldMapping[]
   /** Run this flow through a connector app's functions instead of the built-in mapper/transport. */
@@ -346,6 +352,8 @@ export interface ConnectorLookupResult {
  * connector's `serialize` / `send`, after the flow's identity policy and event mapping.
  */
 export interface EventEnvelope {
+  /** Schema version of this envelope. Bumped only when a consumer could break (a field removed or changed). */
+  specVersion: number
   /** The event's id: stable across retries; use it as the provider's transaction / idempotency id. */
   id: string
   /** Spine event name, e.g. 'interaction.submitted:<typeId>', 'contact.updated', 'tag.scanned:scan_redirect'. */
@@ -361,6 +369,9 @@ export interface EventEnvelope {
     userId: string | null
     /** Ids other systems know this person by, keyed by system (a connector's `provider`). */
     externalIds: Record<string, string>
+    /** The visitor / device id before anyone signed in (an analytics destination stitches on it later). Under every policy. */
+    anonymousId: string | null
+    sessionId: string | null
     emailHash?: string | null
     phoneHash?: string | null
     hashAlgorithm?: 'hmac-sha256' | null
@@ -371,6 +382,11 @@ export interface EventEnvelope {
   identityPolicy: IdentityPolicy
   product: { id: string; name?: string | null; sku?: string | null; gtin?: string | null; variantId?: string | null; batchId?: string | null } | null
   proof: { id: string } | null
+  /**
+   * The person's communication consent, summarised per channel from the contact's comms state; null
+   * when the event is about nobody we hold. A CRM or CDP must not act against it.
+   */
+  consent: { channels: Record<'email' | 'sms' | 'push' | 'whatsapp', 'opted_in' | 'opted_out' | 'suppressed' | 'unknown'>; topics: Record<string, boolean>; updatedAt: string | null } | null
   /** The event's own fields: an interaction's interactionId / outcome / metadata, a scan's codeId / country, a contact's profile. */
   subject: Record<string, unknown>
   /** From the flow's event mapping, when it has one. */

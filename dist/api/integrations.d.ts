@@ -105,4 +105,32 @@ export declare namespace integrations {
     function runConnectorStep<T = unknown>(collectionId: string, appId: string, step: ConnectorConsoleStep, input?: Record<string, unknown> & {
         flowId?: string;
     }): Promise<T>;
+    /**
+     * Invoke a connector ACTION from the console (any visibility): redeem, enrol, adjust points, issue a
+     * coupon… The connector's function runs with its own credentials and is told who asked.
+     * POST /integrations/connectors/:appId/actions/:action { input }
+     */
+    function runConnectorAction<T = unknown>(collectionId: string, appId: string, action: string, input?: Record<string, unknown>): Promise<T>;
+    /**
+     * PUBLIC (the Hub, a site): the connector actions the caller may invoke — those declared `public`,
+     * plus `member` ones when signed in.
+     * GET /public/collection/:collectionId/connectors/:appId/actions
+     */
+    function listConnectorActions(collectionId: string, appId: string): Promise<{
+        actions: Array<{
+            name: string;
+            title: string;
+            description?: string;
+            visibility: 'public' | 'member' | 'admin';
+            input?: Record<string, unknown>;
+            output?: Record<string, unknown>;
+        }>;
+    }>;
+    /**
+     * PUBLIC (the Hub, a site): invoke a connector action — e.g. redeem a reward for the signed-in member.
+     * 401 SIGN_IN_REQUIRED for a `member` action without a session; 403 for an admin-only one;
+     * 400 with `missing[]` when a required input is absent.
+     * POST /public/collection/:collectionId/connectors/:appId/actions/:action { input }
+     */
+    function callConnectorAction<T = unknown>(collectionId: string, appId: string, action: string, input?: Record<string, unknown>): Promise<T>;
 }

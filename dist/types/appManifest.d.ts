@@ -1031,6 +1031,27 @@ export interface ConnectorPanel {
     component: string;
 }
 /**
+ * A named provider operation invoked ON DEMAND (not by the engine): redeem a reward, enrol a member,
+ * issue a coupon, raise a ticket, send a receipt. Called by an app function (`ctx.sl.connectors.call`),
+ * by the Hub (public route — only `public`, or `member` for a signed-in person) or by the console. The
+ * function receives `{ input, installation, caller }` and returns JSON; it runs with the connector's
+ * own credentials and is told who asked.
+ */
+export interface ConnectorAction {
+    /** `^[a-zA-Z][a-zA-Z0-9_-]{0,63}$` */
+    name: string;
+    title?: string;
+    description?: string;
+    /** This app's server function implementing it. */
+    function: string;
+    /** Who may invoke it outside functions and the console. Default 'admin'. */
+    visibility?: 'admin' | 'member' | 'public';
+    /** JSON Schema for `input`; `required` fields are checked before the function runs. */
+    input?: Record<string, unknown>;
+    /** JSON Schema for the result (documentation; not enforced). */
+    output?: Record<string, unknown>;
+}
+/**
  * The connector contract. Every function named here is one of this app's server functions
  * (manifest `functions.definitions`); the engine calls it with collection authority, capped by the
  * capabilities the function declares. A connector fills in only what it needs.
@@ -1092,6 +1113,8 @@ export interface AppConnectorDeclaration {
         lookup?: string;
     };
     panels?: ConnectorPanel[];
+    /** On-demand operations the connector offers (see ConnectorAction). */
+    actions?: ConnectorAction[];
     /** Path (under the app's public files) of a guide the AI mapping assistant reads. */
     aiGuide?: string;
     /**

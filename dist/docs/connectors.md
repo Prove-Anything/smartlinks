@@ -92,6 +92,7 @@ Types: `AppConnectorDeclaration` and friends in `@proveanything/smartlinks` (`sr
 | `aiGuide` | A guide the mapping assistant reads: the provider's quirks, required fields, good defaults. |
 | `recordId` | Path of the provider's own id in a fetched record (e.g. `gtin`). Inbound records are landed and matched by it, so a re-import updates the same product instead of creating another. Default `id`; a flow can override it (`config.upsert.externalIdPath`). |
 | `limits` | `{ requestsPerSecond }` toward the provider, enforced across every SmartLinks worker; `{ maxEvents, maxAttributes }` when the provider caps registered events — a flow's `eventMapping` is checked against them when saved. |
+| `actions[]` | Provider operations invoked on demand (redeem, enrol, issue…): name, title, function, `visibility`, input schema. See [Actions](#actions-provider-operations-on-demand). |
 
 ---
 
@@ -216,6 +217,61 @@ is the member id this wrote back, so **Earn** can address the member by the prov
 
 A connector should ship an `eventMapping` **preset** with the provider's standard event names and an
 `aiGuide` paragraph, so the console's assistant proposes a customer's mapping in the provider's terms.
+
+---
+
+## Actions: provider operations on demand
+
+Steps are called by the engine. **Actions** are called when someone asks: redeem a reward, enrol a
+member, issue a coupon, raise a ticket, send a receipt, check a balance. A connector declares them in
+the manifest and implements each as a server function; the platform decides who may call them and
+runs them with the connector's credentials, telling the function who asked.
+
+```jsonc
+"connector": {
+  "actions": [
+    { "name": "redeem", "title": "Redeem a reward", "function": "redeemReward", "visibility": "member",
+      "input": { "type": "object", "required": ["rewardId"], "properties": { "rewardId": { "type": "string" } } } },
+    { "name": "enrol", "title": "Join the programme", "function": "enrolMember", "visibility": "member" },
+    { "name": "coupon-status", "title": "Coupon status", "function": "couponStatus", "visibility": "public" },
+    { "name": "adjust-points", "title": "Adjust points", "function": "adjustPoints" }     // admin only (the default)
+  ]
+}
+```
+
+| `visibility` | Who may invoke it |
+|---|---|
+| `admin` (default) | the console and admin API; any app function |
+| `member` | also a signed-in person through the Hub / a site |
+| `public` | also anyone |
+
+The function receives `event.body = { input, installation, caller: { userId, contactId, role, surface } }`
+and returns JSON (or a `Response`). `input.required` fields from the declared schema are checked before
+the function runs (400 with `missing[]`); fuller validation is the connector's job.
+
+```ts
+export async function redeemReward(ctx: any, event: any) {
+  const { input, caller } = event.body
+  if (!caller.contactId) return new Response(JSON.stringify({ error: 'no_contact' }), { status: 400 })
+  const memberId = (await ctx.sl.contacts.forCaller())?.customFields?.loyaltyMemberId   // written by Profile
+  const res = await ctx.fetch(`${api}/members/${memberId}/redemptions`, { method: 'POST', headers: auth(await ctx.secrets.get('apiKey')), body: JSON.stringify({ reward: input.rewardId }) })
+  return res.json()
+}
+```
+
+Calling an action:
+
+```ts
+// From the Hub or a site (visibility public / member):
+const { actions } = await integrations.listConnectorActions(collectionId, 'acme-loyalty')
+const out = await integrations.callConnectorAction(collectionId, 'acme-loyalty', 'redeem', { rewardId: 'R-5' })
+
+// From another app's server function (any visibility; needs sl:connectors:write):
+const out = await ctx.sl.connectors.call('acme-loyalty', 'redeem', { rewardId: 'R-5' })
+
+// From the console (any visibility):
+await integrations.runConnectorAction(collectionId, 'acme-loyalty', 'adjust-points', { memberId, delta: 100 })
+```
 
 ---
 
