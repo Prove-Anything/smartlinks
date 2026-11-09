@@ -517,6 +517,8 @@ Prefer the platform primitives above over a dependency; when you do need one, pi
 | Check a tapped tag is real | `ctx.sl.tags.resolve(proofId)` → `{ id, claimSetId, code }` or `null` | `sl:tags:read` |
 | Put a visitor's details on a contact | `ctx.sl.contacts.upsert({ email, firstName, … })` → `{ contactId, created }` (fills empty fields only) | `sl:contacts:write` |
 | Record "they did X" | `ctx.sl.interactions.record({ interactionId, contactId, outcome, metadata })` | `sl:interactions:write` |
+| Land a loyalty / CRM provider's view of a person (member id, tier, points, tags, external ids) | `ctx.sl.members.apply({ identity, contact?, loyalty?, tags?, externalIds? }, { provider })` → `{ contactId, op }` — matches by id, external id, email or phone; profile fields fill-empty only; see [connectors.md](connectors.md#loyalty-and-crm-connectors) | `sl:members:write` |
+| Ask "is this person gold or above?" without holding their member record | `ctx.sl.entitlements.check('tier>=gold')` → `{ allowed, basis, asOf, attributes }` for the signed-in caller (or `{ identity, token, fallback }`); see [entitlements.md](entitlements.md) | `sl:entitlements:read` |
 | Take a booking with your own checks (hours, queue token, payment) | `ctx.sl.bookings.create({ slotId \| resource + time, contactId, status, idempotencyKey })` — never oversold, never double-booked; also `confirm` / `cancel` / `move` / `mine` / `freebusy` / `message` (everyone booked, hydrated) / `slots.*` / `blocks.*` (see [bookings.md](bookings.md)) | `sl:bookings:write` (`sl:bookings:read` to read) |
 
 Notes:

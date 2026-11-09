@@ -3,16 +3,18 @@
 An **integration flow** is one input/output pipeline between SmartLinks and an external
 system. There are two directions:
 
-- **outbound** — read a SmartLinks entity (v1: a product), transform it with field
-  mappings, and send it to an external endpoint.
-- **inbound** — fetch from an external system and write a SmartLinks entity. *(Executor is
-  outbound-first; inbound lands in a later increment.)*
+- **outbound** — read a SmartLinks **product** that changed, or **one event** (an interaction, a
+  contact change, a tag scan — any spine event) as the [envelope](#event-sourced-flows-and-the-envelope),
+  transform it with field mappings, and send it to an external endpoint (signed, if you want).
+- **inbound** — fetch from an external system and write a SmartLinks **product** or **contact**
+  (a provider's view of a person: member id, tier, points — see [Contact as a target](#contact-as-a-target)).
 
 Flows are triggered three ways, all converging on the same executor:
 
 - **manual** — `integrations.runFlow(...)`, inline (returns a run summary) or enqueued.
-- **event** — an outbound flow subscribed to an event type (e.g. `product.updated`) fires
-  automatically when that entity changes.
+- **event** — an outbound flow subscribed to an event type (e.g. `product.updated`,
+  `interaction.submitted`, `contact.*`, `tag.scanned`, `*`) fires automatically when it happens. See
+  [Event names and patterns](#event-names-and-patterns).
 - **schedule** — a flow carrying a cron/interval `schedule` is run by the scan job. *(next)*
 
 Provider-specific logic (a provider's payload format, its API, its connect form) lives in a
@@ -52,17 +54,21 @@ interface IntegrationFlow {
   direction: 'inbound' | 'outbound'
   name: string
   status: 'draft' | 'active' | 'paused' | 'error'  // only 'active' flows fire on events/schedule
-  eventTypes: string[]                              // e.g. ['product.updated']
+  eventTypes: string[]                              // e.g. ['product.updated'], ['interaction.*'], ['*']
   schedule: string | null                           // cron/interval for scheduled flows
-  sourceEntity: string | null                       // outbound source, v1: 'product'
-  targetEntity: string | null                       // inbound target
+  sourceEntity: 'product' | 'interaction' | 'contact' | 'event' | null   // outbound: what it reads
+  targetEntity: 'product' | 'contact' | null        // inbound: what it writes
   config: {
     connection?: {
       baseUrl?: string
       sendEndpoint?: string                          // outbound: appended to baseUrl
       defaultHeaders?: Record<string, string>
       auth?: { method: 'api_key' | 'bearer' | 'basic' | ..., headerName?: string, credentialRef?: string }
+      timeoutMs?: number
     }
+    signing?: { credentialRef: string, previousCredentialRef?: string }        // X-SmartLinks-Signature (below)
+    identity?: { policy?: 'externalIds' | 'hashed' | 'raw', hashKeyCredentialRef?: string }  // event-sourced flows
+    eventMapping?: EventMapping                       // event-sourced flows: many events → the provider's few
     fieldMappings?: FieldMapping[]
   }
   // ...run watermark/telemetry: lastRunAt, lastRunStatus, lastRunCount, totalSynced
@@ -82,6 +88,150 @@ Each mapping produces one field on the target payload:
 
 A single field's failure is collected and the rest continue (partial success) — it never
 aborts the whole record.
+
+---
+
+## Event names and patterns
+
+A flow's `eventTypes` (and a server function's `trigger.eventTypes`) name events exactly or by prefix:
+
+| Subscription | Matches |
+|---|---|
+| `product.updated` | exactly that |
+| `interaction.submitted:<typeId>` | one interaction type's submissions |
+| `interaction.*` | every interaction event |
+| `record.updated:*` | record updates of any type |
+| `*` | everything in the collection — a raw event stream |
+
+Events on the spine today: `product.created / updated / deleted`, `record.<verb>[:<recordType>]`,
+`interaction.submitted[:<typeId>]`, `contact.created / updated / deleted / erased`,
+`tag.scanned[:<eventType>]` (a scan resolves in the redirect, before any page could run a tag),
+`proof.created / transferred`, `attestation.created[:type]`, `booking.*`, `slot.*`.
+
+---
+
+## Event-sourced flows and the envelope
+
+A flow with `sourceEntity: 'interaction' | 'contact' | 'event'` sends **one event per run** — not a
+product. Every such event is wrapped in the same **envelope**, whatever the destination, and only then
+mapped with the flow's field mappings (or handed to a connector's `serialize`):
+
+```jsonc
+{
+  "id": "0b2b…",                               // the event's id — stable across retries; use it as the destination's idempotency / transaction id
+  "type": "interaction.submitted:quiz-1",
+  "entityType": "interaction", "entityId": "0b2b…",
+  "occurredAt": "2026-11-08T10:00:00.000Z",
+  "collectionId": "…", "orgId": "…", "appId": "quiz",
+  "identity": {
+    "contactId": "…", "userId": "…",
+    "externalIds": { "acme-loyalty": "M-9", "crm": "C-1" },     // ids other systems know this person by
+    "emailHash": "…", "phoneHash": "…", "hashAlgorithm": "hmac-sha256"   // policy 'hashed' (default)
+    // "email", "phone": only under policy 'raw'
+  },
+  "identityPolicy": "hashed",
+  "product": { "id": "P1", "name": "Widget", "sku": "W-1", "gtin": "0500…", "variantId": null, "batchId": null },
+  "proof": { "id": "…" },
+  "subject": { "interactionId": "quiz-1", "outcome": "completed", "metadata": { "score": 9 }, "source": "hub" },
+  "event": { "name": "engagement_completed", "attributes": { "kind": "quiz", "score": 9 }, "rule": "quiz" },   // from eventMapping
+  "attributes": {}
+}
+```
+
+Field mappings read envelope paths (`identity.externalIds.acme-loyalty`, `subject.outcome`,
+`event.name`, `product.sku`). With no mappings the envelope itself is sent. A failed event delivery
+keeps its envelope and is retried from it; a product is re-read instead.
+
+```ts
+const flow = await integrations.createFlow(collectionId, {
+  appId: 'core-integrations', direction: 'outbound', name: 'Engagement → loyalty', status: 'active',
+  eventTypes: ['interaction.*', 'tag.scanned:*'],
+  sourceEntity: 'event',
+  config: {
+    connection: { baseUrl: 'https://api.acme.example', sendEndpoint: '/events', auth: { method: 'bearer', credentialRef: ref } },
+    signing: { credentialRef: signingRef },
+    identity: { policy: 'hashed' },
+    eventMapping: {
+      rules: [
+        { id: 'quiz', match: { interactionIds: ['quiz-1'], outcomes: ['completed'] }, event: 'engagement_completed',
+          attributes: { kind: 'quiz', score: '{{ subject.metadata.score }}', sku: { path: 'product.sku' } } },
+        { id: 'scan', match: { types: ['tag.scanned:*'] }, event: 'pack_scanned', attributes: { sku: { path: 'product.sku' } } },
+      ],
+      unmatched: 'skip',
+    },
+    fieldMappings: [
+      { targetPath: 'event_name',     sourcePath: 'event.name', transformType: 'direct' },
+      { targetPath: 'external_id',    sourcePath: 'identity.externalIds.acme-loyalty', transformType: 'direct' },
+      { targetPath: 'transaction_id', sourcePath: 'id', transformType: 'direct' },
+    ],
+  },
+})
+```
+
+### Identity policy
+
+`config.identity.policy` decides what about the person leaves the platform:
+
+| Policy | The envelope's `identity` carries |
+|---|---|
+| `externalIds` | `contactId`, `userId`, `externalIds` — nothing else |
+| `hashed` (default) | the above plus `emailHash` / `phoneHash`: HMAC-SHA256 with a **per-collection** key, or the brand's own key when `identity.hashKeyCredentialRef` names one (so hashes match a mirror the brand built) |
+| `raw` | the above plus `email` and `phone` |
+
+No hash key configured on the server → no hashes, never an unkeyed hash.
+
+### Event mapping
+
+Loyalty and engagement platforms accept a small, pre-registered set of event names. `config.eventMapping`
+folds our many interaction types into those names: rules in order, first match wins; `match` may name
+`types` (exact or patterns), `interactionIds`, `outcomes`, `appIds`; attributes are literals, Liquid
+templates over the envelope, or `{ path, default }`. Unmatched events are skipped (and shown as skipped
+in the run) unless `unmatched: 'passthrough'`. When the flow has a connector with a `describeEvents`
+step, the mapping is **validated when saved** against the provider's registered events and its
+`limits` (`maxEvents`, `maxAttributes`): `createFlow` / `updateFlow` answer `400 EVENT_MAPPING_INVALID`
+with `problems[]`.
+
+### Signed deliveries
+
+With `config.signing.credentialRef`, every HTTP delivery carries:
+
+```
+X-SmartLinks-Signature: t=1730900000,v1=<hex HMAC-SHA256(secret, `${t}.${rawBody}`)>
+X-SmartLinks-Delivery:  <uuid, new per attempt>
+X-SmartLinks-Event:     interaction.submitted:quiz-1
+X-SmartLinks-Run:       <run id>
+Idempotency-Key:        <flowId>:<eventId>:<hash of the body>
+```
+
+The signature covers the exact bytes of the body. A receiver recomputes it, compares in constant time,
+and rejects `t` older than about five minutes. During a rotation `previousCredentialRef` adds a second
+`v1=` so a receiver that knows either secret verifies.
+
+Destinations must be **public hosts**: loopback, private ranges and cloud metadata addresses are
+refused as a permanent failure. (Local development: `INTEGRATION_ALLOW_PRIVATE_DESTINATIONS=1` on the
+server.)
+
+### Contact as a target
+
+An inbound flow with `targetEntity: 'contact'` writes a provider's view of a person. After the
+connector's `shape` (or your field mappings) each record is a **member document**:
+
+```jsonc
+{
+  "identity":    { "externalId": "M-9", "email": "ada@example.com" },      // contactId | externalId | email | phone — at least one
+  "contact":     { "firstName": "Ada", "lastName": "Lovelace" },           // fills EMPTY profile fields only
+  "externalIds": { "acme-crm": "C-1" },                                    // merged
+  "customFields": { "region": "UK" },                                      // merged (never `comms`)
+  "tags":        { "add": ["gold"], "remove": ["silver"] },
+  "loyalty":     { "memberId": "M-9", "tier": "gold", "points": 1500, "status": "active", "asOf": "…", "attributes": { "since": 2024 } }
+}
+```
+
+Matching: `contactId` → `externalIds[<provider>]` → email → phone; a new contact is created once however
+many workers see the same member. Loyalty lands as `customFields.loyalty` plus flat
+`customFields.loyaltyTier / loyaltyPoints / loyaltyMemberId / loyaltyProvider` for segments and comms
+targeting. The same document is what a server function applies with `ctx.sl.members.apply(...)` (a
+provider's webhook, see [connectors.md](connectors.md#loyalty-and-crm-connectors)).
 
 ---
 

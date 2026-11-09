@@ -9141,6 +9141,45 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/partner/{partnerId}/tags/lookup:
+    get:
+      tags:
+        - partner
+      summary: "Find a tag across the partner's sets by its chip UID (8 or 14 hex) or its code (printed or bare)."
+      operationId: partner_lookupTags
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: uid
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PartnerTagHit"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /authKit/{authKitId}/config:
     get:
       tags:
@@ -9602,6 +9641,38 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /authkit/{clientId}/auth/microsoft:
+    post:
+      tags:
+        - authKit
+      summary: authKit.microsoftLogin
+      operationId: authKit_microsoftLogin
+      security: []
+      parameters:
+        - name: clientId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthLoginResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MicrosoftLoginOptions"
   /authkit/{clientId}/auth/phone/send-code:
     post:
       tags:
@@ -21209,6 +21280,10 @@ components:
           type: string
         fetch:
           type: string
+        describeEvents:
+          type: string
+        lookup:
+          type: string
         panels:
           type: array
           items:
@@ -23894,6 +23969,35 @@ components:
           additionalProperties: true
       required:
         - success
+    MicrosoftLoginOptions:
+      type: object
+      properties:
+        returnOrigin:
+          type: string
+        trustedDeviceToken:
+          type: string
+    AuthKitAccess:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum:
+            - anyone
+            - organisation
+        domains:
+          type: array
+          items:
+            type: string
+        emails:
+          type: array
+          items:
+            type: string
+        microsoftTenants:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+        - mode
     AppleLoginOptions:
       type: object
       properties:
@@ -24410,6 +24514,10 @@ components:
           enum:
             - open
             - invite
+        access:
+          $ref: "#/components/schemas/AuthKitAccess"
+        microsoftClientId:
+          type: string
       required:
         - id
     AuthKitInviteRequest:
@@ -24542,6 +24650,7 @@ components:
         - ACCOUNT_EXISTS_UNVERIFIED
         - APPLE_AUTH_FAILED
         - SIGN_UP_CLOSED
+        - NOT_IN_ORGANISATION
     MfaFactor:
       type: string
       enum:
@@ -26120,6 +26229,25 @@ components:
         - codes
         - deleted
         - createdAt
+    PartnerTagHit:
+      type: object
+      properties:
+        namespace:
+          type: string
+        claimSetId:
+          type: string
+        set:
+          $ref: "#/components/schemas/PartnerClaimSet"
+        tag:
+          $ref: "#/components/schemas/ClaimSetRangeTag"
+        range:
+          $ref: "#/components/schemas/ClaimSetRange"
+      required:
+        - namespace
+        - claimSetId
+        - set
+        - tag
+        - range
     CreatePartnerClaimSetRequest:
       type: object
       properties:
@@ -28890,9 +29018,48 @@ components:
           additionalProperties: true
       required:
         - appId
+    EventMappingRule:
+      type: object
+      properties:
+        id:
+          type: string
+        match:
+          type: object
+          additionalProperties: true
+        event:
+          type: string
+        attributes:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+      required:
+        - event
+    EventMapping:
+      type: object
+      properties:
+        rules:
+          type: array
+          items:
+            $ref: "#/components/schemas/EventMappingRule"
+        unmatched:
+          type: string
+          enum:
+            - skip
+            - passthrough
+      required:
+        - rules
     IntegrationFlowConfig:
       type: object
       properties:
+        signing:
+          type: object
+          additionalProperties: true
+        identity:
+          type: object
+          additionalProperties: true
+        eventMapping:
+          $ref: "#/components/schemas/EventMapping"
         connection:
           $ref: "#/components/schemas/FlowConnection"
         fieldMappings:
@@ -28925,9 +29092,11 @@ components:
         schedule:
           type: string
         sourceEntity:
-          type: string
+          type: object
+          additionalProperties: true
         targetEntity:
-          type: string
+          type: object
+          additionalProperties: true
         config:
           $ref: "#/components/schemas/IntegrationFlowConfig"
         createdBy:
@@ -29300,6 +29469,131 @@ components:
         settings:
           type: object
           additionalProperties: true
+    ConnectorEventsSchema:
+      type: object
+      properties:
+        events:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        limits:
+          type: object
+          additionalProperties: true
+      required:
+        - events
+    ConnectorLookupInput:
+      type: object
+      properties:
+        installation:
+          $ref: "#/components/schemas/ConnectorInstallation"
+        identity:
+          type: object
+          additionalProperties: true
+        want:
+          type: array
+          items:
+            type: string
+      required:
+        - installation
+        - identity
+    ConnectorLookupResult:
+      type: object
+      properties:
+        found:
+          type: boolean
+        memberId:
+          type: string
+        tier:
+          type: string
+        points:
+          type: number
+        status:
+          type: string
+        attributes:
+          type: object
+          additionalProperties: true
+        asOf:
+          type: string
+      required:
+        - found
+    EventEnvelope:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: string
+        occurredAt:
+          type: string
+        collectionId:
+          type: string
+        orgId:
+          type: string
+        appId:
+          type: string
+        identity:
+          type: object
+          additionalProperties: true
+        contactId:
+          type: string
+        userId:
+          type: string
+        externalIds:
+          type: object
+          additionalProperties:
+            type: string
+        emailHash:
+          type: string
+        phoneHash:
+          type: string
+        hashAlgorithm:
+          type: string
+          enum:
+            - hmac-sha256
+        email:
+          type: string
+        phone:
+          type: string
+        identityPolicy:
+          $ref: "#/components/schemas/IdentityPolicy"
+        product:
+          type: object
+          additionalProperties: true
+        proof:
+          type: object
+          additionalProperties: true
+        subject:
+          type: object
+          additionalProperties: true
+        event:
+          type: object
+          additionalProperties: true
+        attributes:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - type
+        - entityType
+        - entityId
+        - occurredAt
+        - collectionId
+        - orgId
+        - appId
+        - identity
+        - contactId
+        - userId
+        - externalIds
+        - identityPolicy
+        - product
+        - proof
+        - subject
+        - attributes
     CapturedRequest:
       type: object
       properties:
@@ -29639,6 +29933,24 @@ components:
         - webhook
         - oauth2
         - none
+    IdentityPolicy:
+      type: string
+      enum:
+        - externalIds
+        - hashed
+        - raw
+    FlowSourceEntity:
+      type: string
+      enum:
+        - product
+        - interaction
+        - contact
+        - event
+    FlowTargetEntity:
+      type: string
+      enum:
+        - product
+        - contact
     UpdateFlowInput:
       $ref: "#/components/schemas/CreateFlowInput"
     ConnectorConsoleStep:
@@ -29649,6 +29961,8 @@ components:
         - sample
         - shape
         - serialize
+        - describeEvents
+        - lookup
     RunTrigger:
       type: string
       enum:
@@ -31323,6 +31637,10 @@ components:
         codeId:
           type: string
         mirror:
+          type: string
+        d:
+          type: string
+        c:
           type: string
         userId:
           type: string

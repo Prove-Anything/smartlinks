@@ -32,4 +32,14 @@ export var partner;
         return post(`/admin/partner/${encodeURIComponent(partnerId)}/claimSet`, params);
     }
     partner.createClaimSet = createClaimSet;
+    /** Find a tag across the partner's sets by its chip UID (8 or 14 hex) or its code (printed or bare). Never returns keys. */
+    async function lookupTags(partnerId, query) {
+        const q = new URLSearchParams();
+        if (query.uid)
+            q.set('uid', query.uid);
+        if (query.code)
+            q.set('code', query.code);
+        return request(`/admin/partner/${encodeURIComponent(partnerId)}/tags/lookup?${q}`);
+    }
+    partner.lookupTags = lookupTags;
 })(partner || (partner = {}));

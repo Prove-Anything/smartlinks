@@ -259,6 +259,56 @@ try {
 > ⚠️ This is a behaviour change for `googleLogin`, which previously merged silently in
 > this case. Handle the 409 for both methods.
 
+### Sign in with Microsoft
+
+Work or school accounts from **any** organisation, and personal Microsoft accounts (Outlook, Hotmail,
+Live). Add `'microsoft'` to `enabledProviders` — that's all: SmartLinks' own Microsoft app serves every
+organisation, so neither you nor your users' IT registers anything.
+
+```ts
+const session = await authKit.microsoftLogin(clientId, microsoftIdToken, { returnOrigin });
+```
+
+- **In the SmartLinks sign-in UI** the Microsoft button opens SmartLinks' Microsoft sign-in page
+  (`https://smartlinks.app/apps/account/stable/microsoft-proxy.html`) in a popup — the one address
+  registered with Microsoft — which signs in and hands the session back to your site. Your site must be
+  one of the login setup's own (its collections' domains or site addresses, or `allowedRedirectDomains`),
+  else `MICROSOFT_ORIGIN_NOT_ALLOWED` (403).
+- **Your own UI:** get an ID token from Microsoft (`response_type=id_token`, scope `openid profile email`,
+  authority `https://login.microsoftonline.com/common`) for the app in the public config's
+  `microsoftClientId`, and pass it here.
+- **Some companies' IT approves new apps for their staff.** The first person from such a company sees
+  "needs admin approval"; their IT approves SmartLinks once for the organisation and everyone can sign in.
+- **Your own name on Microsoft's screen (optional):** register your own *multitenant* app in Microsoft
+  Entra (Supported account types: any organisation + personal accounts; Web redirect URI as above, with
+  "ID tokens" ticked; token configuration: optional claim `xms_edov` on the ID token) and set its
+  Application (client) ID as `microsoftClientId`.
+- A Microsoft account's email is trusted only when Microsoft vouches that its organisation owns the
+  domain (or for personal accounts): an organisation can give its users any address. Linking to an
+  existing account by email follows the same verified-to-verified rule as Google and Apple.
+
+### Who can sign in (`access`)
+
+Restrict a login setup to one organisation — no keys, no IT:
+
+```ts
+await authKit.update(collectionId, clientId, {
+  access: { mode: 'organisation', domains: ['acme.com'], emails: ['contractor@gmail.com'] },
+});
+```
+
+- Someone is from acme.com when their **verified** email is at acme.com, they're one of `emails`, or they
+  signed in with Microsoft from acme's own Microsoft organisation (looked up from the domain when you
+  save — `microsoftTenants` is filled in for you).
+- Checked on **every** sign-in method each time a session is issued: everyone else gets
+  `NOT_IN_ORGANISATION` (403) with a message naming the domain. Tighten the rule and people already in
+  are refused from their next sign-in.
+- `register` refuses outside addresses before making anything, and never signs an unverified address
+  straight in (even in `immediate` mode) — it must be verified first.
+- Phone-only and WhatsApp-only accounts have no email to prove an organisation, so they can't get in.
+- The public config (`load`) returns `access: { mode, domains }` so your page can say who it's for; the
+  `emails` list is never public. `{ mode: 'anyone' }` (or no `access`) lets everyone in, as before.
+
 ### Refresh tokens (native sessions)
 
 Native/Capacitor hosts can hold long-lived sessions via refresh tokens. Opt in **once**

@@ -1,7 +1,7 @@
 # Integration connectors
 
 A **connector** is an app that knows one external provider (a PIM, a content network, a shop
-platform…). It is installed on a collection like any app, versioned and released like any app, and
+platform, a loyalty or CRM system…). It is installed on a collection like any app, versioned and released like any app, and
 it adds a manifest `connector` block plus a handful of [server functions](server-functions.md) the
 integration engine and the integrations console call by convention.
 
@@ -83,7 +83,7 @@ Types: `AppConnectorDeclaration` and friends in `@proveanything/smartlinks` (`sr
 | `provider` | Stable provider key (`syndigo`, `oneworldsync`). |
 | `title` | Provider display name; defaults to the app name. |
 | `directions` | `inbound` (provider → SmartLinks), `outbound` (SmartLinks → provider), or both. |
-| `entities` | SmartLinks entities it maps, e.g. `["product"]`. |
+| `entities` | SmartLinks entities it maps: `product`, and for people-shaped providers `interaction`, `contact`, `event` (see [Loyalty and CRM connectors](#loyalty-and-crm-connectors)). |
 | `connection.fields[]` | The console's **Connect** form. A field with `secret` is stored as this app's secret of that name on the collection (write-only; never returned to the browser). Other fields are saved in the installation's connection settings. |
 | `settings` | JSON Schema for installation settings; the console renders it as a form. |
 | `presets[]` | Ready-made flows ("Products → provider"). A preset's `flow.config.fieldMappings` is a **suggested** mapping: the connector's knowledge of the provider, which the customer accepts or edits in core. |
@@ -91,7 +91,7 @@ Types: `AppConnectorDeclaration` and friends in `@proveanything/smartlinks` (`sr
 | `panels[]` | Provider-specific screens the console mounts (an API explorer, a status page). |
 | `aiGuide` | A guide the mapping assistant reads: the provider's quirks, required fields, good defaults. |
 | `recordId` | Path of the provider's own id in a fetched record (e.g. `gtin`). Inbound records are landed and matched by it, so a re-import updates the same product instead of creating another. Default `id`; a flow can override it (`config.upsert.externalIdPath`). |
-| `limits` | `{ requestsPerSecond }` toward the provider, enforced across every SmartLinks worker. |
+| `limits` | `{ requestsPerSecond }` toward the provider, enforced across every SmartLinks worker; `{ maxEvents, maxAttributes }` when the provider caps registered events — a flow's `eventMapping` is checked against them when saved. |
 
 ---
 
@@ -111,7 +111,9 @@ declare the provider's hosts (`network:<host>`) and the secrets it reads (`secre
 | `fetch` | Every inbound run | `ConnectorFetchInput` `{ installation, cursor, limit }` | `ConnectorRecords` `{ records, nextCursor }`: one page per call |
 | `shape` | Every inbound run (and sample dry runs) | `ConnectorShapeInput` `{ installation, records }` | `ConnectorShapeResult` `{ documents, skipped }`: one provider-neutral document per record, same order; `null` skips one |
 | `serialize` | Every outbound run | `ConnectorSerializeInput` `{ installation, documents, entities, targetOptions, eventType? }`: documents core mapped to `describeTarget` paths; `entities` = the SmartLinks record each came from (id, name); `targetOptions` = per-field options the mapping carries (e.g. locale, unit); a deletion arrives as `{ id, _deleted: true }` | `ConnectorSerializeResult` `{ payloads, skipped }`: one provider payload per document, same order; `null` skips one |
-| `send` | Every outbound run | `ConnectorSendInput` `{ installation, payloads }` | `ConnectorSendResult` `{ results: [{ index, ok, status, error, externalId }] }` |
+| `send` | Every outbound run | `ConnectorSendInput` `{ installation, payloads, eventType? }` | `ConnectorSendResult` `{ results: [{ index, ok, status, error, externalId, retryable?, retryAfterSeconds? }] }` — `retryable: false` for a provider validation error (dead at once), `true` / a 5xx or 429 status for anything worth retrying |
+| `describeEvents` | Mapper opens; a flow with an `eventMapping` is saved | `{ installation }` | `ConnectorEventsSchema` `{ events: [{ name, title, attributes: [{ name, type, required }] }], limits: { maxEvents, maxAttributes } }`: the event names the provider has registered for this customer |
+| `lookup` | An entitlement check (`docs/entitlements.md`) | `ConnectorLookupInput` `{ installation, identity: { externalId, email, phone } \| { externalId, emailHash, phoneHash }, want }` | `ConnectorLookupResult` `{ found, memberId, tier, points, status, attributes, asOf }`. Throw for an outage — never `found: false` |
 
 **How a run flows:**
 - **Inbound:** `fetch` (paged; every record is landed as received) → `shape` → core maps the documents
@@ -182,6 +184,41 @@ export async function shape(_ctx: any, event: any): Promise<ConnectorShapeResult
 
 ---
 
+## Loyalty and CRM connectors
+
+A provider that is about **people** rather than products uses the same contract with three more
+pieces; nothing provider-specific lives in core. Full contract: `loyalty-connector-authoring.md` in the
+platform's design docs; the shapes are in [integrations.md](integrations.md#event-sourced-flows-and-the-envelope).
+
+| Flow | What core does | What the connector does |
+|---|---|---|
+| **Earn** (us → them) | an outbound flow with `sourceEntity: 'interaction' \| 'contact' \| 'event'` sends one **envelope** per event, through the flow's identity policy and `eventMapping`, signed, with retries and a run log | `describeEvents` (what the provider has registered), `serialize` (envelope → the provider's event payload), `send` if the generic HTTP destination can't make the call |
+| **Profile** (them → us) | `ctx.sl.members.apply(document)` matches the contact and writes member id, tier, points, tags, external ids; or an inbound flow with `targetEntity: 'contact'` | an **HTTP-trigger function** receiving the provider's member webhook (verify their signature, then apply); or `fetch` + `shape` for a poll |
+| **Gate / display** (on demand) | `entitlements.check` — claims → cached `lookup` → the contact's own loyalty fields → fallback; Valkey cache keyed on an identity hash, brand-set TTL | `lookup`: one identity → tier / points / status |
+
+```ts
+// A member webhook: the provider tells us about a person; we land it on the contact.
+export default async function memberWebhook(event: any, ctx: any) {
+  verifyProviderSignature(event, await ctx.secrets.get('webhookSecret'))
+  const m = event.body
+  return ctx.sl.members.apply({
+    identity: { externalId: m.memberId, email: m.email },
+    contact:  { firstName: m.firstName, lastName: m.lastName },        // fills empty fields only
+    loyalty:  { memberId: m.memberId, tier: m.tier, points: m.points, status: m.status, asOf: m.updatedAt },
+    tags:     { add: [`tier:${m.tier}`] },
+  }, { provider: 'acme-loyalty' })                                     // → { contactId, op: 'created' | 'updated' | 'unchanged' }
+}
+```
+
+Declare it `{ "trigger": { "type": "http" }, "capabilities": ["sl:members:write", "secrets:webhookSecret"] }`;
+`sl:members:write` is approved by the admin on install. The envelope's `identity.externalIds[<provider>]`
+is the member id this wrote back, so **Earn** can address the member by the provider's own id.
+
+A connector should ship an `eventMapping` **preset** with the provider's standard event names and an
+`aiGuide` paragraph, so the console's assistant proposes a customer's mapping in the provider's terms.
+
+---
+
 ## Where configuration lives
 
 | What | Where |
@@ -220,6 +257,7 @@ await secrets.put(collectionId, 'provider-key', value, { appId })              /
 await integrations.saveConnectorInstallation(collectionId, appId, { connection: { environment: 'production' } })
 const test = await integrations.runConnectorStep(collectionId, appId, 'testConnection')
 const target = await integrations.runConnectorStep(collectionId, appId, 'describeTarget')
+const events = await integrations.runConnectorStep(collectionId, appId, 'describeEvents')   // loyalty / engagement providers
 const { records } = await integrations.runConnectorStep(collectionId, appId, 'sample', { limit: 5 })
 const shaped = await integrations.runConnectorStep(collectionId, appId, 'shape', { records })      // dry run
 const wire = await integrations.runConnectorStep(collectionId, appId, 'serialize', { documents })  // dry run

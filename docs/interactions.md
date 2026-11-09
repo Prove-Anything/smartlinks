@@ -283,6 +283,7 @@ Set on the interaction type definition via `permissions`:
 | `allowPublicSummary` | boolean | Show counts/aggregates to unauthenticated users |
 | `allowAuthenticatedSummary` | boolean | Show counts/aggregates to authenticated users |
 | `allowOwnRead` | boolean | Let users read their own event history via public API |
+| `requires` | `{ entitlement, fallback? }` | Gate submissions on a membership check: `entitlement` is a predicate such as `'tier>=gold'`, `'member'`, `{ points: { gte: 500 } }`; `fallback` is `deny` (default), `allow` or `degrade` when no source can answer. Answered on demand from the collection's configured sources (a signed claim the caller presents as `entitlementToken` / `X-SmartLinks-Entitlement`, the loyalty connector's cached `lookup`, the contact's own loyalty fields) — see [entitlements.md](entitlements.md). A refused submit answers `403 { reason: 'entitlement_denied' }`. |
 
 ---
 
@@ -422,7 +423,11 @@ Posts a JSON payload to an HTTP endpoint. All config values support `{{token}}` 
 }
 ```
 
-When `body` is omitted, a standard payload is sent containing `eventId`, `collectionId`, `appId`, `interactionId`, `contactId`, `userId`, `productId`, `proofId`, `outcome`, `eventType`, `metadata`, and `timestamp`.
+When `body` is omitted, a standard payload is sent containing `eventId`, `collectionId`, `appId`, `interactionId`, `contactId`, `userId`, `productId`, `proofId`, `outcome`, `eventType`, `metadata`, `timestamp` — and `envelope`, the same [event envelope](integrations.md#event-sourced-flows-and-the-envelope) outbound flows send (identity under `config.identity.policy`, default `hashed`).
+
+Two more config fields: `signing: { credentialRef, previousCredentialRef? }` adds `X-SmartLinks-Signature` over the body (see [Signed deliveries](integrations.md#signed-deliveries)), and `identity: { policy }` sets what the envelope carries about the person. The destination must be a public host.
+
+The effect runs **once**, with no retry and no delivery log. For retries, a run log, rate limits and event mapping, use an outbound **flow** with `sourceEntity: 'interaction'` subscribed to `interaction.submitted:<typeId>` instead — same payload shape, production guarantees.
 
 #### `tag`
 

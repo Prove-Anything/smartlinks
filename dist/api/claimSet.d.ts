@@ -117,7 +117,8 @@ export declare namespace claimSet {
         /** Record the chip a phone just programmed with this code. */
         function recordTag(scope: ClaimSetScope, claimSetId: string, rangeId: string, code: string, params: {
             uid: string;
-            data?: Record<string, unknown>;
+            data?: Record<string, unknown>; /** A plain (NTAG 21x) tag's write password, kept with the tag */
+            password?: string;
         }): Promise<{
             tag: ClaimSetRangeTag;
             range: ClaimSetRange;

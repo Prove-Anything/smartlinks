@@ -302,6 +302,23 @@ A loyalty failure never causes the interaction event to fail — errors are caug
 
 ---
 
+## External loyalty platforms
+
+The schemes above are SmartLinks' own points. When a brand runs its programme on an external loyalty or
+engagement platform, the platform stays the record of truth and SmartLinks connects to it through a
+**connector app** and the integration engine — no member base is mirrored here:
+
+| Flow | How |
+|---|---|
+| **Earn** — what happens on a pack or in a Hub awards points there | an outbound flow with `sourceEntity: 'interaction' \| 'event'`, an `eventMapping` onto the provider's registered events, signed delivery, retries — [integrations.md](integrations.md#event-sourced-flows-and-the-envelope) |
+| **Profile** — member id, tier and points on the contact | the connector's webhook function calls `ctx.sl.members.apply(...)`; the contact gets `customFields.loyalty` and flat `loyaltyTier / loyaltyPoints / loyaltyMemberId`, usable in segments and comms targeting — [connectors.md](connectors.md#loyalty-and-crm-connectors) |
+| **Gate / display** — "Gold members only", live balance | the entitlement check, answered on demand from a signed claim, the connector's cached `lookup`, or the contact's fields — [entitlements.md](entitlements.md) |
+
+A collection runs one loyalty source: the native schemes here, or an external provider through a
+connector.
+
+---
+
 ## TypeScript Types
 
 ```typescript

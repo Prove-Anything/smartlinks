@@ -55,7 +55,48 @@ export interface FlowConnectorRef {
   settings?: Record<string, unknown>
 }
 
+import type { ConnectorInstallation } from './appManifest'
+
+/** What about a person an event-sourced flow lets leave. Default 'hashed'. */
+export type IdentityPolicy = 'externalIds' | 'hashed' | 'raw'
+
+/**
+ * Many SmartLinks events → the provider's few registered event names. Rules are tried in order; the
+ * first match names the provider event and renders its attributes (a literal, a Liquid template over
+ * the envelope, or `{ path, default }`). An unmatched event is skipped (recorded as such) unless
+ * `unmatched: 'passthrough'`. Validated against the connector's `describeEvents` when the flow is saved.
+ */
+export interface EventMappingRule {
+  id?: string
+  match?: { types?: string[]; interactionIds?: string[]; outcomes?: string[]; appIds?: string[] }
+  /** The provider's registered event name. */
+  event: string
+  attributes?: Record<string, string | number | boolean | { path: string; default?: unknown } | { value: unknown }>
+}
+export interface EventMapping {
+  rules: EventMappingRule[]
+  unmatched?: 'skip' | 'passthrough'
+}
+
+/** What an outbound flow reads: the product that changed, or ONE spine event as the envelope. */
+export type FlowSourceEntity = 'product' | 'interaction' | 'contact' | 'event'
+/** What an inbound flow writes. */
+export type FlowTargetEntity = 'product' | 'contact'
+
 export interface IntegrationFlowConfig {
+  /**
+   * Signed deliveries: X-SmartLinks-Signature `t=<unix>,v1=<hex HMAC-SHA256(secret, t + '.' + body)>`
+   * over the exact bytes sent. `previousCredentialRef` keeps the old secret signing during a rotation.
+   */
+  signing?: { credentialRef: string; previousCredentialRef?: string }
+  /**
+   * Event-sourced flows: what about the person leaves (default 'hashed': ids + HMAC hashes of email and
+   * phone, never the values). `hashKeyCredentialRef` names the brand's own hash key, so hashes match a
+   * mirror they built; otherwise a per-collection platform key is used.
+   */
+  identity?: { policy?: IdentityPolicy; hashKeyCredentialRef?: string }
+  /** Event-sourced flows: fold SmartLinks events into the provider's registered events. */
+  eventMapping?: EventMapping
   connection?: FlowConnection
   fieldMappings?: FieldMapping[]
   /** Run this flow through a connector app's functions instead of the built-in mapper/transport. */
@@ -75,8 +116,10 @@ export interface IntegrationFlow {
   eventTypes: string[]
   /** Cron/interval string for scheduled flows, or null. */
   schedule: string | null
-  sourceEntity: string | null
-  targetEntity: string | null
+  /** Outbound: what the flow reads (product | interaction | contact | event). */
+  sourceEntity: FlowSourceEntity | string | null
+  /** Inbound: what the flow writes (product | contact). */
+  targetEntity: FlowTargetEntity | string | null
   config: IntegrationFlowConfig
   createdBy: string | null
   createdAt: string
@@ -271,7 +314,69 @@ export interface SaveConnectorInstallationInput {
 }
 
 /** Steps the console may run directly (send and fetch only run inside a flow; shape/serialize as dry runs). */
-export type ConnectorConsoleStep = 'testConnection' | 'describeTarget' | 'sample' | 'shape' | 'serialize'
+export type ConnectorConsoleStep = 'testConnection' | 'describeTarget' | 'sample' | 'shape' | 'serialize' | 'describeEvents' | 'lookup'
+
+/** `describeEvents` → what the provider has registered for this installation (loyalty / engagement). */
+export interface ConnectorEventsSchema {
+  events: Array<{ name: string; title?: string; attributes?: Array<{ name: string; type?: string; required?: boolean }> }>
+  limits?: { maxEvents?: number; maxAttributes?: number }
+}
+
+/** `lookup` input: one identity, as the collection's lookup policy sends it (raw, or hashed). */
+export interface ConnectorLookupInput {
+  installation: ConnectorInstallation
+  identity: { externalId?: string | null; email?: string | null; phone?: string | null; emailHash?: string | null; phoneHash?: string | null; contactId?: string | null }
+  /** Attribute names the gate wants, e.g. ['tier', 'points', 'status']. */
+  want?: string[]
+}
+/** `lookup` result. Throw (or return non-2xx) for an outage — never `found: false`. */
+export interface ConnectorLookupResult {
+  found: boolean
+  memberId?: string | null
+  tier?: string | null
+  points?: number | null
+  status?: string | null
+  attributes?: Record<string, unknown>
+  /** When the provider's answer is from (ISO). */
+  asOf?: string | null
+}
+
+/**
+ * The one shape a SmartLinks event has when it leaves the platform — what event-sourced flows hand a
+ * connector's `serialize` / `send`, after the flow's identity policy and event mapping.
+ */
+export interface EventEnvelope {
+  /** The event's id: stable across retries; use it as the provider's transaction / idempotency id. */
+  id: string
+  /** Spine event name, e.g. 'interaction.submitted:<typeId>', 'contact.updated', 'tag.scanned:scan_redirect'. */
+  type: string
+  entityType: string | null
+  entityId: string | null
+  occurredAt: string
+  collectionId: string
+  orgId: string
+  appId: string | null
+  identity: {
+    contactId: string | null
+    userId: string | null
+    /** Ids other systems know this person by, keyed by system (a connector's `provider`). */
+    externalIds: Record<string, string>
+    emailHash?: string | null
+    phoneHash?: string | null
+    hashAlgorithm?: 'hmac-sha256' | null
+    /** Only under identity policy 'raw'. */
+    email?: string | null
+    phone?: string | null
+  }
+  identityPolicy: IdentityPolicy
+  product: { id: string; name?: string | null; sku?: string | null; gtin?: string | null; variantId?: string | null; batchId?: string | null } | null
+  proof: { id: string } | null
+  /** The event's own fields: an interaction's interactionId / outcome / metadata, a scan's codeId / country, a contact's profile. */
+  subject: Record<string, unknown>
+  /** From the flow's event mapping, when it has one. */
+  event?: { name: string; attributes: Record<string, unknown>; rule: string | null }
+  attributes: Record<string, unknown>
+}
 
 // ---------------------------------------------------------------------------
 // Run logs — persisted history of automated + manual runs, with opt-in, redacted

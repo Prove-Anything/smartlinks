@@ -14,6 +14,10 @@ export interface NfcValidateRequest {
     claimSetId: string;
     codeId: string;
     mirror?: string;
+    /** NTAG 424 DNA: the encrypted PICC block from the tag's URL (`?p=`, 32 hex) */
+    d?: string;
+    /** NTAG 424 DNA: the tag's SDM MAC from its URL (`&c=`, 16 hex). Verified by the server when present; always forward it. */
+    c?: string;
     userId?: string;
 }
 export interface NfcValidateResponse {

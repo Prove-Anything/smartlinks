@@ -1,4 +1,4 @@
-import type { AuthLoginResponse, AppleLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, AuthKitConfigInput, AuthKitSetIdentityResponse, AuthKitInviteRequest, AuthKitInviteResponse, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse, MfaChallengeSendResponse, MfaFinalizeResponse, MfaEnrollSendResponse, MfaTotpEnrollResponse, MfaEnrolledResponse, MfaFactor, MfaFactorsResponse, TrustedDevice } from "../types/authKit.js";
+import type { AuthLoginResponse, AppleLoginOptions, MicrosoftLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, AuthKitConfigInput, AuthKitSetIdentityResponse, AuthKitInviteRequest, AuthKitInviteResponse, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse, MfaChallengeSendResponse, MfaFinalizeResponse, MfaEnrollSendResponse, MfaTotpEnrollResponse, MfaEnrolledResponse, MfaFactor, MfaFactorsResponse, TrustedDevice } from "../types/authKit.js";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
@@ -93,6 +93,22 @@ export declare namespace authKit {
      * @see AppleLoginOptions
      */
     function appleLogin(clientId: string, identityToken: string, opts?: AppleLoginOptions): Promise<AuthLoginResponse>;
+    /**
+     * Sign in with Microsoft — work or school accounts from any organisation, and personal Microsoft
+     * accounts — via a Microsoft ID token (public). Mirrors {@link appleLogin}: on success the bearer
+     * token is stored and the cache invalidated.
+     *
+     * Get the ID token from Microsoft's sign-in (response_type `id_token`, scope `openid profile email`)
+     * against the app in the public config's `microsoftClientId`. A site on its own domain can't be a
+     * registered address of that app, so the SmartLinks sign-in UI opens SmartLinks' Microsoft sign-in
+     * page in a popup, which calls this with `opts.returnOrigin` and hands the result back.
+     *
+     * Notable error codes: `MISSING_MICROSOFT_TOKEN` (400), `MICROSOFT_AUTH_NOT_CONFIGURED` (400),
+     * `INVALID_MICROSOFT_TOKEN` (401), `MICROSOFT_ORIGIN_NOT_ALLOWED` (403), `NOT_IN_ORGANISATION` (403 —
+     * the login setup's {@link AuthKitAccess} rule), `ACCOUNT_EXISTS_UNVERIFIED` (409),
+     * `MICROSOFT_AUTH_FAILED` (500). Gated by step-up MFA like every sign-in.
+     */
+    function microsoftLogin(clientId: string, idToken: string, opts?: MicrosoftLoginOptions): Promise<AuthLoginResponse>;
     /**
      * Exchange a refresh token for a fresh access token (public — the refresh token IS
      * the credential). **Native sessions only**; refresh tokens are issued only when the

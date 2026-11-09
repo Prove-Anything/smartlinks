@@ -1121,6 +1121,18 @@ export interface AppConnectorDeclaration {
     send?: string
     /** (ConnectorFetchInput) → ConnectorRecords: inbound pull, one page per call. */
     fetch?: string
+    /**
+     * Loyalty / engagement providers: → ConnectorEventsSchema, the event names (and attributes) the
+     * provider has registered for this installation. A flow's eventMapping is validated against it when
+     * saved, so a mapping that names an unregistered event or breaks a limit is refused with the reason.
+     */
+    describeEvents?: string
+    /**
+     * (ConnectorLookupInput) → ConnectorLookupResult: one identity → member id, tier, points, status.
+     * Called by the entitlement check (see docs/entitlements.md) through a cache keyed on an identity
+     * hash, for the TTL the collection sets — one call per active person per TTL, never a sync.
+     */
+    lookup?: string
   }
   panels?: ConnectorPanel[]
   /** Path (under the app's public files) of a guide the AI mapping assistant reads. */
@@ -1131,8 +1143,12 @@ export interface AppConnectorDeclaration {
    * Default 'id'; a flow can override it with `config.upsert.externalIdPath`.
    */
   recordId?: string
-  /** Requests per second toward the provider, shared by every SmartLinks worker. */
-  limits?: { requestsPerSecond?: number }
+  /**
+   * Requests per second toward the provider, shared by every SmartLinks worker; and, for providers that
+   * cap registered events, how many distinct events / attributes per event they accept (a flow's
+   * eventMapping is checked against them when saved).
+   */
+  limits?: { requestsPerSecond?: number; maxEvents?: number; maxAttributes?: number }
 }
 
 /**

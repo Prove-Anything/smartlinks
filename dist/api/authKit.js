@@ -139,6 +139,30 @@ export var authKit;
         return res;
     }
     authKit.appleLogin = appleLogin;
+    /**
+     * Sign in with Microsoft — work or school accounts from any organisation, and personal Microsoft
+     * accounts — via a Microsoft ID token (public). Mirrors {@link appleLogin}: on success the bearer
+     * token is stored and the cache invalidated.
+     *
+     * Get the ID token from Microsoft's sign-in (response_type `id_token`, scope `openid profile email`)
+     * against the app in the public config's `microsoftClientId`. A site on its own domain can't be a
+     * registered address of that app, so the SmartLinks sign-in UI opens SmartLinks' Microsoft sign-in
+     * page in a popup, which calls this with `opts.returnOrigin` and hands the result back.
+     *
+     * Notable error codes: `MISSING_MICROSOFT_TOKEN` (400), `MICROSOFT_AUTH_NOT_CONFIGURED` (400),
+     * `INVALID_MICROSOFT_TOKEN` (401), `MICROSOFT_ORIGIN_NOT_ALLOWED` (403), `NOT_IN_ORGANISATION` (403 —
+     * the login setup's {@link AuthKitAccess} rule), `ACCOUNT_EXISTS_UNVERIFIED` (409),
+     * `MICROSOFT_AUTH_FAILED` (500). Gated by step-up MFA like every sign-in.
+     */
+    async function microsoftLogin(clientId, idToken, opts) {
+        const res = await post(`/authkit/${encodeURIComponent(clientId)}/auth/microsoft`, Object.assign({ idToken }, opts));
+        if (res.token) {
+            setBearerToken(res.token);
+            invalidateCache();
+        }
+        return res;
+    }
+    authKit.microsoftLogin = microsoftLogin;
     /* ===================================
      * Native session refresh (public)
      * =================================== */

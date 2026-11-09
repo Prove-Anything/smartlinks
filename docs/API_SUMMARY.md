@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.11  |  Generated: 2026-11-05T11:47:28.828Z
+Version: 2.1.14  |  Generated: 2026-11-09T13:01:05.900Z
 
 This is a concise summary of all available API functions and types.
 
@@ -64,8 +64,9 @@ For detailed guides on specific features:
 - **[Analytics](analytics.md)** - Web analytics, link-click tracking, QR/tag scan telemetry, and event reporting
 - **[Analytics Metadata Conventions](analytics-metadata-conventions.md)** - Standard recommended keys and conventions for analytics metadata fields
 - **[Loyalty: Points, Members & Earning Rules](loyalty.md)** - Loyalty schemes, automatic point earning via interaction rules, member balances, transaction history, and manual adjustments
-- **[Integrations](integrations.md)** - Inbound/outbound integration flows + the sealed-secret store; triggers (manual/event/schedule), field mappings, and the Syndigo/Event Hub outbound path
-- **[Connectors](connectors.md)** - Connector apps (adapters for one external provider): a manifest `connector` block + server functions (testConnection/describeTarget/sample/fetch/shape/serialize/send); core does the mapping
+- **[Integrations](integrations.md)** - Inbound/outbound integration flows + the sealed-secret store; triggers (manual/event/schedule), event patterns, the event envelope (interaction/contact/event sources), identity policy, event mapping, signed deliveries, contact as a target, field mappings
+- **[Connectors](connectors.md)** - Connector apps (adapters for one external provider): a manifest `connector` block + server functions (testConnection/describeTarget/sample/fetch/shape/serialize/send/describeEvents/lookup); loyalty and CRM connectors; core does the mapping
+- **[Entitlements](entitlements.md)** - "Is this person gold or above?" answered on demand from signed claims, a connector lookup (cached), or the contact — never a mirrored member base; gates on interaction types and in server functions
 - **[AI Tools & Skills](ai-tools-and-skills.md)** - The AI capability catalog: skills apps invoke by name (e.g. research.brand), the tools the AI reaches for (web fetch/screenshot/brand assets/image gen), the agent loop, and how apps discover them
 - **[Deep Link Discovery](deep-link-discovery.md)** - Registering and discovering navigable app states for portal menus and AI orchestration
 - **[AI Guide Template](ai-guide-template.md)** - A sample for an app on how to build an AI setup guide
@@ -3129,11 +3130,13 @@ interface AppConnectorDeclaration {
   serialize?: string
   send?: string
   fetch?: string
+  describeEvents?: string
+  lookup?: string
   }
   panels?: ConnectorPanel[]
   aiGuide?: string
   recordId?: string
-  limits?: { requestsPerSecond?: number }
+  limits?: { requestsPerSecond?: number; maxEvents?: number; maxAttributes?: number }
 }
 ```
 
@@ -4624,6 +4627,24 @@ interface LogoutResponse {
 }
 ```
 
+**MicrosoftLoginOptions** (interface)
+```typescript
+interface MicrosoftLoginOptions {
+  returnOrigin?: string
+  trustedDeviceToken?: string
+}
+```
+
+**AuthKitAccess** (interface)
+```typescript
+interface AuthKitAccess {
+  mode: 'anyone' | 'organisation'
+  domains?: string[]
+  emails?: string[]
+  microsoftTenants?: Record<string, string>
+}
+```
+
 **AppleLoginOptions** (interface)
 ```typescript
 interface AppleLoginOptions {
@@ -4953,6 +4974,8 @@ interface AuthKitConfig {
   collectionIds?: string[]
   identity?: AuthKitIdentity
   signUp?: 'open' | 'invite'
+  access?: AuthKitAccess
+  microsoftClientId?: string
 }
 ```
 
@@ -5891,6 +5914,17 @@ interface PartnerClaimSet {
   codes: number
   deleted: boolean
   createdAt: string | null
+}
+```
+
+**PartnerTagHit** (interface)
+```typescript
+interface PartnerTagHit {
+  namespace: string
+  claimSetId: string
+  set: PartnerClaimSet | null
+  tag: ClaimSetRangeTag & { url: string | null }
+  range: ClaimSetRange | null
 }
 ```
 
@@ -7922,9 +7956,30 @@ interface FlowConnectorRef {
 }
 ```
 
+**EventMappingRule** (interface)
+```typescript
+interface EventMappingRule {
+  id?: string
+  match?: { types?: string[]; interactionIds?: string[]; outcomes?: string[]; appIds?: string[] }
+  event: string
+  attributes?: Record<string, string | number | boolean | { path: string; default?: unknown } | { value: unknown }>
+}
+```
+
+**EventMapping** (interface)
+```typescript
+interface EventMapping {
+  rules: EventMappingRule[]
+  unmatched?: 'skip' | 'passthrough'
+}
+```
+
 **IntegrationFlowConfig** (interface)
 ```typescript
 interface IntegrationFlowConfig {
+  signing?: { credentialRef: string; previousCredentialRef?: string }
+  identity?: { policy?: IdentityPolicy; hashKeyCredentialRef?: string }
+  eventMapping?: EventMapping
   connection?: FlowConnection
   fieldMappings?: FieldMapping[]
   connector?: FlowConnectorRef
@@ -7944,8 +7999,8 @@ interface IntegrationFlow {
   status: FlowStatus
   eventTypes: string[]
   schedule: string | null
-  sourceEntity: string | null
-  targetEntity: string | null
+  sourceEntity: FlowSourceEntity | string | null
+  targetEntity: FlowTargetEntity | string | null
   config: IntegrationFlowConfig
   createdBy: string | null
   createdAt: string
@@ -8131,6 +8186,66 @@ interface InstalledConnector {
 interface SaveConnectorInstallationInput {
   connection?: Record<string, unknown>
   settings?: Record<string, unknown>
+}
+```
+
+**ConnectorEventsSchema** (interface)
+```typescript
+interface ConnectorEventsSchema {
+  events: Array<{ name: string; title?: string; attributes?: Array<{ name: string; type?: string; required?: boolean }> }>
+  limits?: { maxEvents?: number; maxAttributes?: number }
+}
+```
+
+**ConnectorLookupInput** (interface)
+```typescript
+interface ConnectorLookupInput {
+  installation: ConnectorInstallation
+  identity: { externalId?: string | null; email?: string | null; phone?: string | null; emailHash?: string | null; phoneHash?: string | null; contactId?: string | null }
+  want?: string[]
+}
+```
+
+**ConnectorLookupResult** (interface)
+```typescript
+interface ConnectorLookupResult {
+  found: boolean
+  memberId?: string | null
+  tier?: string | null
+  points?: number | null
+  status?: string | null
+  attributes?: Record<string, unknown>
+  asOf?: string | null
+}
+```
+
+**EventEnvelope** (interface)
+```typescript
+interface EventEnvelope {
+  id: string
+  type: string
+  entityType: string | null
+  entityId: string | null
+  occurredAt: string
+  collectionId: string
+  orgId: string
+  appId: string | null
+  identity: {
+  contactId: string | null
+  userId: string | null
+  externalIds: Record<string, string>
+  emailHash?: string | null
+  phoneHash?: string | null
+  hashAlgorithm?: 'hmac-sha256' | null
+  email?: string | null
+  phone?: string | null
+  }
+  identityPolicy: IdentityPolicy
+  product: { id: string; name?: string | null; sku?: string | null; gtin?: string | null; variantId?: string | null; batchId?: string | null } | null
+  proof: { id: string } | null
+  subject: Record<string, unknown>
+  event?: { name: string; attributes: Record<string, unknown>; rule: string | null }
+  attributes: Record<string, unknown>
 }
 ```
 
@@ -8336,9 +8451,15 @@ interface RecordTypesResponse {
 
 **FlowAuthMethod** = `'api_key' | 'bearer' | 'basic' | 'webhook' | 'oauth2' | 'none'`
 
+**IdentityPolicy** = `'externalIds' | 'hashed' | 'raw'`
+
+**FlowSourceEntity** = `'product' | 'interaction' | 'contact' | 'event'`
+
+**FlowTargetEntity** = `'product' | 'contact'`
+
 **UpdateFlowInput** = `Partial<Omit<CreateFlowInput, 'direction'>> & {`
 
-**ConnectorConsoleStep** = `'testConnection' | 'describeTarget' | 'sample' | 'shape' | 'serialize'`
+**ConnectorConsoleStep** = `'testConnection' | 'describeTarget' | 'sample' | 'shape' | 'serialize' | 'describeEvents' | 'lookup'`
 
 **RunTrigger** = `'manual' | 'event' | 'schedule' | 'test'`
 
@@ -9330,6 +9451,8 @@ interface NfcValidateRequest {
   claimSetId: string
   codeId: string
   mirror?: string
+  d?: string
+  c?: string
   userId?: string
 }
 ```
@@ -11924,6 +12047,9 @@ Sign in with LinkedIn (OpenID Connect) via a server-side authorization code (pub
 **appleLogin**(clientId: string, identityToken: string, opts?: AppleLoginOptions) → `Promise<AuthLoginResponse>`
 Sign in with Apple via an Apple identity token (public). Mirrors {@link googleLogin}. On success the returned bearer token is stored automatically and the cache is invalidated. Notable error codes (thrown as `SmartlinksApiError`, read via `err.errorCode`): - `MISSING_APPLE_TOKEN` (400), `APPLE_AUTH_NOT_CONFIGURED` (400), `INVALID_APPLE_TOKEN` (401), `APPLE_AUTH_FAILED` (500) - `ACCOUNT_EXISTS_UNVERIFIED` (409) — an unverified account already owns this email; the server refuses to silently link. `err.details.requiresEmailVerification` is `true`. Recoverable: the user should sign in with their password (or reset it), then link Apple from settings. **The same 409 can now come back from {@link googleLogin}** under the shared verified-to-verified linking policy. Gated by step-up MFA — see {@link login} for the `MFA_REQUIRED` error shape. Pass `opts.trustedDeviceToken` to skip the challenge on a recognized device.
 
+**microsoftLogin**(clientId: string, idToken: string, opts?: MicrosoftLoginOptions) → `Promise<AuthLoginResponse>`
+Sign in with Microsoft — work or school accounts from any organisation, and personal Microsoft accounts — via a Microsoft ID token (public). Mirrors {@link appleLogin}: on success the bearer token is stored and the cache invalidated. Get the ID token from Microsoft's sign-in (response_type `id_token`, scope `openid profile email`) against the app in the public config's `microsoftClientId`. A site on its own domain can't be a registered address of that app, so the SmartLinks sign-in UI opens SmartLinks' Microsoft sign-in page in a popup, which calls this with `opts.returnOrigin` and hands the result back. Notable error codes: `MISSING_MICROSOFT_TOKEN` (400), `MICROSOFT_AUTH_NOT_CONFIGURED` (400), `INVALID_MICROSOFT_TOKEN` (401), `MICROSOFT_ORIGIN_NOT_ALLOWED` (403), `NOT_IN_ORGANISATION` (403 — the login setup's {@link AuthKitAccess} rule), `ACCOUNT_EXISTS_UNVERIFIED` (409), `MICROSOFT_AUTH_FAILED` (500). Gated by step-up MFA like every sign-in.
+
 **refreshToken**(clientId: string, refreshToken: string) → `Promise<RefreshResponse>`
 Exchange a refresh token for a fresh access token (public — the refresh token IS the credential). **Native sessions only**; refresh tokens are issued only when the host opted in via `initializeApi({ platform: 'native' })`. On success the new access token is stored automatically (`setBearerToken`). The returned `refreshToken` is **rotated** — the caller must persist it and discard the old one before refreshing again. ⚠️ **Single-use, no retry, serialize calls.** This method issues exactly one request and never retries: replaying a consumed refresh token triggers `REFRESH_TOKEN_REUSE_DETECTED` (the whole session family is revoked). The caller is responsible for ensuring only one refresh is in flight at a time (e.g. across tabs or resume events). Errors (thrown as `SmartlinksApiError`, read via `err.errorCode`): `MISSING_REFRESH_TOKEN` (400), `INVALID_REFRESH_TOKEN` (401), `REFRESH_TOKEN_REUSE_DETECTED` (401) — the last two mean a hard logout.
 
@@ -12327,20 +12453,8 @@ The range's tags in index order, a page at a time (keys: owners/admins only).
 The next tag to program on a phone (lowest index without a chip), with its URL and key.
 
 **recordTag**(scope: ClaimSetScope, claimSetId: string, rangeId: string, code: string,
-      params: { uid: string; data?: Record<string, unknown> }) → `Promise<`
+      params: { uid: string; data?: Record<string, unknown>; /** A plain (NTAG 21x) → `void`
 Record the chip a phone just programmed with this code.
-
-**exportFile**(scope: ClaimSetScope, claimSetId: string, rangeId: string) → `Promise<ClaimSetRangeFile>`
-The printer file (CSV text in `csv`). Carries the tags' keys: don't keep it around.
-
-**instructions**(scope: ClaimSetScope, claimSetId: string, rangeId: string, format: 'pdf' | 'md' = 'pdf') → `Promise<ClaimSetRangeFile>`
-The manufacturer's instruction sheet: PDF (base64) or Markdown.
-
-**importUids**(scope: ClaimSetScope, claimSetId: string, rangeId: string, params: ImportClaimSetRangeUidsRequest) → `Promise<ImportClaimSetRangeUidsResponse>`
-The manufacturer's file back: check it (commit false), then write the chip UIDs (commit true).
-
-**assign**(scope: ClaimSetScope, claimSetId: string, rangeId: string, params: AssignClaimSetRangeRequest) → `Promise<AssignClaimSetRangeResponse>`
-Point the range (or from–to within it) at a collection / product / batch, or clear it.
 
 ### collection
 
@@ -13269,6 +13383,9 @@ One of the partner's claim sets.
 
 **createClaimSet**(partnerId: string, params: CreatePartnerClaimSetRequest) → `Promise<PartnerClaimSet>`
 A new claim set for the partner, on one of its tap domains (owners and admins).
+
+**lookupTags**(partnerId: string, query: { uid?: string; code?: string }) → `Promise<PartnerTagHit[]>`
+Find a tag across the partner's sets by its chip UID (8 or 14 hex) or its code (printed or bare). Never returns keys.
 
 ### podcast
 
