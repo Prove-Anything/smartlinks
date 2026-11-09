@@ -2,6 +2,7 @@ import { request, post, put, del, requestWithOptions, setBearerToken, invalidate
 import type {
   AuthLoginResponse,
   AppleLoginOptions,
+  MicrosoftLoginOptions,
   RefreshResponse,
   LogoutResponse,
   PhoneSendCodeResponse,
@@ -164,6 +165,27 @@ export namespace authKit {
   export async function appleLogin(clientId: string, identityToken: string, opts?: AppleLoginOptions): Promise<AuthLoginResponse> {
     const body: { identityToken: string } & AppleLoginOptions = { identityToken, ...opts }
     const res = await post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/apple`, body)
+    if (res.token) { setBearerToken(res.token); invalidateCache() }
+    return res
+  }
+
+  /**
+   * Sign in with Microsoft — work or school accounts from any organisation, and personal Microsoft
+   * accounts — via a Microsoft ID token (public). Mirrors {@link appleLogin}: on success the bearer
+   * token is stored and the cache invalidated.
+   *
+   * Get the ID token from Microsoft's sign-in (response_type `id_token`, scope `openid profile email`)
+   * against the app in the public config's `microsoftClientId`. A site on its own domain can't be a
+   * registered address of that app, so the SmartLinks sign-in UI opens SmartLinks' Microsoft sign-in
+   * page in a popup, which calls this with `opts.returnOrigin` and hands the result back.
+   *
+   * Notable error codes: `MISSING_MICROSOFT_TOKEN` (400), `MICROSOFT_AUTH_NOT_CONFIGURED` (400),
+   * `INVALID_MICROSOFT_TOKEN` (401), `MICROSOFT_ORIGIN_NOT_ALLOWED` (403), `NOT_IN_ORGANISATION` (403 —
+   * the login setup's {@link AuthKitAccess} rule), `ACCOUNT_EXISTS_UNVERIFIED` (409),
+   * `MICROSOFT_AUTH_FAILED` (500). Gated by step-up MFA like every sign-in.
+   */
+  export async function microsoftLogin(clientId: string, idToken: string, opts?: MicrosoftLoginOptions): Promise<AuthLoginResponse> {
+    const res = await post<AuthLoginResponse>(`/authkit/${encodeURIComponent(clientId)}/auth/microsoft`, { idToken, ...opts })
     if (res.token) { setBearerToken(res.token); invalidateCache() }
     return res
   }

@@ -115,6 +115,42 @@ export type RefreshErrorCode =
  * Options for {@link authKit.appleLogin}. All fields are optional — only the
  * `identityToken` (passed as a positional argument) is required by the server.
  */
+/** Options for {@link authKit.microsoftLogin}. */
+export interface MicrosoftLoginOptions {
+  /**
+   * The site the session will be handed to, when signing in through a popup page on another address
+   * (the SmartLinks Microsoft sign-in page does this). The server refuses unless it's one of the login
+   * setup's own sites (`MICROSOFT_ORIGIN_NOT_ALLOWED`). Leave it out when signing in on the site itself.
+   */
+  returnOrigin?: string
+  /** Skip the step-up MFA challenge on a recognised device. */
+  trustedDeviceToken?: string
+}
+
+/**
+ * Who can sign in through a login setup, whatever the method (password, magic link, phone, WhatsApp,
+ * Google, Apple, LinkedIn, Microsoft):
+ * - `anyone` (also: no `access`) — anyone, as before;
+ * - `organisation` — people from the listed organisations: a VERIFIED email at one of `domains`, one of
+ *   the listed `emails`, or signing in with Microsoft from the domain's own Microsoft organisation. A
+ *   Microsoft email alone doesn't count (an organisation can give its users any address), so on save
+ *   the server looks up each domain's Microsoft organisation itself — nobody types a tenant id.
+ *
+ * Checked every time a session is issued (tightening it shuts people out from their next sign-in);
+ * refused with `NOT_IN_ORGANISATION` (403). Registration refuses outside addresses up front and never
+ * signs an unverified address straight in. Accounts with no email (phone / WhatsApp only) can't show
+ * they're from an organisation. The public config returns only `{ mode, domains }`.
+ */
+export interface AuthKitAccess {
+  mode: 'anyone' | 'organisation'
+  /** e.g. `['acme.com']` (no `@`; exact domains — list subsidiaries' domains too). Up to 50. */
+  domains?: string[]
+  /** Particular people allowed besides the organisations, e.g. a contractor. Up to 50. Never public. */
+  emails?: string[]
+  /** Server-filled on save: `{ 'acme.com': '<Microsoft tenant id>' }` for domains with a Microsoft organisation. Read-only. */
+  microsoftTenants?: Record<string, string>
+}
+
 export interface AppleLoginOptions {
   /** Apple authorization code. Accepted but ignored by the server for now (reserved for future server-side token exchange). */
   authorizationCode?: string
@@ -150,6 +186,12 @@ export type AuthKitErrorCode =
   | 'ACCOUNT_EXISTS_UNVERIFIED'   // 409 — an unverified account already owns this email (Apple OR Google)
   | 'APPLE_AUTH_FAILED'           // 500 — unexpected server error
   | 'SIGN_UP_CLOSED'              // 403 — an invitation-only site (signUp: 'invite'): this person has no account and wasn't invited
+  | 'NOT_IN_ORGANISATION'         // 403 — the login setup is for one organisation (`access`) and this person isn't from it; `message` says which
+  | 'MISSING_MICROSOFT_TOKEN'     // 400 — idToken absent from the body
+  | 'MICROSOFT_AUTH_NOT_CONFIGURED' // 400 — Microsoft sign-in isn't set up (no SmartLinks app, no own app id)
+  | 'INVALID_MICROSOFT_TOKEN'     // 401 — signature / issuer / audience / expiry check failed
+  | 'MICROSOFT_ORIGIN_NOT_ALLOWED' // 403 — returnOrigin isn't one of the login setup's own sites
+  | 'MICROSOFT_AUTH_FAILED'       // 500 — unexpected server error
 
 /* ===================================
  * Step-up MFA (Phase 1: email OTP, SMS OTP, recovery codes)
@@ -507,6 +549,16 @@ export interface AuthKitConfig {
    * Setting `invite` needs own logins first (`OWN_LOGINS_REQUIRED`, 409).
    */
   signUp?: 'open' | 'invite'
+  /** Who can sign in — see {@link AuthKitAccess}. Absent = anyone. */
+  access?: AuthKitAccess
+  /**
+   * Sign in with Microsoft: add `'microsoft'` to `enabledProviders`. SmartLinks' own Microsoft app serves
+   * every organisation and personal Microsoft accounts, so nothing else is needed. Set this only to show
+   * your OWN name on Microsoft's sign-in screen: the Application (client) ID of your own multitenant app
+   * registration (redirect URI: https://smartlinks.app/apps/account/stable/microsoft-proxy.html). On the
+   * public config it's the effective id (yours, else SmartLinks').
+   */
+  microsoftClientId?: string
 }
 
 /** Body of {@link authKit.invite}. */
