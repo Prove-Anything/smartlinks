@@ -517,6 +517,7 @@ Prefer the platform primitives above over a dependency; when you do need one, pi
 | Change numbers in a record (stock, counts, balances) without losing updates | `ctx.sl.appRecords.adjust(id, { qty: -5 }, { atLeast: { qty: 0 } })` — in place, conditions checked after the change | `sl:records:write` |
 | Several record writes that land together or not at all (a stock move) | `ctx.sl.transaction([ops], { idempotencyKey })` — see below | `sl:records:write` |
 | Totals: stock per location, forecast per SKU | `ctx.sl.appRecords.aggregate({ groupBy: ['data.location'], metrics: ['sum:qty'] })` | `sl:records:read` |
+| Keep a history of what happened (stock moves, counts) without growing your records | `ctx.sl.history.log('stock.moved', {…})`, or a `log` op in a transaction; read with `ctx.sl.history.query({…})` | `sl:history:write` / `sl:history:read` |
 | Check a tapped tag is real | `ctx.sl.tags.resolve(proofId)` → `{ id, claimSetId, code }` or `null` | `sl:tags:read` |
 | Put a visitor's details on a contact | `ctx.sl.contacts.upsert({ email, firstName, … })` → `{ contactId, created }` (fills empty fields only) | `sl:contacts:write` |
 | Record "they did X" | `ctx.sl.interactions.record({ interactionId, contactId, outcome, metadata })` | `sl:interactions:write` |
@@ -611,15 +612,44 @@ const { results, replayed } = await ctx.sl.transaction([
 ```
 
 - Ops: `create` (`record`), `update` (`recordId`, `fields`), `adjust` (`recordId`, `by`, `atLeast?`,
-  `atMost?`), `delete` (`recordId`). Up to 50, run in order. This app's records in this collection only.
+  `atMost?`), `delete` (`recordId`), `log` (`type`, `data`, `entityId?`: a history event, see below).
+  Up to 50, run in order. This app's records in this collection only.
 - A failing op rolls everything back. The error says which op (`opIndex`) and why (its `code`).
 - Change events and realtime updates go out only after the transaction commits, never for a rollback.
-- **`idempotencyKey`**: the committed results are kept for 30 days. The same key again returns them
-  (`replayed: true`) without writing, so a handheld that retries after a dropped signal never moves
-  stock twice. Two calls with one key at the same moment: one commits, the other replays it. A
-  transaction that failed leaves its key free, so a retry can still succeed.
+- **`idempotencyKey`** ("this was already done"): recorded in the same commit, with what was written
+  (ids only). The same key again within 7 days doesn't write; it returns those records as they are now,
+  with `replayed: true`. So a handheld that retries after a dropped signal never moves stock twice. Two
+  calls with one key at the same moment: one commits, the other replays it. A transaction that failed
+  leaves its key free, so a retry can still succeed.
 - Use the scan's or the request's own id as the key (one key = one intended change).
 - Browser code never writes stock directly: a warehouse screen calls your function.
+
+### `history` — what happened, kept without growing your records
+
+Keep **current state** in records (a bin's quantity, an order's status) and **what happened** in the app's
+history: append-only events in SmartLinks' analytics store, kept for good, cheap however many there
+are. Picking every order line for years would bloat records; as history it costs nothing operational.
+
+```ts
+// In a transaction: commits with the stock change, or not at all.
+await ctx.sl.transaction([
+  { op: 'adjust', recordId: binA, by: { qty: -5 }, atLeast: { qty: 0 } },
+  { op: 'log', type: 'stock.moved', entityId: binA, data: { sku: 'EDP-50', from: 'A1', to: orderId, qty: 5 } },
+], { idempotencyKey: scanId })
+
+// On its own:
+await ctx.sl.history.log('count.taken', { bin: 'A1', counted: 40, expected: 42 }, { entityId: binA })
+
+// Reading back: this app's events in this collection, newest first (default last 30 days, max 400).
+const moves = await ctx.sl.history.query({ types: 'stock.moved', entityId: binA, limit: 20 })
+// → [{ id, at, type, entityId, data, actorType, actorId }]
+```
+
+- `type`: lowercase letters, digits and `. _ -` (`stock.moved`). `data`: up to 32 KB, so **log a summary**:
+  one line for "5 of EDP-50", not five; one line for an RFID count, not one per tag.
+- Delivery takes seconds and is retried until it lands; a logged event is never lost. A query reads the
+  analytics store, so expect about a second: right for a history panel, not for a hot path.
+- The person who called your function is recorded as the actor.
 
 ### `appRecords.aggregate(params)` — totals
 

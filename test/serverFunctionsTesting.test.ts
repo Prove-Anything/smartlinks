@@ -152,3 +152,23 @@ test('aggregate: sums grouped by a data key; transaction needs sl:records:write'
   const readOnly = createFunctionTestContext({ def: httpDef(['sl:records:read']) })
   await assert.rejects(readOnly.sl.transaction([{ op: 'delete', recordId: 'x' }]), CapabilityError)
 })
+
+test('history: a log op commits with the transaction (and rolls back with it); history.query reads newest first', async () => {
+  const ctx = createFunctionTestContext({ def: httpDef(['sl:records:write', 'sl:history:write', 'sl:history:read']) })
+  const bin: any = await ctx.sl.appRecords.create({ recordType: 'bin', data: { qty: 1 } })
+  await assert.rejects(ctx.sl.transaction([
+    { op: 'log', type: 'stock.moved', data: { qty: 5 } },
+    { op: 'adjust', recordId: bin.id, by: { qty: -5 }, atLeast: { qty: 0 } },
+  ]), { code: 'CONDITION_FAILED' })
+  assert.equal(ctx.memory.history.length, 0)
+  await ctx.sl.transaction([{ op: 'adjust', recordId: bin.id, by: { qty: -1 } }, { op: 'log', type: 'stock.moved', entityId: bin.id, data: { qty: 1 } }])
+  await ctx.sl.history.log('count.taken', { counted: 0 }, { entityId: bin.id })
+  const events: any = await ctx.sl.history.query({ entityId: bin.id })
+  assert.deepEqual(events.map((e: any) => e.type), ['count.taken', 'stock.moved'])
+})
+
+test('history: a log op without sl:history:write is refused, as on the platform', async () => {
+  const ctx = createFunctionTestContext({ def: httpDef(['sl:records:write']) })
+  await assert.rejects(ctx.sl.transaction([{ op: 'log', type: 'stock.moved', data: {} }]), CapabilityError)
+  await assert.rejects(ctx.sl.history.log('stock.moved', {}), CapabilityError)
+})

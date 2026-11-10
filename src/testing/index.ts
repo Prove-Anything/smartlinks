@@ -136,11 +136,13 @@ export interface FunctionTestMemory {
   bookings: BookingsMemory
   /** ctx.sl.transaction results by idempotency key (a repeat replays them). */
   transactions: Record<string, any[]>
+  /** ctx.sl.history events (log ops and history.log), oldest first. */
+  history: Array<{ id: string; at: string; type: string; entityId: string | null; data: Record<string, any>; actorType: null; actorId: null }>
 }
 
 /** A fresh in-memory store — pass the same one to several test contexts to simulate concurrent callers. */
 export function createFunctionTestMemory(): FunctionTestMemory {
-  return { records: [], counters: {}, contacts: [], interactions: [], bookings: createBookingsMemory(), transactions: {} }
+  return { records: [], counters: {}, contacts: [], interactions: [], bookings: createBookingsMemory(), transactions: {}, history: [] }
 }
 
 export interface FunctionTestContext extends ServerFunctionContext {
@@ -174,6 +176,9 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
     }
 
   const mem: FunctionTestMemory = opts.memory || createFunctionTestMemory()
+  // A memory built before history / transactions existed still works.
+  mem.history = mem.history || []
+  mem.transactions = mem.transactions || {}
   const ar = impl.appRecords || {}
   const pr = impl.products || {}
   const at = impl.attestations || {}
@@ -270,12 +275,29 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
       return { data, pagination: { total: all.length, limit: size, offset: from, hasMore: from + data.length < all.length } }
     },
   }
+  // The app's history, in memory (newest first when read, like the platform).
+  let nextEventId = 1
+  const memLog = (type: string, data: Record<string, any> = {}, opts: { entityId?: string } = {}) => {
+    if (typeof type !== 'string' || !/^[a-z][a-z0-9._-]{0,63}$/.test(type)) throw Object.assign(new Error('history type: lowercase letters, digits and . _ - (e.g. "stock.moved")'), { code: 'INVALID_INPUT', statusCode: 400 })
+    const ev = { id: `ev-${nextEventId++}`, at: new Date().toISOString(), type, entityId: opts.entityId ?? null, data: data || {}, actorType: null, actorId: null }
+    mem.history.push(ev)
+    return { id: ev.id }
+  }
+  const memHistoryQuery = async (params: any = {}) => {
+    const types = params.types == null ? null : (Array.isArray(params.types) ? params.types : [params.types])
+    return mem.history
+      .filter((e) => (!types || types.includes(e.type)) && (params.entityId == null || e.entityId === params.entityId) &&
+        Object.entries(params.data || {}).every(([k, v]) => (Array.isArray(v) ? v.map(String) : [String(v)]).includes(String(e.data[k]))))
+      .slice().reverse().slice(0, params.limit || 100).map((e) => ({ ...e }))
+  }
+
   // All ops or none, like the platform: records are restored when an op fails; a repeat of an
   // idempotencyKey replays the first results.
   const memTransaction = async (ops: any[], opts: { idempotencyKey?: string } = {}) => {
     const key = opts.idempotencyKey
     if (key && mem.transactions[key]) return { results: mem.transactions[key], replayed: true }
     const before = JSON.parse(JSON.stringify(mem.records))
+    const historyBefore = mem.history.length
     const results: any[] = []
     for (let i = 0; i < ops.length; i++) {
       const o = ops[i] || {}
@@ -284,9 +306,11 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
         else if (o.op === 'update') results.push(await memRecords.update(o.recordId, o.fields || {}))
         else if (o.op === 'adjust') results.push(await memRecords.adjust(o.recordId, o.by, { atLeast: o.atLeast, atMost: o.atMost }))
         else if (o.op === 'delete') { await memRecords.delete(o.recordId); results.push({ deleted: o.recordId }) }
-        else throw Object.assign(new Error(`ops[${i}].op must be create, update, adjust or delete`), { code: 'INVALID_INPUT', statusCode: 400 })
+        else if (o.op === 'log') results.push({ logged: memLog(o.type, o.data, { entityId: o.entityId }).id })
+        else throw Object.assign(new Error(`ops[${i}].op must be create, update, adjust, delete or log`), { code: 'INVALID_INPUT', statusCode: 400 })
       } catch (err: any) {
         mem.records.splice(0, mem.records.length, ...before)
+        mem.history.splice(historyBefore)
         throw Object.assign(err, { opIndex: i })
       }
     }
@@ -310,7 +334,14 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
       adjust: gated('records', 'write', recordsFn('adjust'), 'adjust'),
       aggregate: gated('records', 'read', recordsFn('aggregate'), 'aggregate'),
     },
-    transaction: gated('records', 'write', impl.transaction ? impl.transaction : (impl.appRecords ? undefined : memTransaction), 'transaction'),
+    transaction: gated('records', 'write', impl.transaction ? impl.transaction : (impl.appRecords ? undefined : async (ops: any[], opts?: any) => {
+      if (Array.isArray(ops) && ops.some((o) => o && o.op === 'log') && !allowsSl(parsed, 'history', 'write')) throw new CapabilityError('sl:history:write')
+      return memTransaction(ops, opts)
+    }), 'transaction'),
+    history: {
+      log: gated('history', 'write', async (type: string, data?: any, opts?: any) => memLog(type, data, opts), 'log'),
+      query: gated('history', 'read', memHistoryQuery, 'query'),
+    },
     products: {
       get: gated('products', 'read', pr.get && pr.get.bind(pr), 'get'),
       query: gated('products', 'read', pr.query && pr.query.bind(pr), 'query'),

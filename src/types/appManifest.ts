@@ -527,7 +527,33 @@ export type RecordTransactionOp =
   | { op: 'create'; record: Record<string, any> }
   | { op: 'update'; recordId: string; fields: Record<string, any> }
   | { op: 'adjust'; recordId: string; by: Record<string, number>; atLeast?: Record<string, number>; atMost?: Record<string, number> }
-  | { op: 'delete'; recordId: string };
+  | { op: 'delete'; recordId: string }
+  /** An event in the app's history (BigQuery): commits with the other ops, delivered after. Needs sl:history:write. */
+  | { op: 'log'; type: string; data?: Record<string, any>; entityId?: string };
+
+/** One event from an app's history. */
+export interface AppHistoryEvent {
+  id: string;
+  at: string;
+  type: string;
+  entityId: string | null;
+  data: Record<string, any>;
+  actorType: 'user' | 'contact' | null;
+  actorId: string | null;
+}
+
+/** Reading an app's history: its own events in this collection, newest first. */
+export interface AppHistoryQuery {
+  types?: string | string[];
+  entityId?: string;
+  /** Exact match on top-level data keys (one value or several). */
+  data?: Record<string, string | number | boolean | Array<string | number | boolean>>;
+  /** ISO dates. Default: the last 30 days; at most 400 days. */
+  from?: string;
+  to?: string;
+  /** Default 100, at most 1000. */
+  limit?: number;
+}
 
 export interface ServerFunctionSl {
   /** THIS app's bookings, slots and blocks (`sl:bookings:read` / `sl:bookings:write`). */
@@ -560,6 +586,17 @@ export interface ServerFunctionSl {
    * (`replayed: true`) instead of writing twice; keys are remembered for 30 days.
    */
   transaction(ops: RecordTransactionOp[], opts?: { idempotencyKey?: string }): Promise<{ results: any[]; replayed: boolean }>;
+  /**
+   * The app's HISTORY: append-only events kept in BigQuery (stock moved, a count taken, an order shipped),
+   * so the app's records hold current state and never grow with activity. `log` (`sl:history:write`)
+   * stores one event (it arrives within seconds; a failed delivery is retried, never lost); inside a
+   * transaction use a `log` op instead, so it commits with the change. `query` (`sl:history:read`) reads
+   * this app's events in this collection, newest first.
+   */
+  history: {
+    log(type: string, data?: Record<string, any>, opts?: { entityId?: string }): Promise<{ id: string }>;
+    query(params?: AppHistoryQuery): Promise<AppHistoryEvent[]>;
+  };
   /** Atomic named counters for this app in this collection (`sl:data:write` / `sl:data:read`). */
   counters: ServerFunctionCounters;
   /** Tags (`sl:tags:read`): `resolve(id)` → the real tag in THIS collection, or `null` for a made-up id. */
