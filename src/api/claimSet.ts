@@ -10,6 +10,9 @@ import {
   ImportClaimSetRangeUidsRequest,
   ImportClaimSetRangeUidsResponse,
   AssignClaimSetRangeRequest,
+  AddClaimSetRangeMemberRequest,
+  AddClaimSetRangeMemberResponse,
+  CloseClaimSetRangeResponse,
   AssignClaimSetRangeResponse,
   ClaimSetRangeFile,
   UpdateClaimDataRequest,
@@ -225,6 +228,21 @@ export namespace claimSet {
     /** Finish minting a range that was interrupted. */
     export async function resume(scope: ClaimSetScope, claimSetId: string, rangeId: string): Promise<ClaimSetRange> {
       return post<ClaimSetRange>(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/resume`, {})
+    }
+
+    /** Close an open range: it becomes a range with the quantity it reached (removed if nothing was minted). */
+    export async function close(scope: ClaimSetScope, claimSetId: string, rangeId: string): Promise<CloseClaimSetRangeResponse> {
+      return post<CloseClaimSetRangeResponse>(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/close`, {})
+    }
+
+    /** Put an existing tag of the set into a group (by code or chip UID), assigning it if a collection is given. */
+    export async function addMember(scope: ClaimSetScope, claimSetId: string, groupId: string, params: AddClaimSetRangeMemberRequest): Promise<AddClaimSetRangeMemberResponse> {
+      return post<AddClaimSetRangeMemberResponse>(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(groupId)}/members`, params)
+    }
+
+    /** Take a tag out of a group. Its assignment is left as it is. */
+    export async function removeMember(scope: ClaimSetScope, claimSetId: string, groupId: string, code: string): Promise<{ range: ClaimSetRange }> {
+      return del<{ range: ClaimSetRange }>(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(groupId)}/members/${encodeURIComponent(code)}`)
     }
 
     /** The range's tags in index order, a page at a time (keys: owners/admins only). */
