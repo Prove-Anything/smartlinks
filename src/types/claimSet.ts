@@ -349,6 +349,8 @@ export interface PartnerTagHit {
   set: PartnerClaimSet | null
   tag: ClaimSetRangeTag & { url: string | null }
   range: ClaimSetRange | null
+  /** The group the tag was added to, if any */
+  group: ClaimSetRange | null
 }
 
 export interface CreatePartnerClaimSetRequest {

@@ -1,5 +1,5 @@
 import { request, post } from "../http";
-import { Partner, PartnerClaimSet, CreatePartnerClaimSetRequest, PartnerTagHit } from "../types";
+import { Partner, PartnerClaimSet, CreatePartnerClaimSetRequest, PartnerTagHit, ClientErrorEvent } from "../types";
 
 /**
  * Partners: organisations above collections (FanConnect, Zenith Coins, …) that own NFC claim sets and
@@ -39,5 +39,14 @@ export namespace partner {
     if (query.uid) q.set('uid', query.uid)
     if (query.code) q.set('code', query.code)
     return request<PartnerTagHit[]>(`/admin/partner/${encodeURIComponent(partnerId)}/tags/lookup?${q}`)
+  }
+
+  /**
+   * What phones reported about one chip (errors.report with entityType 'tag'), newest first: a tag that
+   * failed to program or register, with the host's NFC log in context. For a chip in the partner's sets,
+   * or attempts that named one of them.
+   */
+  export async function tagAttempts(partnerId: string, uid: string): Promise<ClientErrorEvent[]> {
+    return request<ClientErrorEvent[]>(`/admin/partner/${encodeURIComponent(partnerId)}/tags/attempts?uid=${encodeURIComponent(uid)}`)
   }
 }

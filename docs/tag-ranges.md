@@ -76,6 +76,14 @@ has a `kind`:
 
 Status reads `open` or `group` for these (and `assigned` once every member of a group is assigned).
 
+## When a tag fails on the phone
+
+`errors.report({ app: 'sidekick', operation: 'tag.program', errorCode: 'TAG_LOST', message, entityType: 'tag',
+entityId: chipUid, labels: { claimSetId, code, failedStep }, context: { steps, timings, hostLog } })` keeps what
+the phone saw in the platform's one error log (never a key: fields that look like one are dropped).
+`partner.tagAttempts(partner.id, chipUid)` and the platform's tag lookup read it back, newest first, so a
+failing chip can be understood by its UID without the phone's console.
+
 ## The printer file
 
 One row per tag, in index order. The manufacturer fills in `UID` and sends the same file back; rows are
