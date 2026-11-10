@@ -807,6 +807,29 @@ await app.records.upsert(collectionId, appId, {
 // customId is stored for later reverse-lookup via ?customId=&sourceSystem=
 ```
 
+### Totals over data (sum, average, min, max)
+
+Records also total the numbers in their `data`, grouped by top-level data keys, with data filters and
+numeric ranges. Stock per location, forecast per SKU:
+
+```typescript
+const stock = await app.records.aggregate(collectionId, appId, {
+  groupBy: ['data.location'],                       // up to 5: columns or 'data.<key>'
+  metrics: ['count', 'sum:qty', 'min:qty'],         // count; sum: / avg: / min: / max: + a data key
+  filters: {
+    record_type: 'bin',
+    data: { warehouse: ['north', 'south'] },        // exact match, one value or any of several
+    dataRange: { qty: { gt: 0 } },                  // gte / gt / lte / lt, numbers only
+    updated_at: { gte: '2026-11-01T00:00:00Z' },
+  },
+}, true)
+// stock.groups → [{ 'data.location': 'A1', count: 12, sum_qty: 340, min_qty: 2 }, …]
+```
+
+Values that aren't numbers are left out of sums and averages. To CHANGE numbers safely (stock moves,
+counts), use a server function: `ctx.sl.appRecords.adjust` and `ctx.sl.transaction`
+([server-functions.md](server-functions.md)).
+
 ### Counts by Record Type
 
 `aggregate()` returns counts grouped by `record_type` in a single round-trip — no separate endpoint needed:

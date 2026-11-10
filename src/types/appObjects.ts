@@ -54,9 +54,22 @@ export interface AggregateRequest {
     created_at?: { gte?: string; lte?: string }
     closed_at?: '__notnull__' | { gte?: string; lte?: string } // cases only
     expires_at?: { lte?: string } // records only
+    updated_at?: { gte?: string; lte?: string } // records only
+    /** Records only: exact match on top-level data keys, one value or any of several. */
+    data?: Record<string, string | number | boolean | Array<string | number | boolean>>
+    /** Records only: numeric comparisons on top-level data keys (numbers only; others never match). */
+    dataRange?: Record<string, { gte?: number; gt?: number; lte?: number; lt?: number }>
   }
-  groupBy?: string[] // see per-resource allowed values
-  metrics?: string[] // see per-resource allowed values below
+  /**
+   * Columns per resource; records also take top-level data keys as `'data.<key>'` (e.g. `'data.location'`),
+   * up to 5. Each group comes back with its key under the same name.
+   */
+  groupBy?: string[]
+  /**
+   * `'count'`; records also take `'sum:<key>'`, `'avg:<key>'`, `'min:<key>'`, `'max:<key>'` over numbers in a
+   * top-level data key (non-numbers ignored) → `sum_<key>`, `avg_<key>`… in the result.
+   */
+  metrics?: string[]
   timeSeriesField?: string // e.g. 'created_at'
   timeSeriesInterval?: 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year'
 }
@@ -66,7 +79,7 @@ export interface AggregateRequest {
  */
 export interface AggregateResponse {
   // One of the following depending on request:
-  groups?: ({ count: number } & Record<string, unknown>)[]
+  groups?: ({ count?: number } & Record<string, unknown>)[]
   timeSeries?: ({ bucket: string; count: number } & Record<string, unknown>)[]
   count?: number
   // Cases scalar extras:

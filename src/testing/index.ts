@@ -63,7 +63,10 @@ export interface TestSlImpl {
   appRecords?: {
     create?(fields: any): any; claim?(fields: any): any; update?(id: string, fields: any): any; upsert?(fields: any): any
     delete?(id: string): any; get?(id: string): any; query?(params: any): any; listTypes?(): any
+    adjust?(id: string, by: Record<string, number>, opts?: any): any; aggregate?(params?: any): any
   }
+  /** ctx.sl.transaction(ops, { idempotencyKey }) — defaults to the in-memory one (all or none, replay by key). */
+  transaction?(ops: any[], opts?: any): any
   counters?: { next?(name: string, opts?: any): any; get?(name: string): any }
   /** Tag lookup. Default: any `<claimSetId>-<code>` resolves (pass `knownTags` to restrict). */
   tags?: { resolve?(id: string): any }
@@ -131,11 +134,13 @@ export interface FunctionTestMemory {
   interactions: any[]
   /** Slots, bookings and allocations of the in-memory bookings engine. */
   bookings: BookingsMemory
+  /** ctx.sl.transaction results by idempotency key (a repeat replays them). */
+  transactions: Record<string, any[]>
 }
 
 /** A fresh in-memory store — pass the same one to several test contexts to simulate concurrent callers. */
 export function createFunctionTestMemory(): FunctionTestMemory {
-  return { records: [], counters: {}, contacts: [], interactions: [], bookings: createBookingsMemory() }
+  return { records: [], counters: {}, contacts: [], interactions: [], bookings: createBookingsMemory(), transactions: {} }
 }
 
 export interface FunctionTestContext extends ServerFunctionContext {
@@ -210,6 +215,50 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
     get: async (id: string) => { const r = mem.records.find((x) => x.id === id); return r ? { ...r } : null },
     update: async (id: string, fields: any) => { const r = mem.records.find((x) => x.id === id); if (!r) return null; Object.assign(r, fields); return { ...r } },
     delete: async (id: string) => { const r = mem.records.find((x) => x.id === id); if (r) r.deletedAt = new Date().toISOString(); return {} },
+    // Numbers in data changed in place, with atLeast / atMost checked after the change (as the platform).
+    adjust: async (id: string, by: Record<string, number> = {}, opts: { atLeast?: Record<string, number>; atMost?: Record<string, number> } = {}) => {
+      const r = mem.records.find((x) => x.id === id && !x.deletedAt)
+      if (!r) throw Object.assign(new Error('Record not found'), { code: 'NOT_FOUND', statusCode: 404 })
+      const data = r.data || {}
+      const keys = [...new Set([...Object.keys(by), ...Object.keys(opts.atLeast || {}), ...Object.keys(opts.atMost || {})])]
+      const bad = keys.find((k) => data[k] != null && typeof data[k] !== 'number')
+      if (bad) throw Object.assign(new Error(`data.${bad} isn't a number, so it can't be adjusted`), { code: 'NOT_A_NUMBER', statusCode: 400, key: bad })
+      const next: Record<string, number> = {}
+      for (const k of keys) next[k] = (data[k] ?? 0) + (by[k] ?? 0)
+      const broken = Object.entries(opts.atLeast || {}).some(([k, n]) => next[k] < n) || Object.entries(opts.atMost || {}).some(([k, n]) => next[k] > n)
+      if (broken) throw Object.assign(new Error('The change would break its condition (atLeast / atMost)'), { code: 'CONDITION_FAILED', statusCode: 409, current: Object.fromEntries(keys.map((k) => [k, data[k] ?? 0])) })
+      r.data = { ...data, ...Object.fromEntries(Object.keys(by).map((k) => [k, next[k]])) }
+      return { ...r }
+    },
+    // count / sum: / avg: / min: / max: over data numbers, grouped by top-level fields or data keys
+    // ('data.location'); filters.data (exact) as the platform. A simple stand-in for tests.
+    aggregate: async (params: any = {}) => {
+      const { groupBy = [], metrics = ['count'], filters = {} } = params || {}
+      const rows = mem.records.filter((r) => !r.deletedAt &&
+        (!filters.record_type || r.recordType === filters.record_type) &&
+        (!filters.status || r.status === filters.status) &&
+        Object.entries(filters.data || {}).every(([k, v]) => (Array.isArray(v) ? v.map(String) : [String(v)]).includes(String((r.data || {})[k]))))
+      const field = (r: any, f: string) => (f.startsWith('data.') ? (r.data || {})[f.slice(5)] : r[f === 'record_type' ? 'recordType' : f])
+      const measure = (set: any[]) => {
+        const out: Record<string, number | null> = {}
+        for (const m of metrics) {
+          if (m === 'count') { out.count = set.length; continue }
+          const [fn, key] = String(m).split(':')
+          const nums = set.map((r) => (r.data || {})[key]).filter((v) => typeof v === 'number') as number[]
+          const sum = nums.reduce((a, b) => a + b, 0)
+          out[`${fn}_${key}`] = !nums.length ? null : fn === 'sum' ? sum : fn === 'avg' ? sum / nums.length : fn === 'min' ? Math.min(...nums) : Math.max(...nums)
+        }
+        return out
+      }
+      if (!groupBy.length) return measure(rows)
+      const buckets = new Map<string, any[]>()
+      for (const r of rows) {
+        const key = JSON.stringify(groupBy.map((f: string) => field(r, f) ?? null))
+        if (!buckets.has(key)) buckets.set(key, [])
+        buckets.get(key)!.push(r)
+      }
+      return { groups: [...buckets].map(([key, set]) => ({ ...Object.fromEntries(groupBy.map((f: string, i: number) => [f, JSON.parse(key)[i]])), ...measure(set) })) }
+    },
     // Simple equality filter on top-level fields (recordType, proofId, customId, status, …).
     query: async (params: any = {}) => {
       const { limit, offset, sort, ...where } = params || {}
@@ -221,6 +270,30 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
       return { data, pagination: { total: all.length, limit: size, offset: from, hasMore: from + data.length < all.length } }
     },
   }
+  // All ops or none, like the platform: records are restored when an op fails; a repeat of an
+  // idempotencyKey replays the first results.
+  const memTransaction = async (ops: any[], opts: { idempotencyKey?: string } = {}) => {
+    const key = opts.idempotencyKey
+    if (key && mem.transactions[key]) return { results: mem.transactions[key], replayed: true }
+    const before = JSON.parse(JSON.stringify(mem.records))
+    const results: any[] = []
+    for (let i = 0; i < ops.length; i++) {
+      const o = ops[i] || {}
+      try {
+        if (o.op === 'create') results.push(await memRecords.create(o.record || {}))
+        else if (o.op === 'update') results.push(await memRecords.update(o.recordId, o.fields || {}))
+        else if (o.op === 'adjust') results.push(await memRecords.adjust(o.recordId, o.by, { atLeast: o.atLeast, atMost: o.atMost }))
+        else if (o.op === 'delete') { await memRecords.delete(o.recordId); results.push({ deleted: o.recordId }) }
+        else throw Object.assign(new Error(`ops[${i}].op must be create, update, adjust or delete`), { code: 'INVALID_INPUT', statusCode: 400 })
+      } catch (err: any) {
+        mem.records.splice(0, mem.records.length, ...before)
+        throw Object.assign(err, { opIndex: i })
+      }
+    }
+    if (key) mem.transactions[key] = results
+    return { results, replayed: false }
+  }
+
   const recordsFn = (name: keyof typeof memRecords | 'upsert' | 'listTypes') =>
     (ar as any)[name] ? (ar as any)[name].bind(ar) : (impl.appRecords ? undefined : (memRecords as any)[name])
 
@@ -234,7 +307,10 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
       get: gated('records', 'read', recordsFn('get'), 'get'),
       query: gated('records', 'read', recordsFn('query'), 'query'),
       listTypes: gated('records', 'read', recordsFn('listTypes'), 'listTypes'),
+      adjust: gated('records', 'write', recordsFn('adjust'), 'adjust'),
+      aggregate: gated('records', 'read', recordsFn('aggregate'), 'aggregate'),
     },
+    transaction: gated('records', 'write', impl.transaction ? impl.transaction : (impl.appRecords ? undefined : memTransaction), 'transaction'),
     products: {
       get: gated('products', 'read', pr.get && pr.get.bind(pr), 'get'),
       query: gated('products', 'read', pr.query && pr.query.bind(pr), 'query'),

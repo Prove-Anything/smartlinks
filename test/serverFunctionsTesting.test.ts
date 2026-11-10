@@ -113,3 +113,42 @@ test('the new primitives need their capabilities', async () => {
   await assert.rejects(() => ctx.sl.contacts.upsert({ email: 'a@b.co' }), (e: any) => e.capability === 'sl:contacts:write')
   await assert.rejects(() => ctx.sl.interactions.record({ interactionId: 't1' }), (e: any) => e.capability === 'sl:interactions:write')
 })
+
+// Stock moves in the local harness behave as on the platform: adjust in place with conditions,
+// transactions all-or-nothing with replay by idempotency key, totals over data numbers.
+test('adjust: in place, conditions after the change, refusals carry their code', async () => {
+  const ctx = createFunctionTestContext({ def: httpDef(['sl:records:write', 'sl:records:read']) })
+  const bin: any = await ctx.sl.appRecords.create({ recordType: 'bin', data: { qty: 3 } })
+  const after: any = await ctx.sl.appRecords.adjust(bin.id, { qty: -2 }, { atLeast: { qty: 0 } })
+  assert.equal(after.data.qty, 1)
+  await assert.rejects(ctx.sl.appRecords.adjust(bin.id, { qty: -2 }, { atLeast: { qty: 0 } }), { code: 'CONDITION_FAILED' })
+  await assert.rejects(ctx.sl.appRecords.adjust('nope', { qty: 1 }), { code: 'NOT_FOUND' })
+})
+
+test('transaction: all or none (with opIndex), and the same idempotency key replays', async () => {
+  const ctx = createFunctionTestContext({ def: httpDef(['sl:records:write']) })
+  const a: any = await ctx.sl.appRecords.create({ recordType: 'bin', data: { qty: 3 } })
+  const b: any = await ctx.sl.appRecords.create({ recordType: 'bin', data: { qty: 0 } })
+  const move = (n: number) => [
+    { op: 'adjust' as const, recordId: b.id, by: { qty: n } },
+    { op: 'adjust' as const, recordId: a.id, by: { qty: -n }, atLeast: { qty: 0 } },
+  ]
+  await assert.rejects(ctx.sl.transaction(move(5)), { code: 'CONDITION_FAILED', opIndex: 1 })
+  assert.deepEqual(ctx.memory.records.map((r: any) => r.data.qty), [3, 0])
+  const first: any = await ctx.sl.transaction(move(2), { idempotencyKey: 'scan-1' })
+  const again: any = await ctx.sl.transaction(move(2), { idempotencyKey: 'scan-1' })
+  assert.equal(first.replayed, false)
+  assert.equal(again.replayed, true)
+  assert.deepEqual(ctx.memory.records.map((r: any) => r.data.qty), [1, 2])
+})
+
+test('aggregate: sums grouped by a data key; transaction needs sl:records:write', async () => {
+  const ctx = createFunctionTestContext({ def: httpDef(['sl:records:write', 'sl:records:read']) })
+  await ctx.sl.appRecords.create({ recordType: 'bin', data: { location: 'A1', qty: 4 } })
+  await ctx.sl.appRecords.create({ recordType: 'bin', data: { location: 'A1', qty: 6 } })
+  await ctx.sl.appRecords.create({ recordType: 'bin', data: { location: 'B2', qty: 1 } })
+  const out: any = await ctx.sl.appRecords.aggregate({ groupBy: ['data.location'], metrics: ['count', 'sum:qty'] })
+  assert.deepEqual(out.groups.find((g: any) => g['data.location'] === 'A1'), { 'data.location': 'A1', count: 2, sum_qty: 10 })
+  const readOnly = createFunctionTestContext({ def: httpDef(['sl:records:read']) })
+  await assert.rejects(readOnly.sl.transaction([{ op: 'delete', recordId: 'x' }]), CapabilityError)
+})

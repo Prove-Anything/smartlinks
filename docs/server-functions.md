@@ -514,6 +514,9 @@ Prefer the platform primitives above over a dependency; when you do need one, pi
 | Read ANOTHER app's data (as the caller may see it) | `ctx.sl.app('other-app').data.get()` — caller-authority, this collection, public-filtered, read-only | `sl:data:read` |
 | Guarantee a UNIQUE claim (one entry per tag, one-per-user, idempotency key, a number nobody else holds) | `ctx.sl.appRecords.claim({ …, singletonPer, customId })` → `{ record, created, conflict? }` — see below | `sl:records:write` |
 | Hand out the next number (tickets, order numbers) | `ctx.sl.counters.next('tickets')` — atomic, distinct per caller | `sl:data:write` |
+| Change numbers in a record (stock, counts, balances) without losing updates | `ctx.sl.appRecords.adjust(id, { qty: -5 }, { atLeast: { qty: 0 } })` — in place, conditions checked after the change | `sl:records:write` |
+| Several record writes that land together or not at all (a stock move) | `ctx.sl.transaction([ops], { idempotencyKey })` — see below | `sl:records:write` |
+| Totals: stock per location, forecast per SKU | `ctx.sl.appRecords.aggregate({ groupBy: ['data.location'], metrics: ['sum:qty'] })` | `sl:records:read` |
 | Check a tapped tag is real | `ctx.sl.tags.resolve(proofId)` → `{ id, claimSetId, code }` or `null` | `sl:tags:read` |
 | Put a visitor's details on a contact | `ctx.sl.contacts.upsert({ email, firstName, … })` → `{ contactId, created }` (fills empty fields only) | `sl:contacts:write` |
 | Record "they did X" | `ctx.sl.interactions.record({ interactionId, contactId, outcome, metadata })` | `sl:interactions:write` |
@@ -578,6 +581,61 @@ reads the last value handed out (`null` before the first). Name a new counter to
 **Counter + claim = a number nobody else can ever hold.** Take `next()`, then `claim` with
 `customId: String(n)`. If the claim says `conflict: 'customId'`, take `next()` again. A failed or raced
 attempt only leaves a gap — never a duplicate.
+
+### `appRecords.adjust(id, by, { atLeast?, atMost? })` — numbers that never lose an update
+
+Adds to numbers in a record's `data` in ONE statement, so twenty scanners taking from the same bin at
+once each land: no read-then-write, no lost counts. A missing value counts as 0. `atLeast` / `atMost` are
+checked on the values **after** the change, inside the same statement:
+
+```ts
+// Take 5 from bin A — refused (nothing changes) if it would go below zero.
+await ctx.sl.appRecords.adjust(binA, { qty: -5 }, { atLeast: { qty: 0 } })
+```
+
+Refusals carry `code`: `NOT_FOUND` (not this app's record in this collection, or deleted), `NOT_A_NUMBER`
+(the key holds something else), `CONDITION_FAILED` (409, with the `current` values). Only top-level data
+keys; a key named only in a condition is checked as it stands.
+
+### `transaction(ops, { idempotencyKey? })` — all or nothing
+
+Several writes as ONE transaction: every op lands, or none does. The classic: take stock out of bin A,
+put it on order line B, and log the move.
+
+```ts
+const { results, replayed } = await ctx.sl.transaction([
+  { op: 'adjust', recordId: binA, by: { qty: -5 }, atLeast: { qty: 0 } },
+  { op: 'adjust', recordId: orderLineB, by: { picked: 5 } },
+  { op: 'create', record: { recordType: 'movement', data: { from: binA, to: orderLineB, qty: 5 } } },
+], { idempotencyKey: scanId })
+```
+
+- Ops: `create` (`record`), `update` (`recordId`, `fields`), `adjust` (`recordId`, `by`, `atLeast?`,
+  `atMost?`), `delete` (`recordId`). Up to 50, run in order. This app's records in this collection only.
+- A failing op rolls everything back. The error says which op (`opIndex`) and why (its `code`).
+- Change events and realtime updates go out only after the transaction commits, never for a rollback.
+- **`idempotencyKey`**: the committed results are kept for 30 days. The same key again returns them
+  (`replayed: true`) without writing, so a handheld that retries after a dropped signal never moves
+  stock twice. Two calls with one key at the same moment: one commits, the other replays it. A
+  transaction that failed leaves its key free, so a retry can still succeed.
+- Use the scan's or the request's own id as the key (one key = one intended change).
+- Browser code never writes stock directly: a warehouse screen calls your function.
+
+### `appRecords.aggregate(params)` — totals
+
+Counts and sums over your app's records, worked out in the database:
+
+```ts
+await ctx.sl.appRecords.aggregate({
+  groupBy: ['data.location', 'data.sku'],          // columns, or top-level data keys
+  metrics: ['count', 'sum:qty'],                   // sum: / avg: / min: / max: over data numbers
+  filters: { record_type: 'bin', data: { warehouse: 'north' }, dataRange: { qty: { gt: 0 } } },
+})
+// → { groups: [{ 'data.location': 'A1', 'data.sku': 'EDP-50', count: 3, sum_qty: 42 }, …] }
+```
+
+Non-numbers are ignored by `sum`/`avg`/`min`/`max`. The same request works from the browser through
+`app.records.aggregate` (admin) — see [app-objects.md](app-objects.md).
 
 ### `tags.resolve(id)` — is this tap real?
 

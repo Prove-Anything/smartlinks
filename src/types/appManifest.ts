@@ -522,6 +522,13 @@ export interface ServerFunctionBookings {
   };
 }
 
+/** One write in ctx.sl.transaction. */
+export type RecordTransactionOp =
+  | { op: 'create'; record: Record<string, any> }
+  | { op: 'update'; recordId: string; fields: Record<string, any> }
+  | { op: 'adjust'; recordId: string; by: Record<string, number>; atLeast?: Record<string, number>; atMost?: Record<string, number> }
+  | { op: 'delete'; recordId: string };
+
 export interface ServerFunctionSl {
   /** THIS app's bookings, slots and blocks (`sl:bookings:read` / `sl:bookings:write`). */
   bookings: ServerFunctionBookings;
@@ -532,7 +539,27 @@ export interface ServerFunctionSl {
    * if the key is free; otherwise the record holding it comes back UNCHANGED with `created: false`.
    * Of any number of concurrent claims on one key, exactly one is created (the database decides).
    */
-  appRecords: { claim(fields: Record<string, any>): Promise<AppRecordClaimResult>; [method: string]: any };
+  appRecords: {
+    claim(fields: Record<string, any>): Promise<AppRecordClaimResult>;
+    /**
+     * Numbers in a record's `data`, changed in place in one statement: two scanners on one bin never lose
+     * a count. `by` `{ qty: -5 }` (missing counts as 0). `atLeast` / `atMost` are checked on the values
+     * AFTER the change: `{ atLeast: { qty: 0 } }` never takes a bin below zero. Refusals carry `code`:
+     * `NOT_FOUND`, `NOT_A_NUMBER`, `CONDITION_FAILED` (with `current` values). → the updated record.
+     */
+    adjust(recordId: string, by: Record<string, number>, opts?: { atLeast?: Record<string, number>; atMost?: Record<string, number> }): Promise<any>;
+    /** Totals over THIS app's records: count, sum/avg/min/max of data numbers, grouped by data keys. */
+    aggregate(params?: import('./appObjects').AggregateRequest): Promise<import('./appObjects').AggregateResponse & Record<string, unknown>>;
+    [method: string]: any;
+  };
+  /**
+   * Several record writes that land together or not at all (take 5 from bin A AND add 5 to order line B
+   * AND log the move). Needs `sl:records:write`; THIS app's records in THIS collection only. A failing op
+   * rolls everything back; its error says which (`opIndex`) and why (`code`). With `idempotencyKey`, a
+   * repeat of the key (a scanner retrying after a dropped signal) returns the first results
+   * (`replayed: true`) instead of writing twice; keys are remembered for 30 days.
+   */
+  transaction(ops: RecordTransactionOp[], opts?: { idempotencyKey?: string }): Promise<{ results: any[]; replayed: boolean }>;
   /** Atomic named counters for this app in this collection (`sl:data:write` / `sl:data:read`). */
   counters: ServerFunctionCounters;
   /** Tags (`sl:tags:read`): `resolve(id)` → the real tag in THIS collection, or `null` for a made-up id. */
