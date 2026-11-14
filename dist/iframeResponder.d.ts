@@ -39,6 +39,8 @@ export declare class IframeResponder {
     private uploads;
     private activeStreams;
     private isInitialLoad;
+    /** The app follows `smartlinks:navigate` (it said so with `smartlinks:navigable`). */
+    private navigable;
     private messageHandler;
     private resizeHandler;
     private appUrl;
@@ -50,6 +52,19 @@ export declare class IframeResponder {
      * Returns the src URL to set on the iframe.
      */
     attach(iframe: HTMLIFrameElement): Promise<string>;
+    /**
+     * Ask the app to open one of its admin views (or a hash path) without reloading. Returns false when
+     * the app hasn't said it follows navigate (an older build): reload the frame at the new path instead.
+     * See docs/admin-views.md.
+     */
+    navigate(req: {
+        view?: string;
+        path?: string;
+        params?: Record<string, string>;
+        highlight?: string;
+    }): boolean;
+    /** True once the app has said it follows `smartlinks:navigate`. */
+    get isNavigable(): boolean;
     /**
      * Update cached data (e.g., after user logs in).
      */

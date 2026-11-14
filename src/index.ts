@@ -8,6 +8,9 @@ export * from "./types"
 export { iframe } from "./iframe"
 // App context reader (props → hash → search), for pages and containers alike
 export { readContext } from "./context"
+// Admin views: an app's admin screens by name, host → app navigate, chrome=none (docs/admin-views.md)
+export * as adminViews from "./adminViews"
+export type { NavigateRequest, NavigateTarget } from "./adminViews"
 export { widgetStyleVars, widgetStyleControls, readableOn, WIDGET_STYLE_VARS } from "./widgetStyle"
 export type { WidgetStyling } from "./widgetStyle"
 export type { SmartLinksContext } from "./context"

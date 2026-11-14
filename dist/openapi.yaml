@@ -21286,6 +21286,35 @@ components:
       required:
         - id
         - title
+    AdminView:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        path:
+          type: string
+        group:
+          type: string
+          enum:
+            - main
+            - settings
+            - record
+        within:
+          type: string
+        icon:
+          type: string
+        description:
+          type: string
+        params:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+        - id
+        - title
+        - path
     AppManifest:
       type: object
       properties:
@@ -21365,6 +21394,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/PublicView"
+        adminViews:
+          type: array
+          items:
+            $ref: "#/components/schemas/AdminView"
         executor:
           $ref: "#/components/schemas/AppManifestExecutor"
         functions:

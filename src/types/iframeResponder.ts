@@ -71,6 +71,14 @@ export interface IframeResponderOptions {
   
   // Deep linking
   onRouteChange?: (path: string, state: Record<string, string>) => void;
+
+  /**
+   * The app said it follows `smartlinks:navigate` (docs/admin-views.md): from now on `navigate()` moves
+   * it without a reload. `views` are the ids it declared.
+   */
+  onNavigable?: (info: { views: string[]; chrome: 'none' | 'full' }) => void;
+  /** The app's answer to a `navigate()`: where it went, or why it couldn't. */
+  onNavigateResult?: (result: { ok: boolean; view: string | null; path: string | null; reason?: string }) => void;
   
   /**
    * Size the iframe to the app's content, for an app placed in a page (a booking form in a website, a
@@ -113,7 +121,9 @@ export interface SmartlinksIframeMessage {
     | 'smartlinks:redirect' 
     | 'smartlinks:authkit:login'
     | 'smartlinks:authkit:logout'
-    | 'smartlinks:authkit:redirect';
+    | 'smartlinks:authkit:redirect'
+    | 'smartlinks:navigable'
+    | 'smartlinks:navigate-result';
   payload: Record<string, any>;
   messageId?: string;
 }

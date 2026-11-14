@@ -390,6 +390,7 @@ An app can have any combination of three setup styles. Only public views are ext
 | **Portal components** — where the app renders inside portal (collection / product / batch / variant / proof) | module registry `components.*` (set at publish) | Inside portal | Physical twin (QR/NFC scan) |
 | **App pages** — the entry points portal menus/tabs link to and websites embed (e.g. list vs calendar; book vs my bookings) | `linkable` / `DeepLinkEntry` | Inside a host: portal or a website | The host: its signed-in session, plus the page's `accepts` params |
 | **Public views** — standalone external screens | `publicViews` (this block) | Outside portal | URL params only |
+| **Admin views** — the admin side's screens by name, for its side menu, Studio's menu and the assistant | `adminViews` ([admin-views.md](admin-views.md)) | The admin page, in Studio | Studio's session; `chrome=none` when Studio carries the menu |
 
 #### `records`
 

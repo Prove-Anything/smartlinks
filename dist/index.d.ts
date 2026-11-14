@@ -3,6 +3,8 @@ export * from "./api/index.js";
 export * from "./types/index.js";
 export { iframe } from "./iframe.js";
 export { readContext } from "./context.js";
+export * as adminViews from "./adminViews.js";
+export type { NavigateRequest, NavigateTarget } from "./adminViews.js";
 export { widgetStyleVars, widgetStyleControls, readableOn, WIDGET_STYLE_VARS } from "./widgetStyle.js";
 export type { WidgetStyling } from "./widgetStyle.js";
 export type { SmartLinksContext } from "./context.js";

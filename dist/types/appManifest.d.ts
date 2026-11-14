@@ -912,6 +912,52 @@ export interface PublicView {
     /** The params the caller supplies via the URL. */
     params?: PublicViewParams;
 }
+/**
+ * One ADMIN VIEW of the app: a screen of its admin side that a host or the assistant can open by name
+ * ("the campaigns list", "one campaign", "bookings for a day"). An app declares them once, in
+ * `app.manifest.json#adminViews`, and the same list drives three things:
+ *  - the app's own side menu (`group` main and settings; see prove docs/design/core-app-layout.md),
+ *  - Studio's workspace menu, which can carry an app's areas itself (it then opens the app with
+ *    `chrome=none` and the app hides its own menu),
+ *  - the Studio assistant, which opens a view while it talks (`smartlinks:navigate`).
+ * Admin views are NOT portal pages (`linkable`) and NOT standalone screens (`publicViews`).
+ * See docs/admin-views.md and `SL.adminViews`.
+ */
+export interface AdminView {
+    /** Stable id, unique within the app (`campaigns`, `campaign`, `campaign.results`). Hosts keep it. */
+    id: string;
+    /** The label in a menu: short, the business's words ("Campaigns", "Message log"). */
+    title: string;
+    /**
+     * Hash route within the admin page, with `{name}` placeholders for the params it needs:
+     * `"/campaigns"`, `"/campaigns/{campaignId}"`, `"/day/{date}"`.
+     */
+    path: string;
+    /**
+     * Where the view sits:
+     * - `main` (default): an area in the side menu, in declared order;
+     * - `settings`: pinned at the bottom of the menu;
+     * - `record`: inside one record (a campaign, a product). Not in the main menu: opening the record
+     *   swaps the menu for the record's own views, headed by "← back to" its `within` area.
+     */
+    group?: 'main' | 'settings' | 'record';
+    /**
+     * The view this one sits inside. A record's first view names its area (`campaign` within
+     * `campaigns`); the record's other views name the record's first view (`campaign.results` within
+     * `campaign`).
+     */
+    within?: string;
+    /** A Lucide icon name, kebab-case (`megaphone`, `scroll-text`, `package`). */
+    icon?: string;
+    /** One line on what the screen shows, for the assistant ("Every message sent and what happened to it"). */
+    description?: string;
+    /**
+     * The params the view takes, each with a few words on what it is (`{ campaignId: "a campaign's id",
+     * status: "draft | scheduled | sent" }`). A `{name}` in `path` is required; any other is optional
+     * and travels as a query param. Platform context (collectionId, appId, …) is never listed.
+     */
+    params?: Record<string, string>;
+}
 export interface AppManifest {
     $schema?: string;
     meta?: {
@@ -1011,6 +1057,12 @@ export interface AppManifest {
      * See PublicView + docs/design/public-views.md.
      */
     publicViews?: PublicView[];
+    /**
+     * The app's ADMIN VIEWS: its admin screens by name, in menu order. They drive the app's own side
+     * menu, Studio's workspace menu and the assistant's "open this screen". @see AdminView ·
+     * docs/admin-views.md
+     */
+    adminViews?: AdminView[];
     /**
      * Executor bundle declaration. Present when the app ships a programmatic executor
      * for AI-driven configuration, server-side SEO, and LLM content generation.

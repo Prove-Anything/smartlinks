@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.18  |  Generated: 2026-11-14T12:53:34.180Z
+Version: 2.1.18  |  Generated: 2026-11-14T16:27:43.575Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3057,6 +3057,20 @@ interface PublicView {
 }
 ```
 
+**AdminView** (interface)
+```typescript
+interface AdminView {
+  id: string;
+  title: string;
+  path: string;
+  group?: 'main' | 'settings' | 'record';
+  within?: string;
+  icon?: string;
+  description?: string;
+  params?: Record<string, string>;
+}
+```
+
 **AppManifest** (interface)
 ```typescript
 interface AppManifest {
@@ -3092,6 +3106,7 @@ interface AppManifest {
   };
   linkable?: DeepLinkEntry[];
   publicViews?: PublicView[];
+  adminViews?: AdminView[];
   executor?: AppManifestExecutor;
   functions?: AppManifestFunctions;
   realtime?: { channels: RealtimeChannelDeclaration[] };
@@ -7897,6 +7912,8 @@ interface IframeResponderOptions {
   ) => Promise<void>;
   onAuthLogout?: () => Promise<void>;
   onRouteChange?: (path: string, state: Record<string, string>) => void;
+  onNavigable?: (info: { views: string[]; chrome: 'none' | 'full' }) => void;
+  onNavigateResult?: (result: { ok: boolean; view: string | null; path: string | null; reason?: string }) => void;
   autoHeight?: boolean | { minHeight?: number };
   onResize?: (height: number) => void;
   onError?: (error: Error) => void;
@@ -7926,7 +7943,9 @@ interface SmartlinksIframeMessage {
   | 'smartlinks:redirect'
   | 'smartlinks:authkit:login'
   | 'smartlinks:authkit:logout'
-  | 'smartlinks:authkit:redirect';
+  | 'smartlinks:authkit:redirect'
+  | 'smartlinks:navigable'
+  | 'smartlinks:navigate-result';
   payload: Record<string, any>;
   messageId?: string;
 }

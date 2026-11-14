@@ -67,6 +67,8 @@ export class IframeResponder {
   private uploads: Map<string, UploadState> = new Map();
   private activeStreams: Map<string, AbortController> = new Map();
   private isInitialLoad: boolean = true;
+  /** The app follows `smartlinks:navigate` (it said so with `smartlinks:navigable`). */
+  private navigable = false;
   private messageHandler: ((e: MessageEvent) => void) | null = null;
   private resizeHandler: (() => void) | null = null;
   private appUrl: string | null = null;
@@ -120,6 +122,27 @@ export class IframeResponder {
     
     const src = this.buildIframeSrc();
     return src;
+  }
+
+  /**
+   * Ask the app to open one of its admin views (or a hash path) without reloading. Returns false when
+   * the app hasn't said it follows navigate (an older build): reload the frame at the new path instead.
+   * See docs/admin-views.md.
+   */
+  navigate(req: { view?: string; path?: string; params?: Record<string, string>; highlight?: string }): boolean {
+    const win = this.iframe?.contentWindow;
+    if (!this.navigable || !win) return false;
+    try {
+      win.postMessage({ type: 'smartlinks:navigate', ...req }, '*');
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /** True once the app has said it follows `smartlinks:navigate`. */
+  get isNavigable(): boolean {
+    return this.navigable;
   }
 
   /**
@@ -502,6 +525,27 @@ export class IframeResponder {
         if (url && typeof url === 'string') {
           window.location.href = url;
         }
+        break;
+      }
+
+      case 'smartlinks:navigable': {
+        this.navigable = true;
+        const p = data.payload || {};
+        this.options.onNavigable?.({
+          views: Array.isArray(p.views) ? p.views.filter((v: unknown) => typeof v === 'string') : [],
+          chrome: p.chrome === 'none' ? 'none' : 'full',
+        });
+        break;
+      }
+
+      case 'smartlinks:navigate-result': {
+        const p = data.payload || {};
+        this.options.onNavigateResult?.({
+          ok: p.ok === true,
+          view: typeof p.view === 'string' ? p.view : null,
+          path: typeof p.path === 'string' ? p.path : null,
+          ...(typeof p.reason === 'string' ? { reason: p.reason } : {}),
+        });
         break;
       }
     }

@@ -43,6 +43,8 @@ export class IframeResponder {
         this.uploads = new Map();
         this.activeStreams = new Map();
         this.isInitialLoad = true;
+        /** The app follows `smartlinks:navigate` (it said so with `smartlinks:navigable`). */
+        this.navigable = false;
         this.messageHandler = null;
         this.resizeHandler = null;
         this.appUrl = null;
@@ -88,6 +90,28 @@ export class IframeResponder {
         }
         const src = this.buildIframeSrc();
         return src;
+    }
+    /**
+     * Ask the app to open one of its admin views (or a hash path) without reloading. Returns false when
+     * the app hasn't said it follows navigate (an older build): reload the frame at the new path instead.
+     * See docs/admin-views.md.
+     */
+    navigate(req) {
+        var _a;
+        const win = (_a = this.iframe) === null || _a === void 0 ? void 0 : _a.contentWindow;
+        if (!this.navigable || !win)
+            return false;
+        try {
+            win.postMessage(Object.assign({ type: 'smartlinks:navigate' }, req), '*');
+            return true;
+        }
+        catch (_b) {
+            return false;
+        }
+    }
+    /** True once the app has said it follows `smartlinks:navigate`. */
+    get isNavigable() {
+        return this.navigable;
     }
     /**
      * Update cached data (e.g., after user logs in).
@@ -356,7 +380,7 @@ export class IframeResponder {
     // Standard Iframe Messages
     // ===========================================================================
     async handleStandardMessage(data, event) {
-        var _a, _b, _c, _d, _e, _f, _g;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
         switch (data.type) {
             case 'smartlinks:resize': {
                 const contentHeight = (_a = data.payload) === null || _a === void 0 ? void 0 : _a.height;
@@ -422,6 +446,20 @@ export class IframeResponder {
                 if (url && typeof url === 'string') {
                     window.location.href = url;
                 }
+                break;
+            }
+            case 'smartlinks:navigable': {
+                this.navigable = true;
+                const p = data.payload || {};
+                (_j = (_h = this.options).onNavigable) === null || _j === void 0 ? void 0 : _j.call(_h, {
+                    views: Array.isArray(p.views) ? p.views.filter((v) => typeof v === 'string') : [],
+                    chrome: p.chrome === 'none' ? 'none' : 'full',
+                });
+                break;
+            }
+            case 'smartlinks:navigate-result': {
+                const p = data.payload || {};
+                (_l = (_k = this.options).onNavigateResult) === null || _l === void 0 ? void 0 : _l.call(_k, Object.assign({ ok: p.ok === true, view: typeof p.view === 'string' ? p.view : null, path: typeof p.path === 'string' ? p.path : null }, (typeof p.reason === 'string' ? { reason: p.reason } : {})));
                 break;
             }
         }

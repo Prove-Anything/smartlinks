@@ -65,6 +65,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **Host Dependency Contract (R5)** | `docs/host-dependency-contract.md` | The libraries the host provides (React 19, Router 7, Radix, liquidjs, …), the externalise-don't-bundle rule + Vite config, and React-18 backwards-compat |
 | **CSS Baseline** (`sl-baseline` v1) | `docs/css-baseline.md` | A small, frozen, `sl-`-namespaced set of structural helpers (layout, spacing, responsive flow, type scale, motion) the SDK ships (`@proveanything/smartlinks/baseline.css`) and the host guarantees — a teachable floor for apps + AI content. No colours/fonts/components. Opt-in via `meta.cssBaseline` |
 | **Deep Linking** | `docs/deep-link-discovery.md` | URL state management, navigable states, portal menus, AI nav |
+| **Admin Views** | `docs/admin-views.md` | The admin side's screens by name (`adminViews`): the app's side menu, Studio's menu and the assistant; host → app `smartlinks:navigate`; `chrome=none` |
 | **Portal Back Button** | `docs/portal-back-button.md` | Hierarchy-aware "up" navigation inside embedded apps |
 | **Portal Request Action** | `docs/portal-request-action.md` | Triggering portal built-in actions (__qrScanner, __share, __logout, etc.) from sub-apps |
 | **Interactions** | `docs/interactions.md` | Business events, outcomes, voting, competitions, and journey triggers |
