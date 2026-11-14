@@ -236,6 +236,21 @@ export var order;
      * })
      * ```
      */
+    /**
+     * Add to (or take from) how much of a line has been shipped or received. Atomic, so two receipts at
+     * once both count; it can't go below zero.
+     *
+     * @example
+     * ```typescript
+     * // 20 more caps arrived against a purchase order line
+     * await order.lineDone('coll_123', orderId, lineId, 20)
+     * ```
+     */
+    async function lineDone(collectionId, orderId, itemId, by) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemId)}/done`;
+        return post(path, { by });
+    }
+    order.lineDone = lineDone;
     async function removeItems(collectionId, orderId, data) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/orders/${encodeURIComponent(orderId)}/items`;
         // DELETE with body requires requestWithOptions since del() doesn't send body

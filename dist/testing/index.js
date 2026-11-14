@@ -77,7 +77,7 @@ function allowsSl(p, resource, op) {
 }
 /** A fresh in-memory store — pass the same one to several test contexts to simulate concurrent callers. */
 export function createFunctionTestMemory() {
-    return { records: [], counters: {}, contacts: [], interactions: [], bookings: createBookingsMemory() };
+    return { records: [], counters: {}, contacts: [], interactions: [], bookings: createBookingsMemory(), transactions: {}, history: [] };
 }
 const stub = (method, args) => ({ __stub: true, method, args });
 /**
@@ -101,6 +101,9 @@ export function createFunctionTestContext(opts) {
         return fn ? fn(...args) : stub(`${resource}.${name}`, args);
     };
     const mem = opts.memory || createFunctionTestMemory();
+    // A memory built before history / transactions existed still works.
+    mem.history = mem.history || [];
+    mem.transactions = mem.transactions || {};
     const ar = impl.appRecords || {};
     const pr = impl.products || {};
     const at = impl.attestations || {};
@@ -147,6 +150,60 @@ export function createFunctionTestContext(opts) {
             return null; Object.assign(r, fields); return Object.assign({}, r); },
         delete: async (id) => { const r = mem.records.find((x) => x.id === id); if (r)
             r.deletedAt = new Date().toISOString(); return {}; },
+        // Numbers in data changed in place, with atLeast / atMost checked after the change (as the platform).
+        adjust: async (id, by = {}, opts = {}) => {
+            var _a, _b;
+            const r = mem.records.find((x) => x.id === id && !x.deletedAt);
+            if (!r)
+                throw Object.assign(new Error('Record not found'), { code: 'NOT_FOUND', statusCode: 404 });
+            const data = r.data || {};
+            const keys = [...new Set([...Object.keys(by), ...Object.keys(opts.atLeast || {}), ...Object.keys(opts.atMost || {})])];
+            const bad = keys.find((k) => data[k] != null && typeof data[k] !== 'number');
+            if (bad)
+                throw Object.assign(new Error(`data.${bad} isn't a number, so it can't be adjusted`), { code: 'NOT_A_NUMBER', statusCode: 400, key: bad });
+            const next = {};
+            for (const k of keys)
+                next[k] = ((_a = data[k]) !== null && _a !== void 0 ? _a : 0) + ((_b = by[k]) !== null && _b !== void 0 ? _b : 0);
+            const broken = Object.entries(opts.atLeast || {}).some(([k, n]) => next[k] < n) || Object.entries(opts.atMost || {}).some(([k, n]) => next[k] > n);
+            if (broken)
+                throw Object.assign(new Error('The change would break its condition (atLeast / atMost)'), { code: 'CONDITION_FAILED', statusCode: 409, current: Object.fromEntries(keys.map((k) => { var _a; return [k, (_a = data[k]) !== null && _a !== void 0 ? _a : 0]; })) });
+            r.data = Object.assign(Object.assign({}, data), Object.fromEntries(Object.keys(by).map((k) => [k, next[k]])));
+            return Object.assign({}, r);
+        },
+        // count / sum: / avg: / min: / max: over data numbers, grouped by top-level fields or data keys
+        // ('data.location'); filters.data (exact) as the platform. A simple stand-in for tests.
+        aggregate: async (params = {}) => {
+            const { groupBy = [], metrics = ['count'], filters = {} } = params || {};
+            const rows = mem.records.filter((r) => !r.deletedAt &&
+                (!filters.record_type || r.recordType === filters.record_type) &&
+                (!filters.status || r.status === filters.status) &&
+                Object.entries(filters.data || {}).every(([k, v]) => (Array.isArray(v) ? v.map(String) : [String(v)]).includes(String((r.data || {})[k]))));
+            const field = (r, f) => (f.startsWith('data.') ? (r.data || {})[f.slice(5)] : r[f === 'record_type' ? 'recordType' : f]);
+            const measure = (set) => {
+                const out = {};
+                for (const m of metrics) {
+                    if (m === 'count') {
+                        out.count = set.length;
+                        continue;
+                    }
+                    const [fn, key] = String(m).split(':');
+                    const nums = set.map((r) => (r.data || {})[key]).filter((v) => typeof v === 'number');
+                    const sum = nums.reduce((a, b) => a + b, 0);
+                    out[`${fn}_${key}`] = !nums.length ? null : fn === 'sum' ? sum : fn === 'avg' ? sum / nums.length : fn === 'min' ? Math.min(...nums) : Math.max(...nums);
+                }
+                return out;
+            };
+            if (!groupBy.length)
+                return measure(rows);
+            const buckets = new Map();
+            for (const r of rows) {
+                const key = JSON.stringify(groupBy.map((f) => { var _a; return (_a = field(r, f)) !== null && _a !== void 0 ? _a : null; }));
+                if (!buckets.has(key))
+                    buckets.set(key, []);
+                buckets.get(key).push(r);
+            }
+            return { groups: [...buckets].map(([key, set]) => (Object.assign(Object.assign({}, Object.fromEntries(groupBy.map((f, i) => [f, JSON.parse(key)[i]]))), measure(set)))) };
+        },
         // Simple equality filter on top-level fields (recordType, proofId, customId, status, …).
         query: async (params = {}) => {
             const _a = params || {}, { limit, offset, sort } = _a, where = __rest(_a, ["limit", "offset", "sort"]);
@@ -157,6 +214,60 @@ export function createFunctionTestContext(opts) {
             // Same envelope as the platform: { data, pagination }.
             return { data, pagination: { total: all.length, limit: size, offset: from, hasMore: from + data.length < all.length } };
         },
+    };
+    // The app's history, in memory (newest first when read, like the platform).
+    let nextEventId = 1;
+    const memLog = (type, data = {}, opts = {}) => {
+        var _a;
+        if (typeof type !== 'string' || !/^[a-z][a-z0-9._-]{0,63}$/.test(type))
+            throw Object.assign(new Error('history type: lowercase letters, digits and . _ - (e.g. "stock.moved")'), { code: 'INVALID_INPUT', statusCode: 400 });
+        const ev = { id: `ev-${nextEventId++}`, at: new Date().toISOString(), type, entityId: (_a = opts.entityId) !== null && _a !== void 0 ? _a : null, data: data || {}, actorType: null, actorId: null };
+        mem.history.push(ev);
+        return { id: ev.id };
+    };
+    const memHistoryQuery = async (params = {}) => {
+        const types = params.types == null ? null : (Array.isArray(params.types) ? params.types : [params.types]);
+        return mem.history
+            .filter((e) => (!types || types.includes(e.type)) && (params.entityId == null || e.entityId === params.entityId) &&
+            Object.entries(params.data || {}).every(([k, v]) => (Array.isArray(v) ? v.map(String) : [String(v)]).includes(String(e.data[k]))))
+            .slice().reverse().slice(0, params.limit || 100).map((e) => (Object.assign({}, e)));
+    };
+    // All ops or none, like the platform: records are restored when an op fails; a repeat of an
+    // idempotencyKey replays the first results.
+    const memTransaction = async (ops, opts = {}) => {
+        const key = opts.idempotencyKey;
+        if (key && mem.transactions[key])
+            return { results: mem.transactions[key], replayed: true };
+        const before = JSON.parse(JSON.stringify(mem.records));
+        const historyBefore = mem.history.length;
+        const results = [];
+        for (let i = 0; i < ops.length; i++) {
+            const o = ops[i] || {};
+            try {
+                if (o.op === 'create')
+                    results.push(await memRecords.create(o.record || {}));
+                else if (o.op === 'update')
+                    results.push(await memRecords.update(o.recordId, o.fields || {}));
+                else if (o.op === 'adjust')
+                    results.push(await memRecords.adjust(o.recordId, o.by, { atLeast: o.atLeast, atMost: o.atMost }));
+                else if (o.op === 'delete') {
+                    await memRecords.delete(o.recordId);
+                    results.push({ deleted: o.recordId });
+                }
+                else if (o.op === 'log')
+                    results.push({ logged: memLog(o.type, o.data, { entityId: o.entityId }).id });
+                else
+                    throw Object.assign(new Error(`ops[${i}].op must be create, update, adjust, delete or log`), { code: 'INVALID_INPUT', statusCode: 400 });
+            }
+            catch (err) {
+                mem.records.splice(0, mem.records.length, ...before);
+                mem.history.splice(historyBefore);
+                throw Object.assign(err, { opIndex: i });
+            }
+        }
+        if (key)
+            mem.transactions[key] = results;
+        return { results, replayed: false };
     };
     const recordsFn = (name) => ar[name] ? ar[name].bind(ar) : (impl.appRecords ? undefined : memRecords[name]);
     const sl = {
@@ -169,6 +280,17 @@ export function createFunctionTestContext(opts) {
             get: gated('records', 'read', recordsFn('get'), 'get'),
             query: gated('records', 'read', recordsFn('query'), 'query'),
             listTypes: gated('records', 'read', recordsFn('listTypes'), 'listTypes'),
+            adjust: gated('records', 'write', recordsFn('adjust'), 'adjust'),
+            aggregate: gated('records', 'read', recordsFn('aggregate'), 'aggregate'),
+        },
+        transaction: gated('records', 'write', impl.transaction ? impl.transaction : (impl.appRecords ? undefined : async (ops, opts) => {
+            if (Array.isArray(ops) && ops.some((o) => o && o.op === 'log') && !allowsSl(parsed, 'history', 'write'))
+                throw new CapabilityError('sl:history:write');
+            return memTransaction(ops, opts);
+        }), 'transaction'),
+        history: {
+            log: gated('history', 'write', async (type, data, opts) => memLog(type, data, opts), 'log'),
+            query: gated('history', 'read', memHistoryQuery, 'query'),
         },
         products: {
             get: gated('products', 'read', pr.get && pr.get.bind(pr), 'get'),
@@ -285,6 +407,60 @@ export function createFunctionTestContext(opts) {
     for (const m of ['create', 'query', 'delete']) {
         sl.bookings.blocks[m] = gated('bookings', m === 'query' ? 'read' : 'write', bkFn(bk.blocks, m), `bookings.blocks.${m}`);
     }
+    // Work orders, stock, bills of materials, made-from: capability + collection authority, as in production.
+    const OPERATIONS = {
+        workOrders: { resource: 'workorders', reads: ['get', 'list'], writes: ['create', 'update', 'setStatus', 'remove', 'startStage', 'progress', 'completeStage', 'skipStage', 'planStage', 'setStages'] },
+        stock: { resource: 'stock', reads: ['lines', 'totals', 'where', 'position', 'short'], writes: ['receive', 'produce', 'consume', 'move', 'allocate', 'release', 'hold', 'unhold', 'adjust'] },
+        boms: { resource: 'boms', reads: ['current', 'versions', 'whereUsed', 'explode'], writes: ['set', 'end'] },
+        madeFrom: { resource: 'madefrom', reads: ['of', 'usedIn', 'trace'], writes: ['record', 'end'] },
+    };
+    const triggerType = (def.trigger && def.trigger.type) || 'http';
+    const hasCollectionAuthority = triggerType !== 'http' || def.authority === 'collection';
+    const needAuthority = () => {
+        if (!hasCollectionAuthority)
+            throw Object.assign(new Error('This needs collection authority: declare the function with authority "collection"'), { code: 'NEEDS_COLLECTION_AUTHORITY', status: 403 });
+    };
+    for (const [group, g] of Object.entries(OPERATIONS)) {
+        sl[group] = {};
+        const given = impl[group] || {};
+        for (const m of [...g.reads, ...g.writes]) {
+            const op = g.reads.includes(m) ? 'read' : 'write';
+            sl[group][m] = async (...args) => {
+                if (!allowsSl(parsed, g.resource, op))
+                    throw new CapabilityError(`sl:${g.resource}:${op}`);
+                needAuthority();
+                return typeof given[m] === 'function' ? given[m](...args) : stub(`${group}.${m}`, args);
+            };
+        }
+    }
+    sl.operations = {
+        // Each step must be a write this function may make; with no impl, the steps run one by one through
+        // the methods above (so your stand-ins are called), without the all-or-nothing the platform gives.
+        transaction: async (steps) => {
+            if (!Array.isArray(steps) || !steps.length)
+                throw Object.assign(new Error('A transaction needs at least one step'), { code: 'INVALID_INPUT' });
+            for (const st of steps) {
+                const [group, m] = String((st && st.op) || '').split('.');
+                const g = OPERATIONS[group];
+                if (!g || ![...g.reads, ...g.writes].includes(m))
+                    throw Object.assign(new Error(`There is no "${st && st.op}"`), { code: 'UNKNOWN_OP' });
+                if (g.reads.includes(m))
+                    throw Object.assign(new Error(`${st.op} only reads. Do reads outside the transaction`), { code: 'INVALID_INPUT' });
+                if (!allowsSl(parsed, g.resource, 'write'))
+                    throw new CapabilityError(`sl:${g.resource}:write`);
+            }
+            needAuthority();
+            const own = impl.operations && impl.operations.transaction;
+            if (typeof own === 'function')
+                return own(steps);
+            const results = [];
+            for (const st of steps) {
+                const [group, m] = st.op.split('.');
+                results.push(await sl[group][m](...(st.args || [])));
+            }
+            return { results };
+        },
+    };
     const secretsMap = opts.secrets || {};
     const baseFetch = opts.fetch || (typeof fetch !== 'undefined' ? fetch : undefined);
     const via = (def.trigger && def.trigger.type) || 'http';
@@ -312,6 +488,7 @@ export function createFunctionTestContext(opts) {
             origin: (_f = caller.origin) !== null && _f !== void 0 ? _f : null,
             ip: (_g = caller.ip) !== null && _g !== void 0 ? _g : null,
             via,
+            userGroups: Object.freeze([...(caller.userGroups || [])]),
         },
         fetch: (async (input, init) => {
             let host = '';

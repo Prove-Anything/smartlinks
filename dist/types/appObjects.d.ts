@@ -55,8 +55,29 @@ export interface AggregateRequest {
         expires_at?: {
             lte?: string;
         };
+        updated_at?: {
+            gte?: string;
+            lte?: string;
+        };
+        /** Records only: exact match on top-level data keys, one value or any of several. */
+        data?: Record<string, string | number | boolean | Array<string | number | boolean>>;
+        /** Records only: numeric comparisons on top-level data keys (numbers only; others never match). */
+        dataRange?: Record<string, {
+            gte?: number;
+            gt?: number;
+            lte?: number;
+            lt?: number;
+        }>;
     };
+    /**
+     * Columns per resource; records also take top-level data keys as `'data.<key>'` (e.g. `'data.location'`),
+     * up to 5. Each group comes back with its key under the same name.
+     */
     groupBy?: string[];
+    /**
+     * `'count'`; records also take `'sum:<key>'`, `'avg:<key>'`, `'min:<key>'`, `'max:<key>'` over numbers in a
+     * top-level data key (non-numbers ignored) → `sum_<key>`, `avg_<key>`… in the result.
+     */
     metrics?: string[];
     timeSeriesField?: string;
     timeSeriesInterval?: 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year';
@@ -66,7 +87,7 @@ export interface AggregateRequest {
  */
 export interface AggregateResponse {
     groups?: ({
-        count: number;
+        count?: number;
     } & Record<string, unknown>)[];
     timeSeries?: ({
         bucket: string;

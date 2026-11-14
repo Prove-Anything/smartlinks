@@ -10,15 +10,37 @@
 export interface OrderItem {
     id: string;
     orderId: string;
-    itemType: 'tag' | 'proof' | 'serial';
+    itemType: 'tag' | 'proof' | 'serial' | 'product';
     itemId: string;
     collectionId?: string;
     productId?: string;
     variantId?: string | null;
     batchId?: string | null;
+    quantity: number;
+    unit?: string | null;
+    quantityDone: number;
+    dueAt?: string | null;
     metadata: Record<string, any>;
     createdAt: string;
     order?: OrderSummary;
+}
+/** Which way an order goes: 'sales' = someone wants it from us; 'purchase' = we want it from a supplier. */
+export type OrderDirection = 'sales' | 'purchase';
+/** One identified thing on an order. */
+export interface OrderItemInput {
+    itemType: 'tag' | 'proof' | 'serial';
+    itemId: string;
+    metadata?: Record<string, any>;
+}
+/** A line of quantity: so many of a product. */
+export interface OrderQuantityLineInput {
+    itemType?: 'product';
+    productId: string;
+    variantId?: string;
+    quantity: number;
+    unit?: string;
+    dueAt?: string;
+    metadata?: Record<string, any>;
 }
 /**
  * Summary of order details (included with items when requested).
@@ -40,6 +62,9 @@ export interface Order {
     orderRef?: string;
     customerId?: string;
     status: string;
+    direction: OrderDirection;
+    partyId?: string | null;
+    dueAt?: string | null;
     itemCount: number;
     metadata: {
         productSummary?: Record<string, number>;
@@ -53,11 +78,10 @@ export interface Order {
  * Request to create a new order with items.
  */
 export interface CreateOrderRequest {
-    items: Array<{
-        itemType: 'tag' | 'proof' | 'serial';
-        itemId: string;
-        metadata?: Record<string, any>;
-    }>;
+    items: Array<OrderItemInput | OrderQuantityLineInput>;
+    direction?: OrderDirection;
+    partyId?: string;
+    dueAt?: string;
     orderRef?: string;
     customerId?: string;
     status?: string;
@@ -84,6 +108,9 @@ export interface GetOrderResponse extends Order {
  * Items are managed separately via add/remove endpoints.
  */
 export interface UpdateOrderRequest {
+    direction?: OrderDirection;
+    partyId?: string | null;
+    dueAt?: string | null;
     orderRef?: string;
     customerId?: string;
     status?: string;
@@ -109,6 +136,8 @@ export interface ListOrdersRequest {
     status?: string;
     orderRef?: string;
     customerId?: string;
+    direction?: OrderDirection;
+    partyId?: string;
     includeItems?: boolean;
 }
 /**

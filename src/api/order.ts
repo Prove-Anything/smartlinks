@@ -2,6 +2,7 @@
 import { request, post, put, del, requestWithOptions } from "../http"
 import {
   Order,
+  OrderItem,
   CreateOrderRequest,
   CreateOrderResponse,
   GetOrderParams,
@@ -297,6 +298,21 @@ export namespace order {
    * })
    * ```
    */
+  /**
+   * Add to (or take from) how much of a line has been shipped or received. Atomic, so two receipts at
+   * once both count; it can't go below zero.
+   *
+   * @example
+   * ```typescript
+   * // 20 more caps arrived against a purchase order line
+   * await order.lineDone('coll_123', orderId, lineId, 20)
+   * ```
+   */
+  export async function lineDone(collectionId: string, orderId: string, itemId: string, by: number): Promise<OrderItem> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/orders/${encodeURIComponent(orderId)}/items/${encodeURIComponent(itemId)}/done`
+    return post<OrderItem>(path, { by })
+  }
+
   export async function removeItems(
     collectionId: string,
     orderId: string,

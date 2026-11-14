@@ -48,6 +48,11 @@ export interface Container {
   metadata?: Record<string, any>
   /** UUID of the parent container; `undefined` / `null` for top-level containers */
   parentContainerId?: string
+  /**
+   * A place that doesn't move (a site, a rack, a bin) rather than something carried (a pallet, a drum).
+   * "Where is this pallet?" is the first fixed container above it. Default `false`.
+   */
+  fixed?: boolean
   /** Recursively nested children — populated only when `?tree=true` */
   children?: Container[]
   /** Current (or historical) items — populated only when `?includeContents=true` */
@@ -102,6 +107,8 @@ export interface CreateContainerInput {
   metadata?: Record<string, any>
   /** UUID of the parent container; omit to create a top-level container */
   parentContainerId?: string
+  /** A place that doesn't move (a bin), rather than something carried (a pallet). Default `false`. */
+  fixed?: boolean
 }
 
 /**
@@ -117,6 +124,7 @@ export interface UpdateContainerInput {
   metadata?: Record<string, any>
   /** Pass `null` to promote the container to top-level. */
   parentContainerId?: string | null
+  fixed?: boolean
 }
 
 /** Request body for `POST /containers/:id/items` — adds items to a container. */

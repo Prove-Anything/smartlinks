@@ -11,15 +11,40 @@
 export interface OrderItem {
   id: string                        // UUID
   orderId: string                   // Parent order ID
-  itemType: 'tag' | 'proof' | 'serial' // Type of item
-  itemId: string                    // The tag ID, proof ID, or serial number
+  itemType: 'tag' | 'proof' | 'serial' | 'product' // Type of item ('product' = a quantity line)
+  itemId: string                    // The tag ID, proof ID, or serial number (the product ID on a quantity line)
   collectionId?: string             // Collection ID
   productId?: string                // Product ID
   variantId?: string | null         // Variant ID
   batchId?: string | null           // Batch ID
+  quantity: number                  // How many (1 for an identified thing)
+  unit?: string | null              // The unit the quantity is in
+  quantityDone: number              // Shipped (sales) or received (purchase) so far
+  dueAt?: string | null             // When this line is wanted or expected, if different from the order's
   metadata: Record<string, any>     // Item-specific metadata
   createdAt: string                 // ISO 8601 timestamp
   order?: OrderSummary              // Optional order summary (when includeOrder=true)
+}
+
+/** Which way an order goes: 'sales' = someone wants it from us; 'purchase' = we want it from a supplier. */
+export type OrderDirection = 'sales' | 'purchase'
+
+/** One identified thing on an order. */
+export interface OrderItemInput {
+  itemType: 'tag' | 'proof' | 'serial' // Required: Type of item
+  itemId: string                        // Required: Item identifier
+  metadata?: Record<string, any>        // Optional: Item-specific data
+}
+
+/** A line of quantity: so many of a product. */
+export interface OrderQuantityLineInput {
+  itemType?: 'product'
+  productId: string                     // Required: The product
+  variantId?: string
+  quantity: number                      // Required: How many
+  unit?: string
+  dueAt?: string                        // Optional: When this line is wanted or expected
+  metadata?: Record<string, any>
 }
 
 /**
@@ -43,6 +68,9 @@ export interface Order {
   orderRef?: string                 // Customer's own order reference/ID (e.g., "ORD-12345")
   customerId?: string               // Customer's own customer ID (can map to CRM/contacts)
   status: string                    // e.g., "pending", "processing", "shipped", "completed"
+  direction: OrderDirection         // 'sales' (someone wants it from us) or 'purchase' (we want it from a supplier)
+  partyId?: string | null           // The supplier, on a purchase order
+  dueAt?: string | null             // When it is wanted or expected
   itemCount: number                 // Cached count of items (maintained automatically)
   metadata: {
     productSummary?: Record<string, number>  // productId -> count (auto-maintained)
@@ -57,11 +85,10 @@ export interface Order {
  * Request to create a new order with items.
  */
 export interface CreateOrderRequest {
-  items: Array<{
-    itemType: 'tag' | 'proof' | 'serial' // Required: Type of item
-    itemId: string                        // Required: Item identifier
-    metadata?: Record<string, any>        // Optional: Item-specific data
-  }>
+  items: Array<OrderItemInput | OrderQuantityLineInput>
+  direction?: OrderDirection              // Optional: 'sales' (default) or 'purchase'
+  partyId?: string                        // Optional: The supplier, on a purchase order
+  dueAt?: string                          // Optional: When it is wanted or expected
   orderRef?: string                       // Optional: Your own order reference/ID
   customerId?: string                     // Optional: Your customer ID
   status?: string                         // Optional: Order status (default: "pending")
@@ -90,6 +117,9 @@ export interface GetOrderResponse extends Order {}
  * Items are managed separately via add/remove endpoints.
  */
 export interface UpdateOrderRequest {
+  direction?: OrderDirection        // Optional: 'sales' or 'purchase'
+  partyId?: string | null           // Optional: The supplier
+  dueAt?: string | null             // Optional: When it is wanted or expected
   orderRef?: string                 // Optional: Update order reference
   customerId?: string               // Optional: Update customer ID
   status?: string                   // Optional: Update status
@@ -117,6 +147,8 @@ export interface ListOrdersRequest {
   status?: string                   // Optional: Filter by status
   orderRef?: string                 // Optional: Filter by order reference
   customerId?: string               // Optional: Filter by customer ID
+  direction?: OrderDirection        // Optional: Only sales, or only purchase, orders
+  partyId?: string                  // Optional: Filter by supplier
   includeItems?: boolean            // Optional: Include items array (default: false)
 }
 

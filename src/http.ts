@@ -229,6 +229,9 @@ function shouldSkipCache(path: string): boolean {
   if (/\/app\/[^/]+\/bookings(\/|\?|$)/i.test(path)) return true
   // Tag ranges change as tags are programmed, and carry the tags' keys — never cached, never persisted.
   if (/\/claimSet\/[^/]+\/ranges(\/|\?|$)/i.test(path)) return true
+  // User groups say who may do what: a change (someone added or removed) must show at once, and
+  // `mine` is about one person.
+  if (/\/userGroups?(\/|\?|$)/i.test(path)) return true
   return false
 }
 

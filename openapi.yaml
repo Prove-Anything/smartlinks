@@ -124,6 +124,8 @@ tags:
     description: Message and document templates.
   - name: translations
     description: Localization and translation lookup.
+  - name: userGroups
+    description: userGroups API
   - name: variant
     description: Product variant management.
 security:
@@ -6143,6 +6145,16 @@ paths:
           required: false
           schema:
             type: string
+        - name: direction
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/OrderDirection"
+        - name: partyId
+          in: query
+          required: false
+          schema:
+            type: string
         - name: includeItems
           in: query
           required: false
@@ -6263,7 +6275,7 @@ paths:
     post:
       tags:
         - order
-      summary: order.getAnalytics
+      summary: Get comprehensive scan analytics for all tags in an order.
       operationId: order_getAnalytics
       security:
         - bearerAuth: []
@@ -6845,6 +6857,43 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/AddItemsRequest"
+  /admin/collection/{collectionId}/orders/{orderId}/items/{itemId}/done:
+    post:
+      tags:
+        - order
+      summary: Add to (or take from) how much of a line has been shipped or received.
+      operationId: order_lineDone
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: orderId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OrderItem"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/owner/{userId}:
     get:
       tags:
@@ -9135,6 +9184,35 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PartnerClaimSet"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/partner/{partnerId}/tags/attempts:
+    get:
+      tags:
+        - partner
+      summary: "What phones reported about one chip (errors.report with entityType 'tag'), newest first: a tag that failed to program or register, with the host's NFC log in context."
+      operationId: partner_tagAttempts
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: partnerId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ClientErrorEvent"
         400:
           description: Bad request
         401:
@@ -14319,6 +14397,32 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TranslationLookupRequest"
+  /public/collection/{collectionId}/userGroups/mine:
+    get:
+      tags:
+        - userGroups
+      summary: "The signed-in person's own user groups in this collection."
+      operationId: userGroups_mine
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MyUserGroups"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/config/fields:
     get:
       tags:
@@ -14952,6 +15056,38 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /{groupId}/members:
+    post:
+      tags:
+        - ranges
+      summary: Put an existing tag of the set into a group (by code or chip UID), assigning it if a collection is given.
+      operationId: ranges_addMember
+      security: []
+      parameters:
+        - name: groupId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AddClaimSetRangeMemberResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddClaimSetRangeMemberRequest"
   /{rangeId}:
     get:
       tags:
@@ -15041,6 +15177,38 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/AssignClaimSetRangeRequest"
+  /{rangeId}/close:
+    post:
+      tags:
+        - ranges
+      summary: "Close an open range: it becomes a range with the quantity it reached (removed if nothing was minted)."
+      operationId: ranges_close
+      security: []
+      parameters:
+        - name: rangeId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CloseClaimSetRangeResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimSetScope"
   /{rangeId}/export:
     get:
       tags:
@@ -20591,6 +20759,10 @@ components:
           $ref: "#/components/schemas/AppFunctionAuthority"
         elevated:
           type: boolean
+        userGroups:
+          type: array
+          items:
+            type: string
         capabilities:
           type: array
           items:
@@ -20764,12 +20936,75 @@ components:
       required:
         - slots
         - blocks
+    AppHistoryEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        at:
+          type: string
+        type:
+          type: string
+        entityId:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        actorType:
+          type: string
+          enum:
+            - user
+            - contact
+        actorId:
+          type: string
+      required:
+        - id
+        - at
+        - type
+        - entityId
+        - data
+        - actorType
+        - actorId
+    AppHistoryQuery:
+      type: object
+      properties:
+        types:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        entityId:
+          type: string
+        data:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        from:
+          type: string
+        to:
+          type: string
+        limit:
+          type: number
     ServerFunctionSl:
       type: object
       properties:
+        workOrders:
+          $ref: "#/components/schemas/WorkOrdersApi"
+        stock:
+          $ref: "#/components/schemas/StockApi"
+        boms:
+          $ref: "#/components/schemas/BomsApi"
+        madeFrom:
+          $ref: "#/components/schemas/MadeFromApi"
+        operations:
+          $ref: "#/components/schemas/OperationsApi"
         bookings:
           $ref: "#/components/schemas/ServerFunctionBookings"
         appRecords:
+          type: object
+          additionalProperties: true
+        history:
           type: object
           additionalProperties: true
         counters:
@@ -20791,8 +21026,14 @@ components:
         appData:
           $ref: "#/components/schemas/AppDataHandle"
       required:
+        - workOrders
+        - stock
+        - boms
+        - madeFrom
+        - operations
         - bookings
         - appRecords
+        - history
         - counters
         - tags
         - contacts
@@ -20814,10 +21055,16 @@ components:
           type: string
         via:
           $ref: "#/components/schemas/AppFunctionTriggerType"
+        userGroups:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
       required:
         - userId
         - anonymous
         - via
+        - userGroups
     CallerContact:
       type: object
       properties:
@@ -21568,6 +21815,9 @@ components:
       enum:
         - caller
         - collection
+    RecordTransactionOp:
+      type: object
+      additionalProperties: true
     PaginatedResponse:
       type: object
       properties:
@@ -21617,6 +21867,19 @@ components:
         expires_at:
           type: object
           additionalProperties: true
+        updated_at:
+          type: object
+          additionalProperties: true
+        data:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        dataRange:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
         groupBy:
           type: array
           items:
@@ -25919,6 +26182,8 @@ components:
           type: string
         namespace:
           type: string
+        kind:
+          $ref: "#/components/schemas/ClaimSetRangeKind"
         name:
           type: string
         notes:
@@ -25972,6 +26237,7 @@ components:
         - id
         - claimSetId
         - namespace
+        - kind
         - name
         - notes
         - startIndex
@@ -25995,6 +26261,8 @@ components:
     CreateClaimSetRangeRequest:
       type: object
       properties:
+        kind:
+          $ref: "#/components/schemas/ClaimSetRangeKind"
         name:
           type: string
         quantity:
@@ -26018,7 +26286,6 @@ components:
           type: string
       required:
         - name
-        - quantity
     UpdateClaimSetRangeRequest:
       type: object
       properties:
@@ -26062,6 +26329,10 @@ components:
           type: string
         proofId:
           type: string
+        rangeId:
+          type: string
+        groupId:
+          type: string
         programmedAt:
           type: string
         scans:
@@ -26075,6 +26346,8 @@ components:
         - productId
         - batchId
         - proofId
+        - rangeId
+        - groupId
         - programmedAt
         - scans
     ClaimSetRangeTagsPage:
@@ -26103,6 +26376,41 @@ components:
       required:
         - url
         - remaining
+    AddClaimSetRangeMemberRequest:
+      type: object
+      properties:
+        code:
+          type: string
+        uid:
+          type: string
+        collectionId:
+          type: string
+        productId:
+          type: string
+        batchId:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        clear:
+          type: boolean
+    AddClaimSetRangeMemberResponse:
+      type: object
+      properties:
+        tag:
+          $ref: "#/components/schemas/ClaimSetRangeTag"
+        range:
+          $ref: "#/components/schemas/ClaimSetRange"
+        assigned:
+          type: object
+          additionalProperties: true
+        movedFrom:
+          type: string
+      required:
+        - tag
+        - range
+        - assigned
+        - movedFrom
     ImportClaimSetRangeUidsRequest:
       type: object
       properties:
@@ -26272,12 +26580,15 @@ components:
           $ref: "#/components/schemas/ClaimSetRangeTag"
         range:
           $ref: "#/components/schemas/ClaimSetRange"
+        group:
+          $ref: "#/components/schemas/ClaimSetRange"
       required:
         - namespace
         - claimSetId
         - set
         - tag
         - range
+        - group
     CreatePartnerClaimSetRequest:
       type: object
       properties:
@@ -26303,6 +26614,12 @@ components:
         - ntag424
         - ntag21x
         - qr
+    ClaimSetRangeKind:
+      type: string
+      enum:
+        - range
+        - open
+        - group
     ClaimSetRangeStatus:
       type: string
       enum:
@@ -26311,6 +26628,11 @@ components:
         - sent
         - received
         - assigned
+        - open
+        - group
+    CloseClaimSetRangeResponse:
+      type: object
+      additionalProperties: true
     ClaimSetImportResult:
       type: string
       enum:
@@ -26324,6 +26646,92 @@ components:
         - duplicate_uid
         - uid_in_use
         - uid_conflict
+    ClientErrorReport:
+      type: object
+      properties:
+        app:
+          type: string
+        appVersion:
+          type: string
+        collectionId:
+          type: string
+        operation:
+          type: string
+        severity:
+          type: string
+          enum:
+            - debug
+            - info
+            - warning
+            - error
+            - critical
+        errorCode:
+          type: string
+        errorType:
+          type: string
+        message:
+          type: string
+        stack:
+          type: string
+        entityType:
+          type: string
+        entityId:
+          type: string
+        labels:
+          type: object
+          additionalProperties: true
+        context:
+          type: object
+          additionalProperties: true
+        refId:
+          type: string
+        correlationId:
+          type: string
+    ClientErrorEvent:
+      type: object
+      properties:
+        id:
+          type: string
+        time:
+          type: string
+        event_category:
+          type: string
+        event_action:
+          type: string
+        log_level:
+          type: string
+        error_code:
+          type: string
+        error_message:
+          type: string
+        service_name:
+          type: string
+        service_version:
+          type: string
+        collection_id:
+          type: string
+        user_id:
+          type: string
+        labels:
+          type: object
+          additionalProperties: true
+        context:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - time
+        - event_category
+        - event_action
+        - log_level
+        - error_code
+        - error_message
+        - service_name
+        - service_version
+        - collection_id
+        - user_id
+        - labels
+        - context
     Collection:
       type: object
       properties:
@@ -27812,6 +28220,8 @@ components:
           additionalProperties: true
         parentContainerId:
           type: string
+        fixed:
+          type: boolean
         children:
           type: array
           items:
@@ -27885,6 +28295,8 @@ components:
           additionalProperties: true
         parentContainerId:
           type: string
+        fixed:
+          type: boolean
       required:
         - containerType
     UpdateContainerInput:
@@ -27905,6 +28317,8 @@ components:
           additionalProperties: true
         parentContainerId:
           type: string
+        fixed:
+          type: boolean
     AddContainerItemsInput:
       type: object
       properties:
@@ -31793,6 +32207,598 @@ components:
         - rescan
         - invalid
         - error
+    WorkOrderStage:
+      type: object
+      properties:
+        key:
+          type: string
+        position:
+          type: number
+        status:
+          $ref: "#/components/schemas/WorkOrderStageStatus"
+        plannedStart:
+          type: string
+        plannedEnd:
+          type: string
+        startedAt:
+          type: string
+        doneAt:
+          type: string
+        quantityDone:
+          type: number
+        quantityScrapped:
+          type: number
+        data:
+          type: object
+          additionalProperties: true
+      required:
+        - key
+        - position
+        - status
+        - plannedStart
+        - plannedEnd
+        - startedAt
+        - doneAt
+        - quantityDone
+        - quantityScrapped
+        - data
+    WorkOrder:
+      type: object
+      properties:
+        id:
+          type: string
+        collectionId:
+          type: string
+        appId:
+          type: string
+        ref:
+          type: string
+        kind:
+          type: string
+        productId:
+          type: string
+        variantId:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        dueAt:
+          type: string
+        priority:
+          type: number
+        status:
+          $ref: "#/components/schemas/WorkOrderStatus"
+        statusReason:
+          type: string
+        orderId:
+          type: string
+        orderItemId:
+          type: string
+        parentId:
+          type: string
+        outputBatchId:
+          type: string
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkOrderStage"
+        currentStage:
+          type: string
+        late:
+          type: boolean
+        data:
+          type: object
+          additionalProperties: true
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        closedAt:
+          type: string
+      required:
+        - id
+        - collectionId
+        - appId
+        - ref
+        - kind
+        - productId
+        - variantId
+        - quantity
+        - unit
+        - dueAt
+        - priority
+        - status
+        - statusReason
+        - orderId
+        - orderItemId
+        - parentId
+        - outputBatchId
+        - stages
+        - currentStage
+        - late
+        - data
+        - createdBy
+        - createdAt
+        - updatedAt
+        - closedAt
+    CreateWorkOrderInput:
+      type: object
+      properties:
+        ref:
+          type: string
+        kind:
+          type: string
+        productId:
+          type: string
+        variantId:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        dueAt:
+          type: string
+        priority:
+          type: number
+        orderId:
+          type: string
+        orderItemId:
+          type: string
+        parentId:
+          type: string
+        outputBatchId:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        stages:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkOrderStageInput"
+      required:
+        - ref
+    WorkOrderListParams:
+      type: object
+      properties:
+        status:
+          type: array
+          items:
+            $ref: "#/components/schemas/WorkOrderStatus"
+        appId:
+          type: string
+        productId:
+          type: string
+        orderId:
+          type: string
+        parentId:
+          type: string
+        kind:
+          type: string
+        late:
+          type: boolean
+        dueFrom:
+          type: string
+        dueTo:
+          type: string
+        q:
+          type: string
+        sort:
+          type: string
+          enum:
+            - due
+            - priority
+            - created
+            - ref
+        limit:
+          type: number
+        offset:
+          type: number
+    WorkOrdersApi:
+      type: object
+      properties: {}
+    StockTarget:
+      type: object
+      properties:
+        type:
+          type: object
+          additionalProperties: true
+      required:
+        - type
+    StockLine:
+      type: object
+      properties:
+        id:
+          type: string
+        containerId:
+          type: string
+        productId:
+          type: string
+        variantId:
+          type: string
+        batchId:
+          type: string
+        state:
+          $ref: "#/components/schemas/StockState"
+        allocatedTo:
+          $ref: "#/components/schemas/StockTarget"
+        quantity:
+          type: number
+        unit:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - containerId
+        - productId
+        - variantId
+        - batchId
+        - state
+        - allocatedTo
+        - quantity
+        - unit
+        - updatedAt
+    StockTotals:
+      type: object
+      properties:
+        available:
+          type: object
+          additionalProperties: true
+      required:
+        - available
+    StockItem:
+      type: object
+      properties:
+        productId:
+          type: object
+          additionalProperties: true
+      required:
+        - productId
+    StockMovementExtras:
+      type: object
+      properties:
+        workOrderId:
+          type: object
+          additionalProperties: true
+    StockMovementOptions:
+      type: object
+      properties:
+        idempotencyKey:
+          type: string
+    StockMovement:
+      type: object
+      properties:
+        movementId:
+          type: string
+        kind:
+          type: string
+          enum:
+            - receive
+            - produce
+            - consume
+            - move
+            - allocate
+            - release
+            - hold
+            - unhold
+            - adjust
+        productId:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        from:
+          $ref: "#/components/schemas/StockLine"
+        to:
+          $ref: "#/components/schemas/StockLine"
+        replayed:
+          type: boolean
+      required:
+        - movementId
+        - kind
+        - productId
+        - quantity
+        - unit
+        - replayed
+    StockWhereLine:
+      type: object
+      properties:
+        container:
+          type: object
+          additionalProperties: true
+        path:
+          type: array
+          items:
+            type: string
+        place:
+          type: object
+          additionalProperties: true
+      required:
+        - container
+        - path
+        - place
+    StockPosition:
+      type: object
+      properties:
+        product:
+          type: object
+          additionalProperties: true
+        onHand:
+          $ref: "#/components/schemas/StockTotals"
+        where:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        onOrder:
+          type: object
+          additionalProperties: true
+        beingMade:
+          type: object
+          additionalProperties: true
+        needed:
+          type: object
+          additionalProperties: true
+        projected:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        shortfall:
+          type: object
+          additionalProperties: true
+        horizonDays:
+          type: number
+        undatedLines:
+          type: number
+        asOf:
+          type: string
+        sources:
+          type: object
+          additionalProperties: true
+      required:
+        - product
+        - onHand
+        - where
+        - onOrder
+        - beingMade
+        - needed
+        - projected
+        - shortfall
+        - horizonDays
+        - asOf
+        - sources
+    StockApi:
+      type: object
+      properties: {}
+    BomLine:
+      type: object
+      properties:
+        componentProductId:
+          type: object
+          additionalProperties: true
+      required:
+        - componentProductId
+    Bom:
+      type: object
+      properties:
+        id:
+          type: string
+        productId:
+          type: string
+        variantId:
+          type: string
+        version:
+          type: number
+        validFrom:
+          type: string
+        validTo:
+          type: string
+        yields:
+          type: number
+        note:
+          type: string
+        lines:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        data:
+          type: object
+          additionalProperties: true
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - productId
+        - variantId
+        - version
+        - validFrom
+        - validTo
+        - yields
+        - note
+        - lines
+        - data
+        - createdBy
+        - createdAt
+    BomTreeNode:
+      type: object
+      properties:
+        productId:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - productId
+    BomExplosion:
+      type: object
+      properties:
+        productId:
+          type: string
+        variantId:
+          type: string
+        quantity:
+          type: number
+        hasBom:
+          type: boolean
+        tree:
+          type: array
+          items:
+            $ref: "#/components/schemas/BomTreeNode"
+        materials:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - productId
+        - variantId
+        - quantity
+        - hasBom
+        - tree
+        - materials
+    BomsApi:
+      type: object
+      properties: {}
+    MadeFromSubject:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - batch
+            - proof
+      required:
+        - type
+    MadeFromSource:
+      type: object
+      properties:
+        type:
+          type: string
+          enum:
+            - batch
+            - proof
+            - product
+      required:
+        - type
+    MadeFromEntry:
+      type: object
+      properties:
+        id:
+          type: string
+        subject:
+          $ref: "#/components/schemas/MadeFromSubject"
+        source:
+          $ref: "#/components/schemas/MadeFromSource"
+        productId:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        workOrderId:
+          type: string
+        at:
+          type: string
+        by:
+          type: string
+        endedAt:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - subject
+        - source
+        - productId
+        - quantity
+        - unit
+        - workOrderId
+        - at
+        - by
+        - endedAt
+        - data
+    MadeFromTraceNode:
+      type: object
+      properties:
+        source:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - source
+    MadeFromApi:
+      type: object
+      properties: {}
+    OperationStep:
+      type: object
+      properties:
+        op:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - op
+    OperationsApi:
+      type: object
+      properties: {}
+    OperationsAdmin:
+      type: object
+      properties:
+        workOrders:
+          $ref: "#/components/schemas/WorkOrdersApi"
+        stock:
+          $ref: "#/components/schemas/StockApi"
+        boms:
+          $ref: "#/components/schemas/BomsApi"
+        madeFrom:
+          $ref: "#/components/schemas/MadeFromApi"
+        transaction:
+          type: object
+          additionalProperties: true
+      required:
+        - workOrders
+        - stock
+        - boms
+        - madeFrom
+        - transaction
+    WorkOrderStatus:
+      type: string
+      enum:
+        - open
+        - on-hold
+        - blocked
+        - done
+        - cancelled
+    WorkOrderStageStatus:
+      type: string
+      enum:
+        - pending
+        - active
+        - done
+        - skipped
+    WorkOrderStageInput:
+      type: object
+      additionalProperties: true
+    UpdateWorkOrderInput:
+      $ref: "#/components/schemas/CreateWorkOrderInput"
+    StockState:
+      type: string
+      enum:
+        - available
+        - allocated
+        - held
+        - quarantine
     OrderItem:
       type: object
       properties:
@@ -31806,6 +32812,7 @@ components:
             - tag
             - proof
             - serial
+            - product
         itemId:
           type: string
         collectionId:
@@ -31815,6 +32822,14 @@ components:
         variantId:
           type: string
         batchId:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        quantityDone:
+          type: number
+        dueAt:
           type: string
         metadata:
           type: object
@@ -31828,8 +32843,50 @@ components:
         - orderId
         - itemType
         - itemId
+        - quantity
+        - quantityDone
         - metadata
         - createdAt
+    OrderItemInput:
+      type: object
+      properties:
+        itemType:
+          type: string
+          enum:
+            - tag
+            - proof
+            - serial
+        itemId:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - itemType
+        - itemId
+    OrderQuantityLineInput:
+      type: object
+      properties:
+        itemType:
+          type: string
+          enum:
+            - product
+        productId:
+          type: string
+        variantId:
+          type: string
+        quantity:
+          type: number
+        unit:
+          type: string
+        dueAt:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - productId
+        - quantity
     OrderSummary:
       type: object
       properties:
@@ -31862,6 +32919,12 @@ components:
           type: string
         status:
           type: string
+        direction:
+          $ref: "#/components/schemas/OrderDirection"
+        partyId:
+          type: string
+        dueAt:
+          type: string
         itemCount:
           type: number
         metadata:
@@ -31884,6 +32947,7 @@ components:
         - orgId
         - collectionId
         - status
+        - direction
         - itemCount
         - metadata
         - createdAt
@@ -31892,29 +32956,28 @@ components:
       type: object
       properties:
         items:
-          type: object
-          additionalProperties: true
-        itemType:
+          type: array
+          items:
+            anyOf:
+              - $ref: "#/components/schemas/OrderItemInput"
+              - $ref: "#/components/schemas/OrderQuantityLineInput"
+        direction:
+          $ref: "#/components/schemas/OrderDirection"
+        partyId:
           type: string
-          enum:
-            - tag
-            - proof
-            - serial
-        itemId:
+        dueAt:
           type: string
-        metadata:
-          type: object
-          additionalProperties: true
         orderRef:
           type: string
         customerId:
           type: string
         status:
           type: string
+        metadata:
+          type: object
+          additionalProperties: true
       required:
         - items
-        - itemType
-        - itemId
     CreateOrderResponse:
       type: object
       properties: {}
@@ -31929,6 +32992,12 @@ components:
     UpdateOrderRequest:
       type: object
       properties:
+        direction:
+          $ref: "#/components/schemas/OrderDirection"
+        partyId:
+          type: string
+        dueAt:
+          type: string
         orderRef:
           type: string
         customerId:
@@ -31960,6 +33029,10 @@ components:
         orderRef:
           type: string
         customerId:
+          type: string
+        direction:
+          $ref: "#/components/schemas/OrderDirection"
+        partyId:
           type: string
         includeItems:
           type: boolean
@@ -32646,6 +33719,11 @@ components:
         - scansByDay
         - adminScansByDay
         - customerScansByDay
+    OrderDirection:
+      type: string
+      enum:
+        - sales
+        - purchase
     ProductKey:
       type: object
       properties:
@@ -34445,6 +35523,165 @@ components:
       anyOf:
         - $ref: "#/components/schemas/TranslationLookupSingleRequest"
         - $ref: "#/components/schemas/TranslationLookupBatchRequest"
+    UserGroup:
+      type: object
+      properties:
+        id:
+          type: string
+        collectionId:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        members:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        deleted:
+          type: boolean
+        deletedAt:
+          type: string
+      required:
+        - id
+        - name
+    CreateUserGroupRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        key:
+          type: string
+        description:
+          type: string
+        members:
+          type: array
+          items:
+            type: string
+      required:
+        - name
+    UpdateUserGroupRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        members:
+          type: array
+          items:
+            type: string
+    UserGroupMember:
+      type: object
+      properties:
+        uid:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+      required:
+        - uid
+    UserGroupRef:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+      required:
+        - id
+        - key
+        - name
+    MyUserGroups:
+      type: object
+      properties:
+        userGroups:
+          type: array
+          items:
+            type: string
+        userGroupIds:
+          type: array
+          items:
+            type: string
+      required:
+        - userGroups
+        - userGroupIds
+    UserGroupChange:
+      type: object
+      properties:
+        id:
+          type: string
+        at:
+          type: string
+        type:
+          $ref: "#/components/schemas/UserGroupChangeType"
+        entityId:
+          type: string
+        data:
+          type: object
+          additionalProperties: true
+        userGroupId:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+        userId:
+          type: string
+        previousName:
+          type: string
+        members:
+          type: array
+          items:
+            type: string
+        actorType:
+          type: string
+        actorId:
+          type: string
+      required:
+        - id
+        - at
+        - type
+        - entityId
+        - data
+        - userGroupId
+        - key
+        - name
+        - actorType
+        - actorId
+    UserGroupHistoryParams:
+      type: object
+      properties:
+        userGroupId:
+          type: string
+        userId:
+          type: string
+        from:
+          type: string
+        to:
+          type: string
+        limit:
+          type: number
+    AddUserGroupMemberRequest:
+      type: object
+      additionalProperties: true
+    UserGroupChangeType:
+      type: string
+      enum:
+        - usergroup.created
+        - usergroup.renamed
+        - usergroup.deleted
+        - usergroup.member-added
+        - usergroup.member-removed
     VariantResponse:
       type: object
       properties:

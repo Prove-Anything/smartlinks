@@ -450,6 +450,7 @@ this is just the manifest shape.
 | `definitions[].name` | string | Function name; also the handler export name (override with `handler`) |
 | `definitions[].trigger` | object | `{ type: "http"|"event"|"cron", … }` |
 | `definitions[].visibility` | string | `admin` \| `public` (http only) — who may call it |
+| `definitions[].userGroups` | string[] | http only — the [user groups](user-groups.md) (by key) allowed to call it; the caller must be in at least one, or be a collection admin |
 | `definitions[].authority` | string | `caller` \| `collection` — whose authority it runs as |
 | `definitions[].capabilities` | string[] | Least-privilege grants (`sl:<res>:<read\|write>`, `network[:<host>]`, `secrets:<ref>`) |
 

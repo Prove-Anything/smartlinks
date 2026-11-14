@@ -505,20 +505,27 @@ async function validateUser(condition, params) {
                     hasRoles: !!((_t = params.collection) === null || _t === void 0 ? void 0 : _t.roles),
                 },
             };
-        case 'group':
-            // User is member of specific group
-            // TODO: Implement group membership check
+        case 'group': {
+            // The user is signed in and in at least one of the named user groups (matched by id or key).
+            // A condition that names no user group passes nobody. This only shows or hides: what must be
+            // protected is limited on the server (a function's `userGroups`).
+            const wanted = [
+                ...(Array.isArray(condition.groupIds) ? condition.groupIds : []),
+                ...(condition.groupId ? [condition.groupId] : []),
+            ].filter((g) => typeof g === 'string' && g);
+            const mine = Array.isArray((_u = params.user) === null || _u === void 0 ? void 0 : _u.groups) ? params.user.groups : [];
             return {
-                passed: !!(params.collection &&
-                    ((_u = params.user) === null || _u === void 0 ? void 0 : _u.valid) &&
-                    params.user.groups),
-                detail: 'Group condition currently checks only that groups are present on the user.',
+                passed: !!(((_v = params.user) === null || _v === void 0 ? void 0 : _v.valid) && wanted.length && wanted.some((g) => mine.includes(g))),
+                detail: wanted.length
+                    ? 'Group check passes when the signed-in user is in at least one of the named user groups.'
+                    : 'Group condition names no user group, so nobody passes.',
                 context: {
-                    groupId: condition.groupId,
-                    groups: (_v = params.user) === null || _v === void 0 ? void 0 : _v.groups,
+                    groupIds: wanted,
+                    groups: mine,
                     userValid: (_x = (_w = params.user) === null || _w === void 0 ? void 0 : _w.valid) !== null && _x !== void 0 ? _x : false,
                 },
             };
+        }
         default:
             return {
                 passed: true,

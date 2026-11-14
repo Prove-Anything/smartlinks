@@ -59,6 +59,9 @@ export interface NestedCondition extends BaseCondition {
 export interface UserCondition extends BaseCondition {
     type: 'user';
     userType: 'valid' | 'invalid' | 'owner' | 'admin' | 'group';
+    /** `group` only: the user must be in at least one of these user groups (ids or keys). */
+    groupIds?: string[];
+    /** `group` only: a single user group (id or key). Same as `groupIds: [groupId]`. */
     groupId?: string;
 }
 /**
@@ -232,6 +235,10 @@ export interface UserInfo {
     valid: boolean;
     uid?: string;
     location?: UserLocation;
+    /**
+     * The user groups this person is in: keys and/or ids. Fill it from `userGroups.mine(collectionId)`
+     * (`[...userGroups, ...userGroupIds]`) so a `group` condition can be checked.
+     */
     groups?: string[];
 }
 /**

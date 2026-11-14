@@ -42,4 +42,13 @@ export var partner;
         return request(`/admin/partner/${encodeURIComponent(partnerId)}/tags/lookup?${q}`);
     }
     partner.lookupTags = lookupTags;
+    /**
+     * What phones reported about one chip (errors.report with entityType 'tag'), newest first: a tag that
+     * failed to program or register, with the host's NFC log in context. For a chip in the partner's sets,
+     * or attempts that named one of them.
+     */
+    async function tagAttempts(partnerId, uid) {
+        return request(`/admin/partner/${encodeURIComponent(partnerId)}/tags/attempts?uid=${encodeURIComponent(uid)}`);
+    }
+    partner.tagAttempts = tagAttempts;
 })(partner || (partner = {}));

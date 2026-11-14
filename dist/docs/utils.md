@@ -479,6 +479,23 @@ await utils.validateCondition({
 
 User types: `'valid'`, `'invalid'`, `'owner'`, `'admin'`, `'group'`
 
+`'group'` passes when the signed-in user is in at least one of the named [user groups](user-groups.md).
+Name them in `groupIds` (keys or ids), and pass the user's own in `user.groups`:
+
+```typescript
+const { userGroups: keys, userGroupIds } = await userGroups.mine(collectionId)
+
+await utils.validateCondition({
+  condition: {
+    type: 'and',
+    conditions: [{ type: 'user', userType: 'group', groupIds: ['qc-controller'] }]
+  },
+  user: { valid: true, uid: 'user123', groups: [...keys, ...userGroupIds] }
+})
+```
+
+A condition only shows or hides. To protect an action, limit the server function behind it.
+
 #### Date & Time Conditions
 Show/hide content based on dates:
 

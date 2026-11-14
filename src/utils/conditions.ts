@@ -78,6 +78,9 @@ export interface NestedCondition extends BaseCondition {
 export interface UserCondition extends BaseCondition {
   type: 'user'
   userType: 'valid' | 'invalid' | 'owner' | 'admin' | 'group'
+  /** `group` only: the user must be in at least one of these user groups (ids or keys). */
+  groupIds?: string[]
+  /** `group` only: a single user group (id or key). Same as `groupIds: [groupId]`. */
   groupId?: string
 }
 
@@ -286,6 +289,10 @@ export interface UserInfo {
   valid: boolean
   uid?: string
   location?: UserLocation
+  /**
+   * The user groups this person is in: keys and/or ids. Fill it from `userGroups.mine(collectionId)`
+   * (`[...userGroups, ...userGroupIds]`) so a `group` condition can be checked.
+   */
   groups?: string[]
 }
 
@@ -931,22 +938,27 @@ async function validateUser(condition: UserCondition, params: ConditionParams): 
         },
       }
 
-    case 'group':
-      // User is member of specific group
-      // TODO: Implement group membership check
+    case 'group': {
+      // The user is signed in and in at least one of the named user groups (matched by id or key).
+      // A condition that names no user group passes nobody. This only shows or hides: what must be
+      // protected is limited on the server (a function's `userGroups`).
+      const wanted = [
+        ...(Array.isArray(condition.groupIds) ? condition.groupIds : []),
+        ...(condition.groupId ? [condition.groupId] : []),
+      ].filter((g) => typeof g === 'string' && g)
+      const mine = Array.isArray(params.user?.groups) ? params.user!.groups! : []
       return {
-        passed: !!(
-        params.collection &&
-        params.user?.valid &&
-        params.user.groups
-        ),
-        detail: 'Group condition currently checks only that groups are present on the user.',
+        passed: !!(params.user?.valid && wanted.length && wanted.some((g) => mine.includes(g))),
+        detail: wanted.length
+          ? 'Group check passes when the signed-in user is in at least one of the named user groups.'
+          : 'Group condition names no user group, so nobody passes.',
         context: {
-          groupId: condition.groupId,
-          groups: params.user?.groups,
+          groupIds: wanted,
+          groups: mine,
           userValid: params.user?.valid ?? false,
         },
       }
+    }
 
     default:
       return {

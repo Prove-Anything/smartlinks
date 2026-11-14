@@ -1,4 +1,5 @@
 import type { AppFunctionDef, ServerFunctionContext, ServerFunctionInputs } from '../types/appManifest.js';
+import type { WorkOrdersApi, StockApi, BomsApi, MadeFromApi, OperationsApi } from '../types/operations.js';
 import { type BookingsMemory } from './bookingsMemory.js';
 export declare class CapabilityError extends Error {
     capability: string;
@@ -16,7 +17,11 @@ export interface TestSlImpl {
         get?(id: string): any;
         query?(params: any): any;
         listTypes?(): any;
+        adjust?(id: string, by: Record<string, number>, opts?: any): any;
+        aggregate?(params?: any): any;
     };
+    /** ctx.sl.transaction(ops, { idempotencyKey }) — defaults to the in-memory one (all or none, replay by key). */
+    transaction?(ops: any[], opts?: any): any;
     counters?: {
         next?(name: string, opts?: any): any;
         get?(name: string): any;
@@ -65,6 +70,16 @@ export interface TestSlImpl {
      * time, idempotent creates, holds) — inspect it via `ctx.memory.bookings`.
      */
     bookings?: Record<string, any>;
+    /**
+     * Work orders, stock, bills of materials and made-from (docs/operations.md). There is no in-memory
+     * engine for these: give the methods your function calls, and any other call returns a stub echo.
+     * The harness still enforces both production gates: the capability, and collection authority.
+     */
+    workOrders?: Partial<WorkOrdersApi>;
+    stock?: Partial<StockApi>;
+    boms?: Partial<BomsApi>;
+    madeFrom?: Partial<MadeFromApi>;
+    operations?: Partial<OperationsApi>;
 }
 export interface TestCaller {
     userId?: string | null;
@@ -73,6 +88,8 @@ export interface TestCaller {
     anonymous?: boolean;
     origin?: string | null;
     ip?: string | null;
+    /** Keys of the user groups the caller is in, for `ctx.caller.userGroups`. Default: none. */
+    userGroups?: string[];
 }
 export interface CreateFunctionTestContextOptions {
     /** The manifest declaration under test — its `capabilities` are the enforced envelope. */
@@ -108,6 +125,18 @@ export interface FunctionTestMemory {
     interactions: any[];
     /** Slots, bookings and allocations of the in-memory bookings engine. */
     bookings: BookingsMemory;
+    /** ctx.sl.transaction results by idempotency key (a repeat replays them). */
+    transactions: Record<string, any[]>;
+    /** ctx.sl.history events (log ops and history.log), oldest first. */
+    history: Array<{
+        id: string;
+        at: string;
+        type: string;
+        entityId: string | null;
+        data: Record<string, any>;
+        actorType: null;
+        actorId: null;
+    }>;
 }
 /** A fresh in-memory store — pass the same one to several test contexts to simulate concurrent callers. */
 export declare function createFunctionTestMemory(): FunctionTestMemory;

@@ -2,6 +2,7 @@ import type { AppDataDeclaration, AppHeadlessDeclaration } from './headless'
 import type { RealtimeChannelDeclaration } from './realtime'
 import type { AppManifestAdminCards } from './adminCards'
 import type { PaginatedResponse } from './appObjects'
+import type { WorkOrdersApi, StockApi, BomsApi, MadeFromApi, OperationsApi } from './operations'
 import type {
   Booking, BookingSlot, BookingAllocation, CreateBookingInput, UpdateBookingInput, MoveBookingInput,
   BookingListQueryParams, CreateSlotInput, UpdateSlotInput, SlotListQueryParams, CreateBlockInput,
@@ -330,6 +331,13 @@ export interface AppFunctionDef {
    */
   elevated?: boolean;
   /**
+   * `http` only. Who may call it: the caller must be signed in and in at least ONE of these user
+   * groups (by key, e.g. `['qc-controller', 'manager']`), or be a collection admin. Checked by the
+   * platform before any of your code runs: anyone else gets `403 NOT_IN_USER_GROUP` (`401
+   * SIGN_IN_REQUIRED` when not signed in). Absent = no user group limit. See docs/user-groups.md.
+   */
+  userGroups?: string[];
+  /**
    * Least-privilege capabilities this function needs, surfaced at install for
    * consent and capped at runtime — even for `collection`-authority functions.
    * e.g. `['sl:records:write', 'network:api.example.com', 'secrets:syndigo-key']`.
@@ -556,6 +564,23 @@ export interface AppHistoryQuery {
 }
 
 export interface ServerFunctionSl {
+  /**
+   * Work orders: what work is under way (`sl:workorders:read` / `:write`). Any app may read a work
+   * order; only the app that owns it may change it. Needs `authority: 'collection'`. See docs/operations.md.
+   */
+  workOrders: WorkOrdersApi;
+  /**
+   * Stock: how much of a product is in each container, changed only through movements, and a product's
+   * position (`sl:stock:read` / `:write`). Shared by every app in the collection. Needs
+   * `authority: 'collection'`.
+   */
+  stock: StockApi;
+  /** Bills of materials: what a product is made of (`sl:boms:read` / `:write`). Needs `authority: 'collection'`. */
+  boms: BomsApi;
+  /** What a batch or item was really made from (`sl:madefrom:read` / `:write`). Needs `authority: 'collection'`. */
+  madeFrom: MadeFromApi;
+  /** Several work order, stock, bill of materials and made-from writes, all or nothing. */
+  operations: OperationsApi;
   /** THIS app's bookings, slots and blocks (`sl:bookings:read` / `sl:bookings:write`). */
   bookings: ServerFunctionBookings;
   /**
@@ -655,6 +680,12 @@ export interface ServerFunctionCaller {
   ip?: string | null;
   /** How the function was triggered. */
   via: AppFunctionTriggerType;
+  /**
+   * Keys of the user groups the caller is in, e.g. `['qc-controller', 'warehouse']`. Empty when nobody
+   * is signed in (and for `event`/`cron`). Use it for finer rules than the declaration's `userGroups`
+   * allows ("a manager may also override"). See docs/user-groups.md.
+   */
+  userGroups: readonly string[];
 }
 
 /** The signed-in caller's own contact, as a server function sees it (`ctx.sl.contacts.forCaller()`). */

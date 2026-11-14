@@ -1,4 +1,4 @@
-import { Partner, PartnerClaimSet, CreatePartnerClaimSetRequest, PartnerTagHit } from "../types/index.js";
+import { Partner, PartnerClaimSet, CreatePartnerClaimSetRequest, PartnerTagHit, ClientErrorEvent } from "../types/index.js";
 /**
  * Partners: organisations above collections (FanConnect, Zenith Coins, …) that own NFC claim sets and
  * assign their tags into collections their people administer. Partners and their members are set up by
@@ -21,4 +21,10 @@ export declare namespace partner {
         uid?: string;
         code?: string;
     }): Promise<PartnerTagHit[]>;
+    /**
+     * What phones reported about one chip (errors.report with entityType 'tag'), newest first: a tag that
+     * failed to program or register, with the host's NFC log in context. For a chip in the partner's sets,
+     * or attempts that named one of them.
+     */
+    function tagAttempts(partnerId: string, uid: string): Promise<ClientErrorEvent[]>;
 }

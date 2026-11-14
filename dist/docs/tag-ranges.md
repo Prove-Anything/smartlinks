@@ -55,6 +55,35 @@ tag without a chip, with its URL and key; write it, then `ranges.recordTag(scope
 
 To find where a chip or code went, `partner.lookupTags(partner.id, { uid })` or `{ code }` searches every set the partner owns and returns each hit's set, tag and range, never a key.
 
+## Open ranges and groups
+
+A range's count is fixed when it is minted. Two phone-side jobs don't know their count in advance, so a range
+has a `kind`:
+
+- **`open`**: blank tags programmed on Sidekick one at a time. `ranges.create(scope, set.id, { kind: 'open', name })`
+  reserves only a start index; each `ranges.next()` hands back a free minted code or mints one more, so
+  `quantity`/`endIndex` grow as tags are written (`remaining` is null). One open range per set, and nothing can
+  be minted behind it (`409 RANGE_OPEN`) until `ranges.close(scope, set.id, range.id)` turns it into an ordinary
+  range (an open range that minted nothing is removed instead).
+- **`group`**: tags that already exist, added by tapping, assigned by hand, and moved together later. Assigners may
+  make one: `ranges.create(scope, set.id, { kind: 'group', name, intendedCollectionId? })`. Each tap goes through
+  `ranges.addMember(scope, set.id, group.id, { code | uid, collectionId, productId? })`, which stamps the tag with
+  the group and assigns it with the single-tag rules; `assigned.skipped` says when a tag was left alone (claimed,
+  or in a collection you don't administer). `ranges.assign(scope, set.id, group.id, { collectionId })` moves every
+  member in one go; `ranges.removeMember` takes one out. Groups have no printer file, instructions, import or
+  `next` (`400 NOT_A_RANGE`). Its tags must be codes of the group's set; a chip that is a code elsewhere is
+  `409 OTHER_SET`.
+
+Status reads `open` or `group` for these (and `assigned` once every member of a group is assigned).
+
+## When a tag fails on the phone
+
+`errors.report({ app: 'sidekick', operation: 'tag.program', errorCode: 'TAG_LOST', message, entityType: 'tag',
+entityId: chipUid, labels: { claimSetId, code, failedStep }, context: { steps, timings, hostLog } })` keeps what
+the phone saw in the platform's one error log (never a key: fields that look like one are dropped).
+`partner.tagAttempts(partner.id, chipUid)` and the platform's tag lookup read it back, newest first, so a
+failing chip can be understood by its UID without the phone's console.
+
 ## The printer file
 
 One row per tag, in index order. The manufacturer fills in `UID` and sends the same file back; rows are

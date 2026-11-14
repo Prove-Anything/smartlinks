@@ -21,6 +21,7 @@
 //    testable. Inspect it via `ctx.memory`.
 
 import type { AppFunctionDef, ServerFunctionContext, ServerFunctionInputs } from '../types/appManifest'
+import type { WorkOrdersApi, StockApi, BomsApi, MadeFromApi, OperationsApi } from '../types/operations'
 import { bookingsMemoryImpl, createBookingsMemory, type BookingsMemory } from './bookingsMemory'
 
 export class CapabilityError extends Error {
@@ -93,6 +94,16 @@ export interface TestSlImpl {
    * time, idempotent creates, holds) — inspect it via `ctx.memory.bookings`.
    */
   bookings?: Record<string, any>
+  /**
+   * Work orders, stock, bills of materials and made-from (docs/operations.md). There is no in-memory
+   * engine for these: give the methods your function calls, and any other call returns a stub echo.
+   * The harness still enforces both production gates: the capability, and collection authority.
+   */
+  workOrders?: Partial<WorkOrdersApi>
+  stock?: Partial<StockApi>
+  boms?: Partial<BomsApi>
+  madeFrom?: Partial<MadeFromApi>
+  operations?: Partial<OperationsApi>
 }
 
 export interface TestCaller {
@@ -102,6 +113,8 @@ export interface TestCaller {
   anonymous?: boolean
   origin?: string | null
   ip?: string | null
+  /** Keys of the user groups the caller is in, for `ctx.caller.userGroups`. Default: none. */
+  userGroups?: string[]
 }
 
 export interface CreateFunctionTestContextOptions {
@@ -451,6 +464,51 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
     sl.bookings.blocks[m] = gated('bookings', m === 'query' ? 'read' : 'write', bkFn(bk.blocks, m), `bookings.blocks.${m}`)
   }
 
+  // Work orders, stock, bills of materials, made-from: capability + collection authority, as in production.
+  const OPERATIONS: Record<string, { resource: string; reads: string[]; writes: string[] }> = {
+    workOrders: { resource: 'workorders', reads: ['get', 'list'], writes: ['create', 'update', 'setStatus', 'remove', 'startStage', 'progress', 'completeStage', 'skipStage', 'planStage', 'setStages'] },
+    stock: { resource: 'stock', reads: ['lines', 'totals', 'where', 'position', 'short'], writes: ['receive', 'produce', 'consume', 'move', 'allocate', 'release', 'hold', 'unhold', 'adjust'] },
+    boms: { resource: 'boms', reads: ['current', 'versions', 'whereUsed', 'explode'], writes: ['set', 'end'] },
+    madeFrom: { resource: 'madefrom', reads: ['of', 'usedIn', 'trace'], writes: ['record', 'end'] },
+  }
+  const triggerType: string = (def.trigger && def.trigger.type) || 'http'
+  const hasCollectionAuthority = triggerType !== 'http' || def.authority === 'collection'
+  const needAuthority = () => {
+    if (!hasCollectionAuthority) throw Object.assign(new Error('This needs collection authority: declare the function with authority "collection"'), { code: 'NEEDS_COLLECTION_AUTHORITY', status: 403 })
+  }
+  for (const [group, g] of Object.entries(OPERATIONS)) {
+    sl[group] = {}
+    const given: any = (impl as any)[group] || {}
+    for (const m of [...g.reads, ...g.writes]) {
+      const op: 'read' | 'write' = g.reads.includes(m) ? 'read' : 'write'
+      sl[group][m] = async (...args: any[]) => {
+        if (!allowsSl(parsed, g.resource, op)) throw new CapabilityError(`sl:${g.resource}:${op}`)
+        needAuthority()
+        return typeof given[m] === 'function' ? given[m](...args) : stub(`${group}.${m}`, args)
+      }
+    }
+  }
+  sl.operations = {
+    // Each step must be a write this function may make; with no impl, the steps run one by one through
+    // the methods above (so your stand-ins are called), without the all-or-nothing the platform gives.
+    transaction: async (steps: Array<{ op: string; args?: any[] }>) => {
+      if (!Array.isArray(steps) || !steps.length) throw Object.assign(new Error('A transaction needs at least one step'), { code: 'INVALID_INPUT' })
+      for (const st of steps) {
+        const [group, m] = String((st && st.op) || '').split('.')
+        const g = OPERATIONS[group]
+        if (!g || ![...g.reads, ...g.writes].includes(m)) throw Object.assign(new Error(`There is no "${st && st.op}"`), { code: 'UNKNOWN_OP' })
+        if (g.reads.includes(m)) throw Object.assign(new Error(`${st.op} only reads. Do reads outside the transaction`), { code: 'INVALID_INPUT' })
+        if (!allowsSl(parsed, g.resource, 'write')) throw new CapabilityError(`sl:${g.resource}:write`)
+      }
+      needAuthority()
+      const own = impl.operations && impl.operations.transaction
+      if (typeof own === 'function') return own(steps as any)
+      const results: any[] = []
+      for (const st of steps) { const [group, m] = st.op.split('.'); results.push(await sl[group][m](...(st.args || []))) }
+      return { results }
+    },
+  }
+
   const secretsMap = opts.secrets || {}
   const baseFetch: any = opts.fetch || (typeof fetch !== 'undefined' ? fetch : undefined)
   const via: any = (def.trigger && def.trigger.type) || 'http'
@@ -477,6 +535,7 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
       origin: caller.origin ?? null,
       ip: caller.ip ?? null,
       via,
+      userGroups: Object.freeze([...(caller.userGroups || [])]),
     },
     fetch: (async (input: any, init?: any) => {
       let host = ''

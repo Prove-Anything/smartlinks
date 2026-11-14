@@ -190,6 +190,21 @@ export var claimSet;
             return post(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/resume`, {});
         }
         ranges.resume = resume;
+        /** Close an open range: it becomes a range with the quantity it reached (removed if nothing was minted). */
+        async function close(scope, claimSetId, rangeId) {
+            return post(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/close`, {});
+        }
+        ranges.close = close;
+        /** Put an existing tag of the set into a group (by code or chip UID), assigning it if a collection is given. */
+        async function addMember(scope, claimSetId, groupId, params) {
+            return post(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(groupId)}/members`, params);
+        }
+        ranges.addMember = addMember;
+        /** Take a tag out of a group. Its assignment is left as it is. */
+        async function removeMember(scope, claimSetId, groupId, code) {
+            return del(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(groupId)}/members/${encodeURIComponent(code)}`);
+        }
+        ranges.removeMember = removeMember;
         /** The range's tags in index order, a page at a time (keys: owners/admins only). */
         async function tags(scope, claimSetId, rangeId, options = {}) {
             const q = new URLSearchParams();

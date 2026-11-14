@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.15  |  Generated: 2026-11-09T15:17:42.472Z
+Version: 2.1.18  |  Generated: 2026-11-14T12:53:34.180Z
 
 This is a concise summary of all available API functions and types.
 
@@ -144,6 +144,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **bookings** - Functions for bookings operations
 - **config** - Functions for config operations
 - **containers** - Functions for containers operations
+- **errors** - Functions for errors operations
 - **facets** - Functions for facets operations
 - **functions** - Functions for functions operations
 - **http** - Functions for http operations
@@ -153,6 +154,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **location** - Functions for location operations
 - **lots** - Functions for lots operations
 - **navigation** - Functions for navigation operations
+- **operations** - Functions for operations operations
 - **order** - Functions for order operations
 - **partner** - Functions for partner operations
 - **products** - Functions for products operations
@@ -162,6 +164,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **tags** - Functions for tags operations
 - **template** - Functions for template operations
 - **translations** - Functions for translations operations
+- **userGroups** - Functions for userGroups operations
 
 ## HTTP Utilities
 
@@ -2698,6 +2701,7 @@ interface AppFunctionDef {
   visibility?: AppFunctionVisibility;
   authority?: AppFunctionAuthority;
   elevated?: boolean;
+  userGroups?: string[];
   capabilities?: string[];
   dataScope?: 'collection' | 'global';
   inputs?: AppFunctionInputs;
@@ -2838,11 +2842,51 @@ interface ServerFunctionBookings {
 }
 ```
 
+**AppHistoryEvent** (interface)
+```typescript
+interface AppHistoryEvent {
+  id: string;
+  at: string;
+  type: string;
+  entityId: string | null;
+  data: Record<string, any>;
+  actorType: 'user' | 'contact' | null;
+  actorId: string | null;
+}
+```
+
+**AppHistoryQuery** (interface)
+```typescript
+interface AppHistoryQuery {
+  types?: string | string[];
+  entityId?: string;
+  data?: Record<string, string | number | boolean | Array<string | number | boolean>>;
+  from?: string;
+  to?: string;
+  limit?: number;
+}
+```
+
 **ServerFunctionSl** (interface)
 ```typescript
 interface ServerFunctionSl {
+  workOrders: WorkOrdersApi;
+  stock: StockApi;
+  boms: BomsApi;
+  madeFrom: MadeFromApi;
+  operations: OperationsApi;
   bookings: ServerFunctionBookings;
-  appRecords: { claim(fields: Record<string, any>): Promise<AppRecordClaimResult>; [method: string]: any };
+  appRecords: {
+  claim(fields: Record<string, any>): Promise<AppRecordClaimResult>;
+  adjust(recordId: string, by: Record<string, number>, opts?: { atLeast?: Record<string, number>; atMost?: Record<string, number> }): Promise<any>;
+  aggregate(params?: import('./appObjects').AggregateRequest): Promise<import('./appObjects').AggregateResponse & Record<string, unknown>>;
+  [method: string]: any;
+  };
+  transaction(ops: RecordTransactionOp[], opts?: { idempotencyKey?: string }): Promise<{ results: any[]; replayed: boolean }>;
+  history: {
+  log(type: string, data?: Record<string, any>, opts?: { entityId?: string }): Promise<{ id: string }>;
+  query(params?: AppHistoryQuery): Promise<AppHistoryEvent[]>;
+  };
   counters: ServerFunctionCounters;
   tags: { resolve(id: string): Promise<ResolvedTag | null> };
   contacts: {
@@ -2866,6 +2910,7 @@ interface ServerFunctionCaller {
   origin?: string | null;
   ip?: string | null;
   via: AppFunctionTriggerType;
+  userGroups: readonly string[];
 }
 ```
 
@@ -3298,6 +3343,8 @@ interface GetCollectionWidgetsOptions {
 
 **AppFunctionAuthority** = `'caller' | 'collection'`
 
+**RecordTransactionOp** = ``
+
 ### appObjects
 
 **PaginatedResponse<T>** (interface)
@@ -3324,9 +3371,12 @@ interface AggregateRequest {
   created_at?: { gte?: string; lte?: string }
   closed_at?: '__notnull__' | { gte?: string; lte?: string } // cases only
   expires_at?: { lte?: string } // records only
+  updated_at?: { gte?: string; lte?: string } // records only
+  data?: Record<string, string | number | boolean | Array<string | number | boolean>>
+  dataRange?: Record<string, { gte?: number; gt?: number; lte?: number; lt?: number }>
   }
-  groupBy?: string[] // see per-resource allowed values
-  metrics?: string[] // see per-resource allowed values below
+  groupBy?: string[]
+  metrics?: string[]
   timeSeriesField?: string // e.g. 'created_at'
   timeSeriesInterval?: 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year'
 }
@@ -3335,7 +3385,7 @@ interface AggregateRequest {
 **AggregateResponse** (interface)
 ```typescript
 interface AggregateResponse {
-  groups?: ({ count: number } & Record<string, unknown>)[]
+  groups?: ({ count?: number } & Record<string, unknown>)[]
   timeSeries?: ({ bucket: string; count: number } & Record<string, unknown>)[]
   count?: number
   avg_close_time_seconds?: number
@@ -5775,10 +5825,11 @@ interface ClaimSetRange {
   id: string
   claimSetId: string
   namespace: string
+  kind: ClaimSetRangeKind
   name: string
   notes: string | null
-  startIndex: number
-  endIndex: number
+  startIndex: number | null
+  endIndex: number | null
   quantity: number
   tagType: ClaimSetTagType
   fulfilment: 'printer' | 'sidekick'
@@ -5801,8 +5852,9 @@ interface ClaimSetRange {
 **CreateClaimSetRangeRequest** (interface)
 ```typescript
 interface CreateClaimSetRangeRequest {
+  kind?: ClaimSetRangeKind
   name: string
-  quantity: number
+  quantity?: number
   intendedCollectionId?: string
   intendedProductId?: string
   intendedBatchId?: string
@@ -5837,6 +5889,8 @@ interface ClaimSetRangeTag {
   productId: string | null
   batchId: string | null
   proofId: string | null
+  rangeId: string | null
+  groupId: string | null
   programmedAt: string | null
   scans: number
 }
@@ -5847,6 +5901,29 @@ interface ClaimSetRangeTag {
 interface ClaimSetRangeTagsPage {
   tags: ClaimSetRangeTag[]
   next: number | null
+}
+```
+
+**AddClaimSetRangeMemberRequest** (interface)
+```typescript
+interface AddClaimSetRangeMemberRequest {
+  code?: string
+  uid?: string
+  collectionId?: string
+  productId?: string
+  batchId?: string
+  data?: Record<string, unknown>
+  clear?: boolean
+}
+```
+
+**AddClaimSetRangeMemberResponse** (interface)
+```typescript
+interface AddClaimSetRangeMemberResponse {
+  tag: ClaimSetRangeTag
+  range: ClaimSetRange
+  assigned: { changed: number; skipped: Array<{ code: string; index: number | null; reason: 'other_range' | 'has_proof' | 'assigned_elsewhere'; collectionId?: string }> }
+  movedFrom: string | null
 }
 ```
 
@@ -5939,6 +6016,7 @@ interface PartnerTagHit {
   set: PartnerClaimSet | null
   tag: ClaimSetRangeTag & { url: string | null }
   range: ClaimSetRange | null
+  group: ClaimSetRange | null
 }
 ```
 
@@ -5958,9 +6036,55 @@ type ClaimSetScope = { collectionId: string }
 
 **ClaimSetTagType** = `'ntag424' | 'ntag21x' | 'qr'`
 
-**ClaimSetRangeStatus** = `'minting' | 'minted' | 'sent' | 'received' | 'assigned'`
+**ClaimSetRangeKind** = `'range' | 'open' | 'group'`
+
+**ClaimSetRangeStatus** = `'minting' | 'minted' | 'sent' | 'received' | 'assigned' | 'open' | 'group'`
+
+**CloseClaimSetRangeResponse** = `ClaimSetRange | { id: string`
 
 **ClaimSetImportResult** = ``
+
+### clientLog
+
+**ClientErrorReport** (interface)
+```typescript
+interface ClientErrorReport {
+  app?: string
+  appVersion?: string
+  collectionId?: string
+  operation?: string
+  severity?: 'debug' | 'info' | 'warning' | 'error' | 'critical'
+  errorCode?: string
+  errorType?: string
+  message?: string
+  stack?: string
+  entityType?: string
+  entityId?: string
+  labels?: Record<string, unknown>
+  context?: Record<string, unknown>
+  refId?: string
+  correlationId?: string
+}
+```
+
+**ClientErrorEvent** (interface)
+```typescript
+interface ClientErrorEvent {
+  id: string
+  time: string
+  event_category: string
+  event_action: string | null
+  log_level: string
+  error_code: string | null
+  error_message: string | null
+  service_name: string | null
+  service_version: string | null
+  collection_id: string | null
+  user_id: string | null
+  labels: Record<string, unknown> | null
+  context: Record<string, unknown> | null
+}
+```
 
 ### collection
 
@@ -7232,6 +7356,7 @@ interface Container {
   status: ContainerStatus
   metadata?: Record<string, any>
   parentContainerId?: string
+  fixed?: boolean
   children?: Container[]
   items?: ContainerItem[]
   createdAt: string
@@ -7267,6 +7392,7 @@ interface CreateContainerInput {
   status?: ContainerStatus
   metadata?: Record<string, any>
   parentContainerId?: string
+  fixed?: boolean
 }
 ```
 
@@ -7280,6 +7406,7 @@ interface UpdateContainerInput {
   status?: ContainerStatus
   metadata?: Record<string, any>
   parentContainerId?: string | null
+  fixed?: boolean
 }
 ```
 
@@ -9525,6 +9652,355 @@ interface TagContext {
 
 **TagStatus** = `'valid' | 'rescan' | 'invalid' | 'error'`
 
+### operations
+
+**WorkOrderStage** (interface)
+```typescript
+interface WorkOrderStage {
+  key: string
+  position: number
+  status: WorkOrderStageStatus
+  plannedStart: string | null
+  plannedEnd: string | null
+  startedAt: string | null
+  doneAt: string | null
+  quantityDone: number
+  quantityScrapped: number
+  data: Record<string, any>
+}
+```
+
+**WorkOrder** (interface)
+```typescript
+interface WorkOrder {
+  id: string
+  collectionId: string
+  appId: string
+  ref: string
+  kind: string | null
+  productId: string | null
+  variantId: string | null
+  quantity: number
+  unit: string
+  dueAt: string | null
+  priority: number
+  status: WorkOrderStatus
+  statusReason: string | null
+  orderId: string | null
+  orderItemId: string | null
+  parentId: string | null
+  outputBatchId: string | null
+  stages: WorkOrderStage[]
+  currentStage: string | null
+  late: boolean
+  data: Record<string, any>
+  createdBy: string | null
+  createdAt: string
+  updatedAt: string
+  closedAt: string | null
+}
+```
+
+**CreateWorkOrderInput** (interface)
+```typescript
+interface CreateWorkOrderInput {
+  ref: string
+  kind?: string
+  productId?: string
+  variantId?: string
+  quantity?: number
+  unit?: string
+  dueAt?: string | null
+  priority?: number
+  orderId?: string
+  orderItemId?: string
+  parentId?: string
+  outputBatchId?: string
+  data?: Record<string, any>
+  stages?: WorkOrderStageInput[]
+}
+```
+
+**WorkOrderListParams** (interface)
+```typescript
+interface WorkOrderListParams {
+  status?: WorkOrderStatus | WorkOrderStatus[]
+  appId?: string
+  productId?: string
+  orderId?: string
+  parentId?: string
+  kind?: string
+  late?: boolean
+  dueFrom?: string
+  dueTo?: string
+  q?: string
+  sort?: 'due' | 'priority' | 'created' | 'ref'
+  limit?: number
+  offset?: number
+}
+```
+
+**WorkOrdersApi** (interface)
+```typescript
+interface WorkOrdersApi {
+  get(idOrRef: string): Promise<WorkOrder | null>
+  list(params?: WorkOrderListParams): Promise<{ items: WorkOrder[]; total: number; limit: number; offset: number }>
+  create(input: CreateWorkOrderInput): Promise<WorkOrder>
+  update(idOrRef: string, patch: UpdateWorkOrderInput, opts?: { reason?: string }): Promise<WorkOrder>
+  setStatus(idOrRef: string, status: WorkOrderStatus, opts?: { reason?: string }): Promise<WorkOrder>
+  remove(idOrRef: string): Promise<{ id: string; deleted: true }>
+  startStage(idOrRef: string, stage: string): Promise<WorkOrder>
+  progress(idOrRef: string, stage: string, by: { done?: number; scrapped?: number }, opts?: { reason?: string; note?: string }): Promise<WorkOrder>
+  completeStage(idOrRef: string, stage: string, opts?: { closeWorkOrder?: boolean }): Promise<WorkOrder>
+  skipStage(idOrRef: string, stage: string, opts: { reason: string }): Promise<WorkOrder>
+  planStage(idOrRef: string, stage: string, plan: { plannedStart?: string | null; plannedEnd?: string | null; data?: Record<string, any> }): Promise<WorkOrder>
+  setStages(idOrRef: string, stages: WorkOrderStageInput[]): Promise<WorkOrder>
+}
+```
+
+**StockTarget** (interface)
+```typescript
+interface StockTarget {
+  type: string; id: string
+}
+```
+
+**StockLine** (interface)
+```typescript
+interface StockLine {
+  id: string
+  containerId: string
+  productId: string
+  variantId: string | null
+  batchId: string | null
+  state: StockState
+  allocatedTo: StockTarget | null
+  quantity: number
+  unit: string
+  updatedAt: string
+}
+```
+
+**StockTotals** (interface)
+```typescript
+interface StockTotals {
+  available: number; allocated: number; held: number; quarantine: number; total: number; unit: string | null
+}
+```
+
+**StockItem** (interface)
+```typescript
+interface StockItem {
+  productId: string; variantId?: string; batchId?: string; quantity: number; unit?: string
+}
+```
+
+**StockMovementExtras** (interface)
+```typescript
+interface StockMovementExtras {
+  workOrderId?: string; reason?: string; note?: string
+}
+```
+
+**StockMovementOptions** (interface)
+```typescript
+interface StockMovementOptions {
+  idempotencyKey?: string
+}
+```
+
+**StockMovement** (interface)
+```typescript
+interface StockMovement {
+  movementId: string
+  kind: 'receive' | 'produce' | 'consume' | 'move' | 'allocate' | 'release' | 'hold' | 'unhold' | 'adjust'
+  productId: string
+  quantity: number
+  unit: string
+  from?: (StockLine & { emptied?: boolean }) | null
+  to?: StockLine | null
+  replayed: boolean
+}
+```
+
+**StockPosition** (interface)
+```typescript
+interface StockPosition {
+  product: { id: string; variantId: string | null; name: string | null; unit: string | null }
+  onHand: StockTotals
+  where: Array<{ containerId: string; container: StockWhereLine['container']; path: string; place: StockWhereLine['place']; quantity: number; batchId: string | null; state: StockState; allocatedTo: StockTarget | null }>
+  onOrder: { total: number; lines: Array<{ orderId: string; orderRef: string | null; supplier: string | null; quantity: number; dueAt: string | null }> }
+  beingMade: { total: number; lines: Array<{ workOrderId: string; ref: string; quantity: number; stage: string | null; status: WorkOrderStatus; dueAt: string | null }> }
+  needed: { total: number; lines: Array<{ orderId?: string; orderRef?: string | null; workOrderId?: string; ref?: string; forProductId: string; quantity: number; neededBy: string | null; why: 'ordered' | 'work order' | 'order, not yet in production' }> }
+  projected: Array<{ date: string; balance: number }>
+  shortfall: { quantity: number; firstShortOn: string } | null
+  horizonDays: number
+  undatedLines?: number
+  asOf: string
+  sources: { stock: string; orders: string; workOrders: string }
+}
+```
+
+**StockApi** (interface)
+```typescript
+interface StockApi {
+  lines(params?: { containerId?: string; productId?: string; variantId?: string; batchId?: string; state?: StockState; allocatedTo?: StockTarget; limit?: number; offset?: number }): Promise<{ items: StockLine[]; total: number; limit: number; offset: number }>
+  totals(params: { productId: string; variantId?: string; batchId?: string }): Promise<StockTotals>
+  where(params: { productId: string; variantId?: string; batchId?: string; state?: StockState }): Promise<StockWhereLine[]>
+  position(params: { productId: string; variantId?: string; horizonDays?: number; includeWhere?: boolean }): Promise<StockPosition>
+  short(params?: { horizonDays?: number; limit?: number }): Promise<{ horizonDays: number; items: Array<{ product: StockPosition['product']; shortfall: NonNullable<StockPosition['shortfall']>; onHand: StockTotals; onOrder: number; beingMade: number; needed: number }>; checked: number; asOf: string }>
+  receive(input: StockItem & StockMovementExtras & { containerId: string; state?: 'available' | 'held' | 'quarantine' }, opts?: StockMovementOptions): Promise<StockMovement>
+  produce(input: StockItem & StockMovementExtras & { containerId: string; state?: 'available' | 'held' | 'quarantine' }, opts?: StockMovementOptions): Promise<StockMovement>
+  consume(input: StockItem & StockMovementExtras & { containerId: string; allocatedTo?: StockTarget }, opts?: StockMovementOptions): Promise<StockMovement>
+  move(input: StockItem & StockMovementExtras & { from: string; to: string; state?: StockState; allocatedTo?: StockTarget }, opts?: StockMovementOptions): Promise<StockMovement>
+  allocate(input: StockItem & StockMovementExtras & { containerId: string; to: StockTarget }, opts?: StockMovementOptions): Promise<StockMovement>
+  release(input: StockItem & StockMovementExtras & { containerId: string; from: StockTarget }, opts?: StockMovementOptions): Promise<StockMovement>
+  hold(input: StockItem & StockMovementExtras & { containerId: string; state?: 'held' | 'quarantine'; reason: string }, opts?: StockMovementOptions): Promise<StockMovement>
+  unhold(input: StockItem & StockMovementExtras & { containerId: string; state?: 'held' | 'quarantine'; reason: string }, opts?: StockMovementOptions): Promise<StockMovement>
+  adjust(input: Omit<StockItem, 'quantity'> & StockMovementExtras & { containerId: string; by: number; state?: 'available' | 'held' | 'quarantine'; reason: string }, opts?: StockMovementOptions): Promise<StockMovement>
+}
+```
+
+**BomLine** (interface)
+```typescript
+interface BomLine {
+  componentProductId: string; componentVariantId?: string | null; quantity: number; unit?: string; optional?: boolean; note?: string | null
+}
+```
+
+**Bom** (interface)
+```typescript
+interface Bom {
+  id: string
+  productId: string
+  variantId: string | null
+  version: number
+  validFrom: string
+  validTo: string | null
+  yields: number
+  note: string | null
+  lines: Array<{ componentProductId: string; componentVariantId: string | null; quantity: number; unit: string; optional: boolean; note: string | null }>
+  data: Record<string, any>
+  createdBy: string | null
+  createdAt: string
+}
+```
+
+**BomTreeNode** (interface)
+```typescript
+interface BomTreeNode {
+  productId: string; variantId: string | null; quantity: number; unit: string; optional: boolean; components: BomTreeNode[]
+}
+```
+
+**BomExplosion** (interface)
+```typescript
+interface BomExplosion {
+  productId: string
+  variantId: string | null
+  quantity: number
+  hasBom: boolean
+  tree: BomTreeNode[]
+  materials: Array<{ productId: string; variantId: string | null; quantity: number; unit: string }>
+}
+```
+
+**BomsApi** (interface)
+```typescript
+interface BomsApi {
+  current(params: { productId: string; variantId?: string; at?: string }): Promise<Bom | null>
+  versions(params: { productId: string; variantId?: string }): Promise<Bom[]>
+  whereUsed(params: { componentProductId: string }): Promise<Array<{ productId: string; variantId: string | null; quantity: number; unit: string; yields: number; optional: boolean }>>
+  explode(params: { productId: string; variantId?: string; quantity?: number; at?: string; includeOptional?: boolean }): Promise<BomExplosion>
+  set(input: { productId: string; variantId?: string; lines: BomLine[]; yields?: number; note?: string; validFrom?: string; data?: Record<string, any> }): Promise<Bom>
+  end(params: { productId: string; variantId?: string }): Promise<Bom | null>
+}
+```
+
+**MadeFromSubject** (interface)
+```typescript
+interface MadeFromSubject {
+  type: 'batch' | 'proof'; id: string
+}
+```
+
+**MadeFromSource** (interface)
+```typescript
+interface MadeFromSource {
+  type: 'batch' | 'proof' | 'product'; id: string
+}
+```
+
+**MadeFromEntry** (interface)
+```typescript
+interface MadeFromEntry {
+  id: string
+  subject: MadeFromSubject
+  source: MadeFromSource
+  productId: string | null
+  quantity: number | null
+  unit: string | null
+  workOrderId: string | null
+  at: string
+  by: string | null
+  endedAt: string | null
+  data: Record<string, any>
+}
+```
+
+**MadeFromTraceNode** (interface)
+```typescript
+interface MadeFromTraceNode {
+  source: MadeFromSource; productId: string | null; quantity: number | null; unit: string | null; at: string; workOrderId: string | null; madeFrom: MadeFromTraceNode[]
+}
+```
+
+**MadeFromApi** (interface)
+```typescript
+interface MadeFromApi {
+  of(subject: MadeFromSubject, opts?: { at?: string; includeEnded?: boolean }): Promise<MadeFromEntry[]>
+  usedIn(source: MadeFromSource, opts?: { includeEnded?: boolean }): Promise<MadeFromEntry[]>
+  trace(subject: MadeFromSubject, opts?: { depth?: number }): Promise<{ subject: MadeFromSubject; madeFrom: MadeFromTraceNode[] }>
+  record(input: { subject: MadeFromSubject; sources: Array<MadeFromSource & { productId?: string; quantity?: number; unit?: string; data?: Record<string, any> }>; workOrderId?: string; at?: string }): Promise<MadeFromEntry[]>
+  end(id: string, opts: { reason: string }): Promise<MadeFromEntry>
+}
+```
+
+**OperationStep** (interface)
+```typescript
+interface OperationStep {
+  op: string; args: any[]
+}
+```
+
+**OperationsApi** (interface)
+```typescript
+interface OperationsApi {
+  transaction(steps: OperationStep[]): Promise<{ results: any[] }>
+}
+```
+
+**OperationsAdmin** (interface)
+```typescript
+interface OperationsAdmin {
+  workOrders: WorkOrdersApi
+  stock: StockApi
+  boms: BomsApi
+  madeFrom: MadeFromApi
+  transaction: OperationsApi['transaction']
+}
+```
+
+**WorkOrderStatus** = `'open' | 'on-hold' | 'blocked' | 'done' | 'cancelled'`
+
+**WorkOrderStageStatus** = `'pending' | 'active' | 'done' | 'skipped'`
+
+**WorkOrderStageInput** = `string | { key: string`
+
+**UpdateWorkOrderInput** = `Partial<Omit<CreateWorkOrderInput, 'ref' | 'stages' | 'parentId'>>`
+
+**StockState** = `'available' | 'allocated' | 'held' | 'quarantine'`
+
 ### order
 
 **OrderItem** (interface)
@@ -9532,15 +10008,41 @@ interface TagContext {
 interface OrderItem {
   id: string                        // UUID
   orderId: string                   // Parent order ID
-  itemType: 'tag' | 'proof' | 'serial' // Type of item
-  itemId: string                    // The tag ID, proof ID, or serial number
+  itemType: 'tag' | 'proof' | 'serial' | 'product' // Type of item ('product' = a quantity line)
+  itemId: string                    // The tag ID, proof ID, or serial number (the product ID on a quantity line)
   collectionId?: string             // Collection ID
   productId?: string                // Product ID
   variantId?: string | null         // Variant ID
   batchId?: string | null           // Batch ID
+  quantity: number                  // How many (1 for an identified thing)
+  unit?: string | null              // The unit the quantity is in
+  quantityDone: number              // Shipped (sales) or received (purchase) so far
+  dueAt?: string | null             // When this line is wanted or expected, if different from the order's
   metadata: Record<string, any>     // Item-specific metadata
   createdAt: string                 // ISO 8601 timestamp
   order?: OrderSummary              // Optional order summary (when includeOrder=true)
+}
+```
+
+**OrderItemInput** (interface)
+```typescript
+interface OrderItemInput {
+  itemType: 'tag' | 'proof' | 'serial' // Required: Type of item
+  itemId: string                        // Required: Item identifier
+  metadata?: Record<string, any>        // Optional: Item-specific data
+}
+```
+
+**OrderQuantityLineInput** (interface)
+```typescript
+interface OrderQuantityLineInput {
+  itemType?: 'product'
+  productId: string                     // Required: The product
+  variantId?: string
+  quantity: number                      // Required: How many
+  unit?: string
+  dueAt?: string                        // Optional: When this line is wanted or expected
+  metadata?: Record<string, any>
 }
 ```
 
@@ -9564,6 +10066,9 @@ interface Order {
   orderRef?: string                 // Customer's own order reference/ID (e.g., "ORD-12345")
   customerId?: string               // Customer's own customer ID (can map to CRM/contacts)
   status: string                    // e.g., "pending", "processing", "shipped", "completed"
+  direction: OrderDirection         // 'sales' (someone wants it from us) or 'purchase' (we want it from a supplier)
+  partyId?: string | null           // The supplier, on a purchase order
+  dueAt?: string | null             // When it is wanted or expected
   itemCount: number                 // Cached count of items (maintained automatically)
   metadata: {
   productSummary?: Record<string, number>  // productId -> count (auto-maintained)
@@ -9578,11 +10083,10 @@ interface Order {
 **CreateOrderRequest** (interface)
 ```typescript
 interface CreateOrderRequest {
-  items: Array<{
-  itemType: 'tag' | 'proof' | 'serial' // Required: Type of item
-  itemId: string                        // Required: Item identifier
-  metadata?: Record<string, any>        // Optional: Item-specific data
-  }>
+  items: Array<OrderItemInput | OrderQuantityLineInput>
+  direction?: OrderDirection              // Optional: 'sales' (default) or 'purchase'
+  partyId?: string                        // Optional: The supplier, on a purchase order
+  dueAt?: string                          // Optional: When it is wanted or expected
   orderRef?: string                       // Optional: Your own order reference/ID
   customerId?: string                     // Optional: Your customer ID
   status?: string                         // Optional: Order status (default: "pending")
@@ -9600,6 +10104,9 @@ interface GetOrderParams {
 **UpdateOrderRequest** (interface)
 ```typescript
 interface UpdateOrderRequest {
+  direction?: OrderDirection        // Optional: 'sales' or 'purchase'
+  partyId?: string | null           // Optional: The supplier
+  dueAt?: string | null             // Optional: When it is wanted or expected
   orderRef?: string                 // Optional: Update order reference
   customerId?: string               // Optional: Update customer ID
   status?: string                   // Optional: Update status
@@ -9622,6 +10129,8 @@ interface ListOrdersRequest {
   status?: string                   // Optional: Filter by status
   orderRef?: string                 // Optional: Filter by order reference
   customerId?: string               // Optional: Filter by customer ID
+  direction?: OrderDirection        // Optional: Only sales, or only purchase, orders
+  partyId?: string                  // Optional: Filter by supplier
   includeItems?: boolean            // Optional: Include items array (default: false)
 }
 ```
@@ -10010,6 +10519,8 @@ interface CollectionSummaryResponse {
   customerScansByDay: DailyScanCount[]
 }
 ```
+
+**OrderDirection** = `'sales' | 'purchase'`
 
 ### product
 
@@ -11016,6 +11527,107 @@ interface TranslationUpdateRequest {
 **TranslationContextValue** = `string | number | boolean | null`
 
 **TranslationLookupRequest** = `TranslationLookupSingleRequest | TranslationLookupBatchRequest`
+
+### userGroups
+
+**UserGroup** (interface)
+```typescript
+interface UserGroup {
+  id: string
+  collectionId?: string
+  key?: string
+  name: string
+  description?: string
+  members?: string[]
+  createdAt?: string
+  updatedAt?: string
+  deleted?: boolean
+  deletedAt?: string | null
+  [extra: string]: any
+}
+```
+
+**CreateUserGroupRequest** (interface)
+```typescript
+interface CreateUserGroupRequest {
+  name: string
+  key?: string
+  description?: string
+  members?: string[]
+  [extra: string]: any
+}
+```
+
+**UpdateUserGroupRequest** (interface)
+```typescript
+interface UpdateUserGroupRequest {
+  name?: string
+  description?: string
+  members?: string[]
+  [extra: string]: any
+}
+```
+
+**UserGroupMember** (interface)
+```typescript
+interface UserGroupMember {
+  uid: string
+  name?: string | null
+  email?: string | null
+}
+```
+
+**UserGroupRef** (interface)
+```typescript
+interface UserGroupRef {
+  id: string
+  key: string | null
+  name: string | null
+}
+```
+
+**MyUserGroups** (interface)
+```typescript
+interface MyUserGroups {
+  userGroups: string[]
+  userGroupIds: string[]
+}
+```
+
+**UserGroupChange** (interface)
+```typescript
+interface UserGroupChange {
+  id: string
+  at: string
+  type: UserGroupChangeType
+  entityId: string | null
+  data: {
+  userGroupId: string
+  key: string | null
+  name: string | null
+  userId?: string
+  previousName?: string | null
+  members?: string[]
+  }
+  actorType: string | null
+  actorId: string | null
+}
+```
+
+**UserGroupHistoryParams** (interface)
+```typescript
+interface UserGroupHistoryParams {
+  userGroupId?: string
+  userId?: string
+  from?: string
+  to?: string
+  limit?: number
+}
+```
+
+**AddUserGroupMemberRequest** = ``
+
+**UserGroupChangeType** = ``
 
 ### variant
 
@@ -12464,6 +13076,15 @@ Name, notes, order details, or a stage move (sent to the printer, received).
 **resume**(scope: ClaimSetScope, claimSetId: string, rangeId: string) → `Promise<ClaimSetRange>`
 Finish minting a range that was interrupted.
 
+**close**(scope: ClaimSetScope, claimSetId: string, rangeId: string) → `Promise<CloseClaimSetRangeResponse>`
+Close an open range: it becomes a range with the quantity it reached (removed if nothing was minted).
+
+**addMember**(scope: ClaimSetScope, claimSetId: string, groupId: string, params: AddClaimSetRangeMemberRequest) → `Promise<AddClaimSetRangeMemberResponse>`
+Put an existing tag of the set into a group (by code or chip UID), assigning it if a collection is given.
+
+**removeMember**(scope: ClaimSetScope, claimSetId: string, groupId: string, code: string) → `Promise<`
+Take a tag out of a group. Its assignment is left as it is.
+
 **tags**(scope: ClaimSetScope, claimSetId: string, rangeId: string,
       options: { from?: number; limit?: number; keys?: boolean } = {}) → `Promise<ClaimSetRangeTagsPage>`
 The range's tags in index order, a page at a time (keys: owners/admins only).
@@ -12789,6 +13410,10 @@ Update a crate for a collection (admin only). ```typescript const updated = awai
 **remove**(collectionId: string,
     crateId: string) → `Promise<DeleteCrateResponse>`
 Delete a crate for a collection (admin only). This performs a soft delete. ```typescript await crate.remove('coll_123', 'crate_abc123') ```
+
+### errors
+
+**report**(event: ClientErrorReport) → `Promise<`
 
 ### facets
 
@@ -13308,6 +13933,14 @@ Validate an NFC tag payload (public). POST /public/nfc/validate
 **lookupTag**(tagId: string) → `Promise<NfcTagInfo[]>`
 Lookup a tag by its ID (public). GET /public/nfc/findByTag/:tagId
 
+### operations
+
+**admin**(collectionId: string, opts: { appId?: string } = {}) → `OperationsAdmin`
+The operations objects for one collection (admin). but a work order is always created for an app, so `workOrders.create` needs this. ```typescript const ops = operations.admin('coll_123', { appId: 'production' }) const caps = await ops.stock.position({ productId: 'brass-cap', horizonDays: 90 }) caps.onHand.available      // 400 caps.shortfall             // { quantity: 140, firstShortOn: '2026-12-14' } | null await ops.stock.move({ from: binId, to: cageId, productId: 'brass-cap', quantity: 100 }) await ops.workOrders.setStatus('19264', 'on-hold', { reason: 'Waiting for caps' }) ```
+
+**describe**(collectionId: string) → `Promise<`
+What the server offers, by group: `{ workOrders: [...], stock: [...], boms: [...], madeFrom: [...] }`.
+
 ### order
 
 **create**(collectionId: string,
@@ -13342,10 +13975,13 @@ Get items from an order with pagination support. Use this for orders with many i
     data: AddItemsRequest) → `Promise<AddItemsResponse>`
 Add additional items to an existing order. ```typescript const updated = await order.addItems('coll_123', 'order_abc123', { items: [ { itemType: 'tag', itemId: 'TAG003' }, { itemType: 'proof', itemId: 'proof_xyz' } ] }) console.log(`Order now has ${updated.itemCount} items`) ```
 
+**lineDone**(collectionId: string, orderId: string, itemId: string, by: number) → `Promise<OrderItem>`
+Add to (or take from) how much of a line has been shipped or received. Atomic, so two receipts at once both count; it can't go below zero. ```typescript // 20 more caps arrived against a purchase order line await order.lineDone('coll_123', orderId, lineId, 20) ```
+
 **removeItems**(collectionId: string,
     orderId: string,
     data: RemoveItemsRequest) → `Promise<RemoveItemsResponse>`
-Remove specific items from an order. ```typescript const updated = await order.removeItems('coll_123', 'order_abc123', { itemIds: ['item_001', 'item_002'] }) ```
+Add to (or take from) how much of a line has been shipped or received. Atomic, so two receipts at once both count; it can't go below zero. ```typescript // 20 more caps arrived against a purchase order line await order.lineDone('coll_123', orderId, lineId, 20) ```
 
 **lookup**(collectionId: string,
     data: LookupOrdersRequest) → `Promise<LookupOrdersResponse>`
@@ -13421,6 +14057,9 @@ A new claim set for the partner, on one of its tap domains (owners and admins).
 
 **lookupTags**(partnerId: string, query: { uid?: string; code?: string }) → `Promise<PartnerTagHit[]>`
 Find a tag across the partner's sets by its chip UID (8 or 14 hex) or its code (printed or bare). Never returns keys.
+
+**tagAttempts**(partnerId: string, uid: string) → `Promise<ClientErrorEvent[]>`
+What phones reported about one chip (errors.report with entityType 'tag'), newest first: a tag that failed to program or register, with the host's NFC log in context. For a chip in the partner's sets, or attempts that named one of them.
 
 ### podcast
 
@@ -14017,6 +14656,41 @@ Create or update a user data item. The item object must include an `id` field. `
 
 **remove**(appId: string, itemId: string) → `Promise<void>`
 Delete a user data item by ID. ```typescript await userAppData.remove('garden-planner', 'bed-1'); ```
+
+### userGroups
+
+**mine**(collectionId: string) → `Promise<MyUserGroups>`
+The signed-in person's own user groups in this collection. Not signed in → both lists empty. Nobody can ask about anyone else with this. ```typescript const { userGroups: mine } = await userGroups.mine('coll_123') const canRelease = mine.includes('qc-controller') ```
+
+**list**(collectionId: string) → `Promise<UserGroup[]>`
+Every user group in the collection (admin).
+
+**get**(collectionId: string, userGroupId: string) → `Promise<UserGroup>`
+One user group (admin).
+
+**create**(collectionId: string, data: CreateUserGroupRequest) → `Promise<UserGroup>`
+Create a user group (admin). Its key is made from the name unless you give one. ```typescript const qc = await userGroups.create('coll_123', { name: 'QC Controllers' }) qc.key // 'qc-controllers' ```
+
+**update**(collectionId: string, userGroupId: string, data: UpdateUserGroupRequest) → `Promise<UserGroup>`
+Change a user group (admin): its name, description, or anything else you keep on it. The key stays. To change who is in it, prefer `addMember` / `removeMember`: saving a whole `members` list here can overwrite a change someone else made at the same moment.
+
+**remove**(collectionId: string, userGroupId: string) → `Promise<UserGroup>`
+Delete a user group (admin). Its members lose whatever it allowed.
+
+**members**(collectionId: string, userGroupId: string) → `Promise<UserGroupMember[]>`
+The people in a user group, with name and email (admin).
+
+**addMember**(collectionId: string, userGroupId: string, who: AddUserGroupMemberRequest) → `Promise<UserGroup>`
+Add one person (admin), by user id or by email. By email, the person is found in the collection's logins or added to them (no welcome email is sent). Adding someone who is already in changes nothing. ```typescript await userGroups.addMember('coll_123', qc.id, { email: 'sam@example.com', name: 'Sam' }) ```
+
+**removeMember**(collectionId: string, userGroupId: string, userId: string) → `Promise<UserGroup>`
+Remove one person (admin).
+
+**history**(collectionId: string, params: UserGroupHistoryParams = {}) → `Promise<UserGroupChange[]>`
+What changed, newest first (admin): user groups created, renamed and deleted, and every person added or removed, each with the admin who did it (`actorId`) and when (`at`). Give `userGroupId` for one user group, `userId` for everything about one person, or neither for the whole collection. Covers the last 30 days unless you give `from` / `to` (at most 400 days). Takes about a second. ```typescript const who = await userGroups.history('coll_123', { userId: 'uid_1' }) // [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }] ```
+
+**ofUser**(collectionId: string, userId: string) → `Promise<UserGroupRef[]>`
+The user groups one person is in (admin).
 
 ### variant
 

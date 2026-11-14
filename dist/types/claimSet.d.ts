@@ -129,21 +129,32 @@ export type ClaimSetScope = {
     partnerId: string;
 };
 export type ClaimSetTagType = 'ntag424' | 'ntag21x' | 'qr';
-export type ClaimSetRangeStatus = 'minting' | 'minted' | 'sent' | 'received' | 'assigned';
+/**
+ * range: a contiguous block of indexes minted up front. open: grows one index per tag programmed on a phone
+ * (count unknown in advance), closed into a range later. group: existing tags added by tapping, assigned by
+ * hand and moved together; no indexes.
+ */
+export type ClaimSetRangeKind = 'range' | 'open' | 'group';
+export type ClaimSetRangeStatus = 'minting' | 'minted' | 'sent' | 'received' | 'assigned' | 'open' | 'group';
 export interface ClaimSetRange {
     id: string;
     claimSetId: string;
     namespace: string;
+    kind: ClaimSetRangeKind;
     name: string;
     notes: string | null;
-    startIndex: number;
-    endIndex: number;
+    /** null for a group */
+    startIndex: number | null;
+    /** open: the highest index minted so far (null until the first); group: null */
+    endIndex: number | null;
+    /** range: the block; open: minted so far; group: its members */
     quantity: number;
     tagType: ClaimSetTagType;
+    /** open ranges and groups are always 'sidekick' */
     fulfilment: 'printer' | 'sidekick';
-    /** The stored step: minting | minted | sent | received */
+    /** The stored step: minting | minted | sent | received (always 'minted' for open ranges and groups) */
     stage: 'minting' | 'minted' | 'sent' | 'received';
-    /** What to show: the stage, or 'assigned' once every tag is assigned */
+    /** What to show: the stage, 'open', 'group', or 'assigned' once every tag is assigned */
     status: ClaimSetRangeStatus;
     intendedCollectionId: string | null;
     intendedProductId: string | null;
@@ -162,9 +173,11 @@ export interface ClaimSetRange {
     updatedAt: string;
 }
 export interface CreateClaimSetRangeRequest {
+    /** Default 'range'. Owners and admins make ranges and open ranges; assigners may make groups too. */
+    kind?: ClaimSetRangeKind;
     name: string;
-    /** 1 to 10,000 */
-    quantity: number;
+    /** 1 to 10,000 (a range); ignored for open ranges and groups */
+    quantity?: number;
     /** Pre-assign every tag at mint time (you must administer the collection) */
     intendedCollectionId?: string;
     intendedProductId?: string;
@@ -194,6 +207,10 @@ export interface ClaimSetRangeTag {
     productId: string | null;
     batchId: string | null;
     proofId: string | null;
+    /** The range it was minted into, if any */
+    rangeId: string | null;
+    /** The group it was added to, if any */
+    groupId: string | null;
     programmedAt: string | null;
     scans: number;
 }
@@ -207,8 +224,42 @@ export interface ClaimSetRangeNextTag extends ClaimSetRangeTag {
     url: string;
     piccOffset?: number;
     mirrorOffset?: number;
-    remaining: number;
+    /** Tags still without a chip; null for an open range (it grows as you go) */
+    remaining: number | null;
 }
+/** Add an existing tag of the set to a group, and (with a collection, or clear) assign it as you go. */
+export interface AddClaimSetRangeMemberRequest {
+    /** The tag's code, printed or bare… */
+    code?: string;
+    /** …or its chip UID (14 hex) */
+    uid?: string;
+    collectionId?: string;
+    productId?: string;
+    batchId?: string;
+    data?: Record<string, unknown>;
+    clear?: boolean;
+}
+export interface AddClaimSetRangeMemberResponse {
+    tag: ClaimSetRangeTag;
+    range: ClaimSetRange;
+    /** The assignment, with the same skips as assign (has_proof, assigned_elsewhere) */
+    assigned: {
+        changed: number;
+        skipped: Array<{
+            code: string;
+            index: number | null;
+            reason: 'other_range' | 'has_proof' | 'assigned_elsewhere';
+            collectionId?: string;
+        }>;
+    };
+    /** The group the tag was taken from, if it was in another one */
+    movedFrom: string | null;
+}
+/** Closing an open range: the range it became, or that it was removed because nothing was minted. */
+export type CloseClaimSetRangeResponse = ClaimSetRange | {
+    id: string;
+    deleted: true;
+};
 export type ClaimSetImportResult = 'ok' | 'unchanged' | 'unknown_code' | 'duplicate_row' | 'index_mismatch' | 'no_uid' | 'bad_uid' | 'duplicate_uid' | 'uid_in_use' | 'uid_conflict';
 export interface ImportClaimSetRangeUidsRequest {
     /** The manufacturer's file as CSV text (the file we sent, with UID filled in) */
@@ -310,6 +361,8 @@ export interface PartnerTagHit {
         url: string | null;
     };
     range: ClaimSetRange | null;
+    /** The group the tag was added to, if any */
+    group: ClaimSetRange | null;
 }
 export interface CreatePartnerClaimSetRequest {
     name: string;

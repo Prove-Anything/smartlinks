@@ -134,6 +134,19 @@ This decides what `ctx.sl` can do.
 `authority` **defaults to `caller`** — secure by default. `event`- and `cron`-triggered
 functions have no external caller, so they always run as `collection`.
 
+### Limiting it to some people: `userGroups`
+
+An `http` function can name the [user groups](user-groups.md) allowed to call it:
+
+```jsonc
+"userGroups": ["qc-controller", "manager"]   // the caller must be in at least one
+```
+
+The platform checks this before your code runs. A signed-in caller in none of them gets
+`403 NOT_IN_USER_GROUP`; an anonymous one gets `401 SIGN_IN_REQUIRED`; a collection admin always
+passes. Inside any function, `ctx.caller.userGroups` lists the caller's own keys for finer rules.
+`userGroups` doesn't replace `elevated: true` on a `public` + `collection` function.
+
 ### The combinations
 
 - **`http` + `admin` + `caller`** — a delegated admin function; runs as the signed-in admin.
@@ -203,6 +216,7 @@ interface ServerFunctionContext {
     origin?: string | null  // http
     ip?: string | null      // http
     via: 'http' | 'event' | 'cron'
+    userGroups: readonly string[]  // keys of the user groups the caller is in ([] when anonymous)
   }
 
   /** Outbound HTTP — present only if you declared `network` (host-scoped if `network:<host>`). */
@@ -514,6 +528,10 @@ Prefer the platform primitives above over a dependency; when you do need one, pi
 | Read ANOTHER app's data (as the caller may see it) | `ctx.sl.app('other-app').data.get()` — caller-authority, this collection, public-filtered, read-only | `sl:data:read` |
 | Guarantee a UNIQUE claim (one entry per tag, one-per-user, idempotency key, a number nobody else holds) | `ctx.sl.appRecords.claim({ …, singletonPer, customId })` → `{ record, created, conflict? }` — see below | `sl:records:write` |
 | Hand out the next number (tickets, order numbers) | `ctx.sl.counters.next('tickets')` — atomic, distinct per caller | `sl:data:write` |
+| Track a job through its stages (a production job, a repair, a fulfilment) | `ctx.sl.workOrders` — the shared work order; stages, holds, progress → `operations.md` | `sl:workorders:write` |
+| Know how much of something there is and where; move, allocate, hold or count it | `ctx.sl.stock` — quantities in containers, changed by movements, never below zero → `operations.md` | `sl:stock:write` |
+| Ask whether you will run short, and when | `ctx.sl.stock.position({ productId, horizonDays })` — on hand, on order, being made, needed, first short day | `sl:stock:read` |
+| Say what a product is made of, or what a batch really used | `ctx.sl.boms`, `ctx.sl.madeFrom` → `operations.md` | `sl:boms:write`, `sl:madefrom:write` |
 | Change numbers in a record (stock, counts, balances) without losing updates | `ctx.sl.appRecords.adjust(id, { qty: -5 }, { atLeast: { qty: 0 } })` — in place, conditions checked after the change | `sl:records:write` |
 | Several record writes that land together or not at all (a stock move) | `ctx.sl.transaction([ops], { idempotencyKey })` — see below | `sl:records:write` |
 | Totals: stock per location, forecast per SKU | `ctx.sl.appRecords.aggregate({ groupBy: ['data.location'], metrics: ['sum:qty'] })` | `sl:records:read` |

@@ -1,4 +1,4 @@
-import { ClaimSetScope, ClaimSetRange, CreateClaimSetRangeRequest, UpdateClaimSetRangeRequest, ClaimSetRangeTagsPage, ClaimSetRangeTag, ClaimSetRangeNextTag, ImportClaimSetRangeUidsRequest, ImportClaimSetRangeUidsResponse, AssignClaimSetRangeRequest, AssignClaimSetRangeResponse, ClaimSetRangeFile, UpdateClaimDataRequest, AssignClaimsRequest, CreateClaimSetTagRequest, CreateClaimSetTagResponse, CreateClaimSetRequest, ImportClaimSetTagsRequest, ImportClaimSetTagsResponse } from "../types/index.js";
+import { ClaimSetScope, ClaimSetRange, CreateClaimSetRangeRequest, UpdateClaimSetRangeRequest, ClaimSetRangeTagsPage, ClaimSetRangeTag, ClaimSetRangeNextTag, ImportClaimSetRangeUidsRequest, ImportClaimSetRangeUidsResponse, AssignClaimSetRangeRequest, AddClaimSetRangeMemberRequest, AddClaimSetRangeMemberResponse, CloseClaimSetRangeResponse, AssignClaimSetRangeResponse, ClaimSetRangeFile, UpdateClaimDataRequest, AssignClaimsRequest, CreateClaimSetTagRequest, CreateClaimSetTagResponse, CreateClaimSetRequest, ImportClaimSetTagsRequest, ImportClaimSetTagsResponse } from "../types/index.js";
 export declare namespace claimSet {
     /**
      * Get all claim sets.
@@ -106,6 +106,14 @@ export declare namespace claimSet {
         function update(scope: ClaimSetScope, claimSetId: string, rangeId: string, params: UpdateClaimSetRangeRequest): Promise<ClaimSetRange>;
         /** Finish minting a range that was interrupted. */
         function resume(scope: ClaimSetScope, claimSetId: string, rangeId: string): Promise<ClaimSetRange>;
+        /** Close an open range: it becomes a range with the quantity it reached (removed if nothing was minted). */
+        function close(scope: ClaimSetScope, claimSetId: string, rangeId: string): Promise<CloseClaimSetRangeResponse>;
+        /** Put an existing tag of the set into a group (by code or chip UID), assigning it if a collection is given. */
+        function addMember(scope: ClaimSetScope, claimSetId: string, groupId: string, params: AddClaimSetRangeMemberRequest): Promise<AddClaimSetRangeMemberResponse>;
+        /** Take a tag out of a group. Its assignment is left as it is. */
+        function removeMember(scope: ClaimSetScope, claimSetId: string, groupId: string, code: string): Promise<{
+            range: ClaimSetRange;
+        }>;
         /** The range's tags in index order, a page at a time (keys: owners/admins only). */
         function tags(scope: ClaimSetScope, claimSetId: string, rangeId: string, options?: {
             from?: number;

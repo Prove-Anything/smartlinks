@@ -1,4 +1,4 @@
-import { CreateOrderRequest, CreateOrderResponse, GetOrderParams, GetOrderResponse, UpdateOrderRequest, UpdateOrderResponse, DeleteOrderResponse, ListOrdersRequest, ListOrdersResponse, GetOrderItemsParams, GetOrderItemsResponse, AddItemsRequest, AddItemsResponse, RemoveItemsRequest, RemoveItemsResponse, QueryOrdersRequest, QueryOrdersResponse, ReportsParams, ReportsResponse, LookupOrdersRequest, LookupOrdersResponse, LookupByProductParams, LookupByProductResponse, OrderAnalyticsResponse, TimelineRequest, TimelineResponse, LocationRequest, LocationResponse, BulkAnalyticsRequest, BulkAnalyticsResponse, SummaryRequest, CollectionSummaryResponse, FindOrdersByAttributeParams, FindOrdersByAttributeResponse, FindItemsByAttributeParams, FindItemsByAttributeResponse, GetOrderIdsParams, GetOrderIdsResponse } from "../types/order.js";
+import { OrderItem, CreateOrderRequest, CreateOrderResponse, GetOrderParams, GetOrderResponse, UpdateOrderRequest, UpdateOrderResponse, DeleteOrderResponse, ListOrdersRequest, ListOrdersResponse, GetOrderItemsParams, GetOrderItemsResponse, AddItemsRequest, AddItemsResponse, RemoveItemsRequest, RemoveItemsResponse, QueryOrdersRequest, QueryOrdersResponse, ReportsParams, ReportsResponse, LookupOrdersRequest, LookupOrdersResponse, LookupByProductParams, LookupByProductResponse, OrderAnalyticsResponse, TimelineRequest, TimelineResponse, LocationRequest, LocationResponse, BulkAnalyticsRequest, BulkAnalyticsResponse, SummaryRequest, CollectionSummaryResponse, FindOrdersByAttributeParams, FindOrdersByAttributeResponse, FindItemsByAttributeParams, FindItemsByAttributeResponse, GetOrderIdsParams, GetOrderIdsResponse } from "../types/order.js";
 /**
  * Order Management API
  *
@@ -182,6 +182,17 @@ export declare namespace order {
      * })
      * ```
      */
+    /**
+     * Add to (or take from) how much of a line has been shipped or received. Atomic, so two receipts at
+     * once both count; it can't go below zero.
+     *
+     * @example
+     * ```typescript
+     * // 20 more caps arrived against a purchase order line
+     * await order.lineDone('coll_123', orderId, lineId, 20)
+     * ```
+     */
+    function lineDone(collectionId: string, orderId: string, itemId: string, by: number): Promise<OrderItem>;
     function removeItems(collectionId: string, orderId: string, data: RemoveItemsRequest): Promise<RemoveItemsResponse>;
     /**
      * Find all orders containing specific items (tags, proofs, or serial numbers).

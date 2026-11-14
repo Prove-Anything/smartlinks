@@ -222,6 +222,10 @@ function shouldSkipCache(path) {
     // Tag ranges change as tags are programmed, and carry the tags' keys — never cached, never persisted.
     if (/\/claimSet\/[^/]+\/ranges(\/|\?|$)/i.test(path))
         return true;
+    // User groups say who may do what: a change (someone added or removed) must show at once, and
+    // `mine` is about one person.
+    if (/\/userGroups?(\/|\?|$)/i.test(path))
+        return true;
     return false;
 }
 /** Evict the oldest (LRU) entry when the cache is at capacity. */

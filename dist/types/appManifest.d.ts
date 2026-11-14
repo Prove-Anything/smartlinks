@@ -4,6 +4,7 @@ import type { AppDataDeclaration, AppHeadlessDeclaration } from './headless.js';
 import type { RealtimeChannelDeclaration } from './realtime.js';
 import type { AppManifestAdminCards } from './adminCards.js';
 import type { PaginatedResponse } from './appObjects.js';
+import type { WorkOrdersApi, StockApi, BomsApi, MadeFromApi, OperationsApi } from './operations.js';
 import type { Booking, BookingSlot, BookingAllocation, CreateBookingInput, UpdateBookingInput, MoveBookingInput, BookingListQueryParams, CreateSlotInput, UpdateSlotInput, SlotListQueryParams, CreateBlockInput, BlockListQueryParams, FreeBusyQuery, FreeBusyResponse, MessageBookersInput, MessageBookersResult } from './bookings.js';
 /**
  * A bundle (widget or container) as returned by the collection widgets endpoint.
@@ -296,6 +297,13 @@ export interface AppFunctionDef {
      */
     elevated?: boolean;
     /**
+     * `http` only. Who may call it: the caller must be signed in and in at least ONE of these user
+     * groups (by key, e.g. `['qc-controller', 'manager']`), or be a collection admin. Checked by the
+     * platform before any of your code runs: anyone else gets `403 NOT_IN_USER_GROUP` (`401
+     * SIGN_IN_REQUIRED` when not signed in). Absent = no user group limit. See docs/user-groups.md.
+     */
+    userGroups?: string[];
+    /**
      * Least-privilege capabilities this function needs, surfaced at install for
      * consent and capped at runtime — even for `collection`-authority functions.
      * e.g. `['sl:records:write', 'network:api.example.com', 'secrets:syndigo-key']`.
@@ -490,7 +498,71 @@ export interface ServerFunctionBookings {
         }>;
     };
 }
+/** One write in ctx.sl.transaction. */
+export type RecordTransactionOp = {
+    op: 'create';
+    record: Record<string, any>;
+} | {
+    op: 'update';
+    recordId: string;
+    fields: Record<string, any>;
+} | {
+    op: 'adjust';
+    recordId: string;
+    by: Record<string, number>;
+    atLeast?: Record<string, number>;
+    atMost?: Record<string, number>;
+} | {
+    op: 'delete';
+    recordId: string;
+}
+/** An event in the app's history (BigQuery): commits with the other ops, delivered after. Needs sl:history:write. */
+ | {
+    op: 'log';
+    type: string;
+    data?: Record<string, any>;
+    entityId?: string;
+};
+/** One event from an app's history. */
+export interface AppHistoryEvent {
+    id: string;
+    at: string;
+    type: string;
+    entityId: string | null;
+    data: Record<string, any>;
+    actorType: 'user' | 'contact' | null;
+    actorId: string | null;
+}
+/** Reading an app's history: its own events in this collection, newest first. */
+export interface AppHistoryQuery {
+    types?: string | string[];
+    entityId?: string;
+    /** Exact match on top-level data keys (one value or several). */
+    data?: Record<string, string | number | boolean | Array<string | number | boolean>>;
+    /** ISO dates. Default: the last 30 days; at most 400 days. */
+    from?: string;
+    to?: string;
+    /** Default 100, at most 1000. */
+    limit?: number;
+}
 export interface ServerFunctionSl {
+    /**
+     * Work orders: what work is under way (`sl:workorders:read` / `:write`). Any app may read a work
+     * order; only the app that owns it may change it. Needs `authority: 'collection'`. See docs/operations.md.
+     */
+    workOrders: WorkOrdersApi;
+    /**
+     * Stock: how much of a product is in each container, changed only through movements, and a product's
+     * position (`sl:stock:read` / `:write`). Shared by every app in the collection. Needs
+     * `authority: 'collection'`.
+     */
+    stock: StockApi;
+    /** Bills of materials: what a product is made of (`sl:boms:read` / `:write`). Needs `authority: 'collection'`. */
+    boms: BomsApi;
+    /** What a batch or item was really made from (`sl:madefrom:read` / `:write`). Needs `authority: 'collection'`. */
+    madeFrom: MadeFromApi;
+    /** Several work order, stock, bill of materials and made-from writes, all or nothing. */
+    operations: OperationsApi;
     /** THIS app's bookings, slots and blocks (`sl:bookings:read` / `sl:bookings:write`). */
     bookings: ServerFunctionBookings;
     /**
@@ -502,7 +574,47 @@ export interface ServerFunctionSl {
      */
     appRecords: {
         claim(fields: Record<string, any>): Promise<AppRecordClaimResult>;
+        /**
+         * Numbers in a record's `data`, changed in place in one statement: two scanners on one bin never lose
+         * a count. `by` `{ qty: -5 }` (missing counts as 0). `atLeast` / `atMost` are checked on the values
+         * AFTER the change: `{ atLeast: { qty: 0 } }` never takes a bin below zero. Refusals carry `code`:
+         * `NOT_FOUND`, `NOT_A_NUMBER`, `CONDITION_FAILED` (with `current` values). → the updated record.
+         */
+        adjust(recordId: string, by: Record<string, number>, opts?: {
+            atLeast?: Record<string, number>;
+            atMost?: Record<string, number>;
+        }): Promise<any>;
+        /** Totals over THIS app's records: count, sum/avg/min/max of data numbers, grouped by data keys. */
+        aggregate(params?: import('./appObjects.js').AggregateRequest): Promise<import('./appObjects.js').AggregateResponse & Record<string, unknown>>;
         [method: string]: any;
+    };
+    /**
+     * Several record writes that land together or not at all (take 5 from bin A AND add 5 to order line B
+     * AND log the move). Needs `sl:records:write`; THIS app's records in THIS collection only. A failing op
+     * rolls everything back; its error says which (`opIndex`) and why (`code`). With `idempotencyKey`, a
+     * repeat of the key (a scanner retrying after a dropped signal) returns the first results
+     * (`replayed: true`) instead of writing twice; keys are remembered for 30 days.
+     */
+    transaction(ops: RecordTransactionOp[], opts?: {
+        idempotencyKey?: string;
+    }): Promise<{
+        results: any[];
+        replayed: boolean;
+    }>;
+    /**
+     * The app's HISTORY: append-only events kept in BigQuery (stock moved, a count taken, an order shipped),
+     * so the app's records hold current state and never grow with activity. `log` (`sl:history:write`)
+     * stores one event (it arrives within seconds; a failed delivery is retried, never lost); inside a
+     * transaction use a `log` op instead, so it commits with the change. `query` (`sl:history:read`) reads
+     * this app's events in this collection, newest first.
+     */
+    history: {
+        log(type: string, data?: Record<string, any>, opts?: {
+            entityId?: string;
+        }): Promise<{
+            id: string;
+        }>;
+        query(params?: AppHistoryQuery): Promise<AppHistoryEvent[]>;
     };
     /** Atomic named counters for this app in this collection (`sl:data:write` / `sl:data:read`). */
     counters: ServerFunctionCounters;
@@ -577,6 +689,12 @@ export interface ServerFunctionCaller {
     ip?: string | null;
     /** How the function was triggered. */
     via: AppFunctionTriggerType;
+    /**
+     * Keys of the user groups the caller is in, e.g. `['qc-controller', 'warehouse']`. Empty when nobody
+     * is signed in (and for `event`/`cron`). Use it for finer rules than the declaration's `userGroups`
+     * allows ("a manager may also override"). See docs/user-groups.md.
+     */
+    userGroups: readonly string[];
 }
 /** The signed-in caller's own contact, as a server function sees it (`ctx.sl.contacts.forCaller()`). */
 export interface CallerContact {
