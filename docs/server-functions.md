@@ -768,7 +768,7 @@ overlaps, idempotency, holds): `ctx.memory.bookings`.
 model, no agent loop. Declare each tool as a capability: `tools:pdf.create`, or `tools:pdf.*` for the
 whole family. Open to functions: `pdf.create`, `pdf.merge`, `pdf.fill`, `pdf.inspect`, `pdf.render`,
 `pdf.decodeBarcodes`, `pdf.inspectGraphics`, `pdf.preflight`, `pdf.printReady`, `pdf.edit`,
-`image.transform` (arguments as in [ai.md](ai.md)).
+`image.transform`, `image.ocr` (arguments as in [ai.md](ai.md)). A site's server code may use them too.
 
 - **Identity:** the call runs as the function's collection, whatever the caller. An anonymous caller
   holding only your own key gets the same result; the work is attributed and billed to the collection.
@@ -811,6 +811,73 @@ export async function printLabel(ctx, event) {
 - **Cache:** the same inputs return the earlier render without rendering again (`cached: true`).
 - **Verify:** `pdf.decodeBarcodes` on a `signedUrl` reads the codes back deterministically, so you can
   confirm the digits before answering.
+
+## Files — `ctx.sl.assets`
+
+The collection's assets are its lasting files: a record per file, kept as long as the asset is. Server
+code reads them (a PDF to parse, a photo to check) and saves what it makes (a job sheet, a label, a
+report) as assets of its own app. Declare `sl:assets:read` or `sl:assets:write`, with **collection
+authority** (an asset belongs to the collection, not to a visitor).
+
+```ts
+// capabilities: ["sl:assets:write", "tools:pdf.create"], authority: "collection"
+const pdf = await ctx.sl.tools.run('pdf.create', { format: 'A4', html, return: 'base64' })
+const sheet = await ctx.sl.assets.create({
+  name: `Job ${job.ref}.pdf`, contentType: 'application/pdf', base64: pdf.base64,
+  labels: ['job-sheet'], metadata: { workOrderId: job.id },
+})
+// later: the bytes back
+const { base64, contentType } = await ctx.sl.assets.read(sheet.id)
+```
+
+- **Reads see every asset** in the collection: `get`, `list({ productId?, proofId?, appId?, labels? })`,
+  `read(id)` (base64, or `{ as: 'text' }`).
+- **Writes act on this app's own assets only.** `create` stamps the asset with your app;
+  `replace(id, file)` keeps the old file as a version (same id, same `assetUrl`); `update(id, { name,
+  labels, metadata })`; `remove(id)`. Changing another app's asset is refused (`NOT_YOURS`).
+- **Size.** `read`, `create` and `replace` carry the file as base64, so up to **7 MB**. Bigger files go
+  straight to storage, never through SmartLinks:
+
+```ts
+// capabilities add: "network:storage.googleapis.com"
+const { uploadId, sessionUrl } = await ctx.sl.assets.startUpload({ name: 'line-3.mp4', contentType: 'video/mp4' })
+await ctx.fetch(sessionUrl, { method: 'PUT', body: bytes })     // one request, or chunks with Content-Range
+const video = await ctx.sl.assets.finishUpload(uploadId)
+```
+
+  To read a large file, fetch its `url` (declare the CDN host, `network:cdn.smartlinks.app`).
+- **Who can open the file.** An asset's file is served from the CDN under an unguessable address, as
+  every asset is. Keep the address to the people who should have it.
+
+## AI — `ctx.sl.ai`
+
+`ctx.sl.ai.generate({ prompt, system?, files?, schema?, quality? })` asks a model. `files` are PDFs,
+photos or text (`{ assetId }`, `{ base64, contentType }` or `{ text }`); with a `schema` (JSON
+Schema) the answer is parsed into `data`. Declare `sl:ai:write`; any authority may use it.
+
+```ts
+// capabilities: ["sl:ai:write", "sl:assets:read"], authority: "collection"
+const { data } = await ctx.sl.ai.generate({
+  prompt: 'Read this sales order.',
+  files: [{ assetId }],
+  schema: { type: 'object', properties: { salesOrderNumber: { type: 'string' }, lines: { type: 'array', items: { type: 'object', properties: { code: { type: 'string' }, qty: { type: 'number' } } } } } },
+})
+```
+
+- **Budget, enforced.** Every call is recorded and priced against the collection and your app. When the
+  collection's monthly AI budget or credits are used up, the call throws `AI_BUDGET_EXCEEDED` /
+  `AI_CREDITS_EXHAUSTED` (402) before anything is spent. Catch it and tell the person plainly.
+- **Quality.** `'fast'` (the default) is quick and cheap; `'best'` thinks harder and costs more.
+- **Limits.** Up to 10 files and 7 MB in all; 5 calls a second per collection (bursts wait).
+- **Failure.** `AI_BAD_JSON` (502) when the answer wasn't JSON of the shape asked for: try again, or ask
+  for less at once.
+
+### Uploaded files on a site
+
+In a site's own functions, a file posted to the function arrives intact: `event.rawBytes` holds the
+exact bytes of any request, and a multipart form's files are in `event.files` as
+`[{ field, filename, contentType, size, base64 }]` (its text fields in `event.body`). `base64` goes
+straight into `ctx.sl.assets.create` or `ctx.sl.ai.generate`.
 
 ### Making an email attachment
 

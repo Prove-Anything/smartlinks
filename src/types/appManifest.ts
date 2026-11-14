@@ -645,11 +645,24 @@ export interface ServerFunctionSl {
   /**
    * Platform tools (`tools:<name>` or `tools:<family>.*`, e.g. `tools:pdf.create`, `tools:pdf.*`):
    * pdf.create, pdf.merge, pdf.fill, pdf.inspect, pdf.render, pdf.decodeBarcodes, pdf.inspectGraphics,
-   * pdf.preflight, pdf.printReady, pdf.edit, image.transform. Runs as THIS collection whatever the caller
+   * pdf.preflight, pdf.printReady, pdf.edit, image.transform, image.ocr. Runs as THIS collection whatever the caller
    * (authorised by the declaration, billed to the collection), rate-limited per collection. Returns the
    * tool's result; a failure throws an Error with `code` (e.g. bad_args, busy, too_many_pages).
    */
   tools: { run<T = any>(name: string, args?: Record<string, any>): Promise<T> };
+  /**
+   * The collection's files (`sl:assets:read` / `sl:assets:write`, and collection authority): read any
+   * asset, save what the function makes as an asset of THIS app, and change or remove only this app's
+   * own. read/create/replace carry the file as base64 (up to 7 MB); bigger files go straight to storage
+   * with startUpload -> PUT to `sessionUrl` -> finishUpload, and are read by fetching the asset's `url`.
+   */
+  assets: ServerFunctionAssets;
+  /**
+   * Ask a model (`sl:ai:write`, any authority): a prompt, files (PDFs, photos, text), and optionally a
+   * JSON Schema for a structured answer in `data`. The collection's AI budget is ENFORCED: when it is
+   * used up the call throws `AI_BUDGET_EXCEEDED` / `AI_CREDITS_EXHAUSTED` (402) before anything is spent.
+   */
+  ai: ServerFunctionAi;
   /** Products, scoped by caller authority + declared capability. */
   products: any;
   /** Attestations, scoped by caller authority + declared capability. */
@@ -666,6 +679,67 @@ export interface ServerFunctionSl {
    * never another app's private/global store, never another collection. Gated by `sl:data:read`.
    */
   app(appId: string): { data: Pick<AppDataHandle, 'get' | 'getData'> };
+}
+
+/** An asset as server code sees it. `url` is the current file; `assetUrl` the address that never changes. */
+export interface ServerFunctionAsset {
+  id: string;
+  appId: string | null;
+  productId: string | null;
+  proofId: string | null;
+  name: string;
+  assetType: string;
+  mimeType: string | null;
+  size: number | null;
+  width: number | null;
+  height: number | null;
+  hash: string | null;
+  url: string;
+  assetUrl: string | null;
+  thumbnail: string | null;
+  labels: string[];
+  metadata: Record<string, any>;
+  /** How many earlier files replace() has kept. */
+  versions: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** A file going into server code's calls: bytes as base64 (or plain text). */
+export type ServerFunctionFileInput = { base64: string; contentType: string } | { text: string; contentType?: string };
+
+/** `ctx.sl.assets` - the collection's files from server code. */
+export interface ServerFunctionAssets {
+  get(assetId: string): Promise<ServerFunctionAsset | null>;
+  list(params?: { productId?: string | null; proofId?: string | null; appId?: string | null; labels?: string | string[]; assetType?: string; limit?: number; offset?: number }): Promise<ServerFunctionAsset[]>;
+  read(assetId: string, opts?: { as?: 'base64' }): Promise<{ id: string; name: string; contentType: string; size: number; base64: string }>;
+  read(assetId: string, opts: { as: 'text' }): Promise<{ id: string; name: string; contentType: string; size: number; text: string }>;
+  create(input: ServerFunctionFileInput & { name: string; productId?: string; proofId?: string; labels?: string[]; metadata?: Record<string, any> }): Promise<ServerFunctionAsset>;
+  /** A new file for one of this app's assets: same id and address, the old file kept as a version. */
+  replace(assetId: string, input: ServerFunctionFileInput & { name?: string }): Promise<ServerFunctionAsset>;
+  update(assetId: string, patch: { name?: string; labels?: string[]; metadata?: Record<string, any> }): Promise<ServerFunctionAsset>;
+  remove(assetId: string): Promise<{ id: string; deleted: true }>;
+  /** A large file: PUT its bytes to `sessionUrl` (declare `network:storage.googleapis.com`), then finishUpload. */
+  startUpload(input: { name: string; contentType: string; productId?: string; proofId?: string; replaceAssetId?: string }): Promise<{ uploadId: string; sessionUrl: string; expiresAt: string }>;
+  finishUpload(uploadId: string, input?: { name?: string; metadata?: Record<string, any> }): Promise<ServerFunctionAsset>;
+}
+
+/** `ctx.sl.ai.generate` - what to ask. */
+export interface ServerFunctionAiRequest {
+  prompt?: string;
+  system?: string;
+  /** Up to 10, 7 MB in all: an asset (needs sl:assets:read), bytes, or text. */
+  files?: Array<{ assetId: string } | { base64: string; contentType: string } | { text: string; name?: string }>;
+  /** A JSON Schema: the answer is parsed into `data`. */
+  schema?: Record<string, any>;
+  /** 'fast' (default) is quick and cheap; 'best' thinks harder and costs more. */
+  quality?: 'fast' | 'best';
+}
+
+/** `ctx.sl.ai` - model calls from server code, metered to the collection. */
+export interface ServerFunctionAi {
+  generate<T = any>(request: ServerFunctionAiRequest): Promise<{ text: string; data?: T; model: string; usage: { inputTokens: number; outputTokens: number } }>;
 }
 
 /** Identity of whoever invoked a server function. */
