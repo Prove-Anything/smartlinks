@@ -768,7 +768,7 @@ overlaps, idempotency, holds): `ctx.memory.bookings`.
 model, no agent loop. Declare each tool as a capability: `tools:pdf.create`, or `tools:pdf.*` for the
 whole family. Open to functions: `pdf.create`, `pdf.merge`, `pdf.fill`, `pdf.inspect`, `pdf.render`,
 `pdf.decodeBarcodes`, `pdf.inspectGraphics`, `pdf.preflight`, `pdf.printReady`, `pdf.edit`,
-`image.transform`, `image.ocr` (arguments as in [ai.md](ai.md)). A site's server code may use them too.
+`image.transform`, `image.ocr`, and `pdf.extract` (a PDF + a JSON schema → its fields; it calls a model, so it is refused when the collection's AI budget is used up) (arguments as in [ai.md](ai.md)). A site's server code may use them too.
 
 - **Identity:** the call runs as the function's collection, whatever the caller. An anonymous caller
   holding only your own key gets the same result; the work is attributed and billed to the collection.

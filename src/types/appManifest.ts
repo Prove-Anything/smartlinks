@@ -645,7 +645,7 @@ export interface ServerFunctionSl {
   /**
    * Platform tools (`tools:<name>` or `tools:<family>.*`, e.g. `tools:pdf.create`, `tools:pdf.*`):
    * pdf.create, pdf.merge, pdf.fill, pdf.inspect, pdf.render, pdf.decodeBarcodes, pdf.inspectGraphics,
-   * pdf.preflight, pdf.printReady, pdf.edit, image.transform, image.ocr. Runs as THIS collection whatever the caller
+   * pdf.preflight, pdf.printReady, pdf.edit, image.transform, image.ocr, pdf.extract. Runs as THIS collection whatever the caller
    * (authorised by the declaration, billed to the collection), rate-limited per collection. Returns the
    * tool's result; a failure throws an Error with `code` (e.g. bad_args, busy, too_many_pages).
    */
