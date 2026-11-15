@@ -2,6 +2,7 @@ import type { AppDataDeclaration, AppHeadlessDeclaration } from './headless'
 import type { RealtimeChannelDeclaration } from './realtime'
 import type { AppManifestAdminCards } from './adminCards'
 import type { PaginatedResponse } from './appObjects'
+import type { TypedMessage, MessageAbout, EmailAttachmentSpec } from './comms'
 import type { WorkOrdersApi, StockApi, BomsApi, MadeFromApi, OperationsApi } from './operations'
 import type {
   Booking, BookingSlot, BookingAllocation, CreateBookingInput, UpdateBookingInput, MoveBookingInput,
@@ -563,6 +564,28 @@ export interface AppHistoryQuery {
   limit?: number;
 }
 
+/** `ctx.sl.messages.send` input. Give `contactId` or `to: 'caller'`, and `templateId` or `message`. */
+export interface ServerFunctionMessage {
+  contactId?: string;
+  /** The person calling this function (their contact, made if they're signed in and have none yet). */
+  to?: 'caller';
+  templateId?: string;
+  message?: TypedMessage;
+  channel?: 'preferred' | 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet';
+  /** Extra Liquid variables. */
+  props?: Record<string, unknown>;
+  /** Records to hydrate into the template (`{ booking: 'B-123' }`, `{ productId }` …), as comm/send. */
+  include?: Record<string, unknown>;
+  about?: MessageAbout;
+  /** A label for the log (`'booking-cancelled'`). */
+  ref?: string;
+  attach?: EmailAttachmentSpec[];
+}
+
+export type ServerFunctionMessageResult =
+  | { ok: true; channel: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet'; messageId?: string; attachmentsLeftOut?: string[] }
+  | { ok: false; reason: 'opted_out' | 'no_channel' | 'no_contact' | 'template_not_found' };
+
 export interface ServerFunctionSl {
   /**
    * Work orders: what work is under way (`sl:workorders:read` / `:write`). Any app may read a work
@@ -642,6 +665,14 @@ export interface ServerFunctionSl {
    * types (refused if the type doesn't exist), runs the type's effects and emits `interaction.submitted`.
    */
   interactions: { record(event: ServerFunctionInteractionEvent): Promise<{ eventId: string }> };
+  /**
+   * Messages (`sl:messages:write`): message one person through the platform — a template or a typed
+   * message, on their preferred channel (or one you name), logged with this app and what it's `about`, so
+   * it shows in Messages and on the contact's Activity and a reply finds its way back. Service messages
+   * only (confirmations, reminders, cancellations, updates); the person's opt-outs are respected. Someone
+   * who can't be reached is an answer — `{ ok: false, reason }` — not an error. docs/comms.md.
+   */
+  messages: { send(input: ServerFunctionMessage): Promise<ServerFunctionMessageResult> };
   /**
    * Platform tools (`tools:<name>` or `tools:<family>.*`, e.g. `tools:pdf.create`, `tools:pdf.*`):
    * pdf.create, pdf.merge, pdf.fill, pdf.inspect, pdf.render, pdf.decodeBarcodes, pdf.inspectGraphics,
