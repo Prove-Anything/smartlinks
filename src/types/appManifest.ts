@@ -624,7 +624,24 @@ export interface ServerFunctionSl {
     adjust(recordId: string, by: Record<string, number>, opts?: { atLeast?: Record<string, number>; atMost?: Record<string, number> }): Promise<any>;
     /** Totals over THIS app's records: count, sum/avg/min/max of data numbers, grouped by data keys. */
     aggregate(params?: import('./appObjects').AggregateRequest): Promise<import('./appObjects').AggregateResponse & Record<string, unknown>>;
+    /**
+     * Every record of one type, with its data: a set-up list (every machine, with its rate). Up to 5,000
+     * (more → `TOO_MANY`: page with `query`). Read from cache for types the manifest declares `small`,
+     * cleared on every write. A record type or a declared type id. → mapped records, oldest first.
+     */
+    all(recordType: string): Promise<any[]>;
     [method: string]: any;
+  };
+  /**
+   * Pickers: a small list for "pick a machine" or "pick a hold reason", served from cache and cleared on
+   * every write. `source` is `type:<record type or declared type id>` (the app's records of it: label,
+   * second line, on/off and order as the manifest's `data` block says) or `list:<list id>` (a value list
+   * the app declares in `data.lists`; the entry's `id` is the value's code). Pass the `version` you hold
+   * to get `{ unchanged: true }` back; a type of more than 2,000 entries answers `mode: 'search'` and
+   * wants `q`. Needs `sl:records:read`. docs/admin-lists-and-pickers.md
+   */
+  appOptions: {
+    get(source: string, opts?: { q?: string; version?: string }): Promise<import('./appOptions').AppOptionsResponse>;
   };
   /**
    * Several record writes that land together or not at all (take 5 from bin A AND add 5 to order line B

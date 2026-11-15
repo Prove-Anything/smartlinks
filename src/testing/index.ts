@@ -64,8 +64,10 @@ export interface TestSlImpl {
   appRecords?: {
     create?(fields: any): any; claim?(fields: any): any; update?(id: string, fields: any): any; upsert?(fields: any): any
     delete?(id: string): any; get?(id: string): any; query?(params: any): any; listTypes?(): any
-    adjust?(id: string, by: Record<string, number>, opts?: any): any; aggregate?(params?: any): any
+    adjust?(id: string, by: Record<string, number>, opts?: any): any; aggregate?(params?: any): any; all?(recordType: string): any
   }
+  /** ctx.sl.appOptions.get(source, opts) — defaults to the in-memory one (records by convention, `valueLists`). */
+  appOptions?: { get?(source: string, opts?: any): any }
   /** ctx.sl.transaction(ops, { idempotencyKey }) — defaults to the in-memory one (all or none, replay by key). */
   transaction?(ops: any[], opts?: any): any
   counters?: { next?(name: string, opts?: any): any; get?(name: string): any }
@@ -137,6 +139,8 @@ export interface CreateFunctionTestContextOptions {
   knownInteractionTypes?: string[]
   /** Share one in-memory store between several contexts (e.g. concurrent callers in one test). */
   memory?: FunctionTestMemory
+  /** Value lists `ctx.sl.appOptions.get('list:<id>')` answers from, by list id (as the admin saved them). */
+  valueLists?: Record<string, Array<{ code: string; label?: string; active?: boolean }>>
 }
 
 /** The harness's in-memory platform state (when no impl is injected). */
@@ -233,6 +237,7 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
     get: async (id: string) => { const r = mem.records.find((x) => x.id === id); return r ? { ...r } : null },
     update: async (id: string, fields: any) => { const r = mem.records.find((x) => x.id === id); if (!r) return null; Object.assign(r, fields); return { ...r } },
     delete: async (id: string) => { const r = mem.records.find((x) => x.id === id); if (r) r.deletedAt = new Date().toISOString(); return {} },
+    all: async (recordType: string) => mem.records.filter((r) => !r.deletedAt && r.recordType === recordType).map((r) => ({ ...r })),
     // Numbers in data changed in place, with atLeast / atMost checked after the change (as the platform).
     adjust: async (id: string, by: Record<string, number> = {}, opts: { atLeast?: Record<string, number>; atMost?: Record<string, number> } = {}) => {
       const r = mem.records.find((x) => x.id === id && !x.deletedAt)
@@ -346,6 +351,28 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
       listTypes: gated('records', 'read', recordsFn('listTypes'), 'listTypes'),
       adjust: gated('records', 'write', recordsFn('adjust'), 'adjust'),
       aggregate: gated('records', 'read', recordsFn('aggregate'), 'aggregate'),
+      all: gated('records', 'read', recordsFn('all'), 'all'),
+    },
+    // Pickers, in memory: a type's records by the platform's conventions (label from data.label, then
+    // name, then title; order from sortOrder), or a value list from `valueLists`.
+    appOptions: {
+      get: gated('records', 'read', impl.appOptions && impl.appOptions.get ? impl.appOptions.get.bind(impl.appOptions) : (impl.appRecords ? undefined : async (source: string) => {
+        const m = /^(type|list):(.+)$/.exec(String(source || ''))
+        if (!m) throw Object.assign(new Error('Say what to list: type:<record type> or list:<list id>'), { code: 'BAD_SOURCE' })
+        let items: Array<{ id: string; label: string; active: boolean; order: number | null }>
+        if (m[1] === 'list') {
+          const values = (opts.valueLists || {})[m[2]]
+          if (!values) throw Object.assign(new Error(`No list "${m[2]}" (pass it in valueLists)`), { code: 'NO_SUCH_LIST' })
+          items = values.map((v, i) => ({ id: v.code, label: v.label || v.code, active: v.active !== false, order: i }))
+        } else {
+          items = mem.records.filter((r) => !r.deletedAt && r.recordType === m[2]).map((r) => {
+            const d = r.data || {}
+            const order = d.sortOrder ?? d.order
+            return { id: r.id, label: String(d.label ?? d.name ?? d.title ?? r.ref ?? r.id), active: !['inactive', 'archived'].includes(r.status || 'active'), order: typeof order === 'number' ? order : null }
+          }).sort((a, b) => (a.order ?? Infinity) - (b.order ?? Infinity) || a.label.localeCompare(b.label))
+        }
+        return { items, mode: 'all', version: String(items.length) }
+      }), 'get'),
     },
     transaction: gated('records', 'write', impl.transaction ? impl.transaction : (impl.appRecords ? undefined : async (ops: any[], opts?: any) => {
       if (Array.isArray(ops) && ops.some((o) => o && o.op === 'log') && !allowsSl(parsed, 'history', 'write')) throw new CapabilityError('sl:history:write')

@@ -1,5 +1,5 @@
 // src/api/appObjects.ts
-import { request, post, patch, del } from '../http'
+import { request, post, patch, del, put } from '../http'
 import type {
   AppCase,
   CreateCaseInput,
@@ -39,6 +39,46 @@ import type {
 // ==================== APP NAMESPACE ====================
 
 export namespace app {
+
+// ==================== OPTIONS (pickers) ====================
+
+/**
+ * Pickers: the small, cached list behind "pick a machine" or "pick a hold reason".
+ * docs/admin-lists-and-pickers.md
+ */
+export namespace options {
+  /**
+   * `source` = `type:<record type or declared type id>` | `list:<list id>`. Admins (`admin: true`)
+   * see every entry; the public API lists public records and lists the app declares public. Hold on
+   * to `version` and pass it back to get `{ unchanged: true }` when nothing changed.
+   */
+  export async function get(
+    collectionId: string,
+    appId: string,
+    source: string,
+    opts: { q?: string; version?: string; admin?: boolean } = {},
+  ): Promise<import('../types/appOptions').AppOptionsResponse> {
+    const zone = opts.admin ? 'admin' : 'public'
+    const qs = new URLSearchParams()
+    if (opts.q) qs.set('q', opts.q)
+    if (opts.version) qs.set('version', opts.version)
+    const query = qs.toString()
+    return request(`/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/options/${encodeURIComponent(source)}${query ? `?${query}` : ''}`)
+  }
+
+  /**
+   * Save a value list's values, in order (admins). Codes never change and are never lost: a value left
+   * out stays, switched off, at the end. → the list as saved.
+   */
+  export async function saveList(
+    collectionId: string,
+    appId: string,
+    listId: string,
+    values: import('../types/appOptions').AppOptionValueInput[],
+  ): Promise<import('../types/appOptions').AppOptionsResponse> {
+    return put(`/admin/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/options/${encodeURIComponent(`list:${listId}`)}`, { values })
+  }
+}
 
 // ==================== CASES ====================
 

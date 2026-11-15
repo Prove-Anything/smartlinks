@@ -22,7 +22,7 @@ export type AppDataFieldType =
   | 'boolean'
   | 'date'        // ISO date (YYYY-MM-DD)
   | 'datetime'    // ISO date-time
-  | 'enum'        // one of `options`
+  | 'enum'        // one of `options` (fixed by the app), or of a value list the admin edits (`list`)
   | 'url'
   | 'image'       // { url, alt? } or an asset ref
   | 'file'        // { url, name? } or an asset ref
@@ -47,8 +47,40 @@ export interface AppDataField {
   public?: boolean;
   /** For `ref` / `ref[]`: the declared type id, or 'product' | 'contact' | 'proof'. */
   to?: string;
-  /** For `enum`: the allowed values. */
+  /**
+   * For `enum`: the allowed values, fixed by the app (changed by a release). Use this when the app's
+   * code branches on the values (job stages, statuses).
+   */
   options?: string[];
+  /**
+   * For `enum`: the id of a value list in `data.lists` whose values the admin edits (hold reasons,
+   * teams). Instead of `options`. The record stores the value's code. docs/admin-lists-and-pickers.md
+   */
+  list?: string;
+}
+
+/** One value of a value list. The code never changes and is never removed (only switched off). */
+export interface AppValueListValue {
+  /** Stored on records. Letters, digits, dots, dashes; unique in the list. */
+  code: string;
+  /** What people see; free to change. Defaults to the code. */
+  label?: string;
+  /** Switched off: hidden from new choices, still shown on records that carry it. Default true. */
+  active?: boolean;
+}
+
+/**
+ * A value list the app declares: values only (a code, a label, on or off), edited by the admin in
+ * Studio. The manifest's `values` are the starting values, used until the admin first saves the list.
+ */
+export interface AppValueList {
+  label: string;
+  description?: string;
+  values: AppValueListValue[];
+  /** The admin may add, rename, reorder and switch off values. Default true. */
+  editable?: boolean;
+  /** Anyone may read it (`SL.app.options` on the public API). Default false: admins and server code. */
+  public?: boolean;
 }
 
 /** How a type's items are stored. */
@@ -79,12 +111,30 @@ export interface AppDataType {
   read?: { list?: string; get?: string; notes?: string };
   /** The app version that introduced this type. */
   since?: string;
+
+  // ── For pickers and set-up lists (docs/admin-lists-and-pickers.md) ──
+  /** The field a picker shows. Default: `label` (then `name`, then `title`). */
+  label?: string;
+  /** A field shown as a picker entry's second line (e.g. a machine's stage). */
+  sublabel?: string;
+  /** A boolean field that switches an entry off (false = off). Default: the record's status. */
+  activeField?: string;
+  /** A number field pickers sort by. Default: `sortOrder` (then `order`), then the label. */
+  orderField?: string;
+  /** A short list (dozens to hundreds): `ctx.sl.appRecords.all` reads it from cache. */
+  small?: boolean;
+  /** A set-up list the admin keeps: Studio shows a generated list and form for it. Implies `checked`. */
+  setup?: boolean;
+  /** Records of this type are checked against these fields when saved (400 INVALID_RECORD). */
+  checked?: boolean;
 }
 
 export interface AppDataDeclaration {
   /** Semver of the data contract itself (not the app's version). Major = breaking. */
   schemaVersion: string;
   types: Record<string, AppDataType>;
+  /** Value lists the admin edits, by id (lowercase, dashes): picked by `enum` fields with `list`. */
+  lists?: Record<string, AppValueList>;
 }
 
 /** What kind of content a provider supplies — how site builders find it. */
