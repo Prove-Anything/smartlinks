@@ -232,6 +232,9 @@ function shouldSkipCache(path: string): boolean {
   // User groups say who may do what: a change (someone added or removed) must show at once, and
   // `mine` is about one person.
   if (/\/userGroups?(\/|\?|$)/i.test(path)) return true
+  // Pickers: the server caches them and clears them on every save, and a repeat with `version` costs
+  // nothing. Cached here as well, a list just saved would look unchanged for a minute.
+  if (/\/app\/[^/]+\/options\//i.test(path)) return true
   return false
 }
 
