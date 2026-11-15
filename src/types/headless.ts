@@ -113,6 +113,8 @@ export interface AppDataType {
   since?: string;
 
   // ── For pickers and set-up lists (docs/admin-lists-and-pickers.md) ──
+  /** The list's name in Studio's Set-up lists (plural, short): "Machines". Default: the description. */
+  title?: string;
   /** The field a picker shows. Default: `label` (then `name`, then `title`). */
   label?: string;
   /** A field shown as a picker entry's second line (e.g. a machine's stage). */

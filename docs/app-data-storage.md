@@ -11,19 +11,20 @@ There are now two different families of flexible app data in SmartLinks, and the
 | Need | Best Fit | Why |
 |------|----------|-----|
 | One settings blob per scope | `appConfiguration.getConfig` / `setConfig` | Simple app setup and feature flags |
-| A few keyed scoped documents by ID | `appConfiguration.getData` / `setDataItem` | Lightweight, direct, minimal overhead |
+| Lists the admin keeps (machines, desks, hold reasons) | Declared set-up types and value lists | Studio edits them, pickers read them fast, saves are checked: [admin-lists-and-pickers.md](admin-lists-and-pickers.md) |
 | Rich app-owned entities with filtering, visibility, ownership, or lifecycle | `app.records` | Better default for real domain objects |
 | Workflow items that move through resolution | `app.cases` | Status, priority, assignment, history |
 | Discussions, comments, reply chains | `app.threads` | Built around replies and conversation flow |
 
 ### Rule of Thumb
 
-- Use `appConfiguration` when the thing you are storing is basically config or a small keyed document.
+- Use `appConfiguration` settings (`getConfig` / `setConfig`) when the thing you are storing is basically config.
+- Use a declared set-up type or value list when it's a list the admin keeps. **Keyed data items (`getData` / `setDataItem`) are being retired:** don't use them in new apps, and `smartlinks-doctor` warns on them.
 - Use `app.records` when the thing you are storing is a real object in your app.
 - Use `app.cases` when the object represents work to resolve.
 - Use `app.threads` when the object is conversational.
 
-This matters for AI-generated apps too: if the documentation only mentions `setDataItem`, builders will overuse it. In most non-trivial app flows, `app.records` is usually the stronger default.
+This matters for AI-generated apps too: builders overused `setDataItem` when it was the only thing documented. `app.records` is the default for real objects; lists the admin keeps are declared types and value lists.
 
 ## 1. User-Specific Data (Global per User+App)
 
@@ -155,7 +156,7 @@ The same visibility pattern applies to collection settings via `collection.getSe
 - Feature flags and toggles
 - Theme and branding settings
 - Public content that all users see
-- Small keyed content entries such as FAQs, menu items, or quick lookup documents
+- (Lists such as FAQs or menu items: app records; lists the admin keeps: set-up types and value lists, see admin-lists-and-pickers.md)
 
 ### API Endpoints
 ```

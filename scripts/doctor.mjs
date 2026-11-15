@@ -313,6 +313,32 @@ if (meta.respectsHostTheme) {
   if (embeds && !handRolled.length && !blocked.size) console.log(`${GREEN}✓${RESET} embedded widgets ${DIM}— ${embeds} via the host's EmbeddedWidget${RESET}`);
 }
 
+// ---- lists: declared set-up types and value lists, not keyed app data ------------------------------
+// Keyed app data (setDataItem / getData, ctx.sl.appData.setData) has no type, no search and no checks, and
+// is being retired (docs/admin-lists-and-pickers.md). Static scan of the source; WARN-only.
+{
+  const { keyedAppDataCalls } = await import('./lib/keyed-app-data.mjs');
+  const EXT = /\.(tsx|ts|jsx|js|mjs)$/;
+  const SKIP = new Set(['node_modules', 'dist', '.git', 'public']);
+  const found = [];
+  (function walkKeyed(dir) {
+    let entries = [];
+    try { entries = readdirSync(dir, { withFileTypes: true }); } catch { return; }
+    for (const e of entries) {
+      if (e.isDirectory()) { if (!SKIP.has(e.name)) walkKeyed(join(dir, e.name)); }
+      else if (EXT.test(e.name)) {
+        const f = join(dir, e.name);
+        const calls = keyedAppDataCalls(readFileSync(f, 'utf8'));
+        if (calls.length) found.push([f.startsWith(appDir) ? f.slice(appDir.length + 1) : f, calls]);
+      }
+    }
+  })(existsSync(join(appDir, 'src')) ? join(appDir, 'src') : appDir);
+  if (found.length) {
+    console.log(`${YELLOW}⚠${RESET} keyed app data — ${found.slice(0, 3).map(([f]) => f).join(', ')}${found.length > 3 ? ` and ${found.length - 3} more` : ''}`);
+    warnings.push(`${found.map(([f, c]) => `${f} (${c.join(', ')})`).join('; ')}: keyed app data is being retired. Keep lists as declared set-up types (app records with \`setup: true\` in the manifest's data block) and value lists (\`data.lists\`); Studio edits them and pickers read them fast (docs/admin-lists-and-pickers.md). Settings stay in getConfig / setConfig.`);
+  }
+}
+
 // ---- realtime: SL.realtime, never a provider library or key in the app ---------------------------
 // SmartLinks Realtime (docs/realtime.md) hands out the stream and checks every publish; an app that talks
 // to the provider directly bypasses the channel rules (and a provider key in a bundle is a key for all).

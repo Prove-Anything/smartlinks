@@ -60,6 +60,7 @@ A set-up type is an ordinary declared type (`storage: { kind: 'record' }`) with 
 
 | Key | Meaning |
 |---|---|
+| `title` | The list's name in Studio's Set-up lists, plural and short ("Machines"). Default: the description |
 | `label` | The field pickers show. Default `label`, then `name`, then `title` |
 | `sublabel` | A field shown as the second line (a machine's stage) |
 | `activeField` | A boolean field; `false` switches the entry off. Default: the record's status (`inactive` / `archived` = off) |
