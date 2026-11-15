@@ -123,7 +123,8 @@ export interface SmartlinksIframeMessage {
     | 'smartlinks:authkit:logout'
     | 'smartlinks:authkit:redirect'
     | 'smartlinks:navigable'
-    | 'smartlinks:navigate-result';
+    | 'smartlinks:navigate-result'
+    | 'smartlinks:open-app';
   payload: Record<string, any>;
   messageId?: string;
 }

@@ -90,3 +90,18 @@ test('onNavigate takes messages only from the parent, says it is navigable, and 
     ;(globalThis as any).window = prevWindow
   }
 })
+
+test('openApp asks the host to open another app at a view', () => {
+  const posted: any[] = []
+  const prevWindow = (globalThis as any).window
+  ;(globalThis as any).window = { parent: { postMessage: (m: any) => posted.push(m) }, addEventListener() {}, removeEventListener() {} }
+  try {
+    av.openApp({ appId: 'crm', view: 'contact', params: { contactId: 'ct1' } })
+    av.openApp({ appId: '' })
+    expect_(posted.length === 1)
+    assert.deepEqual(posted[0], { _smartlinksIframeMessage: true, type: 'smartlinks:open-app', payload: { appId: 'crm', view: 'contact', params: { contactId: 'ct1' } } })
+  } finally {
+    ;(globalThis as any).window = prevWindow
+  }
+})
+function expect_(ok: boolean) { assert.ok(ok) }

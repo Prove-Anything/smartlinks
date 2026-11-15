@@ -110,6 +110,28 @@ navigable. Hosts with their own frame code use `SL.adminViews.postNavigate(frame
 
 ---
 
+## Opening another app: `smartlinks:open-app`
+
+Apps link to each other's screens. Some examples:
+- Messages opens a person in the CRM.
+- The CRM opens that person's messages.
+- A message about a booking opens the booking.
+
+```ts
+SL.adminViews.openApp({ appId: 'crm', view: 'contact', params: { contactId } })
+// app → host   { type: 'smartlinks:open-app', payload: { appId, view?, params?, path? } }
+```
+
+- **How the host resolves it.** Studio reads that app's published manifest `adminViews`, fills the
+  view's path from `params`, and opens the app there. The other app doesn't need any particular SDK,
+  only declared views.
+- **Fallbacks.** An unknown view, or an app without views, opens at its start. A raw `path` (a hash
+  route of that app) is used as given.
+- **Only that collection's apps.** The host opens only apps installed in, or core to, the collection
+  it is showing.
+- **Name the views you link to** in your docs (`crm: contact`, `messages: log` with `contact`), and
+  keep their ids stable: other apps use them.
+
 ## `chrome=none`: the host carries the menu
 
 When a host's own menu already lists an app's views, it opens the app with `chrome=none`. The app then
