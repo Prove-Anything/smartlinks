@@ -37,6 +37,10 @@ and change them through change sets. The declarations make it *good* at your app
 The files sit in `public/assistant/` in your project and ship with every release like any other static
 file (they are read from the release's CDN folder, on the channel the collection runs your app on).
 
+The same block also says **what your app's data means** to the assistant (`purpose`, `objects`, `words`,
+`recipes`): which standard objects are what in your app, and which may only be changed through your
+actions. See **[assistant-context.md](assistant-context.md)**.
+
 ### How they are loaded
 
 When an admin opens a chat, the assistant's box gets the **index** of every installed app's skills: one
