@@ -504,21 +504,119 @@ export interface UpsertContactResponse {
   created: boolean
 }
 
+/** The sign-in screens' look (read by `@proveanything/smartlinks-auth-ui`). */
 export interface AuthKitBrandingConfig {
-  logoUrl?: string
+  /** Absent = the SmartLinks logo; `''` = no logo. An https address (or a small data:image URI). */
+  logoUrl?: string | null
   title?: string
   subtitle?: string
+  registerTitle?: string
+  registerSubtitle?: string
+  /** CSS colours, e.g. `#1D4ED8`. Shown only with `inheritHostStyles: false` (else the host page's colours win). */
   primaryColor?: string
   secondaryColor?: string
   backgroundColor?: string
-  buttonStyle?: string
+  buttonStyle?: 'rounded' | 'square' | 'pill' | string
   fontFamily?: string
+  /** Light or dark screens; `auto` follows the visitor's device. Default `light`. A host `theme` prop wins. */
+  theme?: 'light' | 'dark' | 'auto'
+  /** Use the host page's colours (default true). Turn off for your own colours to show. */
+  inheritHostStyles?: boolean
+  minimal?: boolean
+  customCss?: string
+  termsUrl?: string
+  privacyUrl?: string
+  [key: string]: unknown
 }
 
+/** A sign-in method id, as `enabledProviders` / `providerOrder` take them. */
+export type AuthKitProvider = 'email' | 'magic-link' | 'phone' | 'whatsapp' | 'google' | 'apple' | 'microsoft' | 'linkedin'
+
+/** One account email's wording. A field left out keeps the built-in words. Plain words (no scripts). */
+export interface AuthKitEmailTemplate {
+  subject?: string
+  header?: string
+  introText?: string
+  buttonText?: string
+  footerText?: string
+}
+
+/** The account emails a sign-in sends, by kind. */
+export type AuthKitEmailKind = 'passwordReset' | 'emailVerification' | 'magicLink' | 'memberInvite' | 'invite' | 'addedToCollection' | 'mfaCode' | 'providerLinked'
+
+/** Wording on the sign-in screens a site may change (auth-ui reads `texts[key]`). */
+export type AuthKitTextKey =
+  | 'signInTitle' | 'signInSubtitle' | 'registerTitle' | 'registerSubtitle'
+  | 'emailLabel' | 'passwordLabel' | 'signInButton' | 'registerButton' | 'forgotPassword'
+  | 'noAccount' | 'haveAccount' | 'continueWithEmail' | 'continueWithGoogle' | 'continueWithApple'
+  | 'continueWithMicrosoft' | 'continueWithLinkedIn' | 'continueWithPhone' | 'continueWithWhatsApp'
+  | 'continueWithMagicLink' | 'sendMagicLink' | 'magicLinkSent' | 'inviteOnlyNotice'
+
+/** Second step at sign-in (TOTP authenticator app, email or text code, recovery codes). */
+export interface AuthKitMfaConfig {
+  /** off; optional (people may add one, never asked); risk-based / always (asked at sign-in once they have one). */
+  mode?: 'off' | 'optional' | 'risk-based' | 'always'
+  /** Switch a method off with `false`. */
+  factorsEnabled?: { email?: boolean; sms?: boolean; totp?: boolean; recoveryCodes?: boolean }
+  minimumFactors?: number
+  trustedDeviceDurationDays?: number
+  enforceForAdmins?: boolean
+}
+
+/**
+ * A sign-in (AuthKit) config — the ONE shape every setting lives in. The server validates every write
+ * (`INVALID_CONFIG`, 400, with `problems: [{ path, message }]`) and fills defaults; GET
+ * {@link authKit.schema} lists every field with its default and what reads it, and
+ * {@link authKit.settings} shows what sign-in does now. See `docs/auth-kit.md` → "Setting up sign-in".
+ */
 export interface AuthKitConfig {
   id: string
+  /** The name staff see. */
+  name?: string
   branding?: AuthKitBrandingConfig
-  enabledProviders?: string[]
+  /** Which ways to sign in the screens offer. Absent = the host page's choice. */
+  enabledProviders?: AuthKitProvider[]
+  /** The order they appear in. */
+  providerOrder?: AuthKitProvider[]
+  /** `form` (email + password form straight away, default) or `button` ("Continue with email" first). */
+  emailDisplayMode?: 'form' | 'button'
+  /** How much the screens push creating an account. `none` = no sign-up link. Default `minimal`. */
+  signupProminence?: 'none' | 'minimal' | 'balanced' | 'emphasized'
+  signupRedirectUrl?: string
+  /** Your own Google OAuth web client id (public; no secret needed). Absent = SmartLinks' Google app. */
+  googleClientId?: string
+  googleOAuthFlow?: 'oneTap' | 'popup' | 'redirect'
+  /** Site domains registered on your own Google client (open Google directly, not via the SmartLinks proxy). */
+  whitelistedGoogleDomains?: string[]
+  /** Sign in with Apple: your Services ID / bundle ids. Required for `apple`. */
+  appleClientIds?: string[]
+  /** Your own LinkedIn app's client id. Its secret goes through {@link authKit.secretEntryLink}, never here. */
+  linkedInClientId?: string
+  whatsappPrefillMessage?: string
+  whatsappReply?: { enabled?: boolean; text?: string; cta?: { body?: string; buttonLabel?: string; buttonUrl?: string; mediaUrl?: string } }
+  /** Extra contact fields on the sign-up form. */
+  registrationFields?: Array<{ key: string; showDuringRegistration?: boolean; placement?: 'inline' | 'after'; required?: boolean }>
+  collectNameOnPasswordlessSignup?: boolean
+  /** Default `verify-auto-login`. */
+  emailVerificationMode?: 'immediate' | 'verify-auto-login' | 'verify-manual-login'
+  emailVerificationGracePeriod?: number
+  lockUnverifiedAfterGrace?: boolean
+  /** Offer "Forgot password?" and send reset emails (default true). false → the request answers `PASSWORD_RESET_DISABLED` (403). */
+  allowPasswordReset?: boolean
+  /** Second step at sign-in. */
+  mfa?: AuthKitMfaConfig
+  /** Where the site sends people after they sign in: your page reads it from {@link authKit.load} in `onAuthSuccess`. */
+  afterSignInUrl?: string
+  /** Extra domains emailed links may return to (the collection's own domains are always allowed). */
+  allowedRedirectDomains?: string[]
+  /** Wording on the screens. */
+  texts?: Partial<Record<AuthKitTextKey, string>>
+  /** Wording of the account emails, per email. Preview with {@link authKit.previewEmail}. */
+  emailTemplates?: Partial<Record<AuthKitEmailKind, AuthKitEmailTemplate>>
+  /** The account emails' look. The sender is the collection's email settings (verified domain). */
+  emailBranding?: { logoUrl?: string; buttonColor?: string; footerHtml?: string }
+  /** Where each secret is and a masked hint — never the value. Server-owned. */
+  secrets?: Record<string, { ref: string; hint?: string | null; collectionId?: string; setAt?: string }>
   customCss?: string
   termsUrl?: string
   privacyUrl?: string
@@ -615,7 +713,76 @@ export interface AuthKitSetIdentityResponse {
  * ```
  */
 export type AuthKitConfigInput =
-  Partial<Omit<AuthKitConfig, 'id' | 'updatedAt' | 'identity'>> & Record<string, any>
+  Partial<Omit<AuthKitConfig, 'id' | 'updatedAt' | 'identity' | 'secrets'>> & Record<string, any>
+
+/** {@link authKit.schema}: every setting, its default, what reads it, in plain words. */
+export interface AuthKitSchema {
+  providers: AuthKitProvider[]
+  emailKinds: AuthKitEmailKind[]
+  emailFields: Array<keyof AuthKitEmailTemplate>
+  textKeys: AuthKitTextKey[]
+  /** Secret names (set through {@link authKit.secretEntryLink}). */
+  secrets: string[]
+  /** Fields never written through create/update. */
+  serverOwned: string[]
+  /** where: `screens` (the sign-in UI reads it), `server` (the API enforces it), `both`, `host` (your page reads it from {@link authKit.load}). */
+  fields: Array<{ path: string; group: string; where: 'screens' | 'server' | 'both' | 'host'; default: unknown; description: string }>
+}
+
+/** One thing worth knowing about a sign-in's settings (from {@link authKit.settings}). */
+export interface AuthKitCheck {
+  /** `problem`: on but will fail; `warning`: works, probably not meant; `info`: worth knowing. */
+  level: 'problem' | 'warning' | 'info'
+  code: string
+  message: string
+  /** The setting to change. */
+  setting?: string
+}
+
+/** {@link authKit.settings}: what sign-in does now. */
+export interface AuthKitSettingsResponse {
+  authKitId: string
+  ownLogins: 'own' | 'shared'
+  /** As stored (no secret values). */
+  config: AuthKitConfig
+  /** Every default filled in. */
+  effective: Required<Pick<AuthKitConfig, 'enabledProviders' | 'providerOrder' | 'signUp' | 'allowPasswordReset' | 'emailVerificationMode'>> & AuthKitConfig
+  secrets: Record<string, { set: boolean; hint?: string | null; setAt?: string | null; legacy?: boolean }>
+  checks: AuthKitCheck[]
+}
+
+/** Body of {@link authKit.setup}. */
+export interface AuthKitSetupRequest {
+  /** For a new sign-in. */
+  name?: string
+  /** Give it its own logins (members of this site only). ONE WAY. Needed for `signUp: 'invite'`. */
+  ownLogins?: boolean
+  /** A first settings patch, checked like {@link authKit.update}. No secrets. */
+  settings?: AuthKitConfigInput
+}
+
+/** Result of {@link authKit.setup}. */
+export interface AuthKitSetupResponse {
+  authKit: AuthKitConfig
+  created: boolean
+  ownLogins: 'own' | 'shared'
+  /** What this call changed, in plain words (empty when nothing). */
+  changed: string[]
+}
+
+/** Result of {@link authKit.previewEmail}. */
+export interface AuthKitEmailPreview {
+  kind: AuthKitEmailKind
+  subject: string
+  html: string
+}
+
+/** Result of {@link authKit.secretEntryLink}. */
+export interface AuthKitSecretLink {
+  /** A SmartLinks page where the person types the secret. Works once. */
+  url: string
+  expiresAt: string
+}
 
 /**
  * Per-collection account-security policy. The API **enforces** all of this; the

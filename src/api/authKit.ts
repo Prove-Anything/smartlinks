@@ -17,6 +17,13 @@ import type {
   AuthKitSetIdentityResponse,
   AuthKitInviteRequest,
   AuthKitInviteResponse,
+  AuthKitSchema,
+  AuthKitSettingsResponse,
+  AuthKitSetupRequest,
+  AuthKitSetupResponse,
+  AuthKitEmailKind,
+  AuthKitEmailPreview,
+  AuthKitSecretLink,
   MagicLinkSendResponse,
   MagicLinkVerifyResponse,
   UserProfile,
@@ -589,6 +596,58 @@ export namespace authKit {
   export async function invite(collectionId: string, authKitId: string, body: AuthKitInviteRequest): Promise<AuthKitInviteResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/invite`
     return post<AuthKitInviteResponse>(path, body)
+  }
+
+  /* ===================================
+   * Setting up sign-in (admin) — everything an assistant needs; see docs/auth-kit.md "Setting up sign-in"
+   * =================================== */
+
+  /** Every sign-in setting: its path, default, what reads it (`screens` / `server` / `both`), in plain words. */
+  export async function schema(collectionId: string): Promise<AuthKitSchema> {
+    return request<AuthKitSchema>(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/schema`)
+  }
+
+  /**
+   * Set up the collection's sign-in in one call, safe to repeat: finds its sign-in (or makes one, with
+   * email + Google and confirm-then-signed-in, and makes it the collection's default), optionally gives it
+   * its own logins (ONE WAY — members of this site only; needed for invite-only) and saves a first
+   * settings patch. Errors: `INVALID_CONFIG` (400, `problems`), `OWN_LOGINS_REQUIRED` (409),
+   * `MEMBER_POOL_CONFLICT` (409), `SECRET_IN_SETTINGS` (400).
+   */
+  export async function setup(collectionId: string, body: AuthKitSetupRequest = {}): Promise<AuthKitSetupResponse> {
+    return post<AuthKitSetupResponse>(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/setup`, body)
+  }
+
+  /** What sign-in does now: the stored config, every default filled in, which secrets are set (masked), and checks. */
+  export async function settings(collectionId: string, authKitId: string): Promise<AuthKitSettingsResponse> {
+    return request<AuthKitSettingsResponse>(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/settings`)
+  }
+
+  /**
+   * A one-time SmartLinks page where the PERSON types a secret (e.g. `linkedInClientSecret`) — so it never
+   * passes through a chat or your code. Give them the `url`; it works once, for 30 minutes. Asking again
+   * replaces the link. Check it landed with {@link settings} (`secrets.<name>.set`).
+   */
+  export async function secretEntryLink(collectionId: string, authKitId: string, name: string, opts: { label?: string } = {}): Promise<AuthKitSecretLink> {
+    return post<AuthKitSecretLink>(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/secrets/${encodeURIComponent(name)}/link`, opts)
+  }
+
+  /** Store a secret you already hold (server-side code only — never ask a person to paste one to you). Returns the masked hint. */
+  export async function setSecret(collectionId: string, authKitId: string, name: string, value: string): Promise<{ name: string; hint: string; setAt: string }> {
+    return put<{ name: string; hint: string; setAt: string }>(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/secrets/${encodeURIComponent(name)}`, { value })
+  }
+
+  /** Remove a secret (that provider then uses SmartLinks' own app). */
+  export async function removeSecret(collectionId: string, authKitId: string, name: string): Promise<{ name: string; removed: true }> {
+    return del<{ name: string; removed: true }>(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/secrets/${encodeURIComponent(name)}`)
+  }
+
+  /**
+   * An account email as it would be sent now — or with draft settings (`emailTemplates`, `emailBranding`,
+   * `branding`; checked like a save, nothing stored). Sample values stand in for the person and the link.
+   */
+  export async function previewEmail(collectionId: string, authKitId: string, kind: AuthKitEmailKind, draft: Pick<AuthKitConfigInput, 'emailTemplates' | 'emailBranding' | 'branding'> = {}): Promise<AuthKitEmailPreview> {
+    return post<AuthKitEmailPreview>(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/emails/${encodeURIComponent(kind)}/preview`, draft)
   }
 
   export async function remove(collectionId: string, authKitId: string): Promise<void> {
