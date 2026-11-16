@@ -1,3 +1,4 @@
+import { guide as guideApi, content as contentApi, startLive } from "./aiGuide.js";
 import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, AgentRunRequest, AgentRunResult, AgentToolsQuery, AgentToolsResponse, ToolRunResult, AiToolName, AiToolArgsMap, PublicAgentRunRequest, ClientTool, RunWithClientToolsOptions, SkillsListResponse, CatalogResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, AiSession, AiSessionCreate, AiUsageReport, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef } from "../types/ai.js";
 export type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, AiSession, AiSessionCreate, AiUsageReport, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef, };
 declare namespace aiInternal {
@@ -197,10 +198,6 @@ declare namespace aiInternal {
          * Check rate limit status
          */
         function getRateLimit(collectionId: string, userId: string): Promise<RateLimitStatus>;
-        /**
-         * Generate ephemeral token for Gemini Live
-         */
-        function getToken(collectionId: string, request: EphemeralTokenRequest): Promise<EphemeralTokenResponse>;
     }
     namespace voice {
         /**
@@ -294,12 +291,25 @@ export declare const ai: {
         getSession: typeof aiInternal.publicClient.getSession;
         clearSession: typeof aiInternal.publicClient.clearSession;
         getRateLimit: typeof aiInternal.publicClient.getRateLimit;
-        getToken: typeof aiInternal.publicClient.getToken;
     };
     voice: {
         isSupported: typeof aiInternal.voice.isSupported;
         listen: typeof aiInternal.voice.listen;
         speak: typeof aiInternal.voice.speak;
+    };
+    /** The customer guide: a business's assistant for its visitors (docs/customer-guide.md). */
+    guide: {
+        get: typeof guideApi.get;
+        start: typeof guideApi.start;
+    };
+    /** What's on screen, in words, for an assistant: apps provide it, hosts request it. */
+    content: {
+        provide: typeof contentApi.provide;
+        request: typeof contentApi.request;
+    };
+    /** A live conversation by voice or text, with your own endpoints (the guide and the Studio assistant use it). */
+    live: {
+        start: typeof startLive;
     };
     agent: {
         run: typeof aiInternal.agent.run;

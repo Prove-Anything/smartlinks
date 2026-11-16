@@ -150,6 +150,7 @@ export function createFunctionTestContext(opts) {
             return null; Object.assign(r, fields); return Object.assign({}, r); },
         delete: async (id) => { const r = mem.records.find((x) => x.id === id); if (r)
             r.deletedAt = new Date().toISOString(); return {}; },
+        all: async (recordType) => mem.records.filter((r) => !r.deletedAt && r.recordType === recordType).map((r) => (Object.assign({}, r))),
         // Numbers in data changed in place, with atLeast / atMost checked after the change (as the platform).
         adjust: async (id, by = {}, opts = {}) => {
             var _a, _b;
@@ -282,6 +283,36 @@ export function createFunctionTestContext(opts) {
             listTypes: gated('records', 'read', recordsFn('listTypes'), 'listTypes'),
             adjust: gated('records', 'write', recordsFn('adjust'), 'adjust'),
             aggregate: gated('records', 'read', recordsFn('aggregate'), 'aggregate'),
+            all: gated('records', 'read', recordsFn('all'), 'all'),
+        },
+        userGroups: {
+            members: gated('usergroups', 'read', impl.userGroups && impl.userGroups.members ? impl.userGroups.members.bind(impl.userGroups) : async (keys = []) => (opts.people || []).filter((p) => !keys.length || p.userGroups.some((k) => keys.includes(k)))
+                .map((p) => { var _a, _b; return ({ userId: p.userId, name: (_a = p.name) !== null && _a !== void 0 ? _a : null, email: (_b = p.email) !== null && _b !== void 0 ? _b : null, userGroups: keys.length ? p.userGroups.filter((k) => keys.includes(k)) : [...p.userGroups] }); }), 'members'),
+        },
+        // Pickers, in memory: a type's records by the platform's conventions (label from data.label, then
+        // name, then title; order from sortOrder), or a value list from `valueLists`.
+        appOptions: {
+            get: gated('records', 'read', impl.appOptions && impl.appOptions.get ? impl.appOptions.get.bind(impl.appOptions) : (impl.appRecords ? undefined : async (source) => {
+                const m = /^(type|list):(.+)$/.exec(String(source || ''));
+                if (!m)
+                    throw Object.assign(new Error('Say what to list: type:<record type> or list:<list id>'), { code: 'BAD_SOURCE' });
+                let items;
+                if (m[1] === 'list') {
+                    const values = (opts.valueLists || {})[m[2]];
+                    if (!values)
+                        throw Object.assign(new Error(`No list "${m[2]}" (pass it in valueLists)`), { code: 'NO_SUCH_LIST' });
+                    items = values.map((v, i) => ({ id: v.code, label: v.label || v.code, active: v.active !== false, order: i }));
+                }
+                else {
+                    items = mem.records.filter((r) => !r.deletedAt && r.recordType === m[2]).map((r) => {
+                        var _a, _b, _c, _d, _e;
+                        const d = r.data || {};
+                        const order = (_a = d.sortOrder) !== null && _a !== void 0 ? _a : d.order;
+                        return { id: r.id, label: String((_e = (_d = (_c = (_b = d.label) !== null && _b !== void 0 ? _b : d.name) !== null && _c !== void 0 ? _c : d.title) !== null && _d !== void 0 ? _d : r.ref) !== null && _e !== void 0 ? _e : r.id), active: !['inactive', 'archived'].includes(r.status || 'active'), order: typeof order === 'number' ? order : null };
+                    }).sort((a, b) => { var _a, _b; return ((_a = a.order) !== null && _a !== void 0 ? _a : Infinity) - ((_b = b.order) !== null && _b !== void 0 ? _b : Infinity) || a.label.localeCompare(b.label); });
+                }
+                return { items, mode: 'all', version: String(items.length) };
+            }), 'get'),
         },
         transaction: gated('records', 'write', impl.transaction ? impl.transaction : (impl.appRecords ? undefined : async (ops, opts) => {
             if (Array.isArray(ops) && ops.some((o) => o && o.op === 'log') && !allowsSl(parsed, 'history', 'write'))

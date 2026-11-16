@@ -78,6 +78,25 @@ export declare function hostChrome(): 'none' | 'full';
  *   useEffect(() => SL.adminViews.onNavigate(manifest.adminViews, (to) => navigate(to.path)), [navigate])
  */
 export declare function onNavigate(views: AdminView[] | undefined | null, handler: (to: NavigateTarget) => void): () => void;
+/** Another app's screen to open: by its admin view (and params), or by a hash path. */
+export interface OpenAppRequest {
+    /** The installed app's id in this collection (`'crm'`, `'messages'`, `'appointment-booking'`). */
+    appId: string;
+    view?: string;
+    params?: Record<string, string>;
+    path?: string;
+}
+/**
+ * Ask the host (Studio) to open ANOTHER app at one of its screens: a contact in the CRM, a booking in
+ * the booking app, a person's messages in Messages. The host reads that app's manifest `adminViews`,
+ * turns the view into its address and opens it, so it works whichever SDK the other app is on. Posts
+ * `{ type: 'smartlinks:open-app', payload: { appId, view?, params?, path? } }` to the parent. No-op
+ * outside a frame.
+ *
+ * @example
+ *   SL.adminViews.openApp({ appId: 'crm', view: 'contact', params: { contactId } })
+ */
+export declare function openApp(req: OpenAppRequest): void;
 /**
  * Ask an embedded app to open a screen. Post this only once the app has said it follows navigate
  * (`smartlinks:navigable`); otherwise reload the frame at the new path as before.

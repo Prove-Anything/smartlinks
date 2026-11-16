@@ -583,6 +583,57 @@ export var authKit;
         return post(path, body);
     }
     authKit.invite = invite;
+    /* ===================================
+     * Setting up sign-in (admin) — everything an assistant needs; see docs/auth-kit.md "Setting up sign-in"
+     * =================================== */
+    /** Every sign-in setting: its path, default, what reads it (`screens` / `server` / `both`), in plain words. */
+    async function schema(collectionId) {
+        return request(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/schema`);
+    }
+    authKit.schema = schema;
+    /**
+     * Set up the collection's sign-in in one call, safe to repeat: finds its sign-in (or makes one, with
+     * email + Google and confirm-then-signed-in, and makes it the collection's default), optionally gives it
+     * its own logins (ONE WAY — members of this site only; needed for invite-only) and saves a first
+     * settings patch. Errors: `INVALID_CONFIG` (400, `problems`), `OWN_LOGINS_REQUIRED` (409),
+     * `MEMBER_POOL_CONFLICT` (409), `SECRET_IN_SETTINGS` (400).
+     */
+    async function setup(collectionId, body = {}) {
+        return post(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/setup`, body);
+    }
+    authKit.setup = setup;
+    /** What sign-in does now: the stored config, every default filled in, which secrets are set (masked), and checks. */
+    async function settings(collectionId, authKitId) {
+        return request(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/settings`);
+    }
+    authKit.settings = settings;
+    /**
+     * A one-time SmartLinks page where the PERSON types a secret (e.g. `linkedInClientSecret`) — so it never
+     * passes through a chat or your code. Give them the `url`; it works once, for 30 minutes. Asking again
+     * replaces the link. Check it landed with {@link settings} (`secrets.<name>.set`).
+     */
+    async function secretEntryLink(collectionId, authKitId, name, opts = {}) {
+        return post(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/secrets/${encodeURIComponent(name)}/link`, opts);
+    }
+    authKit.secretEntryLink = secretEntryLink;
+    /** Store a secret you already hold (server-side code only — never ask a person to paste one to you). Returns the masked hint. */
+    async function setSecret(collectionId, authKitId, name, value) {
+        return put(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/secrets/${encodeURIComponent(name)}`, { value });
+    }
+    authKit.setSecret = setSecret;
+    /** Remove a secret (that provider then uses SmartLinks' own app). */
+    async function removeSecret(collectionId, authKitId, name) {
+        return del(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/secrets/${encodeURIComponent(name)}`);
+    }
+    authKit.removeSecret = removeSecret;
+    /**
+     * An account email as it would be sent now — or with draft settings (`emailTemplates`, `emailBranding`,
+     * `branding`; checked like a save, nothing stored). Sample values stand in for the person and the link.
+     */
+    async function previewEmail(collectionId, authKitId, kind, draft = {}) {
+        return post(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/emails/${encodeURIComponent(kind)}/preview`, draft);
+    }
+    authKit.previewEmail = previewEmail;
     async function remove(collectionId, authKitId) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}`;
         return del(path);

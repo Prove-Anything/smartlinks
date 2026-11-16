@@ -3,6 +3,7 @@
 // messages that use them:
 //   host → app   { type: 'smartlinks:navigate', view?, path?, params?, highlight? }   open a screen, no reload
 //   app → host   'smartlinks:navigable'  (the app follows navigate)   'smartlinks:navigate-result'
+//   app → host   'smartlinks:open-app'   { appId, view?, params?, path? }   open ANOTHER app at a screen
 // plus `chrome=none`: the host carries the app's menu itself, so the app hides its own.
 // One list drives the app's own side menu, Studio's workspace menu and the assistant. See
 // docs/admin-views.md.
@@ -239,6 +240,21 @@ export function onNavigate(views, handler) {
         }
         catch ( /* ignore */_a) { /* ignore */ }
     };
+}
+/**
+ * Ask the host (Studio) to open ANOTHER app at one of its screens: a contact in the CRM, a booking in
+ * the booking app, a person's messages in Messages. The host reads that app's manifest `adminViews`,
+ * turns the view into its address and opens it, so it works whichever SDK the other app is on. Posts
+ * `{ type: 'smartlinks:open-app', payload: { appId, view?, params?, path? } }` to the parent. No-op
+ * outside a frame.
+ *
+ * @example
+ *   SL.adminViews.openApp({ appId: 'crm', view: 'contact', params: { contactId } })
+ */
+export function openApp(req) {
+    if (!req || typeof req.appId !== 'string' || !req.appId)
+        return;
+    postParent('smartlinks:open-app', Object.assign(Object.assign(Object.assign({ appId: req.appId }, (req.view ? { view: req.view } : {})), (req.params ? { params: req.params } : {})), (req.path ? { path: req.path } : {})));
 }
 // -----------------------------------------------------------------------------
 // Host side

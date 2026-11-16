@@ -1,4 +1,4 @@
-import type { AuthLoginResponse, AppleLoginOptions, MicrosoftLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, AuthKitConfigInput, AuthKitSetIdentityResponse, AuthKitInviteRequest, AuthKitInviteResponse, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse, MfaChallengeSendResponse, MfaFinalizeResponse, MfaEnrollSendResponse, MfaTotpEnrollResponse, MfaEnrolledResponse, MfaFactor, MfaFactorsResponse, TrustedDevice } from "../types/authKit.js";
+import type { AuthLoginResponse, AppleLoginOptions, MicrosoftLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, AuthKitConfigInput, AuthKitSetIdentityResponse, AuthKitInviteRequest, AuthKitInviteResponse, AuthKitSchema, AuthKitSettingsResponse, AuthKitSetupRequest, AuthKitSetupResponse, AuthKitEmailKind, AuthKitEmailPreview, AuthKitSecretLink, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse, MfaChallengeSendResponse, MfaFinalizeResponse, MfaEnrollSendResponse, MfaTotpEnrollResponse, MfaEnrolledResponse, MfaFactor, MfaFactorsResponse, TrustedDevice } from "../types/authKit.js";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
@@ -321,5 +321,41 @@ export declare namespace authKit {
      * this site's addresses), `TOO_MANY_INVITES` (429, 5 an hour per address).
      */
     function invite(collectionId: string, authKitId: string, body: AuthKitInviteRequest): Promise<AuthKitInviteResponse>;
+    /** Every sign-in setting: its path, default, what reads it (`screens` / `server` / `both`), in plain words. */
+    function schema(collectionId: string): Promise<AuthKitSchema>;
+    /**
+     * Set up the collection's sign-in in one call, safe to repeat: finds its sign-in (or makes one, with
+     * email + Google and confirm-then-signed-in, and makes it the collection's default), optionally gives it
+     * its own logins (ONE WAY — members of this site only; needed for invite-only) and saves a first
+     * settings patch. Errors: `INVALID_CONFIG` (400, `problems`), `OWN_LOGINS_REQUIRED` (409),
+     * `MEMBER_POOL_CONFLICT` (409), `SECRET_IN_SETTINGS` (400).
+     */
+    function setup(collectionId: string, body?: AuthKitSetupRequest): Promise<AuthKitSetupResponse>;
+    /** What sign-in does now: the stored config, every default filled in, which secrets are set (masked), and checks. */
+    function settings(collectionId: string, authKitId: string): Promise<AuthKitSettingsResponse>;
+    /**
+     * A one-time SmartLinks page where the PERSON types a secret (e.g. `linkedInClientSecret`) — so it never
+     * passes through a chat or your code. Give them the `url`; it works once, for 30 minutes. Asking again
+     * replaces the link. Check it landed with {@link settings} (`secrets.<name>.set`).
+     */
+    function secretEntryLink(collectionId: string, authKitId: string, name: string, opts?: {
+        label?: string;
+    }): Promise<AuthKitSecretLink>;
+    /** Store a secret you already hold (server-side code only — never ask a person to paste one to you). Returns the masked hint. */
+    function setSecret(collectionId: string, authKitId: string, name: string, value: string): Promise<{
+        name: string;
+        hint: string;
+        setAt: string;
+    }>;
+    /** Remove a secret (that provider then uses SmartLinks' own app). */
+    function removeSecret(collectionId: string, authKitId: string, name: string): Promise<{
+        name: string;
+        removed: true;
+    }>;
+    /**
+     * An account email as it would be sent now — or with draft settings (`emailTemplates`, `emailBranding`,
+     * `branding`; checked like a save, nothing stored). Sample values stand in for the person and the link.
+     */
+    function previewEmail(collectionId: string, authKitId: string, kind: AuthKitEmailKind, draft?: Pick<AuthKitConfigInput, 'emailTemplates' | 'emailBranding' | 'branding'>): Promise<AuthKitEmailPreview>;
     function remove(collectionId: string, authKitId: string): Promise<void>;
 }

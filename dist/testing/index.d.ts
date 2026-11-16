@@ -19,6 +19,15 @@ export interface TestSlImpl {
         listTypes?(): any;
         adjust?(id: string, by: Record<string, number>, opts?: any): any;
         aggregate?(params?: any): any;
+        all?(recordType: string): any;
+    };
+    /** ctx.sl.userGroups.members(keys) — defaults to the `people` option. */
+    userGroups?: {
+        members?(keys?: string[]): any;
+    };
+    /** ctx.sl.appOptions.get(source, opts) — defaults to the in-memory one (records by convention, `valueLists`). */
+    appOptions?: {
+        get?(source: string, opts?: any): any;
     };
     /** ctx.sl.transaction(ops, { idempotencyKey }) — defaults to the in-memory one (all or none, replay by key). */
     transaction?(ops: any[], opts?: any): any;
@@ -111,6 +120,19 @@ export interface CreateFunctionTestContextOptions {
     knownInteractionTypes?: string[];
     /** Share one in-memory store between several contexts (e.g. concurrent callers in one test). */
     memory?: FunctionTestMemory;
+    /** People `ctx.sl.userGroups.members` answers from: who is in which user group (by key). */
+    people?: Array<{
+        userId: string;
+        name?: string | null;
+        email?: string | null;
+        userGroups: string[];
+    }>;
+    /** Value lists `ctx.sl.appOptions.get('list:<id>')` answers from, by list id (as the admin saved them). */
+    valueLists?: Record<string, Array<{
+        code: string;
+        label?: string;
+        active?: boolean;
+    }>>;
 }
 /** The harness's in-memory platform state (when no impl is injected). */
 export interface FunctionTestMemory {

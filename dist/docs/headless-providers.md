@@ -60,7 +60,7 @@ Site builders (the Forge agent included) read these declarations to decide "inst
 
 Products, contacts and proofs are platform data. Reference them with `ref` fields (`"to": "product"`); never redeclare them.
 
-**Field types:** `string`, `text`, `richtext` (HTML), `markdown`, `number`, `boolean`, `date` (YYYY-MM-DD), `datetime`, `enum` (+ `options`), `url`, `image` and `file` (a URL or `{ url, ... }`), `ref` and `ref[]` (+ `to`: a declared type id, or `product` / `contact` / `proof`), `string[]`, `json` (avoid where a typed field fits).
+**Field types:** `string`, `text`, `richtext` (HTML), `markdown`, `number`, `boolean`, `date` (YYYY-MM-DD), `datetime`, `enum` (+ `options` fixed by the app, or `list`: a value list the admin edits, see admin-lists-and-pickers.md), `url`, `image` and `file` (a URL or `{ url, ... }`), `ref` and `ref[]` (+ `to`: a declared type id, or `product` / `contact` / `proof`), `string[]`, `json` (avoid where a typed field fits).
 
 **Zones and what's public.** App records, cases and threads have three JSONB zones: `data`, `owner` and `admin`. Only `data` can be public, and only when the item's visibility is `public`. Mark each field a visitor may read with `"public": true`. Internal fields (notes, moderation flags) are `zone: "admin"` and never public.
 

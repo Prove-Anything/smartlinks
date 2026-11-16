@@ -87,6 +87,9 @@ function mismatch(field, value) {
         case 'datetime':
             return typeof value === 'string' && !Number.isNaN(Date.parse(value)) ? null : 'expected an ISO date-time';
         case 'enum':
+            // A value list's values are the admin's, so an example can only be checked for being a code.
+            if (field.list && !field.options)
+                return typeof value === 'string' && value ? null : 'expected a value code (a string)';
             return (field.options || []).includes(value) ? null : `expected one of ${(field.options || []).join(', ')}`;
         case 'image':
         case 'file':
@@ -180,8 +183,16 @@ export function validate(manifest, opts = {}) {
                     err(fat, `unknown type "${f && f.type}" (one of ${[...FIELD_TYPES].join(', ')})`);
                     continue;
                 }
-                if (f.type === 'enum' && !(f.options && f.options.length))
-                    err(fat, 'an enum needs options');
+                if (f.type === 'enum') {
+                    if (f.list && f.options)
+                        err(fat, 'an enum has options (fixed) or a list (edited by the admin), not both');
+                    else if (f.list) {
+                        if (!(data.lists && data.lists[f.list]))
+                            err(fat, `"${f.list}" isn't a list in data.lists`);
+                    }
+                    else if (!(f.options && f.options.length))
+                        err(fat, 'an enum needs options, or a list the admin edits');
+                }
                 if ((f.type === 'ref' || f.type === 'ref[]') && !(f.to && (typeIds.has(f.to) || PLATFORM_REFS.has(f.to)))) {
                     err(fat, `"to" must name a declared type or product/contact/proof`);
                 }
@@ -190,6 +201,15 @@ export function validate(manifest, opts = {}) {
                 if (f.public && f.zone && f.zone !== 'data')
                     err(fat, `a ${f.zone}-zone field can't be public — only the data zone is readable publicly`);
             }
+            for (const k of ['label', 'sublabel', 'activeField', 'orderField']) {
+                const name = type[k];
+                if (name !== undefined && !(typeof name === 'string' && name in fields))
+                    err(`${at}.${k}`, `"${name}" isn't a field`);
+            }
+            if (type.activeField && fields[type.activeField] && fields[type.activeField].type !== 'boolean')
+                err(`${at}.activeField`, 'must name a boolean field');
+            if (type.orderField && fields[type.orderField] && fields[type.orderField].type !== 'number')
+                err(`${at}.orderField`, 'must name a number field');
             for (const k of (type.listing && type.listing.sort) || [])
                 if (!(k.replace(/^-/, '') in fields))
                     err(`${at}.listing.sort`, `"${k}" isn't a field`);
@@ -204,6 +224,22 @@ export function validate(manifest, opts = {}) {
             const std = standardRecipe(type);
             const get = (type.read && type.read.get) || std.get;
             recipes[typeId] = Object.assign(Object.assign({ list: (type.read && type.read.list) || std.list }, (get ? { get } : {})), responseShape(type));
+        }
+        for (const [listId, list] of Object.entries(data.lists || {})) {
+            const at = `data.lists.${listId}`;
+            if (!/^[a-z][a-z0-9-]{0,63}$/.test(listId))
+                err(at, 'list ids are lowercase letters, digits and dashes (e.g. "hold-reasons")');
+            if (!list || !list.label)
+                err(`${at}.label`, 'say what the list is, e.g. "Hold reasons"');
+            const codes = new Set();
+            for (const [i, v] of ((list && list.values) || []).entries()) {
+                if (!v || typeof v.code !== 'string' || !/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(v.code))
+                    err(`${at}.values[${i}]`, 'each value needs a code: letters, digits, dots, dashes');
+                else if (codes.has(v.code))
+                    err(`${at}.values[${i}]`, `"${v.code}" is in the list twice`);
+                else
+                    codes.add(v.code);
+            }
         }
     }
     // ---- headless

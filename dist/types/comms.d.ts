@@ -324,8 +324,13 @@ export interface SubscriptionsResolveResponse {
 export interface TransactionalSendRequest {
     /** CRM contact UUID */
     contactId: string;
-    /** Firestore template ID */
-    templateId: string;
+    /** A saved template's id. Give this or `message`. */
+    templateId?: string;
+    /**
+     * A typed message instead of a template: plain text, Liquid allowed (`{{ contact.firstName }}`).
+     * `sms` is the shorter text for SMS and WhatsApp (defaults to `body`).
+     */
+    message?: TypedMessage;
     /**
      * Channel to send on. Defaults to 'preferred', which auto-selects the
      * contact's best available channel respecting consent, suppression, and
@@ -355,6 +360,17 @@ export interface TransactionalSendRequest {
     ref?: string;
     /** App context stored on the comms-events row */
     appId?: string;
+    /**
+     * What the message is about: the record it was sent for and the admin screen that shows it, so it is a
+     * link in Messages, on the contact's Activity, and on the conversation a reply opens. `appId` defaults
+     * to the sending app.
+     */
+    about?: MessageAbout;
+    /**
+     * `'service'` (a confirmation, a reminder, an update): an asked-for channel the person turned off, or a
+     * suppressed email, is refused (`transactional.opted_out`). Marketing goes out as a campaign.
+     */
+    category?: 'service';
     /**
      * Files to attach (email only; at most 5, 10 MB in all). What can't be made is left out and listed in
      * `attachmentsLeftOut` — the email still goes.
@@ -391,6 +407,27 @@ export interface TransactionalSendResponse {
     /** Attachments that couldn't be made, and why (the email went without them) */
     attachmentsLeftOut?: string[];
 }
+/** A message written there and then rather than a saved template. */
+export interface TypedMessage {
+    subject?: string;
+    body: string;
+    /** The shorter text for SMS and WhatsApp (defaults to `body`). */
+    sms?: string;
+}
+/**
+ * What a message is about (docs/comms.md, "What a message is about"). Ids only, never content.
+ * `view` and `params` name one of the app's admin views (manifest `adminViews`, docs/admin-views.md).
+ */
+export interface MessageAbout {
+    appId?: string;
+    /** What kind of record: `'booking'`, `'entry'`, `'case'`. */
+    type: string;
+    id: string;
+    view?: string;
+    params?: Record<string, string>;
+    /** A short label to show without looking the record up: `'Sat 3pm, table for 4'`. */
+    label?: string;
+}
 export interface TransactionalSendError {
     ok: false;
     /**
@@ -403,6 +440,8 @@ export interface TransactionalSendError {
      * - `transactional.whatsapp_missing`
      * - `transactional.no_push_methods`
      * - `transactional.no_wallet_methods`
+     * - `transactional.opted_out` (category `'service'`: the person turned that channel off, or the email is suppressed)
+     * - `transactional.template_or_message` / `transactional.message_invalid` / `transactional.about_invalid`
      */
     error: string;
 }

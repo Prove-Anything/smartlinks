@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.18  |  Generated: 2026-11-14T16:27:43.575Z
+Version: 2.1.20  |  Generated: 2026-11-16T21:00:34.061Z
 
 This is a concise summary of all available API functions and types.
 
@@ -137,6 +137,7 @@ The Smartlinks SDK is organized into the following namespaces:
 
 — Other —
 - **adminCards** - Functions for adminCards operations
+- **aiGuide** - Functions for aiGuide operations
 - **analytics** - Functions for analytics operations
 - **async** - Functions for async operations
 - **attestation** - Functions for attestation operations
@@ -2867,6 +2868,22 @@ interface AppHistoryQuery {
 }
 ```
 
+**ServerFunctionMessage** (interface)
+```typescript
+interface ServerFunctionMessage {
+  contactId?: string;
+  to?: 'caller';
+  templateId?: string;
+  message?: TypedMessage;
+  channel?: 'preferred' | 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet';
+  props?: Record<string, unknown>;
+  include?: Record<string, unknown>;
+  about?: MessageAbout;
+  ref?: string;
+  attach?: EmailAttachmentSpec[];
+}
+```
+
 **ServerFunctionSl** (interface)
 ```typescript
 interface ServerFunctionSl {
@@ -2880,7 +2897,14 @@ interface ServerFunctionSl {
   claim(fields: Record<string, any>): Promise<AppRecordClaimResult>;
   adjust(recordId: string, by: Record<string, number>, opts?: { atLeast?: Record<string, number>; atMost?: Record<string, number> }): Promise<any>;
   aggregate(params?: import('./appObjects').AggregateRequest): Promise<import('./appObjects').AggregateResponse & Record<string, unknown>>;
+  all(recordType: string): Promise<any[]>;
   [method: string]: any;
+  };
+  appOptions: {
+  get(source: string, opts?: { q?: string; version?: string }): Promise<import('./appOptions').AppOptionsResponse>;
+  };
+  userGroups: {
+  members(keys?: string[]): Promise<Array<{ userId: string; name: string | null; email: string | null; userGroups: string[] }>>;
   };
   transaction(ops: RecordTransactionOp[], opts?: { idempotencyKey?: string }): Promise<{ results: any[]; replayed: boolean }>;
   history: {
@@ -2894,11 +2918,74 @@ interface ServerFunctionSl {
   forCaller(): Promise<CallerContact | null>;
   };
   interactions: { record(event: ServerFunctionInteractionEvent): Promise<{ eventId: string }> };
+  messages: { send(input: ServerFunctionMessage): Promise<ServerFunctionMessageResult> };
   tools: { run<T = any>(name: string, args?: Record<string, any>): Promise<T> };
+  assets: ServerFunctionAssets;
+  ai: ServerFunctionAi;
   products: any;
   attestations: any;
   appData: AppDataHandle & { global: AppDataHandle; collection: AppDataHandle };
   app(appId: string): { data: Pick<AppDataHandle, 'get' | 'getData'> };
+}
+```
+
+**ServerFunctionAsset** (interface)
+```typescript
+interface ServerFunctionAsset {
+  id: string;
+  appId: string | null;
+  productId: string | null;
+  proofId: string | null;
+  name: string;
+  assetType: string;
+  mimeType: string | null;
+  size: number | null;
+  width: number | null;
+  height: number | null;
+  hash: string | null;
+  url: string;
+  assetUrl: string | null;
+  thumbnail: string | null;
+  labels: string[];
+  metadata: Record<string, any>;
+  versions: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+}
+```
+
+**ServerFunctionAssets** (interface)
+```typescript
+interface ServerFunctionAssets {
+  get(assetId: string): Promise<ServerFunctionAsset | null>;
+  list(params?: { productId?: string | null; proofId?: string | null; appId?: string | null; labels?: string | string[]; assetType?: string; limit?: number; offset?: number }): Promise<ServerFunctionAsset[]>;
+  read(assetId: string, opts?: { as?: 'base64' }): Promise<{ id: string; name: string; contentType: string; size: number; base64: string }>;
+  read(assetId: string, opts: { as: 'text' }): Promise<{ id: string; name: string; contentType: string; size: number; text: string }>;
+  create(input: ServerFunctionFileInput & { name: string; productId?: string; proofId?: string; labels?: string[]; metadata?: Record<string, any> }): Promise<ServerFunctionAsset>;
+  replace(assetId: string, input: ServerFunctionFileInput & { name?: string }): Promise<ServerFunctionAsset>;
+  update(assetId: string, patch: { name?: string; labels?: string[]; metadata?: Record<string, any> }): Promise<ServerFunctionAsset>;
+  remove(assetId: string): Promise<{ id: string; deleted: true }>;
+  startUpload(input: { name: string; contentType: string; productId?: string; proofId?: string; replaceAssetId?: string }): Promise<{ uploadId: string; sessionUrl: string; expiresAt: string }>;
+  finishUpload(uploadId: string, input?: { name?: string; metadata?: Record<string, any> }): Promise<ServerFunctionAsset>;
+}
+```
+
+**ServerFunctionAiRequest** (interface)
+```typescript
+interface ServerFunctionAiRequest {
+  prompt?: string;
+  system?: string;
+  files?: Array<{ assetId: string } | { base64: string; contentType: string } | { text: string; name?: string }>;
+  schema?: Record<string, any>;
+  quality?: 'fast' | 'best';
+}
+```
+
+**ServerFunctionAi** (interface)
+```typescript
+interface ServerFunctionAi {
+  generate<T = any>(request: ServerFunctionAiRequest): Promise<{ text: string; data?: T; model: string; usage: { inputTokens: number; outputTokens: number } }>;
 }
 ```
 
@@ -3359,6 +3446,13 @@ interface GetCollectionWidgetsOptions {
 **AppFunctionAuthority** = `'caller' | 'collection'`
 
 **RecordTransactionOp** = ``
+
+**ServerFunctionMessageResult** = ``
+
+**ServerFunctionFileInput** (type)
+```typescript
+type ServerFunctionFileInput = { base64: string; contentType: string }
+```
 
 ### appObjects
 
@@ -3920,6 +4014,30 @@ interface PublicCreateBranch {
 **BulkDeleteInput** = ``
 
 **MatchedAt** = ``
+
+### appOptions
+
+**AppOption** (interface)
+```typescript
+interface AppOption {
+  id: string;
+  label: string;
+  sublabel?: string;
+  active: boolean;
+  order: number | null;
+}
+```
+
+**AppOptionValueInput** (interface)
+```typescript
+interface AppOptionValueInput {
+  code: string;
+  label?: string;
+  active?: boolean;
+}
+```
+
+**AppOptionsResponse** = ``
 
 ### asset
 
@@ -5026,14 +5144,45 @@ interface UpsertContactResponse {
 **AuthKitBrandingConfig** (interface)
 ```typescript
 interface AuthKitBrandingConfig {
-  logoUrl?: string
+  logoUrl?: string | null
   title?: string
   subtitle?: string
+  registerTitle?: string
+  registerSubtitle?: string
   primaryColor?: string
   secondaryColor?: string
   backgroundColor?: string
-  buttonStyle?: string
+  buttonStyle?: 'rounded' | 'square' | 'pill' | string
   fontFamily?: string
+  theme?: 'light' | 'dark' | 'auto'
+  inheritHostStyles?: boolean
+  minimal?: boolean
+  customCss?: string
+  termsUrl?: string
+  privacyUrl?: string
+  [key: string]: unknown
+}
+```
+
+**AuthKitEmailTemplate** (interface)
+```typescript
+interface AuthKitEmailTemplate {
+  subject?: string
+  header?: string
+  introText?: string
+  buttonText?: string
+  footerText?: string
+}
+```
+
+**AuthKitMfaConfig** (interface)
+```typescript
+interface AuthKitMfaConfig {
+  mode?: 'off' | 'optional' | 'risk-based' | 'always'
+  factorsEnabled?: { email?: boolean; sms?: boolean; totp?: boolean; recoveryCodes?: boolean }
+  minimumFactors?: number
+  trustedDeviceDurationDays?: number
+  enforceForAdmins?: boolean
 }
 ```
 
@@ -5041,8 +5190,33 @@ interface AuthKitBrandingConfig {
 ```typescript
 interface AuthKitConfig {
   id: string
+  name?: string
   branding?: AuthKitBrandingConfig
-  enabledProviders?: string[]
+  enabledProviders?: AuthKitProvider[]
+  providerOrder?: AuthKitProvider[]
+  emailDisplayMode?: 'form' | 'button'
+  signupProminence?: 'none' | 'minimal' | 'balanced' | 'emphasized'
+  signupRedirectUrl?: string
+  googleClientId?: string
+  googleOAuthFlow?: 'oneTap' | 'popup' | 'redirect'
+  whitelistedGoogleDomains?: string[]
+  appleClientIds?: string[]
+  linkedInClientId?: string
+  whatsappPrefillMessage?: string
+  whatsappReply?: { enabled?: boolean; text?: string; cta?: { body?: string; buttonLabel?: string; buttonUrl?: string; mediaUrl?: string } }
+  registrationFields?: Array<{ key: string; showDuringRegistration?: boolean; placement?: 'inline' | 'after'; required?: boolean }>
+  collectNameOnPasswordlessSignup?: boolean
+  emailVerificationMode?: 'immediate' | 'verify-auto-login' | 'verify-manual-login'
+  emailVerificationGracePeriod?: number
+  lockUnverifiedAfterGrace?: boolean
+  allowPasswordReset?: boolean
+  mfa?: AuthKitMfaConfig
+  afterSignInUrl?: string
+  allowedRedirectDomains?: string[]
+  texts?: Partial<Record<AuthKitTextKey, string>>
+  emailTemplates?: Partial<Record<AuthKitEmailKind, AuthKitEmailTemplate>>
+  emailBranding?: { logoUrl?: string; buttonColor?: string; footerHtml?: string }
+  secrets?: Record<string, { ref: string; hint?: string | null; collectionId?: string; setAt?: string }>
   customCss?: string
   termsUrl?: string
   privacyUrl?: string
@@ -5095,6 +5269,77 @@ interface AuthKitIdentity {
 interface AuthKitSetIdentityResponse {
   identity: AuthKitIdentity
   message: string
+}
+```
+
+**AuthKitSchema** (interface)
+```typescript
+interface AuthKitSchema {
+  providers: AuthKitProvider[]
+  emailKinds: AuthKitEmailKind[]
+  emailFields: Array<keyof AuthKitEmailTemplate>
+  textKeys: AuthKitTextKey[]
+  secrets: string[]
+  serverOwned: string[]
+  fields: Array<{ path: string; group: string; where: 'screens' | 'server' | 'both' | 'host'; default: unknown; description: string }>
+}
+```
+
+**AuthKitCheck** (interface)
+```typescript
+interface AuthKitCheck {
+  level: 'problem' | 'warning' | 'info'
+  code: string
+  message: string
+  setting?: string
+}
+```
+
+**AuthKitSettingsResponse** (interface)
+```typescript
+interface AuthKitSettingsResponse {
+  authKitId: string
+  ownLogins: 'own' | 'shared'
+  config: AuthKitConfig
+  effective: Required<Pick<AuthKitConfig, 'enabledProviders' | 'providerOrder' | 'signUp' | 'allowPasswordReset' | 'emailVerificationMode'>> & AuthKitConfig
+  secrets: Record<string, { set: boolean; hint?: string | null; setAt?: string | null; legacy?: boolean }>
+  checks: AuthKitCheck[]
+}
+```
+
+**AuthKitSetupRequest** (interface)
+```typescript
+interface AuthKitSetupRequest {
+  name?: string
+  ownLogins?: boolean
+  settings?: AuthKitConfigInput
+}
+```
+
+**AuthKitSetupResponse** (interface)
+```typescript
+interface AuthKitSetupResponse {
+  authKit: AuthKitConfig
+  created: boolean
+  ownLogins: 'own' | 'shared'
+  changed: string[]
+}
+```
+
+**AuthKitEmailPreview** (interface)
+```typescript
+interface AuthKitEmailPreview {
+  kind: AuthKitEmailKind
+  subject: string
+  html: string
+}
+```
+
+**AuthKitSecretLink** (interface)
+```typescript
+interface AuthKitSecretLink {
+  url: string
+  expiresAt: string
 }
 ```
 
@@ -5151,6 +5396,12 @@ interface AuthKitLockoutPolicy {
 **MfaErrorCode** = ``
 
 **VerifyStatus** = `'pending' | 'verified' | 'failed' | 'expired' | 'unknown'`
+
+**AuthKitProvider** = `'email' | 'magic-link' | 'phone' | 'whatsapp' | 'google' | 'apple' | 'microsoft' | 'linkedin'`
+
+**AuthKitEmailKind** = `'passwordReset' | 'emailVerification' | 'magicLink' | 'memberInvite' | 'invite' | 'addedToCollection' | 'mfaCode' | 'providerLinked'`
+
+**AuthKitTextKey** = ``
 
 **AuthKitConfigInput** = ``
 
@@ -6600,7 +6851,8 @@ interface SubscriptionsResolveResponse {
 ```typescript
 interface TransactionalSendRequest {
   contactId: string
-  templateId: string
+  templateId?: string
+  message?: TypedMessage
   channel?: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet' | 'preferred'
   props?: Record<string, unknown>
   include?: {
@@ -6614,6 +6866,8 @@ interface TransactionalSendRequest {
   }
   ref?: string
   appId?: string
+  about?: MessageAbout
+  category?: 'service'
   attach?: EmailAttachmentSpec[]
 }
 ```
@@ -6625,6 +6879,27 @@ interface TransactionalSendResponse {
   channel: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet'
   messageId?: string
   attachmentsLeftOut?: string[]
+}
+```
+
+**TypedMessage** (interface)
+```typescript
+interface TypedMessage {
+  subject?: string
+  body: string
+  sms?: string
+}
+```
+
+**MessageAbout** (interface)
+```typescript
+interface MessageAbout {
+  appId?: string
+  type: string
+  id: string
+  view?: string
+  params?: Record<string, string>
+  label?: string
 }
 ```
 
@@ -6940,8 +7215,13 @@ export interface SubscriptionsResolveResponse {
 export interface TransactionalSendRequest {
   /** CRM contact UUID */
   contactId: string
-  /** Firestore template ID */
-  templateId: string
+  /** A saved template's id. Give this or `message`. */
+  templateId?: string
+  /**
+   * A typed message instead of a template: plain text, Liquid allowed (`{{ contact.firstName }}`).
+   * `sms` is the shorter text for SMS and WhatsApp (defaults to `body`).
+   */
+  message?: TypedMessage
   /**
    * Channel to send on. Defaults to 'preferred', which auto-selects the
    * contact's best available channel respecting consent, suppression, and
@@ -6971,6 +7251,17 @@ export interface TransactionalSendRequest {
   ref?: string
   /** App context stored on the comms-events row */
   appId?: string
+  /**
+   * What the message is about: the record it was sent for and the admin screen that shows it, so it is a
+   * link in Messages, on the contact's Activity, and on the conversation a reply opens. `appId` defaults
+   * to the sending app.
+   */
+  about?: MessageAbout
+  /**
+   * `'service'` (a confirmation, a reminder, an update): an asked-for channel the person turned off, or a
+   * suppressed email, is refused (`transactional.opted_out`). Marketing goes out as a campaign.
+   */
+  category?: 'service'
   /**
    * Files to attach (email only; at most 5, 10 MB in all). What can't be made is left out and listed in
    * `attachmentsLeftOut` — the email still goes.
@@ -7003,6 +7294,29 @@ export interface TransactionalSendResponse {
   attachmentsLeftOut?: string[]
 }
 
+/** A message written there and then rather than a saved template. */
+export interface TypedMessage {
+  subject?: string
+  body: string
+  /** The shorter text for SMS and WhatsApp (defaults to `body`). */
+  sms?: string
+}
+
+/**
+ * What a message is about (docs/comms.md, "What a message is about"). Ids only, never content.
+ * `view` and `params` name one of the app's admin views (manifest `adminViews`, docs/admin-views.md).
+ */
+export interface MessageAbout {
+  appId?: string
+  /** What kind of record: `'booking'`, `'entry'`, `'case'`. */
+  type: string
+  id: string
+  view?: string
+  params?: Record<string, string>
+  /** A short label to show without looking the record up: `'Sat 3pm, table for 4'`. */
+  label?: string
+}
+
 export interface TransactionalSendError {
   ok: false
   /**
@@ -7015,6 +7329,8 @@ export interface TransactionalSendError {
    * - `transactional.whatsapp_missing`
    * - `transactional.no_push_methods`
    * - `transactional.no_wallet_methods`
+   * - `transactional.opted_out` (category `'service'`: the person turned that channel off, or the email is suppressed)
+   * - `transactional.template_or_message` / `transactional.message_invalid` / `transactional.about_invalid`
    */
   error: string
 }
@@ -7829,6 +8145,27 @@ interface AppDataField {
   public?: boolean;
   to?: string;
   options?: string[];
+  list?: string;
+}
+```
+
+**AppValueListValue** (interface)
+```typescript
+interface AppValueListValue {
+  code: string;
+  label?: string;
+  active?: boolean;
+}
+```
+
+**AppValueList** (interface)
+```typescript
+interface AppValueList {
+  label: string;
+  description?: string;
+  values: AppValueListValue[];
+  editable?: boolean;
+  public?: boolean;
 }
 ```
 
@@ -7844,6 +8181,14 @@ interface AppDataType {
   examples?: Array<Record<string, unknown>>;
   read?: { list?: string; get?: string; notes?: string };
   since?: string;
+  title?: string;
+  label?: string;
+  sublabel?: string;
+  activeField?: string;
+  orderField?: string;
+  small?: boolean;
+  setup?: boolean;
+  checked?: boolean;
 }
 ```
 
@@ -7852,6 +8197,7 @@ interface AppDataType {
 interface AppDataDeclaration {
   schemaVersion: string;
   types: Record<string, AppDataType>;
+  lists?: Record<string, AppValueList>;
 }
 ```
 
@@ -7945,7 +8291,8 @@ interface SmartlinksIframeMessage {
   | 'smartlinks:authkit:logout'
   | 'smartlinks:authkit:redirect'
   | 'smartlinks:navigable'
-  | 'smartlinks:navigate-result';
+  | 'smartlinks:navigate-result'
+  | 'smartlinks:open-app';
   payload: Record<string, any>;
   messageId?: string;
 }
@@ -11737,6 +12084,82 @@ interface EmbeddedWidgetProps {
 
 **EmbeddedWidgetComponent** = `(props: EmbeddedWidgetProps) => any`
 
+### aiGuide (api)
+
+**GuideInfo** (interface)
+```typescript
+interface GuideInfo {
+  enabled: boolean
+  name?: string
+  modes?: { voice: boolean; text: boolean; start: 'voice' | 'text' }
+  suggestions?: string[]
+  handoff?: { kind: 'email' | 'phone' | 'url'; value: string } | null
+}
+```
+
+**ScreenContent** (interface)
+```typescript
+interface ScreenContent {
+  appId?: string | null
+  title?: string | null
+  content?: string | null
+}
+```
+
+**GuideWhere** (interface)
+```typescript
+interface GuideWhere {
+  appId?: string | null
+  path?: string | null
+  params?: Record<string, string>
+}
+```
+
+**GuideNavigate** (interface)
+```typescript
+interface GuideNavigate {
+  appId: string
+  path: string
+  params?: Record<string, string>
+}
+```
+
+**GuideCard** (interface)
+```typescript
+interface GuideCard {
+  title: string
+  rows: Array<{ title: string; detail?: string | null; goTo?: string }>
+  more?: number
+}
+```
+
+**GuideStartOptions** (interface)
+```typescript
+interface GuideStartOptions {
+  surface: GuideSurface
+  mode?: 'voice' | 'text'
+  productId?: string | null
+  proofId?: string | null
+  apps?: Array<{ id: string; title: string; kind?: 'core' | 'app'; channel?: string }>
+  where?: GuideWhere
+  language?: string
+  screen?: ScreenContent
+  readScreen?: () => Promise<ScreenContent | null> | ScreenContent | null
+  showApp?: (appId: string) => Promise<void> | void
+  openPage?: (to: GuideNavigate) => Promise<void> | void
+  goTo?: (productId: string) => Promise<void> | void
+  onShow?: (card: GuideCard) => void
+  offerPerson?: (handoff: GuideInfo['handoff']) => Promise<void> | void
+  onState?: (s: LiveState) => void
+  onCaption?: (text: string) => void
+  onReply?: (text: string) => void
+  onError?: (message: string) => void
+  onMuted?: (muted: boolean) => void
+}
+```
+
+**GuideSurface** = `'portal' | 'hub'`
+
 ### appConfiguration (api)
 
 **AppConfigOptions** (type)
@@ -12222,6 +12645,20 @@ Append an entry to case history (admin only) POST /cases/:caseId/history
     appId: string,
     caseId: string) → `Promise<RelatedResponse>`
 Get related threads and records for a case (admin only) GET /cases/:caseId/related
+
+### app.options
+
+**get**(collectionId: string,
+    appId: string,
+    source: string,
+    opts: { q?: string; version?: string; admin?: boolean } = {},) → `Promise<import('../types/appOptions').AppOptionsResponse>`
+`source` = `type:<record type or declared type id>` | `list:<list id>`. Admins (`admin: true`) see every entry; the public API lists public records and lists the app declares public. Hold on to `version` and pass it back to get `{ unchanged: true }` when nothing changed.
+
+**saveList**(collectionId: string,
+    appId: string,
+    listId: string,
+    values: import('../types/appOptions') → `void`
+Save a value list's values, in order (admins). Codes never change and are never lost: a value left out stays, switched off, at the end. → the list as saved.
 
 ### app.records
 
@@ -12841,8 +13278,29 @@ Give this AuthKit its **own logins** (admin): its members become accounts of thi
 **invite**(collectionId: string, authKitId: string, body: AuthKitInviteRequest) → `Promise<AuthKitInviteResponse>`
 Invite someone to be a member of a site with its own logins (admin). Makes their account if they have none (the only way in when the site is invitation only — `signUp: 'invite'`), finds or creates their contact in this collection with the `customFields` you pass (their level), links the two, and emails them a sign-in link to the site (`redirectUrl`, default the kit's) that works once for 7 days. The page it opens handles it like any magic link: `mode=magicLink&token=…` → {@link verifyMagicLink}. Inviting someone again sends a fresh link. Errors: `OWN_LOGINS_REQUIRED` (409), `INVALID_EMAIL` (400), `INVALID_REDIRECT_URL` (400, not one of this site's addresses), `TOO_MANY_INVITES` (429, 5 an hour per address).
 
+**schema**(collectionId: string) → `Promise<AuthKitSchema>`
+Every sign-in setting: its path, default, what reads it (`screens` / `server` / `both`), in plain words.
+
+**setup**(collectionId: string, body: AuthKitSetupRequest = {}) → `Promise<AuthKitSetupResponse>`
+Set up the collection's sign-in in one call, safe to repeat: finds its sign-in (or makes one, with email + Google and confirm-then-signed-in, and makes it the collection's default), optionally gives it its own logins (ONE WAY — members of this site only; needed for invite-only) and saves a first settings patch. Errors: `INVALID_CONFIG` (400, `problems`), `OWN_LOGINS_REQUIRED` (409), `MEMBER_POOL_CONFLICT` (409), `SECRET_IN_SETTINGS` (400).
+
+**settings**(collectionId: string, authKitId: string) → `Promise<AuthKitSettingsResponse>`
+What sign-in does now: the stored config, every default filled in, which secrets are set (masked), and checks.
+
+**secretEntryLink**(collectionId: string, authKitId: string, name: string, opts: { label?: string } = {}) → `Promise<AuthKitSecretLink>`
+A one-time SmartLinks page where the PERSON types a secret (e.g. `linkedInClientSecret`) — so it never passes through a chat or your code. Give them the `url`; it works once, for 30 minutes. Asking again replaces the link. Check it landed with {@link settings} (`secrets.<name>.set`).
+
+**setSecret**(collectionId: string, authKitId: string, name: string, value: string) → `Promise<`
+Store a secret you already hold (server-side code only — never ask a person to paste one to you). Returns the masked hint.
+
+**removeSecret**(collectionId: string, authKitId: string, name: string) → `Promise<`
+Remove a secret (that provider then uses SmartLinks' own app).
+
+**previewEmail**(collectionId: string, authKitId: string, kind: AuthKitEmailKind, draft: Pick<AuthKitConfigInput, 'emailTemplates' | 'emailBranding' | 'branding'> = {}) → `Promise<AuthKitEmailPreview>`
+An account email as it would be sent now — or with draft settings (`emailTemplates`, `emailBranding`, `branding`; checked like a save, nothing stored). Sample values stand in for the person and the link.
+
 **remove**(collectionId: string, authKitId: string) → `Promise<void>`
-Invite someone to be a member of a site with its own logins (admin). Makes their account if they have none (the only way in when the site is invitation only — `signUp: 'invite'`), finds or creates their contact in this collection with the `customFields` you pass (their level), links the two, and emails them a sign-in link to the site (`redirectUrl`, default the kit's) that works once for 7 days. The page it opens handles it like any magic link: `mode=magicLink&token=…` → {@link verifyMagicLink}. Inviting someone again sends a fresh link. Errors: `OWN_LOGINS_REQUIRED` (409), `INVALID_EMAIL` (400), `INVALID_REDIRECT_URL` (400, not one of this site's addresses), `TOO_MANY_INVITES` (429, 5 an hour per address).
+An account email as it would be sent now — or with draft settings (`emailTemplates`, `emailBranding`, `branding`; checked like a save, nothing stored). Sample values stand in for the person and the link.
 
 ### batch
 
@@ -13407,6 +13865,14 @@ Get a single container (public). Soft-deleted containers return a 404.  Same `?t
     params?: Pick<ListContainerItemsParams, 'limit' | 'offset'>) → `Promise<ContainerItemsResponse>`
 List current contents of a container (public). Returns only items where `removedAt` is null.  No `?history` option on the public side.
 
+### content
+
+**provide**(handler: ContentHandler) → `() => void`
+An app says what its screen shows, in words (an exhibit's text, a recipe, a form's purpose). Called whenever an assistant needs it. Works in an iframe (the host asks by message) and in the same page (a direct component). Returns a function that stops providing.
+
+**request**(options: { frame?: Window | null; reason?: string; timeoutMs?: number } = {}) → `Promise<ScreenContent | null>`
+A host asks what the app on screen shows: an app in an iframe (pass its window as `frame`), or apps in this page that called `provide`. Resolves null if nothing answers within the time.
+
 ### crate
 
 **list**(collectionId: string,
@@ -13543,6 +14009,14 @@ Call an ADMIN app server function (surface `'admin'`; requires an admin session)
 
 **list**(collectionId: string, opts: FunctionCallOptions = {}) → `Promise<FunctionListResponse>`
 List the public functions available for a collection (discovery). Scoped to one app when an appId is given (or set as the SDK app context): `GET /public/collection/:c[/app/:appId]/functions`.
+
+### guide
+
+**get**(collectionId: string, surface?: GuideSurface) → `Promise<GuideInfo>`
+Is the guide on for this surface, and how does it present itself?
+
+**start**(collectionId: string, options: GuideStartOptions) → `Promise<LiveHandle>`
+Start a live conversation with the guide. Resolves once connected; the handle pauses, stops, sends text.
 
 ### http
 
@@ -14364,10 +14838,6 @@ Clear session history
 
 **getRateLimit**(collectionId: string, userId: string) → `Promise<RateLimitStatus>`
 Check rate limit status
-
-**getToken**(collectionId: string,
-      request: EphemeralTokenRequest) → `Promise<EphemeralTokenResponse>`
-Generate ephemeral token for Gemini Live
 
 ### publicClient.sessions
 

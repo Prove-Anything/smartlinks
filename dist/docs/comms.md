@@ -106,6 +106,48 @@ still goes. The request body is capped at 10 MB, so for big files make a private
 
 ---
 
+## Messaging one person from an app
+
+Every app sends through the platform: a booking reminder, a cancellation, an event update, "we got your
+entry". You never set up email or SMS yourself. Each message:
+- goes out on the person's preferred channel, or one you name;
+- respects their opt-outs;
+- is logged with your app;
+- shows in the Messages app and on the contact's Activity in the CRM.
+
+**From server code** (`sl:messages:write`):
+
+```js
+const out = await ctx.sl.messages.send({
+  to: 'caller',                              // or contactId
+  templateId: 'tpl_booking_cancelled',       // or message: { subject, body, sms? }
+  include: { booking: bookingId },           // hydrates {{ booking }}, as comm/send
+  about: { type: 'booking', id: bookingId, view: 'booking', params: { bookingId }, label: 'Sat 3pm' },
+})
+if (!out.ok) ctx.log('not sent', { reason: out.reason }) // 'opted_out' | 'no_channel' | 'no_contact' | 'template_not_found'
+```
+
+**From an admin screen:** `SL.comms.sendTransactional(collectionId, { contactId, message | templateId, about, category: 'service', appId })`.
+
+- **Service messages only.** A confirmation, a reminder, a cancellation or an update. Marketing goes out
+  as a campaign, with its opt-in and unsubscribe.
+- **Someone who can't be reached is an answer, not an error.** `ctx.sl.messages.send` returns
+  `{ ok: false, reason }`; only a real failure throws.
+- **A typed message** is plain text with Liquid (`{{ contact.firstName }}`), sent exactly like a template:
+  `{ subject, body, sms? }`.
+
+### What a message is about
+
+`about: { appId?, type, id, view?, params?, label? }` names the record the message was sent for, and the
+admin screen that shows it. `view` and `params` are one of your manifest `adminViews`
+([admin-views.md](admin-views.md)).
+- **Where it shows:** the Message log shows "Bookings · Sat 3pm", and it is a link to your screen. A reply
+  opens a conversation that links to the same record.
+- **Defaults:** `appId` defaults to your app.
+- **Ids only:** never put content in it.
+- **Reading it back:** the log can be filtered by it: `GET /admin/collection/:id/comm/query/events?aboutType=booking&aboutId=B-123`,
+  or `app=<appId>` for everything your app sent.
+
 ## Broadcasts
 
 Broadcasts are multi-channel campaigns defined and managed under a collection. Create a broadcast record in the platform first, then use the SDK to preview, test, and enqueue.

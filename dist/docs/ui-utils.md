@@ -60,6 +60,8 @@ Components inherit your shadcn-compatible CSS variables (`--primary`,
 | **ConditionsEditor** | `/conditions-editor` | Recursive AND/OR rule builder (12 condition types, facet-aware). |
 | **FacetRuleEditor** | `/facet-rule-editor` | Author server-side facet rules (AND-of-OR) for record targeting. |
 | **LinkPicker** | `/link-picker` | Universal navigation picker: external URL, an installed app, or a deep link inside an app. Stores a `LinkTarget` discriminated union — never a resolved URL. Ships with `resolveLink` and `useLinkTargets`. |
+| **RecordPicker / ValuePicker** | `/option-picker` | Pick one of the app's records of a declared type, or a value from a value list. Reads the cached options call; switched-off entries stay labelled. See `docs/admin-lists-and-pickers.md`. |
+| **SetupPanel** | `/setup-editor` | Generated list + form for every declared set-up type (`setup: true`) and editable value list. Use it instead of hand-building set-up tabs. |
 | **Liquid editors** | `/liquid-editor` | Author Liquid templates with a code or rich (TipTap) editor, variable autocomplete. |
 | **Hints** | (root) | `useHintsPreference`, `useIntroState`, `HintsPreferenceToggle` — global "show/hide intro hints" preference shared across admin apps. |
 

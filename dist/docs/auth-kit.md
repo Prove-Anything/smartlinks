@@ -21,21 +21,152 @@ Do **not** use Auth Kit for:
 
 ---
 
-## Setup: creating an Auth Kit client
+## Setting up sign-in (admin) — everything by API
 
-Each app requires an Auth Kit configuration, created by a collection admin:
+Every sign-in setting can be read and written through the API: nothing needs a person to click
+through screens. This is the section an assistant (Juno in Studio, the Forge build agent) follows when
+someone says "set up login".
+
+A collection's sign-in is one **AuthKit config** — one shape, validated by the server on every write
+(`INVALID_CONFIG` 400 lists every problem as `problems: [{ path, message }]`), with safe defaults for
+everything left out. `authKit.schema(collectionId)` returns every field with its default and what reads
+it (`screens` = the sign-in UI `@proveanything/smartlinks-auth-ui`, `server` = the API enforces it).
+
+### The calls
+
+| Call | What it does |
+|---|---|
+| `authKit.setup(collectionId, { name?, ownLogins?, settings? })` | Find the collection's sign-in, or make one (email + Google; confirm the email, then signed in) and make it the collection's default. `ownLogins: true` gives it its own members (**one way**, needed for invite-only). `settings` = a first patch. Safe to repeat; `changed` says what it did. |
+| `authKit.settings(collectionId, authKitId)` | What sign-in does now: `config` (stored), `effective` (defaults filled in), `secrets` (set or not, masked hint), `checks` (problems / warnings in plain words, each naming the setting to change). **Read this before and after every change.** |
+| `authKit.update(collectionId, authKitId, patch)` | Change settings. Each top-level field replaces the stored one (send the whole `branding`, `emailTemplates`, `mfa`… object you want). |
+| `authKit.previewEmail(collectionId, authKitId, kind, draft?)` | `{ subject, html }` of an account email as it will be sent — with draft `emailTemplates` / `emailBranding` / `branding` if given (nothing saved). |
+| `authKit.secretEntryLink(collectionId, authKitId, name)` | `{ url, expiresAt }`: a SmartLinks page where the **person** types a secret. Works once, 30 minutes. Never ask anyone to paste a secret into a chat. |
+| `authKit.schema(collectionId)` | The field list (paths, defaults, descriptions). |
+| `authKit.invite(collectionId, authKitId, { email, firstName?, customFields? })` | Invite a member (invite-only sites). |
+
+The collection's sign-in id: `collection.defaultAuthKitId` (`setup` returns it as `authKit.id`).
+
+### The settings
+
+**Sign-in methods** — `enabledProviders`: any of `email` (email + password), `magic-link` (an emailed
+sign-in link), `phone` (a text-message code), `whatsapp` (a WhatsApp code), `google`, `apple`,
+`microsoft`, `linkedin`. `providerOrder`: the order they show in. `emailDisplayMode`: `form` (the email
+form straight away) or `button` ("Continue with email" first).
+
+What each provider needs from the owner:
+
+| Method | Works with nothing else? | What only the owner can give |
+|---|---|---|
+| email, magic-link, phone, whatsapp | yes | — |
+| google | yes (SmartLinks' Google app) | Their own Google OAuth **web client id** (`googleClientId`, public — **no secret**: sign-in verifies Google's ID token against it) and the site domains registered on it (`whitelistedGoogleDomains`). |
+| microsoft | yes (SmartLinks' Microsoft app) | Only to show their own name on Microsoft's screen: `microsoftClientId` (redirect URI `https://smartlinks.app/apps/account/stable/microsoft-proxy.html`). No secret. |
+| apple | **no** | Their Apple **Services ID** (and app bundle ids): `appleClientIds`. No secret. |
+| linkedin | yes (SmartLinks' LinkedIn app) | Their own app: `linkedInClientId` + the client **secret** through `secretEntryLink(…, 'linkedInClientSecret')`. |
+
+**Who may join** — `signUp`: `open` (default) or `invite` (only people invited; every sign-up route
+refuses others with `SIGN_UP_CLOSED`; needs `ownLogins`). `signupProminence`: `none` (no sign-up link),
+`minimal` (default), `balanced`, `emphasized`. `access`: `{ mode: 'anyone' }` or
+`{ mode: 'organisation', domains: ['acme.com'], emails: [...] }` — who can sign in at all (allowed
+domains). `registrationFields`: extra contact fields on the sign-up form.
+`collectNameOnPasswordlessSignup` (default true).
+
+**Email confirmation** — `emailVerificationMode`: `verify-auto-login` (default: confirm, then signed
+straight in), `verify-manual-login`, `immediate`. `emailVerificationGracePeriod` (hours),
+`lockUnverifiedAfterGrace`.
+
+**Passwords** — `security.passwordPolicy` `{ minLength (8), requireUppercase, requireLowercase,
+requireNumber, requireSymbol, blockCommonPasswords (true), expiryDays (0 = never), historyCount }`;
+`security.lockout` `{ enabled, maxFailedAttempts, attemptWindowMinutes, lockoutMinutes,
+notifyUserOnLockout }`; `security.session` `{ inactivityTimeoutMinutes, absoluteTimeoutHours,
+rememberMe }`. `allowPasswordReset` (default true; `false` hides "Forgot password?" and the reset
+request answers `PASSWORD_RESET_DISABLED`).
+
+**Second step** — `mfa`: `{ mode: 'off' | 'optional' | 'risk-based' | 'always', factorsEnabled: {
+email, sms, totp, recoveryCodes } }`. `optional` lets people add an authenticator app (TOTP) without
+being asked; `always` asks everyone who has one at every sign-in.
+
+**Redirects** — `redirectUrl`: the site's sign-in page (where invitations open; the default for
+emailed links). `afterSignInUrl`: where the site sends people after they sign in (the screens hand the session to the
+page's `onAuthSuccess`; the page reads `afterSignInUrl` from `authKit.load()` and goes there). `allowedRedirectDomains`: extra domains emailed links may return to (the collection's own domains
+and `*.smartlinks.host` are always allowed).
+
+**The screens' look** — `branding`: `title`, `subtitle`, `registerTitle`, `registerSubtitle`,
+`logoUrl` (absent = SmartLinks logo, `''` = none), `primaryColor`, `secondaryColor`,
+`backgroundColor`, `fontFamily`, `buttonStyle`, `theme` (`light` | `dark` | `auto`),
+`inheritHostStyles` (default **true** — the host page's colours win; set `false` for your colours to
+show), `minimal`, `customCss`. `termsUrl`, `privacyUrl`, `supportEmail`. **Wording** — `texts`:
+`signInTitle`, `signInSubtitle`, `registerTitle`, `registerSubtitle`, `emailLabel`, `passwordLabel`,
+`signInButton`, `registerButton`, `forgotPassword`, `noAccount`, `haveAccount`, `continueWithEmail`,
+`continueWithGoogle`, `continueWithApple`, `continueWithMicrosoft`, `continueWithLinkedIn`,
+`continueWithPhone`, `continueWithWhatsApp`, `continueWithMagicLink`, `sendMagicLink`, `magicLinkSent`, `inviteOnlyNotice` (a key
+left out keeps the built-in words).
+
+**The account emails** — `emailTemplates.<kind>`: `{ subject, header, introText, buttonText,
+footerText }` for `passwordReset`, `emailVerification`, `magicLink`, `memberInvite` (site member
+invitations), `invite` / `addedToCollection` (staff), `mfaCode`, `providerLinked`. `emailBranding`:
+`{ logoUrl, buttonColor, footerHtml }`. The sender is the collection's email settings (its verified
+domain), not set here. Plain words only — scripts and event handlers are refused.
+
+### Worked example: an invite-only club with magic link
 
 ```ts
-// Admin setup (one-time, done in admin console)
-import { authKit } from '@proveanything/smartlinks';
-
-// Returns an authKitId to store in your app config
-const config = await authKit.create(collectionId, {
-  name: 'My App Auth',
-  loginMethods: ['email', 'google', 'magic_link'],
-  redirectUrl: 'https://myapp.example.com/auth/callback',
-});
+const { authKit: kit } = await authKit.setup(collectionId, {
+  name: 'Riverside Club sign-in',
+  ownLogins: true,                       // members are the club's own (one way) — invite-only needs it
+  settings: {
+    enabledProviders: ['magic-link'],
+    signUp: 'invite',
+    signupProminence: 'none',
+    redirectUrl: 'https://riverside.smartlinks.host/sign-in',
+    branding: { title: 'Riverside Club', subtitle: 'Members only', theme: 'dark', primaryColor: '#0f766e', inheritHostStyles: false },
+    texts: { signInTitle: 'Members sign in', sendMagicLink: 'Email me a sign-in link', inviteOnlyNotice: 'Members only — ask us for an invitation.' },
+    emailTemplates: {
+      magicLink: { subject: 'Your Riverside sign-in link', header: 'Welcome back', buttonText: 'Sign in to Riverside' },
+      memberInvite: { subject: "You're invited to Riverside Club", introText: "The committee has invited you to join. One click and you're in." },
+    },
+    emailBranding: { buttonColor: '#0f766e' },
+  },
+})
+const s = await authKit.settings(collectionId, kit.id)
+// s.checks: nothing at level 'problem' → done. Show the owner the invitation:
+const { subject, html } = await authKit.previewEmail(collectionId, kit.id, 'memberInvite')
+await authKit.invite(collectionId, kit.id, { email: 'sam@example.com', firstName: 'Sam', customFields: { level: 'member' } })
 ```
+
+### Worked example: Google + password with a branded reset email
+
+```ts
+const { authKit: kit } = await authKit.setup(collectionId, { name: 'Shop sign-in' })
+await authKit.update(collectionId, kit.id, {
+  enabledProviders: ['email', 'google'],
+  providerOrder: ['google', 'email'],
+  googleClientId: '1234-abc.apps.googleusercontent.com',   // from the owner (public, no secret)
+  whitelistedGoogleDomains: ['shop.example.com'],
+  security: { passwordPolicy: { minLength: 10, requireNumber: true } },
+  branding: { title: 'Example Shop', logoUrl: 'https://cdn.example.com/logo.png', inheritHostStyles: false, primaryColor: '#111827' },
+  emailTemplates: { passwordReset: { subject: 'Reset your Example Shop password', introText: 'Tap the button to choose a new password.', buttonText: 'Choose a new password' } },
+  emailBranding: { logoUrl: 'https://cdn.example.com/logo.png', buttonColor: '#111827', footerHtml: 'Example Shop Ltd' },
+})
+const preview = await authKit.previewEmail(collectionId, kit.id, 'passwordReset')
+```
+
+### Worked example: their own LinkedIn app (a secret)
+
+```ts
+await authKit.update(collectionId, kitId, { enabledProviders: ['email', 'linkedin'], linkedInClientId: '86abc123' })
+const { url } = await authKit.secretEntryLink(collectionId, kitId, 'linkedInClientSecret', { label: 'LinkedIn sign-in' })
+// Tell the person: "Open this link and paste your LinkedIn client secret there — it works once."
+// Later: (await authKit.settings(collectionId, kitId)).secrets.linkedInClientSecret.set === true
+```
+
+### Rules for assistants
+
+- Ask only for what must come from the owner (their Google client id, Apple Services ID, their own
+  LinkedIn app). For a **secret**, give them an entry link — never ask them to paste it to you.
+- Read `settings` first; change; read `settings` again and tell the owner what sign-in now does and any
+  `checks` left. Preview the emails you changed.
+- `ownLogins` and `signUp: 'invite'` change who can get in: say so plainly before doing it.
+- On a site built in Forge, write sign-in through `cloud/sign-in.json` (the site-cloud skill), not ad-hoc calls.
 
 ---
 

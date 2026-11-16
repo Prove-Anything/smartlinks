@@ -2020,6 +2020,66 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/AuthKitConfigInput"
+  /admin/collection/{collectionId}/authKit/schema:
+    get:
+      tags:
+        - authKit
+      summary: "Every sign-in setting: its path, default, what reads it (`screens` / `server` / `both`), in plain words."
+      operationId: authKit_schema
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthKitSchema"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/authKit/setup:
+    post:
+      tags:
+        - authKit
+      summary: "Set up the collection's sign-in in one call, safe to repeat: finds its sign-in (or makes one, with email + Google and confirm-then-signed-in, and makes it the collection's default), optionally gives it its own logins (ONE WAY — members of this site only; needed for invite-only) and saves a first settings patch."
+      operationId: authKit_setup
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthKitSetupResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthKitSetupRequest"
   /admin/collection/{collectionId}/authKit/{authKitId}:
     get:
       tags:
@@ -2121,6 +2181,49 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/authKit/{authKitId}/emails/{kind}/preview:
+    post:
+      tags:
+        - authKit
+      summary: "An account email as it would be sent now — or with draft settings (`emailTemplates`, `emailBranding`, `branding`; checked like a save, nothing stored)."
+      operationId: authKit_previewEmail
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: authKitId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: kind
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthKitEmailPreview"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AuthKitConfigInput"
   /admin/collection/{collectionId}/authKit/{authKitId}/identity:
     post:
       tags:
@@ -2198,6 +2301,82 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/AuthKitInviteRequest"
+  /admin/collection/{collectionId}/authKit/{authKitId}/secrets/{name}/link:
+    post:
+      tags:
+        - authKit
+      summary: A one-time SmartLinks page where the PERSON types a secret (e.g.
+      operationId: authKit_secretEntryLink
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: authKitId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthKitSecretLink"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+  /admin/collection/{collectionId}/authKit/{authKitId}/settings:
+    get:
+      tags:
+        - authKit
+      summary: "What sign-in does now: the stored config, every default filled in, which secrets are set (masked), and checks."
+      operationId: authKit_settings
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: authKitId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthKitSettingsResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/batch:
     get:
       tags:
@@ -9586,7 +9765,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: Sign in with LinkedIn (OpenID Connect) via a server-side authorization code (public).
+      summary: authKit.linkedInLogin
       operationId: authKit_linkedInLogin
       security: []
       parameters:
@@ -11342,38 +11521,6 @@ paths:
             schema:
               type: object
               additionalProperties: true
-  /public/collection/{collectionId}/ai/token:
-    post:
-      tags:
-        - sessions
-      summary: Generate ephemeral token for Gemini Live
-      operationId: sessions_getToken
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/EphemeralTokenResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/EphemeralTokenRequest"
   /public/collection/{collectionId}/app/config:
     get:
       tags:
@@ -20986,6 +21133,42 @@ components:
           type: string
         limit:
           type: number
+    ServerFunctionMessage:
+      type: object
+      properties:
+        contactId:
+          type: string
+        to:
+          type: string
+          enum:
+            - caller
+        templateId:
+          type: string
+        message:
+          $ref: "#/components/schemas/TypedMessage"
+        channel:
+          type: string
+          enum:
+            - preferred
+            - email
+            - sms
+            - whatsapp
+            - push
+            - wallet
+        props:
+          type: object
+          additionalProperties: true
+        include:
+          type: object
+          additionalProperties: true
+        about:
+          $ref: "#/components/schemas/MessageAbout"
+        ref:
+          type: string
+        attach:
+          type: array
+          items:
+            $ref: "#/components/schemas/EmailAttachmentSpec"
     ServerFunctionSl:
       type: object
       properties:
@@ -21004,6 +21187,12 @@ components:
         appRecords:
           type: object
           additionalProperties: true
+        appOptions:
+          type: object
+          additionalProperties: true
+        userGroups:
+          type: object
+          additionalProperties: true
         history:
           type: object
           additionalProperties: true
@@ -21018,9 +21207,16 @@ components:
         interactions:
           type: object
           additionalProperties: true
+        messages:
+          type: object
+          additionalProperties: true
         tools:
           type: object
           additionalProperties: true
+        assets:
+          $ref: "#/components/schemas/ServerFunctionAssets"
+        ai:
+          $ref: "#/components/schemas/ServerFunctionAi"
         products: {}
         attestations: {}
         appData:
@@ -21033,15 +21229,113 @@ components:
         - operations
         - bookings
         - appRecords
+        - appOptions
+        - userGroups
         - history
         - counters
         - tags
         - contacts
         - interactions
+        - messages
         - tools
+        - assets
+        - ai
         - products
         - attestations
         - appData
+    ServerFunctionAsset:
+      type: object
+      properties:
+        id:
+          type: string
+        appId:
+          type: string
+        productId:
+          type: string
+        proofId:
+          type: string
+        name:
+          type: string
+        assetType:
+          type: string
+        mimeType:
+          type: string
+        size:
+          type: number
+        width:
+          type: number
+        height:
+          type: number
+        hash:
+          type: string
+        url:
+          type: string
+        assetUrl:
+          type: string
+        thumbnail:
+          type: string
+        labels:
+          type: array
+          items:
+            type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        versions:
+          type: number
+        status:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - appId
+        - productId
+        - proofId
+        - name
+        - assetType
+        - mimeType
+        - size
+        - width
+        - height
+        - hash
+        - url
+        - assetUrl
+        - thumbnail
+        - labels
+        - metadata
+        - versions
+        - status
+        - createdAt
+        - updatedAt
+    ServerFunctionAssets:
+      type: object
+      properties: {}
+    ServerFunctionAiRequest:
+      type: object
+      properties:
+        prompt:
+          type: string
+        system:
+          type: string
+        files:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        schema:
+          type: object
+          additionalProperties: true
+        quality:
+          type: string
+          enum:
+            - fast
+            - best
+    ServerFunctionAi:
+      type: object
+      properties: {}
     ServerFunctionCaller:
       type: object
       properties:
@@ -21832,6 +22126,14 @@ components:
       properties:
         force:
           type: boolean
+    ServerFunctionFileInput:
+      type: object
+      properties:
+        base64:
+          type: object
+          additionalProperties: true
+      required:
+        - base64
     AppFunctionTriggerType:
       type: string
       enum:
@@ -21849,6 +22151,9 @@ components:
         - caller
         - collection
     RecordTransactionOp:
+      type: object
+      additionalProperties: true
+    ServerFunctionMessageResult:
       type: object
       additionalProperties: true
     PaginatedResponse:
@@ -23021,6 +23326,38 @@ components:
         - facet
         - collection
         - universal
+    AppOption:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        sublabel:
+          type: string
+        active:
+          type: boolean
+        order:
+          type: number
+      required:
+        - id
+        - label
+        - active
+        - order
+    AppOptionValueInput:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        active:
+          type: boolean
+      required:
+        - code
+    AppOptionsResponse:
+      type: object
+      additionalProperties: true
     AssetRef:
       type: object
       properties:
@@ -24794,6 +25131,10 @@ components:
           type: string
         subtitle:
           type: string
+        registerTitle:
+          type: string
+        registerSubtitle:
+          type: string
         primaryColor:
           type: string
         secondaryColor:
@@ -24802,19 +25143,153 @@ components:
           type: string
         buttonStyle:
           type: string
+          enum:
+            - rounded
+            - square
+            - pill
         fontFamily:
           type: string
+        theme:
+          type: string
+          enum:
+            - light
+            - dark
+            - auto
+        inheritHostStyles:
+          type: boolean
+        minimal:
+          type: boolean
+        customCss:
+          type: string
+        termsUrl:
+          type: string
+        privacyUrl:
+          type: string
+    AuthKitEmailTemplate:
+      type: object
+      properties:
+        subject:
+          type: string
+        header:
+          type: string
+        introText:
+          type: string
+        buttonText:
+          type: string
+        footerText:
+          type: string
+    AuthKitMfaConfig:
+      type: object
+      properties:
+        mode:
+          type: string
+          enum:
+            - off
+            - optional
+            - risk-based
+            - always
+        factorsEnabled:
+          type: object
+          additionalProperties: true
+        minimumFactors:
+          type: number
+        trustedDeviceDurationDays:
+          type: number
+        enforceForAdmins:
+          type: boolean
     AuthKitConfig:
       type: object
       properties:
         id:
+          type: string
+        name:
           type: string
         branding:
           $ref: "#/components/schemas/AuthKitBrandingConfig"
         enabledProviders:
           type: array
           items:
+            $ref: "#/components/schemas/AuthKitProvider"
+        providerOrder:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthKitProvider"
+        emailDisplayMode:
+          type: string
+          enum:
+            - form
+            - button
+        signupProminence:
+          type: string
+          enum:
+            - none
+            - minimal
+            - balanced
+            - emphasized
+        signupRedirectUrl:
+          type: string
+        googleClientId:
+          type: string
+        googleOAuthFlow:
+          type: string
+          enum:
+            - oneTap
+            - popup
+            - redirect
+        whitelistedGoogleDomains:
+          type: array
+          items:
             type: string
+        appleClientIds:
+          type: array
+          items:
+            type: string
+        linkedInClientId:
+          type: string
+        whatsappPrefillMessage:
+          type: string
+        whatsappReply:
+          type: object
+          additionalProperties: true
+        registrationFields:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        collectNameOnPasswordlessSignup:
+          type: boolean
+        emailVerificationMode:
+          type: string
+          enum:
+            - immediate
+            - verify-auto-login
+            - verify-manual-login
+        emailVerificationGracePeriod:
+          type: number
+        lockUnverifiedAfterGrace:
+          type: boolean
+        allowPasswordReset:
+          type: boolean
+        mfa:
+          $ref: "#/components/schemas/AuthKitMfaConfig"
+        afterSignInUrl:
+          type: string
+        allowedRedirectDomains:
+          type: array
+          items:
+            type: string
+        texts:
+          $ref: "#/components/schemas/AuthKitTextKey"
+        emailTemplates:
+          $ref: "#/components/schemas/AuthKitEmailKind"
+        emailBranding:
+          type: object
+          additionalProperties: true
+        secrets:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
         customCss:
           type: string
         termsUrl:
@@ -24908,6 +25383,149 @@ components:
       required:
         - identity
         - message
+    AuthKitSchema:
+      type: object
+      properties:
+        providers:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthKitProvider"
+        emailKinds:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthKitEmailKind"
+        emailFields:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        textKeys:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthKitTextKey"
+        secrets:
+          type: array
+          items:
+            type: string
+        serverOwned:
+          type: array
+          items:
+            type: string
+        fields:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - providers
+        - emailKinds
+        - emailFields
+        - textKeys
+        - secrets
+        - serverOwned
+        - fields
+    AuthKitCheck:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - problem
+            - warning
+            - info
+        code:
+          type: string
+        message:
+          type: string
+        setting:
+          type: string
+      required:
+        - level
+        - code
+        - message
+    AuthKitSettingsResponse:
+      type: object
+      properties:
+        authKitId:
+          type: string
+        ownLogins:
+          type: string
+          enum:
+            - own
+            - shared
+        config:
+          $ref: "#/components/schemas/AuthKitConfig"
+        effective:
+          $ref: "#/components/schemas/AuthKitConfig"
+        secrets:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        checks:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuthKitCheck"
+      required:
+        - authKitId
+        - ownLogins
+        - config
+        - effective
+        - secrets
+        - checks
+    AuthKitSetupRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        ownLogins:
+          type: boolean
+        settings:
+          $ref: "#/components/schemas/AuthKitConfigInput"
+    AuthKitSetupResponse:
+      type: object
+      properties:
+        authKit:
+          $ref: "#/components/schemas/AuthKitConfig"
+        created:
+          type: boolean
+        ownLogins:
+          type: string
+          enum:
+            - own
+            - shared
+        changed:
+          type: array
+          items:
+            type: string
+      required:
+        - authKit
+        - created
+        - ownLogins
+        - changed
+    AuthKitEmailPreview:
+      type: object
+      properties:
+        kind:
+          $ref: "#/components/schemas/AuthKitEmailKind"
+        subject:
+          type: string
+        html:
+          type: string
+      required:
+        - kind
+        - subject
+        - html
+    AuthKitSecretLink:
+      type: object
+      properties:
+        url:
+          type: string
+        expiresAt:
+          type: string
+      required:
+        - url
+        - expiresAt
     AuthKitSecurityConfig:
       type: object
       properties:
@@ -25001,6 +25619,53 @@ components:
         - failed
         - expired
         - unknown
+    AuthKitProvider:
+      type: string
+      enum:
+        - email
+        - magic-link
+        - phone
+        - whatsapp
+        - google
+        - apple
+        - microsoft
+        - linkedin
+    AuthKitEmailKind:
+      type: string
+      enum:
+        - passwordReset
+        - emailVerification
+        - magicLink
+        - memberInvite
+        - invite
+        - addedToCollection
+        - mfaCode
+        - providerLinked
+    AuthKitTextKey:
+      type: string
+      enum:
+        - signInTitle
+        - signInSubtitle
+        - registerTitle
+        - registerSubtitle
+        - emailLabel
+        - passwordLabel
+        - signInButton
+        - registerButton
+        - forgotPassword
+        - noAccount
+        - haveAccount
+        - continueWithEmail
+        - continueWithGoogle
+        - continueWithApple
+        - continueWithMicrosoft
+        - continueWithLinkedIn
+        - continueWithPhone
+        - continueWithWhatsApp
+        - continueWithMagicLink
+        - sendMagicLink
+        - magicLinkSent
+        - inviteOnlyNotice
     AuthKitConfigInput:
       $ref: "#/components/schemas/AuthKitConfig"
     PasswordPolicyErrorCode:
@@ -27520,6 +28185,8 @@ components:
           type: string
         templateId:
           type: string
+        message:
+          $ref: "#/components/schemas/TypedMessage"
         channel:
           type: string
           enum:
@@ -27553,13 +28220,18 @@ components:
           type: string
         appId:
           type: string
+        about:
+          $ref: "#/components/schemas/MessageAbout"
+        category:
+          type: string
+          enum:
+            - service
         attach:
           type: array
           items:
             $ref: "#/components/schemas/EmailAttachmentSpec"
       required:
         - contactId
-        - templateId
     TransactionalSendResponse:
       type: object
       properties:
@@ -27583,6 +28255,37 @@ components:
       required:
         - ok
         - channel
+    TypedMessage:
+      type: object
+      properties:
+        subject:
+          type: string
+        body:
+          type: string
+        sms:
+          type: string
+      required:
+        - body
+    MessageAbout:
+      type: object
+      properties:
+        appId:
+          type: string
+        type:
+          type: string
+        id:
+          type: string
+        view:
+          type: string
+        params:
+          type: object
+          additionalProperties:
+            type: string
+        label:
+          type: string
+      required:
+        - type
+        - id
     TransactionalSendError:
       type: object
       properties:
@@ -28956,8 +29659,39 @@ components:
           type: array
           items:
             type: string
+        list:
+          type: string
       required:
         - type
+    AppValueListValue:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        active:
+          type: boolean
+      required:
+        - code
+    AppValueList:
+      type: object
+      properties:
+        label:
+          type: string
+        description:
+          type: string
+        values:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppValueListValue"
+        editable:
+          type: boolean
+        public:
+          type: boolean
+      required:
+        - label
+        - values
     AppDataType:
       type: object
       properties:
@@ -28998,6 +29732,22 @@ components:
           additionalProperties: true
         since:
           type: string
+        title:
+          type: string
+        label:
+          type: string
+        sublabel:
+          type: string
+        activeField:
+          type: string
+        orderField:
+          type: string
+        small:
+          type: boolean
+        setup:
+          type: boolean
+        checked:
+          type: boolean
       required:
         - description
         - storage
@@ -29011,6 +29761,10 @@ components:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/AppDataType"
+        lists:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/AppValueList"
       required:
         - schemaVersion
         - types
@@ -35841,6 +36595,106 @@ components:
         loading: {}
       required:
         - appId
+    GuideInfo:
+      type: object
+      properties:
+        enabled:
+          type: boolean
+        name:
+          type: string
+        modes:
+          type: object
+          additionalProperties: true
+        suggestions:
+          type: array
+          items:
+            type: string
+        handoff:
+          type: object
+          additionalProperties: true
+      required:
+        - enabled
+    ScreenContent:
+      type: object
+      properties:
+        appId:
+          type: string
+        title:
+          type: string
+        content:
+          type: string
+    GuideWhere:
+      type: object
+      properties:
+        appId:
+          type: string
+        path:
+          type: string
+        params:
+          type: object
+          additionalProperties:
+            type: string
+    GuideNavigate:
+      type: object
+      properties:
+        appId:
+          type: string
+        path:
+          type: string
+        params:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+        - appId
+        - path
+    GuideCard:
+      type: object
+      properties:
+        title:
+          type: string
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        more:
+          type: number
+      required:
+        - title
+        - rows
+    GuideStartOptions:
+      type: object
+      properties:
+        surface:
+          $ref: "#/components/schemas/GuideSurface"
+        mode:
+          type: string
+          enum:
+            - voice
+            - text
+        productId:
+          type: string
+        proofId:
+          type: string
+        apps:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        where:
+          $ref: "#/components/schemas/GuideWhere"
+        language:
+          type: string
+        screen:
+          $ref: "#/components/schemas/ScreenContent"
+      required:
+        - surface
+    GuideSurface:
+      type: string
+      enum:
+        - portal
+        - hub
     AppConfigOptions:
       type: object
       properties:

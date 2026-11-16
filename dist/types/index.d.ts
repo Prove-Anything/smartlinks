@@ -47,4 +47,5 @@ export * from "./research.js";
 export * from "./config.js";
 export * from "./widgets.js";
 export * from "./headless.js";
+export * from "./appOptions.js";
 export * from "./clientLog.js";

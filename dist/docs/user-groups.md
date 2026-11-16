@@ -166,3 +166,10 @@ ctx.caller.userGroups   // ['qc-controller']
 
 The test context gives your handler the caller you describe. It doesn't apply the declaration's
 `userGroups` limit: that check happens on the platform before your handler is called.
+
+## Who is in a user group (server code)
+
+`ctx.sl.userGroups.members(keys?)` lists the people in the named user groups (every keyed group when
+`keys` is empty): `[{ userId, name, email, userGroups }]`, sorted by name, at most 500. For staff lists
+("who is on QC") and for addressing a team (a notification to every Manager). Needs
+`sl:usergroups:read` and collection authority. Members whose account no longer exists are left out.

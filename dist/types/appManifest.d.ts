@@ -4,6 +4,7 @@ import type { AppDataDeclaration, AppHeadlessDeclaration } from './headless.js';
 import type { RealtimeChannelDeclaration } from './realtime.js';
 import type { AppManifestAdminCards } from './adminCards.js';
 import type { PaginatedResponse } from './appObjects.js';
+import type { TypedMessage, MessageAbout, EmailAttachmentSpec } from './comms.js';
 import type { WorkOrdersApi, StockApi, BomsApi, MadeFromApi, OperationsApi } from './operations.js';
 import type { Booking, BookingSlot, BookingAllocation, CreateBookingInput, UpdateBookingInput, MoveBookingInput, BookingListQueryParams, CreateSlotInput, UpdateSlotInput, SlotListQueryParams, CreateBlockInput, BlockListQueryParams, FreeBusyQuery, FreeBusyResponse, MessageBookersInput, MessageBookersResult } from './bookings.js';
 /**
@@ -545,6 +546,32 @@ export interface AppHistoryQuery {
     /** Default 100, at most 1000. */
     limit?: number;
 }
+/** `ctx.sl.messages.send` input. Give `contactId` or `to: 'caller'`, and `templateId` or `message`. */
+export interface ServerFunctionMessage {
+    contactId?: string;
+    /** The person calling this function (their contact, made if they're signed in and have none yet). */
+    to?: 'caller';
+    templateId?: string;
+    message?: TypedMessage;
+    channel?: 'preferred' | 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet';
+    /** Extra Liquid variables. */
+    props?: Record<string, unknown>;
+    /** Records to hydrate into the template (`{ booking: 'B-123' }`, `{ productId }` …), as comm/send. */
+    include?: Record<string, unknown>;
+    about?: MessageAbout;
+    /** A label for the log (`'booking-cancelled'`). */
+    ref?: string;
+    attach?: EmailAttachmentSpec[];
+}
+export type ServerFunctionMessageResult = {
+    ok: true;
+    channel: 'email' | 'sms' | 'whatsapp' | 'push' | 'wallet';
+    messageId?: string;
+    attachmentsLeftOut?: string[];
+} | {
+    ok: false;
+    reason: 'opted_out' | 'no_channel' | 'no_contact' | 'template_not_found';
+};
 export interface ServerFunctionSl {
     /**
      * Work orders: what work is under way (`sl:workorders:read` / `:write`). Any app may read a work
@@ -586,7 +613,40 @@ export interface ServerFunctionSl {
         }): Promise<any>;
         /** Totals over THIS app's records: count, sum/avg/min/max of data numbers, grouped by data keys. */
         aggregate(params?: import('./appObjects.js').AggregateRequest): Promise<import('./appObjects.js').AggregateResponse & Record<string, unknown>>;
+        /**
+         * Every record of one type, with its data: a set-up list (every machine, with its rate). Up to 5,000
+         * (more → `TOO_MANY`: page with `query`). Read from cache for types the manifest declares `small`,
+         * cleared on every write. A record type or a declared type id. → mapped records, oldest first.
+         */
+        all(recordType: string): Promise<any[]>;
         [method: string]: any;
+    };
+    /**
+     * Pickers: a small list for "pick a machine" or "pick a hold reason", served from cache and cleared on
+     * every write. `source` is `type:<record type or declared type id>` (the app's records of it: label,
+     * second line, on/off and order as the manifest's `data` block says) or `list:<list id>` (a value list
+     * the app declares in `data.lists`; the entry's `id` is the value's code). Pass the `version` you hold
+     * to get `{ unchanged: true }` back; a type of more than 2,000 entries answers `mode: 'search'` and
+     * wants `q`. Needs `sl:records:read`. docs/admin-lists-and-pickers.md
+     */
+    appOptions: {
+        get(source: string, opts?: {
+            q?: string;
+            version?: string;
+        }): Promise<import('./appOptions.js').AppOptionsResponse>;
+    };
+    /**
+     * Who is in the collection's user groups, by key (all keyed groups when `keys` is empty): staff lists,
+     * and addressing a team. Needs `sl:usergroups:read` and collection authority. At most 500 people,
+     * sorted by name; members whose account is gone are left out. docs/user-groups.md
+     */
+    userGroups: {
+        members(keys?: string[]): Promise<Array<{
+            userId: string;
+            name: string | null;
+            email: string | null;
+            userGroups: string[];
+        }>>;
     };
     /**
      * Several record writes that land together or not at all (take 5 from bin A AND add 5 to order line B
@@ -646,15 +706,38 @@ export interface ServerFunctionSl {
         }>;
     };
     /**
+     * Messages (`sl:messages:write`): message one person through the platform — a template or a typed
+     * message, on their preferred channel (or one you name), logged with this app and what it's `about`, so
+     * it shows in Messages and on the contact's Activity and a reply finds its way back. Service messages
+     * only (confirmations, reminders, cancellations, updates); the person's opt-outs are respected. Someone
+     * who can't be reached is an answer — `{ ok: false, reason }` — not an error. docs/comms.md.
+     */
+    messages: {
+        send(input: ServerFunctionMessage): Promise<ServerFunctionMessageResult>;
+    };
+    /**
      * Platform tools (`tools:<name>` or `tools:<family>.*`, e.g. `tools:pdf.create`, `tools:pdf.*`):
      * pdf.create, pdf.merge, pdf.fill, pdf.inspect, pdf.render, pdf.decodeBarcodes, pdf.inspectGraphics,
-     * pdf.preflight, pdf.printReady, pdf.edit, image.transform. Runs as THIS collection whatever the caller
+     * pdf.preflight, pdf.printReady, pdf.edit, image.transform, image.ocr, pdf.extract. Runs as THIS collection whatever the caller
      * (authorised by the declaration, billed to the collection), rate-limited per collection. Returns the
      * tool's result; a failure throws an Error with `code` (e.g. bad_args, busy, too_many_pages).
      */
     tools: {
         run<T = any>(name: string, args?: Record<string, any>): Promise<T>;
     };
+    /**
+     * The collection's files (`sl:assets:read` / `sl:assets:write`, and collection authority): read any
+     * asset, save what the function makes as an asset of THIS app, and change or remove only this app's
+     * own. read/create/replace carry the file as base64 (up to 7 MB); bigger files go straight to storage
+     * with startUpload -> PUT to `sessionUrl` -> finishUpload, and are read by fetching the asset's `url`.
+     */
+    assets: ServerFunctionAssets;
+    /**
+     * Ask a model (`sl:ai:write`, any authority): a prompt, files (PDFs, photos, text), and optionally a
+     * JSON Schema for a structured answer in `data`. The collection's AI budget is ENFORCED: when it is
+     * used up the call throws `AI_BUDGET_EXCEEDED` / `AI_CREDITS_EXHAUSTED` (402) before anything is spent.
+     */
+    ai: ServerFunctionAi;
     /** Products, scoped by caller authority + declared capability. */
     products: any;
     /** Attestations, scoped by caller authority + declared capability. */
@@ -676,6 +759,136 @@ export interface ServerFunctionSl {
     app(appId: string): {
         data: Pick<AppDataHandle, 'get' | 'getData'>;
     };
+}
+/** An asset as server code sees it. `url` is the current file; `assetUrl` the address that never changes. */
+export interface ServerFunctionAsset {
+    id: string;
+    appId: string | null;
+    productId: string | null;
+    proofId: string | null;
+    name: string;
+    assetType: string;
+    mimeType: string | null;
+    size: number | null;
+    width: number | null;
+    height: number | null;
+    hash: string | null;
+    url: string;
+    assetUrl: string | null;
+    thumbnail: string | null;
+    labels: string[];
+    metadata: Record<string, any>;
+    /** How many earlier files replace() has kept. */
+    versions: number;
+    status: string;
+    createdAt: string;
+    updatedAt: string;
+}
+/** A file going into server code's calls: bytes as base64 (or plain text). */
+export type ServerFunctionFileInput = {
+    base64: string;
+    contentType: string;
+} | {
+    text: string;
+    contentType?: string;
+};
+/** `ctx.sl.assets` - the collection's files from server code. */
+export interface ServerFunctionAssets {
+    get(assetId: string): Promise<ServerFunctionAsset | null>;
+    list(params?: {
+        productId?: string | null;
+        proofId?: string | null;
+        appId?: string | null;
+        labels?: string | string[];
+        assetType?: string;
+        limit?: number;
+        offset?: number;
+    }): Promise<ServerFunctionAsset[]>;
+    read(assetId: string, opts?: {
+        as?: 'base64';
+    }): Promise<{
+        id: string;
+        name: string;
+        contentType: string;
+        size: number;
+        base64: string;
+    }>;
+    read(assetId: string, opts: {
+        as: 'text';
+    }): Promise<{
+        id: string;
+        name: string;
+        contentType: string;
+        size: number;
+        text: string;
+    }>;
+    create(input: ServerFunctionFileInput & {
+        name: string;
+        productId?: string;
+        proofId?: string;
+        labels?: string[];
+        metadata?: Record<string, any>;
+    }): Promise<ServerFunctionAsset>;
+    /** A new file for one of this app's assets: same id and address, the old file kept as a version. */
+    replace(assetId: string, input: ServerFunctionFileInput & {
+        name?: string;
+    }): Promise<ServerFunctionAsset>;
+    update(assetId: string, patch: {
+        name?: string;
+        labels?: string[];
+        metadata?: Record<string, any>;
+    }): Promise<ServerFunctionAsset>;
+    remove(assetId: string): Promise<{
+        id: string;
+        deleted: true;
+    }>;
+    /** A large file: PUT its bytes to `sessionUrl` (declare `network:storage.googleapis.com`), then finishUpload. */
+    startUpload(input: {
+        name: string;
+        contentType: string;
+        productId?: string;
+        proofId?: string;
+        replaceAssetId?: string;
+    }): Promise<{
+        uploadId: string;
+        sessionUrl: string;
+        expiresAt: string;
+    }>;
+    finishUpload(uploadId: string, input?: {
+        name?: string;
+        metadata?: Record<string, any>;
+    }): Promise<ServerFunctionAsset>;
+}
+/** `ctx.sl.ai.generate` - what to ask. */
+export interface ServerFunctionAiRequest {
+    prompt?: string;
+    system?: string;
+    /** Up to 10, 7 MB in all: an asset (needs sl:assets:read), bytes, or text. */
+    files?: Array<{
+        assetId: string;
+    } | {
+        base64: string;
+        contentType: string;
+    } | {
+        text: string;
+        name?: string;
+    }>;
+    /** A JSON Schema: the answer is parsed into `data`. */
+    schema?: Record<string, any>;
+    /** 'fast' (default) is quick and cheap; 'best' thinks harder and costs more. */
+    quality?: 'fast' | 'best';
+}
+/** `ctx.sl.ai` - model calls from server code, metered to the collection. */
+export interface ServerFunctionAi {
+    generate<T = any>(request: ServerFunctionAiRequest): Promise<{
+        text: string;
+        data?: T;
+        model: string;
+        usage: {
+            inputTokens: number;
+            outputTokens: number;
+        };
+    }>;
 }
 /** Identity of whoever invoked a server function. */
 export interface ServerFunctionCaller {

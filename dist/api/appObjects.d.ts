@@ -1,5 +1,26 @@
 import type { AppCase, CreateCaseInput, UpdateCaseInput, AppendHistoryInput, CaseSummaryRequest, CaseSummaryResponse, CaseListQueryParams, AppThread, CreateThreadInput, UpdateThreadInput, ReplyInput, ThreadListQueryParams, AppRecord, CreateRecordInput, CreateRecordResponse, UpdateRecordInput, UpsertRecordInput, UpsertRecordResponse, MatchRecordsInput, MatchResult, BulkUpsertItem, BulkUpsertResult, BulkDeleteResult, BulkDeleteInput, RecordListQueryParams, ResolveAllParams, ResolveAllResult, PreviewRuleParams, PreviewRuleResult, PaginatedResponse, AggregateRequest, AggregateResponse, RelatedResponse } from '../types/appObjects.js';
 export declare namespace app {
+    /**
+     * Pickers: the small, cached list behind "pick a machine" or "pick a hold reason".
+     * docs/admin-lists-and-pickers.md
+     */
+    namespace options {
+        /**
+         * `source` = `type:<record type or declared type id>` | `list:<list id>`. Admins (`admin: true`)
+         * see every entry; the public API lists public records and lists the app declares public. Hold on
+         * to `version` and pass it back to get `{ unchanged: true }` when nothing changed.
+         */
+        function get(collectionId: string, appId: string, source: string, opts?: {
+            q?: string;
+            version?: string;
+            admin?: boolean;
+        }): Promise<import('../types/appOptions.js').AppOptionsResponse>;
+        /**
+         * Save a value list's values, in order (admins). Codes never change and are never lost: a value left
+         * out stays, switched off, at the end. → the list as saved.
+         */
+        function saveList(collectionId: string, appId: string, listId: string, values: import('../types/appOptions.js').AppOptionValueInput[]): Promise<import('../types/appOptions.js').AppOptionsResponse>;
+    }
     namespace cases {
         /**
          * Create a new case

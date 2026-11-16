@@ -81,7 +81,7 @@ export interface RouteChangeMessage {
 }
 export interface SmartlinksIframeMessage {
     _smartlinksIframeMessage: true;
-    type: 'smartlinks:resize' | 'smartlinks:redirect' | 'smartlinks:authkit:login' | 'smartlinks:authkit:logout' | 'smartlinks:authkit:redirect' | 'smartlinks:navigable' | 'smartlinks:navigate-result';
+    type: 'smartlinks:resize' | 'smartlinks:redirect' | 'smartlinks:authkit:login' | 'smartlinks:authkit:logout' | 'smartlinks:authkit:redirect' | 'smartlinks:navigable' | 'smartlinks:navigate-result' | 'smartlinks:open-app';
     payload: Record<string, any>;
     messageId?: string;
 }
