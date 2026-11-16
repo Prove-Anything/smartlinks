@@ -22,9 +22,13 @@ const chat = await SL.ai.guide.start(collectionId, {
   surface: 'portal',                    // or 'hub'
   mode: info.modes.start,               // 'voice' or 'text'
   productId, proofId,
-  apps: [{ id: 'recipes', title: 'Recipes' }],   // what the guide may open
+  apps: [{ id: 'recipes', title: 'Recipes' }],   // the apps on the visitor's page: their pages come from the deep-link registry
+  where: { appId: 'recipes', path: '/method' },  // where the visitor is now
   screen: await SL.ai.content.request({ frame: appIframe.contentWindow }),
   showApp: (appId) => openApp(appId),
+  openPage: ({ appId, path, params }) => openApp(appId, path, params),   // a page the guide chose (look_in → open_page)
+  goTo: (productId) => openProduct(productId),                         // another product it found (find → go_to)
+  onShow: (card) => showFound(card),                                    // what find found, rows with goTo
   offerPerson: (handoff) => showContact(handoff),
   onState: setState,                    // idle | connecting | listening | hearing | thinking | speaking | paused | error
   onCaption: setCaption,                // what it is saying or writing, as it goes
@@ -33,8 +37,12 @@ const chat = await SL.ai.guide.start(collectionId, {
 
 chat.pause(); chat.resume(); chat.stop()
 chat.send('What is it made of?')       // text mode (works in voice mode too)
-chat.note('The visitor is now on the warranty page.')   // tell it where they are; it doesn't answer
+chat.note('The visitor is now on Dishwasher DW-60 (product id p9), in Manual at /troubleshooting.')   // where they are; it doesn't answer
 ```
+
+The guide knows the pages around the visitor from SmartLinks' deep-link registry (`linkable` in each app's
+manifest, and each app's config `linkable` per collection and per product; see deep-link-discovery.md).
+Register your pages there and the guide can open them by name.
 
 - Voice needs the microphone; ask for it on a tap (browsers require it).
 - A signed-in visitor (Auth Kit bearer on the SDK) owns their conversation; otherwise it is anonymous.

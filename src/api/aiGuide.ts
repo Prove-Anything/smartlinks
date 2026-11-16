@@ -30,21 +30,50 @@ export interface ScreenContent {
   content?: string | null
 }
 
+/** Where the visitor is: the app on screen and the page in it (as the host's deep link). */
+export interface GuideWhere {
+  appId?: string | null
+  path?: string | null
+  params?: Record<string, string>
+}
+
+/** A page the guide opened (the host moves the app there). */
+export interface GuideNavigate {
+  appId: string
+  path: string
+  params?: Record<string, string>
+}
+
+/** Products the guide found, for the screen: each row can take the visitor there. */
+export interface GuideCard {
+  title: string
+  rows: Array<{ title: string; detail?: string | null; goTo?: string }>
+  more?: number
+}
+
 export interface GuideStartOptions {
   surface: GuideSurface
   mode?: 'voice' | 'text'
   productId?: string | null
   proofId?: string | null
-  /** The apps the guide may open for the visitor. */
-  apps?: Array<{ id: string; title: string }>
+  /** The apps on the visitor's page: the guide reads their pages and may open them. A core app says so. */
+  apps?: Array<{ id: string; title: string; kind?: 'core' | 'app'; channel?: string }>
+  /** Where the visitor is when the conversation starts. Later, tell it with handle.note(). */
+  where?: GuideWhere
   /** The visitor's language (e.g. 'fr'); default: theirs as the browser says. */
   language?: string
   /** What's on screen when the conversation starts. Later, the guide asks with read_screen. */
   screen?: ScreenContent
   /** Read the screen now (the guide's read_screen tool). Default: ask the app on screen (ai.content.request). */
   readScreen?: () => Promise<ScreenContent | null> | ScreenContent | null
-  /** Open one of the business's apps (the guide's show_app tool). */
+  /** Open one of the business's apps at its start (the guide's show_app tool). */
   showApp?: (appId: string) => Promise<void> | void
+  /** Open a page of an app (the guide's open_page tool: SmartLinks resolves the page's address). */
+  openPage?: (to: GuideNavigate) => Promise<void> | void
+  /** Go to another product's page (the guide's go_to tool). */
+  goTo?: (productId: string) => Promise<void> | void
+  /** Products the guide found, to show (each row can call goTo). */
+  onShow?: (card: GuideCard) => void
   /** Show how to reach a person (the guide's offer_person tool). */
   offerPerson?: (handoff: GuideInfo['handoff']) => Promise<void> | void
   onState?: (s: LiveState) => void
@@ -75,6 +104,13 @@ export namespace guide {
         await options.showApp(String(args['appId'] ?? ''))
         return { opened: String(args['appId'] ?? '') }
       },
+      go_to: async (args) => {
+        const id = String(args['productId'] ?? '')
+        if (!id) return { error: 'Which product?' }
+        if (!options.goTo) return { error: "That can't be opened from here." }
+        await options.goTo(id)
+        return { opened: id }
+      },
       offer_person: async () => {
         if (!handoff) return { error: 'There is no way to reach a person set up.' }
         await options.offerPerson?.(handoff)
@@ -93,6 +129,7 @@ export namespace guide {
             productId: options.productId ?? undefined,
             proofId: options.proofId ?? undefined,
             apps: options.apps,
+            where: options.where,
             language,
             screen: options.screen,
           })
@@ -101,6 +138,10 @@ export namespace guide {
         },
         tool: (name, args, sessionId) => post(`${base(collectionId)}/tool`, { name, args, sessionId }),
         event: (event: LiveEvent) => { void post(`${base(collectionId)}/event`, event).catch(() => undefined) },
+      },
+      onToolReply: async (_name, reply) => {
+        if (reply['show']) options.onShow?.(reply['show'] as GuideCard)
+        if (reply['navigate']) await options.openPage?.(reply['navigate'] as GuideNavigate)
       },
       onState: options.onState,
       onCaption: options.onCaption,
