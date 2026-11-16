@@ -1,6 +1,7 @@
 // src/api/ai.ts
 // AI endpoints: public and admin helpers
 import { post, request, del, requestStream } from "../http"
+import { guide as guideApi, content as contentApi, startLive } from "./aiGuide"
 import type {
   // Chat Completions types
   ContentPart,
@@ -568,17 +569,6 @@ namespace aiInternal {
       const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/rate-limit/${encodeURIComponent(userId)}`
       return request<RateLimitStatus>(path)
     }
-
-    /**
-     * Generate ephemeral token for Gemini Live
-     */
-    export async function getToken(
-      collectionId: string,
-      request: EphemeralTokenRequest
-    ): Promise<EphemeralTokenResponse> {
-      const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/token`
-      return post<EphemeralTokenResponse>(path, request)
-    }
   }
 
   // ============================================================================
@@ -796,12 +786,25 @@ export const ai = {
     getSession: aiInternal.publicClient.getSession,
     clearSession: aiInternal.publicClient.clearSession,
     getRateLimit: aiInternal.publicClient.getRateLimit,
-    getToken: aiInternal.publicClient.getToken,
   },
   voice: {
     isSupported: aiInternal.voice.isSupported,
     listen: aiInternal.voice.listen,
     speak: aiInternal.voice.speak,
+  },
+  /** The customer guide: a business's assistant for its visitors (docs/customer-guide.md). */
+  guide: {
+    get: guideApi.get,
+    start: guideApi.start,
+  },
+  /** What's on screen, in words, for an assistant: apps provide it, hosts request it. */
+  content: {
+    provide: contentApi.provide,
+    request: contentApi.request,
+  },
+  /** A live conversation by voice or text, with your own endpoints (the guide and the Studio assistant use it). */
+  live: {
+    start: startLive,
   },
   agent: {
     run: aiInternal.agent.run,
