@@ -44,6 +44,9 @@ export {
 } from './shared-dependencies'
 export type { SharedDependency, HostSharedDependencies } from './shared-dependencies'
 // Built-in AI tool catalog (design-time discovery of the core agentic toolset)
+// The customer guide, what's on screen for AI, and the live client (ai.guide / ai.content / ai.live).
+export type { GuideSurface, GuideInfo, ScreenContent, GuideWhere, GuideNavigate, GuideCard, GuideStartOptions } from './api/aiGuide'
+export type { LiveState, LiveHandle, LiveOptions, LiveEndpoints, LiveEvent, LiveMintReply, LiveToolReply, LiveToolHandler } from './live'
 export { AI_TOOL_NAMES, BUILTIN_AI_TOOLS, getBuiltinAiTool } from './ai-tools'
 export type { BuiltinAiToolDescriptor } from './ai-tools'
 
