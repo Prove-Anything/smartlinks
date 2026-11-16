@@ -80,6 +80,8 @@ export interface GuideStartOptions {
   onCaption?: (text: string) => void
   onReply?: (text: string) => void
   onError?: (message: string) => void
+  /** The visitor turned the microphone off or on (handle.mute / unmute). */
+  onMuted?: (muted: boolean) => void
 }
 
 const base = (collectionId: string) => `/public/collection/${encodeURIComponent(collectionId)}/ai/guide`
@@ -147,6 +149,7 @@ export namespace guide {
       onCaption: options.onCaption,
       onReply: options.onReply,
       onError: options.onError,
+      onMuted: options.onMuted,
     }
     return startLive(opts)
   }

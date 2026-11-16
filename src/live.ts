@@ -68,6 +68,8 @@ export interface LiveOptions {
   /** A server tool's reply, for the page to act on (cards, screens to open…). */
   onToolReply?: (name: string, reply: LiveToolReply) => void | Promise<void>
   onError?: (message: string) => void
+  /** The microphone was muted or unmuted (mute / unmute). */
+  onMuted?: (muted: boolean) => void
   /** Names this client in the logs. */
   build?: string
 }
@@ -77,6 +79,12 @@ export interface LiveHandle {
   /** Stop listening and speaking without ending the session; anything it would say waits for `resume`. */
   pause: () => void
   resume: () => void
+  /** Stop listening, and only that: the assistant finishes what it is saying, keeps working, and still speaks. */
+  mute: () => void
+  unmute: () => void
+  muted: () => boolean
+  /** Stop the sentence it is saying now; it keeps listening. */
+  hush: () => void
   /** Text mode (or voice): give the assistant the person's words and have it answer. */
   send: (text: string) => void
   /** Tell the assistant something that happened in the page, and have it answer. */
@@ -95,6 +103,9 @@ export interface LiveHandle {
 }
 
 const CALLS_URL = 'https://api.openai.com/v1/realtime/calls'
+
+/** The service's answers that mean "there was nothing to cancel or clear": not shown as errors. */
+const HARMLESS = /response_cancel_not_active|no active response|output_audio_buffer|nothing to clear/i
 
 function meter(ctx: AudioContext, stream: MediaStream): () => number {
   const analyser = ctx.createAnalyser()
@@ -126,6 +137,9 @@ export async function startLive(opts: LiveOptions): Promise<LiveHandle> {
   let replyOwed = false
   let micTrack: MediaStreamTrack | null = null
   let micSender: RTCRtpSender | null = null
+  // A reply is being made (between response.created and response.done): only then is there one to cancel.
+  let responding = false
+  let muted = false
   let micLevel: () => number = () => 0
   let voiceLevel: () => number = () => 0
 
@@ -191,7 +205,7 @@ export async function startLive(opts: LiveOptions): Promise<LiveHandle> {
     const type = String(ev['type'] ?? '')
     if (type === 'input_audio_buffer.speech_started') setState('hearing')
     else if (type === 'input_audio_buffer.speech_stopped') setState('thinking')
-    else if (type === 'response.created') { caption = ''; if (textMode) setState('thinking') }
+    else if (type === 'response.created') { responding = true; caption = ''; if (textMode) setState('thinking') }
     else if (type === 'output_audio_buffer.started') setState('speaking')
     else if (type === 'output_audio_buffer.stopped' || type === 'output_audio_buffer.cleared') setState('listening')
     else if (/^response\.(output_audio_transcript|audio_transcript|output_text|text)\.delta$/.test(type)) {
@@ -199,6 +213,7 @@ export async function startLive(opts: LiveOptions): Promise<LiveHandle> {
       if (textMode) setState('speaking')
       opts.onCaption?.(caption)
     } else if (type === 'response.done') {
+      responding = false
       if (caption.trim()) {
         replies++
         opts.onReply?.(caption.trim())
@@ -212,7 +227,10 @@ export async function startLive(opts: LiveOptions): Promise<LiveHandle> {
           .then(() => { if (paused) replyOwed = true; else send({ type: 'response.create' }) })
       } else if (textMode) setState('listening')
     } else if (type === 'error') {
-      const message = String(((ev['error'] ?? {}) as Record<string, unknown>)['message'] ?? 'The assistant hit a problem')
+      const err = (ev['error'] ?? {}) as Record<string, unknown>
+      const message = String(err['message'] ?? 'The assistant hit a problem')
+      // "Nothing to cancel" (a pause or a stop between replies) is not a problem: say nothing.
+      if (HARMLESS.test(String(err['code'] ?? '')) || HARMLESS.test(message)) return
       log({ kind: 'error', error: message, detail: 'realtime service' })
       opts.onError?.(message)
     }
@@ -294,8 +312,8 @@ export async function startLive(opts: LiveOptions): Promise<LiveHandle> {
         paused = true
         void micSender?.replaceTrack(null).catch(() => undefined)
         send({ type: 'input_audio_buffer.clear' })
-        send({ type: 'response.cancel' })
-        if (!textMode) send({ type: 'output_audio_buffer.clear' })
+        if (responding) send({ type: 'response.cancel' })
+        if (!textMode && state === 'speaking') send({ type: 'output_audio_buffer.clear' })
         if (audio) audio.muted = true
         state = 'paused'
         opts.onState?.('paused')
@@ -304,7 +322,7 @@ export async function startLive(opts: LiveOptions): Promise<LiveHandle> {
       resume: () => {
         if (stopped || !paused) return
         paused = false
-        void micSender?.replaceTrack(micTrack).catch(() => undefined)
+        if (!muted) void micSender?.replaceTrack(micTrack).catch(() => undefined)
         if (audio) audio.muted = false
         state = 'listening'
         opts.onState?.('listening')
@@ -313,6 +331,27 @@ export async function startLive(opts: LiveOptions): Promise<LiveHandle> {
         if (waiting.length || replyOwed) send({ type: 'response.create' })
         replyOwed = false
         log({ kind: 'resume', detail: waiting.length ? `${waiting.length} message(s) held while paused` : '' })
+      },
+      mute: () => {
+        if (stopped || muted || state === 'connecting' || textMode) return
+        muted = true
+        void micSender?.replaceTrack(null).catch(() => undefined)
+        send({ type: 'input_audio_buffer.clear' })
+        opts.onMuted?.(true)
+        log({ kind: 'pause', detail: 'mic muted' })
+      },
+      unmute: () => {
+        if (stopped || !muted) return
+        muted = false
+        if (!paused) void micSender?.replaceTrack(micTrack).catch(() => undefined)
+        opts.onMuted?.(false)
+        log({ kind: 'resume', detail: 'mic on' })
+      },
+      muted: () => muted,
+      hush: () => {
+        if (stopped) return
+        if (responding) send({ type: 'response.cancel' })
+        if (!textMode && state === 'speaking') send({ type: 'output_audio_buffer.clear' })
       },
       send: (text: string) => { if (text.trim()) answer(text.trim()) },
       tell: (what: string) => answer(`[On screen] ${what}`),
@@ -325,7 +364,7 @@ export async function startLive(opts: LiveOptions): Promise<LiveHandle> {
       },
       session: () => sessionId,
       state: () => state,
-      level: () => (state === 'speaking' ? voiceLevel() : state === 'hearing' || state === 'listening' ? micLevel() : 0),
+      level: () => (state === 'speaking' ? voiceLevel() : !muted && (state === 'hearing' || state === 'listening') ? micLevel() : 0),
     }
   }
   return handle()
