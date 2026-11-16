@@ -66,6 +66,8 @@ export interface TestSlImpl {
     delete?(id: string): any; get?(id: string): any; query?(params: any): any; listTypes?(): any
     adjust?(id: string, by: Record<string, number>, opts?: any): any; aggregate?(params?: any): any; all?(recordType: string): any
   }
+  /** ctx.sl.userGroups.members(keys) — defaults to the `people` option. */
+  userGroups?: { members?(keys?: string[]): any }
   /** ctx.sl.appOptions.get(source, opts) — defaults to the in-memory one (records by convention, `valueLists`). */
   appOptions?: { get?(source: string, opts?: any): any }
   /** ctx.sl.transaction(ops, { idempotencyKey }) — defaults to the in-memory one (all or none, replay by key). */
@@ -139,6 +141,8 @@ export interface CreateFunctionTestContextOptions {
   knownInteractionTypes?: string[]
   /** Share one in-memory store between several contexts (e.g. concurrent callers in one test). */
   memory?: FunctionTestMemory
+  /** People `ctx.sl.userGroups.members` answers from: who is in which user group (by key). */
+  people?: Array<{ userId: string; name?: string | null; email?: string | null; userGroups: string[] }>
   /** Value lists `ctx.sl.appOptions.get('list:<id>')` answers from, by list id (as the admin saved them). */
   valueLists?: Record<string, Array<{ code: string; label?: string; active?: boolean }>>
 }
@@ -352,6 +356,11 @@ export function createFunctionTestContext(opts: CreateFunctionTestContextOptions
       adjust: gated('records', 'write', recordsFn('adjust'), 'adjust'),
       aggregate: gated('records', 'read', recordsFn('aggregate'), 'aggregate'),
       all: gated('records', 'read', recordsFn('all'), 'all'),
+    },
+    userGroups: {
+      members: gated('usergroups', 'read', impl.userGroups && impl.userGroups.members ? impl.userGroups.members.bind(impl.userGroups) : async (keys: string[] = []) =>
+        (opts.people || []).filter((p) => !keys.length || p.userGroups.some((k) => keys.includes(k)))
+          .map((p) => ({ userId: p.userId, name: p.name ?? null, email: p.email ?? null, userGroups: keys.length ? p.userGroups.filter((k) => keys.includes(k)) : [...p.userGroups] })), 'members'),
     },
     // Pickers, in memory: a type's records by the platform's conventions (label from data.label, then
     // name, then title; order from sortOrder), or a value list from `valueLists`.

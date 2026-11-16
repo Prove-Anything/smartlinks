@@ -644,6 +644,14 @@ export interface ServerFunctionSl {
     get(source: string, opts?: { q?: string; version?: string }): Promise<import('./appOptions').AppOptionsResponse>;
   };
   /**
+   * Who is in the collection's user groups, by key (all keyed groups when `keys` is empty): staff lists,
+   * and addressing a team. Needs `sl:usergroups:read` and collection authority. At most 500 people,
+   * sorted by name; members whose account is gone are left out. docs/user-groups.md
+   */
+  userGroups: {
+    members(keys?: string[]): Promise<Array<{ userId: string; name: string | null; email: string | null; userGroups: string[] }>>;
+  };
+  /**
    * Several record writes that land together or not at all (take 5 from bin A AND add 5 to order line B
    * AND log the move). Needs `sl:records:write`; THIS app's records in THIS collection only. A failing op
    * rolls everything back; its error says which (`opIndex`) and why (`code`). With `idempotencyKey`, a
