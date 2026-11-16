@@ -1163,6 +1163,15 @@ export interface AppManifest {
    */
   admin?: string;
 
+  /**
+   * The page a host opens as this app's ADMIN screen, from the app's root: `"admin.html"` or
+   * `"index.html"`. Hosts (Studio, the console, Forge's preview) read it instead of guessing.
+   * Absent → the host's default: `admin.html` for an installed app, the root page (`index.html`) for a
+   * core app. Declare it when that default is wrong — e.g. AuthKit (`core-account`), whose root page
+   * is the PUBLIC sign-in screen every site redirects to, and whose admin is `admin.html`.
+   */
+  adminPage?: string;
+
   /** Widget bundle definition. Presence means a widget bundle exists for this app. */
   widgets?: AppManifestWidgets;
 

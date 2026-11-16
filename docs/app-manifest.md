@@ -219,6 +219,25 @@ A relative path (from the app's public root) to the `app.admin.json` file. Omit 
 "admin": "app.admin.json"
 ```
 
+#### `adminPage`
+
+The page a host opens as the app's **admin screen**, from the app's root: `"admin.html"` or `"index.html"`.
+Studio, the console and Forge's preview read it rather than guess. Omit it to take the host's default:
+
+| App | Default admin page |
+|-----|--------------------|
+| An installed app | `admin.html` |
+| A core app (`core-<name>`, one of Studio's own sections) | the root page, `index.html` |
+
+Declare it when the default is wrong. AuthKit (`core-account`) is the example: its root page is the
+**public sign-in screen** every site sends people to, so its admin lives at `admin.html`:
+
+```json
+"adminPage": "admin.html"
+```
+
+Never move a public page off the root to make room for the admin: sign-in links and embeds point at the root.
+
 #### `widgets`
 
 Declares the widget bundle. Omit if the app has no widget component.
