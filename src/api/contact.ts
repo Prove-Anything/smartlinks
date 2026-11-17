@@ -1,5 +1,5 @@
 import { request, post, del, patch } from "../http"
-import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, ContactSearchParams, ContactSearchResponse, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse, ContactPublic, ContactPatch, PublicGetMyContactResponse, PublicUpdateMyContactResponse, ContactSchemaResponse } from "../types"
+import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, ContactSearchParams, ContactSearchResponse, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse, ContactPublic, ContactPatch, PublicGetMyContactResponse, PublicUpdateMyContactResponse, ContactSchemaResponse, ContactDuplicatesResponse, ContactMergeResponse, ContactLinkLoginResponse } from "../types"
 
 export namespace contact {
   export async function create(collectionId: string, data: ContactCreateRequest): Promise<ContactResponse> {
@@ -179,6 +179,88 @@ export namespace contact {
   export async function erase(collectionId: string, contactId: string, body?: any): Promise<ContactResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/${encodeURIComponent(contactId)}/erase`
     return post<ContactResponse>(path, body || {})
+  }
+
+  /**
+   * Admin: pairs of contacts that look like one person.
+   * GET /admin/collection/:collectionId/contacts/duplicates
+   *
+   * The pattern it finds: someone the collection knew by email first (an import, a list, a form) who
+   * later signed in. Their sign-in got a second contact, which could not take the email the first one
+   * already held — so one contact has the email and no sign-in, the other the sign-in (and everything
+   * they did) and no email. The match is made on the server, on verified addresses only.
+   *
+   * Checks a window of contacts per call; while `more` is true, call again with `offset` moved on by
+   * `scanned`.
+   *
+   * @example
+   * ```typescript
+   * const { pairs } = await contact.findDuplicates(collectionId)
+   * for (const pair of pairs) {
+   *   await contact.merge(collectionId, pair.keep.contactId, pair.merge.contactId)
+   * }
+   * ```
+   */
+  export async function findDuplicates(
+    collectionId: string,
+    params?: { limit?: number; offset?: number }
+  ): Promise<ContactDuplicatesResponse> {
+    const query = new URLSearchParams()
+    if (params?.limit !== undefined) query.set("limit", String(params.limit))
+    if (params?.offset !== undefined) query.set("offset", String(params.offset))
+    const qs = query.toString()
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/duplicates${qs ? `?${qs}` : ""}`
+    return request<ContactDuplicatesResponse>(path)
+  }
+
+  /**
+   * Admin: fold contact `fromContactId` INTO contact `keepContactId`.
+   * POST /admin/collection/:collectionId/contacts/:keepContactId/merge
+   *
+   * The kept contact gains the other's sign-in, emails and phones, and anything it had no value for;
+   * its own values win. Everything recorded against the other contact moves to the kept one. Consent is
+   * never loosened: an opt-out on either contact stays an opt-out. The other contact is soft-deleted and
+   * marked with `customFields.mergedInto`.
+   *
+   * Refused (HTTP 409, `error` = a `ContactMergeErrorCode`) when the two have different sign-ins
+   * (`LOGIN_CONFLICT`) or are both members of the same loyalty scheme (`LOYALTY_CONFLICT`).
+   */
+  export async function merge(
+    collectionId: string,
+    keepContactId: string,
+    fromContactId: string
+  ): Promise<ContactMergeResponse> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/${encodeURIComponent(keepContactId)}/merge`
+    return post<ContactMergeResponse>(path, { fromContactId })
+  }
+
+  /**
+   * Admin: the contact that carries a sign-in, attaching the sign-in first to the contact that already
+   * holds its verified email or phone.
+   * POST /admin/collection/:collectionId/contacts/link-login
+   *
+   * For a service about to create a contact for a `userId`: call this first and only create when it
+   * throws 404 (`NOTHING_TO_LINK`), so a person the collection already knows by email stays one contact.
+   * The address is read from the sign-in itself and must be verified; nothing the caller says about an
+   * email is used. Never creates a contact.
+   *
+   * @example
+   * ```typescript
+   * let contactId: string
+   * try {
+   *   contactId = (await contact.linkLogin(collectionId, userId)).contactId
+   * } catch (err) {
+   *   if (err.statusCode !== 404) throw err
+   *   contactId = (await contact.create(collectionId, { userId, source: 'my-service' })).contactId
+   * }
+   * ```
+   */
+  export async function linkLogin(
+    collectionId: string,
+    userId: string
+  ): Promise<ContactLinkLoginResponse> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/link-login`
+    return post<ContactLinkLoginResponse>(path, { userId })
   }
 
   // get user
