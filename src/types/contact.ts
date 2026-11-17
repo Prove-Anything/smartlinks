@@ -97,6 +97,9 @@ export interface ContactMergeResponse {
     assets?: number
     uploadTokens?: number
     aiSessions?: number
+    /** One-to-one messages and Inbox conversations with them. */
+    messages?: number
+    conversations?: number
   }
   /** The kept contact after the merge. */
   contact: Contact
