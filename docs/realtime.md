@@ -37,6 +37,26 @@ off()
 - **A change carries ids, never data.** Refetch through the normal API, which applies the normal
   permissions, so realtime can never show someone data they couldn't read anyway.
 
+### Changes to what your app works on: `onStaffChange`
+
+Work orders, containers and stock aren't public and aren't only for admins: the people on a production
+floor or in a warehouse need to see them move. Those changes go to the app's **staff feed**:
+
+```ts
+// Every screen of a production app refetches when a job, a container or stock changes.
+const off = realtime.onStaffChange({ collectionId, appId }, {}, () => queryClient.invalidateQueries())
+```
+
+- **Types:** `workOrder` (`id`, `appId`), `container` (`id`, `kind` = its container type), `stock`
+  (`id` = the container, `productId`). Filter as with `onChange`: `{ type: 'workOrder', id }`.
+- **What is sent:** a change to one of the app's work orders; a change to a container or stock made
+  **by the app's own server functions**; and a change to one of the app's own records (`type: 'record'`,
+  with `recordType`), except a person's private ones. Sent after the change is saved, each thing once.
+- **Who hears it:** someone in one of the app's user groups, and collection admins. By default the
+  groups are the ones the app's server functions are limited to (`userGroups` on each function).
+  To say otherwise, name them: `"realtime": { "staff": ["manager", "warehouse-operative"] }`.
+- **IDs only**, as always: refetch through your own functions, which apply your own rules.
+
 With React Query, invalidate on change:
 
 ```ts

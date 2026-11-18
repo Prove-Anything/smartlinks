@@ -88,6 +88,18 @@ describe('realtime', () => {
     off()
   })
 
+  test("onStaffChange: the app's staff feed, asked for with the app, filtered like any change", async () => {
+    const got: any[] = []
+    const off = realtime.onStaffChange({ collectionId: 'c1', appId: 'accord' }, { type: 'workOrder' }, (c) => got.push(c.id))
+    await wait()
+    assert.deepEqual(connects[0], { collectionId: 'c1', appId: 'accord', feeds: ['staff'], channels: [] })
+    FakeEventSource.last!.emit('sl:c1:staff', 'change', { type: 'workOrder', id: 'w1', appId: 'accord', at: 1 })
+    FakeEventSource.last!.emit('sl:c1:staff', 'change', { type: 'stock', id: 'd1', productId: 'juice', at: 2 })
+    FakeEventSource.last!.emit('sl:c1:staff', 'other', { type: 'workOrder', id: 'w2' })
+    assert.deepEqual(got, ['w1'])
+    off()
+  })
+
   test('onChange: an admin gets both feeds but hears each change once (from the admin feed)', async () => {
     grant = (body) => (body.feeds || []).map((f: string) => ({ name: `feed:${f}`, channel: `sl:c1:${f}` }))
     const got: any[] = []

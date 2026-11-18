@@ -1231,7 +1231,15 @@ export interface AppManifest {
    * "realtime": { "channels": [ { "name": "draw", "subscribe": "public", "publish": "admin" } ] }
    * ```
    */
-  realtime?: { channels: RealtimeChannelDeclaration[] };
+  realtime?: {
+    channels?: RealtimeChannelDeclaration[];
+    /**
+     * Who hears changes to what this app works on (`realtime.onStaffChange`: its work orders, the
+     * containers and stock it moves), as user group keys. Absent: every user group the app's server
+     * functions are limited to. `[]`: nobody but collection admins.
+     */
+    staff?: string[];
+  };
 
   /**
    * Cards this app adds to the collection's dashboard in Studio. A `data` card names an ADMIN server

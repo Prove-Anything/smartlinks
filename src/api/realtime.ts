@@ -207,7 +207,7 @@ export function channel(scope: RealtimeScope & { appId: string }, name: string) 
 }
 
 function matches(change: RealtimeChangeEvent, filter: RealtimeChangeFilter): boolean {
-  for (const k of ["type", "id", "appId", "recordType", "productId", "proofId"] as const) {
+  for (const k of ["type", "id", "appId", "recordType", "productId", "proofId", "kind"] as const) {
     if (filter[k] !== undefined && change[k] !== filter[k]) return false
   }
   return true
@@ -240,6 +240,30 @@ export function onChange(scope: RealtimeScope, filter: RealtimeChangeFilter, onC
     offAdmin()
     offPublic()
   }
+}
+
+/**
+ * Something this APP works on changed: one of its work orders, a container or stock it moved, or one of
+ * its own records.
+ * For the people who use the app, admins or not: someone hears these when they are in one of the app's
+ * user groups (the ones its server functions are limited to, or `realtime.staff` in its manifest), and
+ * so does a collection admin. IDs only — refetch through your own API.
+ *
+ * Types: 'workOrder' (`id`, `appId`), 'container' (`id`, `kind` = its container type), 'stock' (`id` =
+ * the container, `productId`), 'record' (`id`, `recordType`). Filter as with `onChange`; an empty filter
+ * hears them all.
+ *
+ * ```ts
+ * // A production app's screens refetch when anything on the floor changes.
+ * useEffect(() => realtime.onStaffChange({ collectionId, appId }, {}, () => queryClient.invalidateQueries()), [collectionId, appId])
+ * ```
+ */
+export function onStaffChange(scope: RealtimeScope & { appId: string }, filter: RealtimeChangeFilter, onChangeFn: (change: RealtimeChangeEvent) => void): () => void {
+  return streamFor({ collectionId: scope.collectionId, appId: scope.appId }).add("feed:staff", (m: RealtimeMessage) => {
+    if (m.event !== "change" || !m.data || typeof m.data !== "object") return
+    const change = m.data as RealtimeChangeEvent
+    if (matches(change, filter)) onChangeFn(change)
+  })
 }
 
 /**
