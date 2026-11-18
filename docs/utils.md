@@ -670,8 +670,24 @@ await utils.validateCondition({
 })
 ```
 
-#### Nested Conditions
-Reference other condition sets for reusability:
+#### Saved Conditions (by id)
+A collection keeps **saved conditions**: named rule sets such as "UK only" or "In the stadium", made in Studio or with the `conditions` API. Check one by id and the SDK loads it from the collection by itself (cached for the page):
+
+```typescript
+import { utils, conditions } from '@proveanything/smartlinks'
+
+const show = await utils.validateCondition({
+  conditionId: 'nfCmuWDY',
+  collection: { id: 'col1' },
+  user: { valid: true, location: { country: 'GB' } },
+})
+
+// Admin: list, create, change, remove
+const all = await conditions.list('col1', true)
+await conditions.create('col1', { title: 'UK only', type: 'and', conditions: [{ type: 'country', countries: ['GB'], contains: true }] })
+```
+
+A rule can also refer to another saved condition, for reuse:
 
 ```typescript
 await utils.validateCondition({
@@ -683,14 +699,12 @@ await utils.validateCondition({
       passes: true  // true = must pass, false = must fail
     }]
   },
-  conditionId: 'mobile-users-condition',
-  fetchCondition: async (collectionId, conditionId) => {
-    // Your logic to fetch condition by ID
-    return { type: 'and', conditions: [...] }
-  },
-  collection: { id: 'col1' }
+  collection: { id: 'col1' },
 })
 ```
+
+- A saved condition that's switched off (`disabled: true`) passes for everyone; so does one that can't be found.
+- Pass `fetchCondition: async (collectionId, conditionId) => ConditionSet | null` to load them your own way (from data you already have, or in a test).
 
 ### Combining Conditions (AND/OR Logic)
 

@@ -1,6 +1,7 @@
 // src/utils/conditions.ts
 
 import type { ItemContext } from '../types/itemContext'
+import { request } from '../http'
 
 /**
  * Geographic region definitions for country-based conditions
@@ -354,7 +355,7 @@ export interface ConditionParams {
   itemContext?: ItemContext
   /** Statistics/tracking information */
   stats?: StatsInfo
-  /** Function to fetch conditions by ID (optional) */
+  /** Load a saved condition by id (optional; by default the collection's saved conditions are read with `conditions.get`) */
   fetchCondition?: (collectionId: string, conditionId: string) => Promise<ConditionSet | null>
   /** Function to get user's current location (optional) */
   getLocation?: () => Promise<{ latitude: number; longitude: number }>
@@ -390,6 +391,15 @@ type InternalConditionParams = ConditionParams & {
 
 // Condition cache
 const conditionCache: Record<string, ConditionSet> = {}
+
+/** The default loader: a collection's saved condition, from the public API; null when there isn't one. */
+async function fetchSavedCondition(collectionId: string, conditionId: string): Promise<ConditionSet | null> {
+  try {
+    return await request<ConditionSet>(`/public/collection/${encodeURIComponent(collectionId)}/condition/${encodeURIComponent(conditionId)}`)
+  } catch {
+    return null
+  }
+}
 const CONDITION_DEBUG_GLOBAL_KEY = 'SMARTLINKS_CONDITION_DEBUG'
 
 function defaultConditionDebugLogger(...args: any[]) {
@@ -636,9 +646,9 @@ export async function validateCondition(params: ConditionParams): Promise<boolea
     // Check cache first
     if (!conditionCache[params.conditionId]) {
       logConditionDebug(debugState, 'Condition cache miss.', { conditionId: params.conditionId })
-      // Try to fetch if function provided
-      if (params.fetchCondition && params.collection) {
-        const fetchedCond = await params.fetchCondition(params.collection.id, params.conditionId)
+      // Fetch it: the caller's own loader, else the collection's saved conditions
+      if (params.collection) {
+        const fetchedCond = await (params.fetchCondition ?? fetchSavedCondition)(params.collection.id, params.conditionId)
         if (fetchedCond) {
           conditionCache[params.conditionId] = fetchedCond
           logConditionDebug(debugState, 'Fetched condition into cache.', {
@@ -663,6 +673,12 @@ export async function validateCondition(params: ConditionParams): Promise<boolea
     logConditionDebug(debugState, 'Evaluating inline condition set.', {
       conditionSet: cond ? summarizeConditionSet(cond) : 'none',
     })
+  }
+
+  // A switched-off condition passes for everyone
+  if ((cond as { disabled?: boolean } | undefined)?.disabled) {
+    logConditionDebug(debugState, 'Condition is switched off; passing.')
+    return true
   }
 
   if (!cond) {
