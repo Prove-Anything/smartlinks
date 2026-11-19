@@ -271,9 +271,15 @@ export namespace claimSet {
       return put<{ tag: ClaimSetRangeTag; range: ClaimSetRange }>(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/tags/${encodeURIComponent(code)}`, params)
     }
 
-    /** The printer file (CSV text in `csv`). Carries the tags' keys: don't keep it around. */
-    export async function exportFile(scope: ClaimSetScope, claimSetId: string, rangeId: string): Promise<ClaimSetRangeFile> {
-      return request<ClaimSetRangeFile>(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/export?as=json`)
+    /**
+     * The printer file (CSV text in `csv`). Carries the tags' keys: don't keep it around. A computed set's
+     * run downloads in parts: `from` / `to` are indexes inside the range, up to 200,000 tags a file.
+     */
+    export async function exportFile(scope: ClaimSetScope, claimSetId: string, rangeId: string, part?: { from?: number; to?: number }): Promise<ClaimSetRangeFile> {
+      const q = new URLSearchParams({ as: 'json' })
+      if (part && part.from !== undefined) q.set('from', String(part.from))
+      if (part && part.to !== undefined) q.set('to', String(part.to))
+      return request<ClaimSetRangeFile>(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/export?${q.toString()}`)
     }
 
     /** The manufacturer's instruction sheet: PDF (base64) or Markdown. */

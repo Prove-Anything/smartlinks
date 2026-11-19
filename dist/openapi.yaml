@@ -15670,6 +15670,16 @@ paths:
           required: true
           schema:
             type: string
+        - name: from
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: to
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         200:
           description: Success
@@ -27634,6 +27644,8 @@ components:
       properties:
         changed:
           type: number
+        wholeRange:
+          type: boolean
         skipped:
           type: array
           items:
@@ -27722,6 +27734,17 @@ components:
           additionalProperties: true
         codes:
           type: number
+        codeSource:
+          type: string
+          enum:
+            - stored
+            - computed
+        sigBits:
+          type: number
+        bareCodes:
+          type: boolean
+        unassignedUrl:
+          type: string
         deleted:
           type: boolean
         createdAt:
@@ -27767,9 +27790,69 @@ components:
           $ref: "#/components/schemas/ClaimSetTagType"
         tapDomain:
           type: string
+        codeSource:
+          type: string
+          enum:
+            - stored
+            - computed
+        sigBits:
+          type: number
+        bareCodes:
+          type: boolean
+        unassignedUrl:
+          type: string
       required:
         - name
         - tagType
+    TagCodeRef:
+      type: object
+      properties:
+        url:
+          type: string
+        claimSetId:
+          type: string
+        code:
+          type: string
+    TagCodeAttachRequest:
+      type: object
+      properties:
+        productId:
+          type: string
+        proofId:
+          type: string
+      required:
+        - productId
+        - proofId
+    TagCodeState:
+      type: object
+      properties:
+        claimSetId:
+          type: string
+        code:
+          type: string
+        url:
+          type: string
+        computed:
+          type: boolean
+        tagType:
+          $ref: "#/components/schemas/ClaimSetTagType"
+        status:
+          type: string
+          enum:
+            - free
+            - attached
+            - elsewhere
+        productId:
+          type: string
+        proofId:
+          type: string
+      required:
+        - claimSetId
+        - code
+        - url
+        - computed
+        - tagType
+        - status
     ClaimSetScope:
       type: object
       properties:

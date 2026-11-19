@@ -228,9 +228,17 @@ export var claimSet;
             return put(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/tags/${encodeURIComponent(code)}`, params);
         }
         ranges.recordTag = recordTag;
-        /** The printer file (CSV text in `csv`). Carries the tags' keys: don't keep it around. */
-        async function exportFile(scope, claimSetId, rangeId) {
-            return request(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/export?as=json`);
+        /**
+         * The printer file (CSV text in `csv`). Carries the tags' keys: don't keep it around. A computed set's
+         * run downloads in parts: `from` / `to` are indexes inside the range, up to 200,000 tags a file.
+         */
+        async function exportFile(scope, claimSetId, rangeId, part) {
+            const q = new URLSearchParams({ as: 'json' });
+            if (part && part.from !== undefined)
+                q.set('from', String(part.from));
+            if (part && part.to !== undefined)
+                q.set('to', String(part.to));
+            return request(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/export?${q.toString()}`);
         }
         ranges.exportFile = exportFile;
         /** The manufacturer's instruction sheet: PDF (base64) or Markdown. */

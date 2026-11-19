@@ -131,8 +131,14 @@ export declare namespace claimSet {
             tag: ClaimSetRangeTag;
             range: ClaimSetRange;
         }>;
-        /** The printer file (CSV text in `csv`). Carries the tags' keys: don't keep it around. */
-        function exportFile(scope: ClaimSetScope, claimSetId: string, rangeId: string): Promise<ClaimSetRangeFile>;
+        /**
+         * The printer file (CSV text in `csv`). Carries the tags' keys: don't keep it around. A computed set's
+         * run downloads in parts: `from` / `to` are indexes inside the range, up to 200,000 tags a file.
+         */
+        function exportFile(scope: ClaimSetScope, claimSetId: string, rangeId: string, part?: {
+            from?: number;
+            to?: number;
+        }): Promise<ClaimSetRangeFile>;
         /** The manufacturer's instruction sheet: PDF (base64) or Markdown. */
         function instructions(scope: ClaimSetScope, claimSetId: string, rangeId: string, format?: 'pdf' | 'md'): Promise<ClaimSetRangeFile>;
         /** The manufacturer's file back: check it (commit false), then write the chip UIDs (commit true). */

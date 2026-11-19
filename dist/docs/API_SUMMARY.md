@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.24  |  Generated: 2026-11-19T13:27:14.982Z
+Version: 2.1.25  |  Generated: 2026-11-19T14:54:46.566Z
 
 This is a concise summary of all available API functions and types.
 
@@ -164,6 +164,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **realtime** - Functions for realtime operations
 - **research** - Functions for research operations
 - **secrets** - Functions for secrets operations
+- **tagCodes** - Functions for tagCodes operations
 - **tags** - Functions for tags operations
 - **template** - Functions for template operations
 - **translations** - Functions for translations operations
@@ -6278,6 +6279,7 @@ interface AssignClaimSetRangeRequest {
 ```typescript
 interface AssignClaimSetRangeResponse {
   changed: number
+  wholeRange?: boolean
   skipped: Array<{ code: string; index: number; reason: 'other_range' | 'has_proof' | 'assigned_elsewhere'; collectionId?: string }>
   range: ClaimSetRange
 }
@@ -6319,6 +6321,10 @@ interface PartnerClaimSet {
   tapDomain: string
   owner: { type: 'platform' | 'partner' | 'collection' | 'user'; id: string | null }
   codes: number
+  codeSource?: 'stored' | 'computed'
+  sigBits?: number
+  bareCodes?: boolean
+  unassignedUrl?: string | null
   deleted: boolean
   createdAt: string | null
 }
@@ -6342,6 +6348,33 @@ interface CreatePartnerClaimSetRequest {
   name: string
   tagType: ClaimSetTagType
   tapDomain?: string
+  codeSource?: 'stored' | 'computed'
+  sigBits?: number
+  bareCodes?: boolean
+  unassignedUrl?: string
+}
+```
+
+**TagCodeRef** (interface)
+```typescript
+interface TagCodeRef {
+  url?: string
+  claimSetId?: string
+  code?: string
+}
+```
+
+**TagCodeState** (interface)
+```typescript
+interface TagCodeState {
+  claimSetId: string
+  code: string
+  url: string
+  computed: boolean
+  tagType: ClaimSetTagType
+  status: 'free' | 'attached' | 'elsewhere'
+  productId?: string | null
+  proofId?: string | null
 }
 ```
 
@@ -15230,6 +15263,17 @@ List the skills apps can invoke (name, description, input/output schema).
 
 **run**(collectionId: string, name: string, input: Record<string, any> = {}) → `Promise<T>`
 Invoke a skill by name with structured input — the app-facing verb; no prompt-shaping. POST /admin/collection/:collectionId/ai/skills/:name/run
+
+### tagCodes
+
+**lookup**(collectionId: string, tag: TagCodeRef) → `Promise<TagCodeState>`
+What a tag is, as far as this collection may know: free, attached here (to what), or elsewhere.
+
+**attach**(collectionId: string, params: TagCodeAttachRequest) → `Promise<TagCodeState>`
+Put a tag on an asset: its asset type (productId) and the asset itself (proofId). Refused when the tag belongs to another organisation, or is already on another asset (detach it first).
+
+**detach**(collectionId: string, tag: TagCodeRef) → `Promise<TagCodeState>`
+Take a tag off its asset. It stays this collection's, free to go on another.
 
 ### tags
 

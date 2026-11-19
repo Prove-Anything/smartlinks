@@ -186,7 +186,7 @@ export interface CreateClaimSetRangeRequest {
   /** Default 'range'. Owners and admins make ranges and open ranges; assigners may make groups too. */
   kind?: ClaimSetRangeKind
   name: string
-  /** 1 to 10,000 (a range); ignored for open ranges and groups */
+  /** 1 to 10,000 (a range), or up to 1,000,000 in a computed set; ignored for open ranges and groups */
   quantity?: number
   /** Pre-assign every tag at mint time (you must administer the collection) */
   intendedCollectionId?: string
@@ -301,6 +301,8 @@ export interface AssignClaimSetRangeRequest {
 
 export interface AssignClaimSetRangeResponse {
   changed: number
+  /** A whole computed run, assigned on the range itself (one write, however many tags) */
+  wholeRange?: boolean
   skipped: Array<{ code: string; index: number; reason: 'other_range' | 'has_proof' | 'assigned_elsewhere'; collectionId?: string }>
   range: ClaimSetRange
 }
@@ -338,6 +340,14 @@ export interface PartnerClaimSet {
   tapDomain: string
   owner: { type: 'platform' | 'partner' | 'collection' | 'user'; id: string | null }
   codes: number
+  /** 'computed': codes are worked out from their index, nothing stored until one is claimed (QR only) */
+  codeSource?: 'stored' | 'computed'
+  /** computed sets: the signature size, 16 to 32 bits (default 24) */
+  sigBits?: number
+  /** computed sets: this set answers bare codes on its domain, https://{tapDomain}/{code} */
+  bareCodes?: boolean
+  /** computed sets: where an unused code's scan goes; {set} and {code} are filled in */
+  unassignedUrl?: string | null
   deleted: boolean
   createdAt: string | null
 }
@@ -358,4 +368,47 @@ export interface CreatePartnerClaimSetRequest {
   tagType: ClaimSetTagType
   /** One of the partner's tap domains; default smartlinks.app */
   tapDomain?: string
+  /**
+   * 'computed' (QR only): codes are worked out from their index and nothing is stored per code until one is
+   * claimed, so a run can hold up to 1,000,000 tags. Default 'stored'.
+   */
+  codeSource?: 'stored' | 'computed'
+  /** computed sets: signature size, 16 to 32 bits; default 24 (about 1 in 16.7 million guesses passes) */
+  sigBits?: number
+  /** computed sets: answer bare codes on the tap domain (https://{domain}/{code}); one set per domain */
+  bareCodes?: boolean
+  /** computed sets: a full https:// address for an unused code's scan, with {set} and {code} placeholders */
+  unassignedUrl?: string
+}
+
+// ── Tag codes on a collection's things (api/tagCodes.ts, docs/tag-codes.md) ────────────────────────────────
+
+/** A scanned tag: the address it carries, or its set and code. */
+export interface TagCodeRef {
+  /** What the scan read: https://{domain}/{code} or https://{domain}/t/{set}/{code} */
+  url?: string
+  claimSetId?: string
+  code?: string
+}
+
+export interface TagCodeAttachRequest extends TagCodeRef {
+  /** The asset's type (a product) */
+  productId: string
+  /** The asset (a proof) */
+  proofId: string
+}
+
+export interface TagCodeState {
+  claimSetId: string
+  code: string
+  /** The address the tag carries */
+  url: string
+  /** A computed set's code (printed QR, nothing stored until attached) */
+  computed: boolean
+  tagType: ClaimSetTagType
+  /** free: not on anything, may be attached here; attached: on one of this collection's assets; elsewhere: another organisation's */
+  status: 'free' | 'attached' | 'elsewhere'
+  /** Only for this collection's own tags */
+  productId?: string | null
+  proofId?: string | null
 }
