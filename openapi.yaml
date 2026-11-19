@@ -70,6 +70,8 @@ tags:
     description: Collection (tenant) configuration and resources.
   - name: comms
     description: Communications preferences, consent and delivery.
+  - name: conditions
+    description: conditions API
   - name: config
     description: Proof-type and platform configuration.
   - name: contact
@@ -3223,6 +3225,70 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ContactCreateRequest"
+  /admin/collection/{collectionId}/contacts/duplicates:
+    get:
+      tags:
+        - contact
+      summary: "Admin: pairs of contacts that look like one person."
+      operationId: contact_findDuplicates
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactDuplicatesResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/contacts/link-login:
+    post:
+      tags:
+        - contact
+      summary: "Admin: the contact that carries a sign-in, attaching the sign-in first to the contact that already holds its verified email or phone."
+      operationId: contact_linkLogin
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactLinkLoginResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/contacts/lookup:
     get:
       tags:
@@ -3260,6 +3326,65 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/contacts/query:
+    get:
+      tags:
+        - contact
+      summary: "What a contacts query can use: its fields and what each can filter, sort, group or total."
+      operationId: contact_queryFields
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryDescription"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    post:
+      tags:
+        - contact
+      summary: "The standard query on contacts (admin only): filter, sort, page, count and total in one call."
+      operationId: contact_query
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StandardQuery"
   /admin/collection/{collectionId}/contacts/search:
     get:
       tags:
@@ -3532,6 +3657,38 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ContactResponse"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /admin/collection/{collectionId}/contacts/{keepContactId}/merge:
+    post:
+      tags:
+        - contact
+      summary: "Admin: fold contact `fromContactId` INTO contact `keepContactId`."
+      operationId: contact_merge
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: keepContactId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContactMergeResponse"
         400:
           description: Bad request
         401:
@@ -7874,6 +8031,65 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ProductCreateRequest"
+  /admin/collection/{collectionId}/products/standard/query:
+    get:
+      tags:
+        - products
+      summary: "What a products standard query can use: its fields and what each can filter, sort, group or total."
+      operationId: products_standardQueryFields
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryDescription"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    post:
+      tags:
+        - products
+      summary: "The standard query on products (admin only): the one query shape every resource is moving to, with counts, totals and filtering by facet."
+      operationId: products_standardQuery
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StandardQuery"
   /admin/collection/{collectionId}/products/{productId}:
     put:
       tags:
@@ -8244,6 +8460,65 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/proof/query:
+    get:
+      tags:
+        - proof
+      summary: "What a proofs query can use: its fields, what each can filter, sort, group or total, and its links."
+      operationId: proof_queryFields
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryDescription"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    post:
+      tags:
+        - proof
+      summary: "The standard query on proofs (admin only): filter, sort, page, count and total a collection's proofs in one call, and follow a proof to its `product` and its `owner` (the owner's contact)."
+      operationId: proof_query
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StandardQuery"
   /admin/collection/{collectionId}/research/fetch:
     post:
       tags:
@@ -15203,6 +15478,32 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /{conditionId}:
+    get:
+      tags:
+        - conditions
+      summary: One saved condition.
+      operationId: conditions_get
+      security: []
+      parameters:
+        - name: conditionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedCondition"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /{groupId}/members:
     post:
       tags:
@@ -16316,6 +16617,83 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/PreviewRuleParams"
+  /{zone}/collection/{collectionId}/app/{appId}/records/query:
+    get:
+      tags:
+        - records
+      summary: "What a records query can use: its fields, what each can filter, sort, group or total, and its links."
+      operationId: records_queryFields
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryDescription"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    post:
+      tags:
+        - records
+      summary: "The standard query on an app's records (admin only): filter, sort, page, count and total in one call, reaching into a record's own fields by path, and following a record to its `product` and its `contact`."
+      operationId: records_query
+      security: []
+      parameters:
+        - name: zone
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/QueryResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StandardQuery"
   /{zone}/collection/{collectionId}/app/{appId}/records/resolve-all:
     post:
       tags:
@@ -21669,6 +22047,8 @@ components:
             type: string
         admin:
           type: string
+        adminPage:
+          type: string
         widgets:
           $ref: "#/components/schemas/AppManifestWidgets"
         containers:
@@ -21699,6 +22079,14 @@ components:
         realtime:
           type: object
           additionalProperties: true
+        channels:
+          type: array
+          items:
+            $ref: "#/components/schemas/RealtimeChannelDeclaration"
+        staff:
+          type: array
+          items:
+            type: string
         adminCards:
           $ref: "#/components/schemas/AppManifestAdminCards"
         data:
@@ -21741,6 +22129,55 @@ components:
             $ref: "#/components/schemas/AppAssistantFile"
         preview:
           type: string
+        purpose:
+          type: string
+        objects:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssistantObject"
+        words:
+          type: object
+          additionalProperties:
+            type: string
+        recipes:
+          type: array
+          items:
+            $ref: "#/components/schemas/AssistantRecipe"
+    AssistantObject:
+      type: object
+      properties:
+        object:
+          type: string
+        where:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        means:
+          type: string
+        fields:
+          type: object
+          additionalProperties:
+            type: string
+        write:
+          type: string
+          enum:
+            - direct
+            - actions
+            - none
+      required:
+        - object
+        - means
+    AssistantRecipe:
+      type: object
+      properties:
+        question:
+          type: string
+        answer:
+          type: string
+      required:
+        - question
+        - answer
     ConnectorConnectionField:
       type: object
       properties:
@@ -28537,6 +28974,91 @@ components:
         - items
         - limit
         - offset
+    ContactDuplicatePair:
+      type: object
+      properties:
+        keep:
+          $ref: "#/components/schemas/Contact"
+        merge:
+          $ref: "#/components/schemas/Contact"
+        matchedOn:
+          type: object
+          additionalProperties: true
+      required:
+        - keep
+        - merge
+        - matchedOn
+    ContactDuplicatesResponse:
+      type: object
+      properties:
+        pairs:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContactDuplicatePair"
+        scanned:
+          type: number
+        more:
+          type: boolean
+      required:
+        - pairs
+        - scanned
+        - more
+    ContactMergeResponse:
+      type: object
+      properties:
+        contactId:
+          type: string
+        mergedFrom:
+          type: string
+        moved:
+          type: object
+          additionalProperties: true
+        login:
+          type: boolean
+        identities:
+          type: number
+        records:
+          type: number
+        cases:
+          type: number
+        threads:
+          type: number
+        bookings:
+          type: number
+        loyaltyMembers:
+          type: number
+        assets:
+          type: number
+        uploadTokens:
+          type: number
+        aiSessions:
+          type: number
+        messages:
+          type: number
+        conversations:
+          type: number
+        contact:
+          $ref: "#/components/schemas/Contact"
+      required:
+        - contactId
+        - mergedFrom
+        - moved
+        - login
+        - identities
+        - contact
+    ContactLinkLoginResponse:
+      type: object
+      properties:
+        contactId:
+          type: string
+        linked:
+          type: boolean
+        contact:
+          $ref: "#/components/schemas/Contact"
+      required:
+        - contactId
+        - linked
+        - contact
     ContactSearchParams:
       type: object
       properties:
@@ -28904,6 +29426,9 @@ components:
       $ref: "#/components/schemas/Contact"
     ContactUpdateRequest:
       $ref: "#/components/schemas/ContactCreateRequest"
+    ContactMergeErrorCode:
+      type: object
+      additionalProperties: true
     PublicContactUpsertRequest:
       $ref: "#/components/schemas/Contact"
     ContactPatch:
@@ -35299,6 +35824,136 @@ components:
           type: string
       required:
         - code
+    QueryFieldTest:
+      type: object
+      properties:
+        eq:
+          $ref: "#/components/schemas/QueryValue"
+        ne:
+          $ref: "#/components/schemas/QueryValue"
+        gt:
+          $ref: "#/components/schemas/QueryValue"
+        gte:
+          $ref: "#/components/schemas/QueryValue"
+        lt:
+          $ref: "#/components/schemas/QueryValue"
+        lte:
+          $ref: "#/components/schemas/QueryValue"
+        in:
+          type: array
+          items:
+            $ref: "#/components/schemas/QueryValue"
+        nin:
+          type: array
+          items:
+            $ref: "#/components/schemas/QueryValue"
+        contains:
+          type: string
+        startsWith:
+          type: string
+        isNull:
+          type: boolean
+        has:
+          type: string
+        hasAny:
+          type: array
+          items:
+            type: string
+        hasAll:
+          type: array
+          items:
+            type: string
+    QueryWhere:
+      type: object
+      properties:
+        and:
+          type: array
+          items:
+            $ref: "#/components/schemas/QueryWhere"
+        or:
+          type: array
+          items:
+            $ref: "#/components/schemas/QueryWhere"
+        not:
+          $ref: "#/components/schemas/QueryWhere"
+    StandardQuery:
+      type: object
+      properties:
+        where:
+          $ref: "#/components/schemas/QueryWhere"
+        orderBy:
+          type: array
+          items:
+            type: object
+            additionalProperties:
+              type: string
+              enum:
+                - asc
+                - desc
+        limit:
+          type: number
+        cursor:
+          type: string
+        select:
+          type: array
+          items:
+            type: string
+        count:
+          type: boolean
+        groupBy:
+          type: array
+          items:
+            type: string
+        aggregates:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/QueryAggregate"
+        expand:
+          type: object
+          additionalProperties: true
+    QueryDescription:
+      type: object
+      properties:
+        name:
+          type: string
+        fields:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        count:
+          type: boolean
+        aggregates:
+          type: boolean
+        links:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        limits:
+          type: object
+          additionalProperties: true
+        shape:
+          type: string
+      required:
+        - name
+        - fields
+        - count
+        - aggregates
+        - links
+        - limits
+        - shape
+    QueryValue:
+      type: object
+      additionalProperties: true
+    QueryKeyedTest:
+      type: object
+      additionalProperties:
+        type: object
+        additionalProperties: true
+    QueryAggregate:
+      type: object
+      additionalProperties: true
     RealtimeTokenRequest:
       type: object
       properties:
@@ -35373,6 +36028,8 @@ components:
           type: string
         status:
           type: string
+        kind:
+          type: string
         at:
           type: number
       required:
@@ -35392,6 +36049,8 @@ components:
         productId:
           type: string
         proofId:
+          type: string
+        kind:
           type: string
     RealtimeChannelDeclaration:
       type: object
@@ -36752,6 +37411,22 @@ components:
           additionalProperties: true
       required:
         - valid
+    SavedCondition:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        disabled:
+          type: boolean
+        deleted:
+          type: boolean
+      required:
+        - id
+        - title
+    SaveConditionRequest:
+      $ref: "#/components/schemas/SavedCondition"
     FunctionListEntry:
       type: object
       properties:

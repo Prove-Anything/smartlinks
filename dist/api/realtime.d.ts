@@ -31,6 +31,25 @@ export declare function channel(scope: RealtimeScope & {
  */
 export declare function onChange(scope: RealtimeScope, filter: RealtimeChangeFilter, onChangeFn: (change: RealtimeChangeEvent) => void): () => void;
 /**
+ * Something this APP works on changed: one of its work orders, a container or stock it moved, or one of
+ * its own records.
+ * For the people who use the app, admins or not: someone hears these when they are in one of the app's
+ * user groups (the ones its server functions are limited to, or `realtime.staff` in its manifest), and
+ * so does a collection admin. IDs only — refetch through your own API.
+ *
+ * Types: 'workOrder' (`id`, `appId`), 'container' (`id`, `kind` = its container type), 'stock' (`id` =
+ * the container, `productId`), 'record' (`id`, `recordType`). Filter as with `onChange`; an empty filter
+ * hears them all.
+ *
+ * ```ts
+ * // A production app's screens refetch when anything on the floor changes.
+ * useEffect(() => realtime.onStaffChange({ collectionId, appId }, {}, () => queryClient.invalidateQueries()), [collectionId, appId])
+ * ```
+ */
+export declare function onStaffChange(scope: RealtimeScope & {
+    appId: string;
+}, filter: RealtimeChangeFilter, onChangeFn: (change: RealtimeChangeEvent) => void): () => void;
+/**
  * Messages for the signed-in person only (e.g. "scan" — a tag they just scanned on another device).
  */
 export declare function onMine(scope: RealtimeScope, onMessage: (msg: RealtimeMessage) => void): () => void;

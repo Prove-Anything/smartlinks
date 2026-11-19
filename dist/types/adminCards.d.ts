@@ -102,12 +102,13 @@ export interface AdminCardPayload {
         total: number;
         label?: string;
     };
-    /** A short list — at most 5 are shown. */
+    /** A short list — at most 5 are shown. `image` (https) is a small picture beside the row, e.g. a product photo. */
     items?: Array<{
         title: string;
         subtitle?: string;
         meta?: string;
         path?: string;
+        image?: string;
     }>;
     /** Things that need doing — collected into the dashboard's To do strip. */
     todo?: Array<{

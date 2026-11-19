@@ -1,4 +1,5 @@
 // src/utils/conditions.ts
+import { request } from '../http.js';
 /**
  * Geographic region definitions for country-based conditions
  */
@@ -16,6 +17,15 @@ export const REGION_COUNTRIES = {
 };
 // Condition cache
 const conditionCache = {};
+/** The default loader: a collection's saved condition, from the public API; null when there isn't one. */
+async function fetchSavedCondition(collectionId, conditionId) {
+    try {
+        return await request(`/public/collection/${encodeURIComponent(collectionId)}/condition/${encodeURIComponent(conditionId)}`);
+    }
+    catch (_a) {
+        return null;
+    }
+}
 const CONDITION_DEBUG_GLOBAL_KEY = 'SMARTLINKS_CONDITION_DEBUG';
 function defaultConditionDebugLogger(...args) {
     if (typeof console === 'undefined')
@@ -227,7 +237,7 @@ async function evaluateConditionEntry(condition, params) {
  * ```
  */
 export async function validateCondition(params) {
-    var _a, _b, _c;
+    var _a, _b, _c, _d;
     const internalParams = params;
     (_a = internalParams.__conditionDebugState) !== null && _a !== void 0 ? _a : (internalParams.__conditionDebugState = resolveConditionDebugState(params));
     const debugState = internalParams.__conditionDebugState;
@@ -242,9 +252,9 @@ export async function validateCondition(params) {
         // Check cache first
         if (!conditionCache[params.conditionId]) {
             logConditionDebug(debugState, 'Condition cache miss.', { conditionId: params.conditionId });
-            // Try to fetch if function provided
-            if (params.fetchCondition && params.collection) {
-                const fetchedCond = await params.fetchCondition(params.collection.id, params.conditionId);
+            // Fetch it: the caller's own loader, else the collection's saved conditions
+            if (params.collection) {
+                const fetchedCond = await ((_b = params.fetchCondition) !== null && _b !== void 0 ? _b : fetchSavedCondition)(params.collection.id, params.conditionId);
                 if (fetchedCond) {
                     conditionCache[params.conditionId] = fetchedCond;
                     logConditionDebug(debugState, 'Fetched condition into cache.', {
@@ -259,7 +269,7 @@ export async function validateCondition(params) {
             return true;
         }
         // Prevent infinite recursion
-        (_b = params.conditionStack) !== null && _b !== void 0 ? _b : (params.conditionStack = []);
+        (_c = params.conditionStack) !== null && _c !== void 0 ? _c : (params.conditionStack = []);
         params.conditionStack.push(params.conditionId);
         cond = conditionCache[params.conditionId];
     }
@@ -268,12 +278,17 @@ export async function validateCondition(params) {
             conditionSet: cond ? summarizeConditionSet(cond) : 'none',
         });
     }
+    // A switched-off condition passes for everyone
+    if (cond === null || cond === void 0 ? void 0 : cond.disabled) {
+        logConditionDebug(debugState, 'Condition is switched off; passing.');
+        return true;
+    }
     if (!cond) {
         logConditionDebug(debugState, 'Resolved condition set is empty; passing by default.');
         return true;
     }
     // Default to AND logic
-    const conditionType = (_c = cond.type) !== null && _c !== void 0 ? _c : 'and';
+    const conditionType = (_d = cond.type) !== null && _d !== void 0 ? _d : 'and';
     // Empty condition set passes
     if (!cond.conditions || cond.conditions.length === 0) {
         logConditionDebug(debugState, 'Condition set has no entries; passing by default.', {

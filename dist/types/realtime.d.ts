@@ -57,7 +57,10 @@ export interface RealtimeMessage {
 }
 /** "This changed" — ids only; refetch through the normal API. */
 export interface RealtimeChangeEvent {
-    /** 'product' | 'proof' | 'asset' | 'record' | 'collection' | 'collection.apps' | 'settings' | … */
+    /**
+     * 'product' | 'proof' | 'asset' | 'record' | 'collection' | 'collection.apps' | 'settings' | …
+     * and, on an app's staff feed (`onStaffChange`): 'workOrder' | 'container' | 'stock'.
+     */
     type: string;
     id?: string;
     appId?: string;
@@ -66,6 +69,8 @@ export interface RealtimeChangeEvent {
     proofId?: string;
     /** 'created' | 'updated' | 'deleted' (records) or 'create' | 'update' | 'delete' (products, proofs…) */
     status?: string;
+    /** A container's type ("drum", "pallet"), on a 'container' change. */
+    kind?: string;
     at: number;
 }
 /** Which changes to hear about — every field given must match. */
@@ -76,6 +81,7 @@ export interface RealtimeChangeFilter {
     recordType?: string;
     productId?: string;
     proofId?: string;
+    kind?: string;
 }
 /** A channel an app declares in its manifest (`realtime.channels`). */
 export interface RealtimeChannelDeclaration {

@@ -296,7 +296,7 @@ export interface ConditionParams {
     itemContext?: ItemContext;
     /** Statistics/tracking information */
     stats?: StatsInfo;
-    /** Function to fetch conditions by ID (optional) */
+    /** Load a saved condition by id (optional; by default the collection's saved conditions are read with `conditions.get`) */
     fetchCondition?: (collectionId: string, conditionId: string) => Promise<ConditionSet | null>;
     /** Function to get user's current location (optional) */
     getLocation?: () => Promise<{

@@ -34,6 +34,61 @@ export interface ContactListResponse {
     limit: number;
     offset: number;
 }
+/**
+ * Two contacts that look like one person (`contact.findDuplicates`): `keep` has a sign-in but no email
+ * (or phone); `merge` has no sign-in and holds that sign-in's verified email (or phone).
+ */
+export interface ContactDuplicatePair {
+    /** The contact with the sign-in — the one `contact.merge` should keep. */
+    keep: Contact;
+    /** The contact holding the address — the one to fold into `keep`. */
+    merge: Contact;
+    /** What ties them together. */
+    matchedOn: "email" | "phone";
+}
+export interface ContactDuplicatesResponse {
+    pairs: ContactDuplicatePair[];
+    /** How many contacts with a sign-in were checked in this call. */
+    scanned: number;
+    /** More contacts remain beyond this window: call again with `offset` + `scanned`. */
+    more: boolean;
+}
+/** What `contact.merge` did. */
+export interface ContactMergeResponse {
+    /** The contact that was kept. */
+    contactId: string;
+    /** The contact that was retired (soft-deleted, marked `customFields.mergedInto`). */
+    mergedFrom: string;
+    moved: {
+        /** The sign-in moved onto the kept contact. */
+        login: boolean;
+        /** Emails and phones moved across. */
+        identities: number;
+        records?: number;
+        cases?: number;
+        threads?: number;
+        bookings?: number;
+        loyaltyMembers?: number;
+        assets?: number;
+        uploadTokens?: number;
+        aiSessions?: number;
+        /** One-to-one messages and Inbox conversations with them. */
+        messages?: number;
+        conversations?: number;
+    };
+    /** The kept contact after the merge. */
+    contact: Contact;
+}
+/** What `contact.linkLogin` found. */
+export interface ContactLinkLoginResponse {
+    /** The contact that carries the sign-in. */
+    contactId: string;
+    /** True when this call attached the sign-in to that contact (or merged a duplicate into it). */
+    linked: boolean;
+    contact: Contact;
+}
+/** `error` codes `contact.merge` can refuse with. */
+export type ContactMergeErrorCode = "INVALID_CONTACT" | "SAME_CONTACT" | "NOT_FOUND" | "KEEP_DELETED" | "LOGIN_CONFLICT" | "LOYALTY_CONFLICT";
 export interface ContactSearchParams {
     collectionId: string;
     q?: string;

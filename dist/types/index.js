@@ -20,6 +20,7 @@ export * from "./segments.js";
 export * from "./userGroups.js";
 export * from "./operations.js";
 export * from "./common.js";
+export * from "./query.js";
 export * from "./journeys.js";
 export * from "./journeysAnalytics.js";
 export * from "./qr.js";

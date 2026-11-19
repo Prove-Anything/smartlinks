@@ -1,5 +1,35 @@
 import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofValuesUpdateRequest, ProofClaimRequest, ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult, ProofTransfer, TransferProofOptions, TransferProofResult, AcceptTransferOptions, CancelTransferOptions } from "../types/proof.js";
+import type { StandardQuery, QueryResult, QueryDescription } from "../types/query.js";
 export declare namespace proof {
+    /**
+     * The standard query on proofs (admin only): filter, sort, page, count and total a collection's proofs
+     * in one call, and follow a proof to its `product` and its `owner` (the owner's contact).
+     * POST /admin/collection/:collectionId/proof/query
+     *
+     * Fields: id, productId, userId (the owner's login id), batchId, variantId, lotId, status, claimable,
+     * createdAt, updatedAt. A proof's own values are not returned by this call.
+     *
+     * ```typescript
+     * // How many people own each product
+     * await proof.query(collectionId, {
+     *   where: { userId: { isNull: false } },
+     *   groupBy: ['productId'],
+     *   aggregates: { owners: { countDistinct: 'userId' } },
+     * })
+     * // The most recent owner of a product, with their name
+     * await proof.query(collectionId, {
+     *   where: { productId: 'toaster', userId: { isNull: false } },
+     *   orderBy: [{ createdAt: 'desc' }], limit: 1,
+     *   expand: { owner: ['firstName', 'lastName', 'email'] },
+     * })
+     * ```
+     */
+    function query(collectionId: string, body?: StandardQuery): Promise<QueryResult>;
+    /**
+     * What a proofs query can use: its fields, what each can filter, sort, group or total, and its links.
+     * GET /admin/collection/:collectionId/proof/query
+     */
+    function queryFields(collectionId: string): Promise<QueryDescription>;
     /**
      * Retrieves a single Proof by Collection ID, Product ID, and Proof ID.
      * Both public and admin endpoints now include productId in the path.

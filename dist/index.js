@@ -27,6 +27,5 @@ export { createAdminCardViews, collectAdminCardTodo, adminCardAge, injectAdminCa
 export { normaliseAdminCardPayload, ADMIN_CARD_MAX_BYTES } from './adminCardPayload.js';
 // Shared dependency contract (host↔app) — one source of truth for externalized deps
 export { SHARED_DEPENDENCY_CONTRACT_VERSION, SHARED_DEPENDENCIES, SHARED_DEPENDENCY_SPECIFIERS, importMapPathFor, getHostSharedDependencies, } from './shared-dependencies.js';
-// Built-in AI tool catalog (design-time discovery of the core agentic toolset)
 export { AI_TOOL_NAMES, BUILTIN_AI_TOOLS, getBuiltinAiTool } from './ai-tools.js';
 export { HostCapabilityUnavailableError, HostPermissionDeniedError, HostTimeoutError, HostCancelledError, } from './mobile-admin/errors.js';

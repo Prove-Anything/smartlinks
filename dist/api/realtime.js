@@ -193,7 +193,7 @@ export function channel(scope, name) {
     };
 }
 function matches(change, filter) {
-    for (const k of ["type", "id", "appId", "recordType", "productId", "proofId"]) {
+    for (const k of ["type", "id", "appId", "recordType", "productId", "proofId", "kind"]) {
         if (filter[k] !== undefined && change[k] !== filter[k])
             return false;
     }
@@ -229,6 +229,31 @@ export function onChange(scope, filter, onChangeFn) {
         offAdmin();
         offPublic();
     };
+}
+/**
+ * Something this APP works on changed: one of its work orders, a container or stock it moved, or one of
+ * its own records.
+ * For the people who use the app, admins or not: someone hears these when they are in one of the app's
+ * user groups (the ones its server functions are limited to, or `realtime.staff` in its manifest), and
+ * so does a collection admin. IDs only — refetch through your own API.
+ *
+ * Types: 'workOrder' (`id`, `appId`), 'container' (`id`, `kind` = its container type), 'stock' (`id` =
+ * the container, `productId`), 'record' (`id`, `recordType`). Filter as with `onChange`; an empty filter
+ * hears them all.
+ *
+ * ```ts
+ * // A production app's screens refetch when anything on the floor changes.
+ * useEffect(() => realtime.onStaffChange({ collectionId, appId }, {}, () => queryClient.invalidateQueries()), [collectionId, appId])
+ * ```
+ */
+export function onStaffChange(scope, filter, onChangeFn) {
+    return streamFor({ collectionId: scope.collectionId, appId: scope.appId }).add("feed:staff", (m) => {
+        if (m.event !== "change" || !m.data || typeof m.data !== "object")
+            return;
+        const change = m.data;
+        if (matches(change, filter))
+            onChangeFn(change);
+    });
 }
 /**
  * Messages for the signed-in person only (e.g. "scan" — a tag they just scanned on another device).

@@ -1,3 +1,4 @@
+import type { StandardQuery, QueryResult, QueryDescription } from "../types/query.js";
 import type { AppCase, CreateCaseInput, UpdateCaseInput, AppendHistoryInput, CaseSummaryRequest, CaseSummaryResponse, CaseListQueryParams, AppThread, CreateThreadInput, UpdateThreadInput, ReplyInput, ThreadListQueryParams, AppRecord, CreateRecordInput, CreateRecordResponse, UpdateRecordInput, UpsertRecordInput, UpsertRecordResponse, MatchRecordsInput, MatchResult, BulkUpsertItem, BulkUpsertResult, BulkDeleteResult, BulkDeleteInput, RecordListQueryParams, ResolveAllParams, ResolveAllResult, PreviewRuleParams, PreviewRuleResult, PaginatedResponse, AggregateRequest, AggregateResponse, RelatedResponse } from '../types/appObjects.js';
 export declare namespace app {
     /**
@@ -131,6 +132,31 @@ export declare namespace app {
          * @see {@link updateWithToken} — use the edit token for a follow-up amendment
          */
         function create(collectionId: string, appId: string, input: CreateRecordInput, admin?: boolean): Promise<CreateRecordResponse>;
+        /**
+         * The standard query on an app's records (admin only): filter, sort, page, count and total in one
+         * call, reaching into a record's own fields by path, and following a record to its `product` and
+         * its `contact`.
+         * POST /admin/collection/:collectionId/app/:appId/records/query
+         *
+         * Fields: id, recordType, ref, status, visibility, customId, productId, variantId, batchId, proofId,
+         * contactId, authorId, parentType, parentId, createdAt, updatedAt, startsAt, expiresAt, and the
+         * documents data, owner and admin, reached by path: `"data.status"`, `"data.line.name"`.
+         *
+         * ```typescript
+         * // How many work orders by status, and how many units on each
+         * await app.records.query(collectionId, appId, {
+         *   where: { recordType: 'work_order' },
+         *   groupBy: ['data.status'],
+         *   aggregates: { orders: { count: true }, units: { sum: 'data.qty' } },
+         * })
+         * ```
+         */
+        function query(collectionId: string, appId: string, body?: StandardQuery): Promise<QueryResult>;
+        /**
+         * What a records query can use: its fields, what each can filter, sort, group or total, and its links.
+         * GET /admin/collection/:collectionId/app/:appId/records/query
+         */
+        function queryFields(collectionId: string, appId: string): Promise<QueryDescription>;
         /**
          * List records with optional query parameters
          * GET /records

@@ -1,4 +1,3 @@
-// src/api/appObjects.ts
 import { request, post, patch, del, put } from '../http.js';
 // ==================== APP NAMESPACE ====================
 export var app;
@@ -242,6 +241,37 @@ export var app;
             return post(path, input);
         }
         records_1.create = create;
+        /**
+         * The standard query on an app's records (admin only): filter, sort, page, count and total in one
+         * call, reaching into a record's own fields by path, and following a record to its `product` and
+         * its `contact`.
+         * POST /admin/collection/:collectionId/app/:appId/records/query
+         *
+         * Fields: id, recordType, ref, status, visibility, customId, productId, variantId, batchId, proofId,
+         * contactId, authorId, parentType, parentId, createdAt, updatedAt, startsAt, expiresAt, and the
+         * documents data, owner and admin, reached by path: `"data.status"`, `"data.line.name"`.
+         *
+         * ```typescript
+         * // How many work orders by status, and how many units on each
+         * await app.records.query(collectionId, appId, {
+         *   where: { recordType: 'work_order' },
+         *   groupBy: ['data.status'],
+         *   aggregates: { orders: { count: true }, units: { sum: 'data.qty' } },
+         * })
+         * ```
+         */
+        async function query(collectionId, appId, body = {}) {
+            return post(`${basePath(collectionId, appId, true)}/query`, body);
+        }
+        records_1.query = query;
+        /**
+         * What a records query can use: its fields, what each can filter, sort, group or total, and its links.
+         * GET /admin/collection/:collectionId/app/:appId/records/query
+         */
+        async function queryFields(collectionId, appId) {
+            return request(`${basePath(collectionId, appId, true)}/query`);
+        }
+        records_1.queryFields = queryFields;
         /**
          * List records with optional query parameters
          * GET /records

@@ -20,6 +20,8 @@ export type { AdminCardViewProps, AdminCardTodoItem } from './adminCardsView.js'
 export { normaliseAdminCardPayload, ADMIN_CARD_MAX_BYTES } from './adminCardPayload.js';
 export { SHARED_DEPENDENCY_CONTRACT_VERSION, SHARED_DEPENDENCIES, SHARED_DEPENDENCY_SPECIFIERS, importMapPathFor, getHostSharedDependencies, } from './shared-dependencies.js';
 export type { SharedDependency, HostSharedDependencies } from './shared-dependencies.js';
+export type { GuideSurface, GuideInfo, ScreenContent, GuideWhere, GuideNavigate, GuideCard, GuideStartOptions } from './api/aiGuide.js';
+export type { LiveState, LiveHandle, LiveOptions, LiveEndpoints, LiveEvent, LiveMintReply, LiveToolReply, LiveToolHandler } from './live.js';
 export { AI_TOOL_NAMES, BUILTIN_AI_TOOLS, getBuiltinAiTool } from './ai-tools.js';
 export type { BuiltinAiToolDescriptor } from './ai-tools.js';
 export type { PortalPathParams, Gs1DigitalLinkParams, ConditionParams, ConditionDebugOptions, ConditionDebugLogger, ConditionSet, Condition, UserInfo, ProductInfo, ProofInfo, CollectionInfo, } from './utils/index.js';

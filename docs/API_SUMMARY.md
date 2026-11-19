@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.20  |  Generated: 2026-11-16T21:00:34.061Z
+Version: 2.1.23  |  Generated: 2026-11-19T11:28:05.726Z
 
 This is a concise summary of all available API functions and types.
 
@@ -9,6 +9,7 @@ This is a concise summary of all available API functions and types.
 For detailed guides on specific features:
 
 - **[SmartLinks Microapp Overview](overview.md)** - Platform architecture, data model, auth patterns, storage, anti-patterns, and quick-reference for all SDK docs
+- **[The Standard Query](standard-query.md)** - One request body to filter, sort, page, count, total and follow links, the same on proofs, contacts, products and app records: `proof.query`, `contact.query`, `products.standardQuery`, `app.records.query`
 - **[Assets](assets.md)** - Asset object, AssetRef, upload, replace, soft-delete, restore, bulk-delete, and public token-based uploads
 - **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation
 - **[Translations](translations.md)** - Runtime translation lookup, browser-side IndexedDB caching, and admin translation management
@@ -143,6 +144,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **attestation** - Functions for attestation operations
 - **attestations** - Functions for attestations operations
 - **bookings** - Functions for bookings operations
+- **conditions** - Functions for conditions operations
 - **config** - Functions for config operations
 - **containers** - Functions for containers operations
 - **errors** - Functions for errors operations
@@ -538,7 +540,7 @@ interface AdminCardPayload {
   trend?: { direction: 'up' | 'down' | 'flat'; label?: string; good?: boolean }
   status?: { tone: 'ok' | 'attention' | 'neutral' | 'error'; text: string }
   progress?: { done: number; total: number; label?: string }
-  items?: Array<{ title: string; subtitle?: string; meta?: string; path?: string }>
+  items?: Array<{ title: string; subtitle?: string; meta?: string; path?: string; image?: string }>
   todo?: Array<{ text: string; action?: AdminCardAction }>
   actions?: AdminCardAction[]
   empty?: { text: string; action?: AdminCardAction }
@@ -3186,6 +3188,7 @@ interface AppManifest {
   };
   };
   admin?: string;
+  adminPage?: string;
   widgets?: AppManifestWidgets;
   containers?: {
   files: AppManifestFiles;
@@ -3196,7 +3199,10 @@ interface AppManifest {
   adminViews?: AdminView[];
   executor?: AppManifestExecutor;
   functions?: AppManifestFunctions;
-  realtime?: { channels: RealtimeChannelDeclaration[] };
+  realtime?: {
+  channels?: RealtimeChannelDeclaration[];
+  staff?: string[];
+  };
   adminCards?: AppManifestAdminCards;
   data?: AppDataDeclaration;
   headless?: AppHeadlessDeclaration;
@@ -3221,6 +3227,29 @@ interface AppAssistantDeclaration {
   skills?: AppAssistantFile[];
   knowledge?: AppAssistantFile[];
   preview?: string;
+  purpose?: string;
+  objects?: AssistantObject[];
+  words?: Record<string, string>;
+  recipes?: AssistantRecipe[];
+}
+```
+
+**AssistantObject** (interface)
+```typescript
+interface AssistantObject {
+  object: string;
+  where?: Record<string, string | number | boolean>;
+  means: string;
+  fields?: Record<string, string>;
+  write?: 'direct' | 'actions' | 'none';
+}
+```
+
+**AssistantRecipe** (interface)
+```typescript
+interface AssistantRecipe {
+  question: string;
+  answer: string;
 }
 ```
 
@@ -7440,6 +7469,56 @@ interface ContactListResponse {
 }
 ```
 
+**ContactDuplicatePair** (interface)
+```typescript
+interface ContactDuplicatePair {
+  keep: Contact
+  merge: Contact
+  matchedOn: "email" | "phone"
+}
+```
+
+**ContactDuplicatesResponse** (interface)
+```typescript
+interface ContactDuplicatesResponse {
+  pairs: ContactDuplicatePair[]
+  scanned: number
+  more: boolean
+}
+```
+
+**ContactMergeResponse** (interface)
+```typescript
+interface ContactMergeResponse {
+  contactId: string
+  mergedFrom: string
+  moved: {
+  login: boolean
+  identities: number
+  records?: number
+  cases?: number
+  threads?: number
+  bookings?: number
+  loyaltyMembers?: number
+  assets?: number
+  uploadTokens?: number
+  aiSessions?: number
+  messages?: number
+  conversations?: number
+  }
+  contact: Contact
+}
+```
+
+**ContactLinkLoginResponse** (interface)
+```typescript
+interface ContactLinkLoginResponse {
+  contactId: string
+  linked: boolean
+  contact: Contact
+}
+```
+
 **ContactSearchParams** (interface)
 ```typescript
 interface ContactSearchParams {
@@ -7659,6 +7738,8 @@ interface ContactSchemaResponse {
 **ContactCreateRequest** = `Omit<`
 
 **ContactUpdateRequest** = `Partial<ContactCreateRequest>`
+
+**ContactMergeErrorCode** = ``
 
 **PublicContactUpsertRequest** = `Partial<`
 
@@ -11285,6 +11366,72 @@ interface QrShortCodeLookupResponse {
 }
 ```
 
+### query
+
+**QueryFieldTest** (interface)
+```typescript
+interface QueryFieldTest {
+  eq?: QueryValue
+  ne?: QueryValue
+  gt?: QueryValue
+  gte?: QueryValue
+  lt?: QueryValue
+  lte?: QueryValue
+  in?: QueryValue[]
+  nin?: QueryValue[]
+  contains?: string
+  startsWith?: string
+  isNull?: boolean
+  has?: string
+  hasAny?: string[]
+  hasAll?: string[]
+}
+```
+
+**QueryWhere** (interface)
+```typescript
+interface QueryWhere {
+  and?: QueryWhere[]
+  or?: QueryWhere[]
+  not?: QueryWhere
+  [field: string]: QueryValue | QueryFieldTest | QueryKeyedTest | QueryWhere | QueryWhere[] | undefined
+}
+```
+
+**StandardQuery** (interface)
+```typescript
+interface StandardQuery {
+  where?: QueryWhere
+  orderBy?: Array<Record<string, 'asc' | 'desc'>>
+  limit?: number
+  cursor?: string | null
+  select?: string[]
+  count?: boolean
+  groupBy?: string[]
+  aggregates?: Record<string, QueryAggregate>
+  expand?: string[] | Record<string, string[] | true>
+}
+```
+
+**QueryDescription** (interface)
+```typescript
+interface QueryDescription {
+  name: string
+  fields: Record<string, { type: 'string' | 'number' | 'boolean' | 'date' | 'list' | 'keyed' | 'json'; about?: string; can: string[] }>
+  count: boolean
+  aggregates: boolean
+  links: Record<string, { to: string; by: string; about?: string }>
+  limits: { limit: number; groups: number }
+  shape: string
+}
+```
+
+**QueryValue** = `string | number | boolean`
+
+**QueryKeyedTest** = `Record<string, QueryValue | { eq?: QueryValue`
+
+**QueryAggregate** = ``
+
 ### realtime
 
 **RealtimeTokenRequest** (interface)
@@ -11336,6 +11483,7 @@ interface RealtimeChangeEvent {
   productId?: string
   proofId?: string
   status?: string
+  kind?: string
   at: number
 }
 ```
@@ -11349,6 +11497,7 @@ interface RealtimeChangeFilter {
   recordType?: string
   productId?: string
   proofId?: string
+  kind?: string
 }
 ```
 
@@ -12221,6 +12370,10 @@ type VerifyTokenResponse = {
 }
 ```
 
+### conditions (api)
+
+**SaveConditionRequest** = `Omit<SavedCondition, "id" | "deleted">`
+
 ### functions (api)
 
 **FunctionListEntry** (interface)
@@ -12669,6 +12822,14 @@ General-purpose structured app objects. Use these when a simple scoped data item
     input: CreateRecordInput,
     admin: boolean = false) → `Promise<CreateRecordResponse>`
 Create a new record POST /records When called on the public endpoint (admin = false) with an anonymous caller, and the app's `publicCreate.records.anonymous.edit.editToken` policy is enabled, the response includes a one-time `editToken` string. Store it immediately — it is never returned again.
+
+**query**(collectionId: string,
+    appId: string,
+    body: StandardQuery = {}) → `Promise<QueryResult>`
+The standard query on an app's records (admin only): filter, sort, page, count and total in one call, reaching into a record's own fields by path, and following a record to its `product` and its `contact`. POST /admin/collection/:collectionId/app/:appId/records/query Fields: id, recordType, ref, status, visibility, customId, productId, variantId, batchId, proofId, contactId, authorId, parentType, parentId, createdAt, updatedAt, startsAt, expiresAt, and the documents data, owner and admin, reached by path: `"data.status"`, `"data.line.name"`. ```typescript // How many work orders by status, and how many units on each await app.records.query(collectionId, appId, { where: { recordType: 'work_order' }, groupBy: ['data.status'], aggregates: { orders: { count: true }, units: { sum: 'data.qty' } }, }) ```
+
+**queryFields**(collectionId: string, appId: string) → `Promise<QueryDescription>`
+What a records query can use: its fields, what each can filter, sort, group or total, and its links. GET /admin/collection/:collectionId/app/:appId/records/query
 
 **list**(collectionId: string,
     appId: string,
@@ -13737,6 +13898,23 @@ Logging: Append a single communication event. POST /admin/collection/:collection
     body: LogBulkCommunicationEventsBody | ({ sourceId: string; ids: string[]; idField?: 'userId'|'contactId'; [k: string]: any }) → `void`
 Logging: Append many communication events for a list of IDs. POST /admin/collection/:collectionId/comm/log/bulk
 
+### conditions
+
+**list**(collectionId: string, admin = false) → `Promise<SavedCondition[]>`
+Every saved condition in the collection (removed ones left out).
+
+**get**(collectionId: string, conditionId: string, admin = false) → `Promise<SavedCondition>`
+One saved condition. Public reads 404 for a removed one; an admin read returns it with `deleted: true`. ```typescript const ukOnly = await conditions.get('coll_123', 'nfCmuWDY') ```
+
+**create**(collectionId: string, data: SaveConditionRequest) → `Promise<SavedCondition>`
+Save a new condition (admin). ```typescript const c = await conditions.create('coll_123', { title: 'UK only', type: 'and', conditions: [{ type: 'country', countries: ['GB'], contains: true }], }) ```
+
+**update**(collectionId: string, conditionId: string, data: Partial<SaveConditionRequest>) → `Promise<SavedCondition>`
+Change a saved condition (admin). Send the fields to change; `conditions` is replaced whole.
+
+**remove**(collectionId: string, conditionId: string) → `Promise<SavedCondition>`
+Remove a saved condition (admin). It's kept, marked deleted, and passes for everyone from then on.
+
 ### config
 
 **getFields**() → `Promise<FieldDefinition[]>`
@@ -13747,10 +13925,19 @@ Returns all proof type definitions. Proof types are templates that specify which
 
 ### contact
 
+**query**(collectionId: string,
+    body: StandardQuery = {}) → `Promise<QueryResult>`
+The standard query on contacts (admin only): filter, sort, page, count and total in one call. POST /admin/collection/:collectionId/contacts/query Fields: contactId, userId, firstName, lastName, displayName, company, email, phone, tags, source, locale, createdAt, updatedAt. Email and phone are the contact's main one. Deleted and erased contacts are never returned. ```typescript await contact.query(collectionId, { where: { tags: { hasAny: ['vip', 'trade'] }, createdAt: { gte: '2026-01-01' } }, select: ['contactId', 'firstName', 'email'], count: true, }) await contact.query(collectionId, { groupBy: ['company'], aggregates: { people: { count: true } } }) ```
+
+**queryFields**(collectionId: string) → `Promise<QueryDescription>`
+What a contacts query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/contacts/query
+
 **create**(collectionId: string, data: ContactCreateRequest) → `Promise<ContactResponse>`
+What a contacts query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/contacts/query
 
 **list**(collectionId: string,
     params?: { limit?: number; offset?: number; includeDeleted?: boolean }) → `Promise<ContactListResponse>`
+What a contacts query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/contacts/query
 
 **search**({
     collectionId,
@@ -13773,30 +13960,39 @@ Returns all proof type definitions. Proof types are templates that specify which
     limit,
     offset,
   }: ContactSearchParams) → `Promise<ContactSearchResponse>`
+What a contacts query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/contacts/query
 
 **get**(collectionId: string,
     contactId: string,
     params?: { includeDeleted?: boolean }) → `Promise<ContactResponse>`
+What a contacts query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/contacts/query
 
 **update**(collectionId: string,
     contactId: string,
     data: ContactUpdateRequest) → `Promise<ContactResponse>`
+What a contacts query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/contacts/query
 
 **remove**(collectionId: string, contactId: string) → `Promise<void>`
+What a contacts query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/contacts/query
 
 **lookup**(collectionId: string,
     params: { email?: string; phone?: string }) → `Promise<ContactResponse>`
+What a contacts query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/contacts/query
 
 **upsert**(collectionId: string,
     data: ContactCreateRequest) → `Promise<ContactResponse>`
+What a contacts query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/contacts/query
 
 **publicUpsert**(collectionId: string,
     data: PublicContactUpsertRequest) → `Promise<PublicContactUpsertResponse>`
+What a contacts query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/contacts/query
 
 **publicGetMine**(collectionId: string) → `Promise<PublicGetMyContactResponse>`
+What a contacts query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/contacts/query
 
 **publicUpdateMine**(collectionId: string,
     data: ContactPatch) → `Promise<PublicUpdateMyContactResponse>`
+What a contacts query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/contacts/query
 
 **publicGetSchema**(collectionId: string) → `Promise<ContactSchemaResponse>`
 Public: Get the contact schema for a collection. GET /public/collection/:collectionId/contact/schema Returns a ContactSchemaResponse describing all publicly visible contact fields. Core fields and collection-defined custom fields are merged into a single flat schema. Fields not in `publicVisibleFields` are stripped entirely from the response. Fields visible but not in `publicEditableFields` have `ui:disabled: true` in `uiSchema`. Use `fieldOrder` to render fields in the correct sequence, and `evaluateConditions` from the types package to handle conditional field visibility. ```typescript import { contact, evaluateConditions } from '@proveanything/smartlinks' const schema = await contact.publicGetSchema(collectionId) for (const fieldId of schema.fieldOrder) { const property = schema.schema.properties[fieldId] const ui       = schema.uiSchema[fieldId] || {} const visible  = evaluateConditions(property.conditions, property.showWhen, formValues) const disabled = ui['ui:disabled'] === true if (visible) renderField({ fieldId, property, ui, disabled }) } ```
@@ -13804,9 +14000,22 @@ Public: Get the contact schema for a collection. GET /public/collection/:collect
 **erase**(collectionId: string, contactId: string, body?: any) → `Promise<ContactResponse>`
 Public: Get the contact schema for a collection. GET /public/collection/:collectionId/contact/schema Returns a ContactSchemaResponse describing all publicly visible contact fields. Core fields and collection-defined custom fields are merged into a single flat schema. Fields not in `publicVisibleFields` are stripped entirely from the response. Fields visible but not in `publicEditableFields` have `ui:disabled: true` in `uiSchema`. Use `fieldOrder` to render fields in the correct sequence, and `evaluateConditions` from the types package to handle conditional field visibility. ```typescript import { contact, evaluateConditions } from '@proveanything/smartlinks' const schema = await contact.publicGetSchema(collectionId) for (const fieldId of schema.fieldOrder) { const property = schema.schema.properties[fieldId] const ui       = schema.uiSchema[fieldId] || {} const visible  = evaluateConditions(property.conditions, property.showWhen, formValues) const disabled = ui['ui:disabled'] === true if (visible) renderField({ fieldId, property, ui, disabled }) } ```
 
+**findDuplicates**(collectionId: string,
+    params?: { limit?: number; offset?: number }) → `Promise<ContactDuplicatesResponse>`
+Admin: pairs of contacts that look like one person. GET /admin/collection/:collectionId/contacts/duplicates The pattern it finds: someone the collection knew by email first (an import, a list, a form) who later signed in. Their sign-in got a second contact, which could not take the email the first one already held — so one contact has the email and no sign-in, the other the sign-in (and everything they did) and no email. The match is made on the server, on verified addresses only. Checks a window of contacts per call; while `more` is true, call again with `offset` moved on by `scanned`. ```typescript const { pairs } = await contact.findDuplicates(collectionId) for (const pair of pairs) { await contact.merge(collectionId, pair.keep.contactId, pair.merge.contactId) } ```
+
+**merge**(collectionId: string,
+    keepContactId: string,
+    fromContactId: string) → `Promise<ContactMergeResponse>`
+Admin: fold contact `fromContactId` INTO contact `keepContactId`. POST /admin/collection/:collectionId/contacts/:keepContactId/merge The kept contact gains the other's sign-in, emails and phones, and anything it had no value for; its own values win. Everything recorded against the other contact moves to the kept one. Consent is never loosened: an opt-out on either contact stays an opt-out. The other contact is soft-deleted and marked with `customFields.mergedInto`. Refused (HTTP 409, `error` = a `ContactMergeErrorCode`) when the two have different sign-ins (`LOGIN_CONFLICT`) or are both members of the same loyalty scheme (`LOYALTY_CONFLICT`).
+
+**linkLogin**(collectionId: string,
+    userId: string) → `Promise<ContactLinkLoginResponse>`
+Admin: the contact that carries a sign-in, attaching the sign-in first to the contact that already holds its verified email or phone. POST /admin/collection/:collectionId/contacts/link-login For a service about to create a contact for a `userId`: call this first and only create when it throws 404 (`NOTHING_TO_LINK`), so a person the collection already knows by email stays one contact. The address is read from the sign-in itself and must be verified; nothing the caller says about an email is used. Never creates a contact. ```typescript let contactId: string try { contactId = (await contact.linkLogin(collectionId, userId)).contactId } catch (err) { if (err.statusCode !== 404) throw err contactId = (await contact.create(collectionId, { userId, source: 'my-service' })).contactId } ```
+
 **getUser**(collectionId: string,
     userId: string,) → `Promise<UserSearchResponse>`
-Public: Get the contact schema for a collection. GET /public/collection/:collectionId/contact/schema Returns a ContactSchemaResponse describing all publicly visible contact fields. Core fields and collection-defined custom fields are merged into a single flat schema. Fields not in `publicVisibleFields` are stripped entirely from the response. Fields visible but not in `publicEditableFields` have `ui:disabled: true` in `uiSchema`. Use `fieldOrder` to render fields in the correct sequence, and `evaluateConditions` from the types package to handle conditional field visibility. ```typescript import { contact, evaluateConditions } from '@proveanything/smartlinks' const schema = await contact.publicGetSchema(collectionId) for (const fieldId of schema.fieldOrder) { const property = schema.schema.properties[fieldId] const ui       = schema.uiSchema[fieldId] || {} const visible  = evaluateConditions(property.conditions, property.showWhen, formValues) const disabled = ui['ui:disabled'] === true if (visible) renderField({ fieldId, property, ui, disabled }) } ```
+Admin: the contact that carries a sign-in, attaching the sign-in first to the contact that already holds its verified email or phone. POST /admin/collection/:collectionId/contacts/link-login For a service about to create a contact for a `userId`: call this first and only create when it throws 404 (`NOTHING_TO_LINK`), so a person the collection already knows by email stays one contact. The address is read from the sign-in itself and must be verified; nothing the caller says about an email is used. Never creates a contact. ```typescript let contactId: string try { contactId = (await contact.linkLogin(collectionId, userId)).contactId } catch (err) { if (err.statusCode !== 404) throw err contactId = (await contact.create(collectionId, { userId, source: 'my-service' })).contactId } ```
 
 ### containers
 
@@ -14656,53 +14865,67 @@ Look up a serial number by code for a product (admin only).
     admin?: boolean) → `Promise<ProductQueryResponse>`
 Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
 
+**standardQuery**(collectionId: string,
+    body: StandardQuery = {}) → `Promise<QueryResult>`
+The standard query on products (admin only): the one query shape every resource is moving to, with counts, totals and filtering by facet. It sits beside `products.query`, whose own body is unchanged. POST /admin/collection/:collectionId/products/standard/query Fields: id, name, description, sku, gtin, schemaType, status, sortOrder, createdAt, updatedAt, facets. Facets are filtered by key: the facet by its key or name, the value by its key or name. ```typescript await products.standardQuery(collectionId, { where: { facets: { brand: 'Breville', category: { in: ['Toasters', 'Kettles'] } }, status: 'active' }, select: ['id', 'name', 'sku'], count: true, }) ```
+
+**standardQueryFields**(collectionId: string) → `Promise<QueryDescription>`
+What a products standard query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/products/standard/query
+
 **clone**(collectionId: string,
     productId: string,
     body: Record<string, JsonValue> = {}) → `Promise<ProductResponse>`
-Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
+What a products standard query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/products/standard/query
 
 **listAssets**(collectionId: string,
     productId: string,
     admin?: boolean) → `Promise<unknown>`
-Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
+What a products standard query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/products/standard/query
 
 **createClaimWindow**(collectionId: string,
     productId: string,
     body: Record<string, JsonValue>) → `Promise<unknown>`
-Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
+What a products standard query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/products/standard/query
 
 **updateClaimWindow**(collectionId: string,
     productId: string,
     claimId: string,
     body: Record<string, JsonValue>) → `Promise<unknown>`
-Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
+What a products standard query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/products/standard/query
 
 **refresh**(collectionId: string,
     productId: string) → `Promise<ProductResponse>`
-Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
+What a products standard query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/products/standard/query
 
 **getSN**(collectionId: string,
     productId: string,
     startIndex: number = 0,
     count: number = 10) → `Promise<unknown>`
-Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
+What a products standard query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/products/standard/query
 
 **lookupSN**(collectionId: string,
     productId: string,
     codeId: string) → `Promise<unknown>`
-Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
+What a products standard query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/products/standard/query
 
 **publicLookupClaim**(collectionId: string,
     productId: string,
     claimId: string) → `Promise<unknown>`
-Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
+What a products standard query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/products/standard/query
 
 **publicCreateClaim**(collectionId: string,
     productId: string,
     body: ProductClaimCreateRequestBody) → `Promise<unknown>`
-Query products in a collection with filtering, sorting, and pagination. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. ```typescript // Public query (default) await products.query(collectionId, { query: { search: 'cabernet' } }) // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
+What a products standard query can use: its fields and what each can filter, sort, group or total. GET /admin/collection/:collectionId/products/standard/query
 
 ### proof
+
+**query**(collectionId: string,
+    body: StandardQuery = {}) → `Promise<QueryResult>`
+The standard query on proofs (admin only): filter, sort, page, count and total a collection's proofs in one call, and follow a proof to its `product` and its `owner` (the owner's contact). POST /admin/collection/:collectionId/proof/query Fields: id, productId, userId (the owner's login id), batchId, variantId, lotId, status, claimable, createdAt, updatedAt. A proof's own values are not returned by this call. ```typescript // How many people own each product await proof.query(collectionId, { where: { userId: { isNull: false } }, groupBy: ['productId'], aggregates: { owners: { countDistinct: 'userId' } }, }) // The most recent owner of a product, with their name await proof.query(collectionId, { where: { productId: 'toaster', userId: { isNull: false } }, orderBy: [{ createdAt: 'desc' }], limit: 1, expand: { owner: ['firstName', 'lastName', 'email'] }, }) ```
+
+**queryFields**(collectionId: string) → `Promise<QueryDescription>`
+What a proofs query can use: its fields, what each can filter, sort, group or total, and its links. GET /admin/collection/:collectionId/proof/query
 
 **get**(collectionId: string,
     productId: string,
@@ -14887,6 +15110,9 @@ One of your app's declared channels (manifest `realtime.channels`). ```ts const 
 
 **onChange**(scope: RealtimeScope, filter: RealtimeChangeFilter, onChangeFn: (change: RealtimeChangeEvent) → `void`
 Something changed: refetch it. IDs only — never data. Admins of the collection see every change; everyone else sees changes to public things (public app records, products). Filter by `type` ('product' | 'proof' | 'asset' | 'record' | 'collection' | 'collection.apps' | 'settings'), `id`, `appId`, `recordType`, `productId`, `proofId`. ```ts const off = realtime.onChange({ collectionId }, { type: "record", appId, recordType: "entry" }, () => refetch()) ```
+
+**onStaffChange**(scope: RealtimeScope & { appId: string }, filter: RealtimeChangeFilter, onChangeFn: (change: RealtimeChangeEvent) → `void`
+Something this APP works on changed: one of its work orders, a container or stock it moved, or one of its own records. For the people who use the app, admins or not: someone hears these when they are in one of the app's user groups (the ones its server functions are limited to, or `realtime.staff` in its manifest), and so does a collection admin. IDs only — refetch through your own API. Types: 'workOrder' (`id`, `appId`), 'container' (`id`, `kind` = its container type), 'stock' (`id` = the container, `productId`), 'record' (`id`, `recordType`). Filter as with `onChange`; an empty filter hears them all. ```ts // A production app's screens refetch when anything on the floor changes. useEffect(() => realtime.onStaffChange({ collectionId, appId }, {}, () => queryClient.invalidateQueries()), [collectionId, appId]) ```
 
 **onMine**(scope: RealtimeScope, onMessage: (msg: RealtimeMessage) → `void`
 Messages for the signed-in person only (e.g. "scan" — a tag they just scanned on another device).

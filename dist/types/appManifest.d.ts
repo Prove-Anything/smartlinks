@@ -1244,6 +1244,14 @@ export interface AppManifest {
      * Absent when the app has no admin UI.
      */
     admin?: string;
+    /**
+     * The page a host opens as this app's ADMIN screen, from the app's root: `"admin.html"` or
+     * `"index.html"`. Hosts (Studio, the console, Forge's preview) read it instead of guessing.
+     * Absent → the host's default: `admin.html` for an installed app, the root page (`index.html`) for a
+     * core app. Declare it when that default is wrong — e.g. AuthKit (`core-account`), whose root page
+     * is the PUBLIC sign-in screen every site redirects to, and whose admin is `admin.html`.
+     */
+    adminPage?: string;
     /** Widget bundle definition. Presence means a widget bundle exists for this app. */
     widgets?: AppManifestWidgets;
     /** Container bundle definition. Presence means a container bundle exists. */
@@ -1297,7 +1305,13 @@ export interface AppManifest {
      * ```
      */
     realtime?: {
-        channels: RealtimeChannelDeclaration[];
+        channels?: RealtimeChannelDeclaration[];
+        /**
+         * Who hears changes to what this app works on (`realtime.onStaffChange`: its work orders, the
+         * containers and stock it moves), as user group keys. Absent: every user group the app's server
+         * functions are limited to. `[]`: nobody but collection admins.
+         */
+        staff?: string[];
     };
     /**
      * Cards this app adds to the collection's dashboard in Studio. A `data` card names an ADMIN server
@@ -1376,6 +1390,55 @@ export interface AppAssistantDeclaration {
      * Relative to the app's admin surface, e.g. `"/admin/preview?changeSet={id}"`.
      */
     preview?: string;
+    /**
+     * One line (≤ 200 characters): what this app or site is for. Always in the assistant's view, in the
+     * line for this app: "Production manager for a fragrance filling and decorating factory".
+     */
+    purpose?: string;
+    /**
+     * What each standard object MEANS in this app ("a work order here is a job"), and whether the
+     * assistant may change it directly or only through one of the app's actions. Up to 20. Record types
+     * declared in the manifest's `data` block needn't be repeated: the assistant gets their titles and
+     * fields from there. @see AssistantObject
+     */
+    objects?: AssistantObject[];
+    /** The business's own terms: `{ "GMP": "the batch manufacturing record printed for each job" }`. Up to 40. */
+    words?: Record<string, string>;
+    /** How to answer the questions people actually ask. Up to 30. @see AssistantRecipe */
+    recipes?: AssistantRecipe[];
+}
+/**
+ * What one standard object means in this app. A SITE may also describe objects other installed apps
+ * keep (narrow them with `where: { appId }`); there, what the site says wins over the app's own words.
+ */
+export interface AssistantObject {
+    /** The standard object: `workOrder`, `workOrderStage`, `container`, `stock`, `booking`, `record`, `contact`, `product`, `history`. */
+    object: string;
+    /**
+     * Which ones, with the same filters the SDK takes: `{ appId: "accord-production" }`,
+     * `{ containerType: "drum" }`, `{ recordType: "smell-test" }`, `{ "data.event": "christmas-fair" }`.
+     */
+    where?: Record<string, string | number | boolean>;
+    /** What it is here, in a sentence (≤ 300 characters): "A job." */
+    means: string;
+    /** What its fields hold, where the name doesn't say: `{ "ref": "job number", "data.stage": "the stage shown on screen" }`. Up to 20. */
+    fields?: Record<string, string>;
+    /**
+     * May the assistant change it?
+     *  - `direct`: through the API, as a planned change the person applies;
+     *  - `actions`: ONLY through one of this app's actions (functions with `agent.tool`), because the
+     *    app's rules live in its code (numbering, checks, who is told);
+     *  - `none`: never.
+     * Absent: nothing is said (the platform's usual rules apply).
+     */
+    write?: 'direct' | 'actions' | 'none';
+}
+/** One common question and how to answer it: an object query in plain words, or the action that knows. */
+export interface AssistantRecipe {
+    /** The question as people ask it (≤ 160 characters): "What's on tomorrow?" */
+    question: string;
+    /** How to answer (≤ 400 characters): "work order stages of this app planned for that day, by stage; show machine or crew". */
+    answer: string;
 }
 /** One field of a connector's "Connect" form. */
 export interface ConnectorConnectionField {

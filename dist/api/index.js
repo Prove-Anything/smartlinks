@@ -26,6 +26,7 @@ export { async } from "./async.js";
 export { jobs } from "./jobs.js";
 export { segments } from "./segments.js";
 export { userGroups } from "./userGroups.js";
+export { conditions } from "./conditions.js";
 export { operations } from "./operations.js";
 export { journeys } from "./journeys.js";
 export { journeysAnalytics } from "./journeysAnalytics.js";

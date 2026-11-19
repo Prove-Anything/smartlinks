@@ -1,6 +1,36 @@
 import { request, post, del, patch } from "../http.js";
 export var contact;
 (function (contact) {
+    /**
+     * The standard query on contacts (admin only): filter, sort, page, count and total in one call.
+     * POST /admin/collection/:collectionId/contacts/query
+     *
+     * Fields: contactId, userId, firstName, lastName, displayName, company, email, phone, tags, source,
+     * locale, createdAt, updatedAt. Email and phone are the contact's main one. Deleted and erased
+     * contacts are never returned.
+     *
+     * ```typescript
+     * await contact.query(collectionId, {
+     *   where: { tags: { hasAny: ['vip', 'trade'] }, createdAt: { gte: '2026-01-01' } },
+     *   select: ['contactId', 'firstName', 'email'], count: true,
+     * })
+     * await contact.query(collectionId, { groupBy: ['company'], aggregates: { people: { count: true } } })
+     * ```
+     */
+    async function query(collectionId, body = {}) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/query`;
+        return post(path, body);
+    }
+    contact.query = query;
+    /**
+     * What a contacts query can use: its fields and what each can filter, sort, group or total.
+     * GET /admin/collection/:collectionId/contacts/query
+     */
+    async function queryFields(collectionId) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/query`;
+        return request(path);
+    }
+    contact.queryFields = queryFields;
     async function create(collectionId, data) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts`;
         return post(path, data);
@@ -155,6 +185,80 @@ export var contact;
         return post(path, body || {});
     }
     contact.erase = erase;
+    /**
+     * Admin: pairs of contacts that look like one person.
+     * GET /admin/collection/:collectionId/contacts/duplicates
+     *
+     * The pattern it finds: someone the collection knew by email first (an import, a list, a form) who
+     * later signed in. Their sign-in got a second contact, which could not take the email the first one
+     * already held — so one contact has the email and no sign-in, the other the sign-in (and everything
+     * they did) and no email. The match is made on the server, on verified addresses only.
+     *
+     * Checks a window of contacts per call; while `more` is true, call again with `offset` moved on by
+     * `scanned`.
+     *
+     * @example
+     * ```typescript
+     * const { pairs } = await contact.findDuplicates(collectionId)
+     * for (const pair of pairs) {
+     *   await contact.merge(collectionId, pair.keep.contactId, pair.merge.contactId)
+     * }
+     * ```
+     */
+    async function findDuplicates(collectionId, params) {
+        const query = new URLSearchParams();
+        if ((params === null || params === void 0 ? void 0 : params.limit) !== undefined)
+            query.set("limit", String(params.limit));
+        if ((params === null || params === void 0 ? void 0 : params.offset) !== undefined)
+            query.set("offset", String(params.offset));
+        const qs = query.toString();
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/duplicates${qs ? `?${qs}` : ""}`;
+        return request(path);
+    }
+    contact.findDuplicates = findDuplicates;
+    /**
+     * Admin: fold contact `fromContactId` INTO contact `keepContactId`.
+     * POST /admin/collection/:collectionId/contacts/:keepContactId/merge
+     *
+     * The kept contact gains the other's sign-in, emails and phones, and anything it had no value for;
+     * its own values win. Everything recorded against the other contact moves to the kept one. Consent is
+     * never loosened: an opt-out on either contact stays an opt-out. The other contact is soft-deleted and
+     * marked with `customFields.mergedInto`.
+     *
+     * Refused (HTTP 409, `error` = a `ContactMergeErrorCode`) when the two have different sign-ins
+     * (`LOGIN_CONFLICT`) or are both members of the same loyalty scheme (`LOYALTY_CONFLICT`).
+     */
+    async function merge(collectionId, keepContactId, fromContactId) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/${encodeURIComponent(keepContactId)}/merge`;
+        return post(path, { fromContactId });
+    }
+    contact.merge = merge;
+    /**
+     * Admin: the contact that carries a sign-in, attaching the sign-in first to the contact that already
+     * holds its verified email or phone.
+     * POST /admin/collection/:collectionId/contacts/link-login
+     *
+     * For a service about to create a contact for a `userId`: call this first and only create when it
+     * throws 404 (`NOTHING_TO_LINK`), so a person the collection already knows by email stays one contact.
+     * The address is read from the sign-in itself and must be verified; nothing the caller says about an
+     * email is used. Never creates a contact.
+     *
+     * @example
+     * ```typescript
+     * let contactId: string
+     * try {
+     *   contactId = (await contact.linkLogin(collectionId, userId)).contactId
+     * } catch (err) {
+     *   if (err.statusCode !== 404) throw err
+     *   contactId = (await contact.create(collectionId, { userId, source: 'my-service' })).contactId
+     * }
+     * ```
+     */
+    async function linkLogin(collectionId, userId) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/link-login`;
+        return post(path, { userId });
+    }
+    contact.linkLogin = linkLogin;
     // get user
     async function getUser(collectionId, userId) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/owner/${encodeURIComponent(userId)}`;

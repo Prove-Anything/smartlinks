@@ -1,3 +1,4 @@
+import type { StandardQuery, QueryResult, QueryDescription } from "../types/query.js";
 import { JsonValue, ProductClaimCreateRequestBody, ProductCreateRequest, ProductQueryRequest, ProductQueryResponse, ProductResponse, ProductUpdateRequest } from "../types/product.js";
 export declare namespace products {
     function get(collectionId: string, productId: string, admin?: boolean): Promise<ProductResponse>;
@@ -25,6 +26,27 @@ export declare namespace products {
      * ```
      */
     function query(collectionId: string, body: ProductQueryRequest, admin?: boolean): Promise<ProductQueryResponse>;
+    /**
+     * The standard query on products (admin only): the one query shape every resource is moving to, with
+     * counts, totals and filtering by facet. It sits beside `products.query`, whose own body is unchanged.
+     * POST /admin/collection/:collectionId/products/standard/query
+     *
+     * Fields: id, name, description, sku, gtin, schemaType, status, sortOrder, createdAt, updatedAt,
+     * facets. Facets are filtered by key: the facet by its key or name, the value by its key or name.
+     *
+     * ```typescript
+     * await products.standardQuery(collectionId, {
+     *   where: { facets: { brand: 'Breville', category: { in: ['Toasters', 'Kettles'] } }, status: 'active' },
+     *   select: ['id', 'name', 'sku'], count: true,
+     * })
+     * ```
+     */
+    function standardQuery(collectionId: string, body?: StandardQuery): Promise<QueryResult>;
+    /**
+     * What a products standard query can use: its fields and what each can filter, sort, group or total.
+     * GET /admin/collection/:collectionId/products/standard/query
+     */
+    function standardQueryFields(collectionId: string): Promise<QueryDescription>;
     function clone(collectionId: string, productId: string, body?: Record<string, JsonValue>): Promise<ProductResponse>;
     function listAssets(collectionId: string, productId: string, admin?: boolean): Promise<unknown>;
     function createClaimWindow(collectionId: string, productId: string, body: Record<string, JsonValue>): Promise<unknown>;
