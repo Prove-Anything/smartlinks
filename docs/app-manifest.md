@@ -507,6 +507,26 @@ should say and how the assistant changes config with undo: **[assistant-apps.md]
 
 ---
 
+#### `docs`
+
+The app's manual, for the people who use it: Markdown pages under `public/docs/`, shipped with every
+release. For first-party apps, docs.smartlinks.app reads the stable release's pages directly, so
+releasing the app publishes its manual.
+
+```jsonc
+"docs": {
+  "pages": [
+    { "file": "docs/index.md", "title": "Messages", "description": "Send campaigns and answer people in one inbox.", "audience": "team" },
+    { "file": "docs/setup.md", "title": "Setting up", "audience": "admin" }
+  ]
+}
+```
+
+The first page is the front page. `audience` is `team` (default), `admin`, `customer` or `developer`.
+`listed: false` keeps a manual off the docs site. What to write and how: **[app-docs.md](app-docs.md)**.
+
+---
+
 ## `app.admin.json`
 
 Fetched only by the admin UI and AI-assisted setup flows — never loaded on the public-facing page. Keep setup logic and configuration schemas here, not in the manifest.

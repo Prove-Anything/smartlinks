@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.23  |  Generated: 2026-11-19T11:28:05.726Z
+Version: 2.1.23  |  Generated: 2026-11-19T13:13:36.369Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3208,7 +3208,26 @@ interface AppManifest {
   headless?: AppHeadlessDeclaration;
   connector?: AppConnectorDeclaration;
   assistant?: AppAssistantDeclaration;
+  docs?: AppDocsDeclaration;
   [key: string]: any;
+}
+```
+
+**AppDocsPage** (interface)
+```typescript
+interface AppDocsPage {
+  file: string;
+  title: string;
+  description?: string;
+  audience?: AppDocsAudience;
+}
+```
+
+**AppDocsDeclaration** (interface)
+```typescript
+interface AppDocsDeclaration {
+  pages: AppDocsPage[];
+  listed?: boolean;
 }
 ```
 
@@ -3482,6 +3501,8 @@ interface GetCollectionWidgetsOptions {
 ```typescript
 type ServerFunctionFileInput = { base64: string; contentType: string }
 ```
+
+**AppDocsAudience** = `'team' | 'admin' | 'customer' | 'developer'`
 
 ### appObjects
 

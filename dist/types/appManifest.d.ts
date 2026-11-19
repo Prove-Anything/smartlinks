@@ -1351,7 +1351,36 @@ export interface AppManifest {
      * planned change set. See docs/assistant-apps.md. @see AppAssistantDeclaration
      */
     assistant?: AppAssistantDeclaration;
+    /**
+     * The app's manual: Markdown pages (and their images) under `public/docs/`, shipped with every
+     * release. First-party apps' manuals are published on docs.smartlinks.app straight from the
+     * stable release. See docs/app-docs.md. @see AppDocsDeclaration
+     */
+    docs?: AppDocsDeclaration;
     [key: string]: any;
+}
+/** Who a manual page is written for. */
+export type AppDocsAudience = 'team' | 'admin' | 'customer' | 'developer';
+/** One page of an app's manual. */
+export interface AppDocsPage {
+    /**
+     * Path of the Markdown file in the published build, relative to the app's root (`public/` in the
+     * project): `docs/index.md`. Images it links with relative paths ship beside it (`docs/images/...`).
+     */
+    file: string;
+    /** Page title, as it appears in the docs menu. */
+    title: string;
+    /** One sentence: what the page helps with. Used for listings and search results. */
+    description?: string;
+    /** Who it is for. Default `team` (the staff who use the app). */
+    audience?: AppDocsAudience;
+}
+/** The `docs` block in `app.manifest.json`. */
+export interface AppDocsDeclaration {
+    /** Pages in reading order. The first one is the manual's front page. */
+    pages: AppDocsPage[];
+    /** `false` keeps this manual off docs.smartlinks.app (it still ships with the app). Default `true`. */
+    listed?: boolean;
 }
 /** One skill or knowledge file the app ships for the assistant. */
 export interface AppAssistantFile {

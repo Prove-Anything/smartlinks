@@ -22097,6 +22097,8 @@ components:
           $ref: "#/components/schemas/AppConnectorDeclaration"
         assistant:
           $ref: "#/components/schemas/AppAssistantDeclaration"
+        docs:
+          $ref: "#/components/schemas/AppDocsDeclaration"
       required:
         - name
         - version
@@ -22104,6 +22106,31 @@ components:
         - function
         - files
         - components
+    AppDocsPage:
+      type: object
+      properties:
+        file:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        audience:
+          $ref: "#/components/schemas/AppDocsAudience"
+      required:
+        - file
+        - title
+    AppDocsDeclaration:
+      type: object
+      properties:
+        pages:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppDocsPage"
+        listed:
+          type: boolean
+      required:
+        - pages
     AppAssistantFile:
       type: object
       properties:
@@ -22593,6 +22620,13 @@ components:
     ServerFunctionMessageResult:
       type: object
       additionalProperties: true
+    AppDocsAudience:
+      type: string
+      enum:
+        - team
+        - admin
+        - customer
+        - developer
     PaginatedResponse:
       type: object
       properties:
