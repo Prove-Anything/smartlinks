@@ -57,3 +57,41 @@ A computed set with `bareCodes: true` answers bare codes on its tap domain: `htt
 Each domain has at most one such set. Assigning a **whole** computed run to a collection
 (`ranges.assign` without `start`/`end`) is one write on the range, however many tags it holds; the response
 says `wholeRange: true`.
+
+## Chips and boxes (2.1.26)
+
+The same three calls take an RFID or NFC chip by its id (`tagId`), or whatever a scanner read (`scan`: an address
+is read as a claim code, anything else as a chip id):
+
+```ts
+await SL.tagCodes.lookup(collectionId, { scan: 'E28011700000020F1E2D3C4B' })
+// → { kind: 'chip', tagId, tagType: 'chip', status: 'free', on: null }
+```
+
+A tag goes on **an item** or **a container** (it's the label on a box, a bag, a shelf, a cask), never both:
+
+```ts
+await SL.tagCodes.attach(collectionId, { url, productId, proofId })            // on an item
+await SL.tagCodes.attach(collectionId, { tagId, containerId })                 // the label on an existing container
+await SL.tagCodes.attach(collectionId, { url, container: { name: 'Box 12', parentContainerId: storeRoomId } })  // a new box
+```
+
+`on` says what a tag is on: `{ type: 'item', productId, proofId }`, `{ type: 'container', containerId, name }`, or
+for older RFID tags tagged only to a product, `{ type: 'product', productId }` (which can still be attached to an
+item). A chip's label is recorded as the tag row's `refType: 'container'` (the label on that container, never
+where the tag is); a claim code's in its own row.
+
+## Moving things
+
+```ts
+await SL.places.move(collectionId, { to: vanId, items: [{ productId, proofId }, { containerId: boxId }], note: 'Acme job' })
+// → { moved: [...], unchanged: [...], refused: [...] }
+```
+
+- An item, or a chip without an item, is taken out of every place it's in and put in `to` (membership).
+- A container is re-parented to `to`. A place can't go inside itself (`INSIDE_ITSELF`).
+- `to: null` takes things out of every place.
+- Each move leaves a history line: `asset.moved` on an item, `tag.moved` on a chip, `container.moved` on a container.
+
+Where something is: an item's place is `containers.findForItem(cid, { itemType: 'proof', itemId })` (its
+membership rows and the containers); a container's is its `parentContainerId`.

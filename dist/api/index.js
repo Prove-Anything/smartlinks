@@ -14,6 +14,7 @@ export { authKit } from "./authKit.js";
 export { claimSet } from "./claimSet.js";
 export { partner } from "./partner.js";
 export { tagCodes } from "./tagCodes.js";
+export { places } from "./places.js";
 export { errors } from "./errors.js";
 export { crate } from "./crate.js";
 export { batch } from "./batch.js";

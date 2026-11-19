@@ -67,7 +67,7 @@ export declare namespace containers {
      *
      * @param collectionId - Collection context
      * @param params - `itemType` and `itemId` are required
-     * @returns `{ containers: Container[] }`
+     * @returns `{ items, containers }`: the current membership rows and those containers
      *
      * @example
      * ```typescript

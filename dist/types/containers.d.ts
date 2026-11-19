@@ -139,7 +139,9 @@ export interface ListContainersResponse {
 export interface PublicListContainersResponse {
     containers: Container[];
 }
+/** What findForItem answers: the item's current membership rows (each has `containerId`) and those containers. */
 export interface FindContainersForItemResponse {
+    items: ContainerItem[];
     containers: Container[];
 }
 export interface ContainerItemsResponse {

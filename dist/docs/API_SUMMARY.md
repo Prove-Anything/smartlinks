@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.25  |  Generated: 2026-11-19T14:54:46.566Z
+Version: 2.1.26  |  Generated: 2026-11-19T17:59:55.975Z
 
 This is a concise summary of all available API functions and types.
 
@@ -160,6 +160,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **operations** - Functions for operations operations
 - **order** - Functions for order operations
 - **partner** - Functions for partner operations
+- **places** - Functions for places operations
 - **products** - Functions for products operations
 - **realtime** - Functions for realtime operations
 - **research** - Functions for research operations
@@ -6358,23 +6359,37 @@ interface CreatePartnerClaimSetRequest {
 **TagCodeRef** (interface)
 ```typescript
 interface TagCodeRef {
+  scan?: string
   url?: string
   claimSetId?: string
   code?: string
+  tagId?: string
 }
 ```
 
 **TagCodeState** (interface)
 ```typescript
 interface TagCodeState {
-  claimSetId: string
-  code: string
-  url: string
-  computed: boolean
-  tagType: ClaimSetTagType
+  kind: 'claim' | 'chip'
+  claimSetId?: string
+  code?: string
+  url?: string
+  computed?: boolean
+  tagId?: string
+  tagType: ClaimSetTagType | 'chip'
   status: 'free' | 'attached' | 'elsewhere'
+  on?: TagCodeOn | null
   productId?: string | null
   proofId?: string | null
+}
+```
+
+**PlaceMoveResult** (interface)
+```typescript
+interface PlaceMoveResult {
+  moved: Array<{ item: PlaceMoveItem; from: string | null; to: string | null }>
+  unchanged: PlaceMoveItem[]
+  refused: Array<{ item: PlaceMoveItem; errorCode: string; errorText: string }>
 }
 ```
 
@@ -6392,6 +6407,13 @@ type ClaimSetScope = { collectionId: string }
 **CloseClaimSetRangeResponse** = `ClaimSetRange | { id: string`
 
 **ClaimSetImportResult** = ``
+
+**TagCodeOn** = ``
+
+**PlaceMoveItem** (type)
+```typescript
+type PlaceMoveItem = { productId: string; proofId: string }
+```
 
 ### clientLog
 
@@ -7915,6 +7937,7 @@ interface PublicListContainersResponse {
 **FindContainersForItemResponse** (interface)
 ```typescript
 interface FindContainersForItemResponse {
+  items: ContainerItem[]
   containers: Container[]
 }
 ```
@@ -14816,6 +14839,11 @@ Find a tag across the partner's sets by its chip UID (8 or 14 hex) or its code (
 
 **tagAttempts**(partnerId: string, uid: string) → `Promise<ClientErrorEvent[]>`
 What phones reported about one chip (errors.report with entityType 'tag'), newest first: a tag that failed to program or register, with the host's NFC log in context. For a chip in the partner's sets, or attempts that named one of them.
+
+### places
+
+**move**(collectionId: string, params: { to: string | null; items: PlaceMoveItem[]; note?: string }) → `Promise<PlaceMoveResult>`
+Move items (by membership), chips without an item (by membership) or containers (re-parented) into `to`, or out of every place with `to: null`. Each move leaves a history line on what moved. Up to 500 at a time.
 
 ### podcast
 

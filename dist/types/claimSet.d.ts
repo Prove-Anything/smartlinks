@@ -391,30 +391,87 @@ export interface CreatePartnerClaimSetRequest {
     /** computed sets: a full https:// address for an unused code's scan, with {set} and {code} placeholders */
     unassignedUrl?: string;
 }
-/** A scanned tag: the address it carries, or its set and code. */
+/**
+ * A scanned tag. Any one of: what a scanner read (`scan`: an address is a claim code, anything else a chip id), the
+ * address (`url`), a claim set and code, or a chip's id in the tags table (`tagId`: an RFID EPC or NFC UID).
+ */
 export interface TagCodeRef {
-    /** What the scan read: https://{domain}/{code} or https://{domain}/t/{set}/{code} */
+    scan?: string;
+    /** https://{domain}/{code} or https://{domain}/t/{set}/{code} */
     url?: string;
     claimSetId?: string;
     code?: string;
+    /** An RFID EPC or NFC UID */
+    tagId?: string;
 }
+/** Attach a tag to an item (productId + proofId), an existing container (containerId), or a new box (container). */
 export interface TagCodeAttachRequest extends TagCodeRef {
-    /** The asset's type (a product) */
-    productId: string;
-    /** The asset (a proof) */
-    proofId: string;
+    /** The item's type (a product) */
+    productId?: string;
+    /** The item (a proof) */
+    proofId?: string;
+    /** An existing container this tag is the label on */
+    containerId?: string;
+    /** A new box (or bag, shelf…) labelled by this tag */
+    container?: {
+        name: string;
+        containerType?: string;
+        parentContainerId?: string;
+    };
 }
+/** What a tag is on: an item, a container it labels, or (older RFID) just a product. */
+export type TagCodeOn = {
+    type: 'item';
+    productId: string | null;
+    proofId: string;
+} | {
+    type: 'container';
+    containerId: string;
+    name?: string | null;
+    containerType?: string;
+} | {
+    type: 'product';
+    productId: string;
+};
 export interface TagCodeState {
-    claimSetId: string;
-    code: string;
-    /** The address the tag carries */
-    url: string;
+    /** claim: a claim-set code (QR, or an NFC claim code); chip: a tags-table chip (RFID EPC, NFC UID) */
+    kind: 'claim' | 'chip';
+    /** claim codes */
+    claimSetId?: string;
+    code?: string;
+    /** The address a claim code carries */
+    url?: string;
     /** A computed set's code (printed QR, nothing stored until attached) */
-    computed: boolean;
-    tagType: ClaimSetTagType;
-    /** free: not on anything, may be attached here; attached: on one of this collection's assets; elsewhere: another organisation's */
+    computed?: boolean;
+    /** chips */
+    tagId?: string;
+    tagType: ClaimSetTagType | 'chip';
+    /** free: may be attached here; attached: on one of this collection's things; elsewhere: another organisation's */
     status: 'free' | 'attached' | 'elsewhere';
     /** Only for this collection's own tags */
+    on?: TagCodeOn | null;
     productId?: string | null;
     proofId?: string | null;
+}
+/** places.move: one thing to move. */
+export type PlaceMoveItem = {
+    productId: string;
+    proofId: string;
+} | {
+    tagId: string;
+} | {
+    containerId: string;
+};
+export interface PlaceMoveResult {
+    moved: Array<{
+        item: PlaceMoveItem;
+        from: string | null;
+        to: string | null;
+    }>;
+    unchanged: PlaceMoveItem[];
+    refused: Array<{
+        item: PlaceMoveItem;
+        errorCode: string;
+        errorText: string;
+    }>;
 }

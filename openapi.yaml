@@ -106,6 +106,8 @@ tags:
     description: Order records and line items.
   - name: partner
     description: partner API
+  - name: places
+    description: places API
   - name: product
     description: Single product operations.
   - name: products
@@ -7262,6 +7264,40 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/places/move:
+    post:
+      tags:
+        - places
+      summary: "Move items (by membership), chips without an item (by membership) or containers (re-parented) into `to`, or out of every place with `to: null`."
+      operationId: places_move
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlaceMoveResult"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
   /admin/collection/{collectionId}/product:
     post:
       tags:
@@ -27807,11 +27843,15 @@ components:
     TagCodeRef:
       type: object
       properties:
+        scan:
+          type: string
         url:
           type: string
         claimSetId:
           type: string
         code:
+          type: string
+        tagId:
           type: string
     TagCodeAttachRequest:
       type: object
@@ -27820,12 +27860,19 @@ components:
           type: string
         proofId:
           type: string
-      required:
-        - productId
-        - proofId
+        containerId:
+          type: string
+        container:
+          type: object
+          additionalProperties: true
     TagCodeState:
       type: object
       properties:
+        kind:
+          type: string
+          enum:
+            - claim
+            - chip
         claimSetId:
           type: string
         code:
@@ -27834,25 +27881,49 @@ components:
           type: string
         computed:
           type: boolean
+        tagId:
+          type: string
         tagType:
-          $ref: "#/components/schemas/ClaimSetTagType"
+          type: string
+          enum:
+            - chip
         status:
           type: string
           enum:
             - free
             - attached
             - elsewhere
+        on:
+          $ref: "#/components/schemas/TagCodeOn"
         productId:
           type: string
         proofId:
           type: string
       required:
-        - claimSetId
-        - code
-        - url
-        - computed
+        - kind
         - tagType
         - status
+    PlaceMoveResult:
+      type: object
+      properties:
+        moved:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        unchanged:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlaceMoveItem"
+        refused:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - moved
+        - unchanged
+        - refused
     ClaimSetScope:
       type: object
       properties:
@@ -27860,6 +27931,14 @@ components:
           type: string
       required:
         - collectionId
+    PlaceMoveItem:
+      type: object
+      properties:
+        productId:
+          type: object
+          additionalProperties: true
+      required:
+        - productId
     ClaimSetTagType:
       type: string
       enum:
@@ -27898,6 +27977,9 @@ components:
         - duplicate_uid
         - uid_in_use
         - uid_conflict
+    TagCodeOn:
+      type: object
+      additionalProperties: true
     ClientErrorReport:
       type: object
       properties:
@@ -29754,11 +29836,16 @@ components:
     FindContainersForItemResponse:
       type: object
       properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ContainerItem"
         containers:
           type: array
           items:
             $ref: "#/components/schemas/Container"
       required:
+        - items
         - containers
     ContainerItemsResponse:
       type: object
