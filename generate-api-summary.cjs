@@ -228,6 +228,7 @@ function generateAPISummary() {
   summary += '## Documentation\n\n';
   summary += 'For detailed guides on specific features:\n\n';
   summary += '- **[SmartLinks Microapp Overview](overview.md)** - Platform architecture, data model, auth patterns, storage, anti-patterns, and quick-reference for all SDK docs\n';
+  summary += '- **[The Standard Query](standard-query.md)** - One request body to filter, sort, page, count, total and follow links, the same on proofs, contacts, products and app records: `proof.query`, `contact.query`, `products.standardQuery`, `app.records.query`\n';
   summary += '- **[Assets](assets.md)** - Asset object, AssetRef, upload, replace, soft-delete, restore, bulk-delete, and public token-based uploads\n';
   summary += '- **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation\n';
   summary += '- **[Translations](translations.md)** - Runtime translation lookup, browser-side IndexedDB caching, and admin translation management\n';

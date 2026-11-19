@@ -1,7 +1,41 @@
 import { request, post, del, patch } from "../http"
 import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, ContactSearchParams, ContactSearchResponse, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse, ContactPublic, ContactPatch, PublicGetMyContactResponse, PublicUpdateMyContactResponse, ContactSchemaResponse, ContactDuplicatesResponse, ContactMergeResponse, ContactLinkLoginResponse } from "../types"
 
+import type { StandardQuery, QueryResult, QueryDescription } from "../types/query"
+
 export namespace contact {
+  /**
+   * The standard query on contacts (admin only): filter, sort, page, count and total in one call.
+   * POST /admin/collection/:collectionId/contacts/query
+   *
+   * Fields: contactId, userId, firstName, lastName, displayName, company, email, phone, tags, source,
+   * locale, createdAt, updatedAt. Email and phone are the contact's main one. Deleted and erased
+   * contacts are never returned.
+   *
+   * ```typescript
+   * await contact.query(collectionId, {
+   *   where: { tags: { hasAny: ['vip', 'trade'] }, createdAt: { gte: '2026-01-01' } },
+   *   select: ['contactId', 'firstName', 'email'], count: true,
+   * })
+   * await contact.query(collectionId, { groupBy: ['company'], aggregates: { people: { count: true } } })
+   * ```
+   */
+  export async function query(
+    collectionId: string,
+    body: StandardQuery = {}
+  ): Promise<QueryResult> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/query`
+    return post<QueryResult>(path, body)
+  }
+
+  /**
+   * What a contacts query can use: its fields and what each can filter, sort, group or total.
+   * GET /admin/collection/:collectionId/contacts/query
+   */
+  export async function queryFields(collectionId: string): Promise<QueryDescription> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/query`
+    return request<QueryDescription>(path)
+  }
   export async function create(collectionId: string, data: ContactCreateRequest): Promise<ContactResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts`
     return post<ContactResponse>(path, data)

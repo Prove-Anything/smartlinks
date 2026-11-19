@@ -1,3 +1,4 @@
+import type { StandardQuery, QueryResult, QueryDescription } from "../types/query"
 import { del, post, put, request } from "../http"
 import {
   JsonValue,
@@ -81,6 +82,38 @@ export namespace products {
     const base = admin ? '/admin' : '/public'
     const path = `${base}/collection/${encodeURIComponent(collectionId)}/products/query`
     return post<ProductQueryResponse>(path, body)
+  }
+
+  /**
+   * The standard query on products (admin only): the one query shape every resource is moving to, with
+   * counts, totals and filtering by facet. It sits beside `products.query`, whose own body is unchanged.
+   * POST /admin/collection/:collectionId/products/standard/query
+   *
+   * Fields: id, name, description, sku, gtin, schemaType, status, sortOrder, createdAt, updatedAt,
+   * facets. Facets are filtered by key: the facet by its key or name, the value by its key or name.
+   *
+   * ```typescript
+   * await products.standardQuery(collectionId, {
+   *   where: { facets: { brand: 'Breville', category: { in: ['Toasters', 'Kettles'] } }, status: 'active' },
+   *   select: ['id', 'name', 'sku'], count: true,
+   * })
+   * ```
+   */
+  export async function standardQuery(
+    collectionId: string,
+    body: StandardQuery = {}
+  ): Promise<QueryResult> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/products/standard/query`
+    return post<QueryResult>(path, body)
+  }
+
+  /**
+   * What a products standard query can use: its fields and what each can filter, sort, group or total.
+   * GET /admin/collection/:collectionId/products/standard/query
+   */
+  export async function standardQueryFields(collectionId: string): Promise<QueryDescription> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/products/standard/query`
+    return request<QueryDescription>(path)
   }
 
   export async function clone(
