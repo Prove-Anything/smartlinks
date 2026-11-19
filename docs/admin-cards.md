@@ -116,7 +116,7 @@ export async function cardUnanswered(ctx): Promise<AdminCardPayload> {
 | `trend` | `{ direction: 'up'\|'down'\|'flat', label?, good? }` — `good` picks the colour |
 | `status` | `{ tone: 'ok'\|'attention'\|'neutral'\|'error', text }` — `attention`/`error` also go to the To do strip |
 | `progress` | `{ done, total, label? }` — a progress bar |
-| `items` | Up to 5 rows `{ title, subtitle?, meta?, path? }` |
+| `items` | Up to 5 rows `{ title, subtitle?, meta?, path?, image? }` — `image` is an https picture shown small beside the row (a product photo); an ISO-timestamp `meta` reads as a short date |
 | `todo` | `[{ text, action? }]` — collected into the dashboard's To do strip |
 | `actions` | Up to 2 buttons `{ label, path? \| url? }` — `path` opens your app's admin at that path |
 | `empty` | `{ text, action? }` — shown instead of the body when there's nothing yet |

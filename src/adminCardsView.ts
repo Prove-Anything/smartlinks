@@ -113,6 +113,7 @@ const CSS = `
 .slc-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--_border);font-size:.875rem;min-width:0}
 .slc-item:first-child{border-top:0}
 .slc-item-main{flex:1;min-width:0}
+.slc-item-img{width:36px;height:36px;flex:none;border-radius:8px;object-fit:cover;background:color-mix(in srgb,var(--_muted) 12%,transparent)}
 .slc-item-title,.slc-item-sub{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .slc-item-sub,.slc-item-meta{color:var(--_muted);font-size:.75rem}
 .slc-link{all:unset;cursor:pointer}
@@ -158,6 +159,14 @@ export function createAdminCardViews(React: ReactLike) {
 
   function useStyles() {
     React.useEffect(() => injectAdminCardStyles(), [])
+  }
+
+  /** A row's meta: an ISO timestamp reads as a short date ("12 Nov"); anything else as given. */
+  function formatMeta(meta: string, lang?: string): string {
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(meta)) return meta
+    const d = new Date(meta)
+    if (Number.isNaN(d.getTime())) return meta
+    try { return new Intl.DateTimeFormat(lang, { day: 'numeric', month: 'short' }).format(d) } catch { return meta }
   }
 
   function formatValue(v: AdminCardPayload['value'], lang?: string): string {
@@ -228,10 +237,11 @@ export function createAdminCardViews(React: ReactLike) {
         items.length && !showEmpty
           ? h('ul', { className: 'slc-items' }, ...items.map((it, i) => {
               const inner = h(React.Fragment, null,
+                it.image ? h('img', { className: 'slc-item-img', src: it.image, alt: '', loading: 'lazy' }) : null,
                 h('span', { className: 'slc-item-main' },
                   h('span', { className: 'slc-item-title' }, it.title),
                   it.subtitle ? h('span', { className: 'slc-item-sub' }, it.subtitle) : null),
-                it.meta ? h('span', { className: 'slc-item-meta' }, it.meta) : null)
+                it.meta ? h('span', { className: 'slc-item-meta' }, formatMeta(it.meta, lang)) : null)
               return h('li', { key: i, className: 'slc-item' },
                 it.path && onAction
                   ? h('button', { type: 'button', className: 'slc-link', style: { display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }, onClick: () => act({ label: it.title, path: it.path! }) }, inner)
