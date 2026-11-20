@@ -8,6 +8,9 @@ export * from "./types"
 export { iframe } from "./iframe"
 // App context reader (props → hash → search), for pages and containers alike
 export { readContext } from "./context"
+
+// An app's own words in the person's language (docs/i18n.md).
+export * as i18n from "./i18n"
 // Admin views: an app's admin screens by name, host → app navigate, chrome=none (docs/admin-views.md)
 export * as adminViews from "./adminViews"
 export type { NavigateRequest, NavigateTarget, OpenAppRequest } from "./adminViews"

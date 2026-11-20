@@ -7,6 +7,8 @@ export * from "./types/index.js";
 export { iframe } from "./iframe.js";
 // App context reader (props → hash → search), for pages and containers alike
 export { readContext } from "./context.js";
+import * as i18n_1 from "./i18n.js";
+export { i18n_1 as i18n };
 import * as adminViews_1 from "./adminViews.js";
 export { adminViews_1 as adminViews };
 export { widgetStyleVars, widgetStyleControls, readableOn, WIDGET_STYLE_VARS } from "./widgetStyle.js";
