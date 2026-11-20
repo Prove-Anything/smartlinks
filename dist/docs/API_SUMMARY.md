@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.28  |  Generated: 2026-11-20T09:04:36.211Z
+Version: 2.1.29  |  Generated: 2026-11-20T10:15:42.775Z
 
 This is a concise summary of all available API functions and types.
 
@@ -6041,7 +6041,7 @@ interface BroadcastAppendBulkBody {
 }
 ```
 
-**BroadcastChannel** = `'email' | 'push' | 'sms' | 'wallet'`
+**BroadcastChannel** = `'email' | 'push' | 'sms'`
 
 **BroadcastPreviewResponse** = ``
 
@@ -6932,7 +6932,7 @@ interface RegisterMethodResponse {
 ```typescript
 interface SubscriptionsResolveRequest {
   subject: { type: SubjectType; id: string; productId?: string }
-  hints: { userId?: string; pushEndpoint?: string; email?: string; walletObjectId?: string }
+  hints: { userId?: string; pushEndpoint?: string; email?: string }
 }
 ```
 
@@ -6945,11 +6945,9 @@ interface SubscriptionsResolveResponse {
   contactId: string
   subscribed: boolean
   channels?: Partial<Record<BroadcastChannel, boolean>>
-  walletForSubject?: boolean
   }>
   anySubscribed: boolean
   anyMethods: boolean
-  anyWalletForSubject: boolean
 }
 ```
 
@@ -7293,7 +7291,7 @@ export interface RegisterMethodResponse { ok: true; contactId: string }
 
 export interface SubscriptionsResolveRequest {
   subject: { type: SubjectType; id: string; productId?: string }
-  hints: { userId?: string; pushEndpoint?: string; email?: string; walletObjectId?: string }
+  hints: { userId?: string; pushEndpoint?: string; email?: string }
 }
 export interface SubscriptionsResolveResponse {
   ok: true
@@ -7302,11 +7300,9 @@ export interface SubscriptionsResolveResponse {
     contactId: string
     subscribed: boolean
     channels?: Partial<Record<BroadcastChannel, boolean>>
-    walletForSubject?: boolean
   }>
   anySubscribed: boolean
   anyMethods: boolean
-  anyWalletForSubject: boolean
 }
 
 // Transactional send (single-contact, single-message)
@@ -7434,7 +7430,7 @@ export interface TransactionalSendError {
    * - `transactional.phone_missing`
    * - `transactional.whatsapp_missing`
    * - `transactional.no_push_methods`
-   * - `transactional.no_wallet_methods`
+   * - `transactional.no_wallet_passes` (`channel: 'wallet'`: the person has no wallet passes from this app)
    * - `transactional.opted_out` (category `'service'`: the person turned that channel off, or the email is suppressed)
    * - `transactional.template_or_message` / `transactional.message_invalid` / `transactional.about_invalid`
    */
@@ -7693,7 +7689,6 @@ interface CommMethodMeta {
   auth?: string
   phone?: string
   email?: string
-  walletObjectId?: string
   subjectType?: SubjectType
   subjectId?: string
   productId?: string

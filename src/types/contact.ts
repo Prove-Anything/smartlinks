@@ -248,8 +248,7 @@ export interface CommMethodMeta {
   phone?: string
   // Email
   email?: string
-  // Wallet (can be tied to a subject)
-  walletObjectId?: string
+  // Optional subject the method is tied to
   subjectType?: SubjectType
   subjectId?: string
   productId?: string

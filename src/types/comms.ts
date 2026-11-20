@@ -264,7 +264,7 @@ export interface RegisterMethodResponse { ok: true; contactId: string }
 
 export interface SubscriptionsResolveRequest {
   subject: { type: SubjectType; id: string; productId?: string }
-  hints: { userId?: string; pushEndpoint?: string; email?: string; walletObjectId?: string }
+  hints: { userId?: string; pushEndpoint?: string; email?: string }
 }
 export interface SubscriptionsResolveResponse {
   ok: true
@@ -273,11 +273,9 @@ export interface SubscriptionsResolveResponse {
     contactId: string
     subscribed: boolean
     channels?: Partial<Record<BroadcastChannel, boolean>>
-    walletForSubject?: boolean
   }>
   anySubscribed: boolean
   anyMethods: boolean
-  anyWalletForSubject: boolean
 }
 
 // Transactional send (single-contact, single-message)
@@ -405,7 +403,7 @@ export interface TransactionalSendError {
    * - `transactional.phone_missing`
    * - `transactional.whatsapp_missing`
    * - `transactional.no_push_methods`
-   * - `transactional.no_wallet_methods`
+   * - `transactional.no_wallet_passes` (`channel: 'wallet'`: the person has no wallet passes from this app)
    * - `transactional.opted_out` (category `'service'`: the person turned that channel off, or the email is suppressed)
    * - `transactional.template_or_message` / `transactional.message_invalid` / `transactional.about_invalid`
    */

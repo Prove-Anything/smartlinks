@@ -167,7 +167,6 @@ export interface CommMethodMeta {
     auth?: string;
     phone?: string;
     email?: string;
-    walletObjectId?: string;
     subjectType?: SubjectType;
     subjectId?: string;
     productId?: string;

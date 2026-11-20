@@ -27248,7 +27248,6 @@ components:
         - email
         - push
         - sms
-        - wallet
     BroadcastPreviewResponse:
       type: object
       additionalProperties: true
@@ -28797,13 +28796,9 @@ components:
           type: boolean
         channels:
           $ref: "#/components/schemas/BroadcastChannel"
-        walletForSubject:
-          type: boolean
         anySubscribed:
           type: boolean
         anyMethods:
-          type: boolean
-        anyWalletForSubject:
           type: boolean
       required:
         - ok
@@ -28813,7 +28808,6 @@ components:
         - subscribed
         - anySubscribed
         - anyMethods
-        - anyWalletForSubject
     TransactionalSendRequest:
       type: object
       properties:
@@ -29419,8 +29413,6 @@ components:
         phone:
           type: string
         email:
-          type: string
-        walletObjectId:
           type: string
         subjectType:
           $ref: "#/components/schemas/SubjectType"

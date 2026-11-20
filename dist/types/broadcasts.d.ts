@@ -3,7 +3,8 @@ export interface ListBroadcastsQuery {
     offset?: number;
     appId?: string;
 }
-export type BroadcastChannel = 'email' | 'push' | 'sms' | 'wallet';
+/** Broadcast channels. Wallet is not one: wallet passes are messaged one-to-one (`comms.send` with `channel: 'wallet'`). */
+export type BroadcastChannel = 'email' | 'push' | 'sms';
 export interface BroadcastRecord {
     id: string;
     collectionId: string;
@@ -80,9 +81,6 @@ export type BroadcastPreviewResponse = {
 } | {
     channel: 'sms';
     body: string;
-} | {
-    channel: 'wallet';
-    payload: any;
 };
 export interface BroadcastSendTestRequest {
     contactId?: string;

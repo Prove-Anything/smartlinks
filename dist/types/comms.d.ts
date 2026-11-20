@@ -294,7 +294,6 @@ export interface SubscriptionsResolveRequest {
         userId?: string;
         pushEndpoint?: string;
         email?: string;
-        walletObjectId?: string;
     };
 }
 export interface SubscriptionsResolveResponse {
@@ -308,11 +307,9 @@ export interface SubscriptionsResolveResponse {
         contactId: string;
         subscribed: boolean;
         channels?: Partial<Record<BroadcastChannel, boolean>>;
-        walletForSubject?: boolean;
     }>;
     anySubscribed: boolean;
     anyMethods: boolean;
-    anyWalletForSubject: boolean;
 }
 /**
  * Send a single message to one contact using a template.
@@ -439,7 +436,7 @@ export interface TransactionalSendError {
      * - `transactional.phone_missing`
      * - `transactional.whatsapp_missing`
      * - `transactional.no_push_methods`
-     * - `transactional.no_wallet_methods`
+     * - `transactional.no_wallet_passes` (`channel: 'wallet'`: the person has no wallet passes from this app)
      * - `transactional.opted_out` (category `'service'`: the person turned that channel off, or the email is suppressed)
      * - `transactional.template_or_message` / `transactional.message_invalid` / `transactional.about_invalid`
      */
