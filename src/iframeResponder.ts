@@ -5,6 +5,7 @@
 import * as cache from './cache';
 import { collection } from './api/collection';
 import { getBaseURL, hasAuthCredentials } from './http';
+import { trackTranslation } from './translationActivity';
 import type {
   IframeResponderOptions,
   CachedData,
@@ -647,8 +648,16 @@ export class IframeResponder {
         };
       }
       
-      const fetchResponse = await fetch(fullUrl, fetchOptions);
-      const responseData = await fetchResponse.json().catch(() => null);
+      // An app's content translation: let the host show "translating this page" while it runs.
+      const settleTranslation = translationLookupTarget(proxyData.method, path, proxyData.body);
+      let fetchResponse: Response;
+      let responseData: any;
+      try {
+        fetchResponse = await fetch(fullUrl, fetchOptions);
+        responseData = await fetchResponse.json().catch(() => null);
+      } finally {
+        settleTranslation?.();
+      }
 
       if (!fetchResponse.ok) {
         response.error = responseData?.message || responseData?.errorText || `Request failed with status ${fetchResponse.status}`;
@@ -1046,4 +1055,15 @@ export function buildIframeSrc(options: {
   if (path && !path.startsWith('/')) path = '/' + path;
   
   return `${base}/#${path}?${params.toString()}`.replace('/#/?', '/#?').replace('/#/', '/#/');
+}
+
+/** A proxied translations lookup that may create translations: start counting it (translationActivity.ts). */
+function translationLookupTarget(method: string, path: string, body: any): (() => void) | null {
+  if (String(method).toUpperCase() !== 'POST' || !/\/translations\/lookup(\?|$)/.test(path)) return null;
+  if (!body || typeof body !== 'object' || typeof body.targetLanguage !== 'string') return null;
+  if (body.mode === 'cache-only') return null;
+  const source = typeof body.sourceLanguage === 'string' ? body.sourceLanguage : 'en';
+  if (source.trim().toLowerCase() === body.targetLanguage.trim().toLowerCase()) return null;
+  const texts = Array.isArray(body.texts) ? body.texts.length : typeof body.text === 'string' ? 1 : 0;
+  return trackTranslation(body.targetLanguage, texts);
 }

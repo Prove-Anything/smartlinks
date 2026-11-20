@@ -181,6 +181,7 @@ export type {
   TranslationListResponse,
   TranslationUpdateRequest,
 } from "./types/translations"
+export type { TranslationActivity } from "./translationActivity"
 
 export type {
   FacetBucket,

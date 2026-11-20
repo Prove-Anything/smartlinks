@@ -4,6 +4,7 @@
 import * as cache from './cache.js';
 import { collection } from './api/collection.js';
 import { getBaseURL, hasAuthCredentials } from './http.js';
+import { trackTranslation } from './translationActivity.js';
 /**
  * Parent-side iframe responder for SmartLinks microapp embedding.
  *
@@ -540,8 +541,17 @@ export class IframeResponder {
                 fetchOptions.body = JSON.stringify(proxyData.body);
                 fetchOptions.headers = Object.assign(Object.assign({}, fetchOptions.headers), { 'Content-Type': 'application/json' });
             }
-            const fetchResponse = await fetch(fullUrl, fetchOptions);
-            const responseData = await fetchResponse.json().catch(() => null);
+            // An app's content translation: let the host show "translating this page" while it runs.
+            const settleTranslation = translationLookupTarget(proxyData.method, path, proxyData.body);
+            let fetchResponse;
+            let responseData;
+            try {
+                fetchResponse = await fetch(fullUrl, fetchOptions);
+                responseData = await fetchResponse.json().catch(() => null);
+            }
+            finally {
+                settleTranslation === null || settleTranslation === void 0 ? void 0 : settleTranslation();
+            }
             if (!fetchResponse.ok) {
                 response.error = (responseData === null || responseData === void 0 ? void 0 : responseData.message) || (responseData === null || responseData === void 0 ? void 0 : responseData.errorText) || `Request failed with status ${fetchResponse.status}`;
                 response.statusCode = fetchResponse.status;
@@ -870,4 +880,18 @@ export function buildIframeSrc(options) {
     if (path && !path.startsWith('/'))
         path = '/' + path;
     return `${base}/#${path}?${params.toString()}`.replace('/#/?', '/#?').replace('/#/', '/#/');
+}
+/** A proxied translations lookup that may create translations: start counting it (translationActivity.ts). */
+function translationLookupTarget(method, path, body) {
+    if (String(method).toUpperCase() !== 'POST' || !/\/translations\/lookup(\?|$)/.test(path))
+        return null;
+    if (!body || typeof body !== 'object' || typeof body.targetLanguage !== 'string')
+        return null;
+    if (body.mode === 'cache-only')
+        return null;
+    const source = typeof body.sourceLanguage === 'string' ? body.sourceLanguage : 'en';
+    if (source.trim().toLowerCase() === body.targetLanguage.trim().toLowerCase())
+        return null;
+    const texts = Array.isArray(body.texts) ? body.texts.length : typeof body.text === 'string' ? 1 : 0;
+    return trackTranslation(body.targetLanguage, texts);
 }

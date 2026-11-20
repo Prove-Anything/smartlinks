@@ -1,4 +1,4 @@
-import { patch, post, request } from '../http'
+import { isProxyEnabled, patch, post, request } from '../http'
 import {
   clearCachedTranslations,
   deriveTranslationContextKey,
@@ -8,6 +8,8 @@ import {
   normalizeTranslationText,
   setCachedTranslations,
 } from '../translationCache'
+import { trackTranslation, onActivity as onTranslationActivity, activity as translationActivity, translatingMessage as translatingLine } from '../translationActivity'
+import type { TranslationActivity } from '../translationActivity'
 import type {
   ResolvedTranslationItem,
   ResolvedTranslationResponse,
@@ -116,7 +118,37 @@ export namespace translations {
   ): Promise<TranslationLookupResponse> {
     const path = `/public/collection/${encodeURIComponent(collectionId)}/translations/lookup`
     const normalized = normalizeLookupRequest(body)
-    return post<TranslationLookupResponse>(path, normalized.requestBody)
+    // A request that may create translations can take a while the first time: say so, so a host
+    // (Portal, Hub) can show "translating…" without the app doing anything (translationActivity.ts).
+    // Through the parent (proxyMode), the host's IframeResponder counts it instead, so apps built on
+    // older SDKs are covered too and nothing is counted twice.
+    const settle = normalized.mode === 'cache-fill' && !isProxyEnabled() && !sameLanguage(normalized.sourceLanguage, normalized.targetLanguage)
+      ? trackTranslation(normalized.targetLanguage, normalized.texts.length)
+      : null
+    try {
+      return await post<TranslationLookupResponse>(path, normalized.requestBody)
+    } finally {
+      settle?.()
+    }
+  }
+
+  /**
+   * Hear when content is being translated for the first time, in this window or in any app frame
+   * it embeds. Hosts use it to show a "translating this page" notice; apps never have to.
+   * Returns an unsubscribe function.
+   */
+  export function onActivity(cb: (activity: TranslationActivity) => void): () => void {
+    return onTranslationActivity(cb)
+  }
+
+  /** The "translating this page" line, in the language being translated into (for a host's banner). */
+  export function translatingMessage(language: string | null | undefined): { text: string; lang: string; dir: 'ltr' | 'rtl' } {
+    return translatingLine(language)
+  }
+
+  /** Whether a first-time translation is under way right now (see onActivity). */
+  export function activity(): TranslationActivity {
+    return translationActivity()
   }
 
   export async function resolve(

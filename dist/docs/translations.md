@@ -253,6 +253,26 @@ await translations.resolve('collection-123', {
 
 The SDK derives a deterministic local cache key from `context` so browser-local entries do not collide across different UI surfaces.
 
+## "Translating this page" notice (hosts)
+
+The first visitor to see content in a new language waits while it is translated. Apps do not need
+to show anything for this: when a `cache-fill` request is still unanswered after about 0.6 s, the
+SDK announces it, and announces again when it settles. Inside a frame it posts
+`{ _smartlinksIframeMessage: true, type: 'smartlinks:translating', payload: { active, targetLanguage, texts } }`
+to the parent. Already-translated content answers well inside the delay, so nothing is announced.
+
+Portal and Hub listen once and show a banner:
+
+```ts
+const stop = translations.onActivity(({ active, targetLanguage, texts }) => {
+  setBanner(active ? targetLanguage : null)
+})
+```
+
+`onActivity` combines this window's own requests with those of every embedded app frame.
+`translations.activity()` returns the state right now. An app that wants its own spinner can use the
+same call.
+
 ## Hashing Helpers
 
 The SDK also exposes the normalization and hashing helpers used by the local cache flow.

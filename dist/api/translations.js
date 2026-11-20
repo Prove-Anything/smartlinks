@@ -1,5 +1,6 @@
-import { patch, post, request } from '../http.js';
+import { isProxyEnabled, patch, post, request } from '../http.js';
 import { clearCachedTranslations, deriveTranslationContextKey, getCachedTranslations, getDefaultTranslationCacheTtlMs, hashTranslationText, normalizeTranslationText, setCachedTranslations, } from '../translationCache.js';
+import { trackTranslation, onActivity as onTranslationActivity, activity as translationActivity, translatingMessage as translatingLine } from '../translationActivity.js';
 function normalizeLookupRequest(body) {
     var _a, _b, _c;
     const texts = Array.isArray(body.texts)
@@ -65,9 +66,40 @@ export var translations;
     async function lookup(collectionId, body) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/translations/lookup`;
         const normalized = normalizeLookupRequest(body);
-        return post(path, normalized.requestBody);
+        // A request that may create translations can take a while the first time: say so, so a host
+        // (Portal, Hub) can show "translating…" without the app doing anything (translationActivity.ts).
+        // Through the parent (proxyMode), the host's IframeResponder counts it instead, so apps built on
+        // older SDKs are covered too and nothing is counted twice.
+        const settle = normalized.mode === 'cache-fill' && !isProxyEnabled() && !sameLanguage(normalized.sourceLanguage, normalized.targetLanguage)
+            ? trackTranslation(normalized.targetLanguage, normalized.texts.length)
+            : null;
+        try {
+            return await post(path, normalized.requestBody);
+        }
+        finally {
+            settle === null || settle === void 0 ? void 0 : settle();
+        }
     }
     translations.lookup = lookup;
+    /**
+     * Hear when content is being translated for the first time, in this window or in any app frame
+     * it embeds. Hosts use it to show a "translating this page" notice; apps never have to.
+     * Returns an unsubscribe function.
+     */
+    function onActivity(cb) {
+        return onTranslationActivity(cb);
+    }
+    translations.onActivity = onActivity;
+    /** The "translating this page" line, in the language being translated into (for a host's banner). */
+    function translatingMessage(language) {
+        return translatingLine(language);
+    }
+    translations.translatingMessage = translatingMessage;
+    /** Whether a first-time translation is under way right now (see onActivity). */
+    function activity() {
+        return translationActivity();
+    }
+    translations.activity = activity;
     async function resolve(collectionId, body, options = {}) {
         var _a, _b, _c;
         const normalized = normalizeLookupRequest(body);

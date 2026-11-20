@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.29  |  Generated: 2026-11-20T10:15:42.775Z
+Version: 2.1.30  |  Generated: 2026-11-20T10:29:03.532Z
 
 This is a concise summary of all available API functions and types.
 
@@ -15500,21 +15500,35 @@ Invoke ONE built-in server tool directly — no model in the loop. This is the "
 **lookup**(collectionId: string,
     body: TranslationLookupRequest) → `Promise<TranslationLookupResponse>`
 
+**onActivity**(cb: (activity: TranslationActivity) → `void`
+Hear when content is being translated for the first time, in this window or in any app frame it embeds. Hosts use it to show a "translating this page" notice; apps never have to. Returns an unsubscribe function.
+
+**translatingMessage**(language: string | null | undefined) → ``
+The "translating this page" line, in the language being translated into (for a host's banner).
+
+**activity**() → `TranslationActivity`
+Whether a first-time translation is under way right now (see onActivity).
+
 **resolve**(collectionId: string,
     body: TranslationLookupRequest,
     options: TranslationResolveOptions = {}) → `Promise<ResolvedTranslationResponse>`
+Whether a first-time translation is under way right now (see onActivity).
 
 **list**(collectionId: string,
     params?: TranslationListParams) → `Promise<TranslationListResponse>`
+Whether a first-time translation is under way right now (see onActivity).
 
 **get**(collectionId: string,
     translationId: string) → `Promise<TranslationRecord>`
+Whether a first-time translation is under way right now (see onActivity).
 
 **update**(collectionId: string,
     translationId: string,
     body: TranslationUpdateRequest) → `Promise<TranslationRecord>`
+Whether a first-time translation is under way right now (see onActivity).
 
 **clearLocalCache**(collectionId?: string) → `Promise<void>`
+Whether a first-time translation is under way right now (see onActivity).
 
 ### tts
 
