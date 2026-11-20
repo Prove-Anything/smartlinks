@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.27  |  Generated: 2026-11-20T07:35:33.272Z
+Version: 2.1.28  |  Generated: 2026-11-20T09:04:36.211Z
 
 This is a concise summary of all available API functions and types.
 
@@ -170,6 +170,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **template** - Functions for template operations
 - **translations** - Functions for translations operations
 - **userGroups** - Functions for userGroups operations
+- **wallet** - Functions for wallet operations
 
 ## HTTP Utilities
 
@@ -12256,6 +12257,92 @@ interface VariantUpdateRequest {
 }
 ```
 
+### wallet
+
+**WalletPassRef** (interface)
+```typescript
+interface WalletPassRef {
+  type: 'booking' | 'contact' | string
+  id: string
+}
+```
+
+**WalletPassContent** (interface)
+```typescript
+interface WalletPassContent {
+  kind: WalletPassKind
+  title: string
+  subtitle?: string
+  start?: string
+  end?: string
+  timezone?: string
+  venue?: { name?: string; address?: string; lat?: number; lng?: number }
+  holder?: string
+  number?: string
+  level?: string
+  points?: number
+  validUntil?: string
+  fields?: Array<{ label: string; value: string }>
+  back?: Array<{ label: string; value: string }>
+  image?: string
+  url?: string
+  barcode?: string
+}
+```
+
+**WalletPassLinks** (interface)
+```typescript
+interface WalletPassLinks {
+  google?: string
+  apple?: string
+}
+```
+
+**WalletPassSummary** (interface)
+```typescript
+interface WalletPassSummary {
+  id: string
+  kind: WalletPassKind
+  ref: WalletPassRef
+  title?: string
+  start?: string
+  links: WalletPassLinks
+}
+```
+
+**WalletPass** (interface)
+```typescript
+interface WalletPass {
+  id: string
+  collectionId: string
+  kind: WalletPassKind
+  ref: WalletPassRef
+  contactId?: string | null
+  status: 'active' | 'voided'
+  issuedBy?: string | null
+  model: WalletPassContent
+  code: string
+  version: number
+  notice?: { header: string; body: string; at: string }
+  voidReason?: string | null
+  links?: WalletPassLinks
+  createdAt?: string
+  updatedAt?: string
+}
+```
+
+**IssueWalletPassRequest** (interface)
+```typescript
+interface IssueWalletPassRequest {
+  ref: WalletPassRef
+  contactId?: string
+  appId?: string
+  pass: WalletPassContent
+}
+```
+
+**WalletPassKind** = `'event' | 'booking' | 'membership' | 'loyalty'`
+
 ### widgets
 
 **NavigationRequest** (interface)
@@ -15555,4 +15642,36 @@ Listen for voice input
 
 **speak**(text: string, options?: { voice?: string; rate?: number }) → `Promise<void>`
 Speak text
+
+### wallet
+
+**addLinks**(collectionId: string, ref: WalletPassRef) → `Promise<`
+"Add to Wallet" links for the signed-in person's pass about `ref` (made on first ask for a booking or a membership card). ```typescript const { pass } = await wallet.addLinks('coll_123', { type: 'booking', id: booking.id }) if (pass.links.apple) appleButton.href = pass.links.apple if (pass.links.google) googleButton.href = pass.links.google ```
+
+**mine**(collectionId: string) → `Promise<`
+The signed-in person's active passes on this site, with their links.
+
+**status**(collectionId: string) → `Promise<`
+Which wallets are switched on (admin).
+
+**list**(collectionId: string, query: { refType?: string; refId?: string; contactId?: string; includeVoided?: boolean }) → `Promise<`
+Passes for one thing (`refType` + `refId`) or one person (`contactId`) (admin).
+
+**get**(collectionId: string, passId: string) → `Promise<`
+One pass, with its links (admin).
+
+**byCode**(collectionId: string, code: string) → `Promise<`
+The pass whose QR this is, for checking a ticket at the door (admin). `valid` is false for a voided pass. ```typescript const { pass, valid } = await wallet.byCode('coll_123', scannedValue) ```
+
+**issue**(collectionId: string, input: IssueWalletPassRequest) → `Promise<`
+Issue a pass (admin). Issuing again for the same thing, person and kind changes the existing pass.
+
+**update**(collectionId: string, passId: string, fields: Partial<Omit<WalletPassContent, "kind">>) → `Promise<`
+Change what a pass shows; both wallets follow (admin).
+
+**voidPass**(collectionId: string, passId: string, reason?: string) → `Promise<`
+The pass no longer counts: shown as void on the phone (admin).
+
+**message**(collectionId: string, passId: string, msg: { header?: string; body: string }) → `Promise<`
+A lock-screen message on the pass (admin).
 

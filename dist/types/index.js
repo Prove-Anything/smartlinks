@@ -52,3 +52,4 @@ export * from "./widgets.js";
 export * from "./headless.js";
 export * from "./appOptions.js";
 export * from "./clientLog.js";
+export * from "./wallet.js";
