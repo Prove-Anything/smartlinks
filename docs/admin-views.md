@@ -191,6 +191,7 @@ const canMessage = await SL.adminViews.canOpen('message.compose')
 | `proof` | **productId**, **proofId** | One item of a product |
 | `interaction.type` | **interactionId** | One interaction type (Customers) |
 | `settings` | | Studio → Settings |
+| `settings.address` | `appId`? | Your address: the business's name, front page, app pages (with `appId`, that app's page: where the owner renames it or makes it the front page) and links domain. Put a "Change this address" link beside any link to your app's page. |
 | `settings.domain` · `.languages` · `.translations` · `.email` · `.team` · `.userGroups` | | That Studio page |
 | `settings.setupLists` | appId | Set-up lists, for that app |
 | `settings.portal` · `.hub` · `.signIn` | | The Portal, the Hub, customer sign-in |

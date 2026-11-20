@@ -322,7 +322,8 @@ export const DESTINATIONS: DestinationInfo[] = [
   { name: 'interaction.type', required: ['interactionId'], description: 'One interaction type in Customers.' },
   // Settings
   { name: 'settings', required: [], description: 'The business settings in Studio.' },
-  { name: 'settings.domain', required: [], description: 'The domain settings.' },
+  { name: 'settings.address', required: [], optional: ['appId'], description: "The business's address: its name, front page, app pages (appId: point at that app's page) and links domain." },
+  { name: 'settings.domain', required: [], description: 'The links domain (QR codes, GS1 Digital Links), on the Your address page.' },
   { name: 'settings.languages', required: [], description: 'The languages customers see.' },
   { name: 'settings.translations', required: [], description: 'Everything translated for customers.' },
   { name: 'settings.email', required: [], description: 'Email settings: the sending address and its look.' },
@@ -342,7 +343,7 @@ export type Destination =
   | 'contacts' | 'contact' | 'contact.messages' | 'conversation' | 'segment'
   | 'message.compose' | 'message.log' | 'campaign.new' | 'campaign' | 'templates' | 'template'
   | 'product' | 'proof' | 'interaction.type'
-  | 'settings' | 'settings.domain' | 'settings.languages' | 'settings.translations' | 'settings.email'
+  | 'settings' | 'settings.address' | 'settings.domain' | 'settings.languages' | 'settings.translations' | 'settings.email'
   | 'settings.team' | 'settings.userGroups' | 'settings.setupLists' | 'settings.portal' | 'settings.hub'
   | 'settings.signIn' | 'media' | 'app'
   | (string & {})
