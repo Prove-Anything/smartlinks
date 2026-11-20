@@ -1,5 +1,7 @@
 import type { TranslationActivity } from '../translationActivity.js';
 import type { ResolvedTranslationResponse, TranslationHashOptions, TranslationListParams, TranslationListResponse, TranslationLookupRequest, TranslationLookupResponse, TranslationRecord, TranslationResolveOptions, TranslationUpdateRequest } from '../types/translations.js';
+/** @internal tests only */
+export declare function _resetRevisionChecks(): void;
 export declare namespace translations {
     function hashText(text: string, options?: TranslationHashOptions): Promise<string>;
     function hashTexts(texts: string[], options?: TranslationHashOptions): Promise<string[]>;
@@ -23,5 +25,23 @@ export declare namespace translations {
     function list(collectionId: string, params?: TranslationListParams): Promise<TranslationListResponse>;
     function get(collectionId: string, translationId: string): Promise<TranslationRecord>;
     function update(collectionId: string, translationId: string, body: TranslationUpdateRequest): Promise<TranslationRecord>;
+    /** Admin: how many translations exist per language, and how many a person has edited. */
+    function summary(collectionId: string): Promise<{
+        languages: Array<{
+            language: string;
+            total: number;
+            edited: number;
+        }>;
+    }>;
+    /** Admin: where translated text appears for one language (context keys), with counts. */
+    function places(collectionId: string, targetLanguage: string): Promise<{
+        places: Array<{
+            contextKey: string;
+            total: number;
+            edited: number;
+        }>;
+    }>;
+    /** Admin: undo a person's edit with a fresh machine translation. */
+    function reset(collectionId: string, translationId: string): Promise<TranslationRecord>;
     function clearLocalCache(collectionId?: string): Promise<void>;
 }

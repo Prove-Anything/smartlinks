@@ -49,6 +49,52 @@ function toResolvedItem(item, index, cacheSource) {
     return Object.assign(Object.assign({}, item), { index,
         cacheSource });
 }
+// A person can correct a translation in Studio. Visitors' browsers keep translations for weeks, so
+// once per page per collection we ask the server when its translations were last edited, and drop
+// the local copies if that changed since we last looked. The answer is cheap (no AI) and never
+// blocks for long: on a slow or failed answer the local copies are used as before.
+const REVISION_KEY = 'smartlinks:translations:revision:';
+const REVISION_WAIT_MS = 1500;
+const revisionChecks = new Map();
+function readStoredRevision(collectionId) {
+    try {
+        return typeof localStorage !== 'undefined' ? localStorage.getItem(REVISION_KEY + collectionId) : null;
+    }
+    catch (_a) {
+        return null;
+    }
+}
+function storeRevision(collectionId, revision) {
+    try {
+        if (typeof localStorage !== 'undefined')
+            localStorage.setItem(REVISION_KEY + collectionId, revision);
+    }
+    catch ( /* ignore */_a) { /* ignore */ }
+}
+async function checkRevision(collectionId) {
+    const res = await request(`/public/collection/${encodeURIComponent(collectionId)}/translations/revision`);
+    const revision = typeof (res === null || res === void 0 ? void 0 : res.revision) === 'string' ? res.revision : null;
+    if (!revision)
+        return;
+    const stored = readStoredRevision(collectionId);
+    // First look ever: copies saved before this check existed may predate an edit, unless nothing was ever edited.
+    const changed = stored === null ? revision !== '0' : stored !== revision;
+    if (changed)
+        await clearCachedTranslations(collectionId);
+    storeRevision(collectionId, revision);
+}
+function refreshIfEdited(collectionId) {
+    let check = revisionChecks.get(collectionId);
+    if (!check) {
+        check = checkRevision(collectionId).catch(() => undefined);
+        revisionChecks.set(collectionId, check);
+    }
+    return Promise.race([check, new Promise((resolve) => setTimeout(resolve, REVISION_WAIT_MS))]);
+}
+/** @internal tests only */
+export function _resetRevisionChecks() {
+    revisionChecks.clear();
+}
 export var translations;
 (function (translations) {
     async function hashText(text, options) {
@@ -135,6 +181,8 @@ export var translations;
                 items: passthroughItems,
             };
         }
+        if (useLocalCache && !refreshLocalCache)
+            await refreshIfEdited(collectionId);
         const cachedByHash = useLocalCache && !refreshLocalCache
             ? await getCachedTranslations({
                 collectionId,
@@ -242,6 +290,21 @@ export var translations;
         return patch(path, body);
     }
     translations.update = update;
+    /** Admin: how many translations exist per language, and how many a person has edited. */
+    async function summary(collectionId) {
+        return request(`/admin/collection/${encodeURIComponent(collectionId)}/translations/summary`);
+    }
+    translations.summary = summary;
+    /** Admin: where translated text appears for one language (context keys), with counts. */
+    async function places(collectionId, targetLanguage) {
+        return request(`/admin/collection/${encodeURIComponent(collectionId)}/translations/places?targetLanguage=${encodeURIComponent(targetLanguage)}`);
+    }
+    translations.places = places;
+    /** Admin: undo a person's edit with a fresh machine translation. */
+    async function reset(collectionId, translationId) {
+        return post(`/admin/collection/${encodeURIComponent(collectionId)}/translations/${encodeURIComponent(translationId)}/reset`, {});
+    }
+    translations.reset = reset;
     async function clearLocalCache(collectionId) {
         await clearCachedTranslations(collectionId);
     }

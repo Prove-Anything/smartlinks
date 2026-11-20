@@ -227,6 +227,8 @@ function shouldSkipCache(path: string): boolean {
   if (/\/me(\?|$)/i.test(path)) return true
   // Bookings change by the second (places left, busy times, a booking's status) — never serve them stale.
   if (/\/app\/[^/]+\/bookings(\/|\?|$)/i.test(path)) return true
+  // A collection's translation revision is how visitors' browsers learn of a correction — never stale.
+  if (/\/translations\/revision(\?|$)/i.test(path)) return true
   // Tag ranges change as tags are programmed, and carry the tags' keys — never cached, never persisted.
   if (/\/claimSet\/[^/]+\/ranges(\/|\?|$)/i.test(path)) return true
   // User groups say who may do what: a change (someone added or removed) must show at once, and

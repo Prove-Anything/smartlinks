@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.30  |  Generated: 2026-11-20T10:29:03.532Z
+Version: 2.1.31  |  Generated: 2026-11-20T11:11:52.944Z
 
 This is a concise summary of all available API functions and types.
 
@@ -15491,6 +15491,8 @@ Invoke ONE built-in server tool directly — no model in the loop. This is the "
 
 ### translations
 
+**_resetRevisionChecks**() → `void`
+
 **hashText**(text: string, options?: TranslationHashOptions) → `Promise<string>`
 
 **hashTexts**(texts: string[], options?: TranslationHashOptions) → `Promise<string[]>`
@@ -15527,8 +15529,17 @@ Whether a first-time translation is under way right now (see onActivity).
     body: TranslationUpdateRequest) → `Promise<TranslationRecord>`
 Whether a first-time translation is under way right now (see onActivity).
 
+**summary**(collectionId: string) → `Promise<`
+Admin: how many translations exist per language, and how many a person has edited.
+
+**places**(collectionId: string, targetLanguage: string) → `Promise<`
+Admin: where translated text appears for one language (context keys), with counts.
+
+**reset**(collectionId: string, translationId: string) → `Promise<TranslationRecord>`
+Admin: undo a person's edit with a fresh machine translation.
+
 **clearLocalCache**(collectionId?: string) → `Promise<void>`
-Whether a first-time translation is under way right now (see onActivity).
+Admin: undo a person's edit with a fresh machine translation.
 
 ### tts
 

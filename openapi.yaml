@@ -9472,6 +9472,38 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TranslationUpdateRequest"
+  /admin/collection/{collectionId}/translations/{translationId}/reset:
+    post:
+      tags:
+        - translations
+      summary: "Admin: undo a person's edit with a fresh machine translation."
+      operationId: translations_reset
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: translationId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranslationRecord"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/updateUserAccess:
     post:
       tags:

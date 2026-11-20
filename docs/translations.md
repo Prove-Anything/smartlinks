@@ -340,6 +340,23 @@ const updated = await translations.update('collection-123', 'translation-id', {
 })
 ```
 
+### Summary, places and reset (Studio's Translations screen)
+
+```ts
+await translations.summary(collectionId)            // { languages: [{ language, total, edited }] }
+await translations.places(collectionId, 'de')       // { places: [{ contextKey, total, edited }] }
+await translations.update(collectionId, id, { translatedText: 'Zum Warenkorb' }) // a person's edit: kept, never overwritten
+await translations.reset(collectionId, id)          // put a fresh machine translation back
+```
+
+### Corrections reach returning visitors
+
+`resolve()` keeps translations in the browser for weeks. Once per page per collection it asks
+`GET /public/collection/:id/translations/revision`, which changes only when a person edits a
+translation or puts a machine one back. When it has changed, that collection's saved translations are
+dropped and fetched again (from the server's store, no AI). A slow or failed answer never holds the
+page for more than 1.5 s, and the saved copies are used as before.
+
 ## Recommended Usage Pattern
 
 For front-end rendering:
