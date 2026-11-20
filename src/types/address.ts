@@ -9,6 +9,8 @@ export type AddressFront =
   | { kind: 'hub'; chosen?: boolean }
   /** A website built in Forge, installed on the collection and live (stable). */
   | { kind: 'website'; appId: string }
+  /** One of the business's apps as its whole front page (its only game, say): installed and live. */
+  | { kind: 'app'; appId: string }
   /** Send visitors to another address. Temporary (302) unless `permanent`; `keepPath` carries /about → target/about. */
   | { kind: 'redirect'; url: string; keepPath?: boolean; permanent?: boolean }
   /** A simple page with the business's name, logo and the app pages it chose to show. */
@@ -25,6 +27,8 @@ export interface AddressPage {
   defaultName: string
   /** Shown on the holding page. */
   listed: boolean
+  /** Live (stable, released): its page works on the business's chosen name, and it can be the front page. */
+  live: boolean
   /** The full address of the page, on the business's main address. */
   url: string
 }
