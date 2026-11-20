@@ -60,3 +60,20 @@ export interface AddressNameAvailability {
   available: boolean
   host: string
 }
+
+/** Where an app's public page is (`address.page`): always a working address. */
+export interface AppPageLink {
+  /** The one to link to: the business's address itself when the app IS its front page, else `pageUrl`. */
+  url: string
+  /** The app's page under the business's address: `https://<address>/_apps/<name>/`. */
+  pageUrl: string
+  /** The page name (the business can rename it in Studio → Your address). */
+  name: string
+  /** Live (stable, released): on the business's own domain or name. A test build is on the automatic address. */
+  live: boolean
+  /** This app is the business's whole front page. */
+  isFront: boolean
+  host: string
+  /** The release channel the collection runs the app on. */
+  channel: string | null
+}
