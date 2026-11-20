@@ -23,6 +23,11 @@ export interface SmartLinksContext {
    * (`appChannel: 'preview'`) on this collection. Set by Forge; never present elsewhere.
    */
   slPreview?: string;
+  /**
+   * Where the app's page lives on the business's address when served as an app page
+   * (`/_apps/<name>`): build share links to the app from it. Absent elsewhere.
+   */
+  basePath?: string;
   /** Any other declared view params (e.g. pageId, voteId, orientation, tvMode). */
   [key: string]: string | undefined;
 }
@@ -63,7 +68,7 @@ export function readContext(overrides?: Record<string, string | undefined>): Sma
     }
     // 4. the SITE the page is served as (lowest precedence). When an app runs as a public website at
     //    its own hostname (an "app site"), the host page injects window.__SMARTLINKS_SITE__ =
-    //    { collectionId, appId, channel, host } — so a site knows its collection with no URL params.
+    //    { collectionId, appId, channel, host[, basePath] } — so a site knows its collection with no URL params.
     const site = (globalThis as any).__SMARTLINKS_SITE__;
     if (site && typeof site === 'object') {
       const fill = (key: string, value: unknown) => { if (out[key] == null && typeof value === 'string' && value) out[key] = value; };
@@ -75,6 +80,8 @@ export function readContext(overrides?: Record<string, string | undefined>): Sma
         fill('appChannelApp', site.appId);
       }
       fill('slPreview', site.previewPass);
+      // Served as an app page on the business's address (/_apps/<name>): where the page lives.
+      if (typeof site.basePath === 'string' && /^\/_apps\/[a-z0-9-]+$/.test(site.basePath)) fill('basePath', site.basePath);
     }
   } catch {
     /* non-browser / bad URL — return what we have */

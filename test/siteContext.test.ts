@@ -29,6 +29,16 @@ test('a site page knows its collection and app with no URL params', () => {
   assert.equal(ctx.appChannel, undefined) // stable needs no channel
 })
 
+test("an app page on the business's address knows where it lives (basePath)", () => {
+  setUrl('https://debs.smartlinks.host/_apps/game/#/play')
+  ;(globalThis as any).__SMARTLINKS_SITE__ = { collectionId: 'colDebs', appId: 'acme--game', channel: 'stable', host: 'debs.smartlinks.host', basePath: '/_apps/game' }
+  const ctx = readContext()
+  assert.equal(ctx.collectionId, 'colDebs')
+  assert.equal(ctx.basePath, '/_apps/game')
+  ;(globalThis as any).__SMARTLINKS_SITE__ = { collectionId: 'colDebs', appId: 'acme--game', basePath: 'javascript:x' }
+  assert.equal(readContext().basePath, undefined)
+})
+
 test('URL params and props still win over the site', () => {
   setUrl('https://bloom.smartlinks.host/?collectionId=fromUrl')
   ;(globalThis as any).__SMARTLINKS_SITE__ = { collectionId: 'colBloom', appId: 'acme--booking' }
