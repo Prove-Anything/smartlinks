@@ -9380,6 +9380,11 @@ paths:
           required: false
           schema:
             type: boolean
+        - name: termIssues
+          in: query
+          required: false
+          schema:
+            type: boolean
         - name: limit
           in: query
           required: false
@@ -9403,6 +9408,65 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /admin/collection/{collectionId}/translations/rules:
+    get:
+      tags:
+        - translations
+      summary: "Admin: the site's translation rules (brief, notes per language, required terms)."
+      operationId: translations_rules
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranslationRules"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+    put:
+      tags:
+        - translations
+      summary: "Admin: replace the site's translation rules."
+      operationId: translations_saveRules
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TranslationRules"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TranslationRules"
   /admin/collection/{collectionId}/translations/{translationId}:
     get:
       tags:
@@ -37145,6 +37209,8 @@ components:
           type: string
         isOverride:
           type: boolean
+        termIssues:
+          type: boolean
         limit:
           type: number
         offset:
@@ -37176,6 +37242,46 @@ components:
         metadata:
           type: object
           additionalProperties: true
+    TranslationTerm:
+      type: object
+      properties:
+        source:
+          type: string
+        keep:
+          type: boolean
+        translations:
+          type: object
+          additionalProperties:
+            type: string
+        note:
+          type: string
+      required:
+        - source
+    TranslationRules:
+      type: object
+      properties:
+        guidance:
+          type: string
+        languages:
+          type: object
+          additionalProperties:
+            type: object
+            additionalProperties: true
+        terms:
+          type: array
+          items:
+            $ref: "#/components/schemas/TranslationTerm"
+        version:
+          type: string
+        updatedAt:
+          type: string
+        limits:
+          type: object
+          additionalProperties: true
+      required:
+        - guidance
+        - languages
+        - terms
     TranslationLookupMode:
       type: string
       enum:

@@ -180,6 +180,8 @@ export type {
   TranslationListParams,
   TranslationListResponse,
   TranslationUpdateRequest,
+  TranslationRules,
+  TranslationTerm,
 } from "./types/translations"
 export type { TranslationActivity } from "./translationActivity"
 

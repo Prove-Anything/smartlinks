@@ -1,4 +1,4 @@
-import { isProxyEnabled, patch, post, request } from '../http'
+import { isProxyEnabled, patch, post, put, request } from '../http'
 import {
   clearCachedTranslations,
   deriveTranslationContextKey,
@@ -20,6 +20,7 @@ import type {
   TranslationLookupResponse,
   TranslationRecord,
   TranslationResolveOptions,
+  TranslationRules,
   TranslationUpdateRequest,
 } from '../types/translations'
 
@@ -380,7 +381,7 @@ export namespace translations {
   }
 
   /** Admin: how many translations exist per language, and how many a person has edited. */
-  export async function summary(collectionId: string): Promise<{ languages: Array<{ language: string; total: number; edited: number }> }> {
+  export async function summary(collectionId: string): Promise<{ languages: Array<{ language: string; total: number; edited: number; issues?: number }> }> {
     return request(`/admin/collection/${encodeURIComponent(collectionId)}/translations/summary`)
   }
 
@@ -392,6 +393,16 @@ export namespace translations {
   /** Admin: undo a person's edit with a fresh machine translation. */
   export async function reset(collectionId: string, translationId: string): Promise<TranslationRecord> {
     return post<TranslationRecord>(`/admin/collection/${encodeURIComponent(collectionId)}/translations/${encodeURIComponent(translationId)}/reset`, {})
+  }
+
+  /** Admin: the site's translation rules (brief, notes per language, required terms). */
+  export async function rules(collectionId: string): Promise<TranslationRules> {
+    return request<TranslationRules>(`/admin/collection/${encodeURIComponent(collectionId)}/translations/rules`)
+  }
+
+  /** Admin: replace the site's translation rules. They apply to new translations from now on. */
+  export async function saveRules(collectionId: string, body: Pick<TranslationRules, 'guidance' | 'languages' | 'terms'>): Promise<TranslationRules> {
+    return put<TranslationRules>(`/admin/collection/${encodeURIComponent(collectionId)}/translations/rules`, body)
   }
 
   export async function clearLocalCache(collectionId?: string): Promise<void> {

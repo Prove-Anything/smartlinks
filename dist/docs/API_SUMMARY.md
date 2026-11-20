@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.31  |  Generated: 2026-11-20T11:11:52.944Z
+Version: 2.1.32  |  Generated: 2026-11-20T14:23:15.255Z
 
 This is a concise summary of all available API functions and types.
 
@@ -12079,6 +12079,7 @@ interface TranslationListParams {
   contextKey?: string
   q?: string
   isOverride?: boolean
+  termIssues?: boolean
   limit?: number
   offset?: number
 }
@@ -12101,6 +12102,28 @@ interface TranslationUpdateRequest {
   isOverride?: boolean
   quality?: TranslationQuality
   metadata?: Record<string, any>
+}
+```
+
+**TranslationTerm** (interface)
+```typescript
+interface TranslationTerm {
+  source: string
+  keep?: boolean
+  translations?: Record<string, string>
+  note?: string
+}
+```
+
+**TranslationRules** (interface)
+```typescript
+interface TranslationRules {
+  guidance: string
+  languages: Record<string, { guidance: string }>
+  terms: TranslationTerm[]
+  version?: string | null
+  updatedAt?: string | null
+  limits?: { guidance: number; languageGuidance: number; terms: number; term: number; note: number }
 }
 ```
 
@@ -15538,8 +15561,14 @@ Admin: where translated text appears for one language (context keys), with count
 **reset**(collectionId: string, translationId: string) → `Promise<TranslationRecord>`
 Admin: undo a person's edit with a fresh machine translation.
 
+**rules**(collectionId: string) → `Promise<TranslationRules>`
+Admin: the site's translation rules (brief, notes per language, required terms).
+
+**saveRules**(collectionId: string, body: Pick<TranslationRules, 'guidance' | 'languages' | 'terms'>) → `Promise<TranslationRules>`
+Admin: replace the site's translation rules. They apply to new translations from now on.
+
 **clearLocalCache**(collectionId?: string) → `Promise<void>`
-Admin: undo a person's edit with a fresh machine translation.
+Admin: replace the site's translation rules. They apply to new translations from now on.
 
 ### tts
 

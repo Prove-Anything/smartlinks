@@ -107,6 +107,8 @@ export interface TranslationListParams {
   contextKey?: string
   q?: string
   isOverride?: boolean
+  /** Only translations that don't use the site's required wording (see TranslationRules). */
+  termIssues?: boolean
   limit?: number
   offset?: number
 }
@@ -123,4 +125,29 @@ export interface TranslationUpdateRequest {
   isOverride?: boolean
   quality?: TranslationQuality
   metadata?: Record<string, any>
+}
+
+/** One required term: the English wording and what each language must use, or kept as written. */
+export interface TranslationTerm {
+  source: string
+  /** Keep exactly as written in every language (brand names, drug names, units). */
+  keep?: boolean
+  /** Language code -> required wording. */
+  translations?: Record<string, string>
+  note?: string
+}
+
+/**
+ * A site's own rules for its machine translations: a brief for the whole site, notes per language, and
+ * required terms. Used for every new translation; translations missing a required term are flagged
+ * (record metadata.termIssues / termIssueCount).
+ */
+export interface TranslationRules {
+  guidance: string
+  languages: Record<string, { guidance: string }>
+  terms: TranslationTerm[]
+  /** Fingerprint of these rules; each machine translation stores the one it was made under (metadata.rulesVersion). */
+  version?: string | null
+  updatedAt?: string | null
+  limits?: { guidance: number; languageGuidance: number; terms: number; term: number; note: number }
 }

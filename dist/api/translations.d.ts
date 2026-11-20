@@ -1,5 +1,5 @@
 import type { TranslationActivity } from '../translationActivity.js';
-import type { ResolvedTranslationResponse, TranslationHashOptions, TranslationListParams, TranslationListResponse, TranslationLookupRequest, TranslationLookupResponse, TranslationRecord, TranslationResolveOptions, TranslationUpdateRequest } from '../types/translations.js';
+import type { ResolvedTranslationResponse, TranslationHashOptions, TranslationListParams, TranslationListResponse, TranslationLookupRequest, TranslationLookupResponse, TranslationRecord, TranslationResolveOptions, TranslationRules, TranslationUpdateRequest } from '../types/translations.js';
 /** @internal tests only */
 export declare function _resetRevisionChecks(): void;
 export declare namespace translations {
@@ -31,6 +31,7 @@ export declare namespace translations {
             language: string;
             total: number;
             edited: number;
+            issues?: number;
         }>;
     }>;
     /** Admin: where translated text appears for one language (context keys), with counts. */
@@ -43,5 +44,9 @@ export declare namespace translations {
     }>;
     /** Admin: undo a person's edit with a fresh machine translation. */
     function reset(collectionId: string, translationId: string): Promise<TranslationRecord>;
+    /** Admin: the site's translation rules (brief, notes per language, required terms). */
+    function rules(collectionId: string): Promise<TranslationRules>;
+    /** Admin: replace the site's translation rules. They apply to new translations from now on. */
+    function saveRules(collectionId: string, body: Pick<TranslationRules, 'guidance' | 'languages' | 'terms'>): Promise<TranslationRules>;
     function clearLocalCache(collectionId?: string): Promise<void>;
 }

@@ -357,6 +357,30 @@ translation or puts a machine one back. When it has changed, that collection's s
 dropped and fetched again (from the server's store, no AI). A slow or failed answer never holds the
 page for more than 1.5 s, and the saved copies are used as before.
 
+### Translation rules (a site's own terminology)
+
+A site can give the AI a brief, notes per language and a list of required terms, for example a
+pharmaceutical company whose leaflets must use regulatory wording. They apply to every new machine
+translation for that collection; existing translations are not changed.
+
+```ts
+await translations.saveRules(collectionId, {
+  guidance: 'Patient information for prescription medicines. Formal register.',
+  languages: { de: { guidance: 'Address the reader with Sie.' } },
+  terms: [
+    { source: 'tablet', translations: { de: 'Tablette', 'zh-Hans': '片剂' } },
+    { source: 'Lumora', keep: true, note: 'brand name' },   // never translated
+  ],
+})
+await translations.rules(collectionId)                         // what is saved, with its version
+await translations.list(collectionId, { targetLanguage: 'de', termIssues: true }) // translations missing a required term
+```
+
+Only the terms a text mentions are sent with it. After translating, each result is checked: if the
+source mentions a term and the translation doesn't contain the required wording (any case, endings
+allowed), its `metadata.termIssues` lists the term and `summary()` counts it under `issues`. A person's
+edit is checked the same way. Each machine translation records `metadata.rulesVersion`.
+
 ## Recommended Usage Pattern
 
 For front-end rendering:

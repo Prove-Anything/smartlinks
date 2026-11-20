@@ -1,4 +1,4 @@
-import { isProxyEnabled, patch, post, request } from '../http.js';
+import { isProxyEnabled, patch, post, put, request } from '../http.js';
 import { clearCachedTranslations, deriveTranslationContextKey, getCachedTranslations, getDefaultTranslationCacheTtlMs, hashTranslationText, normalizeTranslationText, setCachedTranslations, } from '../translationCache.js';
 import { trackTranslation, onActivity as onTranslationActivity, activity as translationActivity, translatingMessage as translatingLine } from '../translationActivity.js';
 function normalizeLookupRequest(body) {
@@ -305,6 +305,16 @@ export var translations;
         return post(`/admin/collection/${encodeURIComponent(collectionId)}/translations/${encodeURIComponent(translationId)}/reset`, {});
     }
     translations.reset = reset;
+    /** Admin: the site's translation rules (brief, notes per language, required terms). */
+    async function rules(collectionId) {
+        return request(`/admin/collection/${encodeURIComponent(collectionId)}/translations/rules`);
+    }
+    translations.rules = rules;
+    /** Admin: replace the site's translation rules. They apply to new translations from now on. */
+    async function saveRules(collectionId, body) {
+        return put(`/admin/collection/${encodeURIComponent(collectionId)}/translations/rules`, body);
+    }
+    translations.saveRules = saveRules;
     async function clearLocalCache(collectionId) {
         await clearCachedTranslations(collectionId);
     }
