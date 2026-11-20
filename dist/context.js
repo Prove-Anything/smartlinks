@@ -42,7 +42,7 @@ export function readContext(overrides) {
         }
         // 4. the SITE the page is served as (lowest precedence). When an app runs as a public website at
         //    its own hostname (an "app site"), the host page injects window.__SMARTLINKS_SITE__ =
-        //    { collectionId, appId, channel, host } — so a site knows its collection with no URL params.
+        //    { collectionId, appId, channel, host[, basePath] } — so a site knows its collection with no URL params.
         const site = globalThis.__SMARTLINKS_SITE__;
         if (site && typeof site === 'object') {
             const fill = (key, value) => { if (out[key] == null && typeof value === 'string' && value)
@@ -55,6 +55,9 @@ export function readContext(overrides) {
                 fill('appChannelApp', site.appId);
             }
             fill('slPreview', site.previewPass);
+            // Served as an app page on the business's address (/_apps/<name>): where the page lives.
+            if (typeof site.basePath === 'string' && /^\/_apps\/[a-z0-9-]+$/.test(site.basePath))
+                fill('basePath', site.basePath);
         }
     }
     catch (_a) {

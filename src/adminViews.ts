@@ -4,6 +4,8 @@
 //   host → app   { type: 'smartlinks:navigate', view?, path?, params?, highlight? }   open a screen, no reload
 //   app → host   'smartlinks:navigable'  (the app follows navigate)   'smartlinks:navigate-result'
 //   app → host   'smartlinks:open-app'   { appId, view?, params?, path? }   open ANOTHER app at a screen
+//   app → host   'smartlinks:open'       { id, to, params?, about? }   open a platform screen by NAME
+//                ('contact', 'message.compose', 'settings.domain'); the host picks the app or page
 // plus `chrome=none`: the host carries the app's menu itself, so the app hides its own.
 // One list drives the app's own side menu, Studio's workspace menu and the assistant. See
 // docs/admin-views.md.
@@ -279,6 +281,219 @@ export function openApp(req: OpenAppRequest): void {
 }
 
 // -----------------------------------------------------------------------------
+// Destinations: the platform's own screens, by name
+// -----------------------------------------------------------------------------
+//   app → host   'smartlinks:open'                  { id, to, params?, about? }
+//   host → app   { type: 'smartlinks:open-result', id, to, ok, reason? }
+//   app → host   'smartlinks:destinations-request'  {}
+//   host → app   { type: 'smartlinks:destinations', available: string[] }   (also on load and on change)
+// The host decides which app or page each name is today; the app never names it. See
+// docs/admin-views.md, "Opening the platform's screens".
+
+/** One destination: its name, the params it needs, and what it opens. */
+export interface DestinationInfo {
+  name: string
+  /** Params that must be given. */
+  required: string[]
+  /** Params that may be given. */
+  optional?: string[]
+  /** What it opens, in a few words. */
+  description: string
+}
+
+/** The platform's screens any admin screen can open by name. */
+export const DESTINATIONS: DestinationInfo[] = [
+  // People
+  { name: 'contacts', required: [], description: 'The contacts list in Customers.' },
+  { name: 'contact', required: ['contactId'], description: 'One contact in Customers.' },
+  { name: 'contact.messages', required: ['contactId'], description: "A person's messages: the Message log for them." },
+  { name: 'conversation', required: ['conversationId'], description: 'One conversation in Messages.' },
+  { name: 'segment', required: ['segmentId'], description: 'One segment in Customers.' },
+  // Messages
+  { name: 'message.compose', required: [], optional: ['contactId', 'about'], description: 'The Messages composer: write to one person (or choose who).' },
+  { name: 'message.log', required: [], optional: ['contactId', 'about'], description: 'The Message log, filtered by person or by what the messages were about.' },
+  { name: 'campaign.new', required: [], optional: ['segmentId'], description: 'A new campaign: one message to many people, with opt-in and unsubscribe.' },
+  { name: 'campaign', required: ['campaignId'], description: 'One campaign in Messages.' },
+  { name: 'templates', required: [], description: 'The email and message templates.' },
+  { name: 'template', required: ['templateId'], description: 'One template, open in the template editor.' },
+  // Catalogue and records
+  { name: 'product', required: ['productId'], description: 'One product in Items.' },
+  { name: 'proof', required: ['productId', 'proofId'], description: 'One item (proof) of a product.' },
+  { name: 'interaction.type', required: ['interactionId'], description: 'One interaction type in Customers.' },
+  // Settings
+  { name: 'settings', required: [], description: 'The business settings in Studio.' },
+  { name: 'settings.domain', required: [], description: 'The domain settings.' },
+  { name: 'settings.languages', required: [], description: 'The languages customers see.' },
+  { name: 'settings.translations', required: [], description: 'Everything translated for customers.' },
+  { name: 'settings.email', required: [], description: 'Email settings: the sending address and its look.' },
+  { name: 'settings.team', required: [], description: 'The people who run the business in Studio.' },
+  { name: 'settings.userGroups', required: [], description: 'User groups.' },
+  { name: 'settings.setupLists', required: [], optional: ['appId'], description: "Set-up lists (an app's lists the business keeps)." },
+  { name: 'settings.portal', required: [], description: 'The Portal: what people see when they scan.' },
+  { name: 'settings.hub', required: [], description: 'The Hub: the ready-made site.' },
+  { name: 'settings.signIn', required: [], description: 'Customer sign-in.' },
+  { name: 'media', required: [], description: 'Images and files (assets).' },
+  // Anything else
+  { name: 'app', required: ['appId'], optional: ['view', 'params'], description: "Another app at one of its screens (as `openApp`)." },
+]
+
+/** A destination name. Any string is accepted, so a newer host's names work on an older SDK. */
+export type Destination =
+  | 'contacts' | 'contact' | 'contact.messages' | 'conversation' | 'segment'
+  | 'message.compose' | 'message.log' | 'campaign.new' | 'campaign' | 'templates' | 'template'
+  | 'product' | 'proof' | 'interaction.type'
+  | 'settings' | 'settings.domain' | 'settings.languages' | 'settings.translations' | 'settings.email'
+  | 'settings.team' | 'settings.userGroups' | 'settings.setupLists' | 'settings.portal' | 'settings.hub'
+  | 'settings.signIn' | 'media' | 'app'
+  | (string & {})
+
+/** What a message is about (the same shape as `comms.sendTransactional`'s `about`). Ids only. */
+export interface DestinationAbout {
+  appId?: string
+  type: string
+  id: string
+  view?: string
+  params?: Record<string, string>
+  label?: string
+}
+
+/** Params for `open`: ids as strings, plus `about` (messages) and `params` (`app`). */
+export interface OpenParams {
+  contactId?: string
+  conversationId?: string
+  segmentId?: string
+  campaignId?: string
+  templateId?: string
+  productId?: string
+  proofId?: string
+  interactionId?: string
+  appId?: string
+  view?: string
+  /** `message.compose` / `message.log`: the record the message is about, so it is logged against it. */
+  about?: DestinationAbout
+  /** `app`: that app's view params. */
+  params?: Record<string, string>
+  [key: string]: string | DestinationAbout | Record<string, string> | undefined
+}
+
+export interface OpenResult {
+  ok: boolean
+  /** `no-host` (not inside Studio) · `unknown` · `not-here` (its app isn't on) · `missing-param` · `preview`. */
+  reason?: string
+}
+
+const ANSWER_MS = 1500
+let available_: string[] | null = null
+let listening = false
+const openWaiters = new Map<string, (r: OpenResult) => void>()
+const listWaiters = new Set<(list: string[]) => void>()
+
+function cleanAbout(a: unknown): DestinationAbout | undefined {
+  if (!a || typeof a !== 'object') return undefined
+  const o = a as Record<string, unknown>
+  if (typeof o.type !== 'string' || typeof o.id !== 'string' || !o.type || !o.id) return undefined
+  const out: DestinationAbout = { type: o.type, id: o.id }
+  if (typeof o.appId === 'string') out.appId = o.appId
+  if (typeof o.view === 'string') out.view = o.view
+  if (typeof o.label === 'string') out.label = o.label
+  if (o.params && typeof o.params === 'object') out.params = stringsOnly(o.params)
+  return out
+}
+
+function stringsOnly(o: unknown): Record<string, string> {
+  const out: Record<string, string> = {}
+  if (o && typeof o === 'object') for (const [k, v] of Object.entries(o as Record<string, unknown>)) if (typeof v === 'string' && v) out[k] = v
+  return out
+}
+
+function listen() {
+  if (listening || typeof window === 'undefined' || !inIframe()) return
+  listening = true
+  window.addEventListener('message', (e: MessageEvent) => {
+    if (e.source !== window.parent) return
+    const d = e.data
+    if (!d || typeof d !== 'object') return
+    if (d.type === 'smartlinks:destinations' && Array.isArray(d.available)) {
+      available_ = d.available.filter((n: unknown): n is string => typeof n === 'string')
+      for (const w of listWaiters) w(available_!)
+      listWaiters.clear()
+    } else if (d.type === 'smartlinks:open-result' && typeof d.id === 'string') {
+      const w = openWaiters.get(d.id)
+      if (w) {
+        openWaiters.delete(d.id)
+        w({ ok: !!d.ok, ...(typeof d.reason === 'string' ? { reason: d.reason } : {}) })
+      }
+    }
+  })
+}
+
+/**
+ * The destinations this host can open here: `['contact', 'message.compose', 'settings.domain', …]`.
+ * Leaves out a screen whose app isn't on in this collection. `[]` with no host (the admin page opened
+ * on its own), after a short wait.
+ */
+export function available(): Promise<string[]> {
+  if (typeof window === 'undefined' || !inIframe()) return Promise.resolve([])
+  listen()
+  if (available_) return Promise.resolve(available_)
+  return new Promise((resolve) => {
+    const done = (list: string[]) => { clearTimeout(timer); resolve(list) }
+    const timer = setTimeout(() => { listWaiters.delete(done); resolve([]) }, ANSWER_MS)
+    listWaiters.add(done)
+    postParent('smartlinks:destinations-request', {})
+  })
+}
+
+/**
+ * Whether `open(name)` will open something here. Ask before showing a button: false when the screen's
+ * app isn't on (Messages not switched on) or there is no host. Then hide the button, or say what to
+ * switch on. Build your own only when the platform has nothing.
+ *
+ * @example
+ *   const canMessage = await SL.adminViews.canOpen('message.compose')
+ */
+export async function canOpen(name: Destination): Promise<boolean> {
+  return (await available()).includes(name)
+}
+
+/**
+ * Open one of the platform's screens by name: a contact, the Messages composer, a person's messages, a
+ * template, a product, a settings page. The host (Studio) decides which app or page that is today, so
+ * the app never hard-codes another app's address or builds its own copy. Resolves with whether it
+ * opened (`{ ok: false, reason: 'no-host' }` outside Studio).
+ *
+ * @example
+ *   // Message this parent, tied to their booking (it is logged against the booking and links back)
+ *   SL.adminViews.open('message.compose', {
+ *     contactId,
+ *     about: { type: 'booking', id: bookingId, view: 'booking', params: { bookingId }, label: 'Sat 3pm' },
+ *   })
+ *   SL.adminViews.open('contact', { contactId })
+ *   SL.adminViews.open('settings.domain')
+ */
+export function open(to: Destination, params: OpenParams = {}): Promise<OpenResult> {
+  if (typeof to !== 'string' || !to) return Promise.resolve({ ok: false, reason: 'unknown' })
+  if (typeof window === 'undefined' || !inIframe()) return Promise.resolve({ ok: false, reason: 'no-host' })
+  listen()
+  const id = `o_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`
+  const flat: Record<string, string> = {}
+  for (const [k, v] of Object.entries(params || {})) if (k !== 'about' && k !== 'params' && typeof v === 'string' && v) flat[k] = v
+  const about = cleanAbout(params?.about)
+  const appParams = params?.params ? stringsOnly(params.params) : undefined
+  return new Promise((resolve) => {
+    const timer = setTimeout(() => { openWaiters.delete(id); resolve({ ok: false, reason: 'no-host' }) }, ANSWER_MS)
+    openWaiters.set(id, (r) => { clearTimeout(timer); resolve(r) })
+    postParent('smartlinks:open', {
+      id,
+      to,
+      params: flat,
+      ...(about ? { about } : {}),
+      ...(appParams ? { appParams } : {}),
+    })
+  })
+}
+
+// -----------------------------------------------------------------------------
 // Host side
 // -----------------------------------------------------------------------------
 
@@ -290,6 +505,26 @@ export function postNavigate(target: Window | null | undefined, req: NavigateReq
   if (!target) return
   try {
     target.postMessage({ type: 'smartlinks:navigate', ...req }, targetOrigin)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Tell an embedded app which destinations it can open here (on load, on request, and when it changes). */
+export function postDestinations(target: Window | null | undefined, availableNames: string[], targetOrigin = '*'): void {
+  if (!target) return
+  try {
+    target.postMessage({ type: 'smartlinks:destinations', available: availableNames }, targetOrigin)
+  } catch {
+    /* ignore */
+  }
+}
+
+/** Answer an app's `smartlinks:open`. */
+export function postOpenResult(target: Window | null | undefined, result: { id: string; to: string; ok: boolean; reason?: string }, targetOrigin = '*'): void {
+  if (!target) return
+  try {
+    target.postMessage({ type: 'smartlinks:open-result', ...result }, targetOrigin)
   } catch {
     /* ignore */
   }

@@ -54,8 +54,11 @@ export declare namespace interactions {
      * @example
      * const vote = await SL.interactions.ensureType(collectionId, {
      *   appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true },
+     *   display: { title: 'Cast a vote', description: 'Someone voted in the poll' },
      * })
      * // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId
+     * // Always give display.title: it's the name staff see in the CRM, on activity and when choosing
+     * // "everyone who voted" for a segment. (Without one the platform names it from the key.)
      */
     function ensureType(collectionId: string, input: EnsureInteractionTypeInput): Promise<InteractionTypeRecord>;
     function get(collectionId: string, id: string): Promise<InteractionTypeRecord>;

@@ -13,7 +13,7 @@ export { readContext } from "./context"
 export * as i18n from "./i18n"
 // Admin views: an app's admin screens by name, host → app navigate, chrome=none (docs/admin-views.md)
 export * as adminViews from "./adminViews"
-export type { NavigateRequest, NavigateTarget, OpenAppRequest } from "./adminViews"
+export type { NavigateRequest, NavigateTarget, OpenAppRequest, Destination, DestinationInfo, DestinationAbout, OpenParams, OpenResult } from "./adminViews"
 export { widgetStyleVars, widgetStyleControls, readableOn, WIDGET_STYLE_VARS } from "./widgetStyle"
 export type { WidgetStyling } from "./widgetStyle"
 export type { SmartLinksContext } from "./context"

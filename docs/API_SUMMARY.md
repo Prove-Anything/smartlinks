@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.32  |  Generated: 2026-11-20T14:23:15.255Z
+Version: 2.1.33  |  Generated: 2026-11-20T18:05:24.523Z
 
 This is a concise summary of all available API functions and types.
 
@@ -137,6 +137,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **serialNumber** - Assign, lookup, and manage serial numbers across scopes.
 
 — Other —
+- **address** - Functions for address operations
 - **adminCards** - Functions for adminCards operations
 - **aiGuide** - Functions for aiGuide operations
 - **analytics** - Functions for analytics operations
@@ -486,6 +487,53 @@ Examples include:
 *Note: Server error codes use either `UPPERCASE_UNDERSCORE` or `dotted.notation` format. Both are supported.*
 
 ## Types
+
+### address
+
+**AddressPage** (interface)
+```typescript
+interface AddressPage {
+  appId: string
+  title: string
+  name: string
+  defaultName: string
+  listed: boolean
+  url: string
+}
+```
+
+**AddressWebsite** (interface)
+```typescript
+interface AddressWebsite {
+  appId: string
+  title: string
+  live: boolean
+  channel: string | null
+}
+```
+
+**AddressResponse** (interface)
+```typescript
+interface AddressResponse {
+  name: string | null
+  host: string
+  defaultHost: string | null
+  domain: { host: string; live: boolean } | null
+  front: AddressFront
+  websites: AddressWebsite[]
+  pages: AddressPage[]
+}
+```
+
+**AddressNameAvailability** (interface)
+```typescript
+interface AddressNameAvailability {
+  available: boolean
+  host: string
+}
+```
+
+**AddressFront** = ``
 
 ### adminCards
 
@@ -12796,6 +12844,23 @@ interface Gs1DigitalLinkParams {
 
 ## API Functions
 
+### address
+
+**get**(collectionId: string) → `Promise<AddressResponse>`
+Everything about the business's address: name, own domain, front page, websites that can take it, app pages.
+
+**checkName**(collectionId: string, name: string) → `Promise<AddressNameAvailability>`
+Is this name free? (lower-case letters, numbers and hyphens)
+
+**setName**(collectionId: string, name: string) → `Promise<`
+Choose (or change) the business's name: `<name>.smartlinks.host`. The previous name is released.
+
+**setFront**(collectionId: string, front: AddressFront) → `Promise<`
+What the front page shows. Applies to the business's name, its automatic address and its own domain together. A website must be installed and live; a redirect must be https and not one of its own addresses.
+
+**setPage**(collectionId: string, appId: string, change: { name?: string; listed?: boolean }) → `Promise<`
+Rename an app's page (old names keep redirecting) and/or show it on the holding page.
+
 ### adminCards
 
 **list**(collectionId: string) → `Promise<AdminCardsResponse>`
@@ -14568,38 +14633,38 @@ POST /api/v1/public/collection/:collectionId/interactions/submit Submits an inte
 
 **ensureType**(collectionId: string,
     input: EnsureInteractionTypeInput) → `Promise<InteractionTypeRecord>`
-Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId
+Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, display: { title: 'Cast a vote', description: 'Someone voted in the poll' }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId // Always give display.title: it's the name staff see in the CRM, on activity and when choosing // "everyone who voted" for a segment. (Without one the platform names it from the key.)
 
 **get**(collectionId: string,
     id: string) → `Promise<InteractionTypeRecord>`
-Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId
+Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, display: { title: 'Cast a vote', description: 'Someone voted in the poll' }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId // Always give display.title: it's the name staff see in the CRM, on activity and when choosing // "everyone who voted" for a segment. (Without one the platform names it from the key.)
 
 **update**(collectionId: string,
     id: string,
     patchBody: UpdateInteractionTypeBody) → `Promise<InteractionTypeRecord>`
-Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId
+Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, display: { title: 'Cast a vote', description: 'Someone voted in the poll' }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId // Always give display.title: it's the name staff see in the CRM, on activity and when choosing // "everyone who voted" for a segment. (Without one the platform names it from the key.)
 
 **remove**(collectionId: string,
     id: string) → `Promise<void>`
-Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId
+Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, display: { title: 'Cast a vote', description: 'Someone voted in the poll' }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId // Always give display.title: it's the name staff see in the CRM, on activity and when choosing // "everyone who voted" for a segment. (Without one the platform names it from the key.)
 
 **publicCountsByOutcome**(collectionId: string,
     body: PublicInteractionsCountsByOutcomeRequest,
     authToken?: string) → `Promise<OutcomeCount[]>`
-Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId
+Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, display: { title: 'Cast a vote', description: 'Someone voted in the poll' }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId // Always give display.title: it's the name staff see in the CRM, on activity and when choosing // "everyone who voted" for a segment. (Without one the platform names it from the key.)
 
 **publicMyInteractions**(collectionId: string,
     body: PublicInteractionsByUserRequest,
     authToken?: string) → `Promise<InteractionEventRow[]>`
-Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId
+Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, display: { title: 'Cast a vote', description: 'Someone voted in the poll' }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId // Always give display.title: it's the name staff see in the CRM, on activity and when choosing // "everyone who voted" for a segment. (Without one the platform names it from the key.)
 
 **publicList**(collectionId: string,
     query: ListInteractionTypesQuery = {}) → `Promise<InteractionTypeList>`
-Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId
+Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, display: { title: 'Cast a vote', description: 'Someone voted in the poll' }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId // Always give display.title: it's the name staff see in the CRM, on activity and when choosing // "everyone who voted" for a segment. (Without one the platform names it from the key.)
 
 **publicGet**(collectionId: string,
     id: string) → `Promise<InteractionTypeRecord>`
-Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId
+Find this app's interaction type by its readable `key` (data.interactionType), or create it. Returns the type record — its `id` is the server-minted UUID every event must use. ADMIN only (run it in your admin/setup screen), then store the id in your app config so public code can read it: `interactionIds: { vote: type.id }`. Safe to run on every setup. const vote = await SL.interactions.ensureType(collectionId, { appId: 'my-app', key: 'vote', permissions: { allowPublicSubmit: true, uniquePerUser: true }, display: { title: 'Cast a vote', description: 'Someone voted in the poll' }, }) // vote.id → '52bab6fa-…' — store it in config; never hardcode 'vote' as an interactionId // Always give display.title: it's the name staff see in the CRM, on activity and when choosing // "everyone who voted" for a segment. (Without one the platform names it from the key.)
 
 ### jobs
 

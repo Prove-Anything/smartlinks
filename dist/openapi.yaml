@@ -17408,6 +17408,87 @@ components:
       name: X-API-Key
       description: API key for server-to-server calls
   schemas:
+    AddressPage:
+      type: object
+      properties:
+        appId:
+          type: string
+        title:
+          type: string
+        name:
+          type: string
+        defaultName:
+          type: string
+        listed:
+          type: boolean
+        url:
+          type: string
+      required:
+        - appId
+        - title
+        - name
+        - defaultName
+        - listed
+        - url
+    AddressWebsite:
+      type: object
+      properties:
+        appId:
+          type: string
+        title:
+          type: string
+        live:
+          type: boolean
+        channel:
+          type: string
+      required:
+        - appId
+        - title
+        - live
+        - channel
+    AddressResponse:
+      type: object
+      properties:
+        name:
+          type: string
+        host:
+          type: string
+        defaultHost:
+          type: string
+        domain:
+          type: object
+          additionalProperties: true
+        front:
+          $ref: "#/components/schemas/AddressFront"
+        websites:
+          type: array
+          items:
+            $ref: "#/components/schemas/AddressWebsite"
+        pages:
+          type: array
+          items:
+            $ref: "#/components/schemas/AddressPage"
+      required:
+        - name
+        - host
+        - defaultHost
+        - domain
+        - front
+        - websites
+        - pages
+    AddressNameAvailability:
+      type: object
+      properties:
+        available:
+          type: boolean
+        host:
+          type: string
+      required:
+        - available
+        - host
+    AddressFront:
+      type: object
+      additionalProperties: true
     AdminCardRefresh:
       type: object
       properties:

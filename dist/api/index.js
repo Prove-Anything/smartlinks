@@ -42,6 +42,7 @@ export { location } from "./location.js";
 import * as realtime_1 from "./realtime.js";
 export { realtime_1 as realtime };
 export { adminCards } from "./adminCards.js";
+export { address } from "./address.js";
 export { tags } from "./tags.js";
 export { order } from "./order.js";
 export { app } from "./appObjects.js";

@@ -13,6 +13,11 @@ export interface SiteContext {
     channel: string;
     /** Where search engines consolidate the site (custom domain > chosen name > automatic address). */
     canonicalHost: string;
+    /**
+     * Set when the app is served as a page under the business's address (`/_apps/<name>`): build links and
+     * share buttons to the app from it, e.g. `https://${canonicalHost}${basePath}/`.
+     */
+    basePath?: string;
 }
 type HeaderSource = {
     headers: Headers | Record<string, string | string[] | undefined>;

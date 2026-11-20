@@ -400,6 +400,20 @@ page. Without this, those routes/modes are invisible to the platform and the Dev
 
 Read the URL params with **`SL.readContext()`** (merges hash → search) instead of hand-rolling it.
 
+##### The app's page on the business's address (`/_apps/<name>/`)
+
+Every installed app with a public page also answers on the business's own address:
+`https://<business>.smartlinks.host/_apps/<name>/#/your-route` (or their own domain). The name defaults to
+the app id without its publisher handle and the business can rename it. There, the platform tells the page
+who it belongs to, so **the URL carries no `collectionId` or `appId`**:
+
+- Read context with **`SL.readContext()`**: it fills `collectionId` and `appId` from the page's address
+  when the URL doesn't carry them, and `basePath` (`/_apps/<name>`) for building share links:
+  `` `https://${location.host}${ctx.basePath ?? ''}/#/play` ``.
+- Build with a **relative base** (`base: './'` in Vite) so assets load under `/_apps/<name>/`.
+- Use hash routes (`#/play`); the path after `/_apps/<name>/` is served the app's `index.html` either way.
+- Never put `collectionId` in your own share links: the address already says which business it is.
+
 ##### Public views vs the two portal surfaces
 
 An app can have any combination of three setup styles. Only public views are external:

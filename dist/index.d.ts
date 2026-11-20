@@ -5,7 +5,7 @@ export { iframe } from "./iframe.js";
 export { readContext } from "./context.js";
 export * as i18n from "./i18n.js";
 export * as adminViews from "./adminViews.js";
-export type { NavigateRequest, NavigateTarget, OpenAppRequest } from "./adminViews.js";
+export type { NavigateRequest, NavigateTarget, OpenAppRequest, Destination, DestinationInfo, DestinationAbout, OpenParams, OpenResult } from "./adminViews.js";
 export { widgetStyleVars, widgetStyleControls, readableOn, WIDGET_STYLE_VARS } from "./widgetStyle.js";
 export type { WidgetStyling } from "./widgetStyle.js";
 export type { SmartLinksContext } from "./context.js";

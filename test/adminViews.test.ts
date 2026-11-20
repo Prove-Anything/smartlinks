@@ -105,3 +105,50 @@ test('openApp asks the host to open another app at a view', () => {
   }
 })
 function expect_(ok: boolean) { assert.ok(ok) }
+
+test('destinations: available, canOpen and open talk to the host by name', async () => {
+  const posted: any[] = []
+  const listeners: any[] = []
+  const parent: any = { postMessage: (m: any) => posted.push(m) }
+  const prevWindow = (globalThis as any).window
+  ;(globalThis as any).window = { parent, addEventListener: (_: string, fn: any) => listeners.push(fn), removeEventListener() {} }
+  try {
+    // available(): asks, then takes the host's answer (only from the parent)
+    const pending = av.available()
+    assert.equal(posted[0].type, 'smartlinks:destinations-request')
+    listeners[0]({ source: {}, data: { type: 'smartlinks:destinations', available: ['nope'] } })
+    listeners[0]({ source: parent, data: { type: 'smartlinks:destinations', available: ['contact', 'message.compose', 7] } })
+    assert.deepEqual(await pending, ['contact', 'message.compose'])
+    assert.equal(await av.canOpen('message.compose'), true)
+    assert.equal(await av.canOpen('settings.domain'), false)
+
+    // open(): ids as strings, about cleaned, the host's answer matched by id
+    const opening = av.open('message.compose', { contactId: 'ct1', junk: 5 as any, about: { type: 'booking', id: 'B1', label: 'Sat 3pm', extra: 'x' } as any })
+    const msg = posted[posted.length - 1]
+    assert.equal(msg.type, 'smartlinks:open')
+    assert.equal(msg.payload.to, 'message.compose')
+    assert.deepEqual(msg.payload.params, { contactId: 'ct1' })
+    assert.deepEqual(msg.payload.about, { type: 'booking', id: 'B1', label: 'Sat 3pm' })
+    listeners[0]({ source: parent, data: { type: 'smartlinks:open-result', id: 'other', ok: true } })
+    listeners[0]({ source: parent, data: { type: 'smartlinks:open-result', id: msg.payload.id, to: 'message.compose', ok: false, reason: 'not-here' } })
+    assert.deepEqual(await opening, { ok: false, reason: 'not-here' })
+
+    // a later push from the host replaces the list
+    listeners[0]({ source: parent, data: { type: 'smartlinks:destinations', available: ['settings.domain'] } })
+    assert.equal(await av.canOpen('settings.domain'), true)
+    assert.ok(av.DESTINATIONS.find((d: any) => d.name === 'contact').required.includes('contactId'))
+  } finally {
+    ;(globalThis as any).window = prevWindow
+  }
+})
+
+test('destinations: no host answers no-host and an empty list', async () => {
+  const prevWindow = (globalThis as any).window
+  delete (globalThis as any).window
+  try {
+    assert.deepEqual(await av.open('contact', { contactId: 'c' }), { ok: false, reason: 'no-host' })
+    assert.deepEqual(await av.available(), [])
+  } finally {
+    ;(globalThis as any).window = prevWindow
+  }
+})

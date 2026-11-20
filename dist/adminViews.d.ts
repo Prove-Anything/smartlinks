@@ -97,8 +97,94 @@ export interface OpenAppRequest {
  *   SL.adminViews.openApp({ appId: 'crm', view: 'contact', params: { contactId } })
  */
 export declare function openApp(req: OpenAppRequest): void;
+/** One destination: its name, the params it needs, and what it opens. */
+export interface DestinationInfo {
+    name: string;
+    /** Params that must be given. */
+    required: string[];
+    /** Params that may be given. */
+    optional?: string[];
+    /** What it opens, in a few words. */
+    description: string;
+}
+/** The platform's screens any admin screen can open by name. */
+export declare const DESTINATIONS: DestinationInfo[];
+/** A destination name. Any string is accepted, so a newer host's names work on an older SDK. */
+export type Destination = 'contacts' | 'contact' | 'contact.messages' | 'conversation' | 'segment' | 'message.compose' | 'message.log' | 'campaign.new' | 'campaign' | 'templates' | 'template' | 'product' | 'proof' | 'interaction.type' | 'settings' | 'settings.domain' | 'settings.languages' | 'settings.translations' | 'settings.email' | 'settings.team' | 'settings.userGroups' | 'settings.setupLists' | 'settings.portal' | 'settings.hub' | 'settings.signIn' | 'media' | 'app' | (string & {});
+/** What a message is about (the same shape as `comms.sendTransactional`'s `about`). Ids only. */
+export interface DestinationAbout {
+    appId?: string;
+    type: string;
+    id: string;
+    view?: string;
+    params?: Record<string, string>;
+    label?: string;
+}
+/** Params for `open`: ids as strings, plus `about` (messages) and `params` (`app`). */
+export interface OpenParams {
+    contactId?: string;
+    conversationId?: string;
+    segmentId?: string;
+    campaignId?: string;
+    templateId?: string;
+    productId?: string;
+    proofId?: string;
+    interactionId?: string;
+    appId?: string;
+    view?: string;
+    /** `message.compose` / `message.log`: the record the message is about, so it is logged against it. */
+    about?: DestinationAbout;
+    /** `app`: that app's view params. */
+    params?: Record<string, string>;
+    [key: string]: string | DestinationAbout | Record<string, string> | undefined;
+}
+export interface OpenResult {
+    ok: boolean;
+    /** `no-host` (not inside Studio) · `unknown` · `not-here` (its app isn't on) · `missing-param` · `preview`. */
+    reason?: string;
+}
+/**
+ * The destinations this host can open here: `['contact', 'message.compose', 'settings.domain', …]`.
+ * Leaves out a screen whose app isn't on in this collection. `[]` with no host (the admin page opened
+ * on its own), after a short wait.
+ */
+export declare function available(): Promise<string[]>;
+/**
+ * Whether `open(name)` will open something here. Ask before showing a button: false when the screen's
+ * app isn't on (Messages not switched on) or there is no host. Then hide the button, or say what to
+ * switch on. Build your own only when the platform has nothing.
+ *
+ * @example
+ *   const canMessage = await SL.adminViews.canOpen('message.compose')
+ */
+export declare function canOpen(name: Destination): Promise<boolean>;
+/**
+ * Open one of the platform's screens by name: a contact, the Messages composer, a person's messages, a
+ * template, a product, a settings page. The host (Studio) decides which app or page that is today, so
+ * the app never hard-codes another app's address or builds its own copy. Resolves with whether it
+ * opened (`{ ok: false, reason: 'no-host' }` outside Studio).
+ *
+ * @example
+ *   // Message this parent, tied to their booking (it is logged against the booking and links back)
+ *   SL.adminViews.open('message.compose', {
+ *     contactId,
+ *     about: { type: 'booking', id: bookingId, view: 'booking', params: { bookingId }, label: 'Sat 3pm' },
+ *   })
+ *   SL.adminViews.open('contact', { contactId })
+ *   SL.adminViews.open('settings.domain')
+ */
+export declare function open(to: Destination, params?: OpenParams): Promise<OpenResult>;
 /**
  * Ask an embedded app to open a screen. Post this only once the app has said it follows navigate
  * (`smartlinks:navigable`); otherwise reload the frame at the new path as before.
  */
 export declare function postNavigate(target: Window | null | undefined, req: NavigateRequest, targetOrigin?: string): void;
+/** Tell an embedded app which destinations it can open here (on load, on request, and when it changes). */
+export declare function postDestinations(target: Window | null | undefined, availableNames: string[], targetOrigin?: string): void;
+/** Answer an app's `smartlinks:open`. */
+export declare function postOpenResult(target: Window | null | undefined, result: {
+    id: string;
+    to: string;
+    ok: boolean;
+    reason?: string;
+}, targetOrigin?: string): void;

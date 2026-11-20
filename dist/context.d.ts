@@ -15,6 +15,11 @@ export interface SmartLinksContext {
      * (`appChannel: 'preview'`) on this collection. Set by Forge; never present elsewhere.
      */
     slPreview?: string;
+    /**
+     * Where the app's page lives on the business's address when served as an app page
+     * (`/_apps/<name>`): build share links to the app from it. Absent elsewhere.
+     */
+    basePath?: string;
     /** Any other declared view params (e.g. pageId, voteId, orientation, tvMode). */
     [key: string]: string | undefined;
 }

@@ -132,6 +132,99 @@ SL.adminViews.openApp({ appId: 'crm', view: 'contact', params: { contactId } })
 - **Name the views you link to** in your docs (`crm: contact`, `messages: log` with `contact`), and
   keep their ids stable: other apps use them.
 
+## Opening the platform's screens: `open` by name
+
+Your admin screens sit inside Studio, next to the platform's own screens. **Link to them; don't copy them.**
+To message someone, open the Messages composer. To show a person, open their contact. Don't build your own
+email pop-up, contact page or message log.
+
+```ts
+// Message this person, tied to the booking: it is logged against the booking and links back to it
+SL.adminViews.open('message.compose', {
+  contactId,
+  about: { type: 'booking', id: bookingId, view: 'booking', params: { bookingId }, label: 'Sat 3pm' },
+})
+SL.adminViews.open('contact', { contactId })            // the person, in Customers
+SL.adminViews.open('contact.messages', { contactId })   // everything sent to them
+SL.adminViews.open('settings.domain')                   // a Studio settings page
+```
+
+You name **what** to open, never which app has it. Studio decides that, so your link keeps working if
+the screen moves to another app. `open` resolves with `{ ok, reason? }`:
+
+| `reason` | Meaning |
+|---|---|
+| `no-host` | Not inside Studio (the admin page opened on its own) |
+| `not-here` | That screen's app isn't on in this business |
+| `unknown` | Studio doesn't know the name |
+| `missing-param` | A required param is missing |
+| `preview` | Forge preview: it showed what would open instead |
+
+### Ask first: `canOpen`
+
+```ts
+const canMessage = await SL.adminViews.canOpen('message.compose')
+// SL.adminViews.available() → ['contact', 'message.compose', 'settings.domain', …]
+```
+
+- If it's `false`, hide the button, or tell the owner what to switch on ("Switch on Messages to send
+  messages").
+- Build your own version only when the platform has nothing for it.
+- `canOpen` answers at once inside Studio. With no host, it answers `false` after a short wait.
+
+### The names
+
+| Name | Params (**required**) | Opens |
+|---|---|---|
+| `contacts` | | The contacts list (Customers) |
+| `contact` | **contactId** | One contact |
+| `contact.messages` | **contactId** | The Message log for that person |
+| `conversation` | **conversationId** | One conversation (Messages) |
+| `segment` | **segmentId** | One segment (Customers) |
+| `message.compose` | contactId, about | The composer, to that person (or choose who) |
+| `message.log` | contactId, about | The Message log, filtered |
+| `campaign.new` | segmentId | A new campaign to that segment |
+| `campaign` | **campaignId** | One campaign |
+| `templates` | | The email and message templates |
+| `template` | **templateId** | One template in the editor |
+| `product` | **productId** | One product (Items) |
+| `proof` | **productId**, **proofId** | One item of a product |
+| `interaction.type` | **interactionId** | One interaction type (Customers) |
+| `settings` | | Studio → Settings |
+| `settings.domain` · `.languages` · `.translations` · `.email` · `.team` · `.userGroups` | | That Studio page |
+| `settings.setupLists` | appId | Set-up lists, for that app |
+| `settings.portal` · `.hub` · `.signIn` | | The Portal, the Hub, customer sign-in |
+| `media` | | Images and files |
+| `app` | **appId**, view, params | Another app at one of its screens, as `openApp` |
+
+`SL.adminViews.DESTINATIONS` has the same list in code.
+
+### `about`: what a message is for
+
+`message.compose` and `message.log` take `about`, the same shape as `comms.sendTransactional`
+([comms.md](comms.md), "What a message is about"). `appId` defaults to your app.
+- **The composer** sends it with the message. The Message log then shows the message against your
+  record ("Bookings · Sat 3pm"), with a link back to your screen (`view` + `params`).
+- **The log** shows only the messages about that record.
+
+### Messaging many people
+
+One message to many people (everyone who booked, entered or joined) is a **campaign**: it has opt-in, an
+unsubscribe, a report, and no cap. Never loop over people sending one message each.
+1. Record an interaction or a tag on each person when they book.
+2. Make a segment in Customers for that interaction or tag.
+3. Open `campaign.new` with the segment.
+
+A server function may still send one service message itself (a confirmation, a reminder:
+`ctx.sl.messages.send`). A message a person writes goes through the composer.
+
+### Hosts
+
+The host answers `smartlinks:open` `{ id, to, params, about?, appParams? }` with `smartlinks:open-result`
+`{ id, to, ok, reason? }`. It posts `smartlinks:destinations` `{ available }` on load, on request
+(`smartlinks:destinations-request`) and whenever the list changes. Helpers: `SL.adminViews.postDestinations`
+and `SL.adminViews.postOpenResult`.
+
 ## `chrome=none`: the host carries the menu
 
 When a host's own menu already lists an app's views, it opens the app with `chrome=none`. The app then
