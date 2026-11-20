@@ -413,6 +413,11 @@ who it belongs to, so **the URL carries no `collectionId` or `appId`**:
 - Build with a **relative base** (`base: './'` in Vite) so assets load under `/_apps/<name>/`.
 - Use hash routes (`#/play`); the path after `/_apps/<name>/` is served the app's `index.html` either way.
 - Never put `collectionId` in your own share links: the address already says which business it is.
+- **Linking to your page from anywhere else** (your admin's "Open the game", a QR code, an email): ask
+  where it is with **`await SL.address.page(collectionId, appId)`** and use its `url` plus your route
+  (`${link.url}#/play`). Never build `smartlinks.app/apps/<id>/stable/index.html…` by hand: the business
+  may have renamed the page, made it its front page, or put it on its own domain, and `url` follows all of
+  that. It's a test build's automatic address until the app is live there.
 
 ##### Public views vs the two portal surfaces
 

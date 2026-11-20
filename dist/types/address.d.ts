@@ -14,6 +14,11 @@ export type AddressFront =
     kind: 'website';
     appId: string;
 }
+/** One of the business's apps as its whole front page (its only game, say): installed and live. */
+ | {
+    kind: 'app';
+    appId: string;
+}
 /** Send visitors to another address. Temporary (302) unless `permanent`; `keepPath` carries /about → target/about. */
  | {
     kind: 'redirect';
@@ -36,6 +41,8 @@ export interface AddressPage {
     defaultName: string;
     /** Shown on the holding page. */
     listed: boolean;
+    /** Live (stable, released): its page works on the business's chosen name, and it can be the front page. */
+    live: boolean;
     /** The full address of the page, on the business's main address. */
     url: string;
 }
@@ -66,4 +73,20 @@ export interface AddressResponse {
 export interface AddressNameAvailability {
     available: boolean;
     host: string;
+}
+/** Where an app's public page is (`address.page`): always a working address. */
+export interface AppPageLink {
+    /** The one to link to: the business's address itself when the app IS its front page, else `pageUrl`. */
+    url: string;
+    /** The app's page under the business's address: `https://<address>/_apps/<name>/`. */
+    pageUrl: string;
+    /** The page name (the business can rename it in Studio → Your address). */
+    name: string;
+    /** Live (stable, released): on the business's own domain or name. A test build is on the automatic address. */
+    live: boolean;
+    /** This app is the business's whole front page. */
+    isFront: boolean;
+    host: string;
+    /** The release channel the collection runs the app on. */
+    channel: string | null;
 }

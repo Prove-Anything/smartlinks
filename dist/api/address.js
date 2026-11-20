@@ -7,6 +7,27 @@ import { request, post } from "../http.js";
 export var address;
 (function (address) {
     const base = (collectionId) => `/admin/collection/${encodeURIComponent(collectionId)}/address`;
+    /**
+     * Where an app's public page is, on the business's own address. Public: use it from the app's admin
+     * ("Open the game") and from share buttons, instead of building the CDN address by hand. Add the app's
+     * own route to it: `${link.url}#/play`. The page carries no collectionId or appId: the address says it.
+     * Resolves null when the app has no page on that collection (not installed, or a connector).
+     *
+     * @example
+     * const link = await SL.address.page(collectionId, appId)
+     * window.open(`${link?.url ?? fallback}#/play`, '_blank')
+     */
+    async function page(collectionId, appId) {
+        try {
+            return await request(`/public/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/page`);
+        }
+        catch (e) {
+            if ((e === null || e === void 0 ? void 0 : e.statusCode) === 404)
+                return null;
+            throw e;
+        }
+    }
+    address.page = page;
     /** Everything about the business's address: name, own domain, front page, websites that can take it, app pages. */
     async function get(collectionId) {
         return request(base(collectionId));

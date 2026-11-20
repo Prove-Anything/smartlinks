@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.33  |  Generated: 2026-11-20T18:05:24.523Z
+Version: 2.1.34  |  Generated: 2026-11-20T19:32:22.299Z
 
 This is a concise summary of all available API functions and types.
 
@@ -498,6 +498,7 @@ interface AddressPage {
   name: string
   defaultName: string
   listed: boolean
+  live: boolean
   url: string
 }
 ```
@@ -530,6 +531,19 @@ interface AddressResponse {
 interface AddressNameAvailability {
   available: boolean
   host: string
+}
+```
+
+**AppPageLink** (interface)
+```typescript
+interface AppPageLink {
+  url: string
+  pageUrl: string
+  name: string
+  live: boolean
+  isFront: boolean
+  host: string
+  channel: string | null
 }
 ```
 
@@ -12845,6 +12859,9 @@ interface Gs1DigitalLinkParams {
 ## API Functions
 
 ### address
+
+**page**(collectionId: string, appId: string) → `Promise<AppPageLink | null>`
+Where an app's public page is, on the business's own address. Public: use it from the app's admin ("Open the game") and from share buttons, instead of building the CDN address by hand. Add the app's own route to it: `${link.url}#/play`. The page carries no collectionId or appId: the address says it. Resolves null when the app has no page on that collection (not installed, or a connector). const link = await SL.address.page(collectionId, appId) window.open(`${link?.url ?? fallback}#/play`, '_blank')
 
 **get**(collectionId: string) → `Promise<AddressResponse>`
 Everything about the business's address: name, own domain, front page, websites that can take it, app pages.

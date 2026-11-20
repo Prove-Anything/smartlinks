@@ -110,7 +110,7 @@ export interface DestinationInfo {
 /** The platform's screens any admin screen can open by name. */
 export declare const DESTINATIONS: DestinationInfo[];
 /** A destination name. Any string is accepted, so a newer host's names work on an older SDK. */
-export type Destination = 'contacts' | 'contact' | 'contact.messages' | 'conversation' | 'segment' | 'message.compose' | 'message.log' | 'campaign.new' | 'campaign' | 'templates' | 'template' | 'product' | 'proof' | 'interaction.type' | 'settings' | 'settings.domain' | 'settings.languages' | 'settings.translations' | 'settings.email' | 'settings.team' | 'settings.userGroups' | 'settings.setupLists' | 'settings.portal' | 'settings.hub' | 'settings.signIn' | 'media' | 'app' | (string & {});
+export type Destination = 'contacts' | 'contact' | 'contact.messages' | 'conversation' | 'segment' | 'message.compose' | 'message.log' | 'campaign.new' | 'campaign' | 'templates' | 'template' | 'product' | 'proof' | 'interaction.type' | 'settings' | 'settings.address' | 'settings.domain' | 'settings.languages' | 'settings.translations' | 'settings.email' | 'settings.team' | 'settings.userGroups' | 'settings.setupLists' | 'settings.portal' | 'settings.hub' | 'settings.signIn' | 'media' | 'app' | (string & {});
 /** What a message is about (the same shape as `comms.sendTransactional`'s `about`). Ids only. */
 export interface DestinationAbout {
     appId?: string;

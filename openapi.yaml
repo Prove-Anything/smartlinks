@@ -10,6 +10,8 @@ servers:
   - url: "https://smartlinks.app/api/v1"
     description: Production
 tags:
+  - name: address
+    description: address API
   - name: responses
     description: Agentic responses API (server-tool runs).
   - name: completions
@@ -11954,6 +11956,37 @@ paths:
           description: Unauthorized
         404:
           description: Not found
+  /public/collection/{collectionId}/app/{appId}/page:
+    get:
+      tags:
+        - address
+      summary: "Where an app's public page is, on the business's own address."
+      operationId: address_page
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: appId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppPageLink"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /public/collection/{collectionId}/asset:
     get:
       tags:
@@ -17421,6 +17454,8 @@ components:
           type: string
         listed:
           type: boolean
+        live:
+          type: boolean
         url:
           type: string
       required:
@@ -17429,6 +17464,7 @@ components:
         - name
         - defaultName
         - listed
+        - live
         - url
     AddressWebsite:
       type: object
@@ -17486,6 +17522,31 @@ components:
       required:
         - available
         - host
+    AppPageLink:
+      type: object
+      properties:
+        url:
+          type: string
+        pageUrl:
+          type: string
+        name:
+          type: string
+        live:
+          type: boolean
+        isFront:
+          type: boolean
+        host:
+          type: string
+        channel:
+          type: string
+      required:
+        - url
+        - pageUrl
+        - name
+        - live
+        - isFront
+        - host
+        - channel
     AddressFront:
       type: object
       additionalProperties: true

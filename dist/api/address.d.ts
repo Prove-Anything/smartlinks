@@ -1,10 +1,21 @@
-import type { AddressFront, AddressNameAvailability, AddressResponse } from "../types/address.js";
+import type { AddressFront, AddressNameAvailability, AddressResponse, AppPageLink } from "../types/address.js";
 /**
  * The business's address in one place (admin): its name, what its front page shows, and its apps' pages
  * under `/_apps/<name>/` (prove docs/design/business-address.md, app-page-addresses.md). Changes reach
  * visitors within about a minute.
  */
 export declare namespace address {
+    /**
+     * Where an app's public page is, on the business's own address. Public: use it from the app's admin
+     * ("Open the game") and from share buttons, instead of building the CDN address by hand. Add the app's
+     * own route to it: `${link.url}#/play`. The page carries no collectionId or appId: the address says it.
+     * Resolves null when the app has no page on that collection (not installed, or a connector).
+     *
+     * @example
+     * const link = await SL.address.page(collectionId, appId)
+     * window.open(`${link?.url ?? fallback}#/play`, '_blank')
+     */
+    function page(collectionId: string, appId: string): Promise<AppPageLink | null>;
     /** Everything about the business's address: name, own domain, front page, websites that can take it, app pages. */
     function get(collectionId: string): Promise<AddressResponse>;
     /** Is this name free? (lower-case letters, numbers and hyphens) */
