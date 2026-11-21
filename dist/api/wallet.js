@@ -78,6 +78,19 @@ export var wallet;
         return post(`${adm(collectionId)}/passes/${encodeURIComponent(passId)}/void`, { reason });
     }
     wallet.voidPass = voidPass;
+    /**
+     * The same lock-screen message on every active pass for one thing, e.g. everyone holding a ticket for an event
+     * (admin).
+     *
+     * @example
+     * ```typescript
+     * await wallet.messageAll('coll_123', { type: 'event', id: eventId }, { header: 'Doors open', body: 'Doors open at 7pm' })
+     * ```
+     */
+    async function messageAll(collectionId, ref, msg) {
+        return post(`${adm(collectionId)}/message`, Object.assign({ ref }, msg));
+    }
+    wallet.messageAll = messageAll;
     /** A lock-screen message on the pass (admin). */
     async function message(collectionId, passId, msg) {
         return post(`${adm(collectionId)}/passes/${encodeURIComponent(passId)}/message`, msg);

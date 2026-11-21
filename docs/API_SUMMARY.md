@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.35  |  Generated: 2026-11-21T10:29:33.594Z
+Version: 2.1.37  |  Generated: 2026-11-21T13:39:32.434Z
 
 This is a concise summary of all available API functions and types.
 
@@ -166,6 +166,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **realtime** - Functions for realtime operations
 - **research** - Functions for research operations
 - **secrets** - Functions for secrets operations
+- **shop** - Functions for shop operations
 - **tagCodes** - Functions for tagCodes operations
 - **tags** - Functions for tags operations
 - **template** - Functions for template operations
@@ -5329,6 +5330,8 @@ interface AuthKitConfig {
   afterSignInUrl?: string
   allowedRedirectDomains?: string[]
   texts?: Partial<Record<AuthKitTextKey, string>>
+  textsLanguage?: string
+  textsByLanguage?: Record<string, Partial<Record<AuthKitTextKey, string>>>
   emailTemplates?: Partial<Record<AuthKitEmailKind, AuthKitEmailTemplate>>
   emailBranding?: { logoUrl?: string; buttonColor?: string; footerHtml?: string }
   secrets?: Record<string, { ref: string; hint?: string | null; collectionId?: string; setAt?: string }>
@@ -11773,6 +11776,294 @@ interface SegmentRecipientsResponse {
 
 **SegmentFilterRule** = ``
 
+### shop
+
+**ShopPrice** (interface)
+```typescript
+interface ShopPrice {
+  id: string
+  collectionId: string
+  productId: string
+  variantId: string | null
+  appId: string
+  currency: string
+  amount: number
+  compareAtAmount: number | null
+  delivery: ShopDelivery
+  deliveryConfig: ShopDeliveryConfig | Record<string, never>
+  trackStock: boolean
+  active: boolean
+  sort: number
+  metadata: Record<string, any>
+  createdAt: string
+  updatedAt: string
+}
+```
+
+**ShopPriceInput** (interface)
+```typescript
+interface ShopPriceInput {
+  productId: string
+  variantId?: string | null
+  appId?: string
+  currency?: string
+  amount: number
+  compareAtAmount?: number | null
+  delivery?: ShopDelivery
+  deliveryConfig?: ShopDeliveryConfig
+  trackStock?: boolean
+  active?: boolean
+  sort?: number
+  metadata?: Record<string, any>
+}
+```
+
+**ShopPriceListParams** (interface)
+```typescript
+interface ShopPriceListParams {
+  productId?: string
+  currency?: string
+  active?: boolean
+  appId?: string
+  limit?: number
+  offset?: number
+}
+```
+
+**ShopShippingRate** (interface)
+```typescript
+interface ShopShippingRate {
+  id: string
+  label: string
+  amount: number
+  days?: string
+}
+```
+
+**ShopSettings** (interface)
+```typescript
+interface ShopSettings {
+  currency: string
+  appId: string
+  seller: { name?: string; address?: string; email?: string; phone?: string; vatNumber?: string }
+  vat: { registered: boolean; rate: number }
+  shipping: {
+  rates: ShopShippingRate[]
+  freeOver: number | null
+  collection: { label: string } | null
+  }
+  policies: { returns?: string; terms?: string; privacy?: string }
+  stripe: { accountId: string | null }
+  stockContainerId: string | null
+  checkout: {
+  successUrl: string | null
+  cancelUrl: string | null
+  expiresMinutes: number
+  allowedHosts: string[]
+  }
+  digital: { euBuyers: boolean }
+  interaction: { interactionId: string | null }
+}
+```
+
+**ShopReadiness** (interface)
+```typescript
+interface ShopReadiness {
+  ready: boolean
+  missing: { key: string; text: string }[]
+}
+```
+
+**ShopConnectStatus** (interface)
+```typescript
+interface ShopConnectStatus {
+  connected: boolean
+  chargesEnabled?: boolean
+  detailsSubmitted?: boolean
+  payoutsEnabled?: boolean
+  id?: string
+}
+```
+
+**ShopPublicConfig** (interface)
+```typescript
+interface ShopPublicConfig {
+  currency: string
+  seller: { name: string | null; address: string | null; email: string | null; vatNumber?: string }
+  vat: { registered: boolean; rate: number }
+  shipping: ShopSettings['shipping']
+  policies: ShopSettings['policies']
+  digital: { euBuyers: boolean }
+  ready: boolean
+}
+```
+
+**ShopProduct** (interface)
+```typescript
+interface ShopProduct {
+  priceId: string
+  productId: string
+  variantId: string | null
+  name: string
+  description: string | null
+  heroImage: any
+  amount: number
+  compareAtAmount: number | null
+  currency: string
+  delivery: ShopDelivery
+  deliveryKind: ShopDigitalKind | null
+  needsSignIn: boolean
+  available: number | null
+  inStock: boolean
+}
+```
+
+**ShopCheckoutLine** (interface)
+```typescript
+interface ShopCheckoutLine {
+  productId: string
+  variantId?: string | null
+  quantity?: number
+}
+```
+
+**ShopCheckoutInput** (interface)
+```typescript
+interface ShopCheckoutInput {
+  lines: ShopCheckoutLine[]
+  shippingRateId?: string
+  email?: string
+  successUrl?: string
+  cancelUrl?: string
+  acceptances?: { digitalImmediate?: boolean }
+}
+```
+
+**ShopCheckoutResult** (interface)
+```typescript
+interface ShopCheckoutResult {
+  orderId: string
+  checkoutUrl: string
+  expiresAt: string
+  total: number
+  currency: string
+}
+```
+
+**ShopOrderLine** (interface)
+```typescript
+interface ShopOrderLine {
+  id: string
+  productId: string
+  variantId: string | null
+  name: string | null
+  quantity: number
+  unitAmount: number | null
+  lineTotal: number | null
+  delivery: ShopDelivery | null
+  deliveryKind: ShopDigitalKind | null
+  quantityDone: number
+  quantityRefunded: number
+  priceId: string | null
+  appId: string
+  files?: string[]
+  fee?: { bps: number; amount: number }
+}
+```
+
+**ShopShipment** (interface)
+```typescript
+interface ShopShipment {
+  id: string
+  at: string
+  lines: { itemId: string; quantity: number }[]
+  carrier?: string
+  trackingNumber?: string
+  trackingUrl?: string
+}
+```
+
+**ShopOrder** (interface)
+```typescript
+interface ShopOrder {
+  id: string
+  collectionId: string
+  orderRef: string | null
+  status: ShopOrderStatus
+  source: 'shop'
+  contactId: string | null
+  currency: string
+  subtotal: number | null
+  shipping: number | null
+  tax: number | null
+  total: number | null
+  refunded: number
+  paidAt: string | null
+  expiresAt: string | null
+  createdAt: string
+  updatedAt: string
+  email: string | null
+  shippingChoice: ShopShippingRate | null
+  shippingAddress: Record<string, any> | null
+  shipments: ShopShipment[]
+  lines: ShopOrderLine[]
+}
+```
+
+**ShopOrderListParams** (interface)
+```typescript
+interface ShopOrderListParams {
+  status?: string
+  contactId?: string
+  includeExpired?: boolean
+  limit?: number
+  offset?: number
+}
+```
+
+**ShopPage<T>** (interface)
+```typescript
+interface ShopPage<T> {
+  items: T[]
+  total: number
+  limit: number
+  offset: number
+}
+```
+
+**ShopShipInput** (interface)
+```typescript
+interface ShopShipInput {
+  lines?: { itemId: string; quantity?: number }[]
+  carrier?: string
+  trackingNumber?: string
+  trackingUrl?: string
+}
+```
+
+**ShopRefundInput** (interface)
+```typescript
+interface ShopRefundInput {
+  lines?: { itemId: string; quantity?: number }[]
+  shipping?: boolean
+  amount?: number
+  restock?: boolean
+  reason?: string
+}
+```
+
+**ShopDelivery** = `'physical' | 'digital'`
+
+**ShopDigitalKind** = `'proof' | 'download' | 'access' | 'app'`
+
+**ShopDeliveryConfig** = ``
+
+**ShopPriceUpdate** = `Partial<Omit<ShopPriceInput, 'productId' | 'variantId' | 'currency'>>`
+
+**ShopSettingsPatch** = `Partial<Omit<ShopSettings, 'stripe' | 'shipping' | 'checkout' | 'vat' | 'seller' | 'digital' | 'interaction'>> & {`
+
+**ShopOrderStatus** = `'pending-payment' | 'paid' | 'fulfilled' | 'partly-refunded' | 'refunded' | 'expired'`
+
 ### tags
 
 **Tag** (interface)
@@ -12377,6 +12668,15 @@ interface WalletPassContent {
 }
 ```
 
+**WalletInWallet** (interface)
+```typescript
+interface WalletInWallet {
+  saved: boolean
+  savedAt?: string | null
+  removedAt?: string
+}
+```
+
 **WalletPassLinks** (interface)
 ```typescript
 interface WalletPassLinks {
@@ -12411,6 +12711,7 @@ interface WalletPass {
   code: string
   version: number
   notice?: { header: string; body: string; at: string }
+  inWallet?: { apple?: WalletInWallet; google?: WalletInWallet }
   voidReason?: string | null
   links?: WalletPassLinks
   createdAt?: string
@@ -15478,6 +15779,70 @@ Append Responses items (input/output/tool) to a session — the manual-persisten
 **clear**(collectionId: string, id: string) → `Promise<`
 Archive (soft-delete) a session.
 
+### shop
+
+**config**(collectionId: string) → `Promise<ShopPublicConfig>`
+What a shop front shows: currency, the seller's details (UK law: shown before paying), shipping rates, policies, and `ready` (false until the shop can take payments).
+
+**products**(collectionId: string, params?: { productIds?: string[] }) → `Promise<`
+What is for sale, in the shop's currency, with stock (`inStock`, `available`) and whether the buyer must sign in first (`needsSignIn`: a proof or access goes to an account). ```typescript const { items } = await shop.products(collectionId) items.map((p) => `${p.name}: ${formatMoney(p.amount, p.currency)}${p.inStock ? '' : ' (sold out)'}`) ```
+
+**checkout**(collectionId: string, input: ShopCheckoutInput) → `Promise<ShopCheckoutResult>`
+Start paying: the server prices the basket, holds the stock and returns Stripe's checkout page. Send the buyer to `checkoutUrl`. Signed-in buyers' orders are theirs (`shop.myOrders`). ```typescript const { checkoutUrl } = await shop.checkout(collectionId, { lines: [{ productId: 'soap', quantity: 2 }], shippingRateId: 'std', successUrl: `${location.origin}/thanks`,   // ?session_id= is added cancelUrl: `${location.origin}/basket`, }) location.href = checkoutUrl ``` `DIGITAL_CONSENT_REQUIRED`, `INVALID_INPUT` (e.g. a return page on another site), `PAYMENT_UNAVAILABLE` (nothing was charged)
+
+**orderBySession**(collectionId: string, sessionId: string) → `Promise<ShopBuyerOrder>`
+The thank-you page: the order a Stripe checkout paid for, from the `session_id` on the success URL. Its `status` is `pending-payment` for a moment while the payment is confirmed: check again shortly. `downloads` has links for bought files once it's paid.
+
+**myOrders**(collectionId: string, params?: { limit?: number; offset?: number }) → `Promise<ShopPage<ShopBuyerOrder>>`
+The signed-in buyer's orders, newest first, with their download links. @throws `SIGN_IN_REQUIRED`
+
+**formatMoney**(amount: number, currency: string, locale?: string) → `string`
+Format minor units as money for the person: `formatMoney(1299, 'GBP')` → "£12.99".
+
+### shop.admin
+
+**settings**(collectionId: string) → `Promise<ShopSettingsView>`
+The settings, what's still needed to take payments (`readiness`), and what SmartLinks takes (`fee`, read-only).
+
+**updateSettings**(collectionId: string, patch: ShopSettingsPatch) → `Promise<ShopSettingsView>`
+Change settings: merged into what's stored; `shipping.rates` is replaced as a whole.
+
+**connect**(collectionId: string, input: { returnUrl: string; refreshUrl: string }) → `Promise<`
+Connect the seller's Stripe account (a new one, set up on Stripe's own pages). Send the seller to `url`; Stripe brings them back to `returnUrl` (done or not: check `connectStatus`) or `refreshUrl` (the link ran out).
+
+**connectStatus**(collectionId: string) → `Promise<ShopConnectStatus>`
+Whether Stripe is connected, and whether it can take payments and pay out yet.
+
+**listPrices**(collectionId: string, params?: ShopPriceListParams) → `Promise<ShopPage<ShopPrice>>`
+Whether Stripe is connected, and whether it can take payments and pay out yet.
+
+**setPrice**(collectionId: string, input: ShopPriceInput) → `Promise<ShopPrice>`
+Put a product (or variant) on sale, or change its price in that currency (one price per product per currency). @throws `INVALID_INPUT`, `APP_NOT_INSTALLED`
+
+**updatePrice**(collectionId: string, priceId: string, changes: ShopPriceUpdate) → `Promise<ShopPrice>`
+Put a product (or variant) on sale, or change its price in that currency (one price per product per currency). @throws `INVALID_INPUT`, `APP_NOT_INSTALLED`
+
+**removePrice**(collectionId: string, priceId: string) → `Promise<`
+Take it off sale for good (or set `active: false` to pause).
+
+**listOrders**(collectionId: string, params?: ShopOrderListParams) → `Promise<ShopPage<ShopAdminOrder>>`
+Shop orders, newest first. Unpaid and expired checkouts are left out unless asked for.
+
+**getOrder**(collectionId: string, orderId: string) → `Promise<ShopAdminOrder>`
+Shop orders, newest first. Unpaid and expired checkouts are left out unless asked for.
+
+**ship**(collectionId: string, orderId: string, input: ShopShipInput = {}) → `Promise<ShopAdminOrder>`
+Send some or all of what's left, with tracking. The held stock leaves; the buyer's "shipped" email goes out if the shop has one. @throws `NOT_SHIPPABLE`, `NOTHING_TO_SHIP`
+
+**refund**(collectionId: string, orderId: string, input: ShopRefundInput = {}) → `Promise<ShopAdminOrder>`
+Refund through Stripe: lines, shipping, a goodwill amount, or everything left. Unsent stock goes back; digital delivery is withdrawn. @throws `NOT_REFUNDABLE`, `NOTHING_TO_REFUND`
+
+**markDelivered**(collectionId: string, orderId: string, itemId: string, input: { note?: string; reference?: string } = {}) → `Promise<ShopAdminOrder>`
+An app that delivers a line itself (`deliveryConfig.kind: 'app'`) says it's done.
+
+**cancelCheckout**(collectionId: string, orderId: string) → `Promise<ShopAdminOrder>`
+Cancel a checkout that hasn't been paid (its stock is released). @throws `NOT_PENDING`
+
 ### skills
 
 **list**(collectionId: string) → `Promise<SkillsListResponse>`
@@ -15809,6 +16174,9 @@ Change what a pass shows; both wallets follow (admin).
 
 **voidPass**(collectionId: string, passId: string, reason?: string) → `Promise<`
 The pass no longer counts: shown as void on the phone (admin).
+
+**messageAll**(collectionId: string, ref: WalletPassRef, msg: { header?: string; body: string }) → `Promise<`
+The same lock-screen message on every active pass for one thing, e.g. everyone holding a ticket for an event (admin). ```typescript await wallet.messageAll('coll_123', { type: 'event', id: eventId }, { header: 'Doors open', body: 'Doors open at 7pm' }) ```
 
 **message**(collectionId: string, passId: string, msg: { header?: string; body: string }) → `Promise<`
 A lock-screen message on the pass (admin).

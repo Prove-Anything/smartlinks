@@ -46,6 +46,11 @@ export interface WalletPassContent {
     /** The QR value; the pass's own code unless you give one. */
     barcode?: string;
 }
+export interface WalletInWallet {
+    saved: boolean;
+    savedAt?: string | null;
+    removedAt?: string;
+}
 /** "Add to Wallet" links that work for this pass now (a wallet that isn't set up is left out). */
 export interface WalletPassLinks {
     google?: string;
@@ -78,6 +83,11 @@ export interface WalletPass {
         header: string;
         body: string;
         at: string;
+    };
+    /** Whether the person has it in each wallet (Apple: a phone registered it; Google: Google's save / delete callback). */
+    inWallet?: {
+        apple?: WalletInWallet;
+        google?: WalletInWallet;
     };
     voidReason?: string | null;
     links?: WalletPassLinks;

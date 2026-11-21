@@ -90,6 +90,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **appConfig / Feature Flags** | `docs/appConfig.md` | `appConfig` settings contract — installed apps, `system.features`/`entitledAppGroups`/`meters`, `isFeatureEnabled()` helper |
 | **App Objects** | `docs/app-objects.md` | Queryable domain objects — `app.records` / `app.cases` / `app.threads`: JSONB zones, visibility, policies, aggregations |
 | **Bookings** | `docs/bookings.md` | Slots, bookings and allocations for events and appointments: no double-booking, holds, per-app public rules, `utils.freeTimes` |
+| **Shop** | `docs/shop.md` | Sell from any site: prices, Stripe checkout into the seller's account, stock held while paying, physical and digital delivery (files, proofs, access), orders, shipping, refunds, order events for emails and integrations |
 | **User groups** | `docs/user-groups.md` | Who may do what: named lists of people (staff who aren't admins, third parties), `userGroups` on a server function, `ctx.caller.userGroups`, `userGroups.mine()` |
 | **Operations** | `docs/operations.md` | Factory floor and warehouse: work orders with stages, stock as quantities in containers, movements, bills of materials, made-from, sales and purchase orders, and a product's position (on hand, on order, needed, when it runs short) |
 | **App Data Storage** | `docs/app-data-storage.md` | Decision guide: pick between `appConfiguration` / `userAppData` / `app.records` |

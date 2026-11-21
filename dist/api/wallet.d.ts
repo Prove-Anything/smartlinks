@@ -81,6 +81,23 @@ export declare namespace wallet {
         ok: true;
         pass: WalletPass;
     }>;
+    /**
+     * The same lock-screen message on every active pass for one thing, e.g. everyone holding a ticket for an event
+     * (admin).
+     *
+     * @example
+     * ```typescript
+     * await wallet.messageAll('coll_123', { type: 'event', id: eventId }, { header: 'Doors open', body: 'Doors open at 7pm' })
+     * ```
+     */
+    function messageAll(collectionId: string, ref: WalletPassRef, msg: {
+        header?: string;
+        body: string;
+    }): Promise<{
+        ok: true;
+        passes: number;
+        sent: number;
+    }>;
     /** A lock-screen message on the pass (admin). */
     function message(collectionId: string, passId: string, msg: {
         header?: string;

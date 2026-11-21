@@ -26040,6 +26040,12 @@ components:
             type: string
         texts:
           $ref: "#/components/schemas/AuthKitTextKey"
+        textsLanguage:
+          type: string
+        textsByLanguage:
+          type: object
+          additionalProperties:
+            $ref: "#/components/schemas/AuthKitTextKey"
         emailTemplates:
           $ref: "#/components/schemas/AuthKitEmailKind"
         emailBranding:
@@ -36724,6 +36730,633 @@ components:
     SegmentFilterRule:
       type: object
       additionalProperties: true
+    ShopPrice:
+      type: object
+      properties:
+        id:
+          type: string
+        collectionId:
+          type: string
+        productId:
+          type: string
+        variantId:
+          type: string
+        appId:
+          type: string
+        currency:
+          type: string
+        amount:
+          type: number
+        compareAtAmount:
+          type: number
+        delivery:
+          $ref: "#/components/schemas/ShopDelivery"
+        deliveryConfig:
+          type: object
+          additionalProperties: true
+        trackStock:
+          type: boolean
+        active:
+          type: boolean
+        sort:
+          type: number
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - collectionId
+        - productId
+        - variantId
+        - appId
+        - currency
+        - amount
+        - compareAtAmount
+        - delivery
+        - deliveryConfig
+        - trackStock
+        - active
+        - sort
+        - metadata
+        - createdAt
+        - updatedAt
+    ShopPriceInput:
+      type: object
+      properties:
+        productId:
+          type: string
+        variantId:
+          type: string
+        appId:
+          type: string
+        currency:
+          type: string
+        amount:
+          type: number
+        compareAtAmount:
+          type: number
+        delivery:
+          $ref: "#/components/schemas/ShopDelivery"
+        deliveryConfig:
+          $ref: "#/components/schemas/ShopDeliveryConfig"
+        trackStock:
+          type: boolean
+        active:
+          type: boolean
+        sort:
+          type: number
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - productId
+        - amount
+    ShopPriceListParams:
+      type: object
+      properties:
+        productId:
+          type: string
+        currency:
+          type: string
+        active:
+          type: boolean
+        appId:
+          type: string
+        limit:
+          type: number
+        offset:
+          type: number
+    ShopShippingRate:
+      type: object
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        amount:
+          type: number
+        days:
+          type: string
+      required:
+        - id
+        - label
+        - amount
+    ShopSettings:
+      type: object
+      properties:
+        currency:
+          type: string
+        appId:
+          type: string
+        seller:
+          type: object
+          additionalProperties: true
+        vat:
+          type: object
+          additionalProperties: true
+        shipping:
+          type: object
+          additionalProperties: true
+        rates:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShopShippingRate"
+        freeOver:
+          type: number
+        collection:
+          type: object
+          additionalProperties: true
+        policies:
+          type: object
+          additionalProperties: true
+        stripe:
+          type: object
+          additionalProperties: true
+        stockContainerId:
+          type: string
+        checkout:
+          type: object
+          additionalProperties: true
+        successUrl:
+          type: string
+        cancelUrl:
+          type: string
+        expiresMinutes:
+          type: number
+        allowedHosts:
+          type: array
+          items:
+            type: string
+        digital:
+          type: object
+          additionalProperties: true
+        interaction:
+          type: object
+          additionalProperties: true
+      required:
+        - currency
+        - appId
+        - seller
+        - vat
+        - shipping
+        - rates
+        - freeOver
+        - collection
+        - policies
+        - stripe
+        - stockContainerId
+        - checkout
+        - successUrl
+        - cancelUrl
+        - expiresMinutes
+        - allowedHosts
+        - digital
+        - interaction
+    ShopReadiness:
+      type: object
+      properties:
+        ready:
+          type: boolean
+        missing:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - ready
+        - missing
+    ShopSettingsView:
+      type: object
+      properties:
+        readiness:
+          $ref: "#/components/schemas/ShopReadiness"
+        fee:
+          type: object
+          additionalProperties: true
+      required:
+        - readiness
+        - fee
+    ShopConnectStatus:
+      type: object
+      properties:
+        connected:
+          type: boolean
+        chargesEnabled:
+          type: boolean
+        detailsSubmitted:
+          type: boolean
+        payoutsEnabled:
+          type: boolean
+        id:
+          type: string
+      required:
+        - connected
+    ShopPublicConfig:
+      type: object
+      properties:
+        currency:
+          type: string
+        seller:
+          type: object
+          additionalProperties: true
+        vat:
+          type: object
+          additionalProperties: true
+        shipping:
+          type: object
+          additionalProperties: true
+        policies:
+          type: object
+          additionalProperties: true
+        digital:
+          type: object
+          additionalProperties: true
+        ready:
+          type: boolean
+      required:
+        - currency
+        - seller
+        - vat
+        - shipping
+        - policies
+        - digital
+        - ready
+    ShopProduct:
+      type: object
+      properties:
+        priceId:
+          type: string
+        productId:
+          type: string
+        variantId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        heroImage: {}
+        amount:
+          type: number
+        compareAtAmount:
+          type: number
+        currency:
+          type: string
+        delivery:
+          $ref: "#/components/schemas/ShopDelivery"
+        deliveryKind:
+          $ref: "#/components/schemas/ShopDigitalKind"
+        needsSignIn:
+          type: boolean
+        available:
+          type: number
+        inStock:
+          type: boolean
+      required:
+        - priceId
+        - productId
+        - variantId
+        - name
+        - description
+        - heroImage
+        - amount
+        - compareAtAmount
+        - currency
+        - delivery
+        - deliveryKind
+        - needsSignIn
+        - available
+        - inStock
+    ShopCheckoutLine:
+      type: object
+      properties:
+        productId:
+          type: string
+        variantId:
+          type: string
+        quantity:
+          type: number
+      required:
+        - productId
+    ShopCheckoutInput:
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShopCheckoutLine"
+        shippingRateId:
+          type: string
+        email:
+          type: string
+        successUrl:
+          type: string
+        cancelUrl:
+          type: string
+        acceptances:
+          type: object
+          additionalProperties: true
+      required:
+        - lines
+    ShopCheckoutResult:
+      type: object
+      properties:
+        orderId:
+          type: string
+        checkoutUrl:
+          type: string
+        expiresAt:
+          type: string
+        total:
+          type: number
+        currency:
+          type: string
+      required:
+        - orderId
+        - checkoutUrl
+        - expiresAt
+        - total
+        - currency
+    ShopOrderLine:
+      type: object
+      properties:
+        id:
+          type: string
+        productId:
+          type: string
+        variantId:
+          type: string
+        name:
+          type: string
+        quantity:
+          type: number
+        unitAmount:
+          type: number
+        lineTotal:
+          type: number
+        delivery:
+          $ref: "#/components/schemas/ShopDelivery"
+        deliveryKind:
+          $ref: "#/components/schemas/ShopDigitalKind"
+        quantityDone:
+          type: number
+        quantityRefunded:
+          type: number
+        priceId:
+          type: string
+        appId:
+          type: string
+        files:
+          type: array
+          items:
+            type: string
+        fee:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - productId
+        - variantId
+        - name
+        - quantity
+        - unitAmount
+        - lineTotal
+        - delivery
+        - deliveryKind
+        - quantityDone
+        - quantityRefunded
+        - priceId
+        - appId
+    ShopShipment:
+      type: object
+      properties:
+        id:
+          type: string
+        at:
+          type: string
+        lines:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        carrier:
+          type: string
+        trackingNumber:
+          type: string
+        trackingUrl:
+          type: string
+      required:
+        - id
+        - at
+        - lines
+    ShopOrder:
+      type: object
+      properties:
+        id:
+          type: string
+        collectionId:
+          type: string
+        orderRef:
+          type: string
+        status:
+          $ref: "#/components/schemas/ShopOrderStatus"
+        source:
+          type: string
+          enum:
+            - shop
+        contactId:
+          type: string
+        currency:
+          type: string
+        subtotal:
+          type: number
+        shipping:
+          type: number
+        tax:
+          type: number
+        total:
+          type: number
+        refunded:
+          type: number
+        paidAt:
+          type: string
+        expiresAt:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        email:
+          type: string
+        shippingChoice:
+          $ref: "#/components/schemas/ShopShippingRate"
+        shippingAddress:
+          type: object
+          additionalProperties: true
+        shipments:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShopShipment"
+        lines:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShopOrderLine"
+      required:
+        - id
+        - collectionId
+        - orderRef
+        - status
+        - source
+        - contactId
+        - currency
+        - subtotal
+        - shipping
+        - tax
+        - total
+        - refunded
+        - paidAt
+        - expiresAt
+        - createdAt
+        - updatedAt
+        - email
+        - shippingChoice
+        - shippingAddress
+        - shipments
+        - lines
+    ShopAdminOrder:
+      type: object
+      properties:
+        payment:
+          type: object
+          additionalProperties: true
+        refunds:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        attention:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        acceptances:
+          type: object
+          additionalProperties: true
+        paymentRef:
+          type: string
+        fee:
+          type: object
+          additionalProperties: true
+      required:
+        - payment
+        - refunds
+        - attention
+        - acceptances
+        - paymentRef
+        - fee
+    ShopBuyerOrder:
+      type: object
+      properties:
+        downloads:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - downloads
+    ShopOrderListParams:
+      type: object
+      properties:
+        status:
+          type: string
+        contactId:
+          type: string
+        includeExpired:
+          type: boolean
+        limit:
+          type: number
+        offset:
+          type: number
+    ShopPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        total:
+          type: number
+        limit:
+          type: number
+        offset:
+          type: number
+      required:
+        - items
+        - total
+        - limit
+        - offset
+    ShopShipInput:
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        carrier:
+          type: string
+        trackingNumber:
+          type: string
+        trackingUrl:
+          type: string
+    ShopRefundInput:
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        shipping:
+          type: boolean
+        amount:
+          type: number
+        restock:
+          type: boolean
+        reason:
+          type: string
+    ShopDelivery:
+      type: string
+      enum:
+        - physical
+        - digital
+    ShopDigitalKind:
+      type: string
+      enum:
+        - proof
+        - download
+        - access
+        - app
+    ShopDeliveryConfig:
+      type: object
+      additionalProperties: true
+    ShopPriceUpdate:
+      $ref: "#/components/schemas/ShopPriceInput"
+    ShopSettingsPatch:
+      $ref: "#/components/schemas/ShopSettings"
+    ShopOrderStatus:
+      type: string
+      enum:
+        - pending-payment
+        - paid
+        - fulfilled
+        - partly-refunded
+        - refunded
+        - expired
     Tag:
       type: object
       properties:
@@ -37718,6 +38351,17 @@ components:
       required:
         - kind
         - title
+    WalletInWallet:
+      type: object
+      properties:
+        saved:
+          type: boolean
+        savedAt:
+          type: string
+        removedAt:
+          type: string
+      required:
+        - saved
     WalletPassLinks:
       type: object
       properties:
@@ -37772,6 +38416,9 @@ components:
         version:
           type: number
         notice:
+          type: object
+          additionalProperties: true
+        inWallet:
           type: object
           additionalProperties: true
         voidReason:

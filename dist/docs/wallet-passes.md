@@ -56,6 +56,8 @@ await ctx.sl.wallet.update(passId, { points: 145 })
 
 await ctx.sl.wallet.void(passId, 'refunded')
 await ctx.sl.wallet.message(passId, { header: 'Doors open', body: 'Doors open at 7pm. See you soon!' })
+// Everyone holding a ticket for this event
+await ctx.sl.wallet.messageAll({ type: 'event', id: eventId }, { header: 'Running late', body: 'We start at 7:30 tonight.' })
 ```
 
 - **Contact:** `contactId` defaults to the caller's contact.
@@ -63,6 +65,24 @@ await ctx.sl.wallet.message(passId, { header: 'Doors open', body: 'Doors open at
 - **Messages:** you can also send a message to wallet with `ctx.sl.messages` and `channel: 'wallet'`. It goes to the
   person's passes about the message's `about`, otherwise to your app's own passes for them. It's worded from the
   template's push version.
+
+## Knowing who added it
+
+Every pass belongs to a known person, so you can tell who has actually put it in their wallet:
+
+- **Apple:** the phone registers the pass with SmartLinks when it's added, and unregisters it when it's removed.
+- **Google:** Google sends a signed "saved" or "deleted" notice.
+
+The pass's `inWallet` shows `{ apple: { saved, savedAt }, google: { saved, savedAt } }`. Each change raises an
+event for the pass holder, so a flow in your app's blueprint can react, for example by sending a "see you there"
+email when someone adds their ticket:
+
+| Event | When |
+|---|---|
+| `wallet.pass_added` | the person added the pass to Apple or Google Wallet |
+| `wallet.pass_removed` | they removed it |
+
+Google's notices are best-effort, so treat them as a good signal rather than a guarantee.
 
 ## Checking a pass at the door
 

@@ -101,6 +101,12 @@ show), `minimal`, `customCss`. `termsUrl`, `privacyUrl`, `supportEmail`. **Wordi
 `continueWithPhone`, `continueWithWhatsApp`, `continueWithMagicLink`, `sendMagicLink`, `magicLinkSent`, `inviteOnlyNotice` (a key
 left out keeps the built-in words).
 
+**Languages.** The screens' own words come in English, Simplified Chinese, French, German, Dutch,
+Spanish, Portuguese and Italian, and follow the page's `<html lang>` (or the `language` prop of
+`SmartlinksAuthUI`); other languages show English. `texts` is shown only in the language it is written
+in: `textsLanguage` (default `en`). For other languages give `textsByLanguage`, e.g.
+`{ fr: { signInTitle: 'Connexion membres' }, de: { signInTitle: 'Mitglieder-Anmeldung' } }`.
+
 **The account emails** — `emailTemplates.<kind>`: `{ subject, header, introText, buttonText,
 footerText }` for `passwordReset`, `emailVerification`, `magicLink`, `memberInvite` (site member
 invitations), `invite` / `addedToCollection` (staff), `mfaCode`, `providerLinked`. `emailBranding`:
