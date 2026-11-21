@@ -309,6 +309,8 @@ export const DESTINATIONS: DestinationInfo[] = [
   { name: 'contact.messages', required: ['contactId'], description: "A person's messages: the Message log for them." },
   { name: 'conversation', required: ['conversationId'], description: 'One conversation in Messages.' },
   { name: 'segment', required: ['segmentId'], description: 'One segment in Customers.' },
+  { name: 'contact.conversations', required: ['contactId'], description: "A person's conversations in the Inbox (their messages and replies, with notes)." },
+  { name: 'loyalty.scheme', required: ['schemeId'], description: 'One loyalty scheme in Customers.' },
   // Messages
   { name: 'message.compose', required: [], optional: ['contactId', 'about'], description: 'The Messages composer: write to one person (or choose who).' },
   { name: 'message.log', required: [], optional: ['contactId', 'about'], description: 'The Message log, filtered by person or by what the messages were about.' },
@@ -320,6 +322,17 @@ export const DESTINATIONS: DestinationInfo[] = [
   { name: 'product', required: ['productId'], description: 'One product in Items.' },
   { name: 'proof', required: ['productId', 'proofId'], description: 'One item (proof) of a product.' },
   { name: 'interaction.type', required: ['interactionId'], description: 'One interaction type in Customers.' },
+  { name: 'batch', required: ['productId', 'batchId'], description: 'One batch of a product (Items).' },
+  { name: 'variant', required: ['productId', 'variantId'], description: 'One variant of a product (Items).' },
+  { name: 'lot', required: ['lotId'], description: 'One lot (Items).' },
+  { name: 'tags', required: [], description: 'The tags and codes on items (Items).' },
+  { name: 'print', required: ['productId'], optional: ['proofId'], description: 'Print labels and QR codes for a product, or for one item of it (Print Studio).' },
+  { name: 'form', required: ['formId'], description: 'One form, open to edit.' },
+  // Things the business owns (the Assets app)
+  { name: 'assets', required: [], description: 'The asset register: everything the business owns.' },
+  { name: 'asset', required: ['productId', 'proofId'], description: 'One asset (productId: its type, proofId: the asset).' },
+  { name: 'asset.history', required: ['productId', 'proofId'], description: "One asset's history: moves, checks and changes." },
+  { name: 'places', required: [], description: 'The places assets are kept (sites, rooms, stores).' },
   // Settings
   { name: 'settings', required: [], description: 'The business settings in Studio.' },
   { name: 'settings.address', required: [], optional: ['appId'], description: "The business's address: its name, front page, app pages (appId: point at that app's page) and links domain." },
@@ -329,6 +342,10 @@ export const DESTINATIONS: DestinationInfo[] = [
   { name: 'settings.email', required: [], description: 'Email settings: the sending address and its look.' },
   { name: 'settings.team', required: [], description: 'The people who run the business in Studio.' },
   { name: 'settings.userGroups', required: [], description: 'User groups.' },
+  { name: 'settings.billing', required: [], description: 'Billing: the plan, invoices and AI credits (top up when the allowance is used up).' },
+  { name: 'settings.integrations', required: [], description: 'Integrations: connections to other systems.' },
+  { name: 'settings.guide', required: [], description: 'The customer guide: the assistant visitors talk to.' },
+  { name: 'settings.translationRules', required: [], description: 'Translation rules: the brief, notes per language and terms to keep.' },
   { name: 'settings.setupLists', required: [], optional: ['appId'], description: "Set-up lists (an app's lists the business keeps)." },
   { name: 'settings.portal', required: [], description: 'The Portal: what people see when they scan.' },
   { name: 'settings.hub', required: [], description: 'The Hub: the ready-made site.' },
@@ -340,9 +357,11 @@ export const DESTINATIONS: DestinationInfo[] = [
 
 /** A destination name. Any string is accepted, so a newer host's names work on an older SDK. */
 export type Destination =
-  | 'contacts' | 'contact' | 'contact.messages' | 'conversation' | 'segment'
+  | 'contacts' | 'contact' | 'contact.messages' | 'contact.conversations' | 'conversation' | 'segment' | 'loyalty.scheme'
   | 'message.compose' | 'message.log' | 'campaign.new' | 'campaign' | 'templates' | 'template'
-  | 'product' | 'proof' | 'interaction.type'
+  | 'product' | 'proof' | 'interaction.type' | 'batch' | 'variant' | 'lot' | 'tags' | 'print' | 'form'
+  | 'assets' | 'asset' | 'asset.history' | 'places'
+  | 'settings.billing' | 'settings.integrations' | 'settings.guide' | 'settings.translationRules'
   | 'settings' | 'settings.address' | 'settings.domain' | 'settings.languages' | 'settings.translations' | 'settings.email'
   | 'settings.team' | 'settings.userGroups' | 'settings.setupLists' | 'settings.portal' | 'settings.hub'
   | 'settings.signIn' | 'media' | 'app'
@@ -368,6 +387,11 @@ export interface OpenParams {
   productId?: string
   proofId?: string
   interactionId?: string
+  batchId?: string
+  variantId?: string
+  lotId?: string
+  formId?: string
+  schemeId?: string
   appId?: string
   view?: string
   /** `message.compose` / `message.log`: the record the message is about, so it is logged against it. */

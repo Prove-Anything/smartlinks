@@ -181,6 +181,8 @@ const canMessage = await SL.adminViews.canOpen('message.compose')
 | `contact.messages` | **contactId** | The Message log for that person |
 | `conversation` | **conversationId** | One conversation (Messages) |
 | `segment` | **segmentId** | One segment (Customers) |
+| `contact.conversations` | **contactId** | Their conversations in the Inbox (Messages) |
+| `loyalty.scheme` | **schemeId** | One loyalty scheme (Customers) |
 | `message.compose` | contactId, about | The composer, to that person (or choose who) |
 | `message.log` | contactId, about | The Message log, filtered |
 | `campaign.new` | segmentId | A new campaign to that segment |
@@ -190,10 +192,22 @@ const canMessage = await SL.adminViews.canOpen('message.compose')
 | `product` | **productId** | One product (Items) |
 | `proof` | **productId**, **proofId** | One item of a product |
 | `interaction.type` | **interactionId** | One interaction type (Customers) |
+| `batch` | **productId**, **batchId** | One batch of a product |
+| `variant` | **productId**, **variantId** | One variant of a product |
+| `lot` | **lotId** | One lot |
+| `tags` | | The tags and codes on items |
+| `print` | **productId**, proofId | Print labels and QR codes for a product, or one item |
+| `form` | **formId** | One form, open to edit |
+| `assets` | | The asset register: what the business owns (Assets) |
+| `asset` · `asset.history` | **productId** (its type), **proofId** | One asset, or its history |
+| `places` | | Where assets are kept |
 | `settings` | | Studio → Settings |
 | `settings.address` | `appId`? | Your address: the business's name, front page, app pages (with `appId`, that app's page: where the owner renames it or makes it the front page) and links domain. Put a "Change this address" link beside any link to your app's page. |
 | `settings.domain` · `.languages` · `.translations` · `.email` · `.team` · `.userGroups` | | That Studio page |
 | `settings.setupLists` | appId | Set-up lists, for that app |
+| `settings.billing` | | Billing: plan, invoices, AI credits. Link here when the AI allowance is used up |
+| `settings.integrations` | | Connections to other systems |
+| `settings.guide` · `settings.translationRules` | | The customer guide · translation rules |
 | `settings.portal` · `.hub` · `.signIn` | | The Portal, the Hub, customer sign-in |
 | `media` | | Images and files |
 | `app` | **appId**, view, params | Another app at one of its screens, as `openApp` |

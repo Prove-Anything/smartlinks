@@ -152,3 +152,11 @@ test('destinations: no host answers no-host and an empty list', async () => {
     ;(globalThis as any).window = prevWindow
   }
 })
+
+test('destinations: every name is unique and the second set is listed', () => {
+  const names = av.DESTINATIONS.map((d: any) => d.name)
+  assert.equal(new Set(names).size, names.length)
+  for (const n of ['contact.conversations', 'loyalty.scheme', 'batch', 'variant', 'lot', 'tags', 'print', 'form', 'assets', 'asset', 'asset.history', 'places', 'settings.billing', 'settings.integrations', 'settings.guide', 'settings.translationRules']) {
+    assert.ok(names.includes(n), n)
+  }
+})
