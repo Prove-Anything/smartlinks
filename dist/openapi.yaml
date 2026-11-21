@@ -273,6 +273,16 @@ paths:
           required: false
           schema:
             type: number
+        - name: include
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+              enum:
+                - temporary
+                - derived
         - name: collectionId
           in: query
           required: false
@@ -24226,6 +24236,26 @@ components:
           type: string
         uploaderIp:
           type: string
+        retention:
+          type: string
+          enum:
+            - permanent
+            - temporary
+        expiresAt:
+          type: string
+        origin:
+          type: string
+          enum:
+            - upload
+            - fetched
+            - derived
+            - generated
+        sourceKey:
+          type: string
+        derivedFromId:
+          type: string
+        variant:
+          type: string
         status:
           type: string
           enum:
@@ -24378,6 +24408,13 @@ components:
           type: number
         offset:
           type: number
+        include:
+          type: array
+          items:
+            type: string
+            enum:
+              - temporary
+              - derived
       required:
         - collectionId
     AdminListAssetsResponse:
@@ -30603,6 +30640,135 @@ components:
           type: boolean
     FacetValueDefinition:
       $ref: "#/components/schemas/FacetValue"
+    PutFileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        text:
+          type: string
+        base64:
+          type: string
+        json: {}
+        contentType:
+          type: string
+        ttl:
+          $ref: "#/components/schemas/FileTtl"
+        appId:
+          type: string
+      required:
+        - name
+    FetchFileRequest:
+      type: object
+      properties:
+        url:
+          type: string
+        ttl:
+          $ref: "#/components/schemas/FileTtl"
+        maxAge:
+          $ref: "#/components/schemas/FileTtl"
+        force:
+          type: boolean
+        appId:
+          type: string
+      required:
+        - url
+    FetchedFile:
+      type: object
+      properties:
+        cached:
+          type: boolean
+        unchanged:
+          type: boolean
+      required:
+        - cached
+    ListFilesQuery:
+      type: object
+      properties:
+        origin:
+          type: object
+          additionalProperties: true
+        retention:
+          type: object
+          additionalProperties: true
+        appId:
+          type: string
+        derivedFromId:
+          type: string
+        limit:
+          type: number
+    ExtractFileRequest:
+      type: object
+      properties:
+        variant:
+          $ref: "#/components/schemas/FileExtractVariant"
+        schema:
+          type: object
+          additionalProperties: true
+        prompt:
+          type: string
+        force:
+          type: boolean
+      required:
+        - variant
+    ExtractFileResponse:
+      type: object
+      properties:
+        ok:
+          type: object
+          additionalProperties: true
+        file:
+          $ref: "#/components/schemas/FileRecord"
+        text:
+          type: string
+        data: {}
+        cached:
+          type: boolean
+      required:
+        - ok
+        - file
+        - cached
+    ReadFileResponse:
+      type: object
+      properties:
+        ok:
+          type: object
+          additionalProperties: true
+        text:
+          type: string
+        base64:
+          type: string
+        contentType:
+          type: string
+        size:
+          type: number
+      required:
+        - ok
+        - contentType
+        - size
+    FileLinkResponse:
+      type: object
+      properties:
+        ok:
+          type: object
+          additionalProperties: true
+        url:
+          type: string
+        expiresAt:
+          type: string
+        permanent:
+          type: boolean
+      required:
+        - ok
+        - url
+    FileRecord:
+      $ref: "#/components/schemas/Asset"
+    FileTtl:
+      type: object
+      additionalProperties: true
+    FileExtractVariant:
+      type: object
+      additionalProperties: true
     AppDataField:
       type: object
       properties:

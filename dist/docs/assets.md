@@ -129,6 +129,10 @@ GET /asset
 | `order`     | string | `desc` (default), `asc` |
 | `limit`     | number | Max results (default 50, max 200) |
 | `offset`    | number | Pagination offset |
+| `include`   | string | `temporary`, `derived` (comma-separated): also list files that are normally left out |
+
+Lists show only what people put there. Temporary files and files extracted from other files (see
+[files.md](files.md)) are left out unless you ask with `include`, so pickers never fill up with them.
 
 **Response:**
 

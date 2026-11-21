@@ -98,6 +98,18 @@ export interface Asset {
     /** Upload token used for public uploads */
     uploadTokenId: string | null;
     uploaderIp: string | null;
+    /** `temporary` files are removed at `expiresAt` and stay out of asset lists. Default `permanent`. */
+    retention?: 'permanent' | 'temporary';
+    /** When a temporary file goes. */
+    expiresAt?: string | null;
+    /** Where it came from: uploaded, fetched from an address, extracted from another file, or made by something. */
+    origin?: 'upload' | 'fetched' | 'derived' | 'generated';
+    /** What it is a copy or extract of (an address key, or `<fileId>:<variant>:<version>`). */
+    sourceKey?: string | null;
+    /** The file this was extracted from. */
+    derivedFromId?: string | null;
+    /** How it was extracted: `text`, `markdown`, `ocr`, `json`. */
+    variant?: string | null;
     status: 'active' | 'pending_review' | 'deleted';
     createdAt: string;
     updatedAt: string;
@@ -239,6 +251,11 @@ export interface AdminListAssetsOptions {
     order?: 'asc' | 'desc';
     limit?: number;
     offset?: number;
+    /**
+     * Also list files that are normally left out: `temporary` (not kept yet) and `derived` (text, Markdown or fields
+     * extracted from another file). Lists show only what people put there unless asked.
+     */
+    include?: Array<'temporary' | 'derived'>;
 }
 export interface AdminListAssetsResponse {
     data: Asset[];

@@ -30,6 +30,7 @@ export { segments } from "./segments.js";
 export { userGroups } from "./userGroups.js";
 export { conditions } from "./conditions.js";
 export { wallet } from "./wallet.js";
+export { files } from "./files.js";
 export { operations } from "./operations.js";
 export { journeys } from "./journeys.js";
 export { journeysAnalytics } from "./journeysAnalytics.js";

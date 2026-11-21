@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.38  |  Generated: 2026-11-21T13:58:59.265Z
+Version: 2.1.39  |  Generated: 2026-11-21T14:40:12.283Z
 
 This is a concise summary of all available API functions and types.
 
@@ -150,6 +150,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **containers** - Functions for containers operations
 - **errors** - Functions for errors operations
 - **facets** - Functions for facets operations
+- **files** - Functions for files operations
 - **functions** - Functions for functions operations
 - **http** - Functions for http operations
 - **integrations** - Functions for integrations operations
@@ -4210,6 +4211,12 @@ interface Asset {
   uploaderContactId: string | null
   uploadTokenId: string | null
   uploaderIp: string | null
+  retention?: 'permanent' | 'temporary'
+  expiresAt?: string | null
+  origin?: 'upload' | 'fetched' | 'derived' | 'generated'
+  sourceKey?: string | null
+  derivedFromId?: string | null
+  variant?: string | null
   status: 'active' | 'pending_review' | 'deleted'
   createdAt: string
   updatedAt: string
@@ -4304,6 +4311,7 @@ interface AdminListAssetsOptions {
   order?: 'asc' | 'desc'
   limit?: number
   offset?: number
+  include?: Array<'temporary' | 'derived'>
 }
 ```
 
@@ -8351,6 +8359,91 @@ interface FacetValueGetParams {
 ```
 
 **FacetValueDefinition** = `FacetValue`
+
+### files
+
+**PutFileRequest** (interface)
+```typescript
+interface PutFileRequest {
+  name: string
+  text?: string
+  base64?: string
+  json?: unknown
+  contentType?: string
+  ttl?: FileTtl
+  appId?: string
+}
+```
+
+**FetchFileRequest** (interface)
+```typescript
+interface FetchFileRequest {
+  url: string
+  ttl?: FileTtl
+  maxAge?: FileTtl
+  force?: boolean
+  appId?: string
+}
+```
+
+**ListFilesQuery** (interface)
+```typescript
+interface ListFilesQuery {
+  origin?: "upload" | "fetched" | "derived" | "generated"
+  retention?: "temporary" | "permanent"
+  appId?: string
+  derivedFromId?: string
+  limit?: number
+}
+```
+
+**ExtractFileRequest** (interface)
+```typescript
+interface ExtractFileRequest {
+  variant: FileExtractVariant
+  schema?: Record<string, any>
+  prompt?: string
+  force?: boolean
+}
+```
+
+**ExtractFileResponse** (interface)
+```typescript
+interface ExtractFileResponse {
+  ok: true
+  file: FileRecord
+  text?: string
+  data?: any
+  cached: boolean
+}
+```
+
+**ReadFileResponse** (interface)
+```typescript
+interface ReadFileResponse {
+  ok: true
+  text?: string
+  base64?: string
+  contentType: string | null
+  size: number
+}
+```
+
+**FileLinkResponse** (interface)
+```typescript
+interface FileLinkResponse {
+  ok: true
+  url: string
+  expiresAt?: string
+  permanent?: boolean
+}
+```
+
+**FileRecord** = `Asset`
+
+**FileTtl** = ``${number}h` | `${number}d` | number`
+
+**FileExtractVariant** = `"text" | "markdown" | "ocr" | "json"`
 
 ### headless
 
@@ -14745,6 +14838,35 @@ Delete a crate for a collection (admin only). This performs a soft delete. ```ty
     body: FacetQueryRequest) → `Promise<FacetQueryResponse>`
 
 **publicNamespaces**(collectionId: string) → `Promise<FacetNamespaceListResponse>`
+
+### files
+
+**list**(collectionId: string, query: ListFilesQuery = {}) → `Promise<`
+Files on this site that aren't ordinary uploads: temporary, fetched, derived or generated (admin).
+
+**put**(collectionId: string, body: PutFileRequest) → `Promise<`
+A new file from text, base64 or JSON. Temporary (default 1 day) and private.
+
+**fetch**(collectionId: string, body: FetchFileRequest) → `Promise<`
+A web address's contents as a file, cached by address.
+
+**get**(collectionId: string, fileId: string) → `Promise<`
+One file. @throws `NOT_FOUND`, `EXPIRED`
+
+**read**(collectionId: string, fileId: string, as: "text" | "base64" = "text") → `Promise<ReadFileResponse>`
+A file's contents, as text (default) or base64 (up to 25 MB).
+
+**link**(collectionId: string, fileId: string, minutes?: number) → `Promise<FileLinkResponse>`
+A signed link to a private file (default 15 minutes), or a kept file's permanent address.
+
+**extract**(collectionId: string, fileId: string, body: ExtractFileRequest) → `Promise<ExtractFileResponse>`
+What's in a file: `text`, `markdown`, `ocr` (images) or `json` (typed fields: give a `schema` and/or a `prompt`). Each file is read each way once; asking again returns the same result (`cached: true`).
+
+**keep**(collectionId: string, fileId: string) → `Promise<`
+Keep a file: permanent and public, with an `assetUrl`. It then shows in asset lists like any upload.
+
+**remove**(collectionId: string, fileId: string) → `Promise<`
+Remove a file (a kept file is deleted like any asset, and can be restored).
 
 ### form
 

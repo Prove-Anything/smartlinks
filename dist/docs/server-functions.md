@@ -850,6 +850,28 @@ const video = await ctx.sl.assets.finishUpload(uploadId)
 - **Who can open the file.** An asset's file is served from the CDN under an unguessable address, as
   every asset is. Keep the address to the people who should have it.
 
+## Temporary and fetched files — `ctx.sl.files`
+
+For files nobody browses: a page or a PDF fetched to read, what was read from it, a result to pass between steps.
+They're private to your app, temporary unless kept, and never show in asset lists (see [files.md](files.md)).
+Declare `sl:files:read` / `sl:files:write`.
+
+```ts
+// capabilities: ["sl:files:write"], authority: "collection"
+const page = await ctx.sl.files.fetch('https://supplier.example/spec.pdf', { ttl: '7d' })  // cached by address
+const { text } = await ctx.sl.files.extract(page.id, 'markdown')                          // read once, kept beside it
+const { data } = await ctx.sl.files.extract(page.id, 'json', { schema })                  // typed fields
+const note = await ctx.sl.files.put({ name: 'step.json', data: { done: 2 }, ttl: '1d' })
+const { url } = await ctx.sl.files.link(note.id, { minutes: 15 })                         // a signed link
+await ctx.sl.files.keep(page.id)                                                           // permanent + public
+```
+
+- `fetch(url, { ttl?, maxAge?, force? })`: the same address gives your app the same file while it's fresh; once
+  stale, an unchanged page isn't downloaded again. Public addresses only, up to 50 MB.
+- `extract(id, 'text' | 'markdown' | 'ocr' | 'json', { schema?, prompt? })`: each file is read each way once.
+- `get`, `read(id, { as: 'text' | 'base64' })`, `link`, `keep`, `remove`, `list({ origin?, derivedFromId? })`.
+- `ttl` is `1h` to `30d` (default `1d`); a temporary file is removed when it expires.
+
 ## AI — `ctx.sl.ai`
 
 `ctx.sl.ai.generate({ prompt, system?, files?, schema?, quality? })` asks a model. `files` are PDFs,

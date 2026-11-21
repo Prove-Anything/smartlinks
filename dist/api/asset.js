@@ -334,6 +334,8 @@ export var asset;
             params.set('limit', String(options.limit));
         if (typeof options.offset === 'number')
             params.set('offset', String(options.offset));
+        if (options.include && options.include.length)
+            params.set('include', options.include.join(','));
         const qs = params.toString();
         const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/asset${qs ? `?${qs}` : ''}`;
         return request(path);

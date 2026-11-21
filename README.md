@@ -24,6 +24,7 @@ If you're new to the SDK, this is the easiest path:
 - [docs/analytics.md](docs/analytics.md) — fire-and-forget web analytics, tag scan telemetry, and dashboard queries
 - [docs/proof-share-grants.md](docs/proof-share-grants.md) — delegated, scoped, revocable share links for a proof (album sharing, guest comments, proof-of-ownership)
 - [docs/assets.md](docs/assets.md) — asset uploads, including resumable uploads for large files (video)
+- [docs/files.md](docs/files.md) — temporary files, fetching web pages and documents once, and extracting text, Markdown, OCR or fields from them
 - [docs/app-objects.md](docs/app-objects.md) — cases, threads (comments), and records
 - [docs/translations.md](docs/translations.md) — runtime translation lookup, browser-side caching, and translation admin flows
 - [docs/widgets.md](docs/widgets.md) — embeddable React components
