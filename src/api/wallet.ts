@@ -80,6 +80,19 @@ export namespace wallet {
     return post(`${adm(collectionId)}/passes/${encodeURIComponent(passId)}/void`, { reason })
   }
 
+  /**
+   * The same lock-screen message on every active pass for one thing, e.g. everyone holding a ticket for an event
+   * (admin).
+   *
+   * @example
+   * ```typescript
+   * await wallet.messageAll('coll_123', { type: 'event', id: eventId }, { header: 'Doors open', body: 'Doors open at 7pm' })
+   * ```
+   */
+  export async function messageAll(collectionId: string, ref: WalletPassRef, msg: { header?: string; body: string }): Promise<{ ok: true; passes: number; sent: number }> {
+    return post(`${adm(collectionId)}/message`, { ref, ...msg })
+  }
+
   /** A lock-screen message on the pass (admin). */
   export async function message(collectionId: string, passId: string, msg: { header?: string; body: string }): Promise<{ ok: true; sent: boolean; pass: WalletPass }> {
     return post(`${adm(collectionId)}/passes/${encodeURIComponent(passId)}/message`, msg)
