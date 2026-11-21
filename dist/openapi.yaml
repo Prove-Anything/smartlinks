@@ -3817,6 +3817,11 @@ paths:
           required: false
           schema:
             type: string
+        - name: productId
+          in: query
+          required: false
+          schema:
+            type: string
       responses:
         200:
           description: Success
@@ -29953,6 +29958,8 @@ components:
           type: string
         proofId:
           type: string
+        itemUid:
+          type: string
         addedAt:
           type: string
         removedAt:
@@ -30154,6 +30161,8 @@ components:
           $ref: "#/components/schemas/ContainerItemType"
         itemId:
           type: string
+        productId:
+          type: string
       required:
         - itemType
         - itemId
@@ -30167,9 +30176,6 @@ components:
       enum:
         - tag
         - proof
-        - serial
-        - order_item
-        - container
     CrateItem:
       type: object
       properties:
@@ -35577,6 +35583,8 @@ components:
     Product:
       type: object
       properties:
+        uid:
+          type: string
         orgId:
           type: string
         name:
@@ -35902,6 +35910,8 @@ components:
         createdAt:
           type: string
         id:
+          type: string
+        uid:
           type: string
         productId:
           type: string
@@ -36737,6 +36747,10 @@ components:
           type: string
         refId:
           type: string
+        containerId:
+          type: string
+        itemUid:
+          type: string
         metadata:
           type: object
           additionalProperties: true
@@ -36802,6 +36816,8 @@ components:
           type: string
         refId:
           type: string
+        containerId:
+          type: string
         metadata:
           type: object
           additionalProperties: true
@@ -36834,6 +36850,8 @@ components:
         refType:
           type: string
         refId:
+          type: string
+        containerId:
           type: string
         metadata:
           type: object

@@ -29,6 +29,11 @@ export interface Proof {
   createdAt: string
   /** Unique identifier for the proof */
   id: string
+  /**
+   * The item's global id (`itm_` + 14 characters): never changes, unique everywhere. Identity only, not an
+   * address: links, QR codes and tags keep using `productId` + `id`. Accepted wherever a proof id goes in a path.
+   */
+  uid?: string | null
   /** Unique identifier for the product */
   productId: string
   /** Unique identifier for the token */

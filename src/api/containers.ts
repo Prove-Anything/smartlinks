@@ -128,7 +128,8 @@ export namespace containers {
    * ```typescript
    * const { containers: holding } = await containers.findForItem('coll_123', {
    *   itemType: 'proof',
-   *   itemId:   'proof-uuid',
+   *   itemId:   'unit-0007',
+   *   productId: 'drill',
    * })
    * ```
    */

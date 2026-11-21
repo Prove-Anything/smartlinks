@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.34  |  Generated: 2026-11-20T19:32:22.299Z
+Version: 2.1.35  |  Generated: 2026-11-21T10:29:33.594Z
 
 This is a concise summary of all available API functions and types.
 
@@ -7922,6 +7922,7 @@ interface ContainerItem {
   itemId: string
   productId?: string
   proofId?: string
+  itemUid?: string | null
   addedAt: string
   removedAt?: string
   metadata?: Record<string, any>
@@ -8060,12 +8061,13 @@ interface ListContainerItemsParams {
 interface FindContainersForItemParams {
   itemType: ContainerItemType
   itemId: string
+  productId?: string
 }
 ```
 
 **ContainerStatus** = `'active' | 'archived' | string`
 
-**ContainerItemType** = `'tag' | 'proof' | 'serial' | 'order_item' | 'container'`
+**ContainerItemType** = `'tag' | 'proof'`
 
 ### crate
 
@@ -11289,6 +11291,7 @@ interface Proof {
   collectionId: string
   createdAt: string
   id: string
+  uid?: string | null
   productId: string
   tokenId: string
   userId: string
@@ -11785,6 +11788,8 @@ interface Tag {
   proofId:      string | null         // Proof / serial number
   refType:      string | null
   refId:        string | null
+  containerId?: string | null
+  itemUid?:     string | null
   metadata:     Record<string, any>
   createdAt:    string                // ISO 8601
   updatedAt:    string                // ISO 8601
@@ -11820,6 +11825,7 @@ interface CreateTagRequest {
   useSerialNumber?: boolean          // Auto-generate a serial number as proofId
   refType?:         string           // Must be paired with refId
   refId?:           string           // Must be paired with refType
+  containerId?:     string           // The label on this container (not with proofId)
   metadata?:        Record<string, any>
   force?:           boolean          // Overwrite if tag already exists in this collection
 }
@@ -11842,6 +11848,7 @@ interface UpdateTagRequest {
   proofId?:    string
   refType?:    string | null
   refId?:      string | null
+  containerId?: string | null
   metadata?:   Record<string, any>   // Merged with existing metadata
 }
 ```
@@ -14293,7 +14300,7 @@ List containers (admin). Supports filtering by type, status, ref, parent, and to
 
 **findForItem**(collectionId: string,
     params: FindContainersForItemParams) → `Promise<FindContainersForItemResponse>`
-Reverse lookup — find all containers currently holding a specific item (admin). ```typescript const { containers: holding } = await containers.findForItem('coll_123', { itemType: 'proof', itemId:   'proof-uuid', }) ```
+Reverse lookup — find all containers currently holding a specific item (admin). ```typescript const { containers: holding } = await containers.findForItem('coll_123', { itemType: 'proof', itemId:   'unit-0007', productId: 'drill', }) ```
 
 **get**(collectionId: string,
     containerId: string,

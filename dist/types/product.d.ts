@@ -62,6 +62,11 @@ export interface ProductQueryRequest {
     includeDeleted?: boolean;
 }
 export interface Product extends ProductKey {
+    /**
+     * The product's global id (`prd_` + 14 characters): never changes, unique everywhere. Identity only, not an
+     * address: links keep using `id`. Accepted wherever a product id goes in a path. Ids can't start with prd_ / itm_.
+     */
+    uid?: string | null;
     orgId?: string | null;
     name: string;
     description?: string | null;

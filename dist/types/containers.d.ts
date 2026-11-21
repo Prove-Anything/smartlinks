@@ -13,7 +13,8 @@ export type ContainerStatus = 'active' | 'archived' | string;
  * Types of items that can be placed inside a container.
  * A `container` item type allows containers to nest inside other containers.
  */
-export type ContainerItemType = 'tag' | 'proof' | 'serial' | 'order_item' | 'container';
+/** What a container holds: items (proofs) and tags. A container goes inside another by its parent, never as an entry. */
+export type ContainerItemType = 'tag' | 'proof';
 /**
  * A physical or logical container entity.
  *
@@ -76,6 +77,8 @@ export interface ContainerItem {
     productId?: string;
     /** Convenience denormalisation — proof / serial UUID if applicable */
     proofId?: string;
+    /** The item's global id (`itm_…`) for itemType 'proof': how the platform tells same-id items under different products apart */
+    itemUid?: string | null;
     /** ISO 8601 — when the item was placed into the container */
     addedAt: string;
     /** ISO 8601 — when the item was removed; `null` / `undefined` = still inside */
@@ -191,6 +194,8 @@ export interface ListContainerItemsParams {
 export interface FindContainersForItemParams {
     /** Required */
     itemType: ContainerItemType;
-    /** Required */
+    /** Required: a tag's id, or an item's proof id (or its uid, `itm_…`) */
     itemId: string;
+    /** For an item: its product. Needed when the proof id repeats across products (else 400 AMBIGUOUS_ITEM). */
+    productId?: string;
 }

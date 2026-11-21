@@ -19,12 +19,16 @@ export interface Tag {
     batchId: string | null;
     proofId: string | null;
     /**
-     * Polymorphic ref type: `'app_record'`, `'app_case'`, `'app_thread'`, `'container'`, etc.
-     * Always paired with `refId`.
+     * Polymorphic ref type: `'app_record'`, `'app_case'`, `'app_thread'`, etc.
+     * Always paired with `refId`. The label on a container is `containerId`, not a ref.
      */
     refType: string | null;
     /** UUID of the referenced object.  Always paired with `refType`. */
     refId: string | null;
+    /** The container this tag is the label on (a box, a cask): never where the tag is. Not with `proofId`. */
+    containerId?: string | null;
+    /** The item's global id when the tag is on an item */
+    itemUid?: string | null;
     metadata: Record<string, any>;
     createdAt: string;
     updatedAt: string;
@@ -77,6 +81,7 @@ export interface CreateTagRequest {
     useSerialNumber?: boolean;
     refType?: string;
     refId?: string;
+    containerId?: string;
     metadata?: Record<string, any>;
     force?: boolean;
 }
@@ -95,6 +100,8 @@ export interface UpdateTagRequest {
     refType?: string | null;
     /** Pass `null` to clear the polymorphic ref.  Must be paired with `refType`. */
     refId?: string | null;
+    /** The label on this container; `null` to clear. Putting the tag on an item clears it. */
+    containerId?: string | null;
     metadata?: Record<string, any>;
 }
 /** Returned when creating a single tag (`wasUpdated: true` when force triggered an update). */
