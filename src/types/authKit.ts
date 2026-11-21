@@ -609,8 +609,12 @@ export interface AuthKitConfig {
   afterSignInUrl?: string
   /** Extra domains emailed links may return to (the collection's own domains are always allowed). */
   allowedRedirectDomains?: string[]
-  /** Wording on the screens. */
+  /** Wording on the screens, in the language `textsLanguage` names (English when not set). */
   texts?: Partial<Record<AuthKitTextKey, string>>
+  /** The language `texts` is written in ("en", "de", ...): only visitors in that language see it. */
+  textsLanguage?: string
+  /** The same wording per language, e.g. `{ fr: { signInTitle: 'Connexion' } }`; wins over `texts`. */
+  textsByLanguage?: Record<string, Partial<Record<AuthKitTextKey, string>>>
   /** Wording of the account emails, per email. Preview with {@link authKit.previewEmail}. */
   emailTemplates?: Partial<Record<AuthKitEmailKind, AuthKitEmailTemplate>>
   /** The account emails' look. The sender is the collection's email settings (verified domain). */
