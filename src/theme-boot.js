@@ -15,7 +15,7 @@
  *   - theme:      the `.dark` class (Tailwind/shadcn convention) AND `[data-theme="dark|light"]`
  *   - contrast:   `[data-contrast="high"]`  (also honour @media (prefers-contrast: more) natively)
  *   - font size:  `--sl-font-scale` (e.g. 1.25) — scale your rem/base type off it
- *   - language:   `lang` attribute (content/i18n is the app's own job; this just flags it)
+ *   - language:   `lang` attribute, and `dir` (rtl for Arabic, Hebrew, ...; use start/end CSS so it mirrors)
  *   - brand:      the --sl-* theme tokens (see theme.css)
  *
  * Brand THEME changes are expected via iframe reload (rare, operator-driven). Viewer / a11y prefs are
@@ -43,7 +43,11 @@
       else root.setAttribute('data-contrast', String(s.contrast));
     }
     if (s.fontScale != null) setVar('font-scale', s.fontScale);
-    if (s.lang) root.setAttribute('lang', String(s.lang));
+    if (s.lang) {
+      root.setAttribute('lang', String(s.lang));
+      // Right-to-left languages mirror the page (Arabic, Hebrew, Persian, Urdu, ...); see i18n.textDirection.
+      root.setAttribute('dir', /^(ar|he|iw|fa|ur|ps|yi|dv|ckb|sd|ug)(-|$)/i.test(String(s.lang)) ? 'rtl' : 'ltr');
+    }
     var a = s.attrs;
     if (a) for (var name in a) if (Object.prototype.hasOwnProperty.call(a, name)) {
       if (a[name] == null || a[name] === false) root.removeAttribute(name);
