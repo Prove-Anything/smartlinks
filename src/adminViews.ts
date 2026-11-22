@@ -342,7 +342,9 @@ export const DESTINATIONS: DestinationInfo[] = [
   { name: 'settings.email', required: [], description: 'Email settings: the sending address and its look.' },
   { name: 'settings.team', required: [], description: 'The people who run the business in Studio.' },
   { name: 'settings.userGroups', required: [], description: 'User groups.' },
-  { name: 'settings.billing', required: [], description: 'Billing: the plan, invoices and AI credits (top up when the allowance is used up).' },
+  { name: 'settings.billing', required: [], optional: ['intent'], description: 'Billing: the plan, invoices and AI credits (top up when the allowance is used up). intent=upgrade opens on the plans to move up to.' },
+  { name: 'settings.addons', required: [], description: 'Add-ons: features the account can switch on (on enterprise, each feature can be switched).' },
+  { name: 'settings.modules', required: [], description: 'Modules: install, reorder and remove the apps the account uses.' },
   { name: 'settings.integrations', required: [], description: 'Integrations: connections to other systems.' },
   { name: 'settings.guide', required: [], description: 'The customer guide: the assistant visitors talk to.' },
   { name: 'settings.translationRules', required: [], description: 'Translation rules: the brief, notes per language and terms to keep.' },
@@ -361,7 +363,7 @@ export type Destination =
   | 'message.compose' | 'message.log' | 'campaign.new' | 'campaign' | 'templates' | 'template'
   | 'product' | 'proof' | 'interaction.type' | 'batch' | 'variant' | 'lot' | 'tags' | 'print' | 'form'
   | 'assets' | 'asset' | 'asset.history' | 'places'
-  | 'settings.billing' | 'settings.integrations' | 'settings.guide' | 'settings.translationRules'
+  | 'settings.billing' | 'settings.addons' | 'settings.modules' | 'settings.integrations' | 'settings.guide' | 'settings.translationRules'
   | 'settings' | 'settings.address' | 'settings.domain' | 'settings.languages' | 'settings.translations' | 'settings.email'
   | 'settings.team' | 'settings.userGroups' | 'settings.setupLists' | 'settings.portal' | 'settings.hub'
   | 'settings.signIn' | 'media' | 'app'

@@ -205,7 +205,9 @@ const canMessage = await SL.adminViews.canOpen('message.compose')
 | `settings.address` | `appId`? | Your address: the business's name, front page, app pages (with `appId`, that app's page: where the owner renames it or makes it the front page) and links domain. Put a "Change this address" link beside any link to your app's page. |
 | `settings.domain` · `.languages` · `.translations` · `.email` · `.team` · `.userGroups` | | That Studio page |
 | `settings.setupLists` | appId | Set-up lists, for that app |
-| `settings.billing` | | Billing: plan, invoices, AI credits. Link here when the AI allowance is used up |
+| `settings.billing` | `intent`? | Billing: plan, invoices, AI credits. Link here when the AI allowance is used up. `intent: 'upgrade'` opens on the plans to move up to |
+| `settings.addons` | | Add-ons: features the account can switch on (on enterprise, every feature, each switchable) |
+| `settings.modules` | | Modules: install, reorder and remove the account's apps |
 | `settings.integrations` | | Connections to other systems |
 | `settings.guide` · `settings.translationRules` | | The customer guide · translation rules |
 | `settings.portal` · `.hub` · `.signIn` | | The Portal, the Hub, customer sign-in |
