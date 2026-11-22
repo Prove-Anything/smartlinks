@@ -314,7 +314,7 @@ export const DESTINATIONS: DestinationInfo[] = [
   // Messages
   { name: 'message.compose', required: [], optional: ['contactId', 'about'], description: 'The Messages composer: write to one person (or choose who).' },
   { name: 'message.log', required: [], optional: ['contactId', 'about'], description: 'The Message log, filtered by person or by what the messages were about.' },
-  { name: 'campaign.new', required: [], optional: ['segmentId'], description: 'A new campaign: one message to many people, with opt-in and unsubscribe.' },
+  { name: 'campaign.new', required: [], optional: ['segmentId', 'interactionId'], description: 'A new campaign: one message to many people, with opt-in and unsubscribe. interactionId = everyone who had that interaction.' },
   { name: 'campaign', required: ['campaignId'], description: 'One campaign in Messages.' },
   { name: 'templates', required: [], description: 'The email and message templates.' },
   { name: 'template', required: ['templateId'], description: 'One template, open in the template editor.' },

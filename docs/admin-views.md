@@ -185,7 +185,7 @@ const canMessage = await SL.adminViews.canOpen('message.compose')
 | `loyalty.scheme` | **schemeId** | One loyalty scheme (Customers) |
 | `message.compose` | contactId, about | The composer, to that person (or choose who) |
 | `message.log` | contactId, about | The Message log, filtered |
-| `campaign.new` | segmentId | A new campaign to that segment |
+| `campaign.new` | segmentId or interactionId | A new campaign to that segment, or to everyone who had that interaction |
 | `campaign` | **campaignId** | One campaign |
 | `templates` | | The email and message templates |
 | `template` | **templateId** | One template in the editor |
@@ -228,9 +228,14 @@ const canMessage = await SL.adminViews.canOpen('message.compose')
 
 One message to many people (everyone who booked, entered or joined) is a **campaign**: it has opt-in, an
 unsubscribe, a report, and no cap. Never loop over people sending one message each.
-1. Record an interaction or a tag on each person when they book.
-2. Make a segment in Customers for that interaction or tag.
-3. Open `campaign.new` with the segment.
+1. Record an interaction on each person when they book (give its type a `display.title`: it's the name staff
+   pick from).
+2. Open `campaign.new` with that interaction: `SL.adminViews.open('campaign.new', { interactionId })`. Messages
+   sets up "everyone who booked" as the audience (made once, and it grows as more people book); the person
+   writes the message and sends it.
+
+Or with a segment someone made in Customers (tags, products): `open('campaign.new', { segmentId })`. Staff can
+also pick "People who did something" in a new campaign themselves.
 
 A server function may still send one service message itself (a confirmation, a reminder:
 `ctx.sl.messages.send`). A message a person writes goes through the composer.
