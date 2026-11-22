@@ -139,7 +139,8 @@ export namespace product {
   }
 
   /**
-   * @deprecated Legacy compatibility endpoint only. Use `products.get(...)` when the product id is known.
+   * @deprecated Retired on the server (2026-11-22): the outside-system id lookup it called is gone, so this now
+   * answers 404. Use `products.get(...)` when the product id is known, or `products.query(...)` to search.
    */
   export async function publicFind(
     collectionId: string,
