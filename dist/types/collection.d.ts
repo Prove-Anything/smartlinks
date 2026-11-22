@@ -192,3 +192,29 @@ export interface InviteUserInput {
     /** Origin used to build the branded invite link. Defaults to `window.location.origin` in the browser. */
     consoleOrigin?: string;
 }
+/** One thing the readiness list says (GET /admin/collection/:id/readiness). */
+export interface ReadinessItem {
+    /** 'problem': something won't work; 'warning': works, probably not what's meant; 'info': worth knowing. */
+    level: 'problem' | 'warning' | 'info';
+    /** e.g. SIGN_IN_MISSING, SIGN_IN_STANDARD, CRM_NOT_IN_PLAN, CRM_OFF, PRODUCTS_OFF, NO_CLAIM_CODES */
+    code: string;
+    /** Plain words for the business. */
+    message: string;
+    /** The app that needs it (master id) and its name. */
+    app?: string;
+    appName?: string;
+    /** The screen that fixes it: `open` is the adminViews.openApp payload; studioPath a plain link. */
+    fix?: {
+        label: string;
+        open: {
+            appId: string;
+            view?: string;
+        };
+        studioPath: string;
+    };
+}
+/** What the installed apps need and whether it's there. `ready` is false when any item is a problem. */
+export interface CollectionReadiness {
+    ready: boolean;
+    items: ReadinessItem[];
+}

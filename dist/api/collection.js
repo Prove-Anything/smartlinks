@@ -3,6 +3,16 @@ import { request, post, put, del } from "../http.js";
 export var collection;
 (function (collection) {
     /**
+     * What the collection's installed apps need and whether it's there (sign-in, customers, products,
+     * something to claim), in plain words, each with the screen that fixes it. Admin. Never fails on a
+     * part it can't read: that part is left out.
+     * @example const { ready, items } = await collection.readiness(collectionId)
+     */
+    async function readiness(collectionId) {
+        return request(`/admin/collection/${encodeURIComponent(collectionId)}/readiness`);
+    }
+    collection.readiness = readiness;
+    /**
      * Retrieves a single Collection by its ID.
      * @param collectionId – Identifier of the collection
      * @param admin – If true, fetches from the admin endpoint

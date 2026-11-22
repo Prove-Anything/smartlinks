@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.40  |  Generated: 2026-11-22T09:29:50.349Z
+Version: 2.1.41  |  Generated: 2026-11-22T10:02:08.893Z
 
 This is a concise summary of all available API functions and types.
 
@@ -3163,6 +3163,7 @@ interface AppManifest {
   linkable?: DeepLinkEntry[];
   publicViews?: PublicView[];
   adminViews?: AdminView[];
+  requires?: AppRequirement[];
   executor?: AppManifestExecutor;
   functions?: AppManifestFunctions;
   realtime?: {
@@ -3469,6 +3470,10 @@ type ServerFunctionFileInput = { base64: string; contentType: string }
 ```
 
 **AppDocsAudience** = `'team' | 'admin' | 'customer' | 'developer'`
+
+**AppNeed** = `'signIn' | 'crm' | 'products' | 'claimableItems'`
+
+**AppRequirement** = `AppNeed | { need: AppNeed`
 
 ### appObjects
 
@@ -6533,6 +6538,26 @@ interface InviteUserInput {
   access: CollectionAccessLevel | string
   loginCollectionId?: string
   consoleOrigin?: string
+}
+```
+
+**ReadinessItem** (interface)
+```typescript
+interface ReadinessItem {
+  level: 'problem' | 'warning' | 'info'
+  code: string
+  message: string
+  app?: string
+  appName?: string
+  fix?: { label: string; open: { appId: string; view?: string }; studioPath: string }
+}
+```
+
+**CollectionReadiness** (interface)
+```typescript
+interface CollectionReadiness {
+  ready: boolean
+  items: ReadinessItem[]
 }
 ```
 
@@ -14424,6 +14449,9 @@ The next tag to program on a phone (lowest index without a chip), with its URL a
 Record the chip a phone just programmed with this code.
 
 ### collection
+
+**readiness**(collectionId: string) → `Promise<CollectionReadiness>`
+What the collection's installed apps need and whether it's there (sign-in, customers, products, something to claim), in plain words, each with the screen that fixes it. Admin. Never fails on a part it can't read: that part is left out.
 
 **get**(collectionId: string, admin?: boolean) → `Promise<CollectionResponse>`
 Retrieves a single Collection by its ID.

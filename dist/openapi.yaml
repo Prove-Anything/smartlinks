@@ -6562,7 +6562,7 @@ paths:
     post:
       tags:
         - order
-      summary: Get comprehensive scan analytics for all tags in an order.
+      summary: order.getAnalytics
       operationId: order_getAnalytics
       security:
         - bearerAuth: []
@@ -7251,7 +7251,7 @@ paths:
     post:
       tags:
         - product
-      summary: Create a new product for a collection (admin only).
+      summary: product.create
       operationId: product_create
       security:
         - bearerAuth: []
@@ -8475,7 +8475,7 @@ paths:
     post:
       tags:
         - proof
-      summary: "The standard query on proofs (admin only): filter, sort, page, count and total a collection's proofs in one call, and follow a proof to its `product` and its `owner` (the owner's contact)."
+      summary: proof.query
       operationId: proof_query
       security:
         - bearerAuth: []
@@ -8504,6 +8504,33 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/StandardQuery"
+  /admin/collection/{collectionId}/readiness:
+    get:
+      tags:
+        - collection
+      summary: "What the collection's installed apps need and whether it's there (sign-in, customers, products, something to claim), in plain words, each with the screen that fixes it."
+      operationId: collection_readiness
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionReadiness"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
   /admin/collection/{collectionId}/research/fetch:
     post:
       tags:
@@ -22081,6 +22108,10 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/AdminView"
+        requires:
+          type: array
+          items:
+            $ref: "#/components/schemas/AppRequirement"
         executor:
           $ref: "#/components/schemas/AppManifestExecutor"
         functions:
@@ -22636,6 +22667,16 @@ components:
         - admin
         - customer
         - developer
+    AppNeed:
+      type: string
+      enum:
+        - signIn
+        - crm
+        - products
+        - claimableItems
+    AppRequirement:
+      type: object
+      additionalProperties: true
     PaginatedResponse:
       type: object
       properties:
@@ -28260,6 +28301,42 @@ components:
       required:
         - email
         - access
+    ReadinessItem:
+      type: object
+      properties:
+        level:
+          type: string
+          enum:
+            - problem
+            - warning
+            - info
+        code:
+          type: string
+        message:
+          type: string
+        app:
+          type: string
+        appName:
+          type: string
+        fix:
+          type: object
+          additionalProperties: true
+      required:
+        - level
+        - code
+        - message
+    CollectionReadiness:
+      type: object
+      properties:
+        ready:
+          type: boolean
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReadinessItem"
+      required:
+        - ready
+        - items
     CollectionResponse:
       $ref: "#/components/schemas/Collection"
     CollectionCreateRequest:

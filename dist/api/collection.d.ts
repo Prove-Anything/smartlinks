@@ -1,5 +1,12 @@
-import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest, AppsConfigResponse, DomainTarget, HubAvailabilityResponse, CollectionUser, CollectionAccessLevel, InviteUserInput } from "../types/collection.js";
+import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest, AppsConfigResponse, DomainTarget, HubAvailabilityResponse, CollectionUser, CollectionAccessLevel, InviteUserInput, CollectionReadiness } from "../types/collection.js";
 export declare namespace collection {
+    /**
+     * What the collection's installed apps need and whether it's there (sign-in, customers, products,
+     * something to claim), in plain words, each with the screen that fixes it. Admin. Never fails on a
+     * part it can't read: that part is left out.
+     * @example const { ready, items } = await collection.readiness(collectionId)
+     */
+    function readiness(collectionId: string): Promise<CollectionReadiness>;
     /**
      * Retrieves a single Collection by its ID.
      * @param collectionId – Identifier of the collection
