@@ -1210,6 +1210,14 @@ export interface AppManifest {
   adminViews?: AdminView[];
 
   /**
+   * What the app needs before it can do its job. Installing the app turns on what can be turned on
+   * (signIn: the standard customer sign-in; crm / products: switched back on); the rest shows in the
+   * collection's readiness list (`collection.readiness`). @see AppRequirement
+   * @example requires: ["signIn", { need: "crm", optional: true, why: "to keep a customer list" }]
+   */
+  requires?: AppRequirement[];
+
+  /**
    * Executor bundle declaration. Present when the app ships a programmatic executor
    * for AI-driven configuration, server-side SEO, and LLM content generation.
    * @see AppManifestExecutor
@@ -1691,3 +1699,14 @@ export interface GetCollectionWidgetsOptions {
   /** Bypass server cache and fetch fresh manifests */
   force?: boolean;
 }
+/**
+ * Something an app needs (manifest `requires`):
+ * - `signIn` — customers sign in (turned on automatically: the standard sign-in)
+ * - `crm` — the customer list (switched back on if off; needs a plan with customers)
+ * - `products` — products (switched back on if off)
+ * - `claimableItems` — something customers can claim (claim codes, or claiming on scan; not automatic)
+ */
+export type AppNeed = 'signIn' | 'crm' | 'products' | 'claimableItems'
+
+/** A need, or a need with detail. Optional needs aren't turned on automatically and only warn when missing. */
+export type AppRequirement = AppNeed | { need: AppNeed; optional?: boolean; why?: string }
