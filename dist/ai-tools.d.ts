@@ -7,7 +7,7 @@ export interface BuiltinAiToolDescriptor {
     /** Capability tags the tool requires. */
     capabilities: AiToolCapability[];
     /** Grouping for tool-picker UIs. */
-    group: 'web' | 'vision' | 'image' | 'media' | 'net' | 'text';
+    group: 'web' | 'vision' | 'image' | 'media' | 'net' | 'text' | 'knowledge';
 }
 /** Stable name constants — reference tools without stringly-typed literals. */
 export declare const AI_TOOL_NAMES: {
@@ -37,6 +37,7 @@ export declare const AI_TOOL_NAMES: {
     readonly PDF_PRINT_READY: "pdf.printReady";
     readonly HTTP_REQUEST: "http.request";
     readonly TRANSLATE: "translate";
+    readonly KNOWLEDGE_SEARCH: "knowledge.search";
 };
 /** The curated core toolset shipped with the SDK. */
 export declare const BUILTIN_AI_TOOLS: BuiltinAiToolDescriptor[];

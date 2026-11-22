@@ -29,6 +29,7 @@ export { userGroups } from "./userGroups.js";
 export { conditions } from "./conditions.js";
 export { wallet } from "./wallet.js";
 export { files } from "./files.js";
+export { knowledge } from "./knowledge.js";
 export { operations } from "./operations.js";
 export { journeys } from "./journeys.js";
 export { journeysAnalytics } from "./journeysAnalytics.js";

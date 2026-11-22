@@ -1,6 +1,6 @@
 import { guide as guideApi, content as contentApi, startLive } from "./aiGuide.js";
-import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, AgentRunRequest, AgentRunResult, AgentToolsQuery, AgentToolsResponse, ToolRunResult, AiToolName, AiToolArgsMap, PublicAgentRunRequest, ClientTool, RunWithClientToolsOptions, SkillsListResponse, CatalogResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, AiSession, AiSessionCreate, AiUsageReport, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef } from "../types/ai.js";
-export type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, DocumentChunk, IndexDocumentRequest, IndexDocumentResponse, ConfigureAssistantRequest, ConfigureAssistantResponse, PublicChatRequest, PublicChatResponse, Session, RateLimitStatus, SessionStatistics, AiSession, AiSessionCreate, AiUsageReport, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef, };
+import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, AgentRunRequest, AgentRunResult, AgentToolsQuery, AgentToolsResponse, ToolRunResult, AiToolName, AiToolArgsMap, PublicAgentRunRequest, ClientTool, RunWithClientToolsOptions, SkillsListResponse, CatalogResponse, Session, RateLimitStatus, SessionStatistics, AiSession, AiSessionCreate, AiUsageReport, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef } from "../types/ai.js";
+export type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, Session, RateLimitStatus, SessionStatistics, AiSession, AiSessionCreate, AiUsageReport, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef, };
 declare namespace aiInternal {
     namespace chat {
         namespace responses {
@@ -70,16 +70,6 @@ declare namespace aiInternal {
          */
         function get(collectionId: string, modelId: string): Promise<AIModel>;
     }
-    namespace rag {
-        /**
-         * Index a document for RAG
-         */
-        function indexDocument(collectionId: string, request: IndexDocumentRequest): Promise<IndexDocumentResponse>;
-        /**
-         * Configure AI assistant behavior
-         */
-        function configureAssistant(collectionId: string, request: ConfigureAssistantRequest): Promise<ConfigureAssistantResponse>;
-    }
     namespace sessions {
         /**
          * Get session statistics
@@ -146,10 +136,6 @@ declare namespace aiInternal {
         function generate(collectionId: string, request: TTSRequest): Promise<Blob>;
     }
     namespace publicClient {
-        /**
-         * Chat with product assistant (RAG)
-         */
-        function chat(collectionId: string, request: PublicChatRequest): Promise<PublicChatResponse>;
         /**
          * Public agent loop — run the orchestration-neutral tool loop on the consumer surface. Exposes an
          * app's PUBLIC server functions (`agent.tool:true`, `visibility:'public'`) to a consumer assistant;
@@ -268,10 +254,6 @@ export declare const ai: {
         list: typeof aiInternal.models.list;
         get: typeof aiInternal.models.get;
     };
-    rag: {
-        indexDocument: typeof aiInternal.rag.indexDocument;
-        configureAssistant: typeof aiInternal.rag.configureAssistant;
-    };
     sessions: {
         stats: typeof aiInternal.sessions.stats;
     };
@@ -286,7 +268,6 @@ export declare const ai: {
         generate: typeof aiInternal.tts.generate;
     };
     public: {
-        chat: typeof aiInternal.publicClient.chat;
         agentRun: typeof aiInternal.publicClient.agentRun;
         getSession: typeof aiInternal.publicClient.getSession;
         clearSession: typeof aiInternal.publicClient.clearSession;

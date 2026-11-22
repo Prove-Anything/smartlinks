@@ -24,8 +24,6 @@ tags:
     description: Reusable agent skills.
   - name: models
     description: Available AI models and their metadata.
-  - name: rag
-    description: Retrieval-augmented generation and document indexing.
   - name: sessions
     description: Conversation session management.
   - name: podcast
@@ -810,39 +808,6 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/ai/configureAssistant:
-    post:
-      tags:
-        - rag
-      summary: Configure AI assistant behavior
-      operationId: rag_configureAssistant
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ConfigureAssistantResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ConfigureAssistantRequest"
   /admin/collection/{collectionId}/ai/createCache:
     post:
       tags:
@@ -936,39 +901,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/GeneratePodcastRequest"
-  /admin/collection/{collectionId}/ai/indexDocument:
-    post:
-      tags:
-        - rag
-      summary: Index a document for RAG
-      operationId: rag_indexDocument
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/IndexDocumentResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/IndexDocumentRequest"
   /admin/collection/{collectionId}/ai/models:
     get:
       tags:
@@ -11750,38 +11682,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/PublicAgentRunRequest"
-  /public/collection/{collectionId}/ai/chat:
-    post:
-      tags:
-        - publicClient
-      summary: Chat with product assistant (RAG)
-      operationId: publicClient_chat
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/PublicChatResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/PublicChatRequest"
   /public/collection/{collectionId}/ai/rate-limit/{userId}:
     get:
       tags:
@@ -18319,209 +18219,6 @@ components:
       required:
         - object
         - data
-    DocumentChunk:
-      type: object
-      properties:
-        text:
-          type: string
-        embedding:
-          type: array
-          items:
-            type: number
-        metadata:
-          type: object
-          additionalProperties: true
-        chunkIndex:
-          type: number
-        documentId:
-          type: string
-      required:
-        - text
-        - embedding
-        - metadata
-        - chunkIndex
-        - documentId
-    IndexDocumentRequest:
-      type: object
-      properties:
-        productId:
-          type: string
-        text:
-          type: string
-        documentUrl:
-          type: string
-        metadata:
-          type: object
-          additionalProperties: true
-        chunkSize:
-          type: number
-        overlap:
-          type: number
-        provider:
-          type: string
-          enum:
-            - openai
-            - gemini
-      required:
-        - productId
-    IndexDocumentResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        productId:
-          type: string
-        documentId:
-          type: string
-        chunks:
-          type: number
-        metadata:
-          type: object
-          additionalProperties: true
-        textLength:
-          type: number
-        chunkSize:
-          type: number
-        overlap:
-          type: number
-        embeddingDimensions:
-          type: number
-        sample:
-          type: object
-          additionalProperties: true
-        text:
-          type: string
-        chunkIndex:
-          type: number
-      required:
-        - success
-        - productId
-        - documentId
-        - chunks
-        - metadata
-        - textLength
-        - chunkSize
-        - overlap
-        - embeddingDimensions
-        - text
-        - chunkIndex
-    ConfigureAssistantRequest:
-      type: object
-      properties:
-        productId:
-          type: string
-        systemPrompt:
-          type: string
-        model:
-          type: string
-        maxTokensPerResponse:
-          type: number
-        temperature:
-          type: number
-        rateLimitPerUser:
-          type: number
-        allowedTopics:
-          type: array
-          items:
-            type: string
-        customInstructions:
-          type: object
-          additionalProperties: true
-        tone:
-          type: string
-        additionalRules:
-          type: string
-      required:
-        - productId
-    ConfigureAssistantResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-        configuration:
-          type: object
-          additionalProperties: true
-        productId:
-          type: string
-        systemPrompt:
-          type: string
-        model:
-          type: string
-        maxTokensPerResponse:
-          type: number
-        temperature:
-          type: number
-        rateLimitPerUser:
-          type: number
-        allowedTopics:
-          type: array
-          items:
-            type: string
-        customInstructions:
-          type: object
-          additionalProperties: true
-        updatedAt:
-          type: string
-      required:
-        - success
-        - configuration
-        - productId
-        - systemPrompt
-        - model
-        - maxTokensPerResponse
-        - temperature
-        - rateLimitPerUser
-        - allowedTopics
-        - updatedAt
-    PublicChatRequest:
-      type: object
-      properties:
-        productId:
-          type: string
-        userId:
-          type: string
-        message:
-          type: string
-        sessionId:
-          type: string
-        stream:
-          type: boolean
-      required:
-        - productId
-        - userId
-        - message
-    PublicChatResponse:
-      type: object
-      properties:
-        message:
-          type: string
-        sessionId:
-          type: string
-        usage:
-          type: object
-          additionalProperties: true
-        prompt_tokens:
-          type: number
-        completion_tokens:
-          type: number
-        total_tokens:
-          type: number
-        context:
-          type: object
-          additionalProperties: true
-        chunksUsed:
-          type: number
-        topSimilarity:
-          type: number
-      required:
-        - message
-        - sessionId
-        - usage
-        - prompt_tokens
-        - completion_tokens
-        - total_tokens
-        - chunksUsed
-        - topSimilarity
     Session:
       type: object
       properties:
@@ -19772,6 +19469,14 @@ components:
             - HEAD
       required:
         - url
+    KnowledgeSearchArgs:
+      type: object
+      properties:
+        query:
+          type: object
+          additionalProperties: true
+      required:
+        - query
     TranslateArgs:
       type: object
       properties:
@@ -19835,6 +19540,8 @@ components:
           $ref: "#/components/schemas/HttpRequestArgs"
         translate:
           $ref: "#/components/schemas/TranslateArgs"
+        knowledge.search:
+          $ref: "#/components/schemas/KnowledgeSearchArgs"
       required:
         - web.fetchPage
         - web.extractSchema
@@ -19862,6 +19569,7 @@ components:
         - pdf.printReady
         - http.request
         - translate
+        - knowledge.search
     WebSearchResultItem:
       type: object
       properties:
@@ -20293,6 +20001,7 @@ components:
         - "media:image"
         - "media:pdf"
         - "net:http"
+        - "knowledge:read"
     AiToolName:
       type: string
       enum:
@@ -20322,6 +20031,7 @@ components:
         - pdf.printReady
         - http.request
         - translate
+        - knowledge.search
     PdfColour:
       type: object
       additionalProperties: true
@@ -33404,6 +33114,233 @@ components:
       type: array
       items:
         type: string
+    KnowledgeSet:
+      type: object
+      properties:
+        id:
+          type: string
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        visibility:
+          $ref: "#/components/schemas/KnowledgeVisibility"
+        ownerAppId:
+          type: string
+        embedModel:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        sourceCount:
+          type: number
+        passageCount:
+          type: number
+      required:
+        - id
+        - key
+        - name
+        - description
+        - visibility
+        - ownerAppId
+        - embedModel
+        - createdAt
+        - updatedAt
+    SaveKnowledgeSetRequest:
+      type: object
+      properties:
+        key:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        visibility:
+          $ref: "#/components/schemas/KnowledgeVisibility"
+      required:
+        - key
+        - name
+    UpdateKnowledgeSetRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        visibility:
+          $ref: "#/components/schemas/KnowledgeVisibility"
+    KnowledgeSource:
+      type: object
+      properties:
+        id:
+          type: string
+        setId:
+          type: string
+        kind:
+          $ref: "#/components/schemas/KnowledgeSourceKind"
+        name:
+          type: string
+        config:
+          type: object
+          additionalProperties: true
+        refreshHours:
+          type: number
+        status:
+          type: string
+          enum:
+            - pending
+            - indexing
+            - ready
+            - failed
+        error:
+          type: string
+        passageCount:
+          type: number
+        lastIndexedAt:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - setId
+        - kind
+        - name
+        - config
+        - refreshHours
+        - status
+        - error
+        - passageCount
+        - lastIndexedAt
+        - createdAt
+        - updatedAt
+    AddKnowledgeSourceRequest:
+      type: object
+      properties:
+        kind:
+          $ref: "#/components/schemas/KnowledgeSourceKind"
+        config:
+          type: object
+          additionalProperties: true
+        name:
+          type: string
+        refreshHours:
+          type: number
+      required:
+        - kind
+    UpdateKnowledgeSourceRequest:
+      type: object
+      properties:
+        config:
+          type: object
+          additionalProperties: true
+        name:
+          type: string
+        refreshHours:
+          type: number
+    KnowledgeDocument:
+      type: object
+      properties:
+        ref:
+          type: string
+        title:
+          type: string
+        body:
+          type: string
+        url:
+          type: string
+        meta:
+          type: object
+          additionalProperties: true
+      required:
+        - ref
+        - title
+        - body
+    KnowledgeSearchRequest:
+      type: object
+      properties:
+        query:
+          type: string
+        sets:
+          type: array
+          items:
+            type: string
+        filters:
+          type: object
+          additionalProperties: true
+        k:
+          type: number
+      required:
+        - query
+    KnowledgeSearchResult:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        heading:
+          type: string
+        url:
+          type: string
+        snippet:
+          type: string
+        text:
+          type: string
+        score:
+          type: number
+        set:
+          type: object
+          additionalProperties: true
+        sourceId:
+          type: string
+        meta:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - title
+        - heading
+        - url
+        - snippet
+        - text
+        - score
+        - set
+        - sourceId
+        - meta
+    KnowledgeSearchResponse:
+      type: object
+      properties:
+        query:
+          type: string
+        results:
+          type: array
+          items:
+            $ref: "#/components/schemas/KnowledgeSearchResult"
+        mode:
+          type: string
+          enum:
+            - hybrid
+            - keywords
+            - none
+      required:
+        - query
+        - results
+        - mode
+    KnowledgeVisibility:
+      type: string
+      enum:
+        - public
+        - customer
+        - staff
+    KnowledgeSourceKind:
+      type: string
+      enum:
+        - markdown_feed
     Location:
       type: object
       properties:

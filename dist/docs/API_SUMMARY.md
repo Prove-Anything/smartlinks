@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.39  |  Generated: 2026-11-21T14:40:12.283Z
+Version: 2.1.40  |  Generated: 2026-11-22T09:29:50.349Z
 
 This is a concise summary of all available API functions and types.
 
@@ -156,6 +156,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **integrations** - Functions for integrations operations
 - **jobs** - Functions for jobs operations
 - **journeysAnalytics** - Functions for journeysAnalytics operations
+- **knowledge** - Functions for knowledge operations
 - **location** - Functions for location operations
 - **lots** - Functions for lots operations
 - **navigation** - Functions for navigation operations
@@ -918,116 +919,6 @@ interface AIModelListParams {
 interface AIModelListResponse {
   object: 'list'
   data: AIModel[]
-}
-```
-
-**DocumentChunk** (interface)
-```typescript
-interface DocumentChunk {
-  text: string
-  embedding: number[]
-  metadata: {
-  chunkIndex: number
-  documentId: string
-  [key: string]: any
-  }
-}
-```
-
-**IndexDocumentRequest** (interface)
-```typescript
-interface IndexDocumentRequest {
-  productId: string
-  text?: string
-  documentUrl?: string
-  metadata?: Record<string, any>
-  chunkSize?: number
-  overlap?: number
-  provider?: 'openai' | 'gemini'
-}
-```
-
-**IndexDocumentResponse** (interface)
-```typescript
-interface IndexDocumentResponse {
-  success: boolean
-  productId: string
-  documentId: string
-  chunks: number
-  metadata: {
-  textLength: number
-  chunkSize: number
-  overlap: number
-  embeddingDimensions: number
-  }
-  sample?: {
-  text: string
-  chunkIndex: number
-  }
-}
-```
-
-**ConfigureAssistantRequest** (interface)
-```typescript
-interface ConfigureAssistantRequest {
-  productId: string
-  systemPrompt?: string
-  model?: string
-  maxTokensPerResponse?: number
-  temperature?: number
-  rateLimitPerUser?: number
-  allowedTopics?: string[]
-  customInstructions?: {
-  tone?: string
-  additionalRules?: string
-  [key: string]: any
-  }
-}
-```
-
-**ConfigureAssistantResponse** (interface)
-```typescript
-interface ConfigureAssistantResponse {
-  success: boolean
-  configuration: {
-  productId: string
-  systemPrompt: string
-  model: string
-  maxTokensPerResponse: number
-  temperature: number
-  rateLimitPerUser: number
-  allowedTopics: string[]
-  customInstructions?: Record<string, any>
-  updatedAt: string
-  }
-}
-```
-
-**PublicChatRequest** (interface)
-```typescript
-interface PublicChatRequest {
-  productId: string
-  userId: string
-  message: string
-  sessionId?: string
-  stream?: boolean
-}
-```
-
-**PublicChatResponse** (interface)
-```typescript
-interface PublicChatResponse {
-  message: string
-  sessionId: string
-  usage: {
-  prompt_tokens: number
-  completion_tokens: number
-  total_tokens: number
-  }
-  context?: {
-  chunksUsed: number
-  topSimilarity: number
-  }
 }
 ```
 
@@ -1815,6 +1706,13 @@ interface HttpRequestArgs {
 }
 ```
 
+**KnowledgeSearchArgs** (interface)
+```typescript
+interface KnowledgeSearchArgs {
+  query: string; sets?: string[]; filters?: Record<string, any>; k?: number
+}
+```
+
 **TranslateArgs** (interface)
 ```typescript
 interface TranslateArgs {
@@ -1851,6 +1749,7 @@ interface AiToolArgsMap {
   'pdf.printReady': PdfPrintReadyArgs
   'http.request': HttpRequestArgs
   'translate': TranslateArgs
+  'knowledge.search': KnowledgeSearchArgs
 }
 ```
 
@@ -9899,6 +9798,131 @@ interface JourneyFunnelReportResponse {
 
 **JourneyStepRecipientsResponse** = `string[]`
 
+### knowledge
+
+**KnowledgeSet** (interface)
+```typescript
+interface KnowledgeSet {
+  id: string
+  key: string
+  name: string
+  description: string | null
+  visibility: KnowledgeVisibility
+  ownerAppId: string | null
+  embedModel: string | null
+  createdAt: string
+  updatedAt: string
+  sourceCount?: number
+  passageCount?: number
+}
+```
+
+**SaveKnowledgeSetRequest** (interface)
+```typescript
+interface SaveKnowledgeSetRequest {
+  key: string
+  name: string
+  description?: string | null
+  visibility?: KnowledgeVisibility
+}
+```
+
+**UpdateKnowledgeSetRequest** (interface)
+```typescript
+interface UpdateKnowledgeSetRequest {
+  name?: string
+  description?: string | null
+  visibility?: KnowledgeVisibility
+}
+```
+
+**KnowledgeSource** (interface)
+```typescript
+interface KnowledgeSource {
+  id: string
+  setId: string
+  kind: KnowledgeSourceKind
+  name: string | null
+  config: Record<string, any>
+  refreshHours: number | null
+  status: 'pending' | 'indexing' | 'ready' | 'failed'
+  error: string | null
+  passageCount: number
+  lastIndexedAt: string | null
+  createdAt: string
+  updatedAt: string
+}
+```
+
+**AddKnowledgeSourceRequest** (interface)
+```typescript
+interface AddKnowledgeSourceRequest {
+  kind: KnowledgeSourceKind
+  config?: { url?: string; [key: string]: any }
+  name?: string
+  refreshHours?: number | null
+}
+```
+
+**UpdateKnowledgeSourceRequest** (interface)
+```typescript
+interface UpdateKnowledgeSourceRequest {
+  config?: { url?: string; [key: string]: any }
+  name?: string
+  refreshHours?: number | null
+}
+```
+
+**KnowledgeDocument** (interface)
+```typescript
+interface KnowledgeDocument {
+  ref: string
+  title: string
+  body: string
+  url?: string
+  meta?: Record<string, any>
+}
+```
+
+**KnowledgeSearchRequest** (interface)
+```typescript
+interface KnowledgeSearchRequest {
+  query: string
+  sets?: string[]
+  filters?: Record<string, any>
+  k?: number
+}
+```
+
+**KnowledgeSearchResult** (interface)
+```typescript
+interface KnowledgeSearchResult {
+  id: string
+  title: string
+  heading: string | null
+  url: string | null
+  snippet: string
+  text: string
+  score: number
+  set: { id: string; key: string; name: string }
+  sourceId: string
+  meta: Record<string, any>
+}
+```
+
+**KnowledgeSearchResponse** (interface)
+```typescript
+interface KnowledgeSearchResponse {
+  query: string
+  results: KnowledgeSearchResult[]
+  mode: 'hybrid' | 'keywords' | 'none'
+}
+```
+
+**KnowledgeVisibility** = `'public' | 'customer' | 'staff'`
+
+**KnowledgeSourceKind** = ``
+
 ### location
 
 **Location** (interface)
@@ -15159,6 +15183,50 @@ POST /admin/collection/:collectionId/journeys.analytics/:journeyId/steps/:stepId
     body: JourneyFunnelReportRequest) → `Promise<JourneyFunnelReportResponse>`
 POST /admin/collection/:collectionId/journeys.analytics/:journeyId/funnel-report Computes conversion, counts, and avg time across mapped steps in a period.
 
+### knowledge
+
+**listSets**(collectionId: string) → `Promise<KnowledgeSet[]>`
+Every set, with its source and passage counts (admin).
+
+**saveSet**(collectionId: string, body: SaveKnowledgeSetRequest) → `Promise<KnowledgeSet>`
+Create a set, or update the one with this key (admin).
+
+**getSet**(collectionId: string, set: string) → `Promise<KnowledgeSet>`
+One set, by id or key (admin).
+
+**updateSet**(collectionId: string, set: string, body: UpdateKnowledgeSetRequest) → `Promise<KnowledgeSet>`
+One set, by id or key (admin).
+
+**deleteSet**(collectionId: string, set: string) → `Promise<`
+Delete a set with its sources and passages (admin).
+
+**listSources**(collectionId: string, set: string) → `Promise<KnowledgeSource[]>`
+A set's sources, with their status (admin).
+
+**addSource**(collectionId: string, set: string, body: AddKnowledgeSourceRequest) → `Promise<KnowledgeSource>`
+Add a source; feeds and pages are read in the background (admin).
+
+**updateSource**(collectionId: string, sourceId: string, body: UpdateKnowledgeSourceRequest) → `Promise<KnowledgeSource>`
+Add a source; feeds and pages are read in the background (admin).
+
+**deleteSource**(collectionId: string, sourceId: string) → `Promise<`
+Add a source; feeds and pages are read in the background (admin).
+
+**reindex**(collectionId: string, sourceId: string, opts: { force?: boolean } = {}) → `Promise<`
+Read a source again now (`force` re-splits even if it hasn't changed) (admin).
+
+**upsertDocuments**(collectionId: string, sourceId: string, documents: KnowledgeDocument[]) → `Promise<`
+Push documents into a `documents` source; the same `ref` replaces its earlier version. Up to 500 at a time (admin).
+
+**removeDocuments**(collectionId: string, sourceId: string, refs: string[]) → `Promise<`
+Remove pushed documents by `ref` (admin).
+
+**search**(collectionId: string, body: KnowledgeSearchRequest) → `Promise<KnowledgeSearchResponse>`
+Search every set, staff ones included (admin).
+
+**publicSearch**(collectionId: string, body: KnowledgeSearchRequest) → `Promise<KnowledgeSearchResponse>`
+Search from a website, Portal or Hub: public sets, plus customer sets for a signed-in person.
+
 ### location
 
 **createGlobal**(params: LocationPayload) → `Promise<Location>`
@@ -15744,10 +15812,6 @@ Get the active transfer/status for a proof (owner, collection admin, or the name
 
 ### publicClient
 
-**chat**(collectionId: string,
-      request: PublicChatRequest) → `Promise<PublicChatResponse>`
-Chat with product assistant (RAG)
-
 **agentRun**(collectionId: string,
       body: PublicAgentRunRequest) → `Promise<AgentRunResult>`
 Public agent loop — run the orchestration-neutral tool loop on the consumer surface. Exposes an app's PUBLIC server functions (`agent.tool:true`, `visibility:'public'`) to a consumer assistant; built-in tools are opt-in by explicit `server_tools[]` allowlist only. The caller runs as the signed-in consumer ('owner', send the authKit bearer) or anonymous ('public'). POST /public/collection/:collectionId/ai/agent/run
@@ -15786,16 +15850,6 @@ List the signed-in consumer's own ('owner') sessions — requires an authKit bea
 
 **lookupShortCode**(shortId: string, code: string) → `Promise<QrShortCodeLookupResponse>`
 Resolve a short code to related resource identifiers.
-
-### rag
-
-**indexDocument**(collectionId: string,
-      request: IndexDocumentRequest) → `Promise<IndexDocumentResponse>`
-Index a document for RAG
-
-**configureAssistant**(collectionId: string,
-      request: ConfigureAssistantRequest) → `Promise<ConfigureAssistantResponse>`
-Configure AI assistant behavior
 
 ### rateLimit
 

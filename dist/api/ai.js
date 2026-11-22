@@ -151,28 +151,6 @@ var aiInternal;
         models.get = get;
     })(models = aiInternal.models || (aiInternal.models = {}));
     // ============================================================================
-    // RAG API
-    // ============================================================================
-    let rag;
-    (function (rag) {
-        /**
-         * Index a document for RAG
-         */
-        async function indexDocument(collectionId, request) {
-            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/indexDocument`;
-            return post(path, request);
-        }
-        rag.indexDocument = indexDocument;
-        /**
-         * Configure AI assistant behavior
-         */
-        async function configureAssistant(collectionId, request) {
-            const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/configureAssistant`;
-            return post(path, request);
-        }
-        rag.configureAssistant = configureAssistant;
-    })(rag = aiInternal.rag || (aiInternal.rag = {}));
-    // ============================================================================
     // Sessions API
     // ============================================================================
     let sessions;
@@ -294,14 +272,6 @@ var aiInternal;
     // ============================================================================
     let publicClient;
     (function (publicClient) {
-        /**
-         * Chat with product assistant (RAG)
-         */
-        async function chat(collectionId, request) {
-            const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/chat`;
-            return post(path, request);
-        }
-        publicClient.chat = chat;
         /**
          * Public agent loop — run the orchestration-neutral tool loop on the consumer surface. Exposes an
          * app's PUBLIC server functions (`agent.tool:true`, `visibility:'public'`) to a consumer assistant;
@@ -548,10 +518,6 @@ export const ai = {
         list: aiInternal.models.list,
         get: aiInternal.models.get,
     },
-    rag: {
-        indexDocument: aiInternal.rag.indexDocument,
-        configureAssistant: aiInternal.rag.configureAssistant,
-    },
     sessions: {
         stats: aiInternal.sessions.stats,
     },
@@ -566,7 +532,6 @@ export const ai = {
         generate: aiInternal.tts.generate,
     },
     public: {
-        chat: aiInternal.publicClient.chat,
         agentRun: aiInternal.publicClient.agentRun,
         getSession: aiInternal.publicClient.getSession,
         clearSession: aiInternal.publicClient.clearSession,

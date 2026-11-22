@@ -54,3 +54,4 @@ export * from "./appOptions.js";
 export * from "./clientLog.js";
 export * from "./wallet.js";
 export * from "./files.js";
+export * from "./knowledge.js";

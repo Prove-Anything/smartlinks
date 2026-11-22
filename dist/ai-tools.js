@@ -34,9 +34,12 @@ export const AI_TOOL_NAMES = {
     PDF_PRINT_READY: 'pdf.printReady',
     HTTP_REQUEST: 'http.request',
     TRANSLATE: 'translate',
+    KNOWLEDGE_SEARCH: 'knowledge.search',
 };
 /** The curated core toolset shipped with the SDK. */
 export const BUILTIN_AI_TOOLS = [
+    { name: 'knowledge.search', group: 'knowledge', capabilities: ['knowledge:read'],
+        description: "Search the business's own knowledge (help articles, manuals, docs) by meaning and keywords; returns passages with links." },
     { name: 'web.search', group: 'web', capabilities: ['web:read'],
         description: 'Search the live web; returns candidate results (url/title/description) to then read.' },
     { name: 'web.fetchPage', group: 'web', capabilities: ['web:read'],
