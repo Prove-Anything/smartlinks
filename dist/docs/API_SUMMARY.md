@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.42  |  Generated: 2026-11-22T10:16:41.176Z
+Version: 2.1.42  |  Generated: 2026-11-22T10:24:05.154Z
 
 This is a concise summary of all available API functions and types.
 
@@ -15824,6 +15824,7 @@ Delete a product for a collection (admin only).
 
 **publicFind**(collectionId: string,
     params?: ProductPublicFindParams) → `Promise<ProductResponse[]>`
+answers 404. Use `products.get(...)` when the product id is known, or `products.query(...)` to search.
 
 **clone**(collectionId: string,
     productId: string,

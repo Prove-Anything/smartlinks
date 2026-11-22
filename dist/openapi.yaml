@@ -6562,7 +6562,7 @@ paths:
     post:
       tags:
         - order
-      summary: order.getAnalytics
+      summary: Get comprehensive scan analytics for all tags in an order.
       operationId: order_getAnalytics
       security:
         - bearerAuth: []
@@ -8475,7 +8475,7 @@ paths:
     post:
       tags:
         - proof
-      summary: proof.query
+      summary: "The standard query on proofs (admin only): filter, sort, page, count and total a collection's proofs in one call, and follow a proof to its `product` and its `owner` (the owner's contact)."
       operationId: proof_query
       security:
         - bearerAuth: []
@@ -13949,7 +13949,7 @@ paths:
     get:
       tags:
         - product
-      summary: product.publicFind
+      summary: answers 404.
       operationId: product_publicFind
       security: []
       parameters:
