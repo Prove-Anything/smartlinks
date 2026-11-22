@@ -716,6 +716,38 @@ export interface ServerFunctionSl {
         send(input: ServerFunctionMessage): Promise<ServerFunctionMessageResult>;
     };
     /**
+     * Memberships (`sl:subscriptions:read` / `sl:subscriptions:write`): plans, and who holds which. Check a
+     * members-only page with `memberOf()` (the caller, or `{ contactId | userId }`). Write: grant a plan by hand
+     * (free, honorary, paid another way), end or cancel one. Joining with a payment is always the member's own
+     * Stripe checkout (`subscriptions.start` in the browser), never here. docs/memberships.md.
+     */
+    subscriptions: {
+        plans(): Promise<Array<import('./subscriptions.js').Plan & {
+            prices: import('./subscriptions.js').PlanPrice[];
+        }>>;
+        list(params?: import('./subscriptions.js').SubscriptionListParams): Promise<import('./subscriptions.js').SubscriptionPage<import('./subscriptions.js').Membership>>;
+        get(subscriptionId: string): Promise<import('./subscriptions.js').Membership | null>;
+        mine(): Promise<import('./subscriptions.js').Membership[]>;
+        memberOf(who?: {
+            contactId?: string;
+            userId?: string;
+        }): Promise<import('./subscriptions.js').MembershipStatus>;
+        grant(input: import('./subscriptions.js').SubscriptionGrantInput): Promise<import('./subscriptions.js').Membership>;
+        end(subscriptionId: string, opts?: {
+            reason?: string;
+        }): Promise<import('./subscriptions.js').Membership>;
+        cancel(subscriptionId: string, opts?: {
+            atPeriodEnd?: boolean;
+        }): Promise<import('./subscriptions.js').Membership>;
+        reapply(who: {
+            contactId?: string;
+            userId?: string;
+        }): Promise<{
+            level?: string | null;
+            groups: string[];
+        }>;
+    };
+    /**
      * Platform tools (`tools:<name>` or `tools:<family>.*`, e.g. `tools:pdf.create`, `tools:pdf.*`):
      * pdf.create, pdf.merge, pdf.fill, pdf.inspect, pdf.render, pdf.decodeBarcodes, pdf.inspectGraphics,
      * pdf.preflight, pdf.printReady, pdf.edit, image.transform, image.ocr, pdf.extract. Runs as THIS collection whatever the caller

@@ -11,6 +11,12 @@ export interface I18nInitOptions {
     /** The app's source language. Default 'en'. */
     sourceLanguage?: string;
 }
+/**
+ * The text direction for a language: 'rtl' for Arabic, Hebrew, Persian, Urdu and the like, else 'ltr'.
+ * Set it on the page (`document.documentElement.dir`) so the layout mirrors; Tailwind's start/end
+ * classes (ms-, pe-, text-start, ...) then follow by themselves.
+ */
+export declare function textDirection(code: string | null | undefined): 'rtl' | 'ltr';
 /** The language the host asked for, in a normal form ('zh-hans' -> 'zh-Hans', 'FR' -> 'fr'). */
 export declare function normalizeLanguage(code: string | null | undefined): string | null;
 /** Which language to start in: what the host passed, else the page's, else the browser's, else the source. */

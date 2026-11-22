@@ -21624,6 +21624,9 @@ components:
         messages:
           type: object
           additionalProperties: true
+        subscriptions:
+          type: object
+          additionalProperties: true
         tools:
           type: object
           additionalProperties: true
@@ -21651,6 +21654,7 @@ components:
         - contacts
         - interactions
         - messages
+        - subscriptions
         - tools
         - assets
         - ai
@@ -37537,6 +37541,425 @@ components:
         - partly-refunded
         - refunded
         - expired
+    PlanLength:
+      type: object
+      properties:
+        unit:
+          type: string
+          enum:
+            - month
+            - year
+        count:
+          type: number
+      required:
+        - unit
+        - count
+    PlanGrants:
+      type: object
+      properties:
+        level:
+          type: string
+        groups:
+          type: array
+          items:
+            type: string
+        rank:
+          type: number
+    PlanIncludes:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    Plan:
+      type: object
+      properties:
+        id:
+          type: string
+        collectionId:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        image:
+          type: string
+        term:
+          $ref: "#/components/schemas/PlanTerm"
+        length:
+          $ref: "#/components/schemas/PlanLength"
+        grants:
+          $ref: "#/components/schemas/PlanGrants"
+        includes:
+          $ref: "#/components/schemas/PlanIncludes"
+        active:
+          type: boolean
+        sort:
+          type: number
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - collectionId
+        - name
+        - description
+        - image
+        - term
+        - length
+        - grants
+        - includes
+        - active
+        - sort
+        - metadata
+        - createdAt
+        - updatedAt
+    PlanInput:
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        image:
+          type: string
+        term:
+          $ref: "#/components/schemas/PlanTerm"
+        length:
+          $ref: "#/components/schemas/PlanLength"
+        grants:
+          $ref: "#/components/schemas/PlanGrants"
+        includes:
+          $ref: "#/components/schemas/PlanIncludes"
+        active:
+          type: boolean
+        sort:
+          type: number
+        metadata:
+          type: object
+          additionalProperties: true
+      required:
+        - name
+    PlanPrice:
+      type: object
+      properties:
+        id:
+          type: string
+        planId:
+          type: string
+        currency:
+          type: string
+        amount:
+          type: number
+        compareAtAmount:
+          type: number
+        interval:
+          type: string
+          enum:
+            - month
+            - year
+        intervalCount:
+          type: number
+        trialDays:
+          type: number
+        active:
+          type: boolean
+        sort:
+          type: number
+      required:
+        - id
+        - planId
+        - currency
+        - amount
+        - compareAtAmount
+        - interval
+        - intervalCount
+        - trialDays
+        - active
+        - sort
+    PlanPriceInput:
+      type: object
+      properties:
+        currency:
+          type: string
+        amount:
+          type: number
+        compareAtAmount:
+          type: number
+        interval:
+          type: string
+          enum:
+            - month
+            - year
+        intervalCount:
+          type: number
+        trialDays:
+          type: number
+        active:
+          type: boolean
+        sort:
+          type: number
+      required:
+        - amount
+    PlanWithPrices:
+      type: object
+      properties:
+        prices:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlanPrice"
+        members:
+          type: number
+      required:
+        - prices
+    PublicPlan:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        image:
+          type: string
+        term:
+          $ref: "#/components/schemas/PlanTerm"
+        length:
+          $ref: "#/components/schemas/PlanLength"
+        level:
+          type: string
+        prices:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlanPrice"
+      required:
+        - id
+        - name
+        - description
+        - image
+        - term
+        - length
+        - level
+        - prices
+    Membership:
+      type: object
+      properties:
+        id:
+          type: string
+        collectionId:
+          type: string
+        contactId:
+          type: string
+        userId:
+          type: string
+        planId:
+          type: string
+        priceId:
+          type: string
+        source:
+          $ref: "#/components/schemas/SubscriptionSource"
+        status:
+          $ref: "#/components/schemas/SubscriptionStatus"
+        live:
+          type: boolean
+        currentPeriodStart:
+          type: string
+        currentPeriodEnd:
+          type: string
+        endsAt:
+          type: string
+        endedAt:
+          type: string
+        cancelReason:
+          type: string
+          enum:
+            - member
+            - staff
+            - payment_failed
+            - expired
+        cancelledBy:
+          type: string
+        pendingPriceId:
+          type: string
+        metadata:
+          type: object
+          additionalProperties: true
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        plan:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - collectionId
+        - contactId
+        - userId
+        - planId
+        - priceId
+        - source
+        - status
+        - live
+        - currentPeriodStart
+        - currentPeriodEnd
+        - endsAt
+        - endedAt
+        - cancelReason
+        - cancelledBy
+        - pendingPriceId
+        - metadata
+        - createdAt
+        - updatedAt
+    MySubscription:
+      type: object
+      properties:
+        id:
+          type: string
+        planId:
+          type: string
+        priceId:
+          type: string
+        status:
+          $ref: "#/components/schemas/SubscriptionStatus"
+        live:
+          type: boolean
+        source:
+          $ref: "#/components/schemas/SubscriptionSource"
+        currentPeriodEnd:
+          type: string
+        endsAt:
+          type: string
+        pendingPriceId:
+          type: string
+        plan:
+          type: object
+          additionalProperties: true
+      required:
+        - id
+        - planId
+        - priceId
+        - status
+        - live
+        - source
+        - currentPeriodEnd
+        - endsAt
+        - pendingPriceId
+        - plan
+    SubscriptionStartInput:
+      type: object
+      properties:
+        priceId:
+          type: string
+        successUrl:
+          type: string
+        cancelUrl:
+          type: string
+      required:
+        - priceId
+    SubscriptionStartResult:
+      type: object
+      properties:
+        checkoutUrl:
+          type: string
+        sessionId:
+          type: string
+      required:
+        - checkoutUrl
+        - sessionId
+    SubscriptionListParams:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/SubscriptionStatus"
+        live:
+          type: boolean
+        planId:
+          type: string
+        contactId:
+          type: string
+        userId:
+          type: string
+        limit:
+          type: number
+        offset:
+          type: number
+    SubscriptionGrantInput:
+      type: object
+      properties:
+        planId:
+          type: string
+        contactId:
+          type: string
+        userId:
+          type: string
+        endsAt:
+          type: string
+        note:
+          type: string
+      required:
+        - planId
+    SubscriptionPage:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        total:
+          type: number
+        limit:
+          type: number
+        offset:
+          type: number
+      required:
+        - items
+        - total
+        - limit
+        - offset
+    MembershipStatus:
+      type: object
+      properties:
+        member:
+          type: boolean
+        level:
+          type: string
+        subscriptions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Membership"
+      required:
+        - member
+        - level
+        - subscriptions
+    PlanTerm:
+      type: string
+      enum:
+        - recurring
+        - fixed
+    PlanUpdate:
+      $ref: "#/components/schemas/PlanInput"
+    SubscriptionStatus:
+      type: string
+      enum:
+        - trialing
+        - active
+        - past_due
+        - cancelling
+        - ended
+    SubscriptionSource:
+      type: string
+      enum:
+        - stripe
+        - manual
     Tag:
       type: object
       properties:

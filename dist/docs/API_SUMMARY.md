@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.41  |  Generated: 2026-11-22T10:02:08.893Z
+Version: 2.1.42  |  Generated: 2026-11-22T10:16:41.176Z
 
 This is a concise summary of all available API functions and types.
 
@@ -169,6 +169,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **research** - Functions for research operations
 - **secrets** - Functions for secrets operations
 - **shop** - Functions for shop operations
+- **subscriptions** - Functions for subscriptions operations
 - **tagCodes** - Functions for tagCodes operations
 - **tags** - Functions for tags operations
 - **template** - Functions for template operations
@@ -2887,6 +2888,17 @@ interface ServerFunctionSl {
   };
   interactions: { record(event: ServerFunctionInteractionEvent): Promise<{ eventId: string }> };
   messages: { send(input: ServerFunctionMessage): Promise<ServerFunctionMessageResult> };
+  subscriptions: {
+  plans(): Promise<Array<import('./subscriptions').Plan & { prices: import('./subscriptions').PlanPrice[] }>>;
+  list(params?: import('./subscriptions').SubscriptionListParams): Promise<import('./subscriptions').SubscriptionPage<import('./subscriptions').Membership>>;
+  get(subscriptionId: string): Promise<import('./subscriptions').Membership | null>;
+  mine(): Promise<import('./subscriptions').Membership[]>;
+  memberOf(who?: { contactId?: string; userId?: string }): Promise<import('./subscriptions').MembershipStatus>;
+  grant(input: import('./subscriptions').SubscriptionGrantInput): Promise<import('./subscriptions').Membership>;
+  end(subscriptionId: string, opts?: { reason?: string }): Promise<import('./subscriptions').Membership>;
+  cancel(subscriptionId: string, opts?: { atPeriodEnd?: boolean }): Promise<import('./subscriptions').Membership>;
+  reapply(who: { contactId?: string; userId?: string }): Promise<{ level?: string | null; groups: string[] }>;
+  };
   tools: { run<T = any>(name: string, args?: Record<string, any>): Promise<T> };
   assets: ServerFunctionAssets;
   ai: ServerFunctionAi;
@@ -12206,6 +12218,222 @@ interface ShopRefundInput {
 
 **ShopOrderStatus** = `'pending-payment' | 'paid' | 'fulfilled' | 'partly-refunded' | 'refunded' | 'expired'`
 
+### subscriptions
+
+**PlanLength** (interface)
+```typescript
+interface PlanLength {
+  unit: 'month' | 'year'
+  count: number
+}
+```
+
+**PlanGrants** (interface)
+```typescript
+interface PlanGrants {
+  level?: string
+  groups?: string[]
+  rank?: number
+}
+```
+
+**PlanIncludes** (interface)
+```typescript
+interface PlanIncludes {
+  items?: Array<{ productId: string; variantId?: string; quantity: number }>
+}
+```
+
+**Plan** (interface)
+```typescript
+interface Plan {
+  id: string
+  collectionId: string
+  name: string
+  description: string | null
+  image: string | null
+  term: PlanTerm
+  length: PlanLength | null
+  grants: PlanGrants
+  includes: PlanIncludes
+  active: boolean
+  sort: number
+  metadata: Record<string, any>
+  createdAt: string
+  updatedAt: string
+}
+```
+
+**PlanInput** (interface)
+```typescript
+interface PlanInput {
+  name: string
+  description?: string | null
+  image?: string | null
+  term?: PlanTerm
+  length?: PlanLength
+  grants?: PlanGrants
+  includes?: PlanIncludes
+  active?: boolean
+  sort?: number
+  metadata?: Record<string, any>
+}
+```
+
+**PlanPrice** (interface)
+```typescript
+interface PlanPrice {
+  id: string
+  planId: string
+  currency: string
+  amount: number
+  compareAtAmount: number | null
+  interval: 'month' | 'year' | null
+  intervalCount: number
+  trialDays: number | null
+  active: boolean
+  sort: number
+}
+```
+
+**PlanPriceInput** (interface)
+```typescript
+interface PlanPriceInput {
+  currency?: string
+  amount: number
+  compareAtAmount?: number | null
+  interval?: 'month' | 'year'
+  intervalCount?: number
+  trialDays?: number | null
+  active?: boolean
+  sort?: number
+}
+```
+
+**PublicPlan** (interface)
+```typescript
+interface PublicPlan {
+  id: string
+  name: string
+  description: string | null
+  image: string | null
+  term: PlanTerm
+  length: PlanLength | null
+  level: string | null
+  prices: Array<Pick<PlanPrice, 'id' | 'currency' | 'amount' | 'compareAtAmount' | 'interval' | 'intervalCount' | 'trialDays'>>
+}
+```
+
+**Membership** (interface)
+```typescript
+interface Membership {
+  id: string
+  collectionId: string
+  contactId: string | null
+  userId: string | null
+  planId: string
+  priceId: string | null
+  source: SubscriptionSource
+  status: SubscriptionStatus
+  live: boolean
+  currentPeriodStart: string | null
+  currentPeriodEnd: string | null
+  endsAt: string | null
+  endedAt: string | null
+  cancelReason: 'member' | 'staff' | 'payment_failed' | 'expired' | string | null
+  cancelledBy: string | null
+  pendingPriceId: string | null
+  metadata: Record<string, any>
+  createdAt: string
+  updatedAt: string
+  plan?: { id: string; name: string; grants: PlanGrants; term: PlanTerm }
+}
+```
+
+**MySubscription** (interface)
+```typescript
+interface MySubscription {
+  id: string
+  planId: string
+  priceId: string | null
+  status: SubscriptionStatus
+  live: boolean
+  source: SubscriptionSource
+  currentPeriodEnd: string | null
+  endsAt: string | null
+  pendingPriceId: string | null
+  plan: { id: string; name: string; level: string | null } | null
+}
+```
+
+**SubscriptionStartInput** (interface)
+```typescript
+interface SubscriptionStartInput {
+  priceId: string
+  successUrl?: string
+  cancelUrl?: string
+}
+```
+
+**SubscriptionStartResult** (interface)
+```typescript
+interface SubscriptionStartResult {
+  checkoutUrl: string
+  sessionId: string
+}
+```
+
+**SubscriptionListParams** (interface)
+```typescript
+interface SubscriptionListParams {
+  status?: SubscriptionStatus
+  live?: boolean
+  planId?: string
+  contactId?: string
+  userId?: string
+  limit?: number
+  offset?: number
+}
+```
+
+**SubscriptionGrantInput** (interface)
+```typescript
+interface SubscriptionGrantInput {
+  planId: string
+  contactId?: string
+  userId?: string
+  endsAt?: string
+  note?: string
+}
+```
+
+**SubscriptionPage<T>** (interface)
+```typescript
+interface SubscriptionPage<T> {
+  items: T[]
+  total: number
+  limit: number
+  offset: number
+}
+```
+
+**MembershipStatus** (interface)
+```typescript
+interface MembershipStatus {
+  member: boolean
+  level: string | null
+  subscriptions: Membership[]
+}
+```
+
+**PlanTerm** = `'recurring' | 'fixed'`
+
+**PlanUpdate** = `Partial<PlanInput>`
+
+**SubscriptionStatus** = `'trialing' | 'active' | 'past_due' | 'cancelling' | 'ended'`
+
+**SubscriptionSource** = `'stripe' | 'manual'`
+
 ### tags
 
 **Tag** (interface)
@@ -16054,6 +16282,80 @@ List the skills apps can invoke (name, description, input/output schema).
 
 **run**(collectionId: string, name: string, input: Record<string, any> = {}) → `Promise<T>`
 Invoke a skill by name with structured input — the app-facing verb; no prompt-shaping. POST /admin/collection/:collectionId/ai/skills/:name/run
+
+### subscriptions
+
+**plans**(collectionId: string) → `Promise<PublicPlan[]>`
+Plans open to new members, each with its prices (monthly, yearly, one-off).
+
+**start**(collectionId: string, input: SubscriptionStartInput) → `Promise<SubscriptionStartResult>`
+Join a plan: Stripe's checkout page for the chosen price. Send them to `checkoutUrl`. Signed in only (a membership belongs to an account). The membership exists once Stripe confirms the payment. ```typescript const plans = await subscriptions.plans(collectionId) const yearly = plans[0].prices.find((p) => p.interval === 'year') const { checkoutUrl } = await subscriptions.start(collectionId, { priceId: yearly.id, successUrl: `${location.origin}/welcome`, cancelUrl: `${location.origin}/join`, }) location.href = checkoutUrl ```
+
+**mine**(collectionId: string) → `Promise<MySubscription[]>`
+The signed-in member's memberships, newest first (ended ones too: check `live`).
+
+**cancel**(collectionId: string, subscriptionId: string) → `Promise<MySubscription>`
+Cancel: it ends at the end of the paid period, and access stays until then. A one-off plan or a staff grant ends now. Undo with `resume` before the period ends.
+
+**resume**(collectionId: string, subscriptionId: string) → `Promise<MySubscription>`
+Undo a cancel before the period ends. @throws `NOT_CANCELLING`
+
+**change**(collectionId: string, subscriptionId: string, priceId: string) → `Promise<MySubscription>`
+Move to another plan's price. Up (a higher-ranked or dearer plan): at once, charging the difference. Down: from the next renewal (`pendingPriceId` until then). @throws `CANNOT_CHANGE`, `NOT_FOUND`
+
+**billingLink**(collectionId: string, subscriptionId: string, returnUrl: string) → `Promise<`
+Stripe's page for the member's card, invoices and cancelling. Send them to `url`. @throws `NO_BILLING`
+
+**describePrice**(p: { amount: number; currency: string; interval: 'month' | 'year' | null; intervalCount?: number }, locale?: string) → `string`
+Format a plan price for people: "£15 a month", "£150 a year", "£40 every 3 months", "£99 once".
+
+### subscriptions.admin
+
+**listPlans**(collectionId: string, params?: { active?: boolean; limit?: number; offset?: number }) → `Promise<SubscriptionPage<PlanWithPrices>>`
+
+**getPlan**(collectionId: string, planId: string) → `Promise<PlanWithPrices>`
+A plan with its prices and how many live members it has.
+
+**createPlan**(collectionId: string, input: PlanInput) → `Promise<Plan>`
+
+**updatePlan**(collectionId: string, planId: string, changes: PlanUpdate) → `Promise<Plan>`
+Change a plan. Its term can't change once it has prices. Changed grants reach members when their membership next changes, or at once with `reapply`. @throws `PLAN_HAS_PRICES`
+
+**removePlan**(collectionId: string, planId: string) → `Promise<`
+Only a plan nobody has held; otherwise close it to new members (`active: false`). @throws `PLAN_HAS_MEMBERS`
+
+**setPrice**(collectionId: string, planId: string, input: PlanPriceInput) → `Promise<PlanPrice>`
+Set a plan's price for a currency and billing period (one each): replaces it if there is one.
+
+**updatePrice**(collectionId: string, priceId: string, changes: Partial<PlanPriceInput>) → `Promise<PlanPrice>`
+Set a plan's price for a currency and billing period (one each): replaces it if there is one.
+
+**removePrice**(collectionId: string, priceId: string) → `Promise<`
+A price nobody pays. One that members pay is kept: close it with `active: false`. @throws `PRICE_IN_USE`
+
+**list**(collectionId: string, params?: SubscriptionListParams) → `Promise<SubscriptionPage<Membership>>`
+Memberships, newest first, with each one's plan.
+
+**get**(collectionId: string, subscriptionId: string) → `Promise<Membership>`
+Memberships, newest first, with each one's plan.
+
+**grant**(collectionId: string, input: SubscriptionGrantInput) → `Promise<Membership>`
+Give someone a plan without payment (free, honorary, paid in cash). Its grants apply at once.
+
+**cancel**(collectionId: string, subscriptionId: string, opts: { atPeriodEnd?: boolean } = {}) → `Promise<Membership>`
+Cancel at the end of the paid period (default), or now with `atPeriodEnd: false`.
+
+**resume**(collectionId: string, subscriptionId: string) → `Promise<Membership>`
+Cancel at the end of the paid period (default), or now with `atPeriodEnd: false`.
+
+**change**(collectionId: string, subscriptionId: string, priceId: string) → `Promise<Membership>`
+Cancel at the end of the paid period (default), or now with `atPeriodEnd: false`.
+
+**end**(collectionId: string, subscriptionId: string) → `Promise<Membership>`
+End now. A paid one is stopped in Stripe at once (no refund is made here).
+
+**reapply**(collectionId: string, subscriptionId: string) → `Promise<`
+Re-apply what the plan grants now (after the plan's grants were changed).
 
 ### tagCodes
 

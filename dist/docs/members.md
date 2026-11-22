@@ -13,7 +13,8 @@ and you don't need one:
 | Managing members | **Studio → Customers**: find people, set their level, email a segment |
 
 **The contract: whoever manages membership writes the member's `level` field.** That can be the owner
-by hand in Studio, a memberships app after a payment, or a connector syncing a club's existing system.
+by hand in Studio, a paid plan (memberships.md: the platform writes it while the member is paid up), or a
+connector syncing a club's existing system.
 The site only ever reads the field, so the way people become members can change without rebuilding
 the site.
 

@@ -47,6 +47,7 @@ export { order } from "./order.js";
 export { app } from "./appObjects.js";
 export { bookings } from "./bookings.js";
 export { shop } from "./shop.js";
+export { subscriptions } from "./subscriptions.js";
 export { attestations } from "./attestations.js";
 export { containers } from "./containers.js";
 export { lots } from "./lots.js";

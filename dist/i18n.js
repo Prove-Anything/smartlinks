@@ -56,6 +56,16 @@ function bundleBase() {
         return 'i18n/';
     }
 }
+/** Languages written right to left (Arabic, Hebrew, Persian, Urdu, Pashto, Yiddish, Dhivehi, Kurdish (Sorani), Sindhi, Uyghur). */
+const RTL = /^(ar|he|iw|fa|ur|ps|yi|dv|ckb|sd|ug)(-|$)/i;
+/**
+ * The text direction for a language: 'rtl' for Arabic, Hebrew, Persian, Urdu and the like, else 'ltr'.
+ * Set it on the page (`document.documentElement.dir`) so the layout mirrors; Tailwind's start/end
+ * classes (ms-, pe-, text-start, ...) then follow by themselves.
+ */
+export function textDirection(code) {
+    return code && RTL.test(String(code).trim()) ? 'rtl' : 'ltr';
+}
 /** The language the host asked for, in a normal form ('zh-hans' -> 'zh-Hans', 'FR' -> 'fr'). */
 export function normalizeLanguage(code) {
     if (!code || typeof code !== 'string')
