@@ -38,14 +38,6 @@ import type {
   // Skills + catalog types
   SkillsListResponse,
   CatalogResponse,
-  // RAG types
-  DocumentChunk,
-  IndexDocumentRequest,
-  IndexDocumentResponse,
-  ConfigureAssistantRequest,
-  ConfigureAssistantResponse,
-  PublicChatRequest,
-  PublicChatResponse,
   Session,
   RateLimitStatus,
   SessionStatistics,
@@ -97,13 +89,6 @@ export type {
   AIModel,
   AIModelListParams,
   AIModelListResponse,
-  DocumentChunk,
-  IndexDocumentRequest,
-  IndexDocumentResponse,
-  ConfigureAssistantRequest,
-  ConfigureAssistantResponse,
-  PublicChatRequest,
-  PublicChatResponse,
   Session,
   RateLimitStatus,
   SessionStatistics,
@@ -309,34 +294,6 @@ namespace aiInternal {
   }
 
   // ============================================================================
-  // RAG API
-  // ============================================================================
-
-  export namespace rag {
-    /**
-     * Index a document for RAG
-     */
-    export async function indexDocument(
-      collectionId: string,
-      request: IndexDocumentRequest
-    ): Promise<IndexDocumentResponse> {
-      const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/indexDocument`
-      return post<IndexDocumentResponse>(path, request)
-    }
-
-    /**
-     * Configure AI assistant behavior
-     */
-    export async function configureAssistant(
-      collectionId: string,
-      request: ConfigureAssistantRequest
-    ): Promise<ConfigureAssistantResponse> {
-      const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/configureAssistant`
-      return post<ConfigureAssistantResponse>(path, request)
-    }
-  }
-
-  // ============================================================================
   // Sessions API
   // ============================================================================
 
@@ -472,17 +429,6 @@ namespace aiInternal {
   // ============================================================================
 
   export namespace publicClient {
-    /**
-     * Chat with product assistant (RAG)
-     */
-    export async function chat(
-      collectionId: string,
-      request: PublicChatRequest
-    ): Promise<PublicChatResponse> {
-      const path = `/public/collection/${encodeURIComponent(collectionId)}/ai/chat`
-      return post<PublicChatResponse>(path, request)
-    }
-
     /**
      * Public agent loop — run the orchestration-neutral tool loop on the consumer surface. Exposes an
      * app's PUBLIC server functions (`agent.tool:true`, `visibility:'public'`) to a consumer assistant;
@@ -763,10 +709,6 @@ export const ai = {
     list: aiInternal.models.list,
     get: aiInternal.models.get,
   },
-  rag: {
-    indexDocument: aiInternal.rag.indexDocument,
-    configureAssistant: aiInternal.rag.configureAssistant,
-  },
   sessions: {
     stats: aiInternal.sessions.stats,
   },
@@ -781,7 +723,6 @@ export const ai = {
     generate: aiInternal.tts.generate,
   },
   public: {
-    chat: aiInternal.publicClient.chat,
     agentRun: aiInternal.publicClient.agentRun,
     getSession: aiInternal.publicClient.getSession,
     clearSession: aiInternal.publicClient.clearSession,

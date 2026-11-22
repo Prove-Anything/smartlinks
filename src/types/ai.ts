@@ -283,102 +283,6 @@ export interface AIModelListResponse {
 // RAG Types
 // ============================================================================
 
-/** Document chunk with embedding */
-export interface DocumentChunk {
-  text: string
-  embedding: number[]
-  metadata: {
-    chunkIndex: number
-    documentId: string
-    [key: string]: any
-  }
-}
-
-/** Index document request */
-export interface IndexDocumentRequest {
-  productId: string
-  text?: string
-  documentUrl?: string
-  metadata?: Record<string, any>
-  chunkSize?: number
-  overlap?: number
-  provider?: 'openai' | 'gemini'
-}
-
-/** Index document response */
-export interface IndexDocumentResponse {
-  success: boolean
-  productId: string
-  documentId: string
-  chunks: number
-  metadata: {
-    textLength: number
-    chunkSize: number
-    overlap: number
-    embeddingDimensions: number
-  }
-  sample?: {
-    text: string
-    chunkIndex: number
-  }
-}
-
-/** Configure assistant request */
-export interface ConfigureAssistantRequest {
-  productId: string
-  systemPrompt?: string
-  model?: string
-  maxTokensPerResponse?: number
-  temperature?: number
-  rateLimitPerUser?: number
-  allowedTopics?: string[]
-  customInstructions?: {
-    tone?: string
-    additionalRules?: string
-    [key: string]: any
-  }
-}
-
-/** Configure assistant response */
-export interface ConfigureAssistantResponse {
-  success: boolean
-  configuration: {
-    productId: string
-    systemPrompt: string
-    model: string
-    maxTokensPerResponse: number
-    temperature: number
-    rateLimitPerUser: number
-    allowedTopics: string[]
-    customInstructions?: Record<string, any>
-    updatedAt: string
-  }
-}
-
-/** Public chat request */
-export interface PublicChatRequest {
-  productId: string
-  userId: string
-  message: string
-  sessionId?: string
-  stream?: boolean
-}
-
-/** Public chat response */
-export interface PublicChatResponse {
-  message: string
-  sessionId: string
-  usage: {
-    prompt_tokens: number
-    completion_tokens: number
-    total_tokens: number
-  }
-  context?: {
-    chunksUsed: number
-    topSimilarity: number
-  }
-}
-
 /** Session information */
 export interface Session {
   sessionId: string
@@ -953,6 +857,7 @@ export type AiToolCapability =
   | 'media:image'
   | 'media:pdf'
   | 'net:http'
+  | 'knowledge:read'
 
 /** The names of the built-in server-side agent tools (run via `server_tools`). */
 export type AiToolName =
@@ -982,6 +887,7 @@ export type AiToolName =
   | 'pdf.printReady'
   | 'http.request'
   | 'translate'
+  | 'knowledge.search'
 
 // ---- Tool argument shapes --------------------------------------------------
 export interface WebFetchPageArgs { url: string; type?: string; forceRefresh?: boolean }
@@ -1132,6 +1038,7 @@ export interface PdfPrintReadyArgs {
   title?: string
 }
 export interface HttpRequestArgs { url: string; method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE' | 'HEAD'; headers?: Record<string, string>; body?: any }
+export interface KnowledgeSearchArgs { query: string; sets?: string[]; filters?: Record<string, any>; k?: number }
 export interface TranslateArgs { text: string; targetLanguages: string[]; sourceLanguage?: string }
 
 /** Map of tool name → its argument type, for typed construction. */
@@ -1162,6 +1069,7 @@ export interface AiToolArgsMap {
   'pdf.printReady': PdfPrintReadyArgs
   'http.request': HttpRequestArgs
   'translate': TranslateArgs
+  'knowledge.search': KnowledgeSearchArgs
 }
 
 // ---- Selected tool result shapes -------------------------------------------

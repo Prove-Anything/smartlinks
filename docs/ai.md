@@ -11,7 +11,7 @@ Build AI-powered SmartLinks experiences with a practical SDK guide for responses
 - [Authentication](#authentication)
 - [Responses API](#responses-api)
 - [Chat Completions](#chat-completions)
-- [RAG: Product Assistants](#rag-product-assistants)
+- [Knowledge: answers from your own content](#knowledge-answers-from-your-own-content)
 - [Voice Integration](#voice-integration)
 - [Podcast Generation](#podcast-generation)
 - [Types & API reference](#types--api-reference)
@@ -33,29 +33,30 @@ This guide is written for SDK users building real products, not backend operator
 |---|---|
 | Build a new AI workflow | Use [Responses API](#responses-api) |
 | Add compatibility with existing chat clients | Use [Chat Completions](#chat-completions) |
-| Build a product/manual assistant | Use [RAG: Product Assistants](#rag-product-assistants) |
+| Answer questions from manuals, help articles or product pages | Use [Knowledge: answers from your own content](#knowledge-answers-from-your-own-content) |
 | Add spoken input/output | Use [Voice Integration](#voice-integration) |
 | Add progressive rendering | Use [Streaming Responses](#streaming-responses) or [Streaming Chat](#streaming-chat) |
 
-> **Which AI chat API? Three surfaces, three jobs — don't confuse them:**
-> - **`ai.chat.responses`** — the **default for new work**. Structured input, tool use, multi-agent, streaming; you manage any history. Reach for this first.
-> - **`ai.chat.completions`** — **OpenAI-compatible** (`messages[]`). Use it *only* to drop into existing OpenAI-style code; prefer Responses for anything new.
-> - **`ai.public.chat`** (+ `getSession` / `clearSession`) — the **public product assistant** with **server-managed conversation sessions** (RAG-grounded). This is the "ongoing conversation" surface, and it's public-facing.
+> **Which API for which job:**
+> - **`ai.chat.responses`**: the default for new work. Structured input, tool use, multi-agent, streaming. You keep any conversation history yourself and send it with each call.
+> - **`ai.chat.completions`**: OpenAI-compatible (`messages[]`). Use it only to drop into existing OpenAI-style code.
+> - **`knowledge.publicSearch`**: finds the passages in your own content (manuals, help articles) that answer a question. Works from a website, Portal or Hub without an API key.
+> - **`ai.agent.run`**: an admin-side agent loop that can call built-in tools such as `knowledge.search` and write an answer from what it finds.
 >
-> Responses and Completions are *generation* APIs (not single-shot vs conversation — both take history); `ai.public.chat` is the one that keeps a conversation for you.
+> Responses and Completions are generation APIs; both take history, neither stores it for you.
 
 ### Recommended starting points
 
 - New AI features: start with `ai.chat.responses.create(...)`
-- Product/manual assistants: start with `ai.public.chat(...)`
+- Product/manual Q&A: start with `knowledge.publicSearch(...)`; for an AI-written answer, run `ai.agent.run(...)` with the `knowledge.search` tool on your own server
 - Existing OpenAI-style clients: use `ai.chat.completions.create(...)`
-- Real-time voice: use `ai.public.getToken(...)` and your provider's live client
+- Real-time voice: use `ai.live.start(...)` or your provider's live client
 
 SmartLinks AI provides five main capabilities:
 
 1. **Responses API** - Preferred API for agentic workflows, multimodal inputs, and tool-driven responses
 2. **Chat Completions** - OpenAI-compatible text generation with streaming and tool calling
-3. **RAG (Retrieval-Augmented Generation)** - Document-grounded Q&A for product assistants
+3. **Knowledge search** - Find the right passage in your manuals and help content, for people and for AI agents
 4. **Voice Integration** - Voice-to-text and text-to-voice for hands-free interaction
 5. **Podcast Generation** - NotebookLM-style multi-voice conversational podcasts from documents
 
@@ -64,12 +65,10 @@ SmartLinks AI provides five main capabilities:
 - ✅ Full TypeScript support with type safety
 - ✅ Streaming responses with async iterators
 - ✅ Automatic rate limit handling
-- ✅ Session management for conversations
 - ✅ Voice input/output helpers
 - ✅ Tool/function calling support
 - ✅ OpenAI-style Responses API support
-- ✅ Document indexing and retrieval
-- ✅ Customizable assistant behavior
+- ✅ Knowledge search over your own content (meaning and keywords together)
 
 ---
 
@@ -97,21 +96,26 @@ const response = await ai.chat.responses.create('my-collection', {
 console.log(response.output_text);
 ```
 
-### 2. Build a product assistant
+### 2. Answer a product question from your manuals
 
 ```typescript
-import { initializeApi, ai } from '@proveanything/smartlinks';
+import { initializeApi, knowledge } from '@proveanything/smartlinks';
 
 initializeApi({ baseURL: 'https://smartlinks.app/api/v1' });
 
-const answer = await ai.public.chat('my-collection', {
-  productId: 'coffee-maker-deluxe',
-  userId: 'user-123',
-  message: 'How do I descale this machine?'
+const { results } = await knowledge.publicSearch('my-collection', {
+  query: 'How do I descale this machine?',
+  filters: { productId: 'coffee-maker-deluxe' },
+  k: 3
 });
 
-console.log(answer.message);
+for (const r of results) {
+  console.log(r.title, r.heading, r.url);
+  console.log(r.snippet);
+}
 ```
+
+This needs a knowledge set with content in it; see [Knowledge: answers from your own content](#knowledge-answers-from-your-own-content).
 
 ### 3. Stream output into your UI
 
@@ -147,16 +151,16 @@ The SDK automatically includes the API key in the `Authorization: Bearer <token>
 
 ### Public Endpoints
 
-Public endpoints don't require an API key but are rate-limited by `userId`:
+Public endpoints don't require an API key. Anonymous callers see public content only; a signed-in person (Portal or Hub sign-in) also sees content meant for customers:
 
 ```typescript
 // No API key needed
-const response = await ai.public.chat('my-collection', {
-  productId: 'coffee-maker',
-  userId: 'user-123',
-  message: 'How do I clean this?'
+const { results } = await knowledge.publicSearch('my-collection', {
+  query: 'How do I clean this?'
 });
 ```
+
+Public AI calls such as `ai.public.agentRun` are rate-limited per user (see [Rate Limiting](#rate-limiting)).
 
 ---
 
@@ -662,117 +666,101 @@ If you want a safe default for most new work, start with `openai/gpt-5.4`. If yo
 
 ---
 
-## RAG: Product Assistants
+## Knowledge: answers from your own content
 
-Create intelligent product assistants that answer questions based on product documentation.
+Knowledge search makes a collection's own content (product manuals, help articles, web pages) searchable by meaning and keywords together, so a question like "how do I descale it" finds the right section, and exact terms such as model numbers and error codes are found too. People can search it from a website, Portal or Hub, and AI agents can search it with the `knowledge.search` tool.
 
-### Setup: Index Documents
+### How it fits together
 
-First, index your product documentation:
+- A collection has **knowledge sets**, such as "Product manuals" or "Help articles". Each set has a visibility:
+  - `public`: anyone can search it.
+  - `customer`: signed-in people can search it.
+  - `staff`: only the business's own admins and admin-side agents (the default).
+- A set has **sources**:
+  - `markdown_feed`: a Markdown bundle at an https address (documents separated by `---`, each with a `Source: <url>` line).
+  - `url`: one web page or document at an address.
+  - `documents`: documents your app pushes itself with `knowledge.upsertDocuments`.
+- The platform splits each document into passages along its headings and keeps them up to date: feeds and pages are re-read every 24 hours by default, and pushing a document with the same `ref` replaces its earlier version.
+
+### Set up a set and its sources (admin)
 
 ```typescript
-// Index a product manual from URL
-const result = await ai.rag.indexDocument('my-collection', {
-  productId: 'coffee-maker-deluxe',
-  documentUrl: 'https://example.com/manuals/coffee-maker.pdf',
-  chunkSize: 500,      // Tokens per chunk
-  overlap: 50,         // Token overlap between chunks
-  provider: 'openai'   // Embedding provider
+import { knowledge } from '@proveanything/smartlinks';
+
+// Create the set (or update the one with this key)
+await knowledge.saveSet('my-collection', {
+  key: 'manuals',
+  name: 'Product manuals',
+  visibility: 'public'
 });
 
-console.log(`Indexed ${result.chunks} chunks`);
-console.log(`Dimensions: ${result.metadata.embeddingDimensions}`);
+// A web page or Markdown feed, read in the background
+await knowledge.addSource('my-collection', 'manuals', {
+  kind: 'url',
+  config: { url: 'https://example.com/manuals/coffee-maker' }
+});
 
-// Or index from text directly
-await ai.rag.indexDocument('my-collection', {
-  productId: 'coffee-maker-deluxe',
-  text: 'Your product manual content here...',
-  metadata: {
-    source: 'manual',
-    version: '2.0'
+// Or documents your app pushes itself (up to 500 at a time)
+const source = await knowledge.addSource('my-collection', 'manuals', { kind: 'documents' });
+
+await knowledge.upsertDocuments('my-collection', source.id, [
+  {
+    ref: 'coffee-maker-deluxe',
+    title: 'Coffee Maker Deluxe manual',
+    body: '## Descaling\n\nDescale once a month. Fill the tank with descaler...',
+    url: 'https://example.com/manuals/coffee-maker-deluxe',
+    meta: { productId: 'coffee-maker-deluxe' }
   }
-});
+]);
+
+// Check progress: status is 'pending' | 'indexing' | 'ready' | 'failed'
+const sources = await knowledge.listSources('my-collection', 'manuals');
 ```
 
-### Configure Assistant
+### Search from a website, Portal or Hub
 
-Customize the assistant's behavior:
+`knowledge.publicSearch` needs no API key. Anyone sees `public` sets; a signed-in person sees `customer` sets too. `staff` sets are never searchable here.
 
 ```typescript
-await ai.rag.configureAssistant('my-collection', {
-  productId: 'coffee-maker-deluxe',
-  systemPrompt: 'You are a helpful coffee maker assistant. Be concise and friendly.',
-  model: 'google/gemini-2.5-flash',
-  temperature: 0.7,
-  maxTokensPerResponse: 500,
-  rateLimitPerUser: 20,
-  allowedTopics: ['usage', 'cleaning', 'troubleshooting'],
-  customInstructions: {
-    tone: 'friendly',
-    additionalRules: 'Always include safety warnings when relevant.'
-  }
+const { results, mode } = await knowledge.publicSearch('my-collection', {
+  query: 'How do I descale my coffee maker?',
+  sets: ['manuals'],                              // optional: ids or keys
+  filters: { productId: 'coffee-maker-deluxe' },  // optional: exact matches on a document's meta
+  k: 5                                            // optional: default 8, at most 25
 });
+
+for (const r of results) {
+  // title: the document; heading: its section ("Cleaning › Descaling"); url: a link to it
+  console.log(r.title, r.heading, r.url);
+  console.log(r.snippet);   // a short piece around the match, for a results list
+  // r.text is the whole passage, for reading out or passing to an AI
+}
 ```
 
-### Public Chat
+`mode` says how the search ran: `hybrid` (meaning and keywords), `keywords`, or `none` (there were no sets to search). Admins can search every set, staff ones included, with `knowledge.search(collectionId, { query })`.
 
-Users can chat with the product assistant without authentication:
+### AI-written answers (admin agent with `knowledge.search`)
+
+When you want the AI to write an answer from the passages, run an admin-side agent with the `knowledge.search` built-in tool. This needs admin credentials, so for a public website call it from your own server, behind your own endpoint:
 
 ```typescript
-// First question
-const response = await ai.public.chat('my-collection', {
-  productId: 'coffee-maker-deluxe',
-  userId: 'user-123',
-  message: 'How do I descale my coffee maker?'
+// On your server (initialised with an admin API key)
+const result = await ai.agent.run('my-collection', {
+  input: 'How do I descale the Coffee Maker Deluxe?',
+  instructions: 'Answer from the knowledge base only. Cite the page for each step. If nothing is found, say so.',
+  toolbelt: { builtins: ['knowledge.search'] }
 });
 
-console.log('Answer:', response.message);
-console.log('Used', response.context.chunksUsed, 'document sections');
-console.log('Top similarity:', response.context.topSimilarity);
+console.log(result.finalText);
 ```
 
-### Conversation History
+The same `toolbelt` works with `ai.chat.responses.create`.
 
-Maintain conversation context with sessions:
+> **Not available yet on the public surface.** Built-in tools are off for `ai.public.agentRun`, so a public agent can't call `knowledge.search` yet. A cited-answer call for websites is planned. Until then, show passages from `knowledge.publicSearch`, or call an admin agent from your own server as above.
 
-```typescript
-const sessionId = `session-${Date.now()}`;
+### Conversations
 
-// First question
-const q1 = await ai.public.chat('my-collection', {
-  productId: 'coffee-maker-deluxe',
-  userId: 'user-123',
-  message: 'How do I clean it?',
-  sessionId
-});
-
-// Follow-up question (uses history)
-const q2 = await ai.public.chat('my-collection', {
-  productId: 'coffee-maker-deluxe',
-  userId: 'user-123',
-  message: 'How often should I do that?',
-  sessionId
-});
-
-// Get full conversation history
-const session = await ai.public.getSession('my-collection', sessionId);
-console.log('Messages:', session.messages);
-console.log('Total messages:', session.messageCount);
-
-// Clear session when done
-await ai.public.clearSession('my-collection', sessionId);
-```
-
-### Session Management
-
-```typescript
-// Get session statistics (admin)
-const stats = await ai.sessions.stats('my-collection');
-console.log('Total sessions:', stats.totalSessions);
-console.log('Active sessions:', stats.activeSessions);
-console.log('Total messages:', stats.totalMessages);
-console.log('Rate-limited users:', stats.rateLimitedUsers);
-```
+Knowledge search answers one question at a time; it doesn't keep a conversation. If you need follow-up questions ("how often should I do that?"), keep the history yourself and send it with each `ai.chat.responses.create` call (see [Multimessage Input](#multimessage-input)), searching the knowledge base on your server for each new question.
 
 ---
 
@@ -786,20 +774,20 @@ The SDK supports three practical voice patterns:
 
 | Pattern | Best For | SDK Building Blocks |
 |---------|----------|---------------------|
-| Voice → Text → AI → Text | Manual helper Q&A, troubleshooting steps | `ai.voice.listen()` + `ai.public.chat()` |
-| Voice → Text → AI → Voice | Hands-free assistants, accessibility | `ai.voice.listen()` + `ai.public.chat()` + `ai.voice.speak()` or `ai.tts.generate()` |
-| Real-time Voice | Low-latency spoken conversation | `ai.public.getToken()` + Gemini Live client |
+| Voice → Text → Answer → Text | Manual helper Q&A, troubleshooting steps | `ai.voice.listen()` + `knowledge.publicSearch()` |
+| Voice → Text → Answer → Voice | Hands-free assistants, accessibility | `ai.voice.listen()` + `knowledge.publicSearch()` + `ai.voice.speak()` or `ai.tts.generate()` |
+| Real-time Voice | Low-latency spoken conversation | `ai.live.start()` with your own endpoints |
 
 ### Current SDK Support
 
 - `ai.voice.listen()` and `ai.voice.speak()` are browser helpers built on the Web Speech APIs.
-- `ai.public.getToken()` generates ephemeral tokens for Gemini Live sessions.
+- `ai.live.start()` runs a live voice (or text) conversation in the browser; you supply the endpoints that start the session and run server tools.
 - `ai.tts.generate()` supports server-side text-to-speech generation.
-- The SDK does not currently expose a first-class transcription endpoint like Whisper; if you need that flow, implement it as your own backend endpoint and feed the transcribed text into `ai.public.chat()` or `ai.chat.responses.create()`.
+- The SDK does not currently expose a first-class transcription endpoint like Whisper; if you need that flow, implement it as your own backend endpoint and feed the transcribed text into `knowledge.publicSearch()` or your own backend.
 
 ### Recommended Approach
 
-For product assistants and RAG-backed support, start with Voice → Text → AI → Text/Voice. It gives you the best control over retrieval, session history, and cost. Use Gemini Live when low-latency spoken conversation matters more than deep document grounding.
+For product help and manuals, start with Voice → Text → Answer → Text/Voice. The text step is either `knowledge.publicSearch` (read out the best passage) or your own backend calling an admin agent with the `knowledge.search` tool (see [AI-written answers](#ai-written-answers-admin-agent-with-knowledgesearch)). Use a live session when low-latency spoken conversation matters more than answers grounded in your documents.
 
 ### Browser Voice Helpers
 
@@ -812,18 +800,16 @@ if (ai.voice.isSupported()) {
   const question = await ai.voice.listen('en-US');
   console.log('User said:', question);
   
-  // Get answer from AI
-  const response = await ai.public.chat('my-collection', {
-    productId: 'coffee-maker-deluxe',
-    userId: 'user-123',
-    message: question
+  // Find the best passage in the manuals
+  const { results } = await knowledge.publicSearch('my-collection', {
+    query: question,
+    filters: { productId: 'coffee-maker-deluxe' },
+    k: 1
   });
-  
-  // Speak the answer
-  await ai.voice.speak(response.message, {
-    voice: 'alloy',
-    rate: 1.0
-  });
+
+  // Speak it
+  const answer = results[0]?.text ?? "Sorry, I couldn't find that in the manual.";
+  await ai.voice.speak(answer, { rate: 1.0 });
 }
 ```
 
@@ -833,94 +819,61 @@ Create a complete voice assistant:
 
 ```typescript
 class ProductVoiceAssistant {
-  private collectionId: string;
-  private productId: string;
-  private userId: string;
-  private sessionId: string;
-
-  constructor(config: { 
-    collectionId: string;
-    productId: string;
-    userId: string;
-  }) {
-    this.collectionId = config.collectionId;
-    this.productId = config.productId;
-    this.userId = config.userId;
-    this.sessionId = `voice-${Date.now()}`;
-  }
+  constructor(private collectionId: string, private productId: string) {}
 
   async ask(): Promise<string> {
-    // Listen for question
-    console.log('Listening...');
+    // Listen for the question
     const question = await ai.voice.listen();
 
-    // Get answer
-    console.log('Processing...');
-    const response = await ai.public.chat(this.collectionId, {
-      productId: this.productId,
-      userId: this.userId,
-      message: question,
-      sessionId: this.sessionId
+    // Find the best passage
+    const { results } = await knowledge.publicSearch(this.collectionId, {
+      query: question,
+      filters: { productId: this.productId },
+      k: 1
     });
+    const answer = results[0]?.text ?? "Sorry, I couldn't find that in the manual.";
 
-    // Speak answer
-    console.log('Speaking...');
-    await ai.voice.speak(response.message);
-
-    return response.message;
-  }
-
-  async getRemainingQuestions(): Promise<number> {
-    const status = await ai.public.getRateLimit(this.collectionId, this.userId);
-    return status.remaining;
+    // Speak it
+    await ai.voice.speak(answer);
+    return answer;
   }
 }
 
 // Usage
-const assistant = new ProductVoiceAssistant({
-  collectionId: 'my-collection',
-  productId: 'coffee-maker-deluxe',
-  userId: 'user-123'
-});
-
-await assistant.ask(); // Voice question → Voice answer
-const remaining = await assistant.getRemainingQuestions();
-console.log(`${remaining} questions remaining`);
+const assistant = new ProductVoiceAssistant('my-collection', 'coffee-maker-deluxe');
+await assistant.ask(); // Voice question → spoken passage
 ```
 
-### Gemini Live Integration
+For an AI-written answer instead of a passage, replace the search with a call to your own endpoint that runs `ai.agent.run` with `toolbelt: { builtins: ['knowledge.search'] }`.
 
-Generate ephemeral tokens for Gemini Live (multimodal voice):
+### Live Voice Sessions
 
-Use this path for real-time voice sessions. The SDK only issues the short-lived token; the actual live connection is made with the provider client.
+`ai.live.start()` runs a live conversation in the browser. SmartLinks mints a short-lived key with the assistant's instructions and tools fixed on it, and the browser connects straight to the provider, so audio never passes through SmartLinks. You supply the endpoints: `mint` (start the session) and `tool` (run a server tool).
 
 ```typescript
-// Generate token for voice session
-const token = await ai.public.getToken('my-collection', {
-  settings: {
-    ttl: 3600,        // 1 hour
-    voice: 'alloy',
-    language: 'en-US'
-  }
+const live = await ai.live.start({
+  endpoints: {
+    mint: () => fetch('/api/assistant/session', { method: 'POST' }).then(r => r.json()),
+    tool: (name, args, sessionId) =>
+      fetch('/api/assistant/tool', { method: 'POST', body: JSON.stringify({ name, args, sessionId }) }).then(r => r.json())
+  },
+  onCaption: (text) => showCaption(text)
 });
 
-console.log('Token:', token.token);
-console.log('Expires at:', new Date(token.expiresAt));
-
-// Use token with Gemini Live API
-// (See Google's Gemini documentation)
+// Later
+live.stop();
 ```
 
-### Voice + RAG Guidance
+### Voice + Knowledge Guidance
 
-For document-grounded assistants, prefer this pattern:
+For answers grounded in your documents, prefer this pattern:
 
 1. Capture voice with `ai.voice.listen()` or your own transcription flow.
-2. Send the transcribed text to `ai.public.chat()`.
+2. Search with `knowledge.publicSearch()`, or send the text to your own backend, which runs an admin agent with `knowledge.search`.
 3. Render the text response for readability.
 4. Optionally speak the answer with `ai.voice.speak()` or `ai.tts.generate()`.
 
-This is usually a better fit for manuals and procedural guidance than trying to use a live voice session as the primary retrieval layer.
+This is usually a better fit for manuals and procedural guidance than trying to use a live voice session as the primary search layer.
 
 ---
 
@@ -1042,34 +995,33 @@ For inline types, use LSP hover / go-to-definition on `SL.ai.*`.
 
 ## Usage Examples
 
-### Example 1: Product FAQ Bot
+### Example 1: Product FAQ
 
 ```typescript
-async function createProductFAQ() {
-  const collectionId = 'my-collection';
-  const productId = 'coffee-maker-deluxe';
+import { knowledge } from '@proveanything/smartlinks';
 
-  // 1. Index product documentation
-  await ai.rag.indexDocument(collectionId, {
-    productId,
-    documentUrl: 'https://example.com/manual.pdf'
+// Admin, once: a public set with the manual pushed into it
+async function setUpManual(collectionId: string) {
+  await knowledge.saveSet(collectionId, { key: 'manuals', name: 'Product manuals', visibility: 'public' });
+  const source = await knowledge.addSource(collectionId, 'manuals', { kind: 'documents' });
+  await knowledge.upsertDocuments(collectionId, source.id, [{
+    ref: 'coffee-maker-deluxe',
+    title: 'Coffee Maker Deluxe manual',
+    body: '## Making espresso
+
+Fill the basket, tamp firmly, press the espresso button...',
+    meta: { productId: 'coffee-maker-deluxe' }
+  }]);
+}
+
+// Website, any time: show the matching sections
+async function answerQuestion(collectionId: string, question: string) {
+  const { results } = await knowledge.publicSearch(collectionId, {
+    query: question,
+    filters: { productId: 'coffee-maker-deluxe' },
+    k: 3
   });
-
-  // 2. Configure assistant
-  await ai.rag.configureAssistant(collectionId, {
-    productId,
-    systemPrompt: 'You are a coffee maker expert. Provide clear, step-by-step instructions.',
-    rateLimitPerUser: 30
-  });
-
-  // 3. Answer user questions
-  const answer = await ai.public.chat(collectionId, {
-    productId,
-    userId: 'user-123',
-    message: 'How do I make espresso?'
-  });
-
-  console.log(answer.message);
+  return results.map(r => ({ title: r.heading ?? r.title, snippet: r.snippet, url: r.url }));
 }
 ```
 
@@ -1102,101 +1054,67 @@ async function streamingChatbot(userMessage: string) {
 
 ### Example 3: Multi-Turn Conversation
 
+With the Responses API you keep the history yourself and send it with each call:
+
 ```typescript
 async function chatConversation() {
   const collectionId = 'my-collection';
-  const sessionId = `chat-${Date.now()}`;
-  const userId = 'user-123';
-  const productId = 'coffee-maker-deluxe';
+  const history: Array<{ role: 'user' | 'assistant'; content: string }> = [];
 
-  // Question 1
-  const a1 = await ai.public.chat(collectionId, {
-    productId,
-    userId,
-    message: 'How do I clean the machine?',
-    sessionId
-  });
-  console.log('A1:', a1.message);
+  async function say(text: string) {
+    history.push({ role: 'user', content: text });
+    const response = await ai.chat.responses.create(collectionId, { input: history });
+    history.push({ role: 'assistant', content: response.output_text });
+    return response.output_text;
+  }
 
-  // Question 2 (references previous context)
-  const a2 = await ai.public.chat(collectionId, {
-    productId,
-    userId,
-    message: 'How often should I do that?',
-    sessionId
-  });
-  console.log('A2:', a2.message);
-
-  // Get full history
-  const session = await ai.public.getSession(collectionId, sessionId);
-  console.log('Full conversation:', session.messages);
+  console.log('A1:', await say('How do I clean the machine?'));
+  console.log('A2:', await say('How often should I do that?')); // sees the first answer
 }
 ```
 
-### Example 4: React Hook for Product Assistant
+### Example 4: React Hook for Product Help
 
 ```typescript
 import { useState, useCallback } from 'react';
-import { ai } from '@proveanything/smartlinks';
+import { knowledge } from '@proveanything/smartlinks';
+import type { KnowledgeSearchResult } from '@proveanything/smartlinks';
 
-export function useProductAssistant(
-  collectionId: string,
-  productId: string,
-  userId: string
-) {
+export function useProductHelp(collectionId: string, productId: string) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [rateLimit, setRateLimit] = useState({ remaining: 20, limit: 20 });
+  const [results, setResults] = useState<KnowledgeSearchResult[]>([]);
 
-  const ask = useCallback(async (message: string) => {
+  const ask = useCallback(async (query: string) => {
     setLoading(true);
     setError(null);
-
     try {
-      const response = await ai.public.chat(collectionId, {
-        productId,
-        userId,
-        message
-      });
-
-      setRateLimit(prev => ({
-        ...prev,
-        remaining: prev.remaining - 1
-      }));
-
-      return response.message;
+      const res = await knowledge.publicSearch(collectionId, { query, filters: { productId }, k: 3 });
+      setResults(res.results);
     } catch (err: any) {
       setError(err.message);
-      throw err;
     } finally {
       setLoading(false);
     }
-  }, [collectionId, productId, userId]);
+  }, [collectionId, productId]);
 
-  return { ask, loading, error, rateLimit };
+  return { ask, loading, error, results };
 }
 
 // Usage in component
 function ProductHelp() {
-  const { ask, loading, rateLimit } = useProductAssistant(
-    'my-collection',
-    'coffee-maker',
-    'user-123'
-  );
-  const [answer, setAnswer] = useState('');
-
-  const handleAsk = async () => {
-    const response = await ask('How do I clean this?');
-    setAnswer(response);
-  };
+  const { ask, loading, results } = useProductHelp('my-collection', 'coffee-maker');
 
   return (
     <div>
-      <button onClick={handleAsk} disabled={loading}>
-        {loading ? 'Asking...' : 'Ask Question'}
+      <button onClick={() => ask('How do I clean this?')} disabled={loading}>
+        {loading ? 'Searching...' : 'Ask Question'}
       </button>
-      {answer && <p>{answer}</p>}
-      <p>{rateLimit.remaining} questions remaining</p>
+      {results.map(r => (
+        <p key={r.id}>
+          <strong>{r.heading ?? r.title}</strong> {r.snippet} {r.url && <a href={r.url}>Read more</a>}
+        </p>
+      ))}
     </div>
   );
 }
@@ -1216,7 +1134,6 @@ function ProductHelp() {
 | `authentication_error` | `authentication_error` | 401 | Invalid/missing API key |
 | `permission_denied` | `permission_error` | 403 | Insufficient permissions |
 | `not_found` | `not_found_error` | 404 | Resource not found |
-| `document_not_found` | `not_found_error` | 404 | Product document not indexed |
 | `server_error` | `server_error` | 500 | Internal server error |
 | `service_unavailable` | `server_error` | 503 | Service temporarily unavailable |
 
@@ -1227,21 +1144,16 @@ import { SmartLinksAIError } from '@proveanything/smartlinks';
 
 async function robustChat() {
   try {
-    const response = await ai.public.chat('my-collection', {
-      productId: 'coffee-maker',
-      userId: 'user-123',
-      message: 'Help!'
+    const response = await ai.chat.responses.create('my-collection', {
+      input: 'Help!'
     });
-    return response.message;
+    return response.output_text;
   } catch (error) {
     if (error instanceof SmartLinksAIError) {
       switch (error.code) {
         case 'rate_limit_exceeded':
           console.error('Rate limit exceeded');
           console.log('Try again at:', new Date(error.resetAt!));
-          break;
-        case 'document_not_found':
-          console.error('Product manual not indexed yet');
           break;
         case 'authentication_error':
           console.error('Invalid API key');
@@ -1264,14 +1176,14 @@ async function robustChat() {
 
 ```typescript
 async function chatWithRetry(
-  request: PublicChatRequest,
+  request: ResponsesRequest,
   maxRetries = 3
 ) {
   let retries = 0;
 
   while (retries < maxRetries) {
     try {
-      return await ai.public.chat('my-collection', request);
+      return await ai.chat.responses.create('my-collection', request);
     } catch (error) {
       if (error instanceof SmartLinksAIError && error.isRateLimitError()) {
         if (retries === maxRetries - 1) throw error;
@@ -1297,15 +1209,7 @@ async function chatWithRetry(
 
 ### Rate Limit Overview
 
-Public endpoints are rate-limited per `userId`:
-
-| Endpoint Type | Default Limit | Window |
-|--------------|---------------|--------|
-| Public Chat | 20 requests | 1 hour |
-| Token Generation | 10 requests | 1 hour |
-| Admin Endpoints | Unlimited* | - |
-
-*Admin endpoints use API key authentication and are not rate-limited by default.
+Public AI calls (such as `ai.public.agentRun`) are rate-limited per user: the signed-in person, or the `userId` you pass for an anonymous caller. Admin endpoints use API key authentication and are not rate-limited per user by default.
 
 ### Rate Limit Headers
 
@@ -1329,7 +1233,7 @@ console.log('Resets at:', new Date(status.resetAt));
 
 if (status.remaining > 0) {
   // Safe to make request
-  await ai.public.chat(/* ... */);
+  await ai.public.agentRun('my-collection', { input: question, userId: 'user-123' });
 } else {
   // Show user when they can ask again
   console.log('Rate limit reached. Try again at:', status.resetAt);
@@ -1395,26 +1299,19 @@ for await (const chunk of stream) {
 }
 ```
 
-### 3. Maintain Session Context
+### 3. Keep Conversation History Yourself
 
-Keep conversations coherent with session IDs:
+The Responses API doesn't store a conversation for you. Keep the turns and send them with each call:
 
 ```typescript
-// Generate unique session ID per conversation
-const sessionId = `user-${userId}-product-${productId}`;
+const history: ResponseInputItem[] = [];
 
-// All questions in same conversation use same sessionId
-await ai.public.chat('my-collection', {
-  sessionId,
-  message: 'First question',
-  ...
-});
+history.push({ role: 'user', content: 'First question' });
+const first = await ai.chat.responses.create('my-collection', { input: history });
+history.push({ role: 'assistant', content: first.output_text });
 
-await ai.public.chat('my-collection', {
-  sessionId,
-  message: 'Follow-up question',
-  ...
-});
+history.push({ role: 'user', content: 'Follow-up question' });
+const second = await ai.chat.responses.create('my-collection', { input: history });
 ```
 
 ### 4. Handle Rate Limits Gracefully
@@ -1423,7 +1320,7 @@ Show clear feedback to users:
 
 ```typescript
 try {
-  await ai.public.chat('my-collection', {...});
+  await ai.public.agentRun('my-collection', { input: question, userId });
 } catch (error) {
   if (error instanceof SmartLinksAIError && error.isRateLimitError()) {
     const resetTime = new Date(error.resetAt!);
@@ -1445,14 +1342,12 @@ async function voiceAssistant() {
     showStatus('Listening...');
     const question = await ai.voice.listen();
 
-    showStatus('Processing...');
-    const answer = await ai.public.chat('my-collection', {
-      message: question,
-      ...
-    });
+    showStatus('Searching...');
+    const { results } = await knowledge.publicSearch('my-collection', { query: question, k: 1 });
+    const answer = results[0]?.text ?? "Sorry, I couldn't find that.";
 
     showStatus('Speaking...');
-    await ai.voice.speak(answer.message);
+    await ai.voice.speak(answer);
 
     showStatus('Ready');
   } catch (error) {
@@ -1461,27 +1356,21 @@ async function voiceAssistant() {
 }
 ```
 
-### 6. Chunk Large Documents
+### 6. Give Documents Clear Headings
 
-For better RAG performance, chunk documents appropriately:
+Knowledge search splits each document into passages along its headings, and each result carries its section (`heading`, such as "Cleaning › Descaling"). Clear, specific headings give tighter passages and better results:
 
-```typescript
-// For technical manuals
-await ai.rag.indexDocument('my-collection', {
-  productId: 'coffee-maker',
-  documentUrl: '...',
-  chunkSize: 500,  // Smaller chunks for precise answers
-  overlap: 50      // Overlap maintains context
-});
+```markdown
+## Descaling
 
-// For narrative content
-await ai.rag.indexDocument('my-collection', {
-  productId: 'coffee-maker',
-  documentUrl: '...',
-  chunkSize: 1000, // Larger chunks for coherent responses
-  overlap: 100
-});
+Descale once a month...
+
+## Cleaning the milk frother
+
+Rinse after every use...
 ```
+
+Put details you want to filter on (such as `productId`) in a pushed document's `meta`, then pass them as `filters` when searching.
 
 ### 7. Use System Prompts Effectively
 
@@ -1628,15 +1517,15 @@ interface AIContentResponse {
   metadata?: Record<string, unknown>;
 
   /**
-   * Pre-built RAG configuration. When provided, the assistant can use
-  * SL.ai.public.chat() to ground answers in indexed product documents.
+   * Which documents to ground answers in. When provided, the assistant can search
+   * the collection's knowledge sets (SL.knowledge.publicSearch) for this product.
    */
   ragHint?: {
-    /** The product ID whose indexed documents should be queried */
+    /** The product whose documents to search (matched against a document's meta.productId) */
     productId: string;
-    /** Optional session ID for multi-turn RAG conversations */
+    /** Optional conversation ID */
     sessionId?: string;
-    /** Optional context hint to help scope the RAG query */
+    /** Optional hint to help scope the search */
     context?: string;
   };
 
@@ -1649,8 +1538,8 @@ interface AIContentResponse {
   /**
    * How the assistant should use this content:
    * - 'context' (default): inject text into the system prompt
-  * - 'rag': use ragHint to query indexed docs via SL.ai.public.chat()
-   * - 'hybrid': inject text as context AND ground answers via RAG
+   * - 'rag': use ragHint to search the collection's knowledge sets
+   * - 'hybrid': inject text as context AND search the knowledge sets
    */
   strategy?: 'context' | 'rag' | 'hybrid';
 }
@@ -1678,7 +1567,7 @@ return {
 
 #### `rag`
 
-Tell the assistant to query pre-indexed documents via SmartLinks RAG. The `text` field is minimal — the real knowledge comes from the indexed docs. Good for product manuals, large document sets, and technical specs.
+Tell the assistant to answer from the collection's knowledge sets. The `text` field is minimal: the real knowledge comes from the documents in those sets (see [Knowledge: answers from your own content](#knowledge-answers-from-your-own-content)). Good for product manuals, large document sets, and technical specs.
 
 ```typescript
 return {
@@ -1687,26 +1576,23 @@ return {
   strategy: 'rag',
   ragHint: {
     productId: 'espresso-machine-pro',
-    sessionId: `rag-session-${userId}`,
     context: 'User is on the troubleshooting section',
   },
 };
 ```
 
-When the assistant receives a `rag` strategy it routes the question through `SL.ai.public.chat()`:
+For the `rag` strategy to find anything, the product's documents must be in a knowledge set the visitor can read (`public`, or `customer` for signed-in people), with `productId` in each document's `meta`. A search scoped by the hint looks like this:
 
 ```typescript
-const response = await SL.ai.public.chat(collectionId, {
-  productId: ragHint.productId,
-  userId: currentUserId,
-  message: userQuestion,
-  sessionId: ragHint.sessionId,
+const { results } = await SL.knowledge.publicSearch(collectionId, {
+  query: userQuestion,
+  filters: { productId: ragHint.productId },
 });
 ```
 
 #### `hybrid`
 
-Combines both — the `text` is injected as additional context **and** the user's questions are also grounded via RAG. Good for museum exhibits, guided experiences, or any scenario with rich metadata alongside large document sets.
+Combines both: the `text` is injected as additional context **and** the user's questions are also answered from the knowledge sets. Good for museum exhibits, guided experiences, or any scenario with rich metadata alongside large document sets.
 
 ```typescript
 return {
@@ -1783,7 +1669,7 @@ ${reviews.map(r => `- "${r.text}" (${r.rating}/5)`).join('\n')}
 }
 ```
 
-#### Equipment Manual App (RAG-only)
+#### Equipment Manual App (knowledge only)
 
 ```typescript
 async function gatherAIContent(): Promise<AIContentResponse> {
@@ -1819,6 +1705,7 @@ If your app doesn't implement either of the above, the framework extracts `inner
 ## Related Documentation
 
 - [API Summary](./API_SUMMARY.md) - Complete API reference
+- [Knowledge search](./knowledge.md) - Knowledge sets, sources and search
 - [Widgets](./widgets.md) - Embedding SmartLinks components
 - [Realtime](./realtime.md) - Realtime data updates
 - [iframe Responder](./iframe-responder.md) - iframe integration
