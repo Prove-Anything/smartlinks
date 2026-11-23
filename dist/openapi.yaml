@@ -36981,6 +36981,88 @@ components:
     SegmentFilterRule:
       type: object
       additionalProperties: true
+    ServiceAccount:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        access:
+          $ref: "#/components/schemas/ServiceAccountAccess"
+        active:
+          type: boolean
+        createdAt:
+          type: string
+        createdBy:
+          type: string
+        lastUsedAt:
+          type: string
+        keyCreatedAt:
+          type: string
+        keyHint:
+          type: string
+      required:
+        - id
+        - name
+        - access
+        - active
+        - createdAt
+        - createdBy
+        - lastUsedAt
+        - keyCreatedAt
+        - keyHint
+    ServiceAccountList:
+      type: object
+      properties:
+        serviceAccounts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceAccount"
+        access:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceAccountAccess"
+      required:
+        - serviceAccounts
+        - access
+    CreateServiceAccountInput:
+      type: object
+      properties:
+        name:
+          type: string
+        access:
+          $ref: "#/components/schemas/ServiceAccountAccess"
+      required:
+        - name
+        - access
+    UpdateServiceAccountInput:
+      type: object
+      properties:
+        name:
+          type: string
+        access:
+          $ref: "#/components/schemas/ServiceAccountAccess"
+    CreateServiceAccountResult:
+      type: object
+      properties:
+        serviceAccount:
+          $ref: "#/components/schemas/ServiceAccount"
+        key:
+          type: string
+      required:
+        - serviceAccount
+        - key
+    ServiceAccountKeyResult:
+      type: object
+      properties:
+        key:
+          type: string
+      required:
+        - key
+    ServiceAccountAccess:
+      type: object
+      additionalProperties: true
     ShopPrice:
       type: object
       properties:

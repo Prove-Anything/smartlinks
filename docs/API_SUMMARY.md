@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.44  |  Generated: 2026-11-23T13:03:37.546Z
+Version: 2.1.45  |  Generated: 2026-11-23T13:13:18.087Z
 
 This is a concise summary of all available API functions and types.
 
@@ -168,6 +168,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **realtime** - Functions for realtime operations
 - **research** - Functions for research operations
 - **secrets** - Functions for secrets operations
+- **serviceAccounts** - Functions for serviceAccounts operations
 - **shop** - Functions for shop operations
 - **subscriptions** - Functions for subscriptions operations
 - **tagCodes** - Functions for tagCodes operations
@@ -11949,6 +11950,64 @@ interface SegmentRecipientsResponse {
 
 **SegmentFilterRule** = ``
 
+### serviceAccounts
+
+**ServiceAccount** (interface)
+```typescript
+interface ServiceAccount {
+  id: string
+  name: string
+  access: ServiceAccountAccess | null
+  active: boolean
+  createdAt: string
+  createdBy: string | null
+  lastUsedAt: string | null
+  keyCreatedAt: string
+  keyHint: string
+}
+```
+
+**ServiceAccountList** (interface)
+```typescript
+interface ServiceAccountList {
+  serviceAccounts: ServiceAccount[]
+  access: ServiceAccountAccess[]
+}
+```
+
+**CreateServiceAccountInput** (interface)
+```typescript
+interface CreateServiceAccountInput {
+  name: string
+  access: ServiceAccountAccess
+}
+```
+
+**UpdateServiceAccountInput** (interface)
+```typescript
+interface UpdateServiceAccountInput {
+  name?: string
+  access?: ServiceAccountAccess
+}
+```
+
+**CreateServiceAccountResult** (interface)
+```typescript
+interface CreateServiceAccountResult {
+  serviceAccount: ServiceAccount
+  key: string
+}
+```
+
+**ServiceAccountKeyResult** (interface)
+```typescript
+interface ServiceAccountKeyResult {
+  key: string
+}
+```
+
+**ServiceAccountAccess** = `"User" | "Reporter" | "Assigner" | "Admin"`
+
 ### shop
 
 **ShopPrice** (interface)
@@ -16210,6 +16269,23 @@ Soft-delete a secret. DELETE /secrets/:ref
 **recipients**(collectionId: string,
     id: string,
     query: { limit?: number; offset?: number } = {}) → `Promise<SegmentRecipientsResponse>`
+
+### serviceAccounts
+
+**list**(collectionId: string) → `Promise<ServiceAccountList>`
+The collection's service accounts (never their keys) and the access levels that can be given. GET /service-accounts
+
+**create**(collectionId: string, input: CreateServiceAccountInput) → `Promise<CreateServiceAccountResult>`
+Make a service account → `{ serviceAccount, key }`. Show the key once — it can't be read again. You can't give it more access than you have. POST /service-accounts
+
+**update**(collectionId: string, id: string, input: UpdateServiceAccountInput) → `Promise<ServiceAccount>`
+Rename it and/or change its access. PUT /service-accounts/:id
+
+**newKey**(collectionId: string, id: string) → `Promise<ServiceAccountKeyResult>`
+Give it a new key → `{ key }` (shown once); the old key stops working within a minute. POST /service-accounts/:id/key
+
+**remove**(collectionId: string, id: string) → `Promise<`
+Delete it: its key stops working and its access is removed. DELETE /service-accounts/:id
 
 ### sessions
 
