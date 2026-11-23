@@ -6,10 +6,22 @@ export interface ServiceAccount {
     id: string;
     /** What uses it, e.g. "Warehouse system". */
     name: string;
-    /** Its access on the collection (null if it was removed from the collection's members another way). */
+    /** Its access on the collection you asked about (null if it was removed from the members another way). */
     access: ServiceAccountAccess | null;
     /** false once its key has been switched off. */
     active: boolean;
+    /**
+     * true when it belongs to the collection you asked about (its home): only there can it be renamed, given a
+     * new key, deleted, or added to other collections.
+     */
+    home: boolean;
+    /** Home only: the other collections it also works on, each with its access there. */
+    alsoOn?: ServiceAccountCollection[];
+    /** Not home: the collection it belongs to. */
+    homeCollection?: {
+        collectionId: string;
+        title: string;
+    };
     createdAt: string;
     /** The user id of the person who made it. */
     createdBy: string | null;
@@ -19,6 +31,17 @@ export interface ServiceAccount {
     keyCreatedAt: string;
     /** How its key starts ("slsvc_sa-….…"), to recognise it — never the secret. */
     keyHint: string;
+}
+/** Another collection a service account works on. */
+export interface ServiceAccountCollection {
+    collectionId: string;
+    title: string;
+    access: ServiceAccountAccess | null;
+}
+/** Let a service account work on another collection too (or change its access there). */
+export interface AddServiceAccountToCollectionInput {
+    collectionId: string;
+    access: ServiceAccountAccess;
 }
 export interface ServiceAccountList {
     serviceAccounts: ServiceAccount[];

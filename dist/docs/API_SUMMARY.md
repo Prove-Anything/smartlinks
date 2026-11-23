@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.45  |  Generated: 2026-11-23T13:13:18.087Z
+Version: 2.1.46  |  Generated: 2026-11-23T13:54:13.635Z
 
 This is a concise summary of all available API functions and types.
 
@@ -11959,11 +11959,31 @@ interface ServiceAccount {
   name: string
   access: ServiceAccountAccess | null
   active: boolean
+  home: boolean
+  alsoOn?: ServiceAccountCollection[]
+  homeCollection?: { collectionId: string; title: string }
   createdAt: string
   createdBy: string | null
   lastUsedAt: string | null
   keyCreatedAt: string
   keyHint: string
+}
+```
+
+**ServiceAccountCollection** (interface)
+```typescript
+interface ServiceAccountCollection {
+  collectionId: string
+  title: string
+  access: ServiceAccountAccess | null
+}
+```
+
+**AddServiceAccountToCollectionInput** (interface)
+```typescript
+interface AddServiceAccountToCollectionInput {
+  collectionId: string
+  access: ServiceAccountAccess
 }
 ```
 
@@ -16273,19 +16293,25 @@ Soft-delete a secret. DELETE /secrets/:ref
 ### serviceAccounts
 
 **list**(collectionId: string) → `Promise<ServiceAccountList>`
-The collection's service accounts (never their keys) and the access levels that can be given. GET /service-accounts
+The service accounts that work on this collection — its own (`home: true`, with `alsoOn`) and other collections' (`home: false`, with `homeCollection`) — never their keys, and the access levels that can be given. GET /service-accounts
 
 **create**(collectionId: string, input: CreateServiceAccountInput) → `Promise<CreateServiceAccountResult>`
 Make a service account → `{ serviceAccount, key }`. Show the key once — it can't be read again. You can't give it more access than you have. POST /service-accounts
 
 **update**(collectionId: string, id: string, input: UpdateServiceAccountInput) → `Promise<ServiceAccount>`
-Rename it and/or change its access. PUT /service-accounts/:id
+Rename it (home collection only) and/or change its access on this collection. PUT /service-accounts/:id
 
 **newKey**(collectionId: string, id: string) → `Promise<ServiceAccountKeyResult>`
-Give it a new key → `{ key }` (shown once); the old key stops working within a minute. POST /service-accounts/:id/key
+Give it a new key → `{ key }` (shown once; home collection only); the old key stops working within a minute. POST /service-accounts/:id/key
+
+**addTo**(collectionId: string, id: string, input: AddServiceAccountToCollectionInput) → `Promise<ServiceAccount>`
+Let it work on another collection too, or change its access there. Call on its home collection; you must be an admin of `input.collectionId` as well, and can't give more access than you have there. POST /service-accounts/:id/collections
+
+**removeFrom**(collectionId: string, id: string, otherCollectionId: string) → `Promise<`
+Stop it working on `otherCollectionId` (call on its home collection). DELETE /service-accounts/:id/collections/:otherId
 
 **remove**(collectionId: string, id: string) → `Promise<`
-Delete it: its key stops working and its access is removed. DELETE /service-accounts/:id
+On its home collection: delete it — its key stops working and its access is removed everywhere. On another collection it works on: remove it from that collection only. DELETE /service-accounts/:id
 
 ### sessions
 

@@ -36992,6 +36992,15 @@ components:
           $ref: "#/components/schemas/ServiceAccountAccess"
         active:
           type: boolean
+        home:
+          type: boolean
+        alsoOn:
+          type: array
+          items:
+            $ref: "#/components/schemas/ServiceAccountCollection"
+        homeCollection:
+          type: object
+          additionalProperties: true
         createdAt:
           type: string
         createdBy:
@@ -37007,11 +37016,35 @@ components:
         - name
         - access
         - active
+        - home
         - createdAt
         - createdBy
         - lastUsedAt
         - keyCreatedAt
         - keyHint
+    ServiceAccountCollection:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        title:
+          type: string
+        access:
+          $ref: "#/components/schemas/ServiceAccountAccess"
+      required:
+        - collectionId
+        - title
+        - access
+    AddServiceAccountToCollectionInput:
+      type: object
+      properties:
+        collectionId:
+          type: string
+        access:
+          $ref: "#/components/schemas/ServiceAccountAccess"
+      required:
+        - collectionId
+        - access
     ServiceAccountList:
       type: object
       properties:
