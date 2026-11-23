@@ -755,6 +755,30 @@ export interface AuthKitSettingsResponse {
   checks: AuthKitCheck[]
 }
 
+/** A domain in {@link authKit.redirectDomains}. */
+export interface AuthKitRedirectDomain {
+  domain: string
+  /** The collection the domain is connected to. */
+  collectionId: string
+  /** That collection's name. */
+  title: string
+}
+
+/** {@link authKit.redirectDomains}: where this sign-in may send emailed links (password reset, magic link, verification). */
+export interface AuthKitRedirectDomainsResponse {
+  /** Connected domains of the collections this sign-in serves: always allowed. */
+  automatic: AuthKitRedirectDomain[]
+  /** The extra domains in its settings (`allowedRedirectDomains`). */
+  allowed: string[]
+  /**
+   * Connected domains of the caller's OTHER collections, where the caller is an Owner of both: add one to
+   * `allowedRedirectDomains` to trust it. Never added automatically.
+   */
+  suggested: AuthKitRedirectDomain[]
+  /** The caller is an Owner of this collection (only owners are offered other collections' domains). */
+  canSuggest: boolean
+}
+
 /** Body of {@link authKit.setup}. */
 export interface AuthKitSetupRequest {
   /** For a new sign-in. */

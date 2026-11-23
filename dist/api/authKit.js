@@ -608,6 +608,16 @@ export var authKit;
     }
     authKit.settings = settings;
     /**
+     * Where this sign-in may send emailed links (password reset, magic link, verification): the domains that
+     * are automatic (connected to its own collections), the extra ones in its settings, and the connected
+     * domains of the caller's other collections it could also allow (offered only to an Owner of both).
+     * A page on a domain that isn't allowed still gets its link, via the same page on smartlinks.app.
+     */
+    async function redirectDomains(collectionId, authKitId) {
+        return request(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/redirect-domains`);
+    }
+    authKit.redirectDomains = redirectDomains;
+    /**
      * A one-time SmartLinks page where the PERSON types a secret (e.g. `linkedInClientSecret`) — so it never
      * passes through a chat or your code. Give them the `url`; it works once, for 30 minutes. Asking again
      * replaces the link. Check it landed with {@link settings} (`secrets.<name>.set`).

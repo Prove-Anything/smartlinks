@@ -19,6 +19,7 @@ import type {
   AuthKitInviteResponse,
   AuthKitSchema,
   AuthKitSettingsResponse,
+  AuthKitRedirectDomainsResponse,
   AuthKitSetupRequest,
   AuthKitSetupResponse,
   AuthKitEmailKind,
@@ -621,6 +622,16 @@ export namespace authKit {
   /** What sign-in does now: the stored config, every default filled in, which secrets are set (masked), and checks. */
   export async function settings(collectionId: string, authKitId: string): Promise<AuthKitSettingsResponse> {
     return request<AuthKitSettingsResponse>(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/settings`)
+  }
+
+  /**
+   * Where this sign-in may send emailed links (password reset, magic link, verification): the domains that
+   * are automatic (connected to its own collections), the extra ones in its settings, and the connected
+   * domains of the caller's other collections it could also allow (offered only to an Owner of both).
+   * A page on a domain that isn't allowed still gets its link, via the same page on smartlinks.app.
+   */
+  export async function redirectDomains(collectionId: string, authKitId: string): Promise<AuthKitRedirectDomainsResponse> {
+    return request<AuthKitRedirectDomainsResponse>(`/admin/collection/${encodeURIComponent(collectionId)}/authKit/${encodeURIComponent(authKitId)}/redirect-domains`)
   }
 
   /**

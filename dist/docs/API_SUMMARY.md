@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.43  |  Generated: 2026-11-22T10:27:00.761Z
+Version: 2.1.44  |  Generated: 2026-11-23T13:03:37.546Z
 
 This is a concise summary of all available API functions and types.
 
@@ -5346,6 +5346,25 @@ interface AuthKitSettingsResponse {
   effective: Required<Pick<AuthKitConfig, 'enabledProviders' | 'providerOrder' | 'signUp' | 'allowPasswordReset' | 'emailVerificationMode'>> & AuthKitConfig
   secrets: Record<string, { set: boolean; hint?: string | null; setAt?: string | null; legacy?: boolean }>
   checks: AuthKitCheck[]
+}
+```
+
+**AuthKitRedirectDomain** (interface)
+```typescript
+interface AuthKitRedirectDomain {
+  domain: string
+  collectionId: string
+  title: string
+}
+```
+
+**AuthKitRedirectDomainsResponse** (interface)
+```typescript
+interface AuthKitRedirectDomainsResponse {
+  automatic: AuthKitRedirectDomain[]
+  allowed: string[]
+  suggested: AuthKitRedirectDomain[]
+  canSuggest: boolean
 }
 ```
 
@@ -14389,6 +14408,9 @@ Set up the collection's sign-in in one call, safe to repeat: finds its sign-in (
 
 **settings**(collectionId: string, authKitId: string) → `Promise<AuthKitSettingsResponse>`
 What sign-in does now: the stored config, every default filled in, which secrets are set (masked), and checks.
+
+**redirectDomains**(collectionId: string, authKitId: string) → `Promise<AuthKitRedirectDomainsResponse>`
+Where this sign-in may send emailed links (password reset, magic link, verification): the domains that are automatic (connected to its own collections), the extra ones in its settings, and the connected domains of the caller's other collections it could also allow (offered only to an Owner of both). A page on a domain that isn't allowed still gets its link, via the same page on smartlinks.app.
 
 **secretEntryLink**(collectionId: string, authKitId: string, name: string, opts: { label?: string } = {}) → `Promise<AuthKitSecretLink>`
 A one-time SmartLinks page where the PERSON types a secret (e.g. `linkedInClientSecret`) — so it never passes through a chat or your code. Give them the `url`; it works once, for 30 minutes. Asking again replaces the link. Check it landed with {@link settings} (`secrets.<name>.set`).

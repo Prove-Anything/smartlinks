@@ -87,8 +87,13 @@ being asked; `always` asks everyone who has one at every sign-in.
 
 **Redirects** — `redirectUrl`: the site's sign-in page (where invitations open; the default for
 emailed links). `afterSignInUrl`: where the site sends people after they sign in (the screens hand the session to the
-page's `onAuthSuccess`; the page reads `afterSignInUrl` from `authKit.load()` and goes there). `allowedRedirectDomains`: extra domains emailed links may return to (the collection's own domains
-and `*.smartlinks.host` are always allowed).
+page's `onAuthSuccess`; the page reads `afterSignInUrl` from `authKit.load()` and goes there). `allowedRedirectDomains`: extra domains emailed links may return to (smartlinks.app, the connected
+domains of the sign-in's own collections and their site addresses on smartlinks.host are always allowed).
+`authKit.redirectDomains(collectionId, authKitId)` lists the automatic ones, the extra ones, and the
+connected domains of your other collections you could add (offered only to an Owner of both — say a sister
+collection's links domain where this collection's tags open). An emailed link for a page of one of the
+sign-in's own collections (`/p/<collectionId>/…`) on a domain that isn't allowed is not refused: it opens
+the same page on smartlinks.app.
 
 **The screens' look** — `branding`: `title`, `subtitle`, `registerTitle`, `registerSubtitle`,
 `logoUrl` (absent = SmartLinks logo, `''` = none), `primaryColor`, `secondaryColor`,

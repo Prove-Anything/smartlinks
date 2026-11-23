@@ -1,4 +1,4 @@
-import type { AuthLoginResponse, AppleLoginOptions, MicrosoftLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, AuthKitConfigInput, AuthKitSetIdentityResponse, AuthKitInviteRequest, AuthKitInviteResponse, AuthKitSchema, AuthKitSettingsResponse, AuthKitSetupRequest, AuthKitSetupResponse, AuthKitEmailKind, AuthKitEmailPreview, AuthKitSecretLink, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse, MfaChallengeSendResponse, MfaFinalizeResponse, MfaEnrollSendResponse, MfaTotpEnrollResponse, MfaEnrolledResponse, MfaFactor, MfaFactorsResponse, TrustedDevice } from "../types/authKit.js";
+import type { AuthLoginResponse, AppleLoginOptions, MicrosoftLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, AuthKitConfigInput, AuthKitSetIdentityResponse, AuthKitInviteRequest, AuthKitInviteResponse, AuthKitSchema, AuthKitSettingsResponse, AuthKitRedirectDomainsResponse, AuthKitSetupRequest, AuthKitSetupResponse, AuthKitEmailKind, AuthKitEmailPreview, AuthKitSecretLink, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse, MfaChallengeSendResponse, MfaFinalizeResponse, MfaEnrollSendResponse, MfaTotpEnrollResponse, MfaEnrolledResponse, MfaFactor, MfaFactorsResponse, TrustedDevice } from "../types/authKit.js";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
@@ -333,6 +333,13 @@ export declare namespace authKit {
     function setup(collectionId: string, body?: AuthKitSetupRequest): Promise<AuthKitSetupResponse>;
     /** What sign-in does now: the stored config, every default filled in, which secrets are set (masked), and checks. */
     function settings(collectionId: string, authKitId: string): Promise<AuthKitSettingsResponse>;
+    /**
+     * Where this sign-in may send emailed links (password reset, magic link, verification): the domains that
+     * are automatic (connected to its own collections), the extra ones in its settings, and the connected
+     * domains of the caller's other collections it could also allow (offered only to an Owner of both).
+     * A page on a domain that isn't allowed still gets its link, via the same page on smartlinks.app.
+     */
+    function redirectDomains(collectionId: string, authKitId: string): Promise<AuthKitRedirectDomainsResponse>;
     /**
      * A one-time SmartLinks page where the PERSON types a secret (e.g. `linkedInClientSecret`) — so it never
      * passes through a chat or your code. Give them the `url`; it works once, for 30 minutes. Asking again
