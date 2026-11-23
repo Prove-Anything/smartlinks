@@ -78,6 +78,7 @@ The SmartLinks SDK (`@proveanything/smartlinks`) includes comprehensive document
 | **AI Guide Template** | `docs/ai-guide-template.md` | Template for creating `public/ai-guide.md` — customise per app |
 | **Forms** | `docs/forms.md` | Form definitions, schema-driven rendering, submission patterns |
 | **Auth Kit** | `docs/auth-kit.md` | End-user sign-in: email/password, magic links, phone OTP, Google OAuth |
+| **EU Digital Product Passports** | `docs/dpp.md` | Passports hosted at their own address in the EU format (public + restricted views, versions), the brand's EU registry connection, and registering them (`dpp.*`) |
 | **Service accounts** | `docs/service-accounts.md` | Identities for other systems (an ERP, a warehouse system) to work with one collection: own key, own access level, made and removed by the collection's admins |
 | **Members** | `docs/members.md` | Signed-in members with a level (clubs, leagues, members' areas): the level field, members-only functions, joining rules |
 | **Portal Request Login** | `docs/portal-request-login.md` | How sub-apps ask the portal to authenticate the user; hook and iframe postMessage contracts |

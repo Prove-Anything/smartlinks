@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.46  |  Generated: 2026-11-23T13:54:13.635Z
+Version: 2.1.47  |  Generated: 2026-11-23T16:16:30.374Z
 
 This is a concise summary of all available API functions and types.
 
@@ -148,6 +148,7 @@ The Smartlinks SDK is organized into the following namespaces:
 - **conditions** - Functions for conditions operations
 - **config** - Functions for config operations
 - **containers** - Functions for containers operations
+- **dpp** - Functions for dpp operations
 - **errors** - Functions for errors operations
 - **facets** - Functions for facets operations
 - **files** - Functions for files operations
@@ -8104,6 +8105,257 @@ interface DeleteCrateResponse {
 }
 ```
 
+### dpp
+
+**DppRegistry** (interface)
+```typescript
+interface DppRegistry {
+  environment: DppEnvironment
+  label: string
+  portal: string | null
+  clientId: string | null
+  kid: string | null
+  alg: string | null
+  orgIdentifier: string | null
+  hasKey: boolean
+  publicPem: string | null
+  publicJwk: { kty: string; crv: string; x: string; y: string } | null
+  thumbprint: string | null
+  keyCreatedAt: string | null
+  lastCheck: { ok: boolean; at: string; message: string; status?: number | null } | null
+  ready: boolean
+  nextStep: DppRegistryNextStep
+}
+```
+
+**SetDppRegistryInput** (interface)
+```typescript
+interface SetDppRegistryInput {
+  clientId?: string | null
+  kid?: string | null
+  orgIdentifier?: string | null
+}
+```
+
+**DppRegistryProductGroup** (interface)
+```typescript
+interface DppRegistryProductGroup {
+  code: string
+  label: string
+  productSubGroups: { code: string; label: string }[]
+}
+```
+
+**DppRegistryCheckResult** (interface)
+```typescript
+interface DppRegistryCheckResult {
+  registry: DppRegistry
+  productGroups: DppRegistryProductGroup[]
+}
+```
+
+**DppViewFields** (interface)
+```typescript
+interface DppViewFields {
+  pub: string[]
+  res1: string[]
+  res2: string[]
+  res3: string[]
+}
+```
+
+**DppGroup** (interface)
+```typescript
+interface DppGroup {
+  productGroup: string
+  label: string
+  subGroups: {
+  productSubGroup: string
+  label: string
+  fields: DppViewFields
+  required: DppViewFields
+  }[]
+}
+```
+
+**DppPassportCheck** (interface)
+```typescript
+interface DppPassportCheck {
+  ready: boolean
+  missing: Partial<DppViewFields>
+  problem?: string
+}
+```
+
+**DppRegistration** (interface)
+```typescript
+interface DppRegistration {
+  status: "processing" | "registered" | "rejected" | "not-sent" | "error"
+  taskId?: string
+  submittedAt?: string
+  correlationId?: string | null
+  registryId?: string | null
+  registeredAt?: string
+  problems?: { code: string; message: string }[] | null
+  checkedAt?: string
+}
+```
+
+**DppPassport** (interface)
+```typescript
+interface DppPassport {
+  id: string
+  url: string
+  status: "active" | "withdrawn"
+  productGroup: string
+  productSubGroup: string | null
+  granularity: DppGranularity
+  modelIdentifier: string | null
+  batchIdentifier: string | null
+  productId: string | null
+  batchId: string | null
+  proofId: string | null
+  public: DppFields
+  restricted: DppFields
+  version: number
+  contentUpdatedAt: string | null
+  registration: Partial<Record<DppEnvironment, DppRegistration>>
+  check: DppPassportCheck
+  createdAt: string
+  updatedAt: string
+}
+```
+
+**DppPassportInput** (interface)
+```typescript
+interface DppPassportInput {
+  productGroup?: string
+  productSubGroup?: string | null
+  granularity?: DppGranularity
+  modelIdentifier?: string | null
+  batchIdentifier?: string | null
+  productId?: string | null
+  batchId?: string | null
+  proofId?: string | null
+  public?: DppFields | null
+  restricted?: DppFields | null
+}
+```
+
+**DppPassportSaveResult** (interface)
+```typescript
+interface DppPassportSaveResult {
+  passport: DppPassport
+  changed: boolean
+}
+```
+
+**DppPassportBulkResult** (interface)
+```typescript
+interface DppPassportBulkResult {
+  results: (
+  | { index: number; ok: true; id: string; url: string; created: boolean; changed: boolean; version: number; check: DppPassportCheck }
+  | { index: number; ok: false; errorCode: string; errorText: string }
+  )[]
+  created: number
+  changed: number
+  unchanged: number
+  failed: number
+}
+```
+
+**DppPassportVersion** (interface)
+```typescript
+interface DppPassportVersion {
+  version: number
+  savedAt: string
+  savedBy: string | null
+}
+```
+
+**DppPassportListQuery** (interface)
+```typescript
+interface DppPassportListQuery {
+  productId?: string
+  batchId?: string
+  proofId?: string
+  status?: "active" | "withdrawn"
+  limit?: number
+  offset?: number
+}
+```
+
+**DppRegisterResult** (interface)
+```typescript
+interface DppRegisterResult {
+  tasks: {
+  taskId: string
+  environment: DppEnvironment
+  productGroup: string
+  productSubGroup: string | null
+  passportIds: string[]
+  estimated: string | null
+  status?: string
+  outcome?: DppTaskOutcome | null
+  passports?: ({ id: string } & Partial<DppRegistration>)[]
+  }[]
+  skipped: { id: string; reason: string; missing?: Partial<DppViewFields>; registryId?: string }[]
+}
+```
+
+**DppTaskOutcome** (interface)
+```typescript
+interface DppTaskOutcome {
+  outcomeResult: "SUCCEEDED" | "FAILED"
+  outcomeMessage?: { code: string; message: string }
+}
+```
+
+**DppTask** (interface)
+```typescript
+interface DppTask {
+  taskId: string
+  environment: DppEnvironment
+  status: string | null
+  outcome: DppTaskOutcome | null
+  passportIds: string[]
+  createdAt: string
+  checkedAt: string | null
+}
+```
+
+**DppTaskRefreshResult** (interface)
+```typescript
+interface DppTaskRefreshResult {
+  taskId: string
+  status: string | null
+  outcome: DppTaskOutcome | null
+  processingInfo: { submittedItems: number; compliantItems: number; nonCompliantItems: number } | null
+  passports: ({ id: string } & Partial<DppRegistration>)[]
+}
+```
+
+**DppDocument** (interface)
+```typescript
+interface DppDocument {
+  digitalProductPassportId: string
+  uniqueProductIdentifier: string
+  granularity: string
+  dppStatus: string
+  lastUpdate: string
+  contentSpecificationIds: string[]
+  [field: string]: unknown
+}
+```
+
+**DppEnvironment** = `"acc" | "prod" | "local" | (string & {})`
+
+**DppGranularity** = `"item" | "batch" | "model"`
+
+**DppRegistryNextStep** = `"make-key" | "enter-service-account" | "enter-organisation-id" | "check" | null`
+
+**DppFields** = `Record<string, unknown>`
+
 ### error
 
 **ErrorResponse** (interface)
@@ -15150,6 +15402,71 @@ Update a crate for a collection (admin only). ```typescript const updated = awai
 **remove**(collectionId: string,
     crateId: string) → `Promise<DeleteCrateResponse>`
 Delete a crate for a collection (admin only). This performs a soft delete. ```typescript await crate.remove('coll_123', 'crate_abc123') ```
+
+### dpp
+
+**groups**(collectionId: string) → `Promise<DppGroup[]>`
+What passports can be made: product groups, their kinds, and each view's fields and required fields. GET /dpp/groups
+
+**read**(collectionId: string, passportId: string, opts: { version?: number } = {}) → `Promise<DppDocument>`
+Read a passport as the public sees it, at its address (the EU JSON document), or an earlier version of it. No sign-in needed. GET /public/dpp/:collectionId/:passportId
+
+**register**(collectionId: string, env: DppEnvironment, passportIds: string[], opts: { wait?: boolean } = {}) → `Promise<DppRegisterResult>`
+Send passports to the EU registry. They're grouped by product group and sent up to 100 at a time; the registry reads each one at its address. Passports still missing required fields, withdrawn or already registered come back in `skipped`. With `wait: true` the call waits (up to ~45 s) and returns each passport's outcome; otherwise follow up with `dpp.tasks.refresh`. POST /dpp/registry/:env/register
+
+### dpp.passports
+
+**list**(collectionId: string, q: DppPassportListQuery = {}) → `Promise<DppPassport[]>`
+GET /dpp/passports
+
+**get**(collectionId: string, passportId: string) → `Promise<DppPassport>`
+One passport, with `check` (what it's still missing) and its `url`. GET /dpp/passports/:id
+
+**create**(collectionId: string, input: DppPassportInput & { productGroup: string }) → `Promise<DppPassport>`
+Make a passport. POST /dpp/passports
+
+**update**(collectionId: string, passportId: string, input: DppPassportInput, opts: { replace?: boolean } = {}) → `Promise<DppPassportSaveResult>`
+Change a passport. `public` / `restricted` are merged into what's there unless `replace` is true. A change to what it says makes a new version. PUT /dpp/passports/:id
+
+**upsert**(collectionId: string, input: DppPassportUpsertInput, opts: { merge?: boolean } = {}) → `Promise<DppPassportUpsertResult>`
+Publish the passport for a product, batch or item (`productId` / `batchId` / `proofId`) at a granularity: updates the one already there or makes it. The fields replace what's there (pass `merge: true` to merge). Saving the same content again changes nothing. PUT /dpp/passports/by-anchor ```typescript const { passport } = await dpp.passports.upsert(collectionId, { productId, productGroup: 'BATTERIES', productSubGroup: 'EV', granularity: 'model', public: { batteryChemistry: [...], manufacturerIdentification: {...} }, restricted: { dismantlingInformation: [...] }, }) if (!passport.check.ready) console.log('Still missing', passport.check.missing) ```
+
+**upsertMany**(collectionId: string, items: DppPassportUpsertInput[], opts: { merge?: boolean } = {}) → `Promise<DppPassportBulkResult>`
+`upsert` for up to 500 passports at once (e.g. one per battery); each answers on its own. POST /dpp/passports/bulk
+
+**versions**(collectionId: string, passportId: string) → `Promise<DppPassportVersion[]>`
+Its versions, newest first; read one with `dpp.read(collectionId, id, { version })`. GET /dpp/passports/:id/versions
+
+**withdraw**(collectionId: string, passportId: string) → `Promise<DppPassport>`
+No longer valid: stays at its address, marked invalid (the registry keeps its record). POST /dpp/passports/:id/withdraw
+
+**restore**(collectionId: string, passportId: string) → `Promise<DppPassport>`
+Valid again. POST /dpp/passports/:id/restore
+
+### dpp.registry
+
+**list**(collectionId: string) → `Promise<DppRegistry[]>`
+Both environments, each with `nextStep` (what's left to connect). GET /dpp/registry
+
+**get**(collectionId: string, env: DppEnvironment) → `Promise<DppRegistry>`
+One environment. GET /dpp/registry/:env
+
+**makeKey**(collectionId: string, env: DppEnvironment, opts: { alg?: "ES256" | "ES384" | "ES512" } = {}) → `Promise<DppRegistry>`
+Make (or replace) the key the brand's Service Account trusts. The private key stays on SmartLinks' servers; show `publicPem` (or `publicJwk`) for the brand to add to its Service Account in the registry. Replacing the key clears `kid` — the registry gives the new key its own. POST /dpp/registry/:env/key
+
+**set**(collectionId: string, env: DppEnvironment, input: SetDppRegistryInput) → `Promise<DppRegistry>`
+Save the Service Account's Client ID and key ID, and the brand's Organisation ID, from the registry. PUT /dpp/registry/:env
+
+**check**(collectionId: string, env: DppEnvironment) → `Promise<DppRegistryCheckResult>`
+Sign in to the registry and read its product groups — proves the connection works. POST /dpp/registry/:env/check
+
+### dpp.tasks
+
+**list**(collectionId: string, env: DppEnvironment) → `Promise<DppTask[]>`
+Requests sent to one environment, newest first. GET /dpp/registry/:env/tasks
+
+**refresh**(collectionId: string, env: DppEnvironment, taskId: string) → `Promise<DppTaskRefreshResult>`
+Ask the registry how a request went and record it on its passports. POST /dpp/registry/:env/tasks/:taskId/refresh
 
 ### errors
 

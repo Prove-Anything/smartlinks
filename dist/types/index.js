@@ -19,6 +19,7 @@ export * from "./broadcasts.js";
 export * from "./segments.js";
 export * from "./userGroups.js";
 export * from "./serviceAccounts.js";
+export * from "./dpp.js";
 export * from "./operations.js";
 export * from "./common.js";
 export * from "./query.js";

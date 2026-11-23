@@ -80,6 +80,8 @@ tags:
     description: Container and item tracking.
   - name: crate
     description: Crate packaging and logistics.
+  - name: dpp
+    description: dpp API
   - name: facets
     description: Product facet querying and aggregation.
   - name: form
@@ -15022,6 +15024,37 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/ProofTypeDefinition"
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
+  /public/dpp/{collectionId}/{passportId}:
+    get:
+      tags:
+        - dpp
+      summary: Read a passport as the public sees it, at its address (the EU JSON document), or an earlier version of it.
+      operationId: dpp_read
+      security: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: passportId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DppDocument"
         400:
           description: Bad request
         401:
@@ -30171,6 +30204,476 @@ components:
           type: boolean
       required:
         - success
+    DppRegistry:
+      type: object
+      properties:
+        environment:
+          $ref: "#/components/schemas/DppEnvironment"
+        label:
+          type: string
+        portal:
+          type: string
+        clientId:
+          type: string
+        kid:
+          type: string
+        alg:
+          type: string
+        orgIdentifier:
+          type: string
+        hasKey:
+          type: boolean
+        publicPem:
+          type: string
+        publicJwk:
+          type: object
+          additionalProperties: true
+        thumbprint:
+          type: string
+        keyCreatedAt:
+          type: string
+        lastCheck:
+          type: object
+          additionalProperties: true
+        ready:
+          type: boolean
+        nextStep:
+          $ref: "#/components/schemas/DppRegistryNextStep"
+      required:
+        - environment
+        - label
+        - portal
+        - clientId
+        - kid
+        - alg
+        - orgIdentifier
+        - hasKey
+        - publicPem
+        - publicJwk
+        - thumbprint
+        - keyCreatedAt
+        - lastCheck
+        - ready
+        - nextStep
+    SetDppRegistryInput:
+      type: object
+      properties:
+        clientId:
+          type: string
+        kid:
+          type: string
+        orgIdentifier:
+          type: string
+    DppRegistryProductGroup:
+      type: object
+      properties:
+        code:
+          type: string
+        label:
+          type: string
+        productSubGroups:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - code
+        - label
+        - productSubGroups
+    DppRegistryCheckResult:
+      type: object
+      properties:
+        registry:
+          $ref: "#/components/schemas/DppRegistry"
+        productGroups:
+          type: array
+          items:
+            $ref: "#/components/schemas/DppRegistryProductGroup"
+      required:
+        - registry
+        - productGroups
+    DppViewFields:
+      type: object
+      properties:
+        pub:
+          type: array
+          items:
+            type: string
+        res1:
+          type: array
+          items:
+            type: string
+        res2:
+          type: array
+          items:
+            type: string
+        res3:
+          type: array
+          items:
+            type: string
+      required:
+        - pub
+        - res1
+        - res2
+        - res3
+    DppGroup:
+      type: object
+      properties:
+        productGroup:
+          type: string
+        label:
+          type: string
+        subGroups:
+          type: object
+          additionalProperties: true
+        productSubGroup:
+          type: string
+        fields:
+          $ref: "#/components/schemas/DppViewFields"
+        required:
+          $ref: "#/components/schemas/DppViewFields"
+      required:
+        - productGroup
+        - label
+        - subGroups
+        - productSubGroup
+        - label
+        - fields
+        - required
+    DppPassportCheck:
+      type: object
+      properties:
+        ready:
+          type: boolean
+        missing:
+          $ref: "#/components/schemas/DppViewFields"
+        problem:
+          type: string
+      required:
+        - ready
+        - missing
+    DppRegistration:
+      type: object
+      properties:
+        status:
+          type: object
+          additionalProperties: true
+        taskId:
+          type: string
+        submittedAt:
+          type: string
+        correlationId:
+          type: string
+        registryId:
+          type: string
+        registeredAt:
+          type: string
+        problems:
+          type: object
+          additionalProperties: true
+        checkedAt:
+          type: string
+      required:
+        - status
+    DppPassport:
+      type: object
+      properties:
+        id:
+          type: string
+        url:
+          type: string
+        status:
+          type: object
+          additionalProperties: true
+        productGroup:
+          type: string
+        productSubGroup:
+          type: string
+        granularity:
+          $ref: "#/components/schemas/DppGranularity"
+        modelIdentifier:
+          type: string
+        batchIdentifier:
+          type: string
+        productId:
+          type: string
+        batchId:
+          type: string
+        proofId:
+          type: string
+        public:
+          $ref: "#/components/schemas/DppFields"
+        restricted:
+          $ref: "#/components/schemas/DppFields"
+        version:
+          type: number
+        contentUpdatedAt:
+          type: string
+        registration:
+          $ref: "#/components/schemas/DppEnvironment"
+        check:
+          $ref: "#/components/schemas/DppPassportCheck"
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+      required:
+        - id
+        - url
+        - status
+        - productGroup
+        - productSubGroup
+        - granularity
+        - modelIdentifier
+        - batchIdentifier
+        - productId
+        - batchId
+        - proofId
+        - public
+        - restricted
+        - version
+        - contentUpdatedAt
+        - registration
+        - check
+        - createdAt
+        - updatedAt
+    DppPassportInput:
+      type: object
+      properties:
+        productGroup:
+          type: string
+        productSubGroup:
+          type: string
+        granularity:
+          $ref: "#/components/schemas/DppGranularity"
+        modelIdentifier:
+          type: string
+        batchIdentifier:
+          type: string
+        productId:
+          type: string
+        batchId:
+          type: string
+        proofId:
+          type: string
+        public:
+          $ref: "#/components/schemas/DppFields"
+        restricted:
+          $ref: "#/components/schemas/DppFields"
+    DppPassportUpsertInput:
+      type: object
+      properties:
+        productGroup:
+          type: string
+        granularity:
+          $ref: "#/components/schemas/DppGranularity"
+      required:
+        - productGroup
+        - granularity
+    DppPassportSaveResult:
+      type: object
+      properties:
+        passport:
+          $ref: "#/components/schemas/DppPassport"
+        changed:
+          type: boolean
+      required:
+        - passport
+        - changed
+    DppPassportUpsertResult:
+      type: object
+      properties:
+        created:
+          type: boolean
+      required:
+        - created
+    DppPassportBulkResult:
+      type: object
+      properties:
+        results:
+          type: object
+          additionalProperties: true
+        created:
+          type: number
+        changed:
+          type: number
+        unchanged:
+          type: number
+        failed:
+          type: number
+      required:
+        - results
+        - created
+        - changed
+        - unchanged
+        - failed
+    DppPassportVersion:
+      type: object
+      properties:
+        version:
+          type: number
+        savedAt:
+          type: string
+        savedBy:
+          type: string
+      required:
+        - version
+        - savedAt
+        - savedBy
+    DppPassportListQuery:
+      type: object
+      properties:
+        productId:
+          type: string
+        batchId:
+          type: string
+        proofId:
+          type: string
+        status:
+          type: object
+          additionalProperties: true
+        limit:
+          type: number
+        offset:
+          type: number
+    DppRegisterResult:
+      type: object
+      properties:
+        tasks:
+          type: object
+          additionalProperties: true
+        taskId:
+          type: string
+        environment:
+          $ref: "#/components/schemas/DppEnvironment"
+        productGroup:
+          type: string
+        productSubGroup:
+          type: string
+        passportIds:
+          type: array
+          items:
+            type: string
+        estimated:
+          type: string
+        status:
+          type: string
+        outcome:
+          $ref: "#/components/schemas/DppTaskOutcome"
+        passports:
+          type: array
+          items:
+            $ref: "#/components/schemas/DppRegistration"
+        skipped:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+      required:
+        - tasks
+        - taskId
+        - environment
+        - productGroup
+        - productSubGroup
+        - passportIds
+        - estimated
+        - skipped
+    DppTaskOutcome:
+      type: object
+      properties:
+        outcomeResult:
+          type: object
+          additionalProperties: true
+        outcomeMessage:
+          type: object
+          additionalProperties: true
+      required:
+        - outcomeResult
+    DppTask:
+      type: object
+      properties:
+        taskId:
+          type: string
+        environment:
+          $ref: "#/components/schemas/DppEnvironment"
+        status:
+          type: string
+        outcome:
+          $ref: "#/components/schemas/DppTaskOutcome"
+        passportIds:
+          type: array
+          items:
+            type: string
+        createdAt:
+          type: string
+        checkedAt:
+          type: string
+      required:
+        - taskId
+        - environment
+        - status
+        - outcome
+        - passportIds
+        - createdAt
+        - checkedAt
+    DppTaskRefreshResult:
+      type: object
+      properties:
+        taskId:
+          type: string
+        status:
+          type: string
+        outcome:
+          $ref: "#/components/schemas/DppTaskOutcome"
+        processingInfo:
+          type: object
+          additionalProperties: true
+        passports:
+          type: array
+          items:
+            $ref: "#/components/schemas/DppRegistration"
+      required:
+        - taskId
+        - status
+        - outcome
+        - processingInfo
+        - passports
+    DppDocument:
+      type: object
+      properties:
+        digitalProductPassportId:
+          type: string
+        uniqueProductIdentifier:
+          type: string
+        granularity:
+          type: string
+        dppStatus:
+          type: string
+        lastUpdate:
+          type: string
+        contentSpecificationIds:
+          type: array
+          items:
+            type: string
+      required:
+        - digitalProductPassportId
+        - uniqueProductIdentifier
+        - granularity
+        - dppStatus
+        - lastUpdate
+        - contentSpecificationIds
+    DppEnvironment:
+      type: object
+      additionalProperties: true
+    DppGranularity:
+      type: object
+      additionalProperties: true
+    DppRegistryNextStep:
+      type: object
+      additionalProperties: true
+    DppFields:
+      type: object
+      additionalProperties: true
     ErrorResponse:
       type: object
       properties:

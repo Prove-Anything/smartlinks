@@ -59,6 +59,7 @@ export { translations } from "./translations.js";
 export { integrations } from "./integrations.js";
 export { secrets } from "./secrets.js";
 export { serviceAccounts } from "./serviceAccounts.js";
+export { dpp } from "./dpp.js";
 export { research } from "./research.js";
 export { config } from "./config.js";
 export { http } from "./http.js";
