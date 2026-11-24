@@ -36,7 +36,36 @@ export function getApiVersion(): string {
   return apiVersionSent
 }
 
+// A second copy of the SDK on one page (a host that serves SDK 3 beside SDK 2) has no sign-in of its own:
+// it asks the host's copy for the current one each time (initializeApi({ signInFrom })), so the two can
+// never disagree about who is signed in.
+let signInFrom: (() => Record<string, string>) | null = null
+let signInSeen = ''
+
+/** The host's sign-in headers right now ({} when this copy doesn't follow a host). */
+function hostSignIn(): Record<string, string> {
+  if (!signInFrom) return {}
+  let h: Record<string, string> = {}
+  try { h = { ...(signInFrom() || {}) } } catch { h = {} }
+  // Only sign-in travels across. Which API version and SDK this copy is, it says itself.
+  for (const k of Object.keys(h)) if (/^smartlinks-(version|sdk|app)$/i.test(k)) delete h[k]
+  // A different person (or none) since the last look: what was cached for the last one must go.
+  const seen = JSON.stringify(Object.keys(h).sort().map((k) => [k.toLowerCase(), h[k]]))
+  if (seen !== signInSeen) {
+    const first = signInSeen === ''
+    signInSeen = seen
+    if (!first) { clearHttpCache('host sign-in changed'); if (cachePersistence !== 'none') idbClear().catch(() => {}) }
+  }
+  return h
+}
+
 function addClientHeaders(headers: Record<string, string>): void {
+  // The host's sign-in replaces whatever this copy holds (it holds none of its own).
+  const host = hostSignIn()
+  for (const [k, v] of Object.entries(host)) {
+    for (const mine of Object.keys(headers)) if (mine.toLowerCase() === k.toLowerCase()) delete headers[mine]
+    headers[k] = v
+  }
   const lower = new Set(Object.keys(headers).map((k) => k.toLowerCase()))
   for (const [k, v] of Object.entries(getClientHeaders())) if (!lower.has(k.toLowerCase())) headers[k] = v
 }
@@ -583,6 +612,18 @@ export function initializeApi(options: {
    */
   apiVersion?: string
   /**
+   * For a HOST that has two copies of the SDK on one page (it serves SDK 3 to apps built for it, beside
+   * the SDK 2 the page itself runs on): where this copy gets its sign-in. Called for every request; return
+   * the other copy's `getApiHeaders()`. This copy then sends exactly the sign-in the host has at that
+   * moment (API key, bearer token, grant token), and forgets cached answers when it changes.
+   *
+   * @example
+   * ```ts
+   * SL3.initializeApi({ baseURL: SL.getBaseURL()!, signInFrom: () => SL.getApiHeaders() })
+   * ```
+   */
+  signInFrom?: () => Record<string, string>
+  /**
    * The release channel this build is running as ('dev' | 'alpha' | 'beta' | 'stable'). Normally
    * left unset — hosts that run a non-production build (Forge preview of a Test build) pass
    * `appChannel` in the app's context and the SDK picks it up. Preserved across re-initialization
@@ -682,6 +723,8 @@ export function initializeApi(options: {
   // Year-month sorts as text, so "newer" is a plain comparison.
   apiVersionSent = options.apiVersion && /^\d{4}-(0[1-9]|1[0-2])$/.test(options.apiVersion) && options.apiVersion >= API_VERSION ? options.apiVersion : API_VERSION
   clientAppVersion = options.appVersion ? String(options.appVersion).slice(0, 30) : null
+  signInFrom = typeof options.signInFrom === 'function' ? options.signInFrom : null
+  signInSeen = ''
   // Platform opt-in (native refresh tokens). Preserve an earlier value when a
   // re-init call omits it, so long-lived native sessions aren't downgraded by a
   // later bootstrap that forgot to pass platform.
@@ -778,7 +821,12 @@ export function getGrantToken(): string | undefined {
  * so this returns `undefined` even when the caller is authenticated.
  */
 export function getBearerToken(): string | undefined {
-  return bearerToken
+  if (bearerToken || !signInFrom) return bearerToken
+  // Following a host: the token is the host's.
+  const host = hostSignIn()
+  const key = Object.keys(host).find((k) => k.toLowerCase() === 'authorization')
+  const m = key ? /^Bearer\s+(.+)$/i.exec(host[key]) : null
+  return m ? m[1] : undefined
 }
 
 /**
@@ -1475,6 +1523,7 @@ export async function proxyUploadFormData<T>(
  */
 export async function request<T>(path: string): Promise<T> {
   await ensureAuthReady()
+  hostSignIn() // before the cache is read: a change of sign-in on the host empties it
   const skipCache = shouldSkipCache(path)
   const cacheKey = buildCacheKey(path)
   const ttl = skipCache ? 0 : getTtlForPath(path)
@@ -2051,6 +2100,11 @@ export function getApiHeaders(): Record<string, string> {
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const sourceDomain = getSourceDomain(); if (sourceDomain) headers["X-Source-Domain"] = sourceDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
+  // A copy that follows a host's sign-in passes that on.
+  for (const [k, v] of Object.entries(hostSignIn())) {
+    for (const mine of Object.keys(headers)) if (mine.toLowerCase() === k.toLowerCase()) delete headers[mine]
+    headers[k] = v
+  }
   return headers
 }
 

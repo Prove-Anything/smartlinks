@@ -2202,7 +2202,7 @@
     {
       "kind": "behaviour",
       "name": "shared dependencies",
-      "note": "Built on SDK 3, a component declares shared-dependency contract v8 and gets SDK 3 from the host. The window global is `SL3` (and `SmartlinksAuthUI3`); `SL` stays SDK 2."
+      "note": "Built on SDK 3, a component declares shared-dependency contract v8 and gets SDK 3 from the host: as the import, as the `SL` prop and as the window global `SL3` (`SL` stays SDK 2). Keep building both formats: the host loads the UMD build of an app on SDK 3."
     },
     {
       "kind": "behaviour",

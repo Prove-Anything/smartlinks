@@ -240,10 +240,13 @@ side by side, the shared-dependency contract goes to **v8** with SDK 3
 - Build with `SHARED_DEPENDENCY_SPECIFIERS` from SDK 3 as your externals, as before. Your manifest then
   says `sharedDependencies: "v8"` and the host gives you SDK 3.
 - An older build of your app, and other apps still on SDK 2, keep getting SDK 2. Nothing changes for them.
-- If you read the SDK from the window global rather than an import, it is `window.SL3` (SDK 2 stays
-  `window.SL`).
-- UI packages that use the SDK (`@proveanything/smartlinks-auth-ui`, `@proveanything/smartlinks-utils-ui`)
-  need their SDK 3 versions.
+- The `SL` prop the host hands your component is SDK 3 too. If you read the SDK from the window
+  global rather than an import, it is `window.SL3` (`window.SL` stays SDK 2).
+- Keep building both formats (`moduleFormat: "dual"`). For now the host loads the UMD build of an app
+  on SDK 3.
+- The sign-in UI (`@proveanything/smartlinks-auth-ui`) is the host's one copy, as before.
+- `@proveanything/smartlinks-utils-ui` is bundled into your app and calls the SDK itself, so it must be
+  a version that works on SDK 3.
 
 ## What the compiler won't catch
 

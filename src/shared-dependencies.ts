@@ -44,10 +44,11 @@ type ContractEntry = Omit<SharedDependency, 'importMapPath'>;
 
 // v8 is the v7 set with SDK 3 in place of SDK 2. SDK 3 changes what the SDK's functions return (every
 // list is { items, nextCursor, count? }) and drops the deprecated calls, so a host cannot swap it in under
-// apps built for SDK 2. Instead a host serves BOTH: a v7 app keeps resolving SDK 2 (/sl-shared/v7/…,
-// window.SL) and a v8 app resolves SDK 3 (/sl-shared/v8/…, window.SL3). The same goes for the auth UI
-// package, which imports the SDK: its SDK-3 major is window.SmartlinksAuthUI3. Every other entry is the
-// same library at the same version in both, and the host serves ONE copy of each (two Reacts would crash).
+// apps built for SDK 2. Instead a host serves BOTH: a v7 app keeps resolving SDK 2 (window.SL) and a v8
+// app resolves SDK 3 (window.SL3). Every other entry is the same library at the same version in both,
+// and the host serves ONE copy of each (two Reacts would crash). That includes the sign-in UI: its
+// provider and hooks share a React context, so there is one copy for every app on the page, whichever
+// SDK the app was built on.
 //
 // The 29-entry v7 contract was: the v6 set plus `dompurify` (HTML sanitizer — pairs with
 // the shared `marked` so output apps sanitize instead of each bundling their own),
@@ -62,7 +63,7 @@ const CONTRACT: ContractEntry[] = [
   { specifier: 'react/jsx-runtime', globalName: 'jsxRuntime', minVersion: '19.0.0' },
   { specifier: 'react/jsx-dev-runtime', globalName: 'jsxDevRuntime', minVersion: '19.0.0' },
   { specifier: '@proveanything/smartlinks', globalName: 'SL3', minVersion: '3.0.0' },
-  { specifier: '@proveanything/smartlinks-auth-ui', globalName: 'SmartlinksAuthUI3', minVersion: '3.0.0' },
+  { specifier: '@proveanything/smartlinks-auth-ui', globalName: 'SmartlinksAuthUI', minVersion: '2.0.0' },
   { specifier: 'react-router-dom', globalName: 'ReactRouterDOM', minVersion: '7.18.4' },
   { specifier: '@tanstack/react-query', globalName: 'ReactQuery', minVersion: '5.0.0' },
   { specifier: 'lucide-react', globalName: 'LucideReact', minVersion: '1.0.0' },
