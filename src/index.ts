@@ -51,6 +51,8 @@ export type { SharedDependency, HostSharedDependencies } from './shared-dependen
 export type { GuideSurface, GuideInfo, ScreenContent, GuideWhere, GuideNavigate, GuideCard, GuideStartOptions } from './api/aiGuide'
 export type { LiveState, LiveHandle, LiveOptions, LiveEndpoints, LiveEvent, LiveMintReply, LiveToolReply, LiveToolHandler } from './live'
 // API versions: the contract this SDK release is built for, and the headers that carry it (docs/api-versions.md)
+// Walking lists: every list returns { items, nextCursor, count? } (docs/lists.md)
+export { each, all } from './list'
 export { API_VERSION, SDK_VERSION, API_VERSION_HEADER, SDK_HEADER, APP_HEADER, CLIENT_HEADER_NAMES } from './apiVersion'
 export { AI_TOOL_NAMES, BUILTIN_AI_TOOLS, getBuiltinAiTool } from './ai-tools'
 export type { BuiltinAiToolDescriptor } from './ai-tools'

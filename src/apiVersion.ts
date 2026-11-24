@@ -8,7 +8,7 @@
 import { SDK_VERSION } from "./version"
 
 /** The API version this SDK release is built for. Override per app with `initializeApi({ apiVersion })`. */
-export const API_VERSION = "2026-11"
+export const API_VERSION = "2027-01"
 
 export { SDK_VERSION }
 
