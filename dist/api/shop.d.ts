@@ -50,7 +50,11 @@ export declare namespace shop {
         limit?: number;
         offset?: number;
     }): Promise<ShopPage<ShopBuyerOrder>>;
-    /** Format minor units as money for the person: `formatMoney(1299, 'GBP')` → "£12.99". */
+    /**
+     * Format minor units as money, in the page's language unless `locale` says otherwise:
+     * `formatMoney(1299, 'EUR')` → "€12.99" in English, "12,99 €" in German. Zero-decimal currencies
+     * (JPY, KRW) are whole units: `formatMoney(1299, 'JPY')` → "¥1,299".
+     */
     function formatMoney(amount: number, currency: string, locale?: string): string;
     /** The seller's side: settings, Stripe, prices and orders (collection admins). */
     namespace admin {

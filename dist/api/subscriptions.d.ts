@@ -39,7 +39,8 @@ export declare namespace subscriptions {
         url: string;
     }>;
     /**
-     * Format a plan price for people: "£15 a month", "£150 a year", "£40 every 3 months", "£99 once".
+     * Format a plan price for people, in the page's language unless `locale` says otherwise:
+     * "£15 a month", "15 € pro Monat", "40 € tous les 3 mois", "99 € una tantum".
      */
     function describePrice(p: {
         amount: number;

@@ -1,6 +1,6 @@
 // src/index.ts
 // Top-level entrypoint of the npm package. Re-export initializeApi + all namespaces.
-export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, getHttpCacheDiagnostics, resetHttpCacheDiagnostics, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, getBaseURL, isProxyEnabled, setBearerToken, getBearerToken, setGrantToken, getGrantToken, getAppContext, setAppContext, getAppChannel, setAppChannel } from "./http.js";
+export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, getHttpCacheDiagnostics, resetHttpCacheDiagnostics, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, getClientHeaders, getApiVersion, getBaseURL, isProxyEnabled, setBearerToken, getBearerToken, setGrantToken, getGrantToken, getAppContext, setAppContext, getAppChannel, setAppChannel } from "./http.js";
 export * from "./api/index.js";
 export * from "./types/index.js";
 // Iframe namespace
@@ -29,5 +29,7 @@ export { createAdminCardViews, collectAdminCardTodo, adminCardAge, injectAdminCa
 export { normaliseAdminCardPayload, ADMIN_CARD_MAX_BYTES } from './adminCardPayload.js';
 // Shared dependency contract (host↔app) — one source of truth for externalized deps
 export { SHARED_DEPENDENCY_CONTRACT_VERSION, SHARED_DEPENDENCIES, SHARED_DEPENDENCY_SPECIFIERS, importMapPathFor, getHostSharedDependencies, } from './shared-dependencies.js';
+// API versions: the contract this SDK release is built for, and the headers that carry it (docs/api-versions.md)
+export { API_VERSION, SDK_VERSION, API_VERSION_HEADER, SDK_HEADER, APP_HEADER, CLIENT_HEADER_NAMES } from './apiVersion.js';
 export { AI_TOOL_NAMES, BUILTIN_AI_TOOLS, getBuiltinAiTool } from './ai-tools.js';
 export { HostCapabilityUnavailableError, HostPermissionDeniedError, HostTimeoutError, HostCancelledError, } from './mobile-admin/errors.js';

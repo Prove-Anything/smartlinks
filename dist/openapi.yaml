@@ -6596,7 +6596,7 @@ paths:
     post:
       tags:
         - order
-      summary: Get comprehensive scan analytics for all tags in an order.
+      summary: order.getAnalytics
       operationId: order_getAnalytics
       security:
         - bearerAuth: []
@@ -8509,7 +8509,7 @@ paths:
     post:
       tags:
         - proof
-      summary: "The standard query on proofs (admin only): filter, sort, page, count and total a collection's proofs in one call, and follow a proof to its `product` and its `owner` (the owner's contact)."
+      summary: proof.query
       operationId: proof_query
       security:
         - bearerAuth: []
@@ -10182,7 +10182,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: Sign in with LinkedIn (OpenID Connect) via a server-side authorization code (public).
+      summary: authKit.linkedInLogin
       operationId: authKit_linkedInLogin
       security: []
       parameters:
@@ -30211,6 +30211,8 @@ components:
           $ref: "#/components/schemas/DppEnvironment"
         label:
           type: string
+        practice:
+          type: boolean
         portal:
           type: string
         clientId:
@@ -30242,6 +30244,7 @@ components:
       required:
         - environment
         - label
+        - practice
         - portal
         - clientId
         - kid

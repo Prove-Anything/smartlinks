@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 2.1.47  |  Generated: 2026-11-23T16:16:30.374Z
+Version: 2.2.0  |  Generated: 2026-11-24T13:11:42.707Z
 
 This is a concise summary of all available API functions and types.
 
@@ -182,6 +182,12 @@ The Smartlinks SDK is organized into the following namespaces:
 ## HTTP Utilities
 
 Core HTTP functions for API configuration and communication:
+
+**getClientHeaders**() → `Record<string, string>`
+The identity headers for this client: API version, SDK release and (in an app) the app.
+
+**getApiVersion**() → `string`
+The API version this client asks for (the SDK's own, unless `initializeApi({ apiVersion })` set another).
 
 **getHttpCacheDiagnostics**() → `void`
 Snapshot of cache counters + current keys. Call from the console via `window.__slHttpDiag()`.
@@ -8112,6 +8118,7 @@ interface DeleteCrateResponse {
 interface DppRegistry {
   environment: DppEnvironment
   label: string
+  practice: boolean
   portal: string | null
   clientId: string | null
   kid: string | null
@@ -8348,11 +8355,11 @@ interface DppDocument {
 }
 ```
 
-**DppEnvironment** = `"acc" | "prod" | "local" | (string & {})`
+**DppEnvironment** = `"acc" | "prod" | "practice" | "local" | (string & {})`
 
 **DppGranularity** = `"item" | "batch" | "model"`
 
-**DppRegistryNextStep** = `"make-key" | "enter-service-account" | "enter-organisation-id" | "check" | null`
+**DppRegistryNextStep** = `"make-key" | "enter-service-account" | "enter-organisation-id" | "check" | "enrol-practice" | null`
 
 **DppFields** = `Record<string, unknown>`
 
@@ -15457,6 +15464,9 @@ Make (or replace) the key the brand's Service Account trusts. The private key st
 **set**(collectionId: string, env: DppEnvironment, input: SetDppRegistryInput) → `Promise<DppRegistry>`
 Save the Service Account's Client ID and key ID, and the brand's Organisation ID, from the registry. PUT /dpp/registry/:env
 
+**enrolPractice**(collectionId: string) → `Promise<DppRegistryCheckResult>`
+Connect the brand to the SmartLinks PRACTICE registry in one step — key, enrolment, Service Account and check — to try publishing and registering before the brand is verified with the EU. Never the EU: label it as practice wherever it's shown. POST /dpp/registry/practice/enrol
+
 **check**(collectionId: string, env: DppEnvironment) → `Promise<DppRegistryCheckResult>`
 Sign in to the registry and read its product groups — proves the connection works. POST /dpp/registry/:env/check
 
@@ -16671,7 +16681,7 @@ The thank-you page: the order a Stripe checkout paid for, from the `session_id` 
 The signed-in buyer's orders, newest first, with their download links. @throws `SIGN_IN_REQUIRED`
 
 **formatMoney**(amount: number, currency: string, locale?: string) → `string`
-Format minor units as money for the person: `formatMoney(1299, 'GBP')` → "£12.99".
+Format minor units as money, in the page's language unless `locale` says otherwise: `formatMoney(1299, 'EUR')` → "€12.99" in English, "12,99 €" in German. Zero-decimal currencies (JPY, KRW) are whole units: `formatMoney(1299, 'JPY')` → "¥1,299".
 
 ### shop.admin
 
@@ -16749,7 +16759,7 @@ Move to another plan's price. Up (a higher-ranked or dearer plan): at once, char
 Stripe's page for the member's card, invoices and cancelling. Send them to `url`. @throws `NO_BILLING`
 
 **describePrice**(p: { amount: number; currency: string; interval: 'month' | 'year' | null; intervalCount?: number }, locale?: string) → `string`
-Format a plan price for people: "£15 a month", "£150 a year", "£40 every 3 months", "£99 once".
+Format a plan price for people, in the page's language unless `locale` says otherwise: "£15 a month", "15 € pro Monat", "40 € tous les 3 mois", "99 € una tantum".
 
 ### subscriptions.admin
 
