@@ -1,3 +1,4 @@
+import type { ListOptions } from './list.js';
 /** How a price is delivered: shipped, or delivered when paid. */
 export type ShopDelivery = 'physical' | 'digital';
 /**
@@ -62,13 +63,12 @@ export interface ShopPriceInput {
     metadata?: Record<string, any>;
 }
 export type ShopPriceUpdate = Partial<Omit<ShopPriceInput, 'productId' | 'variantId' | 'currency'>>;
-export interface ShopPriceListParams {
+/** `shop.admin.listPrices` options: the filters, plus `limit` and `cursor`. */
+export interface ShopPriceListParams extends ListOptions {
     productId?: string;
     currency?: string;
     active?: boolean;
     appId?: string;
-    limit?: number;
-    offset?: number;
 }
 export interface ShopShippingRate {
     id: string;
@@ -336,19 +336,12 @@ export interface ShopBuyerOrder extends ShopOrder {
         url: string;
     }[];
 }
-export interface ShopOrderListParams {
+/** `shop.admin.listOrders` options: the filters, plus `limit` and `cursor`. */
+export interface ShopOrderListParams extends ListOptions {
     /** One status or several, comma-separated. Unpaid and expired checkouts are left out unless asked for. */
     status?: string;
     contactId?: string;
     includeExpired?: boolean;
-    limit?: number;
-    offset?: number;
-}
-export interface ShopPage<T> {
-    items: T[];
-    total: number;
-    limit: number;
-    offset: number;
 }
 export interface ShopShipInput {
     /** Which lines and how many; all that's left when omitted. */

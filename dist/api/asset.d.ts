@@ -1,4 +1,5 @@
-import { Asset, AssetResponse, UploadAssetOptions, UploadFromUrlOptions, ListAssetsOptions, GetAssetOptions, RemoveAssetOptions, AdminListAssetsOptions, AdminListAssetsResponse, UpdateAssetOptions, ReplaceAssetFileOptions, DeleteAssetOptions, BulkDeleteAssetsOptions, RequestUploadTokenOptions, UploadTokenResponse, PublicTokenUploadOptions, CreateResumableUploadOptions, ResumableUploadHandle } from "../types/asset.js";
+import type { ListResult } from "../types/list.js";
+import { Asset, AssetResponse, UploadAssetOptions, UploadFromUrlOptions, ListAssetsOptions, GetAssetOptions, RemoveAssetOptions, AdminListAssetsOptions, UpdateAssetOptions, ReplaceAssetFileOptions, DeleteAssetOptions, BulkDeleteAssetsOptions, RequestUploadTokenOptions, UploadTokenResponse, PublicTokenUploadOptions, CreateResumableUploadOptions, ResumableUploadHandle } from "../types/asset.js";
 export declare namespace asset {
     /**
      * Error type for asset uploads
@@ -43,28 +44,51 @@ export declare namespace asset {
      */
     function uploadFromUrl(options: UploadFromUrlOptions): Promise<Asset>;
     function getForCollection(collectionId: string, assetId: string): Promise<AssetResponse>;
-    function listForCollection(collectionId: string): Promise<AssetResponse[]>;
+    /**
+     * The collection's own assets (public). Returns `{ items, nextCursor }`: the assets are in `items`.
+     * The list is not paged, so `nextCursor` is always `null`.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await asset.listForCollection('my-collection')
+     * ```
+     */
+    function listForCollection(collectionId: string): Promise<ListResult<AssetResponse>>;
     function getForProduct(collectionId: string, productId: string, assetId: string): Promise<AssetResponse>;
-    function listForProduct(collectionId: string, productId: string): Promise<AssetResponse[]>;
+    /**
+     * A product's assets (public). Returns `{ items, nextCursor }`: the assets are in `items`.
+     * The list is not paged, so `nextCursor` is always `null`.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await asset.listForProduct('my-collection', 'wine-bottle')
+     * ```
+     */
+    function listForProduct(collectionId: string, productId: string): Promise<ListResult<AssetResponse>>;
     function getForProof(collectionId: string, productId: string, proofId: string, assetId: string): Promise<AssetResponse>;
-    function listForProof(collectionId: string, productId: string, proofId: string, appId?: string): Promise<AssetResponse[]>;
     /**
-     * Uploads an asset file to a proof, with optional extraData as JSON.
-     * @deprecated Use `asset.upload(options)` instead.
-     * Supports progress reporting via onProgress callback (browser only).
-     * @param collectionId - The collection ID
-     * @param productId - The product ID
-     * @param proofId - The proof ID
-     * @param file - The file to upload
-     * @param extraData - Arbitrary extra data to include (will be stringified as JSON)
-     * @param onProgress - Optional callback for upload progress (0-100)
-     * @returns Promise resolving to an AssetResponse object
+     * A proof's assets (public), optionally only one app's. Returns `{ items, nextCursor }`: the assets
+     * are in `items`. The list is not paged, so `nextCursor` is always `null`.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await asset.listForProof('my-collection', 'wine-bottle', proofId, 'gallery')
+     * ```
      */
-    function uploadAsset(collectionId: string, productId: string, proofId: string, file: File, extraData?: Record<string, any>, onProgress?: (percent: number) => void): Promise<AssetResponse>;
+    function listForProof(collectionId: string, productId: string, proofId: string, appId?: string): Promise<ListResult<AssetResponse>>;
     /**
-     * List assets for a given scope
+     * List assets for a given scope (a collection, a product or a proof). Returns `{ items, nextCursor }`:
+     * the assets are in `items`. These lists are not paged, so `nextCursor` is always `null`.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await asset.list({
+     *   scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' },
+     *   appId: 'gallery',
+     * })
+     * ```
      */
-    function list(options: ListAssetsOptions): Promise<Asset[]>;
+    function list(options: ListAssetsOptions): Promise<ListResult<Asset>>;
     /**
      * Get an asset by id within a scope (public)
      */
@@ -74,9 +98,21 @@ export declare namespace asset {
      */
     function remove(options: RemoveAssetOptions): Promise<void>;
     /**
-     * List assets for a collection with full filtering options.
+     * List assets for a collection with full filtering options (admin). Returns `{ items, nextCursor }`:
+     * the assets are in `items`, 50 at a time unless you give a `limit` (at most 200). Pass `nextCursor`
+     * back as `cursor` for the next page; `null` means that was the last one. `count` (how many match in
+     * all) is there when you gave a `limit` or a `cursor`.
+     *
+     * @example
+     * ```typescript
+     * let page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', limit: 20 })
+     * console.log(`${page.count} images`)
+     * while (page.nextCursor) {
+     *   page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', limit: 20, cursor: page.nextCursor })
+     * }
+     * ```
      */
-    function listAdmin(options: AdminListAssetsOptions): Promise<AdminListAssetsResponse>;
+    function listAdmin(options: AdminListAssetsOptions): Promise<ListResult<Asset>>;
     /**
      * Get a single asset by ID (admin).
      */

@@ -1,5 +1,6 @@
-import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, ContactSearchParams, ContactSearchResponse, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse, ContactPatch, PublicGetMyContactResponse, PublicUpdateMyContactResponse, ContactSchemaResponse, ContactDuplicatesResponse, ContactMergeResponse, ContactLinkLoginResponse } from "../types/index.js";
+import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactSearchParams, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse, ContactPatch, PublicGetMyContactResponse, PublicUpdateMyContactResponse, ContactSchemaResponse, ContactDuplicatesResponse, ContactMergeResponse, ContactLinkLoginResponse } from "../types/index.js";
 import type { StandardQuery, QueryResult, QueryDescription } from "../types/query.js";
+import type { ListResult, ListOptions } from "../types/list.js";
 export declare namespace contact {
     /**
      * The standard query on contacts (admin only): filter, sort, page, count and total in one call.
@@ -24,12 +25,34 @@ export declare namespace contact {
      */
     function queryFields(collectionId: string): Promise<QueryDescription>;
     function create(collectionId: string, data: ContactCreateRequest): Promise<ContactResponse>;
-    function list(collectionId: string, params?: {
-        limit?: number;
-        offset?: number;
+    /**
+     * The collection's contacts, a page at a time (admin only). Pass `includeDeleted: true` to include
+     * deleted contacts. For filters, sorting and totals use `contact.query` or `contact.search`.
+     * GET /admin/collection/:collectionId/contacts
+     *
+     * @example
+     * ```typescript
+     * let page = await contact.list('coll_123', { limit: 50 })
+     * page.items // Contact[]
+     * while (page.nextCursor) page = await contact.list('coll_123', { limit: 50, cursor: page.nextCursor })
+     * ```
+     */
+    function list(collectionId: string, params?: ListOptions & {
         includeDeleted?: boolean;
-    }): Promise<ContactListResponse>;
-    function search({ collectionId, q, typeahead, email, phone, id, userId, tags, tagsAll, source, locale, createdFrom, createdTo, externalIdKey, externalIdValue, customFieldKey, customFieldValue, limit, offset, }: ContactSearchParams): Promise<ContactSearchResponse>;
+    }): Promise<ListResult<ContactResponse>>;
+    /**
+     * Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead`
+     * for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields.
+     * GET /admin/collection/:collectionId/contacts/search
+     *
+     * @example
+     * ```typescript
+     * let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 })
+     * page.items // Contact[]
+     * if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor })
+     * ```
+     */
+    function search({ collectionId, q, typeahead, email, phone, id, userId, tags, tagsAll, source, locale, createdFrom, createdTo, externalIdKey, externalIdValue, customFieldKey, customFieldValue, limit, cursor, }: ContactSearchParams): Promise<ListResult<ContactResponse>>;
     function get(collectionId: string, contactId: string, params?: {
         includeDeleted?: boolean;
     }): Promise<ContactResponse>;
@@ -82,21 +105,19 @@ export declare namespace contact {
      * already held — so one contact has the email and no sign-in, the other the sign-in (and everything
      * they did) and no email. The match is made on the server, on verified addresses only.
      *
-     * Checks a window of contacts per call; while `more` is true, call again with `offset` moved on by
-     * `scanned`.
+     * Checks a window of contacts per call and returns the pairs found in it (`items`); `scanned` is how
+     * many contacts it checked. While `nextCursor` is not null, call again with it as `cursor` to check
+     * the next window.
      *
      * @example
      * ```typescript
-     * const { pairs } = await contact.findDuplicates(collectionId)
+     * const { items: pairs } = await contact.findDuplicates(collectionId)
      * for (const pair of pairs) {
      *   await contact.merge(collectionId, pair.keep.contactId, pair.merge.contactId)
      * }
      * ```
      */
-    function findDuplicates(collectionId: string, params?: {
-        limit?: number;
-        offset?: number;
-    }): Promise<ContactDuplicatesResponse>;
+    function findDuplicates(collectionId: string, params?: ListOptions): Promise<ContactDuplicatesResponse>;
     /**
      * Admin: fold contact `fromContactId` INTO contact `keepContactId`.
      * POST /admin/collection/:collectionId/contacts/:keepContactId/merge

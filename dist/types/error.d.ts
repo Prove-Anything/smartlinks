@@ -33,14 +33,12 @@ export declare class SmartlinksApiError extends Error {
      * Returns the numeric error code from the server response, if available.
      * This is typically the HTTP status code (400, 401, 500, etc.).
      *
-     * For server-defined string error codes like "NOT_AUTHORIZED" or "broadcasts.topic.invalid",
-     * use: `error.details?.errorCode || error.details?.error`
+     * For the server's own code (a string such as "NOT_FOUND" or "UNKNOWN_PARAMETER"), use `error.errorCode`.
      */
     get code(): number | undefined;
     /**
-     * Returns the server-specific error code string.
-     * This is distinct from the HTTP status code (e.g., "NOT_AUTHORIZED", "broadcasts.topic.invalid").
-     * This is the primary identifier to check for programmatic error handling.
+     * The server's code for what went wrong, in UPPER_SNAKE: "NOT_FOUND", "UNKNOWN_PARAMETER",
+     * "INVALID_QUERY". This is what to check in code; the message is for people and may change.
      */
     get errorCode(): string | undefined;
     /**
@@ -48,6 +46,11 @@ export declare class SmartlinksApiError extends Error {
      * This object contains various server-specific fields that may vary by endpoint.
      */
     get details(): Record<string, any> | undefined;
+    /**
+     * The id of the request on the server, when the answer carried one. Quote it when reporting a problem:
+     * it finds the request in the logs.
+     */
+    get requestId(): string | undefined;
     /**
      * Check if this is a client error (4xx status code).
      */

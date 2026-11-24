@@ -33,7 +33,6 @@ export interface JourneyStepRecipientsRequest {
     to?: string;
     limit?: number;
 }
-export type JourneyStepRecipientsResponse = string[];
 export interface JourneyFunnelReportRequest {
     idField?: IdField;
     periodStart?: string;

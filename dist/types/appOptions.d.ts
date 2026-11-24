@@ -1,3 +1,4 @@
+import type { ListResult } from './list.js';
 /** One entry a picker shows. */
 export interface AppOption {
     /** A record's id, or a value list value's code: what a record stores. */
@@ -19,6 +20,23 @@ export type AppOptionsResponse =
     total?: number;
     unchanged?: undefined;
 }
+/** You already hold this version. */
+ | {
+    unchanged: true;
+    version: string;
+};
+/**
+ * What `app.options.get` returns: the standard list shape plus the picker's `version` and `mode`.
+ * `count` is how many entries there are in all, where the server reports it. Pickers are not paged, so
+ * `nextCursor` is always `null`.
+ */
+export type AppOptionsList = 
+/** `all`: every entry. `search`: the type is too large to send whole; these match `q`. */
+(ListResult<AppOption> & {
+    version: string;
+    mode: 'all' | 'search';
+    unchanged?: undefined;
+})
 /** You already hold this version. */
  | {
     unchanged: true;

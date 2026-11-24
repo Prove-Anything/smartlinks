@@ -1,4 +1,5 @@
-import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofValuesUpdateRequest, ProofClaimRequest, ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult, ProofTransfer, TransferProofOptions, TransferProofResult, AcceptTransferOptions, CancelTransferOptions } from "../types/proof.js";
+import { ProofResponse, ProofCreateRequest, ProofUpdateRequest, ProofValuesUpdateRequest, ProofClaimRequest, ProofGrant, CreateGrantOptions, RedeemGrantOptions, RedeemGrantResult, ProofTransfer, TransferProofOptions, TransferProofResult, AcceptTransferOptions, CancelTransferOptions, ProofFindQuery } from "../types/proof.js";
+import type { ListResult } from "../types/list.js";
 import type { StandardQuery, QueryResult, QueryDescription } from "../types/query.js";
 export declare namespace proof {
     /**
@@ -36,9 +37,15 @@ export declare namespace proof {
      */
     function get(collectionId: string, productId: string, proofId: string, admin?: boolean, include?: string[]): Promise<ProofResponse>;
     /**
-     * List all Proofs for a Collection.
+     * List all Proofs for a Collection, in one list (no pages).
+     * GET /public/collection/:collectionId/proof
+     *
+     * @example
+     * ```typescript
+     * const { items } = await proof.list(collectionId)
+     * ```
      */
-    function list(collectionId: string, include?: string[]): Promise<ProofResponse[]>;
+    function list(collectionId: string, include?: string[]): Promise<ListResult<ProofResponse>>;
     /**
      * Create a proof for a product (admin only).
      * POST /admin/collection/:collectionId/product/:productId/proof
@@ -121,25 +128,47 @@ export declare namespace proof {
      */
     function remove(collectionId: string, productId: string, proofId: string): Promise<void>;
     /**
-     * Get proofs for a user in a collection (admin only).
+     * Get proofs for a user in a collection (admin only), in one list (no pages).
      * GET /admin/collection/:collectionId/proof/findByUser/:userId
+     *
+     * @example
+     * ```typescript
+     * const { items } = await proof.getByUser(collectionId, userId)
+     * ```
      */
-    function getByUser(collectionId: string, userId: string): Promise<ProofResponse[]>;
+    function getByUser(collectionId: string, userId: string): Promise<ListResult<ProofResponse>>;
     /**
-     * Get proofs for a product (admin only).
+     * Get proofs for a product (admin only), in one list (no pages).
      * GET /admin/collection/:collectionId/product/:productId/proof
+     *
+     * @example
+     * ```typescript
+     * const { items } = await proof.getByProduct(collectionId, productId)
+     * ```
      */
-    function getByProduct(collectionId: string, productId: string): Promise<ProofResponse[]>;
+    function getByProduct(collectionId: string, productId: string): Promise<ListResult<ProofResponse>>;
     /**
-     * Find proofs for a product (admin only).
+     * Find proofs for a product (admin only): the newest `limit` (default 100), or every proof matching
+     * `filterBy`. For counting, sorting and paging through a collection's proofs use `proof.query`.
      * POST /admin/collection/:collectionId/product/:productId/proof/find
+     *
+     * @example
+     * ```typescript
+     * const { items } = await proof.findByProduct(collectionId, productId, { limit: 50, includes: ['assets'] })
+     * const red = await proof.findByProduct(collectionId, productId, { filterBy: [{ field: 'values.colour', value: 'red' }] })
+     * ```
      */
-    function findByProduct(collectionId: string, productId: string, query: any): Promise<ProofResponse[]>;
+    function findByProduct(collectionId: string, productId: string, query?: ProofFindQuery): Promise<ListResult<ProofResponse>>;
     /**
-     * Get proofs for a batch (admin only).
+     * Get proofs for a batch (admin only), in one list (no pages).
      * GET /admin/collection/:collectionId/product/:productId/batch/:batchId/proof
+     *
+     * @example
+     * ```typescript
+     * const { items } = await proof.getByBatch(collectionId, productId, batchId)
+     * ```
      */
-    function getByBatch(collectionId: string, productId: string, batchId: string): Promise<ProofResponse[]>;
+    function getByBatch(collectionId: string, productId: string, batchId: string): Promise<ListResult<ProofResponse>>;
     /**
      * Migrate a proof to a different product within the same collection (admin only).
      *
@@ -185,8 +214,16 @@ export declare namespace proof {
      * {@link setGrantToken}.
      */
     function createGrant(collectionId: string, productId: string, proofId: string, options: CreateGrantOptions): Promise<ProofGrant>;
-    /** List the active + past grants on a proof (owner / collection admin only). Tokens are never returned here. */
-    function listGrants(collectionId: string, productId: string, proofId: string): Promise<ProofGrant[]>;
+    /**
+     * List the active + past grants on a proof (owner / collection admin only), in one list (no pages).
+     * Tokens are never returned here.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await proof.listGrants(collectionId, productId, proofId)
+     * ```
+     */
+    function listGrants(collectionId: string, productId: string, proofId: string): Promise<ListResult<ProofGrant>>;
     /** Revoke a grant by id (owner / collection admin only). Takes effect immediately. */
     function revokeGrant(collectionId: string, productId: string, proofId: string, grantId: string): Promise<void>;
     /**

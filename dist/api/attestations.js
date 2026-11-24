@@ -98,18 +98,22 @@ export var attestations;
      * Returns all three data zones. Supports filtering by type and date range.
      *
      * @param collectionId - Collection context
-     * @param params - Query parameters; `subjectType` and `subjectId` are required
-     * @returns `{ attestations: Attestation[] }`
+     * @param params - Query parameters; `subjectType` and `subjectId` are required. Page with
+     *   `limit` and `cursor`
+     * @returns `{ items: Attestation[], nextCursor }` — `nextCursor` is `null` on the last page
      *
      * @example
      * ```typescript
-     * const { attestations: records } = await attestations.list('coll_123', {
+     * let page = await attestations.list('coll_123', {
      *   subjectType: 'container',
      *   subjectId:   'uuid-of-cask',
      *   attestationType: 'temperature',
      *   recordedAfter:   '2025-01-01T00:00:00Z',
      *   limit: 50,
      * })
+     * const records = page.items
+     * // next page: pass the cursor back with the same filters
+     * if (page.nextCursor) page = await attestations.list('coll_123', { ...filters, limit: 50, cursor: page.nextCursor })
      * ```
      */
     async function list(collectionId, params) {
@@ -261,12 +265,14 @@ export var attestations;
      * The `audience` field in the response indicates the tier that was served.
      *
      * @param collectionId - Collection context
-     * @param params - Query parameters; `subjectType` and `subjectId` are required
-     * @returns `{ attestations: Attestation[], audience: AttestationAudience }`
+     * @param params - Query parameters; `subjectType` and `subjectId` are required. Page with
+     *   `limit` and `cursor`
+     * @returns `{ items: Attestation[], nextCursor, audience: AttestationAudience }` — `nextCursor` is
+     *   `null` on the last page
      *
      * @example
      * ```typescript
-     * const { attestations: records, audience } = await attestations.publicList('coll_123', {
+     * const { items: records, nextCursor, audience } = await attestations.publicList('coll_123', {
      *   subjectType: 'proof',
      *   subjectId:   'proof-uuid',
      * })
@@ -401,7 +407,16 @@ export var attestations;
      *
      * @param collectionId - Collection context
      * @param containerId - Container UUID
-     * @param params - Optional filters (attestationType, date range, pagination)
+     * @param params - Optional filters (attestationType, date range) and paging (`limit`, `cursor`)
+     * @returns `{ items: Attestation[], nextCursor, audience }` — `nextCursor` is `null` on the last page
+     *
+     * @example
+     * ```typescript
+     * const { items: records, nextCursor } = await attestations.publicContainerList('coll_123', containerId, {
+     *   attestationType: 'temperature',
+     *   limit: 50,
+     * })
+     * ```
      */
     async function publicContainerList(collectionId, containerId, params) {
         const qs = buildAttestationQuery(Object.assign({}, (params !== null && params !== void 0 ? params : {})));

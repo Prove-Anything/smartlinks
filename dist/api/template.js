@@ -2,6 +2,15 @@ import { request, post, put, del as httpDel } from "../http.js";
 export var template;
 (function (template) {
     // Admin APIs
+    /**
+     * Every template in the collection (admin), in one answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await template.getAll('coll_123')
+     * items // Template[]
+     * ```
+     */
     async function getAll(collectionId) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/template`;
         return request(path);
@@ -36,6 +45,15 @@ export var template;
     }
     template.uploadAsset = uploadAsset;
     // Public APIs
+    /**
+     * The collection's templates that may be used publicly, in one answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await template.getAllowed('coll_123')
+     * items // TemplatePublic[]
+     * ```
+     */
     async function getAllowed(collectionId) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/template/getAllowed`;
         return request(path);
@@ -51,6 +69,15 @@ export var template;
         return request(path);
     }
     template.getGlobal = getGlobal;
+    /**
+     * The global templates this collection may use, in one answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await template.getAllowedGlobal('coll_123')
+     * items // TemplatePublic[]
+     * ```
+     */
     async function getAllowedGlobal(collectionId) {
         const path = `/public/template/getAllowed/${encodeURIComponent(collectionId)}`;
         return request(path);

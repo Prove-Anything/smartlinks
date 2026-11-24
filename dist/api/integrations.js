@@ -32,15 +32,28 @@ function encodeQuery(params = {}) {
 export var integrations;
 (function (integrations) {
     const base = (collectionId) => `/admin/collection/${enc(collectionId)}/integrations/flows`;
-    /** List flows in a collection. GET /integrations/flows */
+    /**
+     * List flows in a collection (all of them: this list has no pages). GET /integrations/flows
+     *
+     * @example
+     * ```typescript
+     * const { items } = await integrations.listFlows('coll_123', { direction: 'outbound', status: 'active' })
+     * ```
+     */
     async function listFlows(collectionId, query = {}) {
         return request(`${base(collectionId)}${encodeQuery(query)}`);
     }
     integrations.listFlows = listFlows;
     /**
      * Discover the app-record types present in a collection + which app owns each
-     * (introspected), for picking a sub-record source/trigger.
+     * (introspected), for picking a sub-record source/trigger. One list, no pages.
      * GET /integrations/record-types
+     *
+     * @example
+     * ```typescript
+     * const { items } = await integrations.listRecordTypes('coll_123')
+     * // items: [{ appId: 'warranty', recordType: 'claim', count: 42 }, …]
+     * ```
      */
     async function listRecordTypes(collectionId) {
         return request(`/admin/collection/${enc(collectionId)}/integrations/record-types`);
@@ -92,7 +105,17 @@ export var integrations;
     // A run row is written for every execution (manual, event, scheduled, test). Per-record
     // request/response detail is captured only while enhanced logging is active for the
     // connection (see setLogging); otherwise runs carry metadata only.
-    /** List a flow's runs, newest first. GET /integrations/flows/:id/runs */
+    /**
+     * List a flow's runs, newest first. GET /integrations/flows/:id/runs
+     *
+     * @example
+     * ```typescript
+     * let page = await integrations.listRuns('coll_123', flowId, { status: 'failed', limit: 50 })
+     * while (page.nextCursor) {
+     *   page = await integrations.listRuns('coll_123', flowId, { status: 'failed', limit: 50, cursor: page.nextCursor })
+     * }
+     * ```
+     */
     async function listRuns(collectionId, flowId, query = {}) {
         return request(`${base(collectionId)}/${enc(flowId)}/runs${encodeQuery(query)}`);
     }
@@ -106,12 +129,25 @@ export var integrations;
      * List a run's per-record items. GET /integrations/flows/:id/runs/:runId/items
      * `request`/`response` are populated only for items captured while enhanced logging
      * was active (and before the 24h body purge).
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor } = await integrations.listRunItems('coll_123', flowId, runId, { status: 'failed', limit: 100 })
+     * ```
      */
     async function listRunItems(collectionId, flowId, runId, query = {}) {
         return request(`${base(collectionId)}/${enc(flowId)}/runs/${enc(runId)}/items${encodeQuery(query)}`);
     }
     integrations.listRunItems = listRunItems;
-    /** Every run touching an entity (e.g. a product), across flows. GET /integrations/runs/entity/:entityId */
+    /**
+     * Every run touching an entity (e.g. a product), across flows, newest first. One list, no pages:
+     * `limit` says how many. GET /integrations/runs/entity/:entityId
+     *
+     * @example
+     * ```typescript
+     * const { items } = await integrations.listEntityRuns('coll_123', productId, { limit: 20 })
+     * ```
+     */
     async function listEntityRuns(collectionId, entityId, query = {}) {
         return request(`/admin/collection/${enc(collectionId)}/integrations/runs/entity/${enc(entityId)}${encodeQuery(query)}`);
     }
@@ -133,7 +169,14 @@ export var integrations;
     // --- Failed records + resume -----------------------------------------------
     // A failed record is retried on its own with backoff; a permanent failure, or one out of attempts, is
     // 'dead' and waits for someone to retry it (or for the record to change).
-    /** A flow's failed / dead records. GET /integrations/flows/:id/failed */
+    /**
+     * A flow's failed / dead records, with the flow's `direction` beside the list. GET /integrations/flows/:id/failed
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor, direction } = await integrations.listFailed('coll_123', flowId, { status: 'dead' })
+     * ```
+     */
     async function listFailed(collectionId, flowId, query = {}) {
         return request(`${base(collectionId)}/${enc(flowId)}/failed${encodeQuery(query)}`);
     }
@@ -179,7 +222,14 @@ export var integrations;
     // non-secret settings, and which secrets are set. Secrets themselves go through
     // `secrets.put(collectionId, name, value, { appId })` for the connector's appId.
     const connectorsBase = (collectionId) => `/admin/collection/${enc(collectionId)}/integrations/connectors`;
-    /** The collection's installed connector apps. GET /integrations/connectors */
+    /**
+     * The collection's installed connector apps (all of them: this list has no pages). GET /integrations/connectors
+     *
+     * @example
+     * ```typescript
+     * const { items } = await integrations.listConnectors('coll_123')
+     * ```
+     */
     async function listConnectors(collectionId) {
         return request(connectorsBase(collectionId));
     }
@@ -211,8 +261,14 @@ export var integrations;
     integrations.runConnectorAction = runConnectorAction;
     /**
      * PUBLIC (the Hub, a site): the connector actions the caller may invoke — those declared `public`,
-     * plus `member` ones when signed in.
+     * plus `member` ones when signed in. One list, no pages.
      * GET /public/collection/:collectionId/connectors/:appId/actions
+     *
+     * @example
+     * ```typescript
+     * const { items } = await integrations.listConnectorActions('coll_123', 'sessionm')
+     * const canRedeem = items.some((a) => a.name === 'redeem')
+     * ```
      */
     async function listConnectorActions(collectionId, appId) {
         return request(`/public/collection/${enc(collectionId)}/connectors/${enc(appId)}/actions`);

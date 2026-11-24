@@ -47,7 +47,7 @@ const { text } = await files.read(collectionId, file.id)          // or 'base64'
 const { url } = await files.link(collectionId, file.id, 15)        // a signed link for 15 minutes
 await files.keep(collectionId, file.id)                            // permanent, public, shows in pickers
 await files.remove(collectionId, file.id)
-const { files: mine } = await files.list(collectionId, { appId: 'my-app', origin: 'fetched' })
+const { items: mine } = await files.list(collectionId, { appId: 'my-app', origin: 'fetched' })
 ```
 
 ## In a server function

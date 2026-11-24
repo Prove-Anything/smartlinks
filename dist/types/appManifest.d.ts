@@ -1223,7 +1223,7 @@ export interface AppManifest {
          */
         moduleFormat?: 'umd' | 'esm' | 'dual';
         /**
-         * Shared-dependency contract version this bundle was built against, e.g. `"v7"`
+         * Shared-dependency contract version this bundle was built against, e.g. `"v8"` (SDK 3) or `"v7"` (SDK 2)
          * (see `SHARED_DEPENDENCY_CONTRACT_VERSION`). The host uses it to select a
          * compatible import map for the ESM load path.
          */
@@ -1765,11 +1765,10 @@ export interface CollectionAppWidget {
     admin: string | null;
 }
 /**
- * Response from GET /api/v1/public/collection/:collectionId/widgets
+ * Response from GET /api/v1/public/collection/:collectionId/app/widgets: the apps are in `items`.
+ * It is not paged, so `nextCursor` is always `null`.
  */
-export interface CollectionWidgetsResponse {
-    apps: CollectionAppWidget[];
-}
+export type CollectionWidgetsResponse = import('./list.js').ListResult<CollectionAppWidget>;
 /**
  * Options for fetching collection widgets
  */

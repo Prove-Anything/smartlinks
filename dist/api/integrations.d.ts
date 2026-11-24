@@ -1,13 +1,27 @@
-import type { IntegrationFlow, CreateFlowInput, UpdateFlowInput, ListFlowsQuery, FlowList, RunFlowInput, RunFlowResult, RunFlowSummary, RunFlowEnqueued, RecordTypesResponse, FlowRun, ListRunsQuery, RunList, ListRunItemsQuery, RunItemList, LoggingWindow, SetLoggingInput, InstalledConnector, SaveConnectorInstallationInput, ConnectorConsoleStep, FailedRecordList, FlowHealth, IntegrationHealth, ProductLineage } from "../types/integrations.js";
+import type { IntegrationFlow, CreateFlowInput, UpdateFlowInput, ListFlowsQuery, RunFlowInput, RunFlowResult, RunFlowSummary, RunFlowEnqueued, RecordTypeInfo, FlowRun, FlowRunItem, ListRunsQuery, ListRunItemsQuery, LoggingWindow, SetLoggingInput, InstalledConnector, SaveConnectorInstallationInput, ConnectorConsoleStep, FailedRecord, FlowDirection, FlowHealth, IntegrationHealth, ProductLineage } from "../types/integrations.js";
+import type { ListResult } from "../types/list.js";
 export declare namespace integrations {
-    /** List flows in a collection. GET /integrations/flows */
-    function listFlows(collectionId: string, query?: ListFlowsQuery): Promise<FlowList>;
+    /**
+     * List flows in a collection (all of them: this list has no pages). GET /integrations/flows
+     *
+     * @example
+     * ```typescript
+     * const { items } = await integrations.listFlows('coll_123', { direction: 'outbound', status: 'active' })
+     * ```
+     */
+    function listFlows(collectionId: string, query?: ListFlowsQuery): Promise<ListResult<IntegrationFlow>>;
     /**
      * Discover the app-record types present in a collection + which app owns each
-     * (introspected), for picking a sub-record source/trigger.
+     * (introspected), for picking a sub-record source/trigger. One list, no pages.
      * GET /integrations/record-types
+     *
+     * @example
+     * ```typescript
+     * const { items } = await integrations.listRecordTypes('coll_123')
+     * // items: [{ appId: 'warranty', recordType: 'claim', count: 42 }, …]
+     * ```
      */
-    function listRecordTypes(collectionId: string): Promise<RecordTypesResponse>;
+    function listRecordTypes(collectionId: string): Promise<ListResult<RecordTypeInfo>>;
     /** Create a flow. POST /integrations/flows */
     function createFlow(collectionId: string, input: CreateFlowInput): Promise<IntegrationFlow>;
     /** Get one flow. GET /integrations/flows/:id */
@@ -31,20 +45,43 @@ export declare namespace integrations {
     function isRunSummary(r: RunFlowResult): r is RunFlowSummary;
     /** Type guard: the run was enqueued (async). */
     function isRunEnqueued(r: RunFlowResult): r is RunFlowEnqueued;
-    /** List a flow's runs, newest first. GET /integrations/flows/:id/runs */
-    function listRuns(collectionId: string, flowId: string, query?: ListRunsQuery): Promise<RunList>;
+    /**
+     * List a flow's runs, newest first. GET /integrations/flows/:id/runs
+     *
+     * @example
+     * ```typescript
+     * let page = await integrations.listRuns('coll_123', flowId, { status: 'failed', limit: 50 })
+     * while (page.nextCursor) {
+     *   page = await integrations.listRuns('coll_123', flowId, { status: 'failed', limit: 50, cursor: page.nextCursor })
+     * }
+     * ```
+     */
+    function listRuns(collectionId: string, flowId: string, query?: ListRunsQuery): Promise<ListResult<FlowRun>>;
     /** Get one run's summary. GET /integrations/flows/:id/runs/:runId */
     function getRun(collectionId: string, flowId: string, runId: string): Promise<FlowRun>;
     /**
      * List a run's per-record items. GET /integrations/flows/:id/runs/:runId/items
      * `request`/`response` are populated only for items captured while enhanced logging
      * was active (and before the 24h body purge).
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor } = await integrations.listRunItems('coll_123', flowId, runId, { status: 'failed', limit: 100 })
+     * ```
      */
-    function listRunItems(collectionId: string, flowId: string, runId: string, query?: ListRunItemsQuery): Promise<RunItemList>;
-    /** Every run touching an entity (e.g. a product), across flows. GET /integrations/runs/entity/:entityId */
+    function listRunItems(collectionId: string, flowId: string, runId: string, query?: ListRunItemsQuery): Promise<ListResult<FlowRunItem>>;
+    /**
+     * Every run touching an entity (e.g. a product), across flows, newest first. One list, no pages:
+     * `limit` says how many. GET /integrations/runs/entity/:entityId
+     *
+     * @example
+     * ```typescript
+     * const { items } = await integrations.listEntityRuns('coll_123', productId, { limit: 20 })
+     * ```
+     */
     function listEntityRuns(collectionId: string, entityId: string, query?: {
         limit?: number;
-    }): Promise<RunList>;
+    }): Promise<ListResult<FlowRun>>;
     /** Is enhanced logging active for a connection? GET /integrations/logging/:connectionId */
     function getLogging(collectionId: string, connectionId: string): Promise<{
         window: LoggingWindow | null;
@@ -53,12 +90,21 @@ export declare namespace integrations {
     function setLogging(collectionId: string, connectionId: string, input?: SetLoggingInput): Promise<{
         window: LoggingWindow;
     }>;
-    /** A flow's failed / dead records. GET /integrations/flows/:id/failed */
+    /**
+     * A flow's failed / dead records, with the flow's `direction` beside the list. GET /integrations/flows/:id/failed
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor, direction } = await integrations.listFailed('coll_123', flowId, { status: 'dead' })
+     * ```
+     */
     function listFailed(collectionId: string, flowId: string, query?: {
         status?: 'failed' | 'dead';
         limit?: number;
         cursor?: string;
-    }): Promise<FailedRecordList>;
+    }): Promise<ListResult<FailedRecord> & {
+        direction: FlowDirection;
+    }>;
     /** Retry failed / dead records now (all of them when `ids` is omitted). POST /integrations/flows/:id/failed/retry */
     function retryFailed(collectionId: string, flowId: string, ids?: string[]): Promise<{
         retrying: number;
@@ -84,10 +130,15 @@ export declare namespace integrations {
     function cancelLogging(collectionId: string, connectionId: string): Promise<{
         canceled: boolean;
     }>;
-    /** The collection's installed connector apps. GET /integrations/connectors */
-    function listConnectors(collectionId: string): Promise<{
-        connectors: InstalledConnector[];
-    }>;
+    /**
+     * The collection's installed connector apps (all of them: this list has no pages). GET /integrations/connectors
+     *
+     * @example
+     * ```typescript
+     * const { items } = await integrations.listConnectors('coll_123')
+     * ```
+     */
+    function listConnectors(collectionId: string): Promise<ListResult<InstalledConnector>>;
     /** Save a connector's non-secret Connect-form values and/or settings. PUT /integrations/connectors/:appId/installation */
     function saveConnectorInstallation(collectionId: string, appId: string, input: SaveConnectorInstallationInput): Promise<{
         installation: {
@@ -113,19 +164,23 @@ export declare namespace integrations {
     function runConnectorAction<T = unknown>(collectionId: string, appId: string, action: string, input?: Record<string, unknown>): Promise<T>;
     /**
      * PUBLIC (the Hub, a site): the connector actions the caller may invoke — those declared `public`,
-     * plus `member` ones when signed in.
+     * plus `member` ones when signed in. One list, no pages.
      * GET /public/collection/:collectionId/connectors/:appId/actions
+     *
+     * @example
+     * ```typescript
+     * const { items } = await integrations.listConnectorActions('coll_123', 'sessionm')
+     * const canRedeem = items.some((a) => a.name === 'redeem')
+     * ```
      */
-    function listConnectorActions(collectionId: string, appId: string): Promise<{
-        actions: Array<{
-            name: string;
-            title: string;
-            description?: string;
-            visibility: 'public' | 'member' | 'admin';
-            input?: Record<string, unknown>;
-            output?: Record<string, unknown>;
-        }>;
-    }>;
+    function listConnectorActions(collectionId: string, appId: string): Promise<ListResult<{
+        name: string;
+        title: string;
+        description?: string;
+        visibility: 'public' | 'member' | 'admin';
+        input?: Record<string, unknown>;
+        output?: Record<string, unknown>;
+    }>>;
     /**
      * PUBLIC (the Hub, a site): invoke a connector action — e.g. redeem a reward for the signed-in member.
      * 401 SIGN_IN_REQUIRED for a `member` action without a session; 403 for an admin-only one;

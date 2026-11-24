@@ -263,7 +263,7 @@ Calling an action:
 
 ```ts
 // From the Hub or a site (visibility public / member):
-const { actions } = await integrations.listConnectorActions(collectionId, 'acme-loyalty')
+const { items: actions } = await integrations.listConnectorActions(collectionId, 'acme-loyalty')
 const out = await integrations.callConnectorAction(collectionId, 'acme-loyalty', 'redeem', { rewardId: 'R-5' })
 
 // From another app's server function (any visibility; needs sl:connectors:write):
@@ -306,7 +306,7 @@ await integrations.createFlow(collectionId, {
 ```ts
 import { integrations, secrets } from '@proveanything/smartlinks'
 
-const { connectors } = await integrations.listConnectors(collectionId)
+const { items: connectors } = await integrations.listConnectors(collectionId)
 // → [{ appId, name, version, connector, installation: { connection, settings }, secrets: { 'provider-key': { set, hint } } }]
 
 await secrets.put(collectionId, 'provider-key', value, { appId })              // a secret field

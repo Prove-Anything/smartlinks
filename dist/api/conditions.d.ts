@@ -1,4 +1,5 @@
 import type { ConditionSet } from "../utils/conditions.js";
+import type { ListResult } from "../types/list.js";
 /** A saved condition: a named rule set pages, Hub blocks and apps refer to by id. */
 export interface SavedCondition extends ConditionSet {
     id: string;
@@ -20,8 +21,17 @@ export type SaveConditionRequest = Omit<SavedCondition, "id" | "deleted">;
  * - Admins create and change them (`create`, `update`, `remove`).
  */
 export declare namespace conditions {
-    /** Every saved condition in the collection (removed ones left out). */
-    function list(collectionId: string, admin?: boolean): Promise<SavedCondition[]>;
+    /**
+     * Every saved condition in the collection (removed ones left out). All of them come back in one
+     * answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await conditions.list('coll_123')
+     * items.map(c => c.title) // ["UK only", "In the stadium"]
+     * ```
+     */
+    function list(collectionId: string, admin?: boolean): Promise<ListResult<SavedCondition>>;
     /**
      * One saved condition. Public reads 404 for a removed one; an admin read returns it with `deleted: true`.
      *

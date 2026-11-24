@@ -1,4 +1,5 @@
-import type { KnowledgeSet, SaveKnowledgeSetRequest, UpdateKnowledgeSetRequest, KnowledgeSource, AddKnowledgeSourceRequest, UpdateKnowledgeSourceRequest, KnowledgeDocument, KnowledgeSearchRequest, KnowledgeSearchResponse } from "../types/knowledge.js";
+import type { KnowledgeSet, SaveKnowledgeSetRequest, UpdateKnowledgeSetRequest, KnowledgeSource, AddKnowledgeSourceRequest, UpdateKnowledgeSourceRequest, KnowledgeDocument, KnowledgeSearchRequest, KnowledgeSearchResponse, KnowledgeSearchResult } from "../types/knowledge.js";
+import type { ListResult } from "../types/list.js";
 /**
  * Knowledge search: make a collection's content searchable by meaning and keywords, for people and for AI.
  *
@@ -19,12 +20,19 @@ import type { KnowledgeSet, SaveKnowledgeSetRequest, UpdateKnowledgeSetRequest, 
  * await knowledge.upsertDocuments('coll_123', src.id, [
  *   { ref: 'kettle', title: 'Kettle manual', body: '## Descaling\n\nDescale monthly…', meta: { productId: 'p1' } },
  * ])
- * const { results } = await knowledge.publicSearch('coll_123', { query: 'how do I descale', filters: { productId: 'p1' } })
+ * const { items } = await knowledge.publicSearch('coll_123', { query: 'how do I descale', filters: { productId: 'p1' } })
  * ```
  */
 export declare namespace knowledge {
-    /** Every set, with its source and passage counts (admin). */
-    function listSets(collectionId: string): Promise<KnowledgeSet[]>;
+    /**
+     * Every set, with its source and passage counts (admin). One list, no pages.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await knowledge.listSets('coll_123')
+     * ```
+     */
+    function listSets(collectionId: string): Promise<ListResult<KnowledgeSet>>;
     /** Create a set, or update the one with this key (admin). */
     function saveSet(collectionId: string, body: SaveKnowledgeSetRequest): Promise<KnowledgeSet>;
     /** One set, by id or key (admin). */
@@ -34,8 +42,15 @@ export declare namespace knowledge {
     function deleteSet(collectionId: string, set: string): Promise<{
         deleted: boolean;
     }>;
-    /** A set's sources, with their status (admin). */
-    function listSources(collectionId: string, set: string): Promise<KnowledgeSource[]>;
+    /**
+     * A set's sources, with their status (admin). One list, no pages.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await knowledge.listSources('coll_123', 'manuals')
+     * ```
+     */
+    function listSources(collectionId: string, set: string): Promise<ListResult<KnowledgeSource>>;
     /** Add a source; feeds and pages are read in the background (admin). */
     function addSource(collectionId: string, set: string, body: AddKnowledgeSourceRequest): Promise<KnowledgeSource>;
     function updateSource(collectionId: string, sourceId: string, body: UpdateKnowledgeSourceRequest): Promise<KnowledgeSource>;
@@ -57,8 +72,26 @@ export declare namespace knowledge {
     function removeDocuments(collectionId: string, sourceId: string, refs: string[]): Promise<{
         removed: number;
     }>;
-    /** Search every set, staff ones included (admin). */
-    function search(collectionId: string, body: KnowledgeSearchRequest): Promise<KnowledgeSearchResponse>;
-    /** Search from a website, Portal or Hub: public sets, plus customer sets for a signed-in person. */
-    function publicSearch(collectionId: string, body: KnowledgeSearchRequest): Promise<KnowledgeSearchResponse>;
+    /**
+     * Search every set, staff ones included (admin). The matches come back as `items`, best first, with the
+     * `query` and the search `mode` beside them. There are no pages: `k` says how many matches to return.
+     *
+     * @example
+     * ```typescript
+     * const { items, mode } = await knowledge.search('coll_123', { query: 'how do I descale', k: 5 })
+     * ```
+     */
+    function search(collectionId: string, body: KnowledgeSearchRequest): Promise<ListResult<KnowledgeSearchResult> & Pick<KnowledgeSearchResponse, 'query' | 'mode'>>;
+    /**
+     * Search from a website, Portal or Hub: public sets, plus customer sets for a signed-in person. The
+     * answer has the same shape as the admin `search`: the matches come back as `items`, best first, with the
+     * `query` and the search `mode` beside them. There are no pages: `k` says how many matches to return.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await knowledge.publicSearch('coll_123', { query: 'how do I descale', k: 5 })
+     * for (const r of items) console.log(r.title, r.heading, r.url, r.snippet)
+     * ```
+     */
+    function publicSearch(collectionId: string, body: KnowledgeSearchRequest): Promise<ListResult<KnowledgeSearchResult> & Pick<KnowledgeSearchResponse, 'query' | 'mode'>>;
 }

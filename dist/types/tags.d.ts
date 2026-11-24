@@ -5,6 +5,7 @@
  *  - Per-org shard (`tags` table) — full tag data, all collection-scoped queries
  *  - Shared shard (`tag_index` table) — tagId → collectionId routing only
  */
+import type { ListResult, ListOptions } from './list.js';
 /**
  * Full tag record, stored on the per-org shard.
  * Returned by all collection-scoped endpoints.
@@ -140,9 +141,8 @@ export interface DeleteTagResponse {
 }
 export interface GetTagResponse extends Tag {
 }
-export interface ListTagsRequest {
-    limit?: number;
-    offset?: number;
+/** `tags.list` options: the filters, plus `limit` and `cursor`. */
+export interface ListTagsRequest extends ListOptions {
     productId?: string;
     variantId?: string;
     batchId?: string;
@@ -150,11 +150,6 @@ export interface ListTagsRequest {
     refType?: string;
     /** Filter by polymorphic ref UUID */
     refId?: string;
-}
-export interface ListTagsResponse {
-    tags: Tag[];
-    limit: number;
-    offset: number;
 }
 /**
  * Request body / params for the collection-scoped batch lookup.
@@ -206,21 +201,16 @@ export interface PublicGetTagResponse {
  * `POST /public/collection/:collectionId/tags/lookup`
  * `GET  /public/collection/:collectionId/tags/lookup?tagIds=...`
  */
-export interface TagLookupResponse {
+export interface TagLookupResponse extends ListResult<Tag> {
+    /** How many tags were found. */
     count: number;
-    tags: Tag[];
     embedded: TagEmbedded;
-}
-/** Response from the admin by-ref endpoint (no embed support on admin side). */
-export interface ReverseTagLookupResponse {
-    tags: Tag[];
 }
 /**
  * Response from the public by-ref endpoints (supports `embed`).
  * `GET  /public/collection/:collectionId/tags/by-ref?refType=&refId=&embed=`
  * `POST /public/collection/:collectionId/tags/by-ref`
  */
-export interface ByRefResponse {
-    tags: Tag[];
+export interface ByRefResponse extends ListResult<Tag> {
     embedded: TagEmbedded;
 }

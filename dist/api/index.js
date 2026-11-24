@@ -2,7 +2,6 @@
 // Re-export all resource namespaces so the consumer can import them in one line.
 export { collection } from "./collection.js";
 export { facets } from "./facets.js";
-export { product } from "./product.js";
 export { products } from "./products.js";
 export { proof } from "./proof.js";
 export { appConfiguration, userAppData } from "./appConfiguration.js";

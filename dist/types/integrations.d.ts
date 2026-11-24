@@ -39,6 +39,7 @@ export interface FlowConnectorRef {
     settings?: Record<string, unknown>;
 }
 import type { ConnectorInstallation } from './appManifest.js';
+import type { ListOptions } from './list.js';
 /** What about a person an event-sourced flow lets leave. Default 'hashed'. */
 export type IdentityPolicy = 'externalIds' | 'hashed' | 'raw';
 /**
@@ -251,11 +252,6 @@ export interface ProductLineage {
     }>;
     recentRuns: FlowRun[];
 }
-export interface FailedRecordList {
-    direction: FlowDirection;
-    items: FailedRecord[];
-    nextCursor: string | null;
-}
 export interface CreateFlowInput {
     appId: string;
     direction: FlowDirection;
@@ -274,9 +270,6 @@ export interface ListFlowsQuery {
     direction?: FlowDirection;
     status?: FlowStatus;
     appId?: string;
-}
-export interface FlowList {
-    flows: IntegrationFlow[];
 }
 /** Options for a manual flow run. */
 export interface RunFlowInput {
@@ -493,25 +486,13 @@ export interface FlowRunItem {
     durationMs?: number | null;
     createdAt: string;
 }
-export interface ListRunsQuery {
+export interface ListRunsQuery extends ListOptions {
     status?: FlowRunStatus;
     trigger?: RunTrigger;
     entityId?: string;
-    limit?: number;
-    cursor?: string;
 }
-export interface RunList {
-    runs: FlowRun[];
-    nextCursor?: string;
-}
-export interface ListRunItemsQuery {
+export interface ListRunItemsQuery extends ListOptions {
     status?: FlowRunItemStatus;
-    limit?: number;
-    cursor?: string;
-}
-export interface RunItemList {
-    items: FlowRunItem[];
-    nextCursor?: string;
 }
 /** A per-connection enhanced-logging window (full capture) while active. */
 export interface LoggingWindow {
@@ -549,9 +530,6 @@ export interface SecretMeta {
     updatedAt: string;
     rotatedAt?: string | null;
 }
-export interface SecretList {
-    secrets: SecretMeta[];
-}
 export interface SetSecretInput {
     value: string;
     name?: string;
@@ -570,7 +548,4 @@ export interface RecordTypeInfo {
     appId: string;
     recordType: string;
     count: number;
-}
-export interface RecordTypesResponse {
-    recordTypes: RecordTypeInfo[];
 }

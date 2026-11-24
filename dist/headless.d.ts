@@ -22,7 +22,7 @@ export interface HeadlessValidation {
 }
 /**
  * What a type's read calls return, and where one item's declared fields live — fixed by the storage
- * kind (see app-objects.md "Paginated List Responses"). Sites must read items from `response.data`.
+ * kind (see app-objects.md "Paginated List Responses"). Sites must read items from `response.items`.
  */
 export declare function responseShape(type: AppDataType): {
     returns: string;

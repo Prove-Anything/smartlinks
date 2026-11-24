@@ -1,4 +1,5 @@
 import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest, AppsConfigResponse, DomainTarget, HubAvailabilityResponse, CollectionUser, CollectionAccessLevel, InviteUserInput, CollectionReadiness } from "../types/collection.js";
+import type { ListResult } from "../types/list.js";
 export declare namespace collection {
     /**
      * What the collection's installed apps need and whether it's there (sign-in, customers, products,
@@ -16,12 +17,18 @@ export declare namespace collection {
      */
     function get(collectionId: string, admin?: boolean): Promise<CollectionResponse>;
     /**
-     * Retrieves all Collections.
-     * @param admin – If true, fetches from the admin endpoint
-     * @returns Promise resolving to an array of CollectionResponse objects
+     * The collections the signed-in user can work on (admin). All of them come back in one answer:
+     * `nextCursor` is always null. There is no public list of collections: read one with `collection.get`.
+     * @returns Promise resolving to `{ items, nextCursor }`, where `items` are CollectionResponse objects
      * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * const { items } = await collection.list()
+     * items.forEach(c => console.log(c.id, c.title))
+     * ```
      */
-    function list(admin?: boolean): Promise<CollectionResponse[]>;
+    function list(): Promise<ListResult<CollectionResponse>>;
     /**
      * Retrieve a collection by its shortId (public endpoint).
      * @param shortId – The short identifier of the collection
@@ -190,11 +197,18 @@ export declare namespace collection {
     /**
      * List the users with access to a collection, each with their access level (admin only). Access is
      * stored in the collection's `roles` map (userId → level); this resolves each to name/email.
+     * All of them come back in one answer: `nextCursor` is always null.
      * GET /admin/collection/:collectionId/getUsers
      * @param collectionId - Identifier of the collection
-     * @returns Promise resolving to the collection's users
+     * @returns Promise resolving to `{ items, nextCursor }`, where `items` are the collection's users
+     *
+     * @example
+     * ```typescript
+     * const { items: users } = await collection.getUsers('coll_123')
+     * users.forEach(u => console.log(u.email, u.access))
+     * ```
      */
-    function getUsers(collectionId: string): Promise<CollectionUser[]>;
+    function getUsers(collectionId: string): Promise<ListResult<CollectionUser>>;
     /**
      * Grant, change, or remove a user's access level on a collection (admin only). Pass `null` or
      * `'None'` to remove access. The server enforces privilege-escalation rules — you cannot grant an

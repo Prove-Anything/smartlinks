@@ -29,7 +29,7 @@ const { pass } = await wallet.addLinks(collectionId, { type: 'booking', id: book
   function first. `addLinks` then returns that pass for its owner.
 - Show the official "Add to Apple Wallet" and "Add to Google Wallet" badges, and only the one that suits the
   device. A wallet that isn't set up yet is left out of `links`.
-- `wallet.mine(collectionId)` lists the person's passes.
+- `wallet.mine(collectionId)` lists the person's passes: `{ items, nextCursor: null }`.
 
 ## In a server function: issue, change, void, message
 

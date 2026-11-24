@@ -45,7 +45,17 @@ export var secrets;
         return put_(`${appBase(collectionId, opts)}/${enc(name)}`, { value });
     }
     secrets.put = put;
-    /** This app's secrets on the collection: names + masked hints (never values). GET /app/:appId/secrets */
+    /**
+     * This app's secrets on the collection: names + masked hints (never values). Returns
+     * `{ items, nextCursor }`: the secrets are in `items`, each `ref` being the name you saved it under. The
+     * list is not paged, so `nextCursor` is always `null`. GET /app/:appId/secrets
+     *
+     * @example
+     * ```typescript
+     * const { items } = await secrets.listOwn('coll_123')
+     * // items: [{ ref: 'shop-api-key', hint: '••••1234', ... }]
+     * ```
+     */
     async function listOwn(collectionId, opts = {}) {
         return request(appBase(collectionId, opts));
     }
@@ -55,7 +65,16 @@ export var secrets;
         return del(`${appBase(collectionId, opts)}/${enc(name)}`);
     }
     secrets.removeOwn = removeOwn;
-    /** List secrets as refs + masked hints + metadata (never values). GET /secrets */
+    /**
+     * List secrets as refs + masked hints + metadata (never values). Returns `{ items, nextCursor }`: the
+     * secrets are in `items`, newest first. The list is not paged, so `nextCursor` is always `null`.
+     * `purpose` narrows it to one purpose. GET /secrets
+     *
+     * @example
+     * ```typescript
+     * const { items } = await secrets.list('coll_123', { purpose: 'integration' })
+     * ```
+     */
     async function list(collectionId, query = {}) {
         return request(`${base(collectionId)}${encodeQuery(query)}`);
     }

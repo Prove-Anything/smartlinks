@@ -1,4 +1,4 @@
-import type { PaginatedResponse } from './appObjects.js';
+import type { ListResult, ListOptions } from './list.js';
 export type BookingStatus = 'held' | 'pending' | 'confirmed' | 'completed' | 'cancelled' | 'no_show' | 'waitlisted';
 export type BookingVisibility = 'public' | 'owner' | 'admin';
 /** A claim on a resource's time: seats on a slot (`capacity`) or exclusive time (`exclusive`). */
@@ -169,6 +169,10 @@ export interface MoveBookingInput {
     bufferBefore?: number;
     bufferAfter?: number;
 }
+/**
+ * The filters and paging of `ctx.sl.bookings.query` / `mine` in a server function (which pages with
+ * `limit` + `offset`). The SDK's `bookings.list` / `bookings.mine` take {@link BookingListOptions}.
+ */
 export interface BookingListQueryParams {
     status?: string;
     contactId?: string;
@@ -187,6 +191,9 @@ export interface BookingListQueryParams {
     sort?: string;
     limit?: number;
     offset?: number;
+}
+/** `bookings.list` / `bookings.mine` options: the filters, plus `limit` and `cursor`. */
+export interface BookingListOptions extends Omit<BookingListQueryParams, 'offset'>, ListOptions {
 }
 export interface CreateSlotInput {
     startsAt: string | Date;
@@ -211,6 +218,7 @@ export interface CreateSlotInput {
     admin?: Record<string, any>;
 }
 export type UpdateSlotInput = Partial<Omit<CreateSlotInput, 'blockResource' | 'seriesId' | 'resourceType' | 'resourceId'>>;
+/** `ctx.sl.bookings.slots.query` in a server function (`limit` + `offset`). The SDK's `bookings.slots.list` takes {@link SlotListOptions}. */
 export interface SlotListQueryParams {
     status?: string;
     /** Only slots with places left. */
@@ -227,6 +235,9 @@ export interface SlotListQueryParams {
     limit?: number;
     offset?: number;
 }
+/** `bookings.slots.list` options: the filters, plus `limit` and `cursor`. */
+export interface SlotListOptions extends Omit<SlotListQueryParams, 'offset'>, ListOptions {
+}
 export interface CreateBlockInput {
     resourceType: string;
     resourceId: string;
@@ -235,6 +246,7 @@ export interface CreateBlockInput {
     sourceSystem?: string;
     data?: Record<string, any>;
 }
+/** `ctx.sl.bookings.blocks.query` in a server function (`limit` + `offset`). The SDK's `bookings.blocks.list` takes {@link BlockListOptions}. */
 export interface BlockListQueryParams {
     resourceType?: string;
     resourceId?: string;
@@ -242,6 +254,9 @@ export interface BlockListQueryParams {
     to?: string | Date;
     limit?: number;
     offset?: number;
+}
+/** `bookings.blocks.list` options: the filters, plus `limit` and `cursor`. */
+export interface BlockListOptions extends Omit<BlockListQueryParams, 'offset'>, ListOptions {
 }
 /** A resource reference: `{ type, id }` or the string form `'record:staff-1'`. */
 export type BookingResourceRef = {
@@ -303,9 +318,12 @@ export interface MessageBookersResult {
 export interface BookingAccessOptions {
     editToken?: string;
 }
-export type BookingList = PaginatedResponse<Booking>;
-export type SlotList = PaginatedResponse<BookingSlot>;
-export type BlockList = PaginatedResponse<BookingAllocation>;
+/** What `bookings.list` / `bookings.mine` return: a page of bookings, `nextCursor`, and `count` (how many in all). */
+export type BookingList = ListResult<Booking>;
+/** What `bookings.slots.list` returns. */
+export type SlotList = ListResult<BookingSlot>;
+/** What `bookings.blocks.list` returns. */
+export type BlockList = ListResult<BookingAllocation>;
 /** Error codes a booking call can fail with (HTTP 409 unless noted). */
 export type BookingErrorCode = 'SLOT_FULL' | 'SLOT_CLOSED' | 'RESOURCE_TAKEN' | 'PER_CONTACT_LIMIT' | 'QUANTITY_LIMIT' | 'HOLD_EXPIRED' | 'INVALID_STATE' | 'SLOT_OVERBOOKED' | 'SLOT_HAS_BOOKINGS' | 'TOO_SOON' | 'TOO_FAR_AHEAD' | 'IN_THE_PAST' | 'DURATION_NOT_ALLOWED' | 'OUTSIDE_SCHEDULE' | 'NO_SCHEDULE' | 'SCHEDULE_INVALID' | 'CUTOFF_PASSED' | 'FORBIDDEN' | 'NOT_FOUND' | 'BAD_REQUEST';
 export interface ScheduleHours {

@@ -26,15 +26,19 @@ export var collection;
     }
     collection.get = get;
     /**
-     * Retrieves all Collections.
-     * @param admin – If true, fetches from the admin endpoint
-     * @returns Promise resolving to an array of CollectionResponse objects
+     * The collections the signed-in user can work on (admin). All of them come back in one answer:
+     * `nextCursor` is always null. There is no public list of collections: read one with `collection.get`.
+     * @returns Promise resolving to `{ items, nextCursor }`, where `items` are CollectionResponse objects
      * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * const { items } = await collection.list()
+     * items.forEach(c => console.log(c.id, c.title))
+     * ```
      */
-    async function list(admin) {
-        const base = admin ? '/admin/collection' : '/public/collection';
-        const path = `${base}`;
-        return request(path);
+    async function list() {
+        return request('/admin/collection');
     }
     collection.list = list;
     /**
@@ -278,9 +282,16 @@ export var collection;
     /**
      * List the users with access to a collection, each with their access level (admin only). Access is
      * stored in the collection's `roles` map (userId → level); this resolves each to name/email.
+     * All of them come back in one answer: `nextCursor` is always null.
      * GET /admin/collection/:collectionId/getUsers
      * @param collectionId - Identifier of the collection
-     * @returns Promise resolving to the collection's users
+     * @returns Promise resolving to `{ items, nextCursor }`, where `items` are the collection's users
+     *
+     * @example
+     * ```typescript
+     * const { items: users } = await collection.getUsers('coll_123')
+     * users.forEach(u => console.log(u.email, u.access))
+     * ```
      */
     async function getUsers(collectionId) {
         return request(`/admin/collection/${encodeURIComponent(collectionId)}/getUsers`);

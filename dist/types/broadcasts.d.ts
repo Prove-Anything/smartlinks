@@ -1,6 +1,6 @@
-export interface ListBroadcastsQuery {
-    limit?: number;
-    offset?: number;
+import type { ListResult, ListOptions } from './list.js';
+/** `broadcasts.list` options: the app that owns them, plus `limit` and `cursor`. */
+export interface ListBroadcastsQuery extends ListOptions {
     appId?: string;
 }
 /** Broadcast channels. Wallet is not one: wallet passes are messaged one-to-one (`comms.send` with `channel: 'wallet'`). */
@@ -43,16 +43,8 @@ export interface BroadcastRecord {
     };
     createdAt: string;
 }
-export interface BroadcastList {
-    items: BroadcastRecord[];
-    limit: number;
-    offset: number;
-}
-export interface BroadcastRecipientsResponse {
-    items: import('./comms.js').Recipient[];
-    total: number;
-    limit: number;
-    offset: number;
+/** What `broadcasts.recipients` returns: a page of contacts (`count` = how many in all), and sometimes a note. */
+export interface BroadcastRecipientsResponse extends ListResult<import('./comms.js').Recipient> {
     note?: string;
 }
 export interface BroadcastPreviewRequest {

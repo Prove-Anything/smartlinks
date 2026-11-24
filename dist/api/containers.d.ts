@@ -1,4 +1,5 @@
-import type { Container, CreateContainerInput, UpdateContainerInput, AddContainerItemsInput, RemoveContainerItemsInput, ListContainersParams, ListContainersResponse, PublicListContainersResponse, GetContainerParams, ListContainerItemsParams, ContainerItemsResponse, AddContainerItemsResponse, RemoveContainerItemsResponse, FindContainersForItemParams, FindContainersForItemResponse } from "../types/containers.js";
+import type { Container, ContainerItem, CreateContainerInput, UpdateContainerInput, AddContainerItemsInput, RemoveContainerItemsInput, ListContainersParams, PublicListContainersParams, GetContainerParams, ListContainerItemsParams, AddContainerItemsResponse, RemoveContainerItemsResponse, FindContainersForItemParams, FindContainersForItemResponse } from "../types/containers.js";
+import type { ListResult } from "../types/list.js";
 /**
  * Container Tracking API.
  *
@@ -40,34 +41,40 @@ export declare namespace containers {
      */
     function create(collectionId: string, data: CreateContainerInput): Promise<Container>;
     /**
-     * List containers (admin).
+     * List containers (admin), a page at a time.
      *
      * Supports filtering by type, status, ref, parent, and top-level flag.
      *
      * @param collectionId - Collection context
-     * @param params - Optional filter and pagination parameters
-     * @returns `{ containers: Container[], limit: number, offset: number }`
+     * @param params - Optional filters, plus `limit` and `cursor`
+     * @returns `{ items: Container[], nextCursor: string | null }`
      *
      * @example
      * ```typescript
      * // All active pallets
-     * const { containers: pallets } = await containers.list('coll_123', {
+     * let page = await containers.list('coll_123', {
      *   containerType: 'pallet',
      *   status:        'active',
      *   limit:         50,
      * })
+     * const pallets = page.items
+     * while (page.nextCursor) {
+     *   page = await containers.list('coll_123', { containerType: 'pallet', status: 'active', limit: 50, cursor: page.nextCursor })
+     *   pallets.push(...page.items)
+     * }
      *
      * // Top-level containers only
-     * const { containers: roots } = await containers.list('coll_123', { topLevel: true })
+     * const { items: roots } = await containers.list('coll_123', { topLevel: true })
      * ```
      */
-    function list(collectionId: string, params?: ListContainersParams): Promise<ListContainersResponse>;
+    function list(collectionId: string, params?: ListContainersParams): Promise<ListResult<Container>>;
     /**
      * Reverse lookup — find all containers currently holding a specific item (admin).
      *
      * @param collectionId - Collection context
      * @param params - `itemType` and `itemId` are required
-     * @returns `{ items, containers }`: the current membership rows and those containers
+     * @returns `{ items, containers, nextCursor }`: the current membership rows (`items`) and those
+     *   containers. All of them in one answer: `nextCursor` is always null.
      *
      * @example
      * ```typescript
@@ -140,12 +147,13 @@ export declare namespace containers {
     /**
      * List items currently (or historically) inside a container (admin).
      *
-     * Pass `history: true` to include removed items and see the full membership log.
+     * Pass `history: true` to include removed items and see the full membership log, a page at a time
+     * (`limit`, `cursor`). The current contents come back whole.
      *
      * @param collectionId - Collection context
      * @param containerId - Container UUID
-     * @param params - Optional filters and pagination
-     * @returns `{ items: ContainerItem[], limit: number, offset: number }`
+     * @param params - `history`, plus `limit` and `cursor`
+     * @returns `{ items: ContainerItem[], nextCursor: string | null }`
      *
      * @example
      * ```typescript
@@ -153,10 +161,10 @@ export declare namespace containers {
      * const { items } = await containers.listItems('coll_123', 'cask-uuid')
      *
      * // Full history including removed items
-     * const { items: history } = await containers.listItems('coll_123', 'cask-uuid', { history: true })
+     * const { items: history, nextCursor } = await containers.listItems('coll_123', 'cask-uuid', { history: true, limit: 200 })
      * ```
      */
-    function listItems(collectionId: string, containerId: string, params?: ListContainerItemsParams): Promise<ContainerItemsResponse>;
+    function listItems(collectionId: string, containerId: string, params?: ListContainerItemsParams): Promise<ListResult<ContainerItem>>;
     /**
      * Add one or more items to a container (admin).
      *
@@ -200,16 +208,21 @@ export declare namespace containers {
      */
     function removeItems(collectionId: string, containerId: string, data: RemoveContainerItemsInput): Promise<RemoveContainerItemsResponse>;
     /**
-     * List containers (public).
+     * List containers (public), a page at a time.
      *
-     * Soft-deleted containers and containers with `metadata.publicListing === false`
-     * are excluded from results.
+     * Only active containers are listed; soft-deleted containers and containers with
+     * `metadata.publicListing === false` are excluded from results.
      *
      * @param collectionId - Collection context
-     * @param params - Optional filter and pagination parameters
-     * @returns `{ containers: Container[] }`
+     * @param params - `containerType`, `parentContainerId`, `topLevel`, plus `limit` and `cursor`
+     * @returns `{ items: Container[], nextCursor: string | null }`
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor } = await containers.publicList('coll_123', { containerType: 'cask', limit: 50 })
+     * ```
      */
-    function publicList(collectionId: string, params?: ListContainersParams): Promise<PublicListContainersResponse>;
+    function publicList(collectionId: string, params?: PublicListContainersParams): Promise<ListResult<Container>>;
     /**
      * Get a single container (public).
      *
@@ -226,12 +239,17 @@ export declare namespace containers {
      * List current contents of a container (public).
      *
      * Returns only items where `removedAt` is null.  No `?history` option on
-     * the public side.
+     * the public side.  All of them come back in one answer: `nextCursor` is
+     * always null.
      *
      * @param collectionId - Collection context
      * @param containerId - Container UUID
-     * @param params - Optional pagination
-     * @returns `{ items: ContainerItem[], limit: number, offset: number }`
+     * @returns `{ items: ContainerItem[], nextCursor: null }`
+     *
+     * @example
+     * ```typescript
+     * const { items } = await containers.publicListItems('coll_123', 'cask-uuid')
+     * ```
      */
-    function publicListItems(collectionId: string, containerId: string, params?: Pick<ListContainerItemsParams, 'limit' | 'offset'>): Promise<ContainerItemsResponse>;
+    function publicListItems(collectionId: string, containerId: string): Promise<ListResult<ContainerItem>>;
 }

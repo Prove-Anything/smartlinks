@@ -29,10 +29,10 @@ export var lots;
     }
     function pageQuery(opts = {}) {
         const qs = new URLSearchParams();
-        if (opts.page)
-            qs.append('page', String(opts.page));
         if (opts.limit)
             qs.append('limit', String(opts.limit));
+        if (opts.cursor)
+            qs.append('cursor', opts.cursor);
         const s = qs.toString();
         return s ? `?${s}` : '';
     }
@@ -42,10 +42,17 @@ export var lots;
         return post(adminBase(collectionId), lot);
     }
     lots.create = create;
-    /** List lots (summary rows; `payload`/`productIds` omitted). Filter by status, search, or containing productId. */
+    /**
+     * List lots (summary rows; `payload`/`productIds` omitted). Filter by status, search, or containing
+     * productId. One list, no pages.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await lots.list('coll_123', { status: 'open' })
+     * ```
+     */
     async function list(collectionId, params = {}) {
-        const res = await request(`${adminBase(collectionId)}${listQuery(params)}`);
-        return res.lots;
+        return request(`${adminBase(collectionId)}${listQuery(params)}`);
     }
     lots.list = list;
     /** Get the full lot record. Pass `{ includeDeleted: true }` to fetch a soft-deleted one. */
@@ -88,15 +95,30 @@ export var lots;
         return post(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}/resolve`, {});
     }
     lots.resolve = resolve;
-    /** Paginated member product summaries. */
+    /**
+     * A lot's member products (summaries), a page at a time. `count` is how many members there are in all.
+     *
+     * @example
+     * ```typescript
+     * let page = await lots.listProducts('coll_123', lotId, { limit: 50 })
+     * while (page.nextCursor) page = await lots.listProducts('coll_123', lotId, { limit: 50, cursor: page.nextCursor })
+     * ```
+     */
     async function listProducts(collectionId, lotId, opts = {}) {
         return request(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}/products${pageQuery(opts)}`);
     }
     lots.listProducts = listProducts;
     // ── Public (cross-app reads) ──
+    /**
+     * List lots from a public context (summary rows). One list, no pages.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await lots.publicList('coll_123', { productId: 'prod_789' })
+     * ```
+     */
     async function publicList(collectionId, params = {}) {
-        const res = await request(`${publicBase(collectionId)}${listQuery(params)}`);
-        return res.lots;
+        return request(`${publicBase(collectionId)}${listQuery(params)}`);
     }
     lots.publicList = publicList;
     async function publicGet(collectionId, lotId) {
@@ -107,6 +129,14 @@ export var lots;
         return request(`${publicBase(collectionId)}/by-number/${encodeURIComponent(lotNumber)}`);
     }
     lots.publicGetByNumber = publicGetByNumber;
+    /**
+     * A lot's member products (summaries) from a public context, a page at a time.
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor, count } = await lots.publicListProducts('coll_123', lotId, { limit: 50 })
+     * ```
+     */
     async function publicListProducts(collectionId, lotId, opts = {}) {
         return request(`${publicBase(collectionId)}/${encodeURIComponent(lotId)}/products${pageQuery(opts)}`);
     }

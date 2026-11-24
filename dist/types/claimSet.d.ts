@@ -214,11 +214,6 @@ export interface ClaimSetRangeTag {
     programmedAt: string | null;
     scans: number;
 }
-export interface ClaimSetRangeTagsPage {
-    tags: ClaimSetRangeTag[];
-    /** The index to pass as `from` for the next page, or null */
-    next: number | null;
-}
 /** The next tag to program on a phone, with what to write. */
 export interface ClaimSetRangeNextTag extends ClaimSetRangeTag {
     url: string;

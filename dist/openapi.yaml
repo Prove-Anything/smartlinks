@@ -72,8 +72,6 @@ tags:
     description: Communications preferences, consent and delivery.
   - name: conditions
     description: conditions API
-  - name: config
-    description: Proof-type and platform configuration.
   - name: contact
     description: Contact (CRM) records.
   - name: containers
@@ -110,8 +108,6 @@ tags:
     description: partner API
   - name: places
     description: places API
-  - name: product
-    description: Single product operations.
   - name: products
     description: Product collections and bulk operations.
   - name: proof
@@ -137,27 +133,6 @@ tags:
 security:
   - bearerAuth: []
 paths:
-  /admin/auth/push:
-    get:
-      tags:
-        - realtime
-      summary: (subscribe only).
-      operationId: realtime_getAdminToken
-      security:
-        - bearerAuth: []
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AblyTokenRequest"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /admin/auth/requestJWT:
     post:
       tags:
@@ -210,7 +185,7 @@ paths:
     get:
       tags:
         - asset
-      summary: List assets for a collection with full filtering options.
+      summary: List assets for a collection with full filtering options (admin).
       operationId: asset_listAdmin
       security:
         - bearerAuth: []
@@ -267,12 +242,12 @@ paths:
           in: query
           required: false
           schema:
-            type: number
-        - name: offset
+            type: string
+        - name: cursor
           in: query
           required: false
           schema:
-            type: number
+            type: string
         - name: include
           in: query
           required: false
@@ -294,7 +269,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AdminListAssetsResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -546,9 +522,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/BatchResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -607,9 +582,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/VariantResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -776,7 +750,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/AgentToolsResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -1176,33 +1151,6 @@ paths:
             schema:
               type: object
               additionalProperties: true
-  /admin/collection/{collectionId}/ai/skills:
-    get:
-      tags:
-        - skills
-      summary: List the skills apps can invoke (name, description, input/output schema).
-      operationId: skills_list
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/SkillsListResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /admin/collection/{collectionId}/ai/tools/{name}/run:
     post:
       tags:
@@ -1632,16 +1580,6 @@ paths:
           required: false
           schema:
             type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
       responses:
         200:
           description: Success
@@ -1938,6 +1876,33 @@ paths:
         404:
           description: Not found
   /admin/collection/{collectionId}/authKit:
+    get:
+      tags:
+        - authKit
+      summary: "List a collection's AuthKit configs (admin)."
+      operationId: authKit_list
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: collectionId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        200:
+          description: Success
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+        400:
+          description: Bad request
+        401:
+          description: Unauthorized
+        404:
+          description: Not found
     post:
       tags:
         - authKit
@@ -2394,9 +2359,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/BatchResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -2439,7 +2403,7 @@ paths:
     get:
       tags:
         - batch
-      summary: Get all tags/codes assigned to a specific batch.
+      summary: batch.getBatchTags
       operationId: batch_getBatchTags
       security:
         - bearerAuth: []
@@ -2460,9 +2424,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/BatchTag"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -2473,7 +2436,7 @@ paths:
     get:
       tags:
         - broadcasts
-      summary: broadcasts.list
+      summary: "The collection's broadcasts, a page at a time."
       operationId: broadcasts_list
       security:
         - bearerAuth: []
@@ -2483,16 +2446,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
         - name: appId
           in: query
           required: false
@@ -2504,7 +2457,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/BroadcastList"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -2752,7 +2706,7 @@ paths:
     get:
       tags:
         - broadcasts
-      summary: broadcasts.recipients
+      summary: The contacts a broadcast goes to (its segment), a page at a time.
       operationId: broadcasts_recipients
       security:
         - bearerAuth: []
@@ -2765,6 +2719,16 @@ paths:
         - name: id
           in: path
           required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: cursor
+          in: query
+          required: false
           schema:
             type: string
       responses:
@@ -3010,9 +2974,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/CommunicationEvent"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -3045,9 +3008,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/RecipientId"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -3060,12 +3022,12 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/CommsRecipientIdsQuery"
-  /admin/collection/{collectionId}/comm/query/recipients/with-action:
+  /admin/collection/{collectionId}/comm/query/recipients/with-interaction:
     post:
       tags:
         - comms
-      summary: "Analytics: Recipients who performed an action, optionally with outcome."
-      operationId: comms_queryRecipientsWithAction
+      summary: "Analytics: the recipients of a broadcast or journey who then did an interaction."
+      operationId: comms_queryRecipientsWithInteraction
       security:
         - bearerAuth: []
       parameters:
@@ -3080,10 +3042,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  type: object
-                  additionalProperties: true
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -3095,13 +3055,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CommsRecipientsWithActionQuery"
-  /admin/collection/{collectionId}/comm/query/recipients/without-action:
+              $ref: "#/components/schemas/CommsRecipientsWithInteractionQuery"
+  /admin/collection/{collectionId}/comm/query/recipients/without-interaction:
     post:
       tags:
         - comms
-      summary: "Analytics: Recipients who did not perform an action."
-      operationId: comms_queryRecipientsWithoutAction
+      summary: "Analytics: the recipients of a broadcast or journey who did NOT then do an interaction."
+      operationId: comms_queryRecipientsWithoutInteraction
       security:
         - bearerAuth: []
       parameters:
@@ -3116,9 +3076,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/RecipientId"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -3130,12 +3089,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/CommsRecipientsWithoutActionQuery"
+              $ref: "#/components/schemas/CommsRecipientsWithoutInteractionQuery"
   /admin/collection/{collectionId}/contacts:
     get:
       tags:
         - contact
-      summary: contact.list
+      summary: "The collection's contacts, a page at a time (admin only)."
       operationId: contact_list
       security:
         - bearerAuth: []
@@ -3149,8 +3108,8 @@ paths:
           in: query
           required: false
           schema:
-            type: string
-        - name: offset
+            type: number
+        - name: cursor
           in: query
           required: false
           schema:
@@ -3166,7 +3125,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ContactListResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -3209,7 +3169,7 @@ paths:
     get:
       tags:
         - contact
-      summary: "Admin: pairs of contacts that look like one person."
+      summary: contact.findDuplicates
       operationId: contact_findDuplicates
       security:
         - bearerAuth: []
@@ -3223,8 +3183,8 @@ paths:
           in: query
           required: false
           schema:
-            type: string
-        - name: offset
+            type: number
+        - name: cursor
           in: query
           required: false
           schema:
@@ -3369,7 +3329,7 @@ paths:
     get:
       tags:
         - contact
-      summary: contact.search
+      summary: "Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields."
       operationId: contact_search
       security:
         - bearerAuth: []
@@ -3454,7 +3414,7 @@ paths:
           required: false
           schema:
             type: string
-        - name: offset
+        - name: cursor
           in: query
           required: false
           schema:
@@ -3465,7 +3425,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ContactSearchResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -3679,7 +3640,7 @@ paths:
     get:
       tags:
         - containers
-      summary: List containers (admin).
+      summary: List containers (admin), a page at a time.
       operationId: containers_list
       security:
         - bearerAuth: []
@@ -3714,23 +3675,14 @@ paths:
           required: false
           schema:
             type: boolean
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListContainersResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -3919,23 +3871,14 @@ paths:
           required: false
           schema:
             type: boolean
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ContainerItemsResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -3983,7 +3926,7 @@ paths:
     get:
       tags:
         - crate
-      summary: List crates for a collection with pagination support.
+      summary: List crates for a collection, a page at a time.
       operationId: crate_list
       security:
         - bearerAuth: []
@@ -3991,16 +3934,6 @@ paths:
         - name: collectionId
           in: path
           required: true
-          schema:
-            type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: startAfter
-          in: query
-          required: false
           schema:
             type: string
         - name: includeDeleted
@@ -4014,7 +3947,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListCratesResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -4214,7 +4148,7 @@ paths:
     get:
       tags:
         - facets
-      summary: facets.list
+      summary: "The collection's facets (admin)."
       operationId: facets_list
       security:
         - bearerAuth: []
@@ -4224,11 +4158,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: includeValues
-          in: query
-          required: false
-          schema:
-            type: boolean
         - name: includeDeleted
           in: query
           required: false
@@ -4299,7 +4228,7 @@ paths:
     get:
       tags:
         - facets
-      summary: facets.namespaces
+      summary: The facet namespaces in use (admin).
       operationId: facets_namespaces
       security:
         - bearerAuth: []
@@ -4326,7 +4255,7 @@ paths:
     post:
       tags:
         - facets
-      summary: facets.query
+      summary: "Facet counts for a set of products (admin): each facet with its values in `items`, and the count for each value in `buckets`."
       operationId: facets_query
       security:
         - bearerAuth: []
@@ -4470,7 +4399,7 @@ paths:
     get:
       tags:
         - facets
-      summary: facets.listValues
+      summary: One facet and all its values (admin).
       operationId: facets_listValues
       security:
         - bearerAuth: []
@@ -4776,35 +4705,6 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/getUsers:
-    get:
-      tags:
-        - collection
-      summary: List the users with access to a collection, each with their access level (admin only).
-      operationId: collection_getUsers
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/CollectionUser"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /admin/collection/{collectionId}/hub:
     post:
       tags:
@@ -4918,70 +4818,11 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/integrations/record-types:
-    get:
-      tags:
-        - integrations
-      summary: Discover the app-record types present in a collection + which app owns each (introspected), for picking a sub-record source/trigger.
-      operationId: integrations_listRecordTypes
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RecordTypesResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/integrations/runs/entity/{entityId}:
-    get:
-      tags:
-        - integrations
-      summary: Every run touching an entity (e.g.
-      operationId: integrations_listEntityRuns
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: entityId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RunList"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /admin/collection/{collectionId}/interactions:
     get:
       tags:
         - interactions
-      summary: interactions.list
+      summary: "List the collection's interaction types (admin), optionally only one app's."
       operationId: interactions_list
       security:
         - bearerAuth: []
@@ -4996,23 +4837,14 @@ paths:
           required: false
           schema:
             type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InteractionTypeList"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -5139,9 +4971,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/InteractionEventRow"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -5259,7 +5090,7 @@ paths:
     get:
       tags:
         - jobs
-      summary: "List visible jobs for a collection GET /admin/collection/:collectionId/jobs"
+      summary: "List visible jobs for a collection GET /admin/collection/:collectionId/jobs let page = await jobs.listJobs('coll_123', {"
       operationId: jobs_listJobs
       security:
         - bearerAuth: []
@@ -5279,16 +5110,6 @@ paths:
           required: false
           schema:
             type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
         - name: from
           in: query
           required: false
@@ -5305,7 +5126,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/JobsPage"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -5348,7 +5170,7 @@ paths:
     get:
       tags:
         - journeys
-      summary: journeys.list
+      summary: "List the collection's journeys (admin)."
       operationId: journeys_list
       security:
         - bearerAuth: []
@@ -5376,23 +5198,14 @@ paths:
             enum:
               - event_triggered
               - scheduled
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/JourneyList"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -5511,7 +5324,7 @@ paths:
     post:
       tags:
         - journeysAnalytics
-      summary: "POST /admin/collection/:collectionId/journeys.analytics/:journeyId/steps/:stepId/recipients Returns recipient IDs for a given journey step."
+      summary: "POST /admin/collection/:collectionId/journeys.analytics/:journeyId/steps/:stepId/recipients Returns recipient IDs for a given journey step, as a list of ids."
       operationId: journeysAnalytics_recipients
       security:
         - bearerAuth: []
@@ -5537,7 +5350,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/JourneyStepRecipientsResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -5688,7 +5502,7 @@ paths:
     get:
       tags:
         - location
-      summary: "Admin: Search locations to pick during setup (combines collection + global) GET /admin/collection/:collectionId/location"
+      summary: "Admin: Search locations to pick during setup (combines collection + global)."
       operationId: location_search
       security:
         - bearerAuth: []
@@ -5738,7 +5552,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/LocationSearchResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -5770,33 +5585,6 @@ paths:
           content:
             application/json:
               schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/lots:
-    get:
-      tags:
-        - lots
-      summary: "List lots (summary rows; `payload`/`productIds` omitted)."
-      operationId: lots_list
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListLotsResponse"
         400:
           description: Bad request
         401:
@@ -5904,38 +5692,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/LotUpdateInput"
-  /admin/collection/{collectionId}/lots/{lotId}/products:
-    get:
-      tags:
-        - lots
-      summary: Paginated member product summaries.
-      operationId: lots_listProducts
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: lotId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListLotProductsResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /admin/collection/{collectionId}/lots/{lotId}/resolve:
     post:
       tags:
@@ -6001,34 +5757,6 @@ paths:
         404:
           description: Not found
   /admin/collection/{collectionId}/loyaltyScheme:
-    get:
-      tags:
-        - loyalty
-      summary: loyalty.list
-      operationId: loyalty_list
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/LoyaltyScheme"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
     post:
       tags:
         - loyalty
@@ -6162,39 +5890,6 @@ paths:
         404:
           description: Not found
   /admin/collection/{collectionId}/loyaltyScheme/{schemeId}/earningRule:
-    get:
-      tags:
-        - loyalty
-      summary: loyalty.listEarningRules
-      operationId: loyalty_listEarningRules
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: schemeId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/LoyaltyEarningRule"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
     post:
       tags:
         - loyalty
@@ -6431,7 +6126,7 @@ paths:
     get:
       tags:
         - order
-      summary: List orders for a collection with optional filters and pagination.
+      summary: order.list
       operationId: order_list
       security:
         - bearerAuth: []
@@ -6441,16 +6136,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
         - name: status
           in: query
           required: false
@@ -6487,7 +6172,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListOrdersResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -6596,7 +6282,7 @@ paths:
     post:
       tags:
         - order
-      summary: order.getAnalytics
+      summary: Get comprehensive scan analytics for all tags in an order.
       operationId: order_getAnalytics
       security:
         - bearerAuth: []
@@ -6624,256 +6310,6 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /admin/collection/{collectionId}/orders/analytics/{orderId}/locations:
-    post:
-      tags:
-        - order
-      summary: "Get location-based scan history for an order's tags."
-      operationId: order_getLocationHistory
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: orderId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LocationResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LocationRequest"
-  /admin/collection/{collectionId}/orders/analytics/{orderId}/timeline:
-    post:
-      tags:
-        - order
-      summary: "Get chronological timeline of all scan events for an order's tags."
-      operationId: order_getTimeline
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: orderId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TimelineResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/TimelineRequest"
-  /admin/collection/{collectionId}/orders/ids/{attribute}/{value}:
-    get:
-      tags:
-        - order
-      summary: Get unique order IDs containing items for a specific product.
-      operationId: order_getOrderIdsByAttribute
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: attribute
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: value
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GetOrderIdsResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/orders/lookup:
-    post:
-      tags:
-        - order
-      summary: order.lookup
-      operationId: order_lookup
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LookupOrdersResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LookupOrdersRequest"
-  /admin/collection/{collectionId}/orders/product/{productId}:
-    get:
-      tags:
-        - order
-      summary: Find all orders containing items with a specific product ID.
-      operationId: order_findByProduct
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: includeItems
-          in: query
-          required: false
-          schema:
-            type: boolean
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LookupByProductResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/orders/product/{productId}/items:
-    get:
-      tags:
-        - order
-      summary: Get individual order items for a specific product.
-      operationId: order_findItemsByProduct
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: includeOrder
-          in: query
-          required: false
-          schema:
-            type: boolean
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/FindItemsByAttributeResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /admin/collection/{collectionId}/orders/query:
     post:
       tags:
@@ -6894,7 +6330,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/QueryOrdersResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -7118,23 +6555,14 @@ paths:
           required: true
           schema:
             type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/GetOrderItemsResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -7281,142 +6709,6 @@ paths:
             schema:
               type: object
               additionalProperties: true
-  /admin/collection/{collectionId}/product:
-    post:
-      tags:
-        - product
-      summary: product.create
-      operationId: product_create
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProductResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ProductCreateRequest"
-  /admin/collection/{collectionId}/product/find:
-    post:
-      tags:
-        - product
-      summary: product.find
-      operationId: product_find
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProductQueryResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ProductQueryRequest"
-  /admin/collection/{collectionId}/product/{productId}:
-    put:
-      tags:
-        - product
-      summary: Update a product for a collection (admin only).
-      operationId: product_update
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProductResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ProductUpdateRequest"
-    delete:
-      tags:
-        - product
-      summary: Delete a product for a collection (admin only).
-      operationId: product_remove
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: true
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /admin/collection/{collectionId}/product/{productId}/batch/{batchId}/getSN:
     get:
       tags:
@@ -7498,7 +6790,7 @@ paths:
     get:
       tags:
         - proof
-      summary: Get proofs for a batch (admin only).
+      summary: Get proofs for a batch (admin only), in one list (no pages).
       operationId: proof_getByBatch
       security:
         - bearerAuth: []
@@ -7524,199 +6816,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ProofResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/product/{productId}/claimWindow:
-    post:
-      tags:
-        - product
-      summary: product.createClaimWindow
-      operationId: product_createClaimWindow
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties:
-                $ref: "#/components/schemas/JsonValue"
-  /admin/collection/{collectionId}/product/{productId}/claimWindow/{claimId}:
-    put:
-      tags:
-        - product
-      summary: product.updateClaimWindow
-      operationId: product_updateClaimWindow
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: claimId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties:
-                $ref: "#/components/schemas/JsonValue"
-  /admin/collection/{collectionId}/product/{productId}/clone:
-    post:
-      tags:
-        - product
-      summary: product.clone
-      operationId: product_clone
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProductResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              additionalProperties:
-                $ref: "#/components/schemas/JsonValue"
-  /admin/collection/{collectionId}/product/{productId}/getSN:
-    get:
-      tags:
-        - product
-      summary: Get serial numbers for a product (admin only).
-      operationId: product_getSN
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/product/{productId}/lookupSN/{codeId}:
-    get:
-      tags:
-        - product
-      summary: Look up a serial number by code for a product (admin only).
-      operationId: product_lookupSN
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: codeId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -7727,7 +6828,7 @@ paths:
     get:
       tags:
         - proof
-      summary: Get proofs for a product (admin only).
+      summary: Get proofs for a product (admin only), in one list (no pages).
       operationId: proof_getByProduct
       security:
         - bearerAuth: []
@@ -7748,9 +6849,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ProofResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -7798,7 +6898,7 @@ paths:
     post:
       tags:
         - proof
-      summary: Find proofs for a product (admin only).
+      summary: "Find proofs for a product (admin only): the newest `limit` (default 100), or every proof matching `filterBy`."
       operationId: proof_findByProduct
       security:
         - bearerAuth: []
@@ -7819,15 +6919,20 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ProofResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
           description: Unauthorized
         404:
           description: Not found
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProofFindQuery"
   /admin/collection/{collectionId}/product/{productId}/proof/{proofId}:
     put:
       tags:
@@ -7902,38 +7007,6 @@ paths:
               schema:
                 type: object
                 additionalProperties: true
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/collection/{collectionId}/product/{productId}/refresh:
-    get:
-      tags:
-        - product
-      summary: product.refresh
-      operationId: product_refresh
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ProductResponse"
         400:
           description: Bad request
         401:
@@ -8449,7 +7522,7 @@ paths:
     get:
       tags:
         - proof
-      summary: Get proofs for a user in a collection (admin only).
+      summary: Get proofs for a user in a collection (admin only), in one list (no pages).
       operationId: proof_getByUser
       security:
         - bearerAuth: []
@@ -8470,9 +7543,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ProofResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -8509,7 +7581,7 @@ paths:
     post:
       tags:
         - proof
-      summary: proof.query
+      summary: "The standard query on proofs (admin only): filter, sort, page, count and total a collection's proofs in one call, and follow a proof to its `product` and its `owner` (the owner's contact)."
       operationId: proof_query
       security:
         - bearerAuth: []
@@ -8602,7 +7674,7 @@ paths:
     get:
       tags:
         - segments
-      summary: segments.list
+      summary: "The collection's segments, a page at a time."
       operationId: segments_list
       security:
         - bearerAuth: []
@@ -8625,23 +7697,14 @@ paths:
             enum:
               - dynamic
               - static
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SegmentList"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -8817,7 +7880,7 @@ paths:
     get:
       tags:
         - segments
-      summary: segments.recipients
+      summary: The contacts in a segment, a page at a time.
       operationId: segments_recipients
       security:
         - bearerAuth: []
@@ -8830,6 +7893,16 @@ paths:
         - name: id
           in: path
           required: true
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: number
+        - name: cursor
+          in: query
+          required: false
           schema:
             type: string
       responses:
@@ -8880,7 +7953,7 @@ paths:
     get:
       tags:
         - tags
-      summary: List tags with optional filters and pagination (admin).
+      summary: List tags with optional filters, a page at a time (admin).
       operationId: tags_list
       security:
         - bearerAuth: []
@@ -8890,16 +7963,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
         - name: productId
           in: query
           required: false
@@ -8931,7 +7994,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ListTagsResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -9038,7 +8102,8 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ReverseTagLookupResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -9149,7 +8214,7 @@ paths:
     get:
       tags:
         - template
-      summary: template.getAll
+      summary: "Every template in the collection (admin), in one answer: `nextCursor` is always null."
       operationId: template_getAll
       security:
         - bearerAuth: []
@@ -9165,9 +8230,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Template"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -9350,7 +8414,7 @@ paths:
     get:
       tags:
         - translations
-      summary: translations.list
+      summary: "Admin: the collection's stored translations, a page at a time."
       operationId: translations_list
       security:
         - bearerAuth: []
@@ -9395,23 +8459,14 @@ paths:
           required: false
           schema:
             type: boolean
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TranslationListResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -9643,29 +8698,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/TransactionalSendRequest"
-  /admin/partner:
-    get:
-      tags:
-        - partner
-      summary: The partners you belong to, with your role in each.
-      operationId: partner_list
-      security:
-        - bearerAuth: []
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Partner"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /admin/partner/{partnerId}:
     get:
       tags:
@@ -9694,34 +8726,6 @@ paths:
         404:
           description: Not found
   /admin/partner/{partnerId}/claimSet:
-    get:
-      tags:
-        - partner
-      summary: "The partner's claim sets."
-      operationId: partner_claimSets
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: partnerId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/PartnerClaimSet"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
     post:
       tags:
         - partner
@@ -9780,74 +8784,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PartnerClaimSet"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/partner/{partnerId}/tags/attempts:
-    get:
-      tags:
-        - partner
-      summary: "What phones reported about one chip (errors.report with entityType 'tag'), newest first: a tag that failed to program or register, with the host's NFC log in context."
-      operationId: partner_tagAttempts
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: partnerId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ClientErrorEvent"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /admin/partner/{partnerId}/tags/lookup:
-    get:
-      tags:
-        - partner
-      summary: "Find a tag across the partner's sets by its chip UID (8 or 14 hex) or its code (printed or bare)."
-      operationId: partner_lookupTags
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: partnerId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: uid
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: code
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/PartnerTagHit"
         400:
           description: Bad request
         401:
@@ -10182,7 +9118,7 @@ paths:
     post:
       tags:
         - authKit
-      summary: authKit.linkedInLogin
+      summary: Sign in with LinkedIn (OpenID Connect) via a server-side authorization code (public).
       operationId: authKit_linkedInLogin
       security: []
       parameters:
@@ -11354,8 +10290,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items: {}
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -11967,7 +10903,7 @@ paths:
     get:
       tags:
         - asset
-      summary: asset.listForCollection
+      summary: "The collection's own assets (public)."
       operationId: asset_listForCollection
       security: []
       parameters:
@@ -11982,9 +10918,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AssetResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -12065,16 +11000,6 @@ paths:
           required: false
           schema:
             type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
       responses:
         200:
           description: Success
@@ -12868,7 +11793,7 @@ paths:
     get:
       tags:
         - containers
-      summary: List containers (public).
+      summary: List containers (public), a page at a time.
       operationId: containers_publicList
       security: []
       parameters:
@@ -12877,48 +11802,14 @@ paths:
           required: true
           schema:
             type: string
-        - name: containerType
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: status
-          in: query
-          required: false
-          schema:
-            $ref: "#/components/schemas/ContainerStatus"
-        - name: ref
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: parentContainerId
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: topLevel
-          in: query
-          required: false
-          schema:
-            type: boolean
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PublicListContainersResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -13019,16 +11910,6 @@ paths:
           required: false
           schema:
             type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
       responses:
         200:
           description: Success
@@ -13274,28 +12155,14 @@ paths:
           required: true
           schema:
             type: string
-        - name: history
-          in: query
-          required: false
-          schema:
-            type: boolean
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/ContainerItemsResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -13306,7 +12173,7 @@ paths:
     get:
       tags:
         - facets
-      summary: facets.publicList
+      summary: "The collection's facets (public)."
       operationId: facets_publicList
       security: []
       parameters:
@@ -13315,11 +12182,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: includeValues
-          in: query
-          required: false
-          schema:
-            type: boolean
         - name: namespace
           in: query
           required: false
@@ -13342,7 +12204,7 @@ paths:
     get:
       tags:
         - facets
-      summary: facets.publicNamespaces
+      summary: The facet namespaces in use (public).
       operationId: facets_publicNamespaces
       security: []
       parameters:
@@ -13368,7 +12230,7 @@ paths:
     post:
       tags:
         - facets
-      summary: facets.publicQuery
+      summary: "Facet counts for a set of products (public): each facet with its values in `items`, and the count for each value in `buckets`."
       operationId: facets_publicQuery
       security: []
       parameters:
@@ -13414,11 +12276,6 @@ paths:
           required: true
           schema:
             type: string
-        - name: includeValues
-          in: query
-          required: false
-          schema:
-            type: boolean
         - name: namespace
           in: query
           required: false
@@ -13441,7 +12298,7 @@ paths:
     get:
       tags:
         - facets
-      summary: facets.publicListValues
+      summary: One facet and all its values (public).
       operationId: facets_publicListValues
       security: []
       parameters:
@@ -13508,7 +12365,7 @@ paths:
     get:
       tags:
         - interactions
-      summary: interactions.publicList
+      summary: "Public: list the collection's interaction types, optionally only one app's."
       operationId: interactions_publicList
       security: []
       parameters:
@@ -13522,23 +12379,14 @@ paths:
           required: false
           schema:
             type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: number
-        - name: offset
-          in: query
-          required: false
-          schema:
-            type: number
       responses:
         200:
           description: Success
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/InteractionTypeList"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -13549,7 +12397,7 @@ paths:
     post:
       tags:
         - interactions
-      summary: interactions.publicMyInteractions
+      summary: "The signed-in person's own interaction events (where the type allows it)."
       operationId: interactions_publicMyInteractions
       security: []
       parameters:
@@ -13564,9 +12412,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/InteractionEventRow"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -13709,32 +12556,6 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection/{collectionId}/lots:
-    get:
-      tags:
-        - lots
-      summary: lots.publicList
-      operationId: lots_publicList
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListLotsResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /public/collection/{collectionId}/lots/by-number/{lotNumber}:
     get:
       tags:
@@ -13797,93 +12618,6 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection/{collectionId}/lots/{lotId}/products:
-    get:
-      tags:
-        - lots
-      summary: lots.publicListProducts
-      operationId: lots_publicListProducts
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: lotId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ListLotProductsResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /public/collection/{collectionId}/loyaltyScheme:
-    get:
-      tags:
-        - loyalty
-      summary: List active schemes for a collection.
-      operationId: loyalty_publicList
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/LoyaltyScheme"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /public/collection/{collectionId}/loyaltyScheme/me:
-    get:
-      tags:
-        - loyalty
-      summary: "Get all active schemes with the caller's membership embedded in each."
-      operationId: loyalty_publicGetMe
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/LoyaltySchemeWithMembership"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /public/collection/{collectionId}/loyaltyScheme/{schemeId}:
     get:
       tags:
@@ -13909,39 +12643,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/LoyaltyScheme"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /public/collection/{collectionId}/loyaltyScheme/{schemeId}/earningRule:
-    get:
-      tags:
-        - loyalty
-      summary: "List active earning rules for a scheme — useful for showing \"how to earn\" in a loyalty UI."
-      operationId: loyalty_publicListEarningRules
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: schemeId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/LoyaltyEarningRule"
         400:
           description: Bad request
         401:
@@ -13979,39 +12680,11 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/collection/{collectionId}/product/find:
-    get:
-      tags:
-        - product
-      summary: answers 404.
-      operationId: product_publicFind
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ProductResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /public/collection/{collectionId}/product/{productId}/asset:
     get:
       tags:
         - asset
-      summary: asset.listForProduct
+      summary: "A product's assets (public)."
       operationId: asset_listForProduct
       security: []
       parameters:
@@ -14031,9 +12704,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AssetResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -14070,77 +12742,6 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AssetResponse"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /public/collection/{collectionId}/product/{productId}/createClaim:
-    post:
-      tags:
-        - product
-      summary: product.publicCreateClaim
-      operationId: product_publicCreateClaim
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/ProductClaimCreateRequestBody"
-  /public/collection/{collectionId}/product/{productId}/lookupClaim/{claimId}:
-    get:
-      tags:
-        - product
-      summary: product.publicLookupClaim
-      operationId: product_publicLookupClaim
-      security: []
-      parameters:
-        - name: collectionId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: productId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: claimId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema: {}
         400:
           description: Bad request
         401:
@@ -14229,7 +12830,7 @@ paths:
     get:
       tags:
         - attestation
-      summary: List all attestations for a proof.
+      summary: "List all attestations for a proof, in one list (no pages): `{ items, nextCursor: null }`."
       operationId: attestation_list
       security: []
       parameters:
@@ -14254,9 +12855,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AttestationResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -14675,7 +13275,7 @@ paths:
     get:
       tags:
         - proof
-      summary: List all Proofs for a Collection.
+      summary: List all Proofs for a Collection, in one list (no pages).
       operationId: proof_list
       security: []
       parameters:
@@ -14690,9 +13290,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ProofResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -14873,7 +13472,7 @@ paths:
     get:
       tags:
         - template
-      summary: template.getAllowed
+      summary: "The collection's templates that may be used publicly, in one answer: `nextCursor` is always null."
       operationId: template_getAllowed
       security: []
       parameters:
@@ -14888,9 +13487,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TemplatePublic"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -14986,50 +13584,6 @@ paths:
           description: Unauthorized
         404:
           description: Not found
-  /public/config/fields:
-    get:
-      tags:
-        - config
-      summary: Returns the full platform field catalog.
-      operationId: config_getFields
-      security: []
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/FieldDefinition"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
-  /public/config/proofTypes:
-    get:
-      tags:
-        - config
-      summary: Returns all proof type definitions.
-      operationId: config_getProofTypes
-      security: []
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/ProofTypeDefinition"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /public/dpp/{collectionId}/{passportId}:
     get:
       tags:
@@ -15113,34 +13667,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/NfcClaimTagRequest"
-  /public/nfc/findByTag/{tagId}:
-    get:
-      tags:
-        - nfc
-      summary: Lookup a tag by its ID (public).
-      operationId: nfc_lookupTag
-      security: []
-      parameters:
-        - name: tagId
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/NfcTagInfo"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /public/nfc/validate:
     post:
       tags:
@@ -15167,37 +13693,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/NfcValidateRequest"
-  /public/push/token:
-    get:
-      tags:
-        - realtime
-      summary: "`collection:{collectionId}:*` (subscribe; publish only for the collection's admins)."
-      operationId: realtime_getPublicToken
-      security: []
-      parameters:
-        - name: collectionId
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: appId
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AblyTokenRequest"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /public/qr/lookupShortCode/{shortId}/{code}:
     get:
       tags:
@@ -15286,7 +13781,7 @@ paths:
     get:
       tags:
         - template
-      summary: template.getAllowedGlobal
+      summary: "The global templates this collection may use, in one answer: `nextCursor` is always null."
       operationId: template_getAllowedGlobal
       security: []
       parameters:
@@ -15301,9 +13796,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/TemplatePublic"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:
@@ -15981,52 +14475,11 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/ClaimSetScope"
-  /{rangeId}/tags:
-    get:
-      tags:
-        - ranges
-      summary: "The range's tags in index order, a page at a time (keys: owners/admins only)."
-      operationId: ranges_tags
-      security: []
-      parameters:
-        - name: rangeId
-          in: path
-          required: true
-          schema:
-            type: string
-        - name: from
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: string
-        - name: keys
-          in: query
-          required: false
-          schema:
-            type: string
-      responses:
-        200:
-          description: Success
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ClaimSetRangeTagsPage"
-        400:
-          description: Bad request
-        401:
-          description: Unauthorized
-        404:
-          description: Not found
   /{zone}/collection/{collectionId}/app/{appId}/cases:
     get:
       tags:
         - cases
-      summary: List cases with optional query parameters GET /cases
+      summary: "List cases with optional query parameters GET /cases Returns `{ items, nextCursor, count }`: the cases are in `items`, `count` is how many match in all, and `nextCursor` is `null` on the last page."
       operationId: cases_list
       security: []
       parameters:
@@ -16398,7 +14851,7 @@ paths:
     get:
       tags:
         - records
-      summary: "List records with optional query parameters GET /records Public/owner callers only receive records with `status: \"active\"`."
+      summary: "List records with optional query parameters GET /records Returns `{ items, nextCursor, count }`: the records are in `items`, `count` is how many match in all, and `nextCursor` is `null` on the last page."
       operationId: records_list
       security: []
       parameters:
@@ -17092,7 +15545,7 @@ paths:
     get:
       tags:
         - threads
-      summary: List threads with optional query parameters GET /threads
+      summary: "List threads with optional query parameters GET /threads Returns `{ items, nextCursor, count }`: the threads are in `items`, `count` is how many match in all, and `nextCursor` is `null` on the last page."
       operationId: threads_list
       security: []
       parameters:
@@ -17735,10 +16188,6 @@ components:
     AdminCardsResponse:
       type: object
       properties:
-        cards:
-          type: array
-          items:
-            $ref: "#/components/schemas/AdminCard"
         hidden:
           type: array
           items:
@@ -17746,7 +16195,6 @@ components:
         layout:
           $ref: "#/components/schemas/StudioHomeLayout"
       required:
-        - cards
         - hidden
         - layout
     AdminCardSize:
@@ -19104,15 +17552,6 @@ components:
         - description
         - capabilities
         - parameters
-    AgentToolsResponse:
-      type: object
-      properties:
-        tools:
-          type: array
-          items:
-            $ref: "#/components/schemas/AgentToolDefinition"
-      required:
-        - tools
     AgentToolsQuery:
       type: object
       properties:
@@ -19141,15 +17580,6 @@ components:
         - inputSchema
         - outputSchema
         - capabilities
-    SkillsListResponse:
-      type: object
-      properties:
-        skills:
-          type: array
-          items:
-            $ref: "#/components/schemas/SkillDescriptor"
-      required:
-        - skills
     CatalogResponse:
       type: object
       properties:
@@ -20638,10 +19068,6 @@ components:
       properties:
         source:
           $ref: "#/components/schemas/AnalyticsSource"
-        limit:
-          type: number
-        offset:
-          type: number
         sort:
           $ref: "#/components/schemas/AnalyticsSortOrder"
       required:
@@ -20651,29 +19077,14 @@ components:
       properties:
         source:
           $ref: "#/components/schemas/AnalyticsSource"
-        limit:
-          type: number
-        offset:
-          type: number
         sort:
           type: string
           enum:
             - ASC
             - DESC
-        count:
-          type: number
-        rows:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
       required:
         - source
-        - limit
-        - offset
         - sort
-        - count
-        - rows
     LegacyAnalyticsRequest:
       type: object
       properties:
@@ -22685,15 +21096,6 @@ components:
         - widget
         - container
         - admin
-    CollectionWidgetsResponse:
-      type: object
-      properties:
-        apps:
-          type: array
-          items:
-            $ref: "#/components/schemas/CollectionAppWidget"
-      required:
-        - apps
     GetCollectionWidgetsOptions:
       type: object
       properties:
@@ -22736,6 +21138,9 @@ components:
         - admin
         - customer
         - developer
+    CollectionWidgetsResponse:
+      type: object
+      additionalProperties: true
     AppNeed:
       type: string
       enum:
@@ -22855,10 +21260,6 @@ components:
     ListQueryParams:
       type: object
       properties:
-        limit:
-          type: number
-        offset:
-          type: number
         sort:
           type: string
         includeDeleted:
@@ -23362,20 +21763,12 @@ components:
     MatchResult:
       type: object
       properties:
-        data:
-          type: array
-          items:
-            $ref: "#/components/schemas/MatchEntry"
-        total:
-          type: number
         strategy:
           type: string
           enum:
             - all
             - best
       required:
-        - data
-        - total
         - strategy
     UpsertRecordInput:
       type: object
@@ -23753,19 +22146,11 @@ components:
     ResolveAllResult:
       type: object
       properties:
-        records:
-          type: array
-          items:
-            $ref: "#/components/schemas/ResolveAllEntry"
-        total:
-          type: number
         context:
           $ref: "#/components/schemas/ResolveAllContext"
         truncated:
           type: boolean
       required:
-        - records
-        - total
         - context
         - truncated
     ResolveAllEntry:
@@ -23948,6 +22333,9 @@ components:
     AppOptionsResponse:
       type: object
       additionalProperties: true
+    AppOptionsList:
+      type: object
+      additionalProperties: true
     AssetRef:
       type: object
       properties:
@@ -24088,15 +22476,6 @@ components:
           type: string
         deletedAt:
           type: string
-        thumbnails:
-          type: object
-          additionalProperties: true
-        x100:
-          type: string
-        x200:
-          type: string
-        x512:
-          type: string
       required:
         - id
         - collectionId
@@ -24172,11 +22551,7 @@ components:
       properties:
         appId:
           type: string
-        mimeTypePrefix:
-          type: string
         limit:
-          type: number
-        offset:
           type: number
     GetAssetOptions:
       type: object
@@ -24224,10 +22599,6 @@ components:
           enum:
             - asc
             - desc
-        limit:
-          type: number
-        offset:
-          type: number
         include:
           type: array
           items:
@@ -24237,24 +22608,6 @@ components:
               - derived
       required:
         - collectionId
-    AdminListAssetsResponse:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: "#/components/schemas/Asset"
-        total:
-          type: number
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - data
-        - total
-        - limit
-        - offset
     UpdateAssetOptions:
       type: object
       properties:
@@ -24688,15 +23041,6 @@ components:
           $ref: "#/components/schemas/Attestation"
       required:
         - attestation
-    ListAttestationsResponse:
-      type: object
-      properties:
-        attestations:
-          type: array
-          items:
-            $ref: "#/components/schemas/Attestation"
-      required:
-        - attestations
     CreateOwnerAttestationResponse:
       type: object
       properties:
@@ -24707,14 +23051,9 @@ components:
     PublicListAttestationsResponse:
       type: object
       properties:
-        attestations:
-          type: array
-          items:
-            $ref: "#/components/schemas/Attestation"
         audience:
           $ref: "#/components/schemas/AttestationAudience"
       required:
-        - attestations
         - audience
     AttestationSummaryResponse:
       type: object
@@ -24833,10 +23172,6 @@ components:
           type: string
         recordedBefore:
           type: string
-        limit:
-          type: number
-        offset:
-          type: number
       required:
         - subjectType
         - subjectId
@@ -24951,6 +23286,8 @@ components:
         - day
         - week
         - month
+    ListAttestationsResponse:
+      $ref: "#/components/schemas/ListResult"
     UserAccountRegistrationRequest:
       type: object
       properties:
@@ -26338,15 +24675,6 @@ components:
       enum:
         - ACCOUNT_TEMPORARILY_LOCKED
         - PASSWORD_EXPIRED
-    FirebaseTimestamp:
-      type: object
-      properties:
-        seconds:
-          type: number
-        nanoseconds:
-          type: number
-      required:
-        - seconds
     BatchResponse:
       type: object
       properties:
@@ -26376,8 +24704,6 @@ components:
     BatchCreateRequest:
       type: object
       properties:
-        id:
-          type: string
         name:
           type: string
         expiryDate:
@@ -26782,6 +25108,9 @@ components:
           type: number
         offset:
           type: number
+    BookingListOptions:
+      type: object
+      properties: {}
     CreateSlotInput:
       type: object
       properties:
@@ -26865,6 +25194,9 @@ components:
           type: number
         offset:
           type: number
+    SlotListOptions:
+      type: object
+      properties: {}
     CreateBlockInput:
       type: object
       properties:
@@ -26905,6 +25237,9 @@ components:
           type: number
         offset:
           type: number
+    BlockListOptions:
+      type: object
+      properties: {}
     FreeBusyQuery:
       type: object
       properties:
@@ -27076,11 +25411,11 @@ components:
     UpdateSlotInput:
       $ref: "#/components/schemas/CreateSlotInput"
     BookingList:
-      $ref: "#/components/schemas/PaginatedResponse"
+      $ref: "#/components/schemas/ListResult"
     SlotList:
-      $ref: "#/components/schemas/PaginatedResponse"
+      $ref: "#/components/schemas/ListResult"
     BlockList:
-      $ref: "#/components/schemas/PaginatedResponse"
+      $ref: "#/components/schemas/ListResult"
     BookingErrorCode:
       type: string
       enum:
@@ -27117,10 +25452,6 @@ components:
     ListBroadcastsQuery:
       type: object
       properties:
-        limit:
-          type: number
-        offset:
-          type: number
         appId:
           type: string
     BroadcastRecord:
@@ -27195,42 +25526,11 @@ components:
         - topic
         - channel
         - createdAt
-    BroadcastList:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/BroadcastRecord"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - items
-        - limit
-        - offset
     BroadcastRecipientsResponse:
       type: object
       properties:
-        items:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-        total:
-          type: number
-        limit:
-          type: number
-        offset:
-          type: number
         note:
           type: string
-      required:
-        - items
-        - total
-        - limit
-        - offset
     BroadcastPreviewRequest:
       type: object
       properties:
@@ -27705,18 +26005,6 @@ components:
         - groupId
         - programmedAt
         - scans
-    ClaimSetRangeTagsPage:
-      type: object
-      properties:
-        tags:
-          type: array
-          items:
-            $ref: "#/components/schemas/ClaimSetRangeTag"
-        next:
-          type: number
-      required:
-        - tags
-        - next
     ClaimSetRangeNextTag:
       type: object
       properties:
@@ -28535,8 +26823,6 @@ components:
           type: string
         journeyId:
           type: string
-        journeyStepId:
-          type: string
         idField:
           $ref: "#/components/schemas/IdField"
         from:
@@ -28545,14 +26831,14 @@ components:
           type: string
         limit:
           type: number
-    CommsRecipientsWithoutActionQuery:
+    CommsRecipientsWithoutInteractionQuery:
       type: object
       properties:
         broadcastId:
           type: string
         journeyId:
           type: string
-        actionId:
+        interactionId:
           type: string
         appId:
           type: string
@@ -28564,14 +26850,14 @@ components:
           type: string
         limit:
           type: number
-    CommsRecipientsWithActionQuery:
+    CommsRecipientsWithInteractionQuery:
       type: object
       properties:
         broadcastId:
           type: string
         journeyId:
           type: string
-        actionId:
+        interactionId:
           type: string
         appId:
           type: string
@@ -28913,16 +27199,6 @@ components:
           type: string
         type:
           $ref: "#/components/schemas/BroadcastChannel"
-    CommsListMethodsResponse:
-      type: object
-      properties:
-        ok:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-      required:
-        - ok
     RegisterEmailMethodRequest:
       type: object
       properties:
@@ -29113,6 +27389,8 @@ components:
       $ref: "#/components/schemas/CommsSettings"
     ConsentChannels:
       $ref: "#/components/schemas/BroadcastChannel"
+    CommsListMethodsResponse:
+      $ref: "#/components/schemas/ListResult"
     EmailAttachmentSpec:
       type: object
       additionalProperties: true
@@ -29329,21 +27607,6 @@ components:
         - updatedAt
         - deletedAt
         - erasedAt
-    ContactListResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/Contact"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - items
-        - limit
-        - offset
     ContactDuplicatePair:
       type: object
       properties:
@@ -29361,18 +27624,10 @@ components:
     ContactDuplicatesResponse:
       type: object
       properties:
-        pairs:
-          type: array
-          items:
-            $ref: "#/components/schemas/ContactDuplicatePair"
         scanned:
           type: number
-        more:
-          type: boolean
       required:
-        - pairs
         - scanned
-        - more
     ContactMergeResponse:
       type: object
       properties:
@@ -29472,27 +27727,8 @@ components:
           type: string
         customFieldValue:
           type: string
-        limit:
-          type: number
-        offset:
-          type: number
       required:
         - collectionId
-    ContactSearchResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/Contact"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - items
-        - limit
-        - offset
     PublicContactUpsertResponse:
       type: object
       properties:
@@ -29823,8 +28059,6 @@ components:
         - is_false
         - greater_than
         - less_than
-    ContactSchema:
-      $ref: "#/components/schemas/ContactSchemaResponse"
     Container:
       type: object
       properties:
@@ -29980,59 +28214,15 @@ components:
             type: string
       required:
         - ids
-    ListContainersResponse:
-      type: object
-      properties:
-        containers:
-          type: array
-          items:
-            $ref: "#/components/schemas/Container"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - containers
-        - limit
-        - offset
-    PublicListContainersResponse:
-      type: object
-      properties:
-        containers:
-          type: array
-          items:
-            $ref: "#/components/schemas/Container"
-      required:
-        - containers
     FindContainersForItemResponse:
       type: object
       properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/ContainerItem"
         containers:
           type: array
           items:
             $ref: "#/components/schemas/Container"
       required:
-        - items
         - containers
-    ContainerItemsResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/ContainerItem"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - items
-        - limit
-        - offset
     AddContainerItemsResponse:
       type: object
       properties:
@@ -30066,10 +28256,6 @@ components:
           type: string
         topLevel:
           type: boolean
-        limit:
-          type: number
-        offset:
-          type: number
     GetContainerParams:
       type: object
       properties:
@@ -30084,10 +28270,6 @@ components:
       properties:
         history:
           type: boolean
-        limit:
-          type: number
-        offset:
-          type: number
     FindContainersForItemParams:
       type: object
       properties:
@@ -30110,6 +28292,8 @@ components:
       enum:
         - tag
         - proof
+    PublicListContainersParams:
+      $ref: "#/components/schemas/ListContainersParams"
     CrateItem:
       type: object
       properties:
@@ -30153,27 +28337,8 @@ components:
     ListCratesRequest:
       type: object
       properties:
-        limit:
-          type: number
-        startAfter:
-          type: string
         includeDeleted:
           type: boolean
-    ListCratesResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/Crate"
-        hasMore:
-          type: boolean
-        lastId:
-          type: string
-      required:
-        - items
-        - hasMore
-        - lastId
     GetCrateResponse:
       type: object
       properties: {}
@@ -30535,10 +28700,6 @@ components:
         status:
           type: object
           additionalProperties: true
-        limit:
-          type: number
-        offset:
-          type: number
     DppRegisterResult:
       type: object
       properties:
@@ -30859,27 +29020,13 @@ components:
           type: boolean
       required:
         - name
-    FacetListResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/FacetDefinition"
-      required:
-        - items
     FacetValueListResponse:
       type: object
       properties:
         facet:
           $ref: "#/components/schemas/FacetDefinition"
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/FacetValue"
       required:
         - facet
-        - items
     FacetValueResponse:
       type: object
       properties:
@@ -30929,37 +29076,18 @@ components:
     FacetQueryResponse:
       type: object
       properties:
-        items:
-          type: object
-          additionalProperties: true
         facet:
           $ref: "#/components/schemas/FacetDefinition"
         values:
           type: array
           items:
             $ref: "#/components/schemas/FacetValue"
-        buckets:
-          type: array
-          items:
-            $ref: "#/components/schemas/FacetBucket"
-        meta:
-          type: object
-          additionalProperties: true
-        source:
-          type: object
-          additionalProperties: true
-        matchedProducts:
-          type: number
       required:
-        - items
         - facet
         - values
-        - buckets
     FacetListParams:
       type: object
       properties:
-        includeValues:
-          type: boolean
         includeDeleted:
           type: boolean
         kind:
@@ -30972,19 +29100,8 @@ components:
     PublicFacetListParams:
       type: object
       properties:
-        includeValues:
-          type: boolean
         namespace:
           type: string
-    FacetNamespaceListResponse:
-      type: object
-      properties:
-        namespaces:
-          type: array
-          items:
-            type: string
-      required:
-        - namespaces
     FacetGetParams:
       type: object
       properties:
@@ -31002,6 +29119,10 @@ components:
       properties:
         includeDeleted:
           type: boolean
+    FacetListResponse:
+      $ref: "#/components/schemas/ListResult"
+    FacetNamespaceListResponse:
+      $ref: "#/components/schemas/ListResult"
     FacetValueDefinition:
       $ref: "#/components/schemas/FacetValue"
     PutFileRequest:
@@ -32068,21 +30189,6 @@ components:
         - lastError
         - lastRunId
         - recentRuns
-    FailedRecordList:
-      type: object
-      properties:
-        direction:
-          $ref: "#/components/schemas/FlowDirection"
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/FailedRecord"
-        nextCursor:
-          type: string
-      required:
-        - direction
-        - items
-        - nextCursor
     CreateFlowInput:
       type: object
       properties:
@@ -32119,15 +30225,6 @@ components:
           $ref: "#/components/schemas/FlowStatus"
         appId:
           type: string
-    FlowList:
-      type: object
-      properties:
-        flows:
-          type: array
-          items:
-            $ref: "#/components/schemas/IntegrationFlow"
-      required:
-        - flows
     RunFlowInput:
       type: object
       properties:
@@ -32488,32 +30585,11 @@ components:
           $ref: "#/components/schemas/RunTrigger"
         entityId:
           type: string
-        limit:
-          type: number
-        cursor:
-          type: string
-    RunList:
-      type: object
-      properties:
-        runs:
-          type: object
-          additionalProperties: true
-      required:
-        - runs
     ListRunItemsQuery:
       type: object
       properties:
         status:
-          type: object
-          additionalProperties: true
-    RunItemList:
-      type: object
-      properties:
-        items:
-          type: object
-          additionalProperties: true
-      required:
-        - items
+          $ref: "#/components/schemas/FlowRunItemStatus"
     LoggingWindow:
       type: object
       properties:
@@ -32590,15 +30666,6 @@ components:
         - createdBy
         - createdAt
         - updatedAt
-    SecretList:
-      type: object
-      properties:
-        secrets:
-          type: array
-          items:
-            $ref: "#/components/schemas/SecretMeta"
-      required:
-        - secrets
     SetSecretInput:
       type: object
       properties:
@@ -32638,15 +30705,6 @@ components:
         - appId
         - recordType
         - count
-    RecordTypesResponse:
-      type: object
-      properties:
-        recordTypes:
-          type: array
-          items:
-            $ref: "#/components/schemas/RecordTypeInfo"
-      required:
-        - recordTypes
     FlowDirection:
       type: string
       enum:
@@ -32926,8 +30984,6 @@ components:
           type: string
         interactionId:
           type: string
-        scope:
-          type: string
         from:
           type: string
         to:
@@ -33108,21 +31164,6 @@ components:
         - collectionId
         - appId
         - createdAt
-    InteractionTypeList:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/InteractionTypeRecord"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - items
-        - limit
-        - offset
     CreateInteractionTypeBody:
       type: object
       properties:
@@ -33169,10 +31210,6 @@ components:
       properties:
         appId:
           type: string
-        limit:
-          type: number
-        offset:
-          type: number
     SubmitInteractionResponse:
       type: object
       properties:
@@ -33461,29 +31498,10 @@ components:
           $ref: "#/components/schemas/JobStatus"
         task:
           type: string
-        limit:
-          type: number
-        offset:
-          type: number
         from:
           type: string
         to:
           type: string
-    JobsPage:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/Job"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - items
-        - limit
-        - offset
     EnqueueAsyncJobRequest:
       type: object
       properties:
@@ -33586,21 +31604,6 @@ components:
         - journeyType
         - createdAt
         - updatedAt
-    JourneyList:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/JourneyRecord"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - items
-        - limit
-        - offset
     ListJourneysQuery:
       type: object
       properties:
@@ -33613,10 +31616,6 @@ components:
           enum:
             - event_triggered
             - scheduled
-        limit:
-          type: number
-        offset:
-          type: number
     CreateJourneyBody:
       type: object
       properties:
@@ -33764,10 +31763,6 @@ components:
         - completedCount
         - conversionRate
         - avgTimeToComplete
-    JourneyStepRecipientsResponse:
-      type: array
-      items:
-        type: string
     KnowledgeSet:
       type: object
       properties:
@@ -33995,6 +31990,28 @@ components:
       type: string
       enum:
         - markdown_feed
+    ListResult:
+      type: object
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        nextCursor:
+          type: string
+        count:
+          type: number
+      required:
+        - items
+        - nextCursor
+    ListOptions:
+      type: object
+      properties:
+        limit:
+          type: number
+        cursor:
+          type: string
     Location:
       type: object
       properties:
@@ -34061,18 +32078,6 @@ components:
             - name
             - countryCode
             - countryName
-    LocationSearchResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/Location"
-        count:
-          type: number
-      required:
-        - items
-        - count
     Geofence:
       type: object
       additionalProperties: true
@@ -34172,15 +32177,6 @@ components:
           type: string
         includeDeleted:
           type: boolean
-    ListLotsResponse:
-      type: object
-      properties:
-        lots:
-          type: array
-          items:
-            $ref: "#/components/schemas/Lot"
-      required:
-        - lots
     LotMemberDiff:
       type: object
       properties:
@@ -34207,24 +32203,6 @@ components:
           additionalProperties: true
       required:
         - id
-    ListLotProductsResponse:
-      type: object
-      properties:
-        products:
-          type: array
-          items:
-            $ref: "#/components/schemas/LotProductSummary"
-        total:
-          type: number
-        page:
-          type: number
-        limit:
-          type: number
-      required:
-        - products
-        - total
-        - page
-        - limit
     LotResolutionResult:
       type: object
       properties:
@@ -34437,29 +32415,6 @@ components:
       required:
         - member
         - transaction
-    LoyaltyPaginationParams:
-      type: object
-      properties:
-        limit:
-          type: number
-        offset:
-          type: number
-    LoyaltyPaginatedResult:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - items
-        - limit
-        - offset
     CreateLoyaltySchemeBody:
       type: object
       properties:
@@ -35535,10 +33490,6 @@ components:
     ListOrdersRequest:
       type: object
       properties:
-        limit:
-          type: number
-        offset:
-          type: number
         status:
           type: string
         orderRef:
@@ -35551,21 +33502,6 @@ components:
           type: string
         includeItems:
           type: boolean
-    ListOrdersResponse:
-      type: object
-      properties:
-        orders:
-          type: array
-          items:
-            $ref: "#/components/schemas/Order"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - orders
-        - limit
-        - offset
     AddItemsRequest:
       type: object
       properties:
@@ -35602,55 +33538,9 @@ components:
     RemoveItemsResponse:
       type: object
       properties: {}
-    LookupOrdersRequest:
-      type: object
-      properties:
-        items:
-          type: object
-          additionalProperties: true
-        itemType:
-          type: string
-          enum:
-            - tag
-            - proof
-            - serial
-        itemId:
-          type: string
-      required:
-        - items
-        - itemType
-        - itemId
-    LookupOrdersResponse:
-      type: object
-      properties:
-        orders:
-          type: array
-          items:
-            $ref: "#/components/schemas/Order"
-      required:
-        - orders
     GetOrderItemsParams:
       type: object
-      properties:
-        limit:
-          type: number
-        offset:
-          type: number
-    GetOrderItemsResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/OrderItem"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - items
-        - limit
-        - offset
+      properties: {}
     QueryOrdersRequest:
       type: object
       properties:
@@ -35708,30 +33598,11 @@ components:
           enum:
             - asc
             - desc
-        limit:
-          type: number
-        offset:
-          type: number
         includeItems:
           type: boolean
       required:
         - itemType
         - itemId
-    QueryOrdersResponse:
-      type: object
-      properties:
-        orders:
-          type: array
-          items:
-            $ref: "#/components/schemas/Order"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - orders
-        - limit
-        - offset
     ReportsParams:
       type: object
       properties:
@@ -35804,108 +33675,6 @@ components:
         - avgItemsPerOrder
         - maxItemsInOrder
         - minItemsInOrder
-    LookupByProductParams:
-      type: object
-      properties:
-        limit:
-          type: number
-        offset:
-          type: number
-        includeItems:
-          type: boolean
-    LookupByProductResponse:
-      type: object
-      properties:
-        orders:
-          type: array
-          items:
-            $ref: "#/components/schemas/Order"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - orders
-        - limit
-        - offset
-    FindOrdersByAttributeParams:
-      type: object
-      properties:
-        limit:
-          type: number
-        offset:
-          type: number
-        includeItems:
-          type: boolean
-    FindOrdersByAttributeResponse:
-      type: object
-      properties:
-        orders:
-          type: array
-          items:
-            $ref: "#/components/schemas/Order"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - orders
-        - limit
-        - offset
-    FindItemsByAttributeParams:
-      type: object
-      properties:
-        limit:
-          type: number
-        offset:
-          type: number
-        includeOrder:
-          type: boolean
-    FindItemsByAttributeResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/OrderItem"
-        count:
-          type: number
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - items
-        - count
-        - limit
-        - offset
-    GetOrderIdsParams:
-      type: object
-      properties:
-        limit:
-          type: number
-        offset:
-          type: number
-    GetOrderIdsResponse:
-      type: object
-      properties:
-        orderIds:
-          type: array
-          items:
-            type: string
-        count:
-          type: number
-        attribute:
-          type: string
-          enum:
-            - productId
-        value:
-          type: string
-      required:
-        - orderIds
-        - count
-        - attribute
-        - value
     TagScanSummary:
       type: object
       properties:
@@ -36067,24 +33836,6 @@ components:
           type: string
         isAdmin:
           type: boolean
-    TimelineResponse:
-      type: object
-      properties:
-        orderRef:
-          type: string
-        orderId:
-          type: string
-        timeline:
-          type: array
-          items:
-            $ref: "#/components/schemas/TagScanEvent"
-        count:
-          type: number
-      required:
-        - orderRef
-        - orderId
-        - timeline
-        - count
     LocationScan:
       type: object
       properties: {}
@@ -36093,24 +33844,6 @@ components:
       properties:
         limit:
           type: number
-    LocationResponse:
-      type: object
-      properties:
-        orderRef:
-          type: string
-        orderId:
-          type: string
-        locations:
-          type: array
-          items:
-            $ref: "#/components/schemas/LocationScan"
-        count:
-          type: number
-      required:
-        - orderRef
-        - orderId
-        - locations
-        - count
     BulkAnalyticsRequest:
       type: object
       properties:
@@ -36329,15 +34062,6 @@ components:
           enum:
             - asc
             - desc
-        page:
-          type: object
-          additionalProperties: true
-        limit:
-          type: number
-        offset:
-          type: number
-        cursor:
-          type: string
         includeDeleted:
           type: boolean
       required:
@@ -36482,31 +34206,9 @@ components:
             type: string
       required:
         - name
-    ProductQueryResponse:
+    ProductQueryMeta:
       type: object
       properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/Product"
-        page:
-          type: object
-          additionalProperties: true
-        limit:
-          type: number
-        offset:
-          type: number
-        returned:
-          type: number
-        total:
-          type: number
-        hasMore:
-          type: boolean
-        nextCursor:
-          type: string
-        meta:
-          type: object
-          additionalProperties: true
         apiVersion:
           type: string
           enum:
@@ -36535,8 +34237,6 @@ components:
           type: array
           items:
             type: string
-      required:
-        - items
     ProductClaimLookupInput:
       type: object
       properties:
@@ -36752,6 +34452,20 @@ components:
           type: object
           additionalProperties:
             $ref: "#/components/schemas/JsonValue"
+    ProofFindQuery:
+      type: object
+      properties:
+        limit:
+          type: number
+        filterBy:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+        includes:
+          type: array
+          items:
+            type: string
     ProofValuesUpdateRequest:
       type: object
       properties:
@@ -37161,40 +34875,6 @@ components:
     QueryAggregate:
       type: object
       additionalProperties: true
-    RealtimeTokenRequest:
-      type: object
-      properties:
-        collectionId:
-          type: string
-        appId:
-          type: string
-      required:
-        - collectionId
-    AblyTokenRequest:
-      type: object
-      properties:
-        keyName:
-          type: string
-        ttl:
-          type: number
-        timestamp:
-          type: number
-        capability:
-          type: string
-        nonce:
-          type: string
-        mac:
-          type: string
-        clientId:
-          type: string
-      required:
-        - keyName
-        - ttl
-        - timestamp
-        - capability
-        - nonce
-        - mac
-        - clientId
     RealtimeScope:
       type: object
       properties:
@@ -37409,25 +35089,6 @@ components:
           enum:
             - dynamic
             - static
-        limit:
-          type: number
-        offset:
-          type: number
-    SegmentList:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/SegmentRecord"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - items
-        - limit
-        - offset
     SegmentCalculateResult:
       type: object
       properties:
@@ -37444,24 +35105,8 @@ components:
     SegmentRecipientsResponse:
       type: object
       properties:
-        items:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-        limit:
-          type: number
-        offset:
-          type: number
-        total:
-          type: number
         note:
           type: string
-      required:
-        - items
-        - limit
-        - offset
-        - total
     CustomFieldOperator:
       type: string
       enum:
@@ -37554,16 +35199,11 @@ components:
     ServiceAccountList:
       type: object
       properties:
-        serviceAccounts:
-          type: array
-          items:
-            $ref: "#/components/schemas/ServiceAccount"
         access:
           type: array
           items:
             $ref: "#/components/schemas/ServiceAccountAccess"
       required:
-        - serviceAccounts
         - access
     CreateServiceAccountInput:
       type: object
@@ -37698,10 +35338,6 @@ components:
           type: boolean
         appId:
           type: string
-        limit:
-          type: number
-        offset:
-          type: number
     ShopShippingRate:
       type: object
       properties:
@@ -38148,29 +35784,6 @@ components:
           type: string
         includeExpired:
           type: boolean
-        limit:
-          type: number
-        offset:
-          type: number
-    ShopPage:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            type: object
-            additionalProperties: true
-        total:
-          type: number
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - items
-        - total
-        - limit
-        - offset
     ShopShipInput:
       type: object
       properties:
@@ -38562,6 +36175,19 @@ components:
       required:
         - checkoutUrl
         - sessionId
+    SubscriptionListOptions:
+      type: object
+      properties:
+        status:
+          $ref: "#/components/schemas/SubscriptionStatus"
+        live:
+          type: boolean
+        planId:
+          type: string
+        contactId:
+          type: string
+        userId:
+          type: string
     SubscriptionListParams:
       type: object
       properties:
@@ -38842,10 +36468,6 @@ components:
     ListTagsRequest:
       type: object
       properties:
-        limit:
-          type: number
-        offset:
-          type: number
         productId:
           type: string
         variantId:
@@ -38856,21 +36478,6 @@ components:
           type: string
         refId:
           type: string
-    ListTagsResponse:
-      type: object
-      properties:
-        tags:
-          type: array
-          items:
-            $ref: "#/components/schemas/Tag"
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - tags
-        - limit
-        - offset
     LookupTagsRequest:
       type: object
       properties:
@@ -38930,36 +36537,17 @@ components:
       properties:
         count:
           type: number
-        tags:
-          type: array
-          items:
-            $ref: "#/components/schemas/Tag"
         embedded:
           $ref: "#/components/schemas/TagEmbedded"
       required:
         - count
-        - tags
         - embedded
-    ReverseTagLookupResponse:
-      type: object
-      properties:
-        tags:
-          type: array
-          items:
-            $ref: "#/components/schemas/Tag"
-      required:
-        - tags
     ByRefResponse:
       type: object
       properties:
-        tags:
-          type: array
-          items:
-            $ref: "#/components/schemas/Tag"
         embedded:
           $ref: "#/components/schemas/TagEmbedded"
       required:
-        - tags
         - embedded
     TemplateBase:
       type: object
@@ -39295,25 +36883,6 @@ components:
           type: boolean
         termIssues:
           type: boolean
-        limit:
-          type: number
-        offset:
-          type: number
-    TranslationListResponse:
-      type: object
-      properties:
-        items:
-          type: array
-          items:
-            $ref: "#/components/schemas/TranslationRecord"
-        total:
-          type: number
-        limit:
-          type: number
-        offset:
-          type: number
-      required:
-        - items
     TranslationUpdateRequest:
       type: object
       properties:
@@ -39573,8 +37142,6 @@ components:
     VariantCreateRequest:
       type: object
       properties:
-        id:
-          type: string
         name:
           type: string
     VariantUpdateRequest:

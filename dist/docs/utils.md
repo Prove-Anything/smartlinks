@@ -683,7 +683,7 @@ const show = await utils.validateCondition({
 })
 
 // Admin: list, create, change, remove
-const all = await conditions.list('col1', true)
+const { items: all } = await conditions.list('col1', true)
 await conditions.create('col1', { title: 'UK only', type: 'and', conditions: [{ type: 'country', countries: ['GB'], contains: true }] })
 ```
 

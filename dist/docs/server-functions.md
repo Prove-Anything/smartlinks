@@ -1,7 +1,7 @@
 # Server functions ("edge functions")
 
 > **SmartLinks SDK 2.x** (current `latest`). Part of the installable-app platform
-> (author → register → install → run → test). Install `@proveanything/smartlinks@^2`.
+> (author → register → install → run → test). Install `@proveanything/smartlinks@^3`.
 
 A **server function** is arbitrary server-side JavaScript your app deploys directly into
 SmartLinks. It runs on the SmartLinks servers — with access to the full SDK, to your app's
@@ -986,7 +986,7 @@ has its own. Your app's **admin screen** saves it; your **functions** read it by
 
 ```ts
 await SL.secrets.put(collectionId, 'shop-api-key', apiKeyFromTheForm)   // create or replace
-const { secrets } = await SL.secrets.listOwn(collectionId)              // names + masked hints, e.g. "••••1234"
+const { items: secrets } = await SL.secrets.listOwn(collectionId)       // names + masked hints, e.g. "••••1234"
 await SL.secrets.removeOwn(collectionId, 'shop-api-key')
 ```
 

@@ -17,11 +17,18 @@ export var batch;
     }
     batch.get = get;
     /**
-     * List all batches for a collection and product (admin only).
+     * List all batches for a collection and product (admin only). All of them come back in one answer:
+     * `nextCursor` is always null.
      * @param collectionId - Identifier of the parent collection
      * @param productId - Identifier of the parent product
-     * @returns Promise resolving to an array of BatchResponse objects
+     * @returns Promise resolving to `{ items, nextCursor }`, where `items` are BatchResponse objects
      * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * const { items } = await batch.list('coll_123', 'prod_abc')
+     * console.log(`${items.length} batches`)
+     * ```
      */
     async function list(collectionId, productId) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/batch`;
@@ -118,16 +125,17 @@ export var batch;
     /**
      * Search for batches across all products in a collection.
      * Allows searching by batch ID or name, with optional product filtering.
+     * The matches come back in one answer (`nextCursor` is always null); `limit` is the most it returns.
      *
      * @param collectionId - Identifier of the collection
      * @param params - Optional search parameters (search term, productId filter, limit)
-     * @returns Promise resolving to an array of matching BatchResponse objects
+     * @returns Promise resolving to `{ items, nextCursor }`, where `items` are the matching BatchResponse objects
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
      * // Search for batches containing "2024"
-     * const batches = await batch.searchInCollection('coll_123', {
+     * const { items: batches } = await batch.searchInCollection('coll_123', {
      *   search: 'BATCH-2024',
      *   limit: 50
      * })
@@ -141,13 +149,10 @@ export var batch;
      * // Get all batches in collection
      * const allBatches = await batch.searchInCollection('coll_123')
      *
-     * // Check for expired batches
+     * // Check for expired batches (expiryDate is an ISO 8601 string)
      * batches.forEach(batch => {
-     *   if (batch.expiryDate?.seconds) {
-     *     const expiryDate = new Date(batch.expiryDate.seconds * 1000)
-     *     if (expiryDate < new Date()) {
-     *       console.log(`Batch ${batch.id} is expired`)
-     *     }
+     *   if (batch.expiryDate && new Date(batch.expiryDate) < new Date()) {
+     *     console.log(`Batch ${batch.id} is expired`)
      *   }
      * })
      * ```
@@ -189,18 +194,19 @@ export var batch;
     batch.findInCollection = findInCollection;
     /**
      * Get all tags/codes assigned to a specific batch.
-     * Shows which claim set codes have been assigned to this batch.
+     * Shows which claim set codes have been assigned to this batch. All of them come back in one
+     * answer: `nextCursor` is always null.
      *
      * @param collectionId - Identifier of the collection
      * @param batchId - Batch ID
      * @param claimSetId - Optional claim set ID to filter results
-     * @returns Promise resolving to an array of BatchTag objects
+     * @returns Promise resolving to `{ items, nextCursor }`, where `items` are BatchTag objects
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
      * // Get all tags assigned to a batch
-     * const tags = await batch.getBatchTags('coll_123', 'BATCH-2024-001')
+     * const { items: tags } = await batch.getBatchTags('coll_123', 'BATCH-2024-001')
      * console.log(`Batch has ${tags.length} tags assigned`)
      * tags.forEach(tag => {
      *   console.log(`Code: ${tag.code}, ClaimSet: ${tag.claimSetId}, TagID: ${tag.tagId}`)

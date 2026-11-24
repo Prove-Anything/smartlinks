@@ -587,7 +587,7 @@ const session = await authKit.exchangeWhatsAppSession(clientId, waToken, session
 // the method just throws MFA_REQUIRED again, no special-case handling needed.
 
 // 3) Let users audit/revoke devices from a Settings screen
-const { devices } = await authKit.listTrustedDevices(clientId);
+const { items: devices } = await authKit.listTrustedDevices(clientId);
 await authKit.revokeTrustedDevice(clientId, deviceId);
 ```
 

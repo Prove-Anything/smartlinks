@@ -1,10 +1,17 @@
-import type { AdminInteractionsCountsByOutcomeRequest, AdminInteractionsQueryRequest, AdminInteractionsAggregateRequest, AdminInteractionsAggregateResponse, AppendInteractionBody, UpdateInteractionBody, OutcomeCount, InteractionEventRow, PublicInteractionsCountsByOutcomeRequest, PublicInteractionsByUserRequest, SubmitInteractionResponse, SubmitInteractionError, CreateInteractionTypeBody, EnsureInteractionTypeInput, UpdateInteractionTypeBody, ListInteractionTypesQuery, InteractionTypeRecord, InteractionTypeList } from "../types/interaction.js";
+import type { AdminInteractionsCountsByOutcomeRequest, AdminInteractionsQueryRequest, AdminInteractionsAggregateRequest, AdminInteractionsAggregateResponse, AppendInteractionBody, UpdateInteractionBody, OutcomeCount, InteractionEventRow, PublicInteractionsCountsByOutcomeRequest, PublicInteractionsByUserRequest, SubmitInteractionResponse, SubmitInteractionError, CreateInteractionTypeBody, EnsureInteractionTypeInput, UpdateInteractionTypeBody, ListInteractionTypesQuery, InteractionTypeRecord } from "../types/interaction.js";
+import type { ListResult } from "../types/list.js";
 export declare namespace interactions {
     /**
      * POST /admin/collection/:collectionId/interactions/query
-     * Flexible query for interaction events with optional includes.
+     * Flexible query for interaction events with optional includes. One list, no pages: `limit` in the
+     * body says how many events to return.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await interactions.query('coll_123', { appId: 'my-app', interactionId: voteTypeId, limit: 500 })
+     * ```
      */
-    function query(collectionId: string, body: AdminInteractionsQueryRequest): Promise<InteractionEventRow[]>;
+    function query(collectionId: string, body: AdminInteractionsQueryRequest): Promise<ListResult<InteractionEventRow>>;
     /**
      * POST /admin/collection/:collectionId/interactions/counts-by-outcome
      * Returns array of { outcome, count }.
@@ -44,7 +51,17 @@ export declare namespace interactions {
      */
     function submitPublicEvent(collectionId: string, body: AppendInteractionBody): Promise<SubmitInteractionResponse | SubmitInteractionError>;
     function create(collectionId: string, body: CreateInteractionTypeBody): Promise<InteractionTypeRecord>;
-    function list(collectionId: string, query?: ListInteractionTypesQuery): Promise<InteractionTypeList>;
+    /**
+     * List the collection's interaction types (admin), optionally only one app's.
+     * GET /admin/collection/:collectionId/interactions
+     *
+     * @example
+     * ```typescript
+     * let page = await interactions.list('coll_123', { appId: 'my-app', limit: 100 })
+     * while (page.nextCursor) page = await interactions.list('coll_123', { appId: 'my-app', limit: 100, cursor: page.nextCursor })
+     * ```
+     */
+    function list(collectionId: string, query?: ListInteractionTypesQuery): Promise<ListResult<InteractionTypeRecord>>;
     /**
      * Find this app's interaction type by its readable `key` (data.interactionType), or create it.
      * Returns the type record — its `id` is the server-minted UUID every event must use.
@@ -65,7 +82,26 @@ export declare namespace interactions {
     function update(collectionId: string, id: string, patchBody: UpdateInteractionTypeBody): Promise<InteractionTypeRecord>;
     function remove(collectionId: string, id: string): Promise<void>;
     function publicCountsByOutcome(collectionId: string, body: PublicInteractionsCountsByOutcomeRequest, authToken?: string): Promise<OutcomeCount[]>;
-    function publicMyInteractions(collectionId: string, body: PublicInteractionsByUserRequest, authToken?: string): Promise<InteractionEventRow[]>;
-    function publicList(collectionId: string, query?: ListInteractionTypesQuery): Promise<InteractionTypeList>;
+    /**
+     * The signed-in person's own interaction events (where the type allows it). One list, no pages:
+     * `limit` in the body says how many.
+     * POST /public/collection/:collectionId/interactions/by-user
+     *
+     * @example
+     * ```typescript
+     * const { items } = await interactions.publicMyInteractions('coll_123', { appId: 'my-app', interactionId: voteTypeId })
+     * ```
+     */
+    function publicMyInteractions(collectionId: string, body: PublicInteractionsByUserRequest, authToken?: string): Promise<ListResult<InteractionEventRow>>;
+    /**
+     * Public: list the collection's interaction types, optionally only one app's.
+     * GET /public/collection/:collectionId/interactions
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor } = await interactions.publicList('coll_123', { appId: 'my-app', limit: 50 })
+     * ```
+     */
+    function publicList(collectionId: string, query?: ListInteractionTypesQuery): Promise<ListResult<InteractionTypeRecord>>;
     function publicGet(collectionId: string, id: string): Promise<InteractionTypeRecord>;
 }

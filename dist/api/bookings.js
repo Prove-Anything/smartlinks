@@ -45,12 +45,32 @@ export var bookings;
         return post(basePath(collectionId, appId, admin), input);
     }
     bookings.create = create;
-    /** List bookings (admin). GET /bookings */
+    /**
+     * List bookings (admin), a page at a time. `count` is how many match in all. There is no public
+     * list: a signed-in booker uses {@link mine}. GET /bookings
+     *
+     * @example
+     * ```typescript
+     * let page = await bookings.list(collectionId, appId, { status: 'confirmed', from: new Date(), limit: 50 })
+     * page.items      // Booking[]
+     * page.count      // how many match in all
+     * while (page.nextCursor) {
+     *   page = await bookings.list(collectionId, appId, { status: 'confirmed', from: new Date(), limit: 50, cursor: page.nextCursor })
+     * }
+     * ```
+     */
     async function list(collectionId, appId, params, admin = true) {
         return request(`${basePath(collectionId, appId, admin)}${query(params)}`);
     }
     bookings.list = list;
-    /** The signed-in caller's own bookings (public). GET /bookings/mine */
+    /**
+     * The signed-in caller's own bookings (public), a page at a time. GET /bookings/mine
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor, count } = await bookings.mine(collectionId, appId, { from: new Date() })
+     * ```
+     */
     async function mine(collectionId, appId, params) {
         return request(`${basePath(collectionId, appId, false)}/mine${query(params)}`);
     }
@@ -144,7 +164,15 @@ export var bookings;
             return post(`${basePath(collectionId, appId, true)}/slots/batch`, { slots, seriesId: opts === null || opts === void 0 ? void 0 : opts.seriesId });
         }
         slots_1.createMany = createMany;
-        /** List slots. Public: open, public slots only, each with `remaining`. GET /bookings/slots */
+        /**
+         * List slots, a page at a time. Public: open, public slots only, each with `remaining`.
+         * GET /bookings/slots
+         *
+         * @example
+         * ```typescript
+         * const { items, nextCursor, count } = await bookings.slots.list(collectionId, appId, { from, to, available: true })
+         * ```
+         */
         async function list(collectionId, appId, params, admin = false) {
             return request(`${basePath(collectionId, appId, admin)}/slots${query(params)}`);
         }
@@ -176,6 +204,14 @@ export var bookings;
             return post(`${basePath(collectionId, appId, true)}/blocks`, input);
         }
         blocks.create = create;
+        /**
+         * The blocks on a resource and/or in a date range, a page at a time. GET /bookings/blocks
+         *
+         * @example
+         * ```typescript
+         * const { items, nextCursor } = await bookings.blocks.list(collectionId, appId, { resourceType: 'record', resourceId: 'staff-1' })
+         * ```
+         */
         async function list(collectionId, appId, params) {
             return request(`${basePath(collectionId, appId, true)}/blocks${query(params)}`);
         }

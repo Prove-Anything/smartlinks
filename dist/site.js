@@ -37,7 +37,7 @@ function parse(raw) {
  * @example
  *   // TanStack Start server function / loader
  *   const site = SL.site.fromRequest(getRequest())
- *   const products = await SL.product.list(site!.collectionId)
+ *   const { items: products } = await SL.products.list(site!.collectionId)
  */
 export function fromRequest(request) {
     return parse(headerOf(request, 'x-sl-site'));
@@ -45,17 +45,4 @@ export function fromRequest(request) {
 /** In the browser: the site the page is served as (the router puts it in the page). Null elsewhere. */
 export function current() {
     return parse(globalThis.__SMARTLINKS_SITE__);
-}
-/**
- * @deprecated Sites are server-rendered: crawlers get the finished page from the server, so nothing
- * waits for this signal any more. Kept as a harmless no-op signal for older pages.
- */
-export function ready() {
-    if (typeof globalThis === 'undefined')
-        return;
-    globalThis.__SL_READY__ = true;
-    const w = typeof window !== 'undefined' ? window : null;
-    if (w && typeof w.dispatchEvent === 'function' && typeof w.CustomEvent === 'function') {
-        w.dispatchEvent(new w.CustomEvent('smartlinks:ready'));
-    }
 }

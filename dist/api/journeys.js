@@ -21,7 +21,16 @@ export var journeys;
         return post(path, body);
     }
     journeys.create = create;
-    // List
+    /**
+     * List the collection's journeys (admin).
+     * GET /admin/collection/:collectionId/journeys
+     *
+     * @example
+     * ```typescript
+     * let page = await journeys.list('coll_123', { active: true, limit: 50 })
+     * while (page.nextCursor) page = await journeys.list('coll_123', { active: true, limit: 50, cursor: page.nextCursor })
+     * ```
+     */
     async function list(collectionId, query = {}) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/journeys/${encodeQuery(query)}`;
         return request(path);

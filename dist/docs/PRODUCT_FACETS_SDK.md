@@ -56,7 +56,7 @@ GET /api/v1/admin/collection/:collectionId/facets/namespaces
 Returns all distinct namespaces in use for the collection (excludes globals).
 
 ```ts
-{ namespaces: string[] }
+{ items: string[], nextCursor: null }
 ```
 
 ### Create facet definition
@@ -191,7 +191,7 @@ GET /api/v1/public/collection/:collectionId/facets/namespaces
 Returns all distinct namespaces in use for the collection (excludes globals).
 
 ```ts
-{ namespaces: string[] }
+{ items: string[], nextCursor: null }
 ```
 
 ### Get facet definition
@@ -319,13 +319,11 @@ export interface FacetValueWriteInput {
 ## List response types
 
 ```ts
-export interface FacetListResponse {
-  items: FacetDefinition[]
-}
+// Every list answers { items, nextCursor } (API version 2027-01). These come back whole: nextCursor is null.
+export type FacetListResponse = ListResult<FacetDefinition>
 
-export interface FacetValueListResponse {
+export interface FacetValueListResponse extends ListResult<FacetValue> {
   facet: FacetDefinition
-  items: FacetValue[]
 }
 
 export interface FacetValueResponse {
@@ -363,15 +361,12 @@ export interface FacetBucket {
   count: number
 }
 
-export interface FacetNamespaceListResponse {
-  namespaces: string[]
-}
+export type FacetNamespaceListResponse = ListResult<string>
 
-export interface FacetQueryResponse {
-  items: Array<{
-    facet: FacetDefinition
-    values: FacetValue[]
-  }>
+export interface FacetQueryResponse extends ListResult<{
+  facet: FacetDefinition
+  values: FacetValue[]
+}> {
   buckets: FacetBucket[]
   meta?: {
     source?: 'postgres'

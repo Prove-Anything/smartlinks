@@ -1,4 +1,5 @@
 import { VariantResponse, VariantCreateRequest, VariantUpdateRequest } from "../types/variant.js";
+import type { ListResult } from "../types/list.js";
 export declare namespace variant {
     /**
      * Get a single variant by ID for a collection and product (admin only).
@@ -10,13 +11,20 @@ export declare namespace variant {
      */
     function get(collectionId: string, productId: string, variantId: string): Promise<VariantResponse>;
     /**
-     * List all variants for a collection and product (admin only).
+     * List all variants for a collection and product (admin only). All of them come in one answer:
+     * `nextCursor` is always null.
      * @param collectionId - Identifier of the parent collection
      * @param productId - Identifier of the parent product
-     * @returns Promise resolving to an array of VariantResponse objects
+     * @returns Promise resolving to `{ items: VariantResponse[], nextCursor: null }`
      * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * const { items } = await variant.list('coll_123', 'prod_456')
+     * items.map((v) => v.name)
+     * ```
      */
-    function list(collectionId: string, productId: string): Promise<VariantResponse[]>;
+    function list(collectionId: string, productId: string): Promise<ListResult<VariantResponse>>;
     /**
      * Create a new variant for a collection and product (admin only).
      * @param collectionId - Identifier of the parent collection

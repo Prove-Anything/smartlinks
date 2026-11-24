@@ -1,5 +1,6 @@
 import type { StandardQuery, QueryResult, QueryDescription } from "../types/query.js";
-import type { AppCase, CreateCaseInput, UpdateCaseInput, AppendHistoryInput, CaseSummaryRequest, CaseSummaryResponse, CaseListQueryParams, AppThread, CreateThreadInput, UpdateThreadInput, ReplyInput, ThreadListQueryParams, AppRecord, CreateRecordInput, CreateRecordResponse, UpdateRecordInput, UpsertRecordInput, UpsertRecordResponse, MatchRecordsInput, MatchResult, BulkUpsertItem, BulkUpsertResult, BulkDeleteResult, BulkDeleteInput, RecordListQueryParams, ResolveAllParams, ResolveAllResult, PreviewRuleParams, PreviewRuleResult, PaginatedResponse, AggregateRequest, AggregateResponse, RelatedResponse } from '../types/appObjects.js';
+import type { ListResult } from "../types/list.js";
+import type { AppCase, CreateCaseInput, UpdateCaseInput, AppendHistoryInput, CaseSummaryRequest, CaseSummaryResponse, CaseListQueryParams, AppThread, CreateThreadInput, UpdateThreadInput, ReplyInput, ThreadListQueryParams, AppRecord, CreateRecordInput, CreateRecordResponse, UpdateRecordInput, UpsertRecordInput, UpsertRecordResponse, MatchRecordsInput, MatchResult, BulkUpsertItem, BulkUpsertResult, BulkDeleteResult, BulkDeleteInput, RecordListQueryParams, ResolveAllParams, ResolveAllResult, PreviewRuleParams, PreviewRuleResult, AggregateRequest, AggregateResponse, RelatedResponse } from '../types/appObjects.js';
 export declare namespace app {
     /**
      * Pickers: the small, cached list behind "pick a machine" or "pick a hold reason".
@@ -10,12 +11,21 @@ export declare namespace app {
          * `source` = `type:<record type or declared type id>` | `list:<list id>`. Admins (`admin: true`)
          * see every entry; the public API lists public records and lists the app declares public. Hold on
          * to `version` and pass it back to get `{ unchanged: true }` when nothing changed.
+         *
+         * Returns `{ items, nextCursor, count?, version, mode }`: the entries are in `items`, already sorted.
+         * A picker is not paged, so `nextCursor` is always `null`.
+         *
+         * @example
+         * ```typescript
+         * const res = await app.options.get(collectionId, appId, 'type:machine', { admin: true })
+         * if (!res.unchanged) { options = res.items; version = res.version }
+         * ```
          */
         function get(collectionId: string, appId: string, source: string, opts?: {
             q?: string;
             version?: string;
             admin?: boolean;
-        }): Promise<import('../types/appOptions.js').AppOptionsResponse>;
+        }): Promise<import('../types/appOptions.js').AppOptionsList>;
         /**
          * Save a value list's values, in order (admins). Codes never change and are never lost: a value left
          * out stays, switched off, at the end. → the list as saved.
@@ -31,8 +41,22 @@ export declare namespace app {
         /**
          * List cases with optional query parameters
          * GET /cases
+         *
+         * Returns `{ items, nextCursor, count }`: the cases are in `items`, `count` is how many match in
+         * all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`.
+         * `includeDeleted`, `contactId` and `assignedTo` are for admin calls (`admin = true`) only: the
+         * public list refuses a parameter it does not read.
+         *
+         * @example
+         * ```typescript
+         * let page = await app.cases.list(collectionId, appId, { status: 'open', limit: 50 })
+         * console.log(page.items, page.count)
+         * while (page.nextCursor) {
+         *   page = await app.cases.list(collectionId, appId, { status: 'open', limit: 50, cursor: page.nextCursor })
+         * }
+         * ```
          */
-        function list(collectionId: string, appId: string, params?: CaseListQueryParams, admin?: boolean): Promise<PaginatedResponse<AppCase>>;
+        function list(collectionId: string, appId: string, params?: CaseListQueryParams, admin?: boolean): Promise<ListResult<AppCase>>;
         /**
          * Get a single case by ID
          * GET /cases/:caseId
@@ -81,8 +105,22 @@ export declare namespace app {
         /**
          * List threads with optional query parameters
          * GET /threads
+         *
+         * Returns `{ items, nextCursor, count }`: the threads are in `items`, `count` is how many match in
+         * all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`.
+         * `includeDeleted` and `contactId` are for admin calls (`admin = true`) only: the public list
+         * refuses a parameter it does not read.
+         *
+         * @example
+         * ```typescript
+         * let page = await app.threads.list(collectionId, appId, { parentType: 'case', parentId: caseId, limit: 50 })
+         * console.log(page.items, page.count)
+         * while (page.nextCursor) {
+         *   page = await app.threads.list(collectionId, appId, { parentType: 'case', parentId: caseId, limit: 50, cursor: page.nextCursor })
+         * }
+         * ```
          */
-        function list(collectionId: string, appId: string, params?: ThreadListQueryParams, admin?: boolean): Promise<PaginatedResponse<AppThread>>;
+        function list(collectionId: string, appId: string, params?: ThreadListQueryParams, admin?: boolean): Promise<ListResult<AppThread>>;
         /**
          * Get a single thread by ID
          * GET /threads/:threadId
@@ -160,11 +198,25 @@ export declare namespace app {
         /**
          * List records with optional query parameters
          * GET /records
-          *
-          * Public/owner callers only receive records with `status: "active"`.
-          * Admin callers can query all statuses (for example `draft`/`archived`).
+         *
+         * Returns `{ items, nextCursor, count }`: the records are in `items`, `count` is how many match in
+         * all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`.
+         *
+         * Public/owner callers only receive records with `status: "active"`.
+         * Admin callers can query all statuses (for example `draft`/`archived`).
+         * `qFields`, `dataFilter`, `contactId` and `includeDeleted` are for admin calls (`admin = true`)
+         * only: the public list refuses a parameter it does not read.
+         *
+         * @example
+         * ```typescript
+         * let page = await app.records.list(collectionId, appId, { recordType: 'tip', limit: 100 })
+         * console.log(page.items, page.count)
+         * while (page.nextCursor) {
+         *   page = await app.records.list(collectionId, appId, { recordType: 'tip', limit: 100, cursor: page.nextCursor })
+         * }
+         * ```
          */
-        function list(collectionId: string, appId: string, params?: RecordListQueryParams, admin?: boolean): Promise<PaginatedResponse<AppRecord>>;
+        function list(collectionId: string, appId: string, params?: RecordListQueryParams, admin?: boolean): Promise<ListResult<AppRecord>>;
         /**
          * Get a single record by ID
          * GET /records/:recordId
@@ -248,20 +300,21 @@ export declare namespace app {
         function upsert(collectionId: string, appId: string, input: UpsertRecordInput): Promise<UpsertRecordResponse>;
         /**
          * Match records against a runtime target scope.
-         * Returns records whose scope is satisfied by the target,
-         * ordered by specificity descending (most specific first).
+         * Returns `{ items, nextCursor, count, strategy }`: `items` are the records whose scope is satisfied
+         * by the target, most specific first, and `count` is how many matched. It is not paged
+         * (`nextCursor` is always `null`); cap the answer with `limit`.
          * POST /records/match
          *
-        * @param admin - false for public endpoint (visibility-filtered, active-only), true for admin
+         * @param admin - false for public endpoint (visibility-filtered, active-only), true for admin
          *
          * @example
          * ```ts
-         * const { records, best } = await app.records.match(collectionId, appId, {
+         * const { items } = await app.records.match(collectionId, appId, {
          *   target: { productId: 'prod_abc', facets: { tier: ['gold'] } },
          *   strategy: 'best',
          *   recordType: 'nutrition',
          * }, true);
-         * // best.nutrition → the single highest-specificity nutrition record
+         * const best = items[0] // the single highest-specificity nutrition record
          * ```
          */
         function match(collectionId: string, appId: string, input: MatchRecordsInput, admin?: boolean): Promise<MatchResult>;
@@ -297,11 +350,22 @@ export declare namespace app {
         function bulkDelete(collectionId: string, appId: string, input: BulkDeleteInput): Promise<BulkDeleteResult>;
         /**
          * Resolve every applicable record for a product context in one call.
-         * Returns records across all tiers (proof, batch, variant, product, rule, facet, collection)
-         * deduplicated and sorted by specificity descending.
+         * Returns `{ items, nextCursor, count, context, truncated }`: `items` are the records across all
+         * tiers (proof, batch, variant, product, rule, facet, collection), deduplicated and sorted by
+         * specificity descending, each as `{ record, matchedAt, specificity }`. It is not paged
+         * (`nextCursor` is always `null`); `truncated` says the answer was cut at `limit`.
          * POST /records/resolve-all
          *
-          * @param admin - false for public (visibility-filtered, active-only), true for admin (all statuses)
+         * @param admin - false for public (visibility-filtered, active-only), true for admin (all statuses)
+         *
+         * @example
+         * ```ts
+         * const { items, truncated } = await app.records.resolveAll(collectionId, appId, {
+         *   context: { productId: 'prod_abc' },
+         *   recordType: 'nutrition',
+         * })
+         * for (const { record, matchedAt } of items) console.log(matchedAt, record.data)
+         * ```
          */
         function resolveAll(collectionId: string, appId: string, input: ResolveAllParams, admin?: boolean): Promise<ResolveAllResult>;
         /**

@@ -502,6 +502,19 @@ export var analytics;
             return post(`/admin/collection/${encodeURIComponent(collectionId)}/analytics/breakdown`, body);
         }
         admin.breakdown = breakdown;
+        /**
+         * The raw events behind the reports, newest first unless `sort` says otherwise. Returns
+         * `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on
+         * the last page. Page with `limit` and `cursor`.
+         *
+         * @example
+         * ```typescript
+         * let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 })
+         * while (page.nextCursor) {
+         *   page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor })
+         * }
+         * ```
+         */
         async function events(collectionId, body) {
             return post(`/admin/collection/${encodeURIComponent(collectionId)}/analytics/events`, body);
         }

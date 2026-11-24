@@ -55,11 +55,11 @@ const scheme = await SL.loyalty.create(collectionId, {
 
 ```typescript
 // Admin: all schemes including inactive/deleted
-const schemes = await SL.loyalty.list(collectionId);
+const { items: schemes } = await SL.loyalty.list(collectionId);
 const scheme  = await SL.loyalty.get(collectionId, schemeId);
 
 // Public: active schemes only (no admin/owner data blocks)
-const schemes = await SL.loyalty.publicList(collectionId);
+const { items: schemes } = await SL.loyalty.publicList(collectionId);
 const scheme  = await SL.loyalty.publicGet(collectionId, schemeId);
 ```
 
@@ -79,7 +79,7 @@ await SL.loyalty.remove(collectionId, schemeId); // soft-delete
 `publicGetMe` is the primary entry point for any loyalty UI. It returns all active schemes with the caller's membership embedded — one request, everything you need.
 
 ```typescript
-const schemes = await SL.loyalty.publicGetMe(collectionId);
+const { items: schemes } = await SL.loyalty.publicGetMe(collectionId);
 
 // schemes[0] looks like:
 // {
@@ -107,11 +107,10 @@ Unauthenticated callers get `member: null` on every scheme — useful for previe
 // Current balance + lifetime points
 const member = await SL.loyalty.publicGetMine(collectionId, schemeId);
 
-// Transaction history (newest first, paginated)
-const { items } = await SL.loyalty.publicGetMineHistory(collectionId, schemeId, {
-  limit: 20,
-  offset: 0,
-});
+// Transaction history (newest first, a page at a time)
+const { items, nextCursor } = await SL.loyalty.publicGetMineHistory(collectionId, schemeId, { limit: 20 });
+// The next page: pass the cursor back (nextCursor is null on the last page)
+if (nextCursor) await SL.loyalty.publicGetMineHistory(collectionId, schemeId, { limit: 20, cursor: nextCursor });
 ```
 
 ---
@@ -195,10 +194,10 @@ await SL.loyalty.createEarningRule(collectionId, schemeId, {
 
 ```typescript
 // List rules (admin)
-const rules = await SL.loyalty.listEarningRules(collectionId, schemeId);
+const { items: rules } = await SL.loyalty.listEarningRules(collectionId, schemeId);
 
 // Public: show "how to earn" in UI (active rules only)
-const rules = await SL.loyalty.publicListEarningRules(collectionId, schemeId);
+const { items: rules } = await SL.loyalty.publicListEarningRules(collectionId, schemeId);
 
 // Update
 await SL.loyalty.updateEarningRule(collectionId, schemeId, ruleId, {
@@ -257,10 +256,7 @@ const { items } = await SL.loyalty.listMembers(collectionId, schemeId, { limit: 
 const member = await SL.loyalty.getMember(collectionId, schemeId, contactId);
 
 // Full transaction history for a member
-const { items } = await SL.loyalty.getMemberHistory(collectionId, schemeId, contactId, {
-  limit: 100,
-  offset: 0,
-});
+const { items, nextCursor } = await SL.loyalty.getMemberHistory(collectionId, schemeId, contactId, { limit: 100 });
 ```
 
 ---
@@ -329,8 +325,8 @@ import type {
   LoyaltyEarningRule,              // Interaction → points mapping
   LoyaltySchemeWithMembership,     // publicGetMe() response shape
   LoyaltyTransactionResult,        // recordTransaction() response
-  LoyaltyPaginatedResult,          // { items, limit, offset }
-  LoyaltyPaginationParams,         // { limit?, offset? }
+  ListResult,                      // { items, nextCursor, count? } — what every list returns
+  ListOptions,                     // { limit?, cursor? } — the paging options every list takes
   CreateLoyaltySchemeBody,
   UpdateLoyaltySchemeBody,
   CreateLoyaltyEarningRuleBody,

@@ -7,6 +7,18 @@ export var products;
         return request(path);
     }
     products.get = get;
+    /**
+     * Every product in a collection, in one list (no pages). For filtering, sorting and paging use
+     * `products.query`.
+     *
+     * @param collectionId - Identifier of the parent collection
+     * @param admin - When `true`, targets the `/admin` endpoint; otherwise the `/public` one
+     *
+     * @example
+     * ```typescript
+     * const { items } = await products.list(collectionId)
+     * ```
+     */
     async function list(collectionId, admin) {
         const base = admin ? '/admin' : '/public';
         const path = `${base}/collection/${encodeURIComponent(collectionId)}/products`;
@@ -29,19 +41,26 @@ export var products;
     }
     products.remove = remove;
     /**
-     * Query products in a collection with filtering, sorting, and pagination.
+     * Query products in a collection with filtering, sorting, and paging.
      *
      * @param collectionId - Identifier of the parent collection
-     * @param body - Query parameters with filters, sorting, and pagination
+     * @param body - Filters and sorting, plus `limit` (default 50) and `cursor` for paging
      * @param admin - When `true`, targets the `/admin` endpoint (requires an
      *   authenticated admin context). Defaults to `false`, which targets the
      *   `/public` endpoint — consistent with `get`, `list`, and `listAssets`.
-     * @returns Promise resolving to a ProductQueryResponse
+     * @returns Promise resolving to `{ items, nextCursor, count?, meta? }`: the matching products, the cursor
+     *   for the next page (null on the last), how many match in all where the server counted, and `meta`
+     *   (how the query was run)
      *
      * @example
      * ```typescript
      * // Public query (default)
-     * await products.query(collectionId, { query: { search: 'cabernet' } })
+     * const { items, nextCursor, count } = await products.query(collectionId, { query: { search: 'cabernet' }, limit: 20 })
+     *
+     * // The next page: the same query with the cursor
+     * if (nextCursor) {
+     *   await products.query(collectionId, { query: { search: 'cabernet' }, limit: 20, cursor: nextCursor })
+     * }
      *
      * // Admin query (authenticated)
      * await products.query(collectionId, { query: { search: 'cabernet' } }, true)
@@ -87,6 +106,16 @@ export var products;
         return post(path, body);
     }
     products.clone = clone;
+    /**
+     * A product's assets (images, documents), in one list (no pages).
+     *
+     * @param admin - When `true`, targets the `/admin` endpoint; otherwise the `/public` one
+     *
+     * @example
+     * ```typescript
+     * const { items } = await products.listAssets(collectionId, productId)
+     * ```
+     */
     async function listAssets(collectionId, productId, admin) {
         const base = admin ? '/admin' : '/public';
         const path = `${base}/collection/${encodeURIComponent(collectionId)}/products/${encodeURIComponent(productId)}/asset`;

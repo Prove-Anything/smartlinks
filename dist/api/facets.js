@@ -23,6 +23,15 @@ function buildQueryString(params) {
  */
 export var facets;
 (function (facets) {
+    /**
+     * The collection's facets (admin). All of them come back in one answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await facets.list('coll_123', { kind: 'custom' })
+     * items.map(f => f.key) // ["brand", "material", …]
+     * ```
+     */
     async function list(collectionId, params) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/facets${buildQueryString(params)}`;
         return request(path);
@@ -48,6 +57,15 @@ export var facets;
         return del(path);
     }
     facets.remove = remove;
+    /**
+     * One facet and all its values (admin). The values are in `items`; `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { facet, items } = await facets.listValues('coll_123', 'brand')
+     * items.map(v => v.name)
+     * ```
+     */
     async function listValues(collectionId, facetKey, params) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/facets/${encodeURIComponent(facetKey)}/values${buildQueryString(params)}`;
         return request(path);
@@ -73,16 +91,44 @@ export var facets;
         return del(path);
     }
     facets.removeValue = removeValue;
+    /**
+     * Facet counts for a set of products (admin): each facet with its values in `items`, and the
+     * count for each value in `buckets`. Everything comes back in one answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items, buckets, meta } = await facets.query('coll_123', {
+     *   facetKeys: ['brand', 'material'],
+     *   query: { facetEquals: { brand: 'acme' } },
+     * })
+     * ```
+     */
     async function query(collectionId, body) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/facets/query`;
         return post(path, body);
     }
     facets.query = query;
+    /**
+     * The facet namespaces in use (admin). The names are in `items`; `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await facets.namespaces('coll_123') // items: string[]
+     * ```
+     */
     async function namespaces(collectionId) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/facets/namespaces`;
         return request(path);
     }
     facets.namespaces = namespaces;
+    /**
+     * The collection's facets (public). All of them come back in one answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await facets.publicList('coll_123', { namespace: 'catalog' })
+     * ```
+     */
     async function publicList(collectionId, params) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/facets${buildQueryString(params)}`;
         return request(path);
@@ -93,6 +139,14 @@ export var facets;
         return request(path);
     }
     facets.publicGet = publicGet;
+    /**
+     * One facet and all its values (public). The values are in `items`; `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { facet, items } = await facets.publicListValues('coll_123', 'brand')
+     * ```
+     */
     async function publicListValues(collectionId, facetKey) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/facets/${encodeURIComponent(facetKey)}/values`;
         return request(path);
@@ -103,11 +157,28 @@ export var facets;
         return request(path);
     }
     facets.publicGetValue = publicGetValue;
+    /**
+     * Facet counts for a set of products (public): each facet with its values in `items`, and the
+     * count for each value in `buckets`. Everything comes back in one answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items, buckets } = await facets.publicQuery('coll_123', { facetKeys: ['brand'] })
+     * ```
+     */
     async function publicQuery(collectionId, body) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/facets/query`;
         return post(path, body);
     }
     facets.publicQuery = publicQuery;
+    /**
+     * The facet namespaces in use (public). The names are in `items`; `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await facets.publicNamespaces('coll_123') // items: string[]
+     * ```
+     */
     async function publicNamespaces(collectionId) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/facets/namespaces`;
         return request(path);

@@ -121,6 +121,22 @@ export type ProofUpdateRequest = Partial<ProofWrite> & {
     proof?: ProofWrite;
 };
 /**
+ * Body for proof.findByProduct(): the newest `limit` proofs of a product (default 100), or every proof
+ * matching `filterBy`. This list hands out no cursor: use `proof.query` to page through proofs.
+ */
+export interface ProofFindQuery {
+    /** The most to return (default 100). */
+    limit?: number;
+    /** Only proofs where each field (a dot-path, e.g. 'values.colour') equals its value. Not limited. */
+    filterBy?: Array<{
+        field: string;
+        value: JsonValue;
+    }>;
+    /** Extras to attach to each proof: 'assets'. */
+    includes?: string[];
+    [key: string]: any;
+}
+/**
  * Body for the owner self-service values write (`proof.updateValues`), the
  * public counterpart to the admin `update`. The caller must be the current
  * owner (or a collection admin). Only owner-writable zones are honoured:

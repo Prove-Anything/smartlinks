@@ -131,8 +131,9 @@ example, `scan`: a tag they just scanned with Sidekick on another device.
   server function.
 - **Don't put personal data in messages.** Publish an id; fetch the details with permissions.
 
-## Legacy
+## Removed in SDK 3
 
-`realtime.getPublicToken()` and `realtime.getAdminToken()` return raw provider tokens for the old
-`collection:{id}:*` and `interaction:{uid}` channels. They still work, but publishing is now limited to
-the collection's admins. Move to `channel` / `onChange` / `onMine`.
+`realtime.getPublicToken()` and `realtime.getAdminToken()` (raw provider tokens for the old
+`collection:{id}:*` and `interaction:{uid}` channels) are gone, with their types `RealtimeTokenRequest`
+and `AblyTokenRequest`. Use `channel` / `onChange` in place of `getPublicToken`, and `onMine` in place of
+`getAdminToken`.

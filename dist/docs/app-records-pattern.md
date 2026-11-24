@@ -219,12 +219,12 @@ const result = await SL.app.records.match(collectionId, appId, {
   recordType: 'ingredients',
 });
 
-// result.data[0] → the single highest-specificity MatchEntry (when strategy: 'best')
-// result.data[0].matchedAt → 'product' | 'rule' | 'facet' | 'collection' | …
-// result.data[0].data → your record payload
+// result.items[0] → the single highest-specificity MatchEntry (when strategy: 'best')
+// result.items[0].matchedAt → 'product' | 'rule' | 'facet' | 'collection' | …
+// result.items[0].data → your record payload
 ```
 
-The server walks `proof → batch → variant → product → rule → facet → collection` and returns the first match. `result.data` will have at most one entry when `strategy: 'best'`.
+The server walks `proof → batch → variant → product → rule → facet → collection` and returns the first match. `result.items` will have at most one entry when `strategy: 'best'`.
 
 ### 5b. Collection — `app.records.resolveAll()` (every match, ordered)
 
@@ -236,7 +236,7 @@ const result = await SL.app.records.resolveAll(collectionId, appId, {
   recordType: 'faq',        // singular — omit to return all record types
 });
 
-// result.records → ResolveAllEntry[] sorted most-specific first
+// result.items → ResolveAllEntry[] sorted most-specific first
 // each entry: { record: AppRecord, matchedAt, specificity, matchedRule? }
 ```
 
@@ -253,7 +253,7 @@ const result = await SL.app.records.resolveAll(collectionId, appId, {
   // no recordType → returns all declared types
 });
 
-// result.records → one ResolveAllEntry per matched record, all types interleaved
+// result.items → one ResolveAllEntry per matched record, all types interleaved
 // filter client-side by entry.record.recordType if you need to separate them
 ```
 

@@ -1,3 +1,4 @@
+import type { ListOptions } from './list.js';
 /** `recurring` renews until cancelled; `fixed` is one payment that lasts `length`, then ends. */
 export type PlanTerm = 'recurring' | 'fixed';
 export interface PlanLength {
@@ -162,6 +163,19 @@ export interface SubscriptionStartResult {
     checkoutUrl: string;
     sessionId: string;
 }
+/** `subscriptions.admin.list` options: the filters, plus `limit` and `cursor`. */
+export interface SubscriptionListOptions extends ListOptions {
+    status?: SubscriptionStatus;
+    /** Only live ones (trialing, active, past_due, cancelling). */
+    live?: boolean;
+    planId?: string;
+    contactId?: string;
+    userId?: string;
+}
+/**
+ * What `ctx.sl.subscriptions.list` takes in a server function (it pages by `limit` and `offset`). In the
+ * browser, `subscriptions.admin.list` takes `SubscriptionListOptions`.
+ */
 export interface SubscriptionListParams {
     status?: SubscriptionStatus;
     /** Only live ones (trialing, active, past_due, cancelling). */
@@ -181,6 +195,10 @@ export interface SubscriptionGrantInput {
     endsAt?: string;
     note?: string;
 }
+/**
+ * What `ctx.sl.subscriptions.list` returns in a server function. In the browser, `subscriptions.admin.list`
+ * and `subscriptions.admin.listPlans` return `ListResult<T>`.
+ */
 export interface SubscriptionPage<T> {
     items: T[];
     total: number;

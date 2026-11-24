@@ -66,10 +66,23 @@ export declare function initializeApi(options: {
      */
     appVersion?: string;
     /**
-     * The API version to ask for, as year-month (for example `"2026-11"`). Defaults to the version this SDK
-     * release was built for (`API_VERSION`), which is what you want unless you are pinning an older contract.
+     * The API version to ask for, as year-month (for example `"2027-06"`). Defaults to the version this SDK
+     * release was built for (`API_VERSION`), which is what you want. A NEWER version can be asked for, to try
+     * it; an older one is ignored, because this SDK's functions return the shapes of its own version.
      */
     apiVersion?: string;
+    /**
+     * For a HOST that has two copies of the SDK on one page (it serves SDK 3 to apps built for it, beside
+     * the SDK 2 the page itself runs on): where this copy gets its sign-in. Called for every request; return
+     * the other copy's `getApiHeaders()`. This copy then sends exactly the sign-in the host has at that
+     * moment (API key, bearer token, grant token), and forgets cached answers when it changes.
+     *
+     * @example
+     * ```ts
+     * SL3.initializeApi({ baseURL: SL.getBaseURL()!, signInFrom: () => SL.getApiHeaders() })
+     * ```
+     */
+    signInFrom?: () => Record<string, string>;
     /**
      * The release channel this build is running as ('dev' | 'alpha' | 'beta' | 'stable'). Normally
      * left unset — hosts that run a non-production build (Forge preview of a Test build) pass

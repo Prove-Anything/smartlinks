@@ -1,3 +1,4 @@
+import type { ListResult, ListOptions } from "./list.js";
 export type ContactCustomFields = Record<string, any>;
 export interface Contact {
     contactId: string;
@@ -29,11 +30,6 @@ export interface Contact {
 export type ContactResponse = Contact;
 export type ContactCreateRequest = Omit<Contact, "contactId" | "orgId" | "createdAt" | "updatedAt" | "deletedAt" | "erasedAt">;
 export type ContactUpdateRequest = Partial<ContactCreateRequest>;
-export interface ContactListResponse {
-    items: Contact[];
-    limit: number;
-    offset: number;
-}
 /**
  * Two contacts that look like one person (`contact.findDuplicates`): `keep` has a sign-in but no email
  * (or phone); `merge` has no sign-in and holds that sign-in's verified email (or phone).
@@ -46,12 +42,10 @@ export interface ContactDuplicatePair {
     /** What ties them together. */
     matchedOn: "email" | "phone";
 }
-export interface ContactDuplicatesResponse {
-    pairs: ContactDuplicatePair[];
+/** What `contact.findDuplicates` returns: the pairs found in this call (`items`), and how far it looked. */
+export interface ContactDuplicatesResponse extends ListResult<ContactDuplicatePair> {
     /** How many contacts with a sign-in were checked in this call. */
     scanned: number;
-    /** More contacts remain beyond this window: call again with `offset` + `scanned`. */
-    more: boolean;
 }
 /** What `contact.merge` did. */
 export interface ContactMergeResponse {
@@ -89,7 +83,8 @@ export interface ContactLinkLoginResponse {
 }
 /** `error` codes `contact.merge` can refuse with. */
 export type ContactMergeErrorCode = "INVALID_CONTACT" | "SAME_CONTACT" | "NOT_FOUND" | "KEEP_DELETED" | "LOGIN_CONFLICT" | "LOYALTY_CONFLICT";
-export interface ContactSearchParams {
+/** `contact.search` options: the collection, the filters, plus `limit` and `cursor`. */
+export interface ContactSearchParams extends ListOptions {
     collectionId: string;
     q?: string;
     typeahead?: boolean;
@@ -107,13 +102,6 @@ export interface ContactSearchParams {
     externalIdValue?: string;
     customFieldKey?: string;
     customFieldValue?: string;
-    limit?: number;
-    offset?: number;
-}
-export interface ContactSearchResponse {
-    items: Contact[];
-    limit: number;
-    offset: number;
 }
 export type PublicContactUpsertRequest = Partial<Pick<Contact, "email" | "phone" | "userId" | "firstName" | "lastName" | "displayName" | "company" | "tags" | "source" | "notes" | "avatarUrl" | "locale" | "timezone" | "externalIds">> & {
     customFields?: ContactCustomFields;
@@ -309,8 +297,6 @@ export interface ContactSchemaResponse {
     /** Pass-through of the collection's SchemaFormConfig styling block */
     styling: Record<string, unknown>;
 }
-/** @deprecated Use ContactSchemaResponse instead */
-export type ContactSchema = ContactSchemaResponse;
 /**
  * Evaluate whether a field's conditions are satisfied given the current form values.
  * Returns `true` if the field should be visible.
@@ -326,13 +312,3 @@ export type ContactSchema = ContactSchemaResponse;
  * ```
  */
 export declare function evaluateConditions(conditions: FieldCondition[] | undefined, showWhen: 'all' | 'any' | undefined, fieldValues: Record<string, unknown>): boolean;
-/**
- * @deprecated Use evaluateConditions (plural) instead.
- * Shim for code using the old single-condition API.
- */
-export declare function evaluateCondition(condition: {
-    dependsOn?: string;
-    targetFieldId?: string;
-    operator: string;
-    value?: unknown;
-} | undefined, fieldValues: Record<string, unknown>): boolean;

@@ -87,15 +87,6 @@ export interface LoyaltyTransactionResult {
     member: LoyaltyMember;
     transaction: LoyaltyTransaction;
 }
-export interface LoyaltyPaginationParams {
-    limit?: number;
-    offset?: number;
-}
-export interface LoyaltyPaginatedResult<T> {
-    items: T[];
-    limit: number;
-    offset: number;
-}
 export interface CreateLoyaltySchemeBody {
     name: string;
     type: string;

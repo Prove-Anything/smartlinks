@@ -141,8 +141,14 @@ export var comms;
     }
     comms.checkSubscription = checkSubscription;
     /**
-     * Public: List registered contact methods.
+     * Public: List registered contact methods. All of them come back in one answer: `nextCursor` is
+     * always null.
      * GET /public/collection/:collectionId/comm/methods
+     *
+     * @example
+     * ```typescript
+     * const { items: methods } = await comms.listMethods(collectionId, { type: 'email' })
+     * ```
      */
     async function listMethods(collectionId, query) {
         const params = new URLSearchParams();
@@ -183,8 +189,14 @@ export var comms;
     }
     comms.resolveSubscriptions = resolveSubscriptions;
     /**
-     * Analytics: Query communication events by user or contact.
+     * Analytics: Query communication events by user or contact. The events come back in one answer
+     * (`nextCursor` is always null); `limit` is the most it returns.
      * POST /admin/collection/:collectionId/comm/query/by-user
+     *
+     * @example
+     * ```typescript
+     * const { items: events } = await comms.queryByUser(collectionId, { contactId, from: '2026-01-01', limit: 200 })
+     * ```
      */
     async function queryByUser(collectionId, body = {}) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/query/by-user`;
@@ -192,8 +204,14 @@ export var comms;
     }
     comms.queryByUser = queryByUser;
     /**
-     * Analytics: Recipient IDs for a communication source.
+     * Analytics: Recipient IDs for a communication source. The ids come back in one answer
+     * (`nextCursor` is always null); `limit` is the most it returns.
      * POST /admin/collection/:collectionId/comm/query/recipient-ids
+     *
+     * @example
+     * ```typescript
+     * const { items: ids } = await comms.queryRecipientIds(collectionId, { broadcastId, idField: 'contactId' })
+     * ```
      */
     async function queryRecipientIds(collectionId, body) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/query/recipient-ids`;
@@ -201,23 +219,35 @@ export var comms;
     }
     comms.queryRecipientIds = queryRecipientIds;
     /**
-     * Analytics: Recipients who did not perform an action.
-     * POST /admin/collection/:collectionId/comm/query/recipients/without-action
+     * Analytics: the recipients of a broadcast or journey who did NOT then do an interaction. The ids come
+     * back in one answer (`nextCursor` is always null); `limit` is the most it returns.
+     * POST /admin/collection/:collectionId/comm/query/recipients/without-interaction
+     *
+     * @example
+     * ```typescript
+     * const { items: ids } = await comms.queryRecipientsWithoutInteraction(collectionId, { broadcastId, interactionId: 'survey-done' })
+     * ```
      */
-    async function queryRecipientsWithoutAction(collectionId, body) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/query/recipients/without-action`;
+    async function queryRecipientsWithoutInteraction(collectionId, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/query/recipients/without-interaction`;
         return post(path, body);
     }
-    comms.queryRecipientsWithoutAction = queryRecipientsWithoutAction;
+    comms.queryRecipientsWithoutInteraction = queryRecipientsWithoutInteraction;
     /**
-     * Analytics: Recipients who performed an action, optionally with outcome.
-     * POST /admin/collection/:collectionId/comm/query/recipients/with-action
+     * Analytics: the recipients of a broadcast or journey who then did an interaction. With
+     * `includeOutcome: true` each item is `{ id, outcome }` instead of an id. One answer, no pages.
+     * POST /admin/collection/:collectionId/comm/query/recipients/with-interaction
+     *
+     * @example
+     * ```typescript
+     * const { items } = await comms.queryRecipientsWithInteraction(collectionId, { broadcastId, interactionId: 'survey-done', includeOutcome: true })
+     * ```
      */
-    async function queryRecipientsWithAction(collectionId, body) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/query/recipients/with-action`;
+    async function queryRecipientsWithInteraction(collectionId, body) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/query/recipients/with-interaction`;
         return post(path, body);
     }
-    comms.queryRecipientsWithAction = queryRecipientsWithAction;
+    comms.queryRecipientsWithInteraction = queryRecipientsWithInteraction;
     /**
      * Send a single transactional message to one contact using a template.
      * No broadcast record is created. The send is logged to the contact's

@@ -1,5 +1,6 @@
 import type { TranslationActivity } from '../translationActivity.js';
-import type { ResolvedTranslationResponse, TranslationHashOptions, TranslationListParams, TranslationListResponse, TranslationLookupRequest, TranslationLookupResponse, TranslationRecord, TranslationResolveOptions, TranslationRules, TranslationUpdateRequest } from '../types/translations.js';
+import type { ResolvedTranslationResponse, TranslationHashOptions, TranslationListParams, TranslationLookupRequest, TranslationLookupResponse, TranslationRecord, TranslationResolveOptions, TranslationRules, TranslationUpdateRequest } from '../types/translations.js';
+import type { ListResult } from '../types/list.js';
 /** @internal tests only */
 export declare function _resetRevisionChecks(): void;
 export declare namespace translations {
@@ -22,7 +23,21 @@ export declare namespace translations {
     /** Whether a first-time translation is under way right now (see onActivity). */
     function activity(): TranslationActivity;
     function resolve(collectionId: string, body: TranslationLookupRequest, options?: TranslationResolveOptions): Promise<ResolvedTranslationResponse>;
-    function list(collectionId: string, params?: TranslationListParams): Promise<TranslationListResponse>;
+    /**
+     * Admin: the collection's stored translations, a page at a time. Filter by language, content type, where
+     * the text appears (`contextKey`), a search (`q`), whether a person edited it (`isOverride`), or whether
+     * it misses the site's required wording (`termIssues`). `count` is how many match in all.
+     *
+     * @example
+     * ```typescript
+     * let page = await translations.list('coll_123', { targetLanguage: 'de', limit: 50 })
+     * page.items // TranslationRecord[]
+     * while (page.nextCursor) {
+     *   page = await translations.list('coll_123', { targetLanguage: 'de', limit: 50, cursor: page.nextCursor })
+     * }
+     * ```
+     */
+    function list(collectionId: string, params?: TranslationListParams): Promise<ListResult<TranslationRecord>>;
     function get(collectionId: string, translationId: string): Promise<TranslationRecord>;
     function update(collectionId: string, translationId: string, body: TranslationUpdateRequest): Promise<TranslationRecord>;
     /** Admin: how many translations exist per language, and how many a person has edited. */

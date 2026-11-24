@@ -11,19 +11,27 @@
 //
 // See docs/host-dependency-contract.md.
 /** Current contract revision. Bumped when the entry list or host versions change. */
-export const SHARED_DEPENDENCY_CONTRACT_VERSION = 'v7';
+export const SHARED_DEPENDENCY_CONTRACT_VERSION = 'v8';
 /**
  * Canonical import-map path for a specifier: drop the leading `@` scope marker and
  * turn every `/` into `-`.
- *   'react-dom/client'      -> '/sl-shared/v7/react-dom-client.js'
- *   '@radix-ui/react-slot'  -> '/sl-shared/v7/radix-ui-react-slot.js'
+ *   'react-dom/client'      -> '/sl-shared/v8/react-dom-client.js'
+ *   '@radix-ui/react-slot'  -> '/sl-shared/v8/radix-ui-react-slot.js'
  * Hosts MUST serve shims at these paths so the map the SDK advertises resolves.
  */
 export function importMapPathFor(specifier, version = SHARED_DEPENDENCY_CONTRACT_VERSION) {
     const slug = specifier.replace(/^@/, '').replace(/\//g, '-');
     return `/sl-shared/${version}/${slug}.js`;
 }
-// The 29-entry v7 contract: the v6 set plus `dompurify` (HTML sanitizer — pairs with
+// v8 is the v7 set with SDK 3 in place of SDK 2. SDK 3 changes what the SDK's functions return (every
+// list is { items, nextCursor, count? }) and drops the deprecated calls, so a host cannot swap it in under
+// apps built for SDK 2. Instead a host serves BOTH: a v7 app keeps resolving SDK 2 (window.SL) and a v8
+// app resolves SDK 3 (window.SL3). Every other entry is the same library at the same version in both,
+// and the host serves ONE copy of each (two Reacts would crash). That includes the sign-in UI: its
+// provider and hooks share a React context, so there is one copy for every app on the page, whichever
+// SDK the app was built on.
+//
+// The 29-entry v7 contract was: the v6 set plus `dompurify` (HTML sanitizer — pairs with
 // the shared `marked` so output apps sanitize instead of each bundling their own),
 // `clsx` + `tailwind-merge` (the standard `cn()` pair the portal/hub already ship, now
 // exposed to apps). All small, version-stable, ubiquitous — apps stop bundling copies.
@@ -35,7 +43,7 @@ const CONTRACT = [
     { specifier: 'react-dom/client', globalName: 'ReactDOMClient', minVersion: '19.0.0' },
     { specifier: 'react/jsx-runtime', globalName: 'jsxRuntime', minVersion: '19.0.0' },
     { specifier: 'react/jsx-dev-runtime', globalName: 'jsxDevRuntime', minVersion: '19.0.0' },
-    { specifier: '@proveanything/smartlinks', globalName: 'SL', minVersion: '2.0.0' },
+    { specifier: '@proveanything/smartlinks', globalName: 'SL3', minVersion: '3.0.0' },
     { specifier: '@proveanything/smartlinks-auth-ui', globalName: 'SmartlinksAuthUI', minVersion: '2.0.0' },
     { specifier: 'react-router-dom', globalName: 'ReactRouterDOM', minVersion: '7.18.4' },
     { specifier: '@tanstack/react-query', globalName: 'ReactQuery', minVersion: '5.0.0' },

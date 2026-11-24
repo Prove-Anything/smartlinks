@@ -52,10 +52,10 @@ Site builders (the Forge agent included) read these declarations to decide "inst
 
 **What the read calls return.** This is fixed by the storage kind, so a provider never needs to describe it, and site builders get it from the checker and `forge-cms describe`:
 
-- **`record`, `case`, `thread`:** `list` returns `{ data: Item[], pagination: { total, limit, offset, hasMore } }`.
-  - The items are in **`response.data`**, never `response.items` or `response.records`.
+- **`record`, `case`, `thread`:** `list` returns `{ items: Item[], nextCursor: string | null, count: number }`.
+  - The items are in **`response.items`**, never `response.data` or `response.records`.
   - Each item's declared fields are in **`item.data`** (e.g. `record.data.question`). `id`, `status`, `productId` and the dates are top-level.
-  - Page with `offset` / `limit` while `pagination.hasMore`. `get` returns one item.
+  - Page with `limit` and `cursor` (the previous page's `nextCursor`) until `nextCursor` is `null`. `get` returns one item.
 - **`config`:** the configuration object. Items are in `config.<key>` when the type names a `key`.
 
 Products, contacts and proofs are platform data. Reference them with `ref` fields (`"to": "product"`); never redeclare them.

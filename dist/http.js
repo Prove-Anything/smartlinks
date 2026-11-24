@@ -55,7 +55,48 @@ export function getClientHeaders() {
 export function getApiVersion() {
     return apiVersionSent;
 }
+// A second copy of the SDK on one page (a host that serves SDK 3 beside SDK 2) has no sign-in of its own:
+// it asks the host's copy for the current one each time (initializeApi({ signInFrom })), so the two can
+// never disagree about who is signed in.
+let signInFrom = null;
+let signInSeen = '';
+/** The host's sign-in headers right now ({} when this copy doesn't follow a host). */
+function hostSignIn() {
+    if (!signInFrom)
+        return {};
+    let h = {};
+    try {
+        h = Object.assign({}, (signInFrom() || {}));
+    }
+    catch (_a) {
+        h = {};
+    }
+    // Only sign-in travels across. Which API version and SDK this copy is, it says itself.
+    for (const k of Object.keys(h))
+        if (/^smartlinks-(version|sdk|app)$/i.test(k))
+            delete h[k];
+    // A different person (or none) since the last look: what was cached for the last one must go.
+    const seen = JSON.stringify(Object.keys(h).sort().map((k) => [k.toLowerCase(), h[k]]));
+    if (seen !== signInSeen) {
+        const first = signInSeen === '';
+        signInSeen = seen;
+        if (!first) {
+            clearHttpCache('host sign-in changed');
+            if (cachePersistence !== 'none')
+                idbClear().catch(() => { });
+        }
+    }
+    return h;
+}
 function addClientHeaders(headers) {
+    // The host's sign-in replaces whatever this copy holds (it holds none of its own).
+    const host = hostSignIn();
+    for (const [k, v] of Object.entries(host)) {
+        for (const mine of Object.keys(headers))
+            if (mine.toLowerCase() === k.toLowerCase())
+                delete headers[mine];
+        headers[k] = v;
+    }
     const lower = new Set(Object.keys(headers).map((k) => k.toLowerCase()));
     for (const [k, v] of Object.entries(getClientHeaders()))
         if (!lower.has(k.toLowerCase()))
@@ -608,8 +649,11 @@ export function initializeApi(options) {
         ? !!options.ngrokSkipBrowserWarning
         : inferredNgrok;
     extraHeadersGlobal = options.extraHeaders ? Object.assign({}, options.extraHeaders) : {};
-    apiVersionSent = options.apiVersion && /^\d{4}-(0[1-9]|1[0-2])$/.test(options.apiVersion) ? options.apiVersion : API_VERSION;
+    // Year-month sorts as text, so "newer" is a plain comparison.
+    apiVersionSent = options.apiVersion && /^\d{4}-(0[1-9]|1[0-2])$/.test(options.apiVersion) && options.apiVersion >= API_VERSION ? options.apiVersion : API_VERSION;
     clientAppVersion = options.appVersion ? String(options.appVersion).slice(0, 30) : null;
+    signInFrom = typeof options.signInFrom === 'function' ? options.signInFrom : null;
+    signInSeen = '';
     // Platform opt-in (native refresh tokens). Preserve an earlier value when a
     // re-init call omits it, so long-lived native sessions aren't downgraded by a
     // later bootstrap that forgot to pass platform.
@@ -713,7 +757,13 @@ export function getGrantToken() {
  * so this returns `undefined` even when the caller is authenticated.
  */
 export function getBearerToken() {
-    return bearerToken;
+    if (bearerToken || !signInFrom)
+        return bearerToken;
+    // Following a host: the token is the host's.
+    const host = hostSignIn();
+    const key = Object.keys(host).find((k) => k.toLowerCase() === 'authorization');
+    const m = key ? /^Bearer\s+(.+)$/i.exec(host[key]) : null;
+    return m ? m[1] : undefined;
 }
 /**
  * Get the currently configured API base URL.
@@ -1338,6 +1388,7 @@ export async function proxyUploadFormData(path, formData, onProgress) {
  */
 export async function request(path) {
     await ensureAuthReady();
+    hostSignIn(); // before the cache is read: a change of sign-in on the host empties it
     const skipCache = shouldSkipCache(path);
     const cacheKey = buildCacheKey(path);
     const ttl = skipCache ? 0 : getTtlForPath(path);
@@ -1877,6 +1928,13 @@ export function getApiHeaders() {
     for (const [k, v] of Object.entries(extraHeadersGlobal))
         if (!(k in headers))
             headers[k] = v;
+    // A copy that follows a host's sign-in passes that on.
+    for (const [k, v] of Object.entries(hostSignIn())) {
+        for (const mine of Object.keys(headers))
+            if (mine.toLowerCase() === k.toLowerCase())
+                delete headers[mine];
+        headers[k] = v;
+    }
     return headers;
 }
 /**

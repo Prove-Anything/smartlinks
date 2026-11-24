@@ -17,11 +17,18 @@ export var variant;
     }
     variant.get = get;
     /**
-     * List all variants for a collection and product (admin only).
+     * List all variants for a collection and product (admin only). All of them come in one answer:
+     * `nextCursor` is always null.
      * @param collectionId - Identifier of the parent collection
      * @param productId - Identifier of the parent product
-     * @returns Promise resolving to an array of VariantResponse objects
+     * @returns Promise resolving to `{ items: VariantResponse[], nextCursor: null }`
      * @throws ErrorResponse if the request fails
+     *
+     * @example
+     * ```typescript
+     * const { items } = await variant.list('coll_123', 'prod_456')
+     * items.map((v) => v.name)
+     * ```
      */
     async function list(collectionId, productId) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/variant`;

@@ -29,11 +29,12 @@ export var shop;
     shop.config = config;
     /**
      * What is for sale, in the shop's currency, with stock (`inStock`, `available`) and whether the buyer must
-     * sign in first (`needsSignIn`: a proof or access goes to an account).
+     * sign in first (`needsSignIn`: a proof or access goes to an account). Everything for sale comes in one
+     * answer (`nextCursor` is always null), with the shop's `currency` beside the list.
      *
      * @example
      * ```typescript
-     * const { items } = await shop.products(collectionId)
+     * const { items, currency } = await shop.products(collectionId)
      * items.map((p) => `${p.name}: ${formatMoney(p.amount, p.currency)}${p.inStock ? '' : ' (sold out)'}`)
      * ```
      */
@@ -71,7 +72,18 @@ export var shop;
         return request(`${pub(collectionId)}/orders/by-session/${encodeURIComponent(sessionId)}`);
     }
     shop.orderBySession = orderBySession;
-    /** The signed-in buyer's orders, newest first, with their download links. @throws `SIGN_IN_REQUIRED` */
+    /**
+     * The signed-in buyer's orders, newest first, with their download links, a page at a time. `count` is how
+     * many they have in all.
+     *
+     * @example
+     * ```typescript
+     * let page = await shop.myOrders(collectionId, { limit: 20 })
+     * page.items // ShopBuyerOrder[]
+     * if (page.nextCursor) page = await shop.myOrders(collectionId, { limit: 20, cursor: page.nextCursor })
+     * ```
+     * @throws `SIGN_IN_REQUIRED`
+     */
     async function myOrders(collectionId, params) {
         return request(`${pub(collectionId)}/orders/mine${qs(params)}`);
     }
@@ -111,6 +123,15 @@ export var shop;
             return request(`${adm(collectionId)}/connect/status`);
         }
         admin.connectStatus = connectStatus;
+        /**
+         * The shop's prices, a page at a time. Filter by product, currency, app, or whether it is on sale
+         * (`active`). `count` is how many match in all.
+         *
+         * @example
+         * ```typescript
+         * const { items, nextCursor, count } = await shop.admin.listPrices(collectionId, { productId: 'soap', active: true })
+         * ```
+         */
         async function listPrices(collectionId, params) {
             return request(`${adm(collectionId)}/prices${qs(params)}`);
         }
@@ -132,7 +153,17 @@ export var shop;
             return del(`${adm(collectionId)}/prices/${encodeURIComponent(priceId)}`);
         }
         admin.removePrice = removePrice;
-        /** Shop orders, newest first. Unpaid and expired checkouts are left out unless asked for. */
+        /**
+         * Shop orders, newest first, a page at a time. Unpaid and expired checkouts are left out unless asked
+         * for. `count` is how many match in all.
+         *
+         * @example
+         * ```typescript
+         * let page = await shop.admin.listOrders(collectionId, { status: 'paid', limit: 50 })
+         * page.items // ShopAdminOrder[]
+         * while (page.nextCursor) page = await shop.admin.listOrders(collectionId, { status: 'paid', limit: 50, cursor: page.nextCursor })
+         * ```
+         */
         async function listOrders(collectionId, params) {
             return request(`${adm(collectionId)}/orders${qs(params)}`);
         }

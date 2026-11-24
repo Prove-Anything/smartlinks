@@ -39,8 +39,14 @@ export var location;
     }
     location.create = create;
     /**
-     * Admin: Search locations to pick during setup (combines collection + global)
+     * Admin: Search locations to pick during setup (combines collection + global). One list, no pages:
+     * `limit` says how many (default 20, at most 100).
      * GET /admin/collection/:collectionId/location/search
+     *
+     * @example
+     * ```typescript
+     * const { items } = await location.search('coll_123', { q: 'distillery', countryCode: 'GB', limit: 10 })
+     * ```
      */
     async function search(collectionId, query = {}) {
         const qs = buildQueryString(query);

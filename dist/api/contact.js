@@ -36,12 +36,24 @@ export var contact;
         return post(path, data);
     }
     contact.create = create;
+    /**
+     * The collection's contacts, a page at a time (admin only). Pass `includeDeleted: true` to include
+     * deleted contacts. For filters, sorting and totals use `contact.query` or `contact.search`.
+     * GET /admin/collection/:collectionId/contacts
+     *
+     * @example
+     * ```typescript
+     * let page = await contact.list('coll_123', { limit: 50 })
+     * page.items // Contact[]
+     * while (page.nextCursor) page = await contact.list('coll_123', { limit: 50, cursor: page.nextCursor })
+     * ```
+     */
     async function list(collectionId, params) {
         const query = new URLSearchParams();
         if ((params === null || params === void 0 ? void 0 : params.limit) !== undefined)
             query.set("limit", String(params.limit));
-        if ((params === null || params === void 0 ? void 0 : params.offset) !== undefined)
-            query.set("offset", String(params.offset));
+        if ((params === null || params === void 0 ? void 0 : params.cursor) !== undefined)
+            query.set("cursor", params.cursor);
         if ((params === null || params === void 0 ? void 0 : params.includeDeleted) !== undefined)
             query.set("includeDeleted", String(params.includeDeleted));
         const qs = query.toString();
@@ -49,7 +61,19 @@ export var contact;
         return request(path);
     }
     contact.list = list;
-    async function search({ collectionId, q, typeahead, email, phone, id, userId, tags, tagsAll, source, locale, createdFrom, createdTo, externalIdKey, externalIdValue, customFieldKey, customFieldValue, limit, offset, }) {
+    /**
+     * Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead`
+     * for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields.
+     * GET /admin/collection/:collectionId/contacts/search
+     *
+     * @example
+     * ```typescript
+     * let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 })
+     * page.items // Contact[]
+     * if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor })
+     * ```
+     */
+    async function search({ collectionId, q, typeahead, email, phone, id, userId, tags, tagsAll, source, locale, createdFrom, createdTo, externalIdKey, externalIdValue, customFieldKey, customFieldValue, limit, cursor, }) {
         const query = new URLSearchParams();
         if (q !== undefined)
             query.set("q", q);
@@ -89,8 +113,8 @@ export var contact;
             query.set("customFieldValue", customFieldValue);
         if (limit !== undefined)
             query.set("limit", String(limit));
-        if (offset !== undefined)
-            query.set("offset", String(offset));
+        if (cursor !== undefined)
+            query.set("cursor", cursor);
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/search?${query.toString()}`;
         return request(path);
     }
@@ -194,12 +218,13 @@ export var contact;
      * already held — so one contact has the email and no sign-in, the other the sign-in (and everything
      * they did) and no email. The match is made on the server, on verified addresses only.
      *
-     * Checks a window of contacts per call; while `more` is true, call again with `offset` moved on by
-     * `scanned`.
+     * Checks a window of contacts per call and returns the pairs found in it (`items`); `scanned` is how
+     * many contacts it checked. While `nextCursor` is not null, call again with it as `cursor` to check
+     * the next window.
      *
      * @example
      * ```typescript
-     * const { pairs } = await contact.findDuplicates(collectionId)
+     * const { items: pairs } = await contact.findDuplicates(collectionId)
      * for (const pair of pairs) {
      *   await contact.merge(collectionId, pair.keep.contactId, pair.merge.contactId)
      * }
@@ -209,8 +234,8 @@ export var contact;
         const query = new URLSearchParams();
         if ((params === null || params === void 0 ? void 0 : params.limit) !== undefined)
             query.set("limit", String(params.limit));
-        if ((params === null || params === void 0 ? void 0 : params.offset) !== undefined)
-            query.set("offset", String(params.offset));
+        if ((params === null || params === void 0 ? void 0 : params.cursor) !== undefined)
+            query.set("cursor", params.cursor);
         const qs = query.toString();
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/duplicates${qs ? `?${qs}` : ""}`;
         return request(path);

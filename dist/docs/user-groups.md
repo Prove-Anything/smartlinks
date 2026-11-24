@@ -113,9 +113,9 @@ await userGroups.addMember(collectionId, qc.id, { email: 'sam@example.com', name
 await userGroups.addMember(collectionId, qc.id, { userId: 'uid_2' })
 await userGroups.removeMember(collectionId, qc.id, 'uid_2')
 
-await userGroups.members(collectionId, qc.id)   // [{ uid, name, email }]
-await userGroups.ofUser(collectionId, 'uid_1')  // [{ id, key, name }]
-await userGroups.list(collectionId)
+await userGroups.members(collectionId, qc.id)   // { items: [{ uid, name, email }], nextCursor: null }
+await userGroups.ofUser(collectionId, 'uid_1')  // { items: [{ id, key, name }], nextCursor: null }
+await userGroups.list(collectionId)             // { items: [{ id, key, name, … }], nextCursor: null }
 await userGroups.update(collectionId, qc.id, { name: 'Quality control' })   // key stays 'qc-controllers'
 await userGroups.remove(collectionId, qc.id)
 ```
@@ -136,7 +136,7 @@ with the admin who did it and when.
 ```ts
 await userGroups.history(collectionId, { userGroupId: qc.id })   // one user group
 await userGroups.history(collectionId, { userId: 'uid_1' })      // everything about one person
-// [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }]
+// { items: [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }], nextCursor: null }
 ```
 
 It covers the last 30 days unless you pass `from` / `to` (up to 400 days), and takes about a second.

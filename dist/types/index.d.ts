@@ -58,3 +58,4 @@ export * from "./clientLog.js";
 export * from "./wallet.js";
 export * from "./files.js";
 export * from "./knowledge.js";
+export * from "./list.js";

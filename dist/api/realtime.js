@@ -1,5 +1,5 @@
 // src/api/realtime.ts
-import { request, post } from "../http.js";
+import { post } from "../http.js";
 /** One live stream per (collection, app): every listener on this page shares it. */
 class Stream {
     constructor(collectionId, appId, onEmpty) {
@@ -260,25 +260,4 @@ export function onStaffChange(scope, filter, onChangeFn) {
  */
 export function onMine(scope, onMessage) {
     return streamFor({ collectionId: scope.collectionId }).add("feed:me", onMessage);
-}
-// ---------------------------------------------------------------------------------------------------
-// Legacy (raw Ably tokens). New code uses channel / onChange above — no provider in your app.
-// ---------------------------------------------------------------------------------------------------
-/**
- * @deprecated Use `realtime.channel()` / `realtime.onChange()`. Returns a raw Ably TokenRequest for
- * `collection:{collectionId}:*` (subscribe; publish only for the collection's admins).
- */
-export async function getPublicToken(params) {
-    const queryParams = new URLSearchParams();
-    queryParams.append("collectionId", params.collectionId);
-    if (params.appId)
-        queryParams.append("appId", params.appId);
-    return request(`/public/push/token?${queryParams.toString()}`);
-}
-/**
- * @deprecated Use `realtime.onMine()`. Returns a raw Ably TokenRequest for `interaction:{userId}`
- * (subscribe only).
- */
-export async function getAdminToken() {
-    return request("/admin/auth/push");
 }

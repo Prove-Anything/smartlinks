@@ -21,7 +21,17 @@ export var segments;
         return post(path, body);
     }
     segments.create = create;
-    // List
+    /**
+     * The collection's segments, a page at a time. Filter by the app that owns them (`appId`) or by
+     * `filterType`.
+     *
+     * @example
+     * ```typescript
+     * let page = await segments.list('coll_123', { filterType: 'dynamic', limit: 50 })
+     * page.items // SegmentRecord[]
+     * while (page.nextCursor) page = await segments.list('coll_123', { filterType: 'dynamic', limit: 50, cursor: page.nextCursor })
+     * ```
+     */
     async function list(collectionId, query = {}) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/segments/${encodeQuery(query)}`;
         return request(path);
@@ -51,7 +61,17 @@ export var segments;
         return post(path, {});
     }
     segments.calculate = calculate;
-    // Stub: recipients
+    /**
+     * The contacts in a segment, a page at a time. `count` is how many there are in all.
+     *
+     * @example
+     * ```typescript
+     * const page = await segments.recipients('coll_123', 'seg_1', { limit: 100 })
+     * page.items      // Recipient[]
+     * page.count      // total in the segment
+     * page.nextCursor // pass back as `cursor` for the next page; null on the last
+     * ```
+     */
     async function recipients(collectionId, id, query = {}) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/segments/${encodeURIComponent(id)}/recipients${encodeQuery(query)}`;
         return request(path);

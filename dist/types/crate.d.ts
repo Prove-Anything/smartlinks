@@ -3,6 +3,7 @@
  *
  * Types for managing crates (containers for tags/products).
  */
+import type { ListOptions } from './list.js';
 /**
  * Item within a crate.
  */
@@ -27,20 +28,11 @@ export interface Crate {
     deletedAt?: string | null;
 }
 /**
- * Query parameters for listing crates.
+ * `crate.list` options: `limit` (default 100, max 100) and `cursor`, plus whether to include
+ * soft-deleted crates.
  */
-export interface ListCratesRequest {
-    limit?: number;
-    startAfter?: string;
+export interface ListCratesRequest extends ListOptions {
     includeDeleted?: boolean;
-}
-/**
- * Response from listing crates.
- */
-export interface ListCratesResponse {
-    items: Crate[];
-    hasMore: boolean;
-    lastId: string | null;
 }
 /**
  * Response from getting a single crate.

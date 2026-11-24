@@ -1,12 +1,4 @@
 /**
- * @deprecated Batches moved to Postgres — dates now come back as ISO 8601 strings, never
- * Firestore Timestamp objects. Kept only so request bodies can still pass a legacy value.
- */
-export interface FirebaseTimestamp {
-    seconds: number;
-    nanoseconds?: number;
-}
-/**
  * Represents a Batch object. Dates are **ISO 8601 strings**.
  */
 export interface BatchResponse {
@@ -29,11 +21,9 @@ export interface BatchResponse {
  * Request payload for creating a new batch.
  */
 export interface BatchCreateRequest {
-    /** @deprecated Ignored — the server generates the batch id. */
-    id?: string;
     name?: string;
-    /** A `Date`, ISO 8601 string, or legacy Firebase Timestamp — all accepted. */
-    expiryDate?: FirebaseTimestamp | string | Date;
+    /** A `Date` or an ISO 8601 string. */
+    expiryDate?: string | Date;
     [key: string]: any;
 }
 /**
@@ -41,11 +31,13 @@ export interface BatchCreateRequest {
  */
 export interface BatchUpdateRequest {
     name?: string;
-    expiryDate?: FirebaseTimestamp | string | Date;
+    /** A `Date` or an ISO 8601 string. */
+    expiryDate?: string | Date;
     [key: string]: any;
 }
 /**
- * Query parameters for searching batches in a collection.
+ * Options for `batch.searchInCollection`. The search answers in one page (it has no cursor):
+ * `limit` is the most it returns.
  */
 export interface SearchBatchesRequest {
     search?: string;

@@ -1,5 +1,6 @@
 import { guide as guideApi, content as contentApi, startLive } from "./aiGuide.js";
-import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, AgentRunRequest, AgentRunResult, AgentToolsQuery, AgentToolsResponse, ToolRunResult, AiToolName, AiToolArgsMap, PublicAgentRunRequest, ClientTool, RunWithClientToolsOptions, SkillsListResponse, CatalogResponse, Session, RateLimitStatus, SessionStatistics, AiSession, AiSessionCreate, AiUsageReport, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef } from "../types/ai.js";
+import type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, AgentRunRequest, AgentRunResult, AgentToolsQuery, AgentToolDefinition, ToolRunResult, AiToolName, AiToolArgsMap, PublicAgentRunRequest, ClientTool, RunWithClientToolsOptions, SkillDescriptor, CatalogResponse, Session, RateLimitStatus, SessionStatistics, AiSession, AiSessionCreate, AiUsageReport, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef } from "../types/ai.js";
+import type { ListResult } from "../types/list.js";
 export type { ContentPart, FunctionCall, ToolCall, ChatMessage, ToolDefinition, ResponseTool, ResponseInputItem, ResponsesRequest, ResponsesResult, ResponsesStreamEvent, ChatCompletionRequest, ChatCompletionChoice, ChatCompletionResponse, ChatCompletionChunk, AIModel, AIModelListParams, AIModelListResponse, Session, RateLimitStatus, SessionStatistics, AiSession, AiSessionCreate, AiUsageReport, VoiceSessionRequest, VoiceSessionResponse, EphemeralTokenRequest, EphemeralTokenResponse, TranscriptionResponse, TTSRequest, GeneratePodcastRequest, PodcastScript, GeneratePodcastResponse, PodcastStatus, AIGenerateContentRequest, AIGenerateContentCandidate, AIGenerateContentResponse, AIGenerateImageRequest, AIGenerateImageResponse, AIGeneratedImage, AISearchPhotosRequest, AISearchPhotosPhoto, AISearchPhotosResponse, AIUploadedFile, AICacheRef, };
 declare namespace aiInternal {
     namespace chat {
@@ -30,10 +31,17 @@ declare namespace aiInternal {
          */
         function run(collectionId: string, body: AgentRunRequest): Promise<AgentRunResult>;
         /**
-         * List the tools the agent can use (optionally scoped by capability / name).
+         * List the tools the agent can use (optionally scoped by capability / name). Returns
+         * `{ items, nextCursor }`: the tools are in `items`. The list is not paged, so `nextCursor` is
+         * always `null`.
          * GET /admin/collection/:collectionId/ai/agent/tools
+         *
+         * @example
+         * ```typescript
+         * const { items: tools } = await ai.agent.listTools('coll_123', { allowCapabilities: 'read' })
+         * ```
          */
-        function listTools(collectionId: string, query?: AgentToolsQuery): Promise<AgentToolsResponse>;
+        function listTools(collectionId: string, query?: AgentToolsQuery): Promise<ListResult<AgentToolDefinition>>;
     }
     namespace tools {
         /**
@@ -50,8 +58,17 @@ declare namespace aiInternal {
         function run<T = any>(collectionId: string, name: string, args?: Record<string, any>): Promise<ToolRunResult<T>>;
     }
     namespace skills {
-        /** List the skills apps can invoke (name, description, input/output schema). */
-        function list(collectionId: string): Promise<SkillsListResponse>;
+        /**
+         * List the skills apps can invoke (name, description, input/output schema). Returns
+         * `{ items, nextCursor }`: the skills are in `items`. The list is not paged, so `nextCursor` is
+         * always `null`.
+         *
+         * @example
+         * ```typescript
+         * const { items: skills } = await ai.skills.list('coll_123')
+         * ```
+         */
+        function list(collectionId: string): Promise<ListResult<SkillDescriptor>>;
         /**
          * Invoke a skill by name with structured input — the app-facing verb; no
          * prompt-shaping. POST /admin/collection/:collectionId/ai/skills/:name/run
@@ -203,11 +220,6 @@ declare namespace aiInternal {
         }): Promise<void>;
     }
     /**
-     * Generate text/content via AI (admin)
-     * @deprecated Use ai.chat.completions.create() instead
-     */
-    function generateContent(collectionId: string, params: AIGenerateContentRequest, admin?: boolean): Promise<AIGenerateContentResponse>;
-    /**
      * Generate an image via AI (admin)
      */
     function generateImage(collectionId: string, params: AIGenerateImageRequest): Promise<AIGenerateImageResponse>;
@@ -306,7 +318,6 @@ export declare const ai: {
         run: typeof aiInternal.skills.run;
     };
     catalog: typeof aiInternal.catalog;
-    generateContent: typeof aiInternal.generateContent;
     generateImage: typeof aiInternal.generateImage;
     searchPhotos: typeof aiInternal.searchPhotos;
     uploadFile: typeof aiInternal.uploadFile;

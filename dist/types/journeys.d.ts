@@ -1,3 +1,4 @@
+import type { ListOptions } from './list.js';
 export interface JourneyRecord {
     id: string;
     collectionId: string;
@@ -29,17 +30,11 @@ export interface JourneyRecord {
     createdAt: string;
     updatedAt: string;
 }
-export interface JourneyList {
-    items: JourneyRecord[];
-    limit: number;
-    offset: number;
-}
-export interface ListJourneysQuery {
+/** Options for journeys.list(): `limit` and `cursor` page the list. */
+export interface ListJourneysQuery extends ListOptions {
     appId?: string;
     active?: boolean;
     journeyType?: 'event_triggered' | 'scheduled';
-    limit?: number;
-    offset?: number;
 }
 export interface CreateJourneyBody {
     appId?: string;

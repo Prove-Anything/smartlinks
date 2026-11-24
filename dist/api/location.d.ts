@@ -1,4 +1,5 @@
-import type { Location, LocationPayload, LocationSearchQuery, LocationSearchResponse } from "../types/location.js";
+import type { Location, LocationPayload, LocationSearchQuery } from "../types/location.js";
+import type { ListResult } from "../types/list.js";
 export declare namespace location {
     /**
      * Platform: Create a global location (super admin; requires features.adminApps)
@@ -11,10 +12,16 @@ export declare namespace location {
      */
     function create(collectionId: string, params: LocationPayload): Promise<Location>;
     /**
-     * Admin: Search locations to pick during setup (combines collection + global)
+     * Admin: Search locations to pick during setup (combines collection + global). One list, no pages:
+     * `limit` says how many (default 20, at most 100).
      * GET /admin/collection/:collectionId/location/search
+     *
+     * @example
+     * ```typescript
+     * const { items } = await location.search('coll_123', { q: 'distillery', countryCode: 'GB', limit: 10 })
+     * ```
      */
-    function search(collectionId: string, query?: LocationSearchQuery): Promise<LocationSearchResponse>;
+    function search(collectionId: string, query?: LocationSearchQuery): Promise<ListResult<Location>>;
     /**
      * Public: Fetch a global location by ID
      * GET /public/location/:locationId

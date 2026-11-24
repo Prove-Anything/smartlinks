@@ -208,6 +208,15 @@ export var asset;
         return request(path);
     }
     asset.getForCollection = getForCollection;
+    /**
+     * The collection's own assets (public). Returns `{ items, nextCursor }`: the assets are in `items`.
+     * The list is not paged, so `nextCursor` is always `null`.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await asset.listForCollection('my-collection')
+     * ```
+     */
     async function listForCollection(collectionId) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/asset`;
         return request(path);
@@ -219,6 +228,15 @@ export var asset;
         return request(path);
     }
     asset.getForProduct = getForProduct;
+    /**
+     * A product's assets (public). Returns `{ items, nextCursor }`: the assets are in `items`.
+     * The list is not paged, so `nextCursor` is always `null`.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await asset.listForProduct('my-collection', 'wine-bottle')
+     * ```
+     */
     async function listForProduct(collectionId, productId) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/asset`;
         return request(path);
@@ -230,6 +248,15 @@ export var asset;
         return request(path);
     }
     asset.getForProof = getForProof;
+    /**
+     * A proof's assets (public), optionally only one app's. Returns `{ items, nextCursor }`: the assets
+     * are in `items`. The list is not paged, so `nextCursor` is always `null`.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await asset.listForProof('my-collection', 'wine-bottle', proofId, 'gallery')
+     * ```
+     */
     async function listForProof(collectionId, productId, proofId, appId) {
         let path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/asset`;
         if (appId) {
@@ -239,43 +266,24 @@ export var asset;
     }
     asset.listForProof = listForProof;
     /**
-     * Uploads an asset file to a proof, with optional extraData as JSON.
-     * @deprecated Use `asset.upload(options)` instead.
-     * Supports progress reporting via onProgress callback (browser only).
-     * @param collectionId - The collection ID
-     * @param productId - The product ID
-     * @param proofId - The proof ID
-     * @param file - The file to upload
-     * @param extraData - Arbitrary extra data to include (will be stringified as JSON)
-     * @param onProgress - Optional callback for upload progress (0-100)
-     * @returns Promise resolving to an AssetResponse object
-     */
-    async function uploadAsset(collectionId, productId, proofId, file, extraData, onProgress) {
-        // Route through new upload API for backward compatibility
-        const res = await upload({
-            file,
-            name: file === null || file === void 0 ? void 0 : file.name,
-            metadata: extraData,
-            onProgress,
-            scope: { type: 'proof', collectionId, productId, proofId },
-        });
-        return res;
-    }
-    asset.uploadAsset = uploadAsset;
-    /**
-     * List assets for a given scope
+     * List assets for a given scope (a collection, a product or a proof). Returns `{ items, nextCursor }`:
+     * the assets are in `items`. These lists are not paged, so `nextCursor` is always `null`.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await asset.list({
+     *   scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' },
+     *   appId: 'gallery',
+     * })
+     * ```
      */
     async function list(options) {
         const base = buildScopeBase(options.scope);
         const params = new URLSearchParams();
         if (options.appId)
             params.set('appId', options.appId);
-        if (options.mimeTypePrefix)
-            params.set('mimeTypePrefix', options.mimeTypePrefix);
         if (typeof options.limit === 'number')
             params.set('limit', String(options.limit));
-        if (typeof options.offset === 'number')
-            params.set('offset', String(options.offset));
         const path = `${base}/asset${params.toString() ? `?${params}` : ''}`;
         return request(path);
     }
@@ -312,7 +320,19 @@ export var asset;
     // Base: /api/admin/collection/:collectionId/assets
     // ---------------------------------------------------------------------------
     /**
-     * List assets for a collection with full filtering options.
+     * List assets for a collection with full filtering options (admin). Returns `{ items, nextCursor }`:
+     * the assets are in `items`, 50 at a time unless you give a `limit` (at most 200). Pass `nextCursor`
+     * back as `cursor` for the next page; `null` means that was the last one. `count` (how many match in
+     * all) is there when you gave a `limit` or a `cursor`.
+     *
+     * @example
+     * ```typescript
+     * let page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', limit: 20 })
+     * console.log(`${page.count} images`)
+     * while (page.nextCursor) {
+     *   page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', limit: 20, cursor: page.nextCursor })
+     * }
+     * ```
      */
     async function listAdmin(options) {
         const params = new URLSearchParams();
@@ -332,8 +352,8 @@ export var asset;
             params.set('order', options.order);
         if (typeof options.limit === 'number')
             params.set('limit', String(options.limit));
-        if (typeof options.offset === 'number')
-            params.set('offset', String(options.offset));
+        if (options.cursor)
+            params.set('cursor', options.cursor);
         if (options.include && options.include.length)
             params.set('include', options.include.join(','));
         const qs = params.toString();

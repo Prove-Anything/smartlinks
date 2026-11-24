@@ -6,7 +6,7 @@
 // it on every request, so an app moves to a newer contract by upgrading its SDK — never by surprise.
 import { SDK_VERSION } from "./version.js";
 /** The API version this SDK release is built for. Override per app with `initializeApi({ apiVersion })`. */
-export const API_VERSION = "2026-11";
+export const API_VERSION = "2027-01";
 export { SDK_VERSION };
 export const API_VERSION_HEADER = "SmartLinks-Version";
 export const SDK_HEADER = "SmartLinks-SDK";

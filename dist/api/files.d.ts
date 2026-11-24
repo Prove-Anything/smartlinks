@@ -1,4 +1,5 @@
 import type { FileRecord, PutFileRequest, FetchFileRequest, FetchedFile, ListFilesQuery, ExtractFileRequest, ExtractFileResponse, ReadFileResponse, FileLinkResponse } from "../types/files.js";
+import type { ListResult } from "../types/list.js";
 /**
  * Files: temporary or kept files, web pages and documents fetched by address, and what's extracted from them
  * (text, Markdown, OCR, typed fields). Files are assets, but private until kept and left out of asset lists, so
@@ -22,11 +23,16 @@ import type { FileRecord, PutFileRequest, FetchFileRequest, FetchedFile, ListFil
  * ```
  */
 export declare namespace files {
-    /** Files on this site that aren't ordinary uploads: temporary, fetched, derived or generated (admin). */
-    function list(collectionId: string, query?: ListFilesQuery): Promise<{
-        ok: true;
-        files: FileRecord[];
-    }>;
+    /**
+     * Files on this site that aren't ordinary uploads: temporary, fetched, derived or generated (admin).
+     * They come back in one answer (`nextCursor` is always null); `limit` is the most it returns.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await files.list('coll_123', { appId: 'my-app', origin: 'fetched' })
+     * ```
+     */
+    function list(collectionId: string, query?: ListFilesQuery): Promise<ListResult<FileRecord>>;
     /** A new file from text, base64 or JSON. Temporary (default 1 day) and private. */
     function put(collectionId: string, body: PutFileRequest): Promise<{
         ok: true;

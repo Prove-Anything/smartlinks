@@ -58,8 +58,8 @@ paid once.
 ```typescript
 import { subscriptions } from '@proveanything/smartlinks'
 
-const plans = await subscriptions.plans(collectionId)
-// [{ id, name, description, level, prices: [{ id, amount, currency, interval, intervalCount, trialDays }] }]
+const { items: plans } = await subscriptions.plans(collectionId)
+// plans: [{ id, name, description, level, prices: [{ id, amount, currency, interval, intervalCount, trialDays }] }]
 
 plans.forEach((plan) => plan.prices.forEach((p) => console.log(plan.name, subscriptions.describePrice(p))))
 // "Gold £15 a month", "Gold £150 a year"
@@ -82,7 +82,7 @@ business hasn't connected Stripe), `INVALID_INPUT` (return pages must be https o
 ## "My membership"
 
 ```typescript
-const mine = await subscriptions.mine(collectionId)          // newest first; check `live`
+const { items: mine } = await subscriptions.mine(collectionId)   // newest first; check `live`
 await subscriptions.cancel(collectionId, id)                 // ends at the period end; access kept until then
 await subscriptions.resume(collectionId, id)                 // undo, before the period ends
 await subscriptions.change(collectionId, id, otherPriceId)   // up: at once (the difference charged); down: at renewal
@@ -124,7 +124,8 @@ const gold = await subscriptions.admin.createPlan(collectionId, { name: 'Gold', 
 await subscriptions.admin.setPrice(collectionId, gold.id, { amount: 1500, interval: 'month', trialDays: 14 })
 await subscriptions.admin.setPrice(collectionId, gold.id, { amount: 15000, interval: 'year' })
 
-const { items } = await subscriptions.admin.list(collectionId, { live: true, planId: gold.id })
+const { items, nextCursor, count } = await subscriptions.admin.list(collectionId, { live: true, planId: gold.id })
+// next page: subscriptions.admin.list(collectionId, { live: true, planId: gold.id, cursor: nextCursor })
 await subscriptions.admin.grant(collectionId, { planId: gold.id, contactId, note: 'Founding member' })
 await subscriptions.admin.end(collectionId, membershipId)   // a paid one is stopped in Stripe at once
 ```

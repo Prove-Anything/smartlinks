@@ -19,7 +19,13 @@ export var interactions;
 (function (interactions) {
     /**
      * POST /admin/collection/:collectionId/interactions/query
-     * Flexible query for interaction events with optional includes.
+     * Flexible query for interaction events with optional includes. One list, no pages: `limit` in the
+     * body says how many events to return.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await interactions.query('coll_123', { appId: 'my-app', interactionId: voteTypeId, limit: 500 })
+     * ```
      */
     async function query(collectionId, body) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/query`;
@@ -96,6 +102,16 @@ export var interactions;
         return post(path, body);
     }
     interactions.create = create;
+    /**
+     * List the collection's interaction types (admin), optionally only one app's.
+     * GET /admin/collection/:collectionId/interactions
+     *
+     * @example
+     * ```typescript
+     * let page = await interactions.list('coll_123', { appId: 'my-app', limit: 100 })
+     * while (page.nextCursor) page = await interactions.list('coll_123', { appId: 'my-app', limit: 100, cursor: page.nextCursor })
+     * ```
+     */
     async function list(collectionId, query = {}) {
         const qs = encodeQuery(query);
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/${qs}`;
@@ -121,13 +137,15 @@ export var interactions;
         const { appId, key, permissions, display, data } = input;
         if (!appId || !key)
             throw new Error('interactions.ensureType: appId and key are required');
-        for (let offset = 0;; offset += 200) {
-            const page = await list(collectionId, { appId, limit: 200, offset });
+        let cursor;
+        for (;;) {
+            const page = await list(collectionId, { appId, limit: 200, cursor });
             const found = (page.items || []).find((t) => t.data && t.data.interactionType === key);
             if (found)
                 return found;
-            if (!page.items || page.items.length < 200)
+            if (!page.nextCursor)
                 break;
+            cursor = page.nextCursor;
         }
         return create(collectionId, Object.assign(Object.assign({ appId }, (permissions ? { permissions } : {})), { data: Object.assign(Object.assign(Object.assign({}, (data || {})), { interactionType: key }), (display ? { display } : {})) }));
     }
@@ -154,13 +172,31 @@ export var interactions;
         return post(path, body, headers);
     }
     interactions.publicCountsByOutcome = publicCountsByOutcome;
+    /**
+     * The signed-in person's own interaction events (where the type allows it). One list, no pages:
+     * `limit` in the body says how many.
+     * POST /public/collection/:collectionId/interactions/by-user
+     *
+     * @example
+     * ```typescript
+     * const { items } = await interactions.publicMyInteractions('coll_123', { appId: 'my-app', interactionId: voteTypeId })
+     * ```
+     */
     async function publicMyInteractions(collectionId, body, authToken) {
         const path = `/public/collection/${encodeURIComponent(collectionId)}/interactions/by-user`;
         const headers = authToken ? { AUTHORIZATION: `Bearer ${authToken}` } : undefined;
         return post(path, body, headers);
     }
     interactions.publicMyInteractions = publicMyInteractions;
-    // Public: list interaction definitions (Postgres)
+    /**
+     * Public: list the collection's interaction types, optionally only one app's.
+     * GET /public/collection/:collectionId/interactions
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor } = await interactions.publicList('coll_123', { appId: 'my-app', limit: 50 })
+     * ```
+     */
     async function publicList(collectionId, query = {}) {
         const qs = encodeQuery(query);
         const path = `/public/collection/${encodeURIComponent(collectionId)}/interactions/${qs}`;

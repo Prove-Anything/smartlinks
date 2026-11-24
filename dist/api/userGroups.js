@@ -26,7 +26,15 @@ export var userGroups;
         return request(`/public/collection/${encodeURIComponent(collectionId)}/userGroups/mine`);
     }
     userGroups.mine = mine;
-    /** Every user group in the collection (admin). */
+    /**
+     * Every user group in the collection (admin), in one answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await userGroups.list('coll_123')
+     * items.map((g) => g.name)
+     * ```
+     */
     async function list(collectionId) {
         return request(base(collectionId));
     }
@@ -66,7 +74,15 @@ export var userGroups;
         return del(`${base(collectionId)}/${encodeURIComponent(userGroupId)}`);
     }
     userGroups.remove = remove;
-    /** The people in a user group, with name and email (admin). */
+    /**
+     * The people in a user group, with name and email (admin), in one answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await userGroups.members('coll_123', qc.id)
+     * items // [{ uid, name, email }]
+     * ```
+     */
     async function members(collectionId, userGroupId) {
         return request(`${base(collectionId)}/${encodeURIComponent(userGroupId)}/users`);
     }
@@ -94,11 +110,12 @@ export var userGroups;
      * or removed, each with the admin who did it (`actorId`) and when (`at`). Give `userGroupId` for one
      * user group, `userId` for everything about one person, or neither for the whole collection.
      * Covers the last 30 days unless you give `from` / `to` (at most 400 days). Takes about a second.
+     * It has no further pages (`nextCursor` is always null): ask for more with `limit`, or narrow the dates.
      *
      * @example
      * ```typescript
-     * const who = await userGroups.history('coll_123', { userId: 'uid_1' })
-     * // [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }]
+     * const { items } = await userGroups.history('coll_123', { userId: 'uid_1' })
+     * // items: [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }]
      * ```
      */
     async function history(collectionId, params = {}) {
@@ -116,7 +133,15 @@ export var userGroups;
         return request(`${path}${qs ? `?${qs}` : ''}`);
     }
     userGroups.history = history;
-    /** The user groups one person is in (admin). */
+    /**
+     * The user groups one person is in (admin), in one answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await userGroups.ofUser('coll_123', 'uid_1')
+     * items // [{ id, key, name }]
+     * ```
+     */
     async function ofUser(collectionId, userId) {
         return request(`${base(collectionId)}/of/${encodeURIComponent(userId)}`);
     }

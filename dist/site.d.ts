@@ -1,5 +1,4 @@
 declare global {
-    var __SL_READY__: boolean | undefined;
     var __SMARTLINKS_SITE__: SiteContext | undefined;
 }
 /** The site a page is being served as. */
@@ -30,14 +29,9 @@ type HeaderSource = {
  * @example
  *   // TanStack Start server function / loader
  *   const site = SL.site.fromRequest(getRequest())
- *   const products = await SL.product.list(site!.collectionId)
+ *   const { items: products } = await SL.products.list(site!.collectionId)
  */
 export declare function fromRequest(request: HeaderSource): SiteContext | null;
 /** In the browser: the site the page is served as (the router puts it in the page). Null elsewhere. */
 export declare function current(): SiteContext | null;
-/**
- * @deprecated Sites are server-rendered: crawlers get the finished page from the server, so nothing
- * waits for this signal any more. Kept as a harmless no-op signal for older pages.
- */
-export declare function ready(): void;
 export {};

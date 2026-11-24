@@ -20,7 +20,7 @@ import { serviceAccounts } from "@proveanything/smartlinks"
 // Make one: show the key once, then it's gone.
 const { serviceAccount, key } = await serviceAccounts.create(collectionId, { name: "Warehouse system", access: "Assigner" })
 
-await serviceAccounts.list(collectionId)              // { serviceAccounts: [...], access: ["User", "Reporter", "Assigner", "Admin"] }
+await serviceAccounts.list(collectionId)              // { items: [...], nextCursor: null, access: ["User", "Reporter", "Assigner", "Admin"] }
 await serviceAccounts.update(collectionId, serviceAccount.id, { access: "Reporter" })
 const { key: replacement } = await serviceAccounts.newKey(collectionId, serviceAccount.id)  // the old key stops within a minute
 await serviceAccounts.remove(collectionId, serviceAccount.id)                               // key stops, access removed

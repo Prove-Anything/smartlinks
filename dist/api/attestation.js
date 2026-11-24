@@ -17,7 +17,7 @@ import { request, post, put, del } from "../http.js";
 export var attestation;
 (function (attestation) {
     /**
-     * List all attestations for a proof.
+     * List all attestations for a proof, in one list (no pages): `{ items, nextCursor: null }`.
      * @deprecated Use `attestations.list()` with `subjectType='proof'` instead.
      */
     async function list(collectionId, productId, proofId) {

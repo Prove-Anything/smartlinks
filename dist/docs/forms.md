@@ -23,7 +23,7 @@ The `form` namespace in the core SDK manages **form definitions** — the schema
 import { form } from '@proveanything/smartlinks';
 
 // List all forms in a collection
-const forms = await form.list(collectionId, /* admin= */ true);
+const { items: forms } = await form.list(collectionId, /* admin= */ true);
 
 // Get a specific form
 const myForm = await form.get(collectionId, formId);

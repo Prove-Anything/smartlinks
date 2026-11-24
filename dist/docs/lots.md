@@ -56,26 +56,27 @@ const lot = await lots.create(collectionId, {
   payload: { manufacturedAt: '2026-09-01', custom: { supplierBatchRef: 'ACM-7741' } },
 })
 
-const list       = await lots.list(collectionId, { status: 'open' })
+const { items: list } = await lots.list(collectionId, { status: 'open' })
 const byId        = await lots.get(collectionId, lot.id)
 const byNumber    = await lots.getByNumber(collectionId, 'LOT-2026-09')  // case-insensitive
-const containing  = await lots.list(collectionId, { productId: 'prd_abc' }) // reverse lookup
+const { items: containing } = await lots.list(collectionId, { productId: 'prd_abc' }) // reverse lookup
 const updated     = await lots.update(collectionId, lot.id, { status: 'closed' })
 const { diff }    = await lots.resolve(collectionId, lot.id)               // { added, removed }
-const members     = await lots.listProducts(collectionId, lot.id, { page: 1, limit: 50 })
+const members     = await lots.listProducts(collectionId, lot.id, { limit: 50 })            // { items, nextCursor, count }
+const more        = members.nextCursor && await lots.listProducts(collectionId, lot.id, { limit: 50, cursor: members.nextCursor })
 
 await lots.archive(collectionId, lot.id)                       // live, keeps its number
 await lots.remove(collectionId, lot.id)                        // soft-delete, frees the number
-const withDeleted = await lots.list(collectionId, { includeDeleted: true })
+const { items: withDeleted } = await lots.list(collectionId, { includeDeleted: true })
 const restored    = await lots.restore(collectionId, lot.id)   // undo a soft-delete
 
 // Cross-app reads
-const publicLots  = await lots.publicList(collectionId)
+const { items: publicLots } = await lots.publicList(collectionId)
 ```
 
 Exported types: `Lot`, `LotStatus`, `LotSelector`, `LotPayload`, `LotCreateInput`,
-`LotUpdateInput`, `ListLotsParams`, `ResolveLotResponse`, `ListLotProductsResponse`,
-`LotResolutionResult`.
+`LotUpdateInput`, `ListLotsParams`, `ResolveLotResponse`, `LotProductSummary`,
+`LotResolutionResult`. The lists return `ListResult<Lot>` and `ListResult<LotProductSummary>`.
 
 ---
 

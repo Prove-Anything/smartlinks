@@ -143,14 +143,14 @@ const cask = await containers.create('coll_123', {
 
 ```typescript
 // All active pallets
-const { containers: pallets } = await containers.list('coll_123', {
+const { items: pallets, nextCursor } = await containers.list('coll_123', {
   containerType: 'pallet',
   status:        'active',
   limit:         50,
 })
 
 // Top-level containers only (no parent)
-const { containers: roots } = await containers.list('coll_123', { topLevel: true })
+const { items: roots } = await containers.list('coll_123', { topLevel: true })
 ```
 
 #### Get a container — flat, tree, or with contents
@@ -237,7 +237,7 @@ console.log(`Removed ${result.removedCount} items`)
 
 ```typescript
 // List (excludes soft-deleted and non-public containers)
-const { containers: list } = await containers.publicList('coll_123', {
+const { items: list } = await containers.publicList('coll_123', {
   containerType: 'cask',
 })
 
@@ -278,7 +278,7 @@ DELETE /api/v1/admin/collection/:collectionId/containers/:containerId/items
 | `parentContainerId` | Filter by parent UUID |
 | `topLevel` | `true` to return only root containers |
 | `limit` | Default `100` |
-| `offset` | Default `0` |
+| `cursor` | The `nextCursor` of the page before |
 
 #### GET /containers/:id query parameters
 
@@ -293,8 +293,8 @@ DELETE /api/v1/admin/collection/:collectionId/containers/:containerId/items
 | Parameter | Description |
 |---|---|
 | `history` | `true` to include removed items |
-| `limit` | Default `100` |
-| `offset` | Default `0` |
+| `limit` | With `history`: default `200` |
+| `cursor` | With `history`: the `nextCursor` of the page before |
 
 #### POST /containers/:id/items body
 
@@ -388,7 +388,7 @@ const bottleIntervals = history
   }))
 
 // 3. Get temperature attestations for the fridge
-const { attestations: temps } = await attestations.list(collectionId, {
+const { items: temps } = await attestations.list(collectionId, {
   subjectType:     'container',
   subjectId:       fridgeId,
   attestationType: 'temperature',

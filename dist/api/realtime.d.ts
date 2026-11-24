@@ -1,4 +1,4 @@
-import type { AblyTokenRequest, RealtimeTokenRequest, RealtimeChangeEvent, RealtimeChangeFilter, RealtimeMessage, RealtimeScope } from "../types/realtime.js";
+import type { RealtimeChangeEvent, RealtimeChangeFilter, RealtimeMessage, RealtimeScope } from "../types/realtime.js";
 /**
  * One of your app's declared channels (manifest `realtime.channels`).
  *
@@ -53,13 +53,3 @@ export declare function onStaffChange(scope: RealtimeScope & {
  * Messages for the signed-in person only (e.g. "scan" — a tag they just scanned on another device).
  */
 export declare function onMine(scope: RealtimeScope, onMessage: (msg: RealtimeMessage) => void): () => void;
-/**
- * @deprecated Use `realtime.channel()` / `realtime.onChange()`. Returns a raw Ably TokenRequest for
- * `collection:{collectionId}:*` (subscribe; publish only for the collection's admins).
- */
-export declare function getPublicToken(params: RealtimeTokenRequest): Promise<AblyTokenRequest>;
-/**
- * @deprecated Use `realtime.onMine()`. Returns a raw Ably TokenRequest for `interaction:{userId}`
- * (subscribe only).
- */
-export declare function getAdminToken(): Promise<AblyTokenRequest>;

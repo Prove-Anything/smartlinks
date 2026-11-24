@@ -19,7 +19,7 @@ import { request, post, patch, del } from "../http.js";
  * await knowledge.upsertDocuments('coll_123', src.id, [
  *   { ref: 'kettle', title: 'Kettle manual', body: '## Descaling\n\nDescale monthly…', meta: { productId: 'p1' } },
  * ])
- * const { results } = await knowledge.publicSearch('coll_123', { query: 'how do I descale', filters: { productId: 'p1' } })
+ * const { items } = await knowledge.publicSearch('coll_123', { query: 'how do I descale', filters: { productId: 'p1' } })
  * ```
  */
 export var knowledge;
@@ -27,7 +27,14 @@ export var knowledge;
     const adm = (collectionId) => `/admin/collection/${encodeURIComponent(collectionId)}/knowledge`;
     const pub = (collectionId) => `/public/collection/${encodeURIComponent(collectionId)}/knowledge`;
     const enc = encodeURIComponent;
-    /** Every set, with its source and passage counts (admin). */
+    /**
+     * Every set, with its source and passage counts (admin). One list, no pages.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await knowledge.listSets('coll_123')
+     * ```
+     */
     async function listSets(collectionId) {
         return request(`${adm(collectionId)}/sets`);
     }
@@ -51,7 +58,14 @@ export var knowledge;
         return del(`${adm(collectionId)}/sets/${enc(set)}`);
     }
     knowledge.deleteSet = deleteSet;
-    /** A set's sources, with their status (admin). */
+    /**
+     * A set's sources, with their status (admin). One list, no pages.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await knowledge.listSources('coll_123', 'manuals')
+     * ```
+     */
     async function listSources(collectionId, set) {
         return request(`${adm(collectionId)}/sets/${enc(set)}/sources`);
     }
@@ -84,12 +98,30 @@ export var knowledge;
         return post(`${adm(collectionId)}/sources/${enc(sourceId)}/documents/remove`, { refs });
     }
     knowledge.removeDocuments = removeDocuments;
-    /** Search every set, staff ones included (admin). */
+    /**
+     * Search every set, staff ones included (admin). The matches come back as `items`, best first, with the
+     * `query` and the search `mode` beside them. There are no pages: `k` says how many matches to return.
+     *
+     * @example
+     * ```typescript
+     * const { items, mode } = await knowledge.search('coll_123', { query: 'how do I descale', k: 5 })
+     * ```
+     */
     async function search(collectionId, body) {
         return post(`${adm(collectionId)}/search`, body);
     }
     knowledge.search = search;
-    /** Search from a website, Portal or Hub: public sets, plus customer sets for a signed-in person. */
+    /**
+     * Search from a website, Portal or Hub: public sets, plus customer sets for a signed-in person. The
+     * answer has the same shape as the admin `search`: the matches come back as `items`, best first, with the
+     * `query` and the search `mode` beside them. There are no pages: `k` says how many matches to return.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await knowledge.publicSearch('coll_123', { query: 'how do I descale', k: 5 })
+     * for (const r of items) console.log(r.title, r.heading, r.url, r.snippet)
+     * ```
+     */
     async function publicSearch(collectionId, body) {
         return post(`${pub(collectionId)}/search`, body);
     }

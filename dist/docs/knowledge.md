@@ -57,18 +57,21 @@ failed re-read keeps the previous passages searchable. `knowledge.reindex` reads
 
 ```typescript
 // From a website, Portal or Hub: public sets, plus customer sets for a signed-in person
-const { results } = await knowledge.publicSearch('coll_123', {
+const { items } = await knowledge.publicSearch('coll_123', {
   query: 'how do I descale',
   filters: { productId: 'prod_k200' }, // exact matches on a document's meta
   k: 5,
 })
-for (const r of results) console.log(r.title, r.heading, r.url, r.snippet)
+for (const r of items) console.log(r.title, r.heading, r.url, r.snippet)
 
 // Staff: every set
-await knowledge.search('coll_123', { query: 'refund policy for damaged items' })
+const { items: staffMatches, mode } = await knowledge.search('coll_123', { query: 'refund policy for damaged items' })
 ```
 
-Each result has `title` (the document), `heading` (its section), `url` (a link to the section), `snippet`
+Both searches answer in the same shape: the matches in `items`, best first, with `query` and `mode` beside
+them. There are no pages (`nextCursor` is always `null`): `k` says how many matches to return.
+
+Each match has `title` (the document), `heading` (its section), `url` (a link to the section), `snippet`
 (for a results list) and `text` (the whole passage, for an AI to read). `mode` says how the search ran:
 `hybrid` (meaning and keywords) or `keywords`.
 

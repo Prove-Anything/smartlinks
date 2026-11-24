@@ -20,7 +20,16 @@ function qs(params) {
 }
 export var subscriptions;
 (function (subscriptions) {
-    /** Plans open to new members, each with its prices (monthly, yearly, one-off). */
+    /**
+     * Plans open to new members, each with its prices (monthly, yearly, one-off). All of them in one answer:
+     * `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items: plans } = await subscriptions.plans(collectionId)
+     * plans.map((p) => p.prices.map((price) => subscriptions.describePrice(price)))
+     * ```
+     */
     async function plans(collectionId) {
         return request(`${pub(collectionId)}/plans`);
     }
@@ -31,7 +40,7 @@ export var subscriptions;
      *
      * @example
      * ```typescript
-     * const plans = await subscriptions.plans(collectionId)
+     * const { items: plans } = await subscriptions.plans(collectionId)
      * const yearly = plans[0].prices.find((p) => p.interval === 'year')
      * const { checkoutUrl } = await subscriptions.start(collectionId, {
      *   priceId: yearly.id,
@@ -46,7 +55,16 @@ export var subscriptions;
         return post(`${pub(collectionId)}/start`, input);
     }
     subscriptions.start = start;
-    /** The signed-in member's memberships, newest first (ended ones too: check `live`). */
+    /**
+     * The signed-in member's memberships, newest first (ended ones too: check `live`). All of them in one
+     * answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await subscriptions.mine(collectionId)
+     * const current = items.find((s) => s.live)
+     * ```
+     */
     async function mine(collectionId) {
         return request(`${pub(collectionId)}/mine`);
     }
@@ -88,6 +106,15 @@ export var subscriptions;
     /** The business's side: plans, prices and members (collection admins). Payments use the shop's Stripe set-up. */
     let admin;
     (function (admin) {
+        /**
+         * The collection's plans with their prices, a page at a time. `active: true` for only the ones open to
+         * new members.
+         *
+         * @example
+         * ```typescript
+         * const { items, nextCursor } = await subscriptions.admin.listPlans(collectionId, { active: true })
+         * ```
+         */
         async function listPlans(collectionId, params) {
             return request(`${adm(collectionId)}/plans${qs(params)}`);
         }
@@ -129,7 +156,16 @@ export var subscriptions;
             return del(`${adm(collectionId)}/prices/${encodeURIComponent(priceId)}`);
         }
         admin.removePrice = removePrice;
-        /** Memberships, newest first, with each one's plan. */
+        /**
+         * Memberships, newest first, with each one's plan, a page at a time. `count` is how many match in all.
+         *
+         * @example
+         * ```typescript
+         * let page = await subscriptions.admin.list(collectionId, { live: true, limit: 50 })
+         * page.items // Membership[]
+         * while (page.nextCursor) page = await subscriptions.admin.list(collectionId, { live: true, limit: 50, cursor: page.nextCursor })
+         * ```
+         */
         async function list(collectionId, params) {
             return request(`${adm(collectionId)}/subscriptions${qs(params)}`);
         }

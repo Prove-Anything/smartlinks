@@ -7,12 +7,12 @@ import { request, post, put, del } from "../http.js";
 export var crate;
 (function (crate) {
     /**
-     * List crates for a collection with pagination support.
-     * Returns crates in pages, with support for soft-deleted crates.
+     * List crates for a collection, a page at a time.
+     * Soft-deleted crates are left out unless `includeDeleted` is set.
      *
      * @param collectionId - Identifier of the parent collection
-     * @param params - Optional query parameters for pagination and filtering
-     * @returns Promise resolving to a ListCratesResponse object
+     * @param params - `limit` (default 100, max 100), `cursor`, and `includeDeleted`
+     * @returns Promise resolving to `{ items, nextCursor }`, where `items` are Crate objects
      * @throws ErrorResponse if the request fails
      *
      * @example
@@ -22,10 +22,10 @@ export var crate;
      * console.log(`Found ${page1.items.length} crates`)
      *
      * // Get next page
-     * if (page1.hasMore) {
+     * if (page1.nextCursor) {
      *   const page2 = await crate.list('coll_123', {
      *     limit: 100,
-     *     startAfter: page1.lastId
+     *     cursor: page1.nextCursor
      *   })
      * }
      *
@@ -39,8 +39,8 @@ export var crate;
         const queryParams = new URLSearchParams();
         if (params === null || params === void 0 ? void 0 : params.limit)
             queryParams.append('limit', params.limit.toString());
-        if (params === null || params === void 0 ? void 0 : params.startAfter)
-            queryParams.append('startAfter', params.startAfter);
+        if (params === null || params === void 0 ? void 0 : params.cursor)
+            queryParams.append('cursor', params.cursor);
         if (params === null || params === void 0 ? void 0 : params.includeDeleted)
             queryParams.append('includeDeleted', 'true');
         const query = queryParams.toString();

@@ -14,8 +14,16 @@ export var journeysAnalytics;
     journeysAnalytics.stats = stats;
     /**
      * POST /admin/collection/:collectionId/journeys.analytics/:journeyId/steps/:stepId/recipients
-     * Returns recipient IDs for a given journey step.
+     * Returns recipient IDs for a given journey step, as a list of ids. One list, no pages: `limit` in
+     * the body says how many.
      * For completed/pending, `interactionId` is required; outcome defaults to 'success'.
+     *
+     * @example
+     * ```typescript
+     * const { items: contactIds } = await journeysAnalytics.recipients('coll_123', journeyId, stepId, {
+     *   status: 'completed', interactionId, idField: 'contactId', limit: 1000,
+     * })
+     * ```
      */
     async function recipients(collectionId, journeyId, stepId, body = {}) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/journeys.analytics/${encodeURIComponent(journeyId)}/steps/${encodeURIComponent(stepId)}/recipients`;

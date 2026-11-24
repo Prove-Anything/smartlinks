@@ -75,8 +75,15 @@ var aiInternal;
         }
         agent.run = run;
         /**
-         * List the tools the agent can use (optionally scoped by capability / name).
+         * List the tools the agent can use (optionally scoped by capability / name). Returns
+         * `{ items, nextCursor }`: the tools are in `items`. The list is not paged, so `nextCursor` is
+         * always `null`.
          * GET /admin/collection/:collectionId/ai/agent/tools
+         *
+         * @example
+         * ```typescript
+         * const { items: tools } = await ai.agent.listTools('coll_123', { allowCapabilities: 'read' })
+         * ```
          */
         async function listTools(collectionId, query = {}) {
             const search = new URLSearchParams();
@@ -106,7 +113,16 @@ var aiInternal;
     // ============================================================================
     let skills;
     (function (skills) {
-        /** List the skills apps can invoke (name, description, input/output schema). */
+        /**
+         * List the skills apps can invoke (name, description, input/output schema). Returns
+         * `{ items, nextCursor }`: the skills are in `items`. The list is not paged, so `nextCursor` is
+         * always `null`.
+         *
+         * @example
+         * ```typescript
+         * const { items: skills } = await ai.skills.list('coll_123')
+         * ```
+         */
         async function list(collectionId) {
             return request(`/admin/collection/${encodeURIComponent(collectionId)}/ai/skills`);
         }
@@ -415,17 +431,6 @@ var aiInternal;
     // Legacy Methods (backwards compatibility)
     // ============================================================================
     /**
-     * Generate text/content via AI (admin)
-     * @deprecated Use ai.chat.completions.create() instead
-     */
-    async function generateContent(collectionId, params, admin = true) {
-        const base = admin ? '/admin' : '/public';
-        const path = `${base}/collection/${encodeURIComponent(collectionId)}/ai/generateContent`;
-        // Normalised envelope — text is at candidates[0].content.parts[0].text.
-        return post(path, params);
-    }
-    aiInternal.generateContent = generateContent;
-    /**
      * Generate an image via AI (admin)
      */
     async function generateImage(collectionId, params) {
@@ -570,7 +575,6 @@ export const ai = {
         run: aiInternal.skills.run,
     },
     catalog: aiInternal.catalog,
-    generateContent: aiInternal.generateContent,
     generateImage: aiInternal.generateImage,
     searchPhotos: aiInternal.searchPhotos,
     uploadFile: aiInternal.uploadFile,

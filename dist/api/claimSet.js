@@ -19,10 +19,16 @@ function rangesBase(scope, claimSetId) {
 export var claimSet;
 (function (claimSet) {
     /**
-     * Get all claim sets.
+     * Get all claim sets. Returns `{ items, nextCursor }`: the claim sets are in `items`. The list is not
+     * paged, so `nextCursor` is always `null`.
      * When collectionId is provided, returns claim sets for that collection.
      * When omitted, returns all claim sets owned by the authenticated user.
      * @param collectionId – Optional collection identifier
+     *
+     * @example
+     * ```typescript
+     * const { items } = await claimSet.getAll('coll_123')
+     * ```
      */
     async function getAll(collectionId) {
         return request(base(collectionId));
@@ -68,7 +74,9 @@ export var claimSet;
     }
     claimSet.remove = remove;
     /**
-     * Get all tags for a claim set (including data).
+     * Get all tags for a claim set (including data). This is not one of the SDK 3 lists: the answer is the
+     * claim set itself with its tags inside. Without a collectionId (your own claim set) they are in `tags`;
+     * with one they are in `codes` (the tag ids), or in `codeMap` (id → key) for a secure set.
      * @param claimSetId – The claim set identifier
      * @param collectionId – Optional collection identifier; omit for user-scoped access
      */
@@ -77,9 +85,17 @@ export var claimSet;
     }
     claimSet.getAllTags = getAllTags;
     /**
-     * Get assigned tags for a claim set — tags soft-assigned to a collection or product.
+     * Get assigned tags for a claim set — tags soft-assigned to a collection or product. Returns
+     * `{ items, nextCursor }` with the claim set's own fields (`id`, `name`, …) beside them: the tags are
+     * in `items`. The list is not paged, so `nextCursor` is always `null`.
      * @param claimSetId – The claim set identifier
      * @param collectionId – Optional collection identifier; omit for user-scoped access
+     *
+     * @example
+     * ```typescript
+     * const { items, name } = await claimSet.getAssignedTags('12', 'coll_123')
+     * console.log(`${items.length} tags of ${name} are assigned`)
+     * ```
      */
     async function getAssignedTags(claimSetId, collectionId) {
         return request(`${base(collectionId)}/${encodeURIComponent(claimSetId)}/assignedTags`);
@@ -165,7 +181,15 @@ export var claimSet;
     // export, import and program; assigners assign. Responses are never cached (they carry keys).
     let ranges;
     (function (ranges) {
-        /** The ranges in a set, lowest index first. */
+        /**
+         * The ranges in a set, lowest index first. Returns `{ items, nextCursor }`: the ranges are in `items`.
+         * The list is not paged, so `nextCursor` is always `null`.
+         *
+         * @example
+         * ```typescript
+         * const { items: ranges } = await claimSet.ranges.list({ collectionId: 'coll_123' }, '12')
+         * ```
+         */
         async function list(scope, claimSetId) {
             return request(rangesBase(scope, claimSetId));
         }
@@ -205,13 +229,25 @@ export var claimSet;
             return del(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(groupId)}/members/${encodeURIComponent(code)}`);
         }
         ranges.removeMember = removeMember;
-        /** The range's tags in index order, a page at a time (keys: owners/admins only). */
+        /**
+         * The range's tags in index order, a page at a time (200 unless you give a `limit`, at most 1000).
+         * Returns `{ items, nextCursor }`: pass `nextCursor` back as `cursor` for the next page; `null` means
+         * that was the last one. `keys: true` includes each tag's key (owners and admins only).
+         *
+         * @example
+         * ```typescript
+         * let page = await claimSet.ranges.tags(scope, '12', rangeId, { limit: 500 })
+         * while (page.nextCursor) {
+         *   page = await claimSet.ranges.tags(scope, '12', rangeId, { limit: 500, cursor: page.nextCursor })
+         * }
+         * ```
+         */
         async function tags(scope, claimSetId, rangeId, options = {}) {
             const q = new URLSearchParams();
-            if (options.from !== undefined)
-                q.set('from', String(options.from));
             if (options.limit !== undefined)
                 q.set('limit', String(options.limit));
+            if (options.cursor)
+                q.set('cursor', options.cursor);
             if (options.keys)
                 q.set('keys', '1');
             const qs = q.toString();

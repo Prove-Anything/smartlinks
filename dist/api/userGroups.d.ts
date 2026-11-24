@@ -1,4 +1,5 @@
 import type { UserGroup, CreateUserGroupRequest, UpdateUserGroupRequest, UserGroupMember, AddUserGroupMemberRequest, UserGroupRef, MyUserGroups, UserGroupChange, UserGroupHistoryParams } from "../types/userGroups.js";
+import type { ListResult } from "../types/list.js";
 /**
  * User groups: named lists of people in a collection, used to say who may do what.
  *
@@ -21,8 +22,16 @@ export declare namespace userGroups {
      * ```
      */
     function mine(collectionId: string): Promise<MyUserGroups>;
-    /** Every user group in the collection (admin). */
-    function list(collectionId: string): Promise<UserGroup[]>;
+    /**
+     * Every user group in the collection (admin), in one answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await userGroups.list('coll_123')
+     * items.map((g) => g.name)
+     * ```
+     */
+    function list(collectionId: string): Promise<ListResult<UserGroup>>;
     /** One user group (admin). */
     function get(collectionId: string, userGroupId: string): Promise<UserGroup>;
     /**
@@ -46,8 +55,16 @@ export declare namespace userGroups {
     function update(collectionId: string, userGroupId: string, data: UpdateUserGroupRequest): Promise<UserGroup>;
     /** Delete a user group (admin). Its members lose whatever it allowed. */
     function remove(collectionId: string, userGroupId: string): Promise<UserGroup>;
-    /** The people in a user group, with name and email (admin). */
-    function members(collectionId: string, userGroupId: string): Promise<UserGroupMember[]>;
+    /**
+     * The people in a user group, with name and email (admin), in one answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await userGroups.members('coll_123', qc.id)
+     * items // [{ uid, name, email }]
+     * ```
+     */
+    function members(collectionId: string, userGroupId: string): Promise<ListResult<UserGroupMember>>;
     /**
      * Add one person (admin), by user id or by email. By email, the person is found in the collection's
      * logins or added to them (no welcome email is sent). Adding someone who is already in changes nothing.
@@ -65,14 +82,23 @@ export declare namespace userGroups {
      * or removed, each with the admin who did it (`actorId`) and when (`at`). Give `userGroupId` for one
      * user group, `userId` for everything about one person, or neither for the whole collection.
      * Covers the last 30 days unless you give `from` / `to` (at most 400 days). Takes about a second.
+     * It has no further pages (`nextCursor` is always null): ask for more with `limit`, or narrow the dates.
      *
      * @example
      * ```typescript
-     * const who = await userGroups.history('coll_123', { userId: 'uid_1' })
-     * // [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }]
+     * const { items } = await userGroups.history('coll_123', { userId: 'uid_1' })
+     * // items: [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }]
      * ```
      */
-    function history(collectionId: string, params?: UserGroupHistoryParams): Promise<UserGroupChange[]>;
-    /** The user groups one person is in (admin). */
-    function ofUser(collectionId: string, userId: string): Promise<UserGroupRef[]>;
+    function history(collectionId: string, params?: UserGroupHistoryParams): Promise<ListResult<UserGroupChange>>;
+    /**
+     * The user groups one person is in (admin), in one answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await userGroups.ofUser('coll_123', 'uid_1')
+     * items // [{ id, key, name }]
+     * ```
+     */
+    function ofUser(collectionId: string, userId: string): Promise<ListResult<UserGroupRef>>;
 }

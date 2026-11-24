@@ -1,4 +1,5 @@
 import type { WalletPass, WalletPassRef, WalletPassSummary, WalletPassContent, IssueWalletPassRequest } from "../types/wallet.js";
+import type { ListResult } from "../types/list.js";
 /**
  * Wallet passes: an event ticket, booking, membership card or loyalty card in the person's Apple Wallet or
  * Google Wallet, branded from the site (docs/wallet-passes.md).
@@ -27,27 +28,39 @@ export declare namespace wallet {
         ok: true;
         pass: WalletPassSummary;
     }>;
-    /** The signed-in person's active passes on this site, with their links. */
-    function mine(collectionId: string): Promise<{
-        ok: true;
-        passes: WalletPassSummary[];
-    }>;
+    /**
+     * The signed-in person's active passes on this site, with their links. All of them in one answer:
+     * `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await wallet.mine('coll_123')
+     * items.map((pass) => pass.links.google)
+     * ```
+     */
+    function mine(collectionId: string): Promise<ListResult<WalletPassSummary>>;
     /** Which wallets are switched on (admin). */
     function status(collectionId: string): Promise<{
         ok: true;
         google: boolean;
         apple: boolean;
     }>;
-    /** Passes for one thing (`refType` + `refId`) or one person (`contactId`) (admin). */
+    /**
+     * Passes for one thing (`refType` + `refId`) or one person (`contactId`) (admin). All of them in one
+     * answer: `nextCursor` is always null. Voided passes are left out unless `includeVoided` is true.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await wallet.list('coll_123', { refType: 'event', refId: eventId })
+     * items // WalletPass[]
+     * ```
+     */
     function list(collectionId: string, query: {
         refType?: string;
         refId?: string;
         contactId?: string;
         includeVoided?: boolean;
-    }): Promise<{
-        ok: true;
-        passes: WalletPass[];
-    }>;
+    }): Promise<ListResult<WalletPass>>;
     /** One pass, with its links (admin). */
     function get(collectionId: string, passId: string): Promise<{
         ok: true;

@@ -1,4 +1,5 @@
 import type { AttestationResponse, AttestationCreateRequest, AttestationUpdateRequest } from "../types/attestation.js";
+import type { ListResult } from "../types/list.js";
 /**
  * @deprecated Legacy Firestore-backed attestation API.
  *
@@ -16,10 +17,10 @@ import type { AttestationResponse, AttestationCreateRequest, AttestationUpdateRe
  */
 export declare namespace attestation {
     /**
-     * List all attestations for a proof.
+     * List all attestations for a proof, in one list (no pages): `{ items, nextCursor: null }`.
      * @deprecated Use `attestations.list()` with `subjectType='proof'` instead.
      */
-    function list(collectionId: string, productId: string, proofId: string): Promise<AttestationResponse[]>;
+    function list(collectionId: string, productId: string, proofId: string): Promise<ListResult<AttestationResponse>>;
     /**
      * Get a single attestation by ID.
      * @deprecated Use `attestations.list()` with `subjectType='proof'` and filter by ID instead.

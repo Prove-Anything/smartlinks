@@ -60,6 +60,48 @@ export default defineConfig({
 })
 ```
 
+## Contract v8: SDK 3, beside SDK 2
+
+SDK 3 changes what the SDK's functions return and drops the deprecated calls
+([upgrading-to-3.md](upgrading-to-3.md)), so a host can't swap it in under apps built for SDK 2. The
+contract version is what keeps both working:
+
+| The app's manifest says | `@proveanything/smartlinks` is | Window global | The `SL` prop |
+|---|---|---|---|
+| `sharedDependencies: "v7"` (or older, or nothing) | SDK 2 | `window.SL` | SDK 2 |
+| `sharedDependencies: "v8"` | SDK 3 | `window.SL3` | SDK 3 |
+
+**For an app:** build on SDK 3 and take your externals and globals from `SHARED_DEPENDENCY_SPECIFIERS` /
+`SHARED_DEPENDENCIES` as before, and say `"sharedDependencies": "v8"` in the manifest
+(`smartlinks-upgrade` sets it). The host then gives you SDK 3 wherever you get the SDK from: the import,
+the window global, the `SL` prop. Keep building both formats (`moduleFormat: "dual"`): for now a host
+loads a v8 app's UMD build, because a page has one import map and it says `@proveanything/smartlinks`
+is SDK 2.
+
+**For a host:**
+
+- **Decide per app, from its manifest.** `meta.sharedDependencies` of `v8` or later means SDK 3;
+  anything else means SDK 2. An app never gets a mixture.
+- **Load SDK 3 only when a v8 app is about to load.** It is a second download, and most pages won't need it.
+- **One sign-in.** Start the SDK 3 copy so that it asks the page's own SDK for the sign-in on every request:
+
+  ```ts
+  import * as SL from '@proveanything/smartlinks'            // the host's own: SDK 2
+  const SL3 = await import('@proveanything/smartlinks-v3')    // SDK 3, installed under a second name
+  SL3.initializeApi({ baseURL: SL.getBaseURL()!, signInFrom: () => SL.getApiHeaders() })
+  window.SL3 = SL3
+  ```
+
+  Nothing else needs keeping in step: signing in, signing out, a grant token and an API key all reach
+  SDK 3 through that one function, and it drops its cached answers when the sign-in changes.
+- **Give the app SDK 3 everywhere it looks**, before its bundle runs: `window.SL3` (a UMD build's
+  global), `require('@proveanything/smartlinks')` if you evaluate bundles with a require of your own,
+  and the `SL` prop.
+- **Everything else is one copy.** React, the router, Radix and the rest are the same instances for v7
+  and v8 apps. So is the sign-in UI (`@proveanything/smartlinks-auth-ui`, `window.SmartlinksAuthUI`):
+  its provider and hooks share a React context, so the page has one, on the host's own SDK.
+- **SDK 2 stays** until no released app still declares v7 (see *Version retention* below).
+
 ## Host-provided globals (build against versions ≤ these)
 
 > **The SmartLinks packages on the host are always the latest published.** `@proveanything/smartlinks`
@@ -168,7 +210,7 @@ never drift:
 
 ```ts
 import {
-  SHARED_DEPENDENCY_CONTRACT_VERSION, // 'v7'
+  SHARED_DEPENDENCY_CONTRACT_VERSION, // 'v8' in SDK 3 ('v7' in SDK 2)
   SHARED_DEPENDENCIES,                // [{ specifier, globalName, minVersion, importMapPath }, …] (29)
   SHARED_DEPENDENCY_SPECIFIERS,       // bare specifiers — drop straight into a bundler `external` list
   getHostSharedDependencies,          // what the live host advertises at runtime, or null

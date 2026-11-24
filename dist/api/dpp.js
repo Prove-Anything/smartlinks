@@ -33,10 +33,18 @@ function query(q) {
 }
 export var dpp;
 (function (dpp) {
-    /** What passports can be made: product groups, their kinds, and each view's fields and required fields. GET /dpp/groups */
+    /**
+     * What passports can be made: product groups, their kinds, and each view's fields and required fields.
+     * All of them in one answer (`nextCursor` is always null). GET /dpp/groups
+     *
+     * @example
+     * ```typescript
+     * const { items } = await dpp.groups(collectionId)
+     * items.map(g => g.productGroup) // ["BATTERIES", …]
+     * ```
+     */
     async function groups(collectionId) {
-        const out = await request(`${base(collectionId)}/groups`);
-        return out.groups;
+        return request(`${base(collectionId)}/groups`);
     }
     dpp.groups = groups;
     /**
@@ -60,10 +68,18 @@ export var dpp;
     /** The brand's EU registry connection (one per environment). Managed by the collection's admins. */
     let registry;
     (function (registry) {
-        /** Both environments, each with `nextStep` (what's left to connect). GET /dpp/registry */
+        /**
+         * Both environments, each with `nextStep` (what's left to connect). All of them in one answer
+         * (`nextCursor` is always null). GET /dpp/registry
+         *
+         * @example
+         * ```typescript
+         * const { items } = await dpp.registry.list(collectionId)
+         * const acc = items.find(r => r.environment === 'acc')
+         * ```
+         */
         async function list(collectionId) {
-            const out = await request(`${base(collectionId)}/registry`);
-            return out.registries;
+            return request(`${base(collectionId)}/registry`);
         }
         registry.list = list;
         /** One environment. GET /dpp/registry/:env */
@@ -106,10 +122,21 @@ export var dpp;
     /** The collection's passports. */
     let passports;
     (function (passports) {
-        /** GET /dpp/passports */
+        /**
+         * The collection's passports, a page at a time: all of them, or those of one product, batch or item,
+         * or with one status. GET /dpp/passports
+         *
+         * @example
+         * ```typescript
+         * let page = await dpp.passports.list(collectionId, { productId, status: 'active', limit: 100 })
+         * page.items // DppPassport[]
+         * while (page.nextCursor) {
+         *   page = await dpp.passports.list(collectionId, { productId, status: 'active', limit: 100, cursor: page.nextCursor })
+         * }
+         * ```
+         */
         async function list(collectionId, q = {}) {
-            const out = await request(`${base(collectionId)}/passports${query(q)}`);
-            return out.passports;
+            return request(`${base(collectionId)}/passports${query(q)}`);
         }
         passports.list = list;
         /** One passport, with `check` (what it's still missing) and its `url`. GET /dpp/passports/:id */
@@ -156,10 +183,18 @@ export var dpp;
             return post(`${base(collectionId)}/passports/bulk${query({ replace: opts.merge ? "false" : undefined })}`, { passports: items });
         }
         passports.upsertMany = upsertMany;
-        /** Its versions, newest first; read one with `dpp.read(collectionId, id, { version })`. GET /dpp/passports/:id/versions */
+        /**
+         * Its versions, newest first, all in one answer (`nextCursor` is always null); read one with
+         * `dpp.read(collectionId, id, { version })`. GET /dpp/passports/:id/versions
+         *
+         * @example
+         * ```typescript
+         * const { items } = await dpp.passports.versions(collectionId, passportId)
+         * const latest = items[0].version
+         * ```
+         */
         async function versions(collectionId, passportId) {
-            const out = await request(`${base(collectionId)}/passports/${enc(passportId)}/versions`);
-            return out.versions;
+            return request(`${base(collectionId)}/passports/${enc(passportId)}/versions`);
         }
         passports.versions = versions;
         /** No longer valid: stays at its address, marked invalid (the registry keeps its record). POST /dpp/passports/:id/withdraw */
@@ -178,10 +213,17 @@ export var dpp;
     /** Registry requests and their outcomes. */
     let tasks;
     (function (tasks) {
-        /** Requests sent to one environment, newest first. GET /dpp/registry/:env/tasks */
+        /**
+         * Requests sent to one environment, newest first, all in one answer (`nextCursor` is always null).
+         * GET /dpp/registry/:env/tasks
+         *
+         * @example
+         * ```typescript
+         * const { items } = await dpp.tasks.list(collectionId, 'acc')
+         * ```
+         */
         async function list(collectionId, env) {
-            const out = await request(`${base(collectionId)}/registry/${enc(env)}/tasks`);
-            return out.tasks;
+            return request(`${base(collectionId)}/registry/${enc(env)}/tasks`);
         }
         tasks.list = list;
         /** Ask the registry how a request went and record it on its passports. POST /dpp/registry/:env/tasks/:taskId/refresh */

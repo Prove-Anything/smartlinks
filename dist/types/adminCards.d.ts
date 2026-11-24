@@ -11,6 +11,7 @@
  * recomputed when something it declares in `refresh.on` changed (or `refresh.maxAge` passed), in the
  * background, within a time and size budget — so a dashboard never waits on 20 functions.
  */
+import type { ListResult } from './list.js';
 /** Grid widths on a 12-column dashboard: small 3, medium 6, wide 8, full 12. One column on phones. */
 export type AdminCardSize = 'small' | 'medium' | 'wide' | 'full';
 /**
@@ -172,9 +173,11 @@ export interface StudioHomeLayout {
         hidden?: boolean;
     }>;
 }
-/** `adminCards.list` → the whole dashboard in one call. */
-export interface AdminCardsResponse {
-    cards: AdminCard[];
+/**
+ * `adminCards.list` → the whole dashboard in one call: the cards to show are in `items`, in display
+ * order. It is not paged, so `nextCursor` is always `null`.
+ */
+export interface AdminCardsResponse extends ListResult<AdminCard> {
     /** Cards the layout hides (for the "add a card" picker). */
     hidden: AdminCard[];
     layout: StudioHomeLayout | null;

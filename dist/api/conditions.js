@@ -11,7 +11,16 @@ export var conditions;
 (function (conditions) {
     const pub = (collectionId) => `/public/collection/${encodeURIComponent(collectionId)}/condition`;
     const adm = (collectionId) => `/admin/collection/${encodeURIComponent(collectionId)}/condition`;
-    /** Every saved condition in the collection (removed ones left out). */
+    /**
+     * Every saved condition in the collection (removed ones left out). All of them come back in one
+     * answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await conditions.list('coll_123')
+     * items.map(c => c.title) // ["UK only", "In the stadium"]
+     * ```
+     */
     async function list(collectionId, admin = false) {
         return request(admin ? adm(collectionId) : pub(collectionId));
     }

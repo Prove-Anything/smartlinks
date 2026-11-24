@@ -234,7 +234,7 @@ const results = await SL.interactions.publicCountsByOutcome(
 Flexible admin query for raw interaction events:
 
 ```typescript
-const events = await SL.interactions.query(collectionId, {
+const { items: events } = await SL.interactions.query(collectionId, {
   appId: 'my-app',
   interactionId: interactionIds.vote,
   userId: 'user_abc123',      // Filter by user
@@ -253,7 +253,7 @@ const events = await SL.interactions.query(collectionId, {
 Lets authenticated users see their own events:
 
 ```typescript
-const myEvents = await SL.interactions.publicMyInteractions(
+const { items: myEvents } = await SL.interactions.publicMyInteractions(
   collectionId,
   { appId: 'my-app', interactionId: interactionIds.vote },
   authToken
@@ -508,7 +508,6 @@ import type {
   OutcomeCount,                   // { outcome: string | null; count: number }
   InteractionPermissions,         // Full permissions config shape
   InteractionTypeRecord,          // Definition record from create() / get()
-  InteractionTypeList,            // { items, limit, offset }
   CreateInteractionTypeBody,      // Body for create() — the server mints the id
   EnsureInteractionTypeInput,     // Input for ensureType() — { appId, key, permissions?, display?, data? }
   UpdateInteractionTypeBody,      // Body for update()

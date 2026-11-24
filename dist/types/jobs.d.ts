@@ -1,3 +1,4 @@
+import type { ListOptions } from './list.js';
 export type JobStatus = 'queued' | 'running' | 'errored';
 export interface Job {
     id: number;
@@ -13,18 +14,12 @@ export interface Job {
     queueName: string | null;
     status: JobStatus;
 }
-export interface ListJobsQuery {
+/** Options for jobs.listJobs(): `limit` and `cursor` page the list. */
+export interface ListJobsQuery extends ListOptions {
     state?: JobStatus;
     task?: string;
-    limit?: number;
-    offset?: number;
     from?: string;
     to?: string;
-}
-export interface JobsPage {
-    items: Job[];
-    limit: number;
-    offset: number;
 }
 export interface EnqueueAsyncJobRequest {
     task: string;

@@ -30,6 +30,8 @@ export { normaliseAdminCardPayload, ADMIN_CARD_MAX_BYTES } from './adminCardPayl
 // Shared dependency contract (host↔app) — one source of truth for externalized deps
 export { SHARED_DEPENDENCY_CONTRACT_VERSION, SHARED_DEPENDENCIES, SHARED_DEPENDENCY_SPECIFIERS, importMapPathFor, getHostSharedDependencies, } from './shared-dependencies.js';
 // API versions: the contract this SDK release is built for, and the headers that carry it (docs/api-versions.md)
+// Walking lists: every list returns { items, nextCursor, count? } (docs/lists.md)
+export { each, all } from './list.js';
 export { API_VERSION, SDK_VERSION, API_VERSION_HEADER, SDK_HEADER, APP_HEADER, CLIENT_HEADER_NAMES } from './apiVersion.js';
 export { AI_TOOL_NAMES, BUILTIN_AI_TOOLS, getBuiltinAiTool } from './ai-tools.js';
 export { HostCapabilityUnavailableError, HostPermissionDeniedError, HostTimeoutError, HostCancelledError, } from './mobile-admin/errors.js';

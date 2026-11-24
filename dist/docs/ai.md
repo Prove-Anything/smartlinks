@@ -103,7 +103,7 @@ import { initializeApi, knowledge } from '@proveanything/smartlinks';
 
 initializeApi({ baseURL: 'https://smartlinks.app/api/v1' });
 
-const { results } = await knowledge.publicSearch('my-collection', {
+const { items: results } = await knowledge.publicSearch('my-collection', {
   query: 'How do I descale this machine?',
   filters: { productId: 'coffee-maker-deluxe' },
   k: 3
@@ -155,7 +155,7 @@ Public endpoints don't require an API key. Anonymous callers see public content 
 
 ```typescript
 // No API key needed
-const { results } = await knowledge.publicSearch('my-collection', {
+const { items: results } = await knowledge.publicSearch('my-collection', {
   query: 'How do I clean this?'
 });
 ```
@@ -714,7 +714,7 @@ await knowledge.upsertDocuments('my-collection', source.id, [
 ]);
 
 // Check progress: status is 'pending' | 'indexing' | 'ready' | 'failed'
-const sources = await knowledge.listSources('my-collection', 'manuals');
+const { items: sources } = await knowledge.listSources('my-collection', 'manuals');
 ```
 
 ### Search from a website, Portal or Hub
@@ -722,7 +722,7 @@ const sources = await knowledge.listSources('my-collection', 'manuals');
 `knowledge.publicSearch` needs no API key. Anyone sees `public` sets; a signed-in person sees `customer` sets too. `staff` sets are never searchable here.
 
 ```typescript
-const { results, mode } = await knowledge.publicSearch('my-collection', {
+const { items: results, mode } = await knowledge.publicSearch('my-collection', {
   query: 'How do I descale my coffee maker?',
   sets: ['manuals'],                              // optional: ids or keys
   filters: { productId: 'coffee-maker-deluxe' },  // optional: exact matches on a document's meta
@@ -737,7 +737,7 @@ for (const r of results) {
 }
 ```
 
-`mode` says how the search ran: `hybrid` (meaning and keywords), `keywords`, or `none` (there were no sets to search). Admins can search every set, staff ones included, with `knowledge.search(collectionId, { query })`.
+`mode` says how the search ran: `hybrid` (meaning and keywords), `keywords`, or `none` (there were no sets to search). Admins can search every set, staff ones included, with `knowledge.search(collectionId, { query })`. Both searches return their matches as `items`, with `query` and `mode` beside them.
 
 ### AI-written answers (admin agent with `knowledge.search`)
 
@@ -801,7 +801,7 @@ if (ai.voice.isSupported()) {
   console.log('User said:', question);
   
   // Find the best passage in the manuals
-  const { results } = await knowledge.publicSearch('my-collection', {
+  const { items: results } = await knowledge.publicSearch('my-collection', {
     query: question,
     filters: { productId: 'coffee-maker-deluxe' },
     k: 1
@@ -826,7 +826,7 @@ class ProductVoiceAssistant {
     const question = await ai.voice.listen();
 
     // Find the best passage
-    const { results } = await knowledge.publicSearch(this.collectionId, {
+    const { items: results } = await knowledge.publicSearch(this.collectionId, {
       query: question,
       filters: { productId: this.productId },
       k: 1
@@ -1016,7 +1016,7 @@ Fill the basket, tamp firmly, press the espresso button...',
 
 // Website, any time: show the matching sections
 async function answerQuestion(collectionId: string, question: string) {
-  const { results } = await knowledge.publicSearch(collectionId, {
+  const { items: results } = await knowledge.publicSearch(collectionId, {
     query: question,
     filters: { productId: 'coffee-maker-deluxe' },
     k: 3
@@ -1090,7 +1090,7 @@ export function useProductHelp(collectionId: string, productId: string) {
     setError(null);
     try {
       const res = await knowledge.publicSearch(collectionId, { query, filters: { productId }, k: 3 });
-      setResults(res.results);
+      setResults(res.items);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -1343,7 +1343,7 @@ async function voiceAssistant() {
     const question = await ai.voice.listen();
 
     showStatus('Searching...');
-    const { results } = await knowledge.publicSearch('my-collection', { query: question, k: 1 });
+    const { items: results } = await knowledge.publicSearch('my-collection', { query: question, k: 1 });
     const answer = results[0]?.text ?? "Sorry, I couldn't find that.";
 
     showStatus('Speaking...');
@@ -1584,7 +1584,7 @@ return {
 For the `rag` strategy to find anything, the product's documents must be in a knowledge set the visitor can read (`public`, or `customer` for signed-in people), with `productId` in each document's `meta`. A search scoped by the hint looks like this:
 
 ```typescript
-const { results } = await SL.knowledge.publicSearch(collectionId, {
+const { items: results } = await SL.knowledge.publicSearch(collectionId, {
   query: userQuestion,
   filters: { productId: ragHint.productId },
 });

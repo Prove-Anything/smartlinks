@@ -54,16 +54,3 @@ export function evaluateConditions(conditions, showWhen, fieldValues) {
         ? results.some(Boolean)
         : results.every(Boolean);
 }
-/**
- * @deprecated Use evaluateConditions (plural) instead.
- * Shim for code using the old single-condition API.
- */
-export function evaluateCondition(condition, fieldValues) {
-    var _a;
-    if (!condition)
-        return true;
-    const targetFieldId = (_a = condition.dependsOn) !== null && _a !== void 0 ? _a : condition.targetFieldId;
-    if (!targetFieldId)
-        return true;
-    return evaluateConditions([{ targetFieldId, operator: condition.operator, value: condition.value }], 'all', fieldValues);
-}

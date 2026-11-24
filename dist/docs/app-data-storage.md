@@ -73,8 +73,8 @@ await userAppData.deleteConfig('allergy-tracker');
 #### Multiple Keyed Data Items (Recommended)
 ```typescript
 // Get all user's garden beds
-const beds = await userAppData.list('garden-planner');
-// Returns: [{ id: 'bed-1', name: 'Vegetables', ... }, { id: 'bed-2', ... }]
+const { items: beds } = await userAppData.list('garden-planner');
+// beds: [{ id: 'bed-1', name: 'Vegetables', ... }, { id: 'bed-2', ... }]
 
 // Get specific bed
 const bed = await userAppData.get('garden-planner', 'bed-1');
@@ -192,7 +192,7 @@ await appConfiguration.setConfig({
 });
 
 // Get product-level data items
-const items = await appConfiguration.getData({ 
+const { items } = await appConfiguration.getData({ 
   appId: 'product-docs', 
   collectionId: 'my-collection',
   productId: 'product-123'

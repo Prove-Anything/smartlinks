@@ -30,7 +30,16 @@ export var wallet;
         return post(`${pub(collectionId)}/links`, { ref });
     }
     wallet.addLinks = addLinks;
-    /** The signed-in person's active passes on this site, with their links. */
+    /**
+     * The signed-in person's active passes on this site, with their links. All of them in one answer:
+     * `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await wallet.mine('coll_123')
+     * items.map((pass) => pass.links.google)
+     * ```
+     */
     async function mine(collectionId) {
         return request(`${pub(collectionId)}/mine`);
     }
@@ -40,7 +49,16 @@ export var wallet;
         return request(`${adm(collectionId)}/status`);
     }
     wallet.status = status;
-    /** Passes for one thing (`refType` + `refId`) or one person (`contactId`) (admin). */
+    /**
+     * Passes for one thing (`refType` + `refId`) or one person (`contactId`) (admin). All of them in one
+     * answer: `nextCursor` is always null. Voided passes are left out unless `includeVoided` is true.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await wallet.list('coll_123', { refType: 'event', refId: eventId })
+     * items // WalletPass[]
+     * ```
+     */
     async function list(collectionId, query) {
         const qs = new URLSearchParams(Object.entries(query).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)])).toString();
         return request(`${adm(collectionId)}/passes${qs ? `?${qs}` : ""}`);

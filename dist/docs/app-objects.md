@@ -137,11 +137,11 @@ await app.records.create(collectionId, appId, {
 
 ## Paginated List Responses
 
-Every `.list()` call returns a **`PaginatedResponse<T>`** object. The items are in the `data` array and all page-level metadata lives in a nested `pagination` object:
+Every `.list()` call returns a **`ListResult<T>`** object: the items are in `items`, `nextCursor` gets you the next page, and `count` is how many match in all.
 
 ```json
 {
-  "data": [
+  "items": [
     {
       "id": "7ac44316-c227-4c39-bf99-a287bc08c6f5",
       "collectionId": "veho-demo",
@@ -158,51 +158,41 @@ Every `.list()` call returns a **`PaginatedResponse<T>`** object. The items are 
       }
     }
   ],
-  "pagination": {
-    "total": 42,
-    "limit": 10,
-    "offset": 0,
-    "hasMore": true
-  }
+  "nextCursor": "eyJvIjoxMH0",
+  "count": 42
 }
 ```
 
-### Pagination fields
+### List fields
 
 | Field | Type | Description |
 |---|---|---|
-| `data` | `T[]` | The page of items returned |
-| `pagination.total` | `number` | Total number of matching records across **all** pages |
-| `pagination.limit` | `number` | The `limit` that was applied to this request (default `50`, max `500`) |
-| `pagination.offset` | `number` | The `offset` that was applied to this request |
-| `pagination.hasMore` | `boolean` | `true` when more pages exist — use this instead of computing `offset + limit < total` yourself |
+| `items` | `T[]` | The page of items returned |
+| `nextCursor` | `string \| null` | Pass it back as `cursor` to get the next page. `null` means this was the last page. It is opaque: never build or read one |
+| `count` | `number` | Total number of matching records across **all** pages |
 
-> **Note:** The items are always in `response.data`, **not** at the top level. A common mistake is reading `response.total` — the correct path is `response.pagination.total`.
+Paging is `limit` (how many per page) and `cursor` (the previous page's `nextCursor`). There is no `offset`.
 
 ### Fetching all pages
 
 ```typescript
-import { app, PaginatedResponse, AppRecord } from '@proveanything/smartlinks';
+import { app, ListResult, AppRecord } from '@proveanything/smartlinks';
 
 async function fetchAllRecords(collectionId: string, appId: string) {
   const results: AppRecord[] = [];
-  let offset = 0;
-  const limit = 100;
+  let cursor: string | undefined;
 
-  while (true) {
-    const page: PaginatedResponse<AppRecord> = await app.records.list(
+  do {
+    const page: ListResult<AppRecord> = await app.records.list(
       collectionId,
       appId,
-      { limit, offset, sort: 'createdAt:desc' }
+      { limit: 100, cursor, sort: 'createdAt:desc' }
     );
 
-    results.push(...page.data);
+    results.push(...page.items);
+    cursor = page.nextCursor ?? undefined;  // null = no more pages
+  } while (cursor);
 
-    if (!page.pagination.hasMore) break;  // no more pages
-    offset += limit;
-  }
-
-  console.log(`Fetched ${results.length} of ${/* saved from first page */ 0} total`);
   return results;
 }
 ```
@@ -212,11 +202,9 @@ async function fetchAllRecords(collectionId: string, appId: string) {
 ```typescript
 const page = await app.cases.list(collectionId, appId, { status: 'open', limit: 10 });
 
-console.log(page.data);                   // array of AppCase objects
-console.log(page.pagination.total);       // e.g. 142  — total open cases
-console.log(page.pagination.hasMore);     // true / false
-console.log(page.pagination.offset);      // current page start
-console.log(page.pagination.limit);       // items per page
+console.log(page.items);                  // array of AppCase objects
+console.log(page.count);                  // e.g. 142  — total open cases
+console.log(page.nextCursor !== null);    // true when there are more pages
 ```
 
 ---
@@ -564,18 +552,18 @@ Use `app.records.match()` to find records whose scope is satisfied by a runtime 
 
 ```typescript
 // Find all nutrition records that apply for this product + facet context
-const { data } = await app.records.match(collectionId, appId, {
+const { items } = await app.records.match(collectionId, appId, {
   target: {
     productId: 'prod_abc',
     facets: { tier: ['gold'] },
   },
   recordType: 'nutrition',
 }, true);
-// data is ordered by specificity descending — most specific first
+// items are ordered by specificity descending — most specific first
 // each entry carries a `matchedAt` field indicating which dimension matched
 
 // Use strategy: 'best' to get only the single winner per recordType
-const { data: best } = await app.records.match(collectionId, appId, {
+const { items: best } = await app.records.match(collectionId, appId, {
   target: { productId: 'prod_abc', variantId: 'var_500ml' },
   strategy: 'best',
 }, true);
@@ -592,9 +580,9 @@ Facet matching rules:
 Every record in the response includes a `matchedAt` field indicating **which matching dimension caused the match**. Use it to render attribution labels:
 
 ```typescript
-const { data } = await app.records.match(collectionId, appId, { target, recordType: 'nutrition' }, true);
+const { items } = await app.records.match(collectionId, appId, { target, recordType: 'nutrition' }, true);
 
-for (const entry of data) {
+for (const entry of items) {
   switch (entry.matchedAt) {
     case 'rule':       /* "Matches rule" */           break;
     case 'proof':      /* "Scan-specific" */          break;
@@ -652,7 +640,7 @@ Use `app.records.resolveAll()` to fetch **every applicable record for a product 
 
 ```typescript
 // All records that apply to this product context (admin)
-const { records, total, truncated } = await app.records.resolveAll(collectionId, appId, {
+const { items, count, truncated } = await app.records.resolveAll(collectionId, appId, {
   context: {
     productId: 'prod_001',
     facets: { brand: 'samsung', type: 'tv' },
@@ -660,7 +648,7 @@ const { records, total, truncated } = await app.records.resolveAll(collectionId,
   recordType: 'warranty',
 }, true);
 
-for (const entry of records) {
+for (const entry of items) {
   console.log(entry.matchedAt, entry.specificity, entry.record.id);
   if (entry.matchedAt === 'rule') {
     console.log('rule fired:', entry.matchedRule, 'clauses:', entry.matchedClauseCount);
@@ -668,12 +656,12 @@ for (const entry of records) {
 }
 
 // Public endpoint — visibility-filtered (admin records excluded)
-const { records: publicRecords } = await app.records.resolveAll(collectionId, appId, {
+const { items: publicRecords } = await app.records.resolveAll(collectionId, appId, {
   context: { productId: 'prod_001', facets: { brand: 'samsung' } },
 }, false);
 
 // Filter to specific tiers
-const { records: ruleRecords } = await app.records.resolveAll(collectionId, appId, {
+const { items: ruleRecords } = await app.records.resolveAll(collectionId, appId, {
   context: { productId: 'prod_001', facets: { brand: 'samsung', type: 'tv' } },
   tiers: ['product', 'rule', 'collection'],
 }, true);
@@ -732,7 +720,7 @@ const all = await app.records.list(collectionId, appId, {
   recordType: 'nutrition',
   includeDeleted: true,
 }, true);
-// all.data includes records with non-null deletedAt
+// all.items includes records with non-null deletedAt
 ```
 
 `bulkDelete` is fully reversible: rows survive with their IDs intact. Restore individually via `restore`, or re-write via `bulkUpsert` (which will find the existing row by `ref` and update it, clearing `deletedAt` in the process).
@@ -758,7 +746,7 @@ const page = await app.records.list(collectionId, appId, {
   recordType: 'packaging-field',
   q: 'best before',
   qFields: 'value,label',       // match data.value OR data.label
-  limit: 100, offset: 0,
+  limit: 100,
 }, true);
 ```
 
@@ -773,15 +761,15 @@ const page = await app.records.list(collectionId, appId, {
     versionId: 'ver_123',               // data.versionId = 'ver_123'
     zone: 'in:on_pack,unclear',         // data.zone is one of these
   },
-  limit: 100, offset: 0,
+  limit: 100,
 }, true);
 
-page.pagination.total    // matches across all pages
-page.pagination.hasMore  // keep paging while true
+page.count        // matches across all pages
+page.nextCursor   // pass it back as `cursor` for the next page; null on the last page
 ```
 
 - Values are compared as text (`data->>key`); nested keys and joins aren't supported.
-- `limit` is capped at **100** per page — page with `offset` while `hasMore` is true.
+- `limit` is capped at **100** per page — page with `cursor` until `nextCursor` is `null`.
 - `status` also accepts `in:a,b` (e.g. `status: 'in:active,draft'`).
 
 ### External ID / ETL Workflow
@@ -1470,7 +1458,7 @@ await realtime.publish(collectionId, `contact:${contactId}`, {
 
 For high-volume queries, consider:
 - Filter by `status`, `recordType`, or `category` to reduce result sets
-- Use `limit` and `offset` for pagination (max 500 per page)
+- Use `limit` and `cursor` for pagination (max 500 per page)
 - Use aggregations instead of fetching all records and counting client-side
 - Index commonly filtered fields if you add custom indexes
 
@@ -1572,7 +1560,7 @@ import {
   app,
   AppCase, AppThread, AppRecord,
   CreateCaseInput, CreateThreadInput, CreateRecordInput,
-  PaginatedResponse, AggregateResponse
+  ListResult, AggregateResponse
 } from '@proveanything/smartlinks';
 
 // Fully typed
@@ -1581,7 +1569,7 @@ const newCase: AppCase = await app.cases.create(collectionId, appId, {
   data: { issue: 'Login problem' }
 });
 
-const threadList: PaginatedResponse<AppThread> = await app.threads.list(
+const threadList: ListResult<AppThread> = await app.threads.list(
   collectionId,
   appId,
   { limit: 50, sort: 'createdAt:desc' }

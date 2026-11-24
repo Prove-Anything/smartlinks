@@ -23,7 +23,16 @@ export var broadcasts;
         return post(path, body);
     }
     broadcasts.create = create;
-    // CRUD: List broadcasts (GET with query)
+    /**
+     * The collection's broadcasts, a page at a time. Filter by the app that owns them (`appId`).
+     *
+     * @example
+     * ```typescript
+     * let page = await broadcasts.list('coll_123', { appId: 'newsletter', limit: 50 })
+     * page.items // BroadcastRecord[]
+     * while (page.nextCursor) page = await broadcasts.list('coll_123', { appId: 'newsletter', limit: 50, cursor: page.nextCursor })
+     * ```
+     */
     async function list(collectionId, query = {}) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeQuery(query)}`;
         return request(path);
@@ -47,7 +56,18 @@ export var broadcasts;
         return del(path);
     }
     broadcasts.remove = remove;
-    // Recipients listing for a broadcast
+    /**
+     * The contacts a broadcast goes to (its segment), a page at a time. `count` is how many there are in
+     * all. A broadcast with no segment answers an empty page with a `note`.
+     *
+     * @example
+     * ```typescript
+     * const page = await broadcasts.recipients('coll_123', 'broadcast_1', { limit: 50 })
+     * page.items      // Recipient[]
+     * page.count      // how many in all
+     * page.nextCursor // pass back as `cursor` for the next page; null on the last
+     * ```
+     */
     async function recipients(collectionId, id, query = {}) {
         const qs = encodeQuery(query);
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/recipients${qs}`;

@@ -8,6 +8,7 @@
  *
  * @see docs/attestations.md
  */
+import type { ListResult, ListOptions } from './list.js';
 /** Types of entities that can be the subject of an attestation. */
 export type AttestationSubjectType = 'container' | 'proof' | 'product' | 'tag' | 'serial' | 'order_item' | string;
 /**
@@ -188,14 +189,13 @@ export interface ModerateAttestationInput {
 export interface ModerateAttestationResponse {
     attestation: Attestation;
 }
-export interface ListAttestationsResponse {
-    attestations: Attestation[];
-}
+/** What `attestations.list` returns: `{ items, nextCursor }`. */
+export type ListAttestationsResponse = ListResult<Attestation>;
 export interface CreateOwnerAttestationResponse {
     attestation: Attestation;
 }
-export interface PublicListAttestationsResponse {
-    attestations: Attestation[];
+/** What `attestations.publicList` and `publicContainerList` return: `{ items, nextCursor, audience }`. */
+export interface PublicListAttestationsResponse extends ListResult<Attestation> {
     /** Resolved audience tier; governs which data zones are populated */
     audience: AttestationAudience;
 }
@@ -232,7 +232,8 @@ export interface PublicAttestationTreeLatestResponse {
     audience: 'public';
     subjectCount: number;
 }
-export interface ListAttestationsParams {
+/** Paging is `limit` (default 100) and `cursor`: pass the previous page's `nextCursor`. */
+export interface ListAttestationsParams extends ListOptions {
     /** Required */
     subjectType: AttestationSubjectType;
     /** Required */
@@ -248,10 +249,6 @@ export interface ListAttestationsParams {
     recordedAfter?: string;
     /** ISO 8601 upper bound (inclusive) */
     recordedBefore?: string;
-    /** Default 100 */
-    limit?: number;
-    /** Default 0 */
-    offset?: number;
 }
 export interface AttestationSummaryParams {
     /** Required */

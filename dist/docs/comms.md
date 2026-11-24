@@ -254,6 +254,9 @@ await broadcasts.appendBulk('collectionId', {
 
 // List recipients
 const recips = await broadcasts.recipients('collectionId', 'broadcastId', { limit: 50 })
+recips.items      // the contacts on this page
+recips.count      // how many in all
+recips.nextCursor // pass back as `cursor` for the next page; null on the last
 ```
 
 ---
@@ -493,7 +496,7 @@ const res = await comms.resolveSubscriptions('collectionId', {
 
 ```typescript
 // List registered methods for a contact
-const { methods } = await comms.listMethods('collectionId', {
+const { items: methods } = await comms.listMethods('collectionId', {
   contactId: 'contact_123',
   type: 'email'          // optional filter: 'email' | 'sms' | 'push'
 })
@@ -578,7 +581,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
 ### Query Events by User / Contact
 
 ```typescript
-const events = await comms.queryByUser('collectionId', {
+const { items: events } = await comms.queryByUser('collectionId', {
   userId: 'user_123',
   limit:  100
 })
@@ -587,27 +590,27 @@ const events = await comms.queryByUser('collectionId', {
 ### Recipient IDs for a Source
 
 ```typescript
-const ids = await comms.queryRecipientIds('collectionId', {
+const { items: ids } = await comms.queryRecipientIds('collectionId', {
   broadcastId: 'br_456'
 })
 ```
 
-### Recipients Without an Action
+### Recipients Without an Interaction
 
 ```typescript
-const withoutOpen = await comms.queryRecipientsWithoutAction('collectionId', {
-  broadcastId: 'br_456',
-  actionId:    'open'
+const { items: didNot } = await comms.queryRecipientsWithoutInteraction('collectionId', {
+  broadcastId:   'br_456',
+  interactionId: 'survey-done'
 })
 ```
 
-### Recipients With an Action
+### Recipients With an Interaction
 
 ```typescript
-const withClick = await comms.queryRecipientsWithAction('collectionId', {
+const { items: did } = await comms.queryRecipientsWithInteraction('collectionId', {
   broadcastId:    'br_456',
-  actionId:       'click',
-  includeOutcome: true    // returns RecipientWithOutcome[] instead of RecipientId[]
+  interactionId:  'survey-done',
+  includeOutcome: true    // each item is { id, outcome } instead of an id
 })
 ```
 

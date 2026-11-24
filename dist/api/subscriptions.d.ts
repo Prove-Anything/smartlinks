@@ -1,14 +1,24 @@
-import type { PublicPlan, MySubscription, SubscriptionStartInput, SubscriptionStartResult, PlanWithPrices, Plan, PlanInput, PlanUpdate, PlanPrice, PlanPriceInput, Membership, SubscriptionListParams, SubscriptionGrantInput, SubscriptionPage, PlanGrants } from '../types/subscriptions.js';
+import type { PublicPlan, MySubscription, SubscriptionStartInput, SubscriptionStartResult, PlanWithPrices, Plan, PlanInput, PlanUpdate, PlanPrice, PlanPriceInput, Membership, SubscriptionListOptions, SubscriptionGrantInput, PlanGrants } from '../types/subscriptions.js';
+import type { ListResult, ListOptions } from '../types/list.js';
 export declare namespace subscriptions {
-    /** Plans open to new members, each with its prices (monthly, yearly, one-off). */
-    function plans(collectionId: string): Promise<PublicPlan[]>;
+    /**
+     * Plans open to new members, each with its prices (monthly, yearly, one-off). All of them in one answer:
+     * `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items: plans } = await subscriptions.plans(collectionId)
+     * plans.map((p) => p.prices.map((price) => subscriptions.describePrice(price)))
+     * ```
+     */
+    function plans(collectionId: string): Promise<ListResult<PublicPlan>>;
     /**
      * Join a plan: Stripe's checkout page for the chosen price. Send them to `checkoutUrl`. Signed in only (a
      * membership belongs to an account). The membership exists once Stripe confirms the payment.
      *
      * @example
      * ```typescript
-     * const plans = await subscriptions.plans(collectionId)
+     * const { items: plans } = await subscriptions.plans(collectionId)
      * const yearly = plans[0].prices.find((p) => p.interval === 'year')
      * const { checkoutUrl } = await subscriptions.start(collectionId, {
      *   priceId: yearly.id,
@@ -20,8 +30,17 @@ export declare namespace subscriptions {
      * @throws `SIGN_IN_REQUIRED`, `ALREADY_MEMBER`, `NOT_FOUND` (closed plan or price), `PAYMENTS_NOT_READY`, `INVALID_INPUT`
      */
     function start(collectionId: string, input: SubscriptionStartInput): Promise<SubscriptionStartResult>;
-    /** The signed-in member's memberships, newest first (ended ones too: check `live`). */
-    function mine(collectionId: string): Promise<MySubscription[]>;
+    /**
+     * The signed-in member's memberships, newest first (ended ones too: check `live`). All of them in one
+     * answer: `nextCursor` is always null.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await subscriptions.mine(collectionId)
+     * const current = items.find((s) => s.live)
+     * ```
+     */
+    function mine(collectionId: string): Promise<ListResult<MySubscription>>;
     /**
      * Cancel: it ends at the end of the paid period, and access stays until then. A one-off plan or a staff
      * grant ends now. Undo with `resume` before the period ends.
@@ -50,11 +69,18 @@ export declare namespace subscriptions {
     }, locale?: string): string;
     /** The business's side: plans, prices and members (collection admins). Payments use the shop's Stripe set-up. */
     namespace admin {
-        function listPlans(collectionId: string, params?: {
+        /**
+         * The collection's plans with their prices, a page at a time. `active: true` for only the ones open to
+         * new members.
+         *
+         * @example
+         * ```typescript
+         * const { items, nextCursor } = await subscriptions.admin.listPlans(collectionId, { active: true })
+         * ```
+         */
+        function listPlans(collectionId: string, params?: ListOptions & {
             active?: boolean;
-            limit?: number;
-            offset?: number;
-        }): Promise<SubscriptionPage<PlanWithPrices>>;
+        }): Promise<ListResult<PlanWithPrices>>;
         /** A plan with its prices and how many live members it has. */
         function getPlan(collectionId: string, planId: string): Promise<PlanWithPrices>;
         /** @throws `INVALID_INPUT` */
@@ -75,8 +101,17 @@ export declare namespace subscriptions {
         function removePrice(collectionId: string, priceId: string): Promise<{
             ok: true;
         }>;
-        /** Memberships, newest first, with each one's plan. */
-        function list(collectionId: string, params?: SubscriptionListParams): Promise<SubscriptionPage<Membership>>;
+        /**
+         * Memberships, newest first, with each one's plan, a page at a time. `count` is how many match in all.
+         *
+         * @example
+         * ```typescript
+         * let page = await subscriptions.admin.list(collectionId, { live: true, limit: 50 })
+         * page.items // Membership[]
+         * while (page.nextCursor) page = await subscriptions.admin.list(collectionId, { live: true, limit: 50, cursor: page.nextCursor })
+         * ```
+         */
+        function list(collectionId: string, params?: SubscriptionListOptions): Promise<ListResult<Membership>>;
         function get(collectionId: string, subscriptionId: string): Promise<Membership>;
         /** Give someone a plan without payment (free, honorary, paid in cash). Its grants apply at once. */
         function grant(collectionId: string, input: SubscriptionGrantInput): Promise<Membership>;

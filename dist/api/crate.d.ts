@@ -1,4 +1,5 @@
-import { GetCrateResponse, CreateCrateRequest, CreateCrateResponse, UpdateCrateRequest, UpdateCrateResponse, DeleteCrateResponse, ListCratesRequest, ListCratesResponse } from "../types/crate.js";
+import { Crate, GetCrateResponse, CreateCrateRequest, CreateCrateResponse, UpdateCrateRequest, UpdateCrateResponse, DeleteCrateResponse, ListCratesRequest } from "../types/crate.js";
+import type { ListResult } from "../types/list.js";
 /**
  * Crate Management API
  *
@@ -6,12 +7,12 @@ import { GetCrateResponse, CreateCrateRequest, CreateCrateResponse, UpdateCrateR
  */
 export declare namespace crate {
     /**
-     * List crates for a collection with pagination support.
-     * Returns crates in pages, with support for soft-deleted crates.
+     * List crates for a collection, a page at a time.
+     * Soft-deleted crates are left out unless `includeDeleted` is set.
      *
      * @param collectionId - Identifier of the parent collection
-     * @param params - Optional query parameters for pagination and filtering
-     * @returns Promise resolving to a ListCratesResponse object
+     * @param params - `limit` (default 100, max 100), `cursor`, and `includeDeleted`
+     * @returns Promise resolving to `{ items, nextCursor }`, where `items` are Crate objects
      * @throws ErrorResponse if the request fails
      *
      * @example
@@ -21,10 +22,10 @@ export declare namespace crate {
      * console.log(`Found ${page1.items.length} crates`)
      *
      * // Get next page
-     * if (page1.hasMore) {
+     * if (page1.nextCursor) {
      *   const page2 = await crate.list('coll_123', {
      *     limit: 100,
-     *     startAfter: page1.lastId
+     *     cursor: page1.nextCursor
      *   })
      * }
      *
@@ -34,7 +35,7 @@ export declare namespace crate {
      * })
      * ```
      */
-    function list(collectionId: string, params?: ListCratesRequest): Promise<ListCratesResponse>;
+    function list(collectionId: string, params?: ListCratesRequest): Promise<ListResult<Crate>>;
     /**
      * Get a single crate by ID for a collection (admin only).
      *

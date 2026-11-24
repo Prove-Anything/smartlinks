@@ -97,7 +97,7 @@ that aren't checked are never checked.
 // In any screen
 const res = await SL.app.options.get(collectionId, appId, 'type:accord.machine', { admin: true })
 const res = await SL.app.options.get(collectionId, appId, 'list:hold-reasons', { admin: true })
-// → { items: [{ id, label, sublabel?, active, order }], version, mode: 'all' }
+// → { items: [{ id, label, sublabel?, active, order }], nextCursor: null, version, mode: 'all' }
 
 // In server code (needs sl:records:read)
 await ctx.sl.appOptions.get('list:hold-reasons')

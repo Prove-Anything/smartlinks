@@ -1,5 +1,6 @@
 import type { IdField } from './common.js';
 import type { BroadcastChannel } from './broadcasts.js';
+import type { ListResult } from './list.js';
 /**
  * Target subject for notifications (product, collection, etc.)
  */
@@ -37,26 +38,29 @@ export interface RecipientWithOutcome {
 export interface CommsRecipientIdsQuery {
     broadcastId?: string;
     journeyId?: string;
-    journeyStepId?: string;
     idField?: IdField;
     from?: string;
     to?: string;
     limit?: number;
 }
-export interface CommsRecipientsWithoutActionQuery {
+/** Who a broadcast or journey reached that did NOT then do an interaction. */
+export interface CommsRecipientsWithoutInteractionQuery {
     broadcastId?: string;
     journeyId?: string;
-    actionId?: string;
+    /** The interaction to look for (its id). */
+    interactionId?: string;
     appId?: string;
     idField?: IdField;
     from?: string;
     to?: string;
     limit?: number;
 }
-export interface CommsRecipientsWithActionQuery {
+/** Who a broadcast or journey reached that then did an interaction. */
+export interface CommsRecipientsWithInteractionQuery {
     broadcastId?: string;
     journeyId?: string;
-    actionId?: string;
+    /** The interaction to look for (its id). */
+    interactionId?: string;
     appId?: string;
     outcome?: string;
     idField?: IdField;
@@ -266,10 +270,8 @@ export interface CommsListMethodsQuery {
     contactId?: string;
     type?: BroadcastChannel;
 }
-export interface CommsListMethodsResponse {
-    ok: true;
-    methods: import('./contact.js').CommMethod[];
-}
+/** What `comms.listMethods` returns: the contact's registered methods in `items` (all of them; `nextCursor` is always null). */
+export type CommsListMethodsResponse = ListResult<import('./contact.js').CommMethod>;
 export interface RegisterEmailMethodRequest {
     contactId?: string;
     email?: string;

@@ -20,12 +20,12 @@ const STORAGE_KINDS = new Set(['record', 'case', 'thread', 'config']);
 const SEMVER = /^\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/;
 /**
  * What a type's read calls return, and where one item's declared fields live — fixed by the storage
- * kind (see app-objects.md "Paginated List Responses"). Sites must read items from `response.data`.
+ * kind (see app-objects.md "Paginated List Responses"). Sites must read items from `response.items`.
  */
 export function responseShape(type) {
     const s = type.storage;
     const first = Object.keys(type.fields || {})[0] || 'field';
-    const paged = (name) => `list → { data: ${name}[], pagination: { total, limit, offset, hasMore } }. The items are in response.data (not response.items / response.records); page with offset/limit while pagination.hasMore. get → one ${name}.`;
+    const paged = (name) => `list → { items: ${name}[], nextCursor: string | null, count: number }. The items are in response.items (not response.data / response.records); page with limit and cursor (the previous page's nextCursor) until nextCursor is null. get → one ${name}.`;
     switch (s && s.kind) {
         case 'record':
             return { returns: paged('AppRecord'), item: `Each record's declared fields are in record.data (e.g. record.data.${first}); record.id, record.productId, record.status, record.createdAt are top-level.` };

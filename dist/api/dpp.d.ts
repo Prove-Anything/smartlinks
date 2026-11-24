@@ -1,7 +1,17 @@
 import type { DppEnvironment, DppRegistry, SetDppRegistryInput, DppRegistryCheckResult, DppGroup, DppPassport, DppPassportInput, DppPassportUpsertInput, DppPassportSaveResult, DppPassportUpsertResult, DppPassportBulkResult, DppPassportVersion, DppPassportListQuery, DppRegisterResult, DppTask, DppTaskRefreshResult, DppDocument } from "../types/dpp.js";
+import type { ListResult } from "../types/list.js";
 export declare namespace dpp {
-    /** What passports can be made: product groups, their kinds, and each view's fields and required fields. GET /dpp/groups */
-    function groups(collectionId: string): Promise<DppGroup[]>;
+    /**
+     * What passports can be made: product groups, their kinds, and each view's fields and required fields.
+     * All of them in one answer (`nextCursor` is always null). GET /dpp/groups
+     *
+     * @example
+     * ```typescript
+     * const { items } = await dpp.groups(collectionId)
+     * items.map(g => g.productGroup) // ["BATTERIES", …]
+     * ```
+     */
+    function groups(collectionId: string): Promise<ListResult<DppGroup>>;
     /**
      * Read a passport as the public sees it, at its address (the EU JSON document), or an earlier version of it.
      * No sign-in needed. GET /public/dpp/:collectionId/:passportId
@@ -20,8 +30,17 @@ export declare namespace dpp {
     }): Promise<DppRegisterResult>;
     /** The brand's EU registry connection (one per environment). Managed by the collection's admins. */
     namespace registry {
-        /** Both environments, each with `nextStep` (what's left to connect). GET /dpp/registry */
-        function list(collectionId: string): Promise<DppRegistry[]>;
+        /**
+         * Both environments, each with `nextStep` (what's left to connect). All of them in one answer
+         * (`nextCursor` is always null). GET /dpp/registry
+         *
+         * @example
+         * ```typescript
+         * const { items } = await dpp.registry.list(collectionId)
+         * const acc = items.find(r => r.environment === 'acc')
+         * ```
+         */
+        function list(collectionId: string): Promise<ListResult<DppRegistry>>;
         /** One environment. GET /dpp/registry/:env */
         function get(collectionId: string, env: DppEnvironment): Promise<DppRegistry>;
         /**
@@ -45,8 +64,20 @@ export declare namespace dpp {
     }
     /** The collection's passports. */
     namespace passports {
-        /** GET /dpp/passports */
-        function list(collectionId: string, q?: DppPassportListQuery): Promise<DppPassport[]>;
+        /**
+         * The collection's passports, a page at a time: all of them, or those of one product, batch or item,
+         * or with one status. GET /dpp/passports
+         *
+         * @example
+         * ```typescript
+         * let page = await dpp.passports.list(collectionId, { productId, status: 'active', limit: 100 })
+         * page.items // DppPassport[]
+         * while (page.nextCursor) {
+         *   page = await dpp.passports.list(collectionId, { productId, status: 'active', limit: 100, cursor: page.nextCursor })
+         * }
+         * ```
+         */
+        function list(collectionId: string, q?: DppPassportListQuery): Promise<ListResult<DppPassport>>;
         /** One passport, with `check` (what it's still missing) and its `url`. GET /dpp/passports/:id */
         function get(collectionId: string, passportId: string): Promise<DppPassport>;
         /** Make a passport. POST /dpp/passports */
@@ -82,8 +113,17 @@ export declare namespace dpp {
         function upsertMany(collectionId: string, items: DppPassportUpsertInput[], opts?: {
             merge?: boolean;
         }): Promise<DppPassportBulkResult>;
-        /** Its versions, newest first; read one with `dpp.read(collectionId, id, { version })`. GET /dpp/passports/:id/versions */
-        function versions(collectionId: string, passportId: string): Promise<DppPassportVersion[]>;
+        /**
+         * Its versions, newest first, all in one answer (`nextCursor` is always null); read one with
+         * `dpp.read(collectionId, id, { version })`. GET /dpp/passports/:id/versions
+         *
+         * @example
+         * ```typescript
+         * const { items } = await dpp.passports.versions(collectionId, passportId)
+         * const latest = items[0].version
+         * ```
+         */
+        function versions(collectionId: string, passportId: string): Promise<ListResult<DppPassportVersion>>;
         /** No longer valid: stays at its address, marked invalid (the registry keeps its record). POST /dpp/passports/:id/withdraw */
         function withdraw(collectionId: string, passportId: string): Promise<DppPassport>;
         /** Valid again. POST /dpp/passports/:id/restore */
@@ -91,8 +131,16 @@ export declare namespace dpp {
     }
     /** Registry requests and their outcomes. */
     namespace tasks {
-        /** Requests sent to one environment, newest first. GET /dpp/registry/:env/tasks */
-        function list(collectionId: string, env: DppEnvironment): Promise<DppTask[]>;
+        /**
+         * Requests sent to one environment, newest first, all in one answer (`nextCursor` is always null).
+         * GET /dpp/registry/:env/tasks
+         *
+         * @example
+         * ```typescript
+         * const { items } = await dpp.tasks.list(collectionId, 'acc')
+         * ```
+         */
+        function list(collectionId: string, env: DppEnvironment): Promise<ListResult<DppTask>>;
         /** Ask the registry how a request went and record it on its passports. POST /dpp/registry/:env/tasks/:taskId/refresh */
         function refresh(collectionId: string, env: DppEnvironment, taskId: string): Promise<DppTaskRefreshResult>;
     }

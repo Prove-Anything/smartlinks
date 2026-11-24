@@ -59,7 +59,7 @@ Your container **never** detects the host directly. It receives a `host` prop fr
 
 Every container mounted by the SmartLinks Mobile launcher receives a single `host` prop — `AdminMobileHostContext`. Do not reach for `window.SmartlinksScanner` or `window.Capacitor` directly; both are wrapped here.
 
-> **SDK export** — `AdminMobileHostContext`, `AdminMobileCapability`, `ActionableCapability`, `AdminMobileHostId`, `AdminMobileEvent`, `AdminMobileEventCallback`, `AdminMobileEventSubscriber`, `AdminMobileComponentManifest`, `AdminMobileBundleManifest`, and `NativeFacade` (plus all sub-facade interfaces) are exported from `@proveanything/smartlinks`. Import via `import type { AdminMobileHostContext } from '@proveanything/smartlinks'` — no local mirror needed. `ScannerEventSubscriber`, `MobileAdminComponentManifest`, and `MobileAdminBundleManifest` still export as deprecated aliases.
+> **SDK export** — `AdminMobileHostContext`, `AdminMobileCapability`, `ActionableCapability`, `AdminMobileHostId`, `AdminMobileEvent`, `AdminMobileEventCallback`, `AdminMobileEventSubscriber`, `AdminMobileComponentManifest`, `AdminMobileBundleManifest`, and `NativeFacade` (plus all sub-facade interfaces) are exported from `@proveanything/smartlinks`. Import via `import type { AdminMobileHostContext } from '@proveanything/smartlinks'` — no local mirror needed. The old names `ScannerEventSubscriber`, `MobileAdminComponentManifest` and `MobileAdminBundleManifest` were removed in SDK 3: use `AdminMobileEventCallback`, `AdminMobileComponentManifest` and `AdminMobileBundleManifest`.
 
 ```typescript
 interface AdminMobileHostContext {

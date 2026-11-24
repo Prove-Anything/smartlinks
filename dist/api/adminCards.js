@@ -6,7 +6,7 @@
 // One call loads the whole dashboard, served from a cache; stale cards are recomputed in the
 // background and announced over SmartLinks Realtime as a `cards` change event:
 //
-//   const { cards } = await adminCards.list(collectionId)
+//   const { items: cards } = await adminCards.list(collectionId)
 //   realtime.onChange({ collectionId }, { type: 'cards' }, () => reload())
 //
 // Endpoints: /admin/collection/:collectionId/cards
@@ -18,6 +18,14 @@ export var adminCards;
      * The collection's dashboard: every card, in display order, with its cached payload and how fresh
      * it is (`state`). Never waits on slow cards — those come back `stale` / `pending` and arrive later
      * as a realtime `cards` change.
+     *
+     * Returns `{ items, nextCursor, hidden, layout }`: the cards to show are in `items`; `hidden` are the
+     * cards the layout hides. The dashboard is not paged, so `nextCursor` is always `null`.
+     *
+     * @example
+     * ```typescript
+     * const { items: cards, hidden, layout } = await adminCards.list(collectionId)
+     * ```
      */
     async function list(collectionId) {
         return request(base(collectionId));

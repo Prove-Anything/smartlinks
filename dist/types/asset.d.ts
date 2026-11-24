@@ -1,3 +1,4 @@
+import type { ListOptions } from './list.js';
 /**
  * Slim reference to an asset embedded inside product and collection documents.
  * Use `asset.get()` with the `id` to retrieve the full `Asset` record.
@@ -114,15 +115,6 @@ export interface Asset {
     createdAt: string;
     updatedAt: string;
     deletedAt: string | null;
-    /**
-     * @deprecated Use `thumbnail` instead. Legacy multi-size thumbnail map.
-     */
-    thumbnails?: {
-        x100?: string;
-        x200?: string;
-        x512?: string;
-        [key: string]: string | undefined;
-    };
 }
 export type AssetResponse = Asset;
 export interface UploadAssetOptions {
@@ -201,11 +193,8 @@ export interface ListAssetsOptions {
     };
     /** Filter by app ID */
     appId?: string;
-    /** Filter by MIME type prefix (e.g., 'image/', 'video/') */
-    mimeTypePrefix?: string;
-    /** Pagination */
+    /** How many to return. These lists are not paged: there is no cursor, and `nextCursor` is always `null`. */
     limit?: number;
-    offset?: number;
 }
 export interface GetAssetOptions {
     assetId: string;
@@ -239,7 +228,7 @@ export interface RemoveAssetOptions {
         proofId: string;
     };
 }
-export interface AdminListAssetsOptions {
+export interface AdminListAssetsOptions extends ListOptions {
     collectionId: string;
     productId?: string;
     proofId?: string;
@@ -249,19 +238,11 @@ export interface AdminListAssetsOptions {
     labels?: string;
     sort?: 'createdAt' | 'name' | 'size' | 'assetType';
     order?: 'asc' | 'desc';
-    limit?: number;
-    offset?: number;
     /**
      * Also list files that are normally left out: `temporary` (not kept yet) and `derived` (text, Markdown or fields
      * extracted from another file). Lists show only what people put there unless asked.
      */
     include?: Array<'temporary' | 'derived'>;
-}
-export interface AdminListAssetsResponse {
-    data: Asset[];
-    total: number;
-    limit: number;
-    offset: number;
 }
 export interface UpdateAssetOptions {
     collectionId: string;

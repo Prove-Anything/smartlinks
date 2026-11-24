@@ -274,6 +274,20 @@ export var translations;
         };
     }
     translations.resolve = resolve;
+    /**
+     * Admin: the collection's stored translations, a page at a time. Filter by language, content type, where
+     * the text appears (`contextKey`), a search (`q`), whether a person edited it (`isOverride`), or whether
+     * it misses the site's required wording (`termIssues`). `count` is how many match in all.
+     *
+     * @example
+     * ```typescript
+     * let page = await translations.list('coll_123', { targetLanguage: 'de', limit: 50 })
+     * page.items // TranslationRecord[]
+     * while (page.nextCursor) {
+     *   page = await translations.list('coll_123', { targetLanguage: 'de', limit: 50, cursor: page.nextCursor })
+     * }
+     * ```
+     */
     async function list(collectionId, params) {
         const query = buildTranslationListQuery(params);
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/translations${query}`;

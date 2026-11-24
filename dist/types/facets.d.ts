@@ -1,4 +1,5 @@
 import type { JsonValue, ProductQueryRequest } from "./product.js";
+import type { ListResult } from "./list.js";
 export interface FacetDefinition {
     id?: string;
     orgId?: string;
@@ -70,12 +71,11 @@ export interface FacetValueWriteInput {
     parentValueKey?: string | null;
     enabled?: boolean;
 }
-export interface FacetListResponse {
-    items: FacetDefinition[];
-}
-export interface FacetValueListResponse {
+/** What `facets.list` / `facets.publicList` return: every facet in `items` (`nextCursor` is always null). */
+export type FacetListResponse = ListResult<FacetDefinition>;
+/** What `facets.listValues` / `facets.publicListValues` return: the facet, and all its values in `items`. */
+export interface FacetValueListResponse extends ListResult<FacetValue> {
     facet: FacetDefinition;
-    items: FacetValue[];
 }
 export interface FacetValueResponse {
     facet: FacetDefinition;
@@ -96,11 +96,14 @@ export interface FacetBucket {
     name?: string;
     count: number;
 }
-export interface FacetQueryResponse {
-    items: Array<{
-        facet: FacetDefinition;
-        values: FacetValue[];
-    }>;
+/**
+ * What `facets.query` / `facets.publicQuery` return: each facet with its values in `items`
+ * (`nextCursor` is always null), and the counts in `buckets`.
+ */
+export interface FacetQueryResponse extends ListResult<{
+    facet: FacetDefinition;
+    values: FacetValue[];
+}> {
     buckets: FacetBucket[];
     meta?: {
         source?: "postgres";
@@ -108,19 +111,16 @@ export interface FacetQueryResponse {
     };
 }
 export interface FacetListParams {
-    includeValues?: boolean;
     includeDeleted?: boolean;
     kind?: "system" | "custom";
     reserved?: boolean;
     namespace?: string;
 }
 export interface PublicFacetListParams {
-    includeValues?: boolean;
     namespace?: string;
 }
-export interface FacetNamespaceListResponse {
-    namespaces: string[];
-}
+/** What `facets.namespaces` / `facets.publicNamespaces` return: the namespace names in `items` (`nextCursor` is always null). */
+export type FacetNamespaceListResponse = ListResult<string>;
 export interface FacetGetParams {
     includeValues?: boolean;
     includeDeleted?: boolean;

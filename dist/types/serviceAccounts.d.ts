@@ -1,3 +1,4 @@
+import type { ListResult } from "./list.js";
 /** The access a service account can have on its collection (never Owner). */
 export type ServiceAccountAccess = "User" | "Reporter" | "Assigner" | "Admin";
 /** One of a collection's service accounts. The key itself is never listed (only shown when made or replaced). */
@@ -43,8 +44,8 @@ export interface AddServiceAccountToCollectionInput {
     collectionId: string;
     access: ServiceAccountAccess;
 }
-export interface ServiceAccountList {
-    serviceAccounts: ServiceAccount[];
+/** What `serviceAccounts.list` returns: the service accounts (`items`) and the access levels that can be given. */
+export interface ServiceAccountList extends ListResult<ServiceAccount> {
     /** The access levels that can be given. */
     access: ServiceAccountAccess[];
 }

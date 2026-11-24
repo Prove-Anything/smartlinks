@@ -61,25 +61,30 @@ export var containers;
     }
     containers.create = create;
     /**
-     * List containers (admin).
+     * List containers (admin), a page at a time.
      *
      * Supports filtering by type, status, ref, parent, and top-level flag.
      *
      * @param collectionId - Collection context
-     * @param params - Optional filter and pagination parameters
-     * @returns `{ containers: Container[], limit: number, offset: number }`
+     * @param params - Optional filters, plus `limit` and `cursor`
+     * @returns `{ items: Container[], nextCursor: string | null }`
      *
      * @example
      * ```typescript
      * // All active pallets
-     * const { containers: pallets } = await containers.list('coll_123', {
+     * let page = await containers.list('coll_123', {
      *   containerType: 'pallet',
      *   status:        'active',
      *   limit:         50,
      * })
+     * const pallets = page.items
+     * while (page.nextCursor) {
+     *   page = await containers.list('coll_123', { containerType: 'pallet', status: 'active', limit: 50, cursor: page.nextCursor })
+     *   pallets.push(...page.items)
+     * }
      *
      * // Top-level containers only
-     * const { containers: roots } = await containers.list('coll_123', { topLevel: true })
+     * const { items: roots } = await containers.list('coll_123', { topLevel: true })
      * ```
      */
     async function list(collectionId, params) {
@@ -93,7 +98,8 @@ export var containers;
      *
      * @param collectionId - Collection context
      * @param params - `itemType` and `itemId` are required
-     * @returns `{ items, containers }`: the current membership rows and those containers
+     * @returns `{ items, containers, nextCursor }`: the current membership rows (`items`) and those
+     *   containers. All of them in one answer: `nextCursor` is always null.
      *
      * @example
      * ```typescript
@@ -185,12 +191,13 @@ export var containers;
     /**
      * List items currently (or historically) inside a container (admin).
      *
-     * Pass `history: true` to include removed items and see the full membership log.
+     * Pass `history: true` to include removed items and see the full membership log, a page at a time
+     * (`limit`, `cursor`). The current contents come back whole.
      *
      * @param collectionId - Collection context
      * @param containerId - Container UUID
-     * @param params - Optional filters and pagination
-     * @returns `{ items: ContainerItem[], limit: number, offset: number }`
+     * @param params - `history`, plus `limit` and `cursor`
+     * @returns `{ items: ContainerItem[], nextCursor: string | null }`
      *
      * @example
      * ```typescript
@@ -198,7 +205,7 @@ export var containers;
      * const { items } = await containers.listItems('coll_123', 'cask-uuid')
      *
      * // Full history including removed items
-     * const { items: history } = await containers.listItems('coll_123', 'cask-uuid', { history: true })
+     * const { items: history, nextCursor } = await containers.listItems('coll_123', 'cask-uuid', { history: true, limit: 200 })
      * ```
      */
     async function listItems(collectionId, containerId, params) {
@@ -265,14 +272,19 @@ export var containers;
     // Public — read-only
     // ==========================================================================
     /**
-     * List containers (public).
+     * List containers (public), a page at a time.
      *
-     * Soft-deleted containers and containers with `metadata.publicListing === false`
-     * are excluded from results.
+     * Only active containers are listed; soft-deleted containers and containers with
+     * `metadata.publicListing === false` are excluded from results.
      *
      * @param collectionId - Collection context
-     * @param params - Optional filter and pagination parameters
-     * @returns `{ containers: Container[] }`
+     * @param params - `containerType`, `parentContainerId`, `topLevel`, plus `limit` and `cursor`
+     * @returns `{ items: Container[], nextCursor: string | null }`
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor } = await containers.publicList('coll_123', { containerType: 'cask', limit: 50 })
+     * ```
      */
     async function publicList(collectionId, params) {
         const qs = buildContainerQuery(params !== null && params !== void 0 ? params : {});
@@ -301,16 +313,20 @@ export var containers;
      * List current contents of a container (public).
      *
      * Returns only items where `removedAt` is null.  No `?history` option on
-     * the public side.
+     * the public side.  All of them come back in one answer: `nextCursor` is
+     * always null.
      *
      * @param collectionId - Collection context
      * @param containerId - Container UUID
-     * @param params - Optional pagination
-     * @returns `{ items: ContainerItem[], limit: number, offset: number }`
+     * @returns `{ items: ContainerItem[], nextCursor: null }`
+     *
+     * @example
+     * ```typescript
+     * const { items } = await containers.publicListItems('coll_123', 'cask-uuid')
+     * ```
      */
-    async function publicListItems(collectionId, containerId, params) {
-        const qs = buildContainerQuery(params !== null && params !== void 0 ? params : {});
-        const path = `/public/collection/${encodeURIComponent(collectionId)}/containers/${encodeURIComponent(containerId)}/items${qs}`;
+    async function publicListItems(collectionId, containerId) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/containers/${encodeURIComponent(containerId)}/items`;
         return request(path);
     }
     containers.publicListItems = publicListItems;

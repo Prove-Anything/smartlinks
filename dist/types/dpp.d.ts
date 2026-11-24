@@ -1,3 +1,4 @@
+import type { ListOptions } from "./list.js";
 /**
  * The registry environments: `acc` = the EU test registry, `prod` = the live EU registry, `practice` = the SmartLinks
  * practice registry (never the EU — for trying the whole flow before a brand is verified with the EU), `local` = a
@@ -198,13 +199,12 @@ export interface DppPassportVersion {
     savedAt: string;
     savedBy: string | null;
 }
-export interface DppPassportListQuery {
+/** `dpp.passports.list` options: the filters, plus `limit` and `cursor`. */
+export interface DppPassportListQuery extends ListOptions {
     productId?: string;
     batchId?: string;
     proofId?: string;
     status?: "active" | "withdrawn";
-    limit?: number;
-    offset?: number;
 }
 export interface DppRegisterResult {
     /** One registry request per product group (and kind), up to 100 passports each. */

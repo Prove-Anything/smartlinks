@@ -12,6 +12,14 @@ function encodeQuery(params) {
 export var loyalty;
 (function (loyalty) {
     // ── Admin — Schemes ───────────────────────────────────────────────────────────
+    /**
+     * The collection's loyalty schemes (admin). One list, no pages.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await loyalty.list('coll_123')
+     * ```
+     */
     async function list(collectionId, params = {}) {
         return request(`/admin/collection/${encodeURIComponent(collectionId)}/loyaltyScheme${encodeQuery(params)}`);
     }
@@ -33,6 +41,14 @@ export var loyalty;
     }
     loyalty.remove = remove;
     // ── Admin — Earning Rules ─────────────────────────────────────────────────────
+    /**
+     * A scheme's earning rules (admin). One list, no pages.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await loyalty.listEarningRules('coll_123', schemeId)
+     * ```
+     */
     async function listEarningRules(collectionId, schemeId) {
         return request(`/admin/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/earningRule`);
     }
@@ -54,6 +70,15 @@ export var loyalty;
     }
     loyalty.removeEarningRule = removeEarningRule;
     // ── Admin — Members ───────────────────────────────────────────────────────────
+    /**
+     * A scheme's members (admin), a page at a time (default 50, at most 200).
+     *
+     * @example
+     * ```typescript
+     * let page = await loyalty.listMembers('coll_123', schemeId, { limit: 100 })
+     * while (page.nextCursor) page = await loyalty.listMembers('coll_123', schemeId, { limit: 100, cursor: page.nextCursor })
+     * ```
+     */
     async function listMembers(collectionId, schemeId, params = {}) {
         return request(`/admin/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/member${encodeQuery(params)}`);
     }
@@ -78,13 +103,26 @@ export var loyalty;
         return post(`/admin/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/member/${encodeURIComponent(contactId)}/transaction`, body);
     }
     loyalty.recordTransaction = recordTransaction;
+    /**
+     * One member's points transactions (admin), newest first, a page at a time.
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor } = await loyalty.getMemberHistory('coll_123', schemeId, contactId, { limit: 50 })
+     * ```
+     */
     async function getMemberHistory(collectionId, schemeId, contactId, params = {}) {
         return request(`/admin/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/member/${encodeURIComponent(contactId)}/history${encodeQuery(params)}`);
     }
     loyalty.getMemberHistory = getMemberHistory;
     // ── Public ────────────────────────────────────────────────────────────────────
     /**
-     * List active schemes for a collection. No authentication required.
+     * List active schemes for a collection. No authentication required. One list, no pages.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await loyalty.publicList('coll_123')
+     * ```
      */
     async function publicList(collectionId) {
         return request(`/public/collection/${encodeURIComponent(collectionId)}/loyaltyScheme`);
@@ -99,7 +137,12 @@ export var loyalty;
     loyalty.publicGet = publicGet;
     /**
      * List active earning rules for a scheme — useful for showing "how to earn"
-     * in a loyalty UI. No authentication required.
+     * in a loyalty UI. No authentication required. One list, no pages.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await loyalty.publicListEarningRules('coll_123', schemeId)
+     * ```
      */
     async function publicListEarningRules(collectionId, schemeId) {
         return request(`/public/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/earningRule`);
@@ -115,6 +158,14 @@ export var loyalty;
      * - Authenticated: `member` is populated with balance + lifetimePoints
      *   (or null if not yet enrolled in that scheme)
      * - Unauthenticated: `member` is null on all schemes
+     *
+     * One list, no pages.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await loyalty.publicGetMe('coll_123')
+     * for (const scheme of items) console.log(scheme.name, scheme.member?.balance ?? 0)
+     * ```
      */
     async function publicGetMe(collectionId) {
         return request(`/public/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/me`);
@@ -130,7 +181,13 @@ export var loyalty;
     loyalty.publicGetMine = publicGetMine;
     /**
      * Get the authenticated caller's transaction history on a specific scheme.
-     * Ordered newest first. Requires authentication.
+     * Ordered newest first, a page at a time. Requires authentication.
+     *
+     * @example
+     * ```typescript
+     * let page = await loyalty.publicGetMineHistory('coll_123', schemeId, { limit: 20 })
+     * while (page.nextCursor) page = await loyalty.publicGetMineHistory('coll_123', schemeId, { limit: 20, cursor: page.nextCursor })
+     * ```
      */
     async function publicGetMineHistory(collectionId, schemeId, params = {}) {
         return request(`/public/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/member/me/history${encodeQuery(params)}`);

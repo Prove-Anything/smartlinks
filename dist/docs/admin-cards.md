@@ -143,7 +143,7 @@ an uninstalled app's cards drop out. Save it with `adminCards.saveLayout`.
 ```ts
 import { adminCards, realtime } from '@proveanything/smartlinks'
 
-const { cards, hidden, layout } = await adminCards.list(collectionId)   // display order
+const { items: cards, hidden, layout } = await adminCards.list(collectionId)   // display order
 realtime.onChange({ collectionId }, { type: 'cards' }, () => reload())  // a card was recomputed
 await adminCards.refresh(collectionId, 'faq', 'unanswered')             // the card's refresh button
 ```

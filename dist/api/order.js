@@ -113,45 +113,51 @@ export var order;
     }
     order.remove = remove;
     /**
-     * List orders for a collection with optional filters and pagination.
+     * List orders for a collection with optional filters, a page at a time (default 100).
      * Orders are returned in descending order by createdAt (newest first).
      *
      * @param collectionId - Identifier of the parent collection
-     * @param params - Optional query parameters for filtering and pagination
-     * @returns Promise resolving to a ListOrdersResponse object
+     * @param params - Optional filters, plus `limit` and `cursor` for paging
+     * @returns Promise resolving to `{ items, nextCursor }`: the orders, and the cursor for the next page (null on the last)
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
-     * // List all orders (without items for better performance)
-     * const all = await order.list('coll_123')
+     * // The first page of orders (without items for better performance)
+     * const { items } = await order.list('coll_123')
      *
-     * // List with filters
-     * const pending = await order.list('coll_123', {
-     *   status: 'pending',
-     *   limit: 50,
-     *   offset: 0
-     * })
+     * // List with filters, page by page
+     * let page = await order.list('coll_123', { status: 'pending', limit: 50 })
+     * while (page.nextCursor) {
+     *   page = await order.list('coll_123', { status: 'pending', limit: 50, cursor: page.nextCursor })
+     * }
      *
      * // Filter by customer with items
      * const customerOrders = await order.list('coll_123', {
      *   customerId: 'CUST-789',
      *   includeItems: true
      * })
+     *
+     * // Purchase orders from one supplier
+     * const purchases = await order.list('coll_123', { direction: 'purchase', partyId: supplierId })
      * ```
      */
     async function list(collectionId, params) {
         const queryParams = new URLSearchParams();
         if (params === null || params === void 0 ? void 0 : params.limit)
             queryParams.append('limit', params.limit.toString());
-        if (params === null || params === void 0 ? void 0 : params.offset)
-            queryParams.append('offset', params.offset.toString());
+        if (params === null || params === void 0 ? void 0 : params.cursor)
+            queryParams.append('cursor', params.cursor);
         if (params === null || params === void 0 ? void 0 : params.status)
             queryParams.append('status', params.status);
         if (params === null || params === void 0 ? void 0 : params.orderRef)
             queryParams.append('orderRef', params.orderRef);
         if (params === null || params === void 0 ? void 0 : params.customerId)
             queryParams.append('customerId', params.customerId);
+        if (params === null || params === void 0 ? void 0 : params.direction)
+            queryParams.append('direction', params.direction);
+        if (params === null || params === void 0 ? void 0 : params.partyId)
+            queryParams.append('partyId', params.partyId);
         if (params === null || params === void 0 ? void 0 : params.includeItems)
             queryParams.append('includeItems', 'true');
         const query = queryParams.toString();
@@ -165,31 +171,27 @@ export var order;
      *
      * @param collectionId - Identifier of the parent collection
      * @param orderId - Order ID
-     * @param params - Optional pagination parameters
-     * @returns Promise resolving to a GetOrderItemsResponse object
+     * @param params - Optional `limit` and `cursor` for paging
+     * @returns Promise resolving to `{ items, nextCursor }`: the order's items, and the cursor for the next page (null on the last)
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
      * // Get first page of items
-     * const page1 = await order.getItems('coll_123', 'order_abc123', {
-     *   limit: 100,
-     *   offset: 0
-     * })
+     * const page1 = await order.getItems('coll_123', 'order_abc123', { limit: 100 })
      *
      * // Get next page
-     * const page2 = await order.getItems('coll_123', 'order_abc123', {
-     *   limit: 100,
-     *   offset: 100
-     * })
+     * if (page1.nextCursor) {
+     *   const page2 = await order.getItems('coll_123', 'order_abc123', { limit: 100, cursor: page1.nextCursor })
+     * }
      * ```
      */
     async function getItems(collectionId, orderId, params) {
         const queryParams = new URLSearchParams();
         if (params === null || params === void 0 ? void 0 : params.limit)
             queryParams.append('limit', params.limit.toString());
-        if (params === null || params === void 0 ? void 0 : params.offset)
-            queryParams.append('offset', params.offset.toString());
+        if (params === null || params === void 0 ? void 0 : params.cursor)
+            queryParams.append('cursor', params.cursor);
         const query = queryParams.toString();
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/orders/${encodeURIComponent(orderId)}/items${query ? `?${query}` : ''}`;
         return request(path);
@@ -261,46 +263,6 @@ export var order;
         });
     }
     order.removeItems = removeItems;
-    /**
-     * Find all orders containing specific items (tags, proofs, or serial numbers).
-     * Use case: Scan a tag and immediately see if it's part of any order.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param data - Items to look up
-     * @returns Promise resolving to a LookupOrdersResponse with matching orders
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Scan a tag and find associated orders
-     * const result = await order.lookup('coll_123', {
-     *   items: [
-     *     { itemType: 'tag', itemId: 'TAG001' }
-     *   ]
-     * })
-     *
-     * if (result.orders.length > 0) {
-     *   console.log(`Tag is part of ${result.orders.length} order(s)`)
-     *   result.orders.forEach(ord => {
-     *     console.log(`Order ${ord.orderRef}: ${ord.status}`)
-     *   })
-     * }
-     *
-     * // Batch lookup multiple items
-     * const batchResult = await order.lookup('coll_123', {
-     *   items: [
-     *     { itemType: 'tag', itemId: 'TAG001' },
-     *     { itemType: 'serial', itemId: 'SN12345' },
-     *     { itemType: 'proof', itemId: 'proof_xyz' }
-     *   ]
-     * })
-     * ```
-     */
-    async function lookup(collectionId, data) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/orders/lookup`;
-        return post(path, data);
-    }
-    order.lookup = lookup;
     function validateOrderQuery(data) {
         const query = data.query;
         if (!query)
@@ -314,8 +276,8 @@ export var order;
      * More powerful than the basic list() function.
      *
      * @param collectionId - Identifier of the parent collection
-     * @param data - Query parameters with filters, sorting, and pagination
-     * @returns Promise resolving to a QueryOrdersResponse
+     * @param data - Query parameters with filters and sorting, plus `limit` and `cursor` for paging
+     * @returns Promise resolving to `{ items, nextCursor }`: the matching orders, and the cursor for the next page (null on the last)
      * @throws ErrorResponse if the request fails
      *
      * @example
@@ -331,6 +293,16 @@ export var order;
      *   },
      *   limit: 50
      * })
+     * console.log(result.items.length)
+     *
+     * // The next page: the same query with the cursor
+     * if (result.nextCursor) {
+     *   const next = await order.query('coll_123', {
+     *     query: { status: 'pending', sortBy: 'createdAt', sortOrder: 'desc' },
+     *     limit: 50,
+     *     cursor: result.nextCursor
+     *   })
+     * }
      *
      * // Find orders with specific metadata and item count
      * const highPriority = await order.query('coll_123', {
@@ -435,43 +407,6 @@ export var order;
     }
     order.reports = reports;
     /**
-     * Find all orders containing items with a specific product ID.
-     * Uses the automatic productSummary tracking in order metadata.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param productId - Product ID to search for
-     * @param params - Optional pagination and includeItems parameters
-     * @returns Promise resolving to a LookupByProductResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Find all orders with a specific product
-     * const result = await order.findByProduct('coll_123', 'product_abc123', {
-     *   limit: 50,
-     *   includeItems: false
-     * })
-     *
-     * result.orders.forEach(ord => {
-     *   const count = ord.metadata.productSummary?.['product_abc123'] ?? 0
-     *   console.log(`Order ${ord.orderRef} has ${count} items of this product`)
-     * })
-     * ```
-     */
-    async function findByProduct(collectionId, productId, params) {
-        const queryParams = new URLSearchParams();
-        if (params === null || params === void 0 ? void 0 : params.limit)
-            queryParams.append('limit', params.limit.toString());
-        if (params === null || params === void 0 ? void 0 : params.offset)
-            queryParams.append('offset', params.offset.toString());
-        if (params === null || params === void 0 ? void 0 : params.includeItems)
-            queryParams.append('includeItems', 'true');
-        const query = queryParams.toString();
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/orders/product/${encodeURIComponent(productId)}${query ? `?${query}` : ''}`;
-        return request(path);
-    }
-    order.findByProduct = findByProduct;
-    /**
      * Get comprehensive scan analytics for all tags in an order.
      * Returns scan counts, timestamps, locations, devices, and per-tag summaries.
      *
@@ -508,7 +443,8 @@ export var order;
      * @param collectionId - Identifier of the parent collection
      * @param orderId - Order ID
      * @param params - Optional filters (limit, date range, isAdmin)
-     * @returns Promise resolving to a TimelineResponse with scan events
+     * @returns Promise resolving to `{ items, nextCursor, orderRef, orderId }`: the scan events (one list, no
+     *   pages: `limit` says how many, default 1000), with the order they belong to
      * @throws ErrorResponse if the request fails
      *
      * @example
@@ -516,7 +452,7 @@ export var order;
      * // Get all scan events
      * const timeline = await order.getTimeline('coll_123', 'order_abc123')
      *
-     * timeline.timeline.forEach(event => {
+     * timeline.items.forEach(event => {
      *   console.log(`${event.timestamp}: ${event.eventType} by ${event.isAdmin ? 'admin' : 'customer'}`)
      * })
      *
@@ -540,7 +476,8 @@ export var order;
      * @param collectionId - Identifier of the parent collection
      * @param orderId - Order ID
      * @param params - Optional limit parameter
-     * @returns Promise resolving to a LocationResponse with location scans
+     * @returns Promise resolving to `{ items, nextCursor, orderRef, orderId }`: the scans that have a location
+     *   (one list, no pages: `limit` says how many, default 1000), with the order they belong to
      * @throws ErrorResponse if the request fails
      *
      * @example
@@ -549,8 +486,8 @@ export var order;
      *   limit: 100
      * })
      *
-     * console.log(`Order scanned in ${locations.count} locations`)
-     * locations.locations.forEach(scan => {
+     * console.log(`Order has ${locations.items.length} scans with a location`)
+     * locations.items.forEach(scan => {
      *   console.log(`${scan.location} at ${scan.timestamp}`)
      * })
      * ```
@@ -620,103 +557,4 @@ export var order;
         return post(path, params || {});
     }
     order.getCollectionSummary = getCollectionSummary;
-    /**
-     * Find all orders containing items from a specific product.
-     * Uses indexed queries for fast lookups across order items.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param productId - Product ID to search for
-     * @param params - Optional pagination and includeItems parameters
-     * @returns Promise resolving to a FindOrdersByAttributeResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Find all orders containing a product
-     * const { orders, limit, offset } = await order.findOrdersByProduct('coll_123', 'prod_789', {
-     *   limit: 100
-     * })
-     *
-     * console.log(`Product appears in ${orders.length} orders`)
-     * ```
-     */
-    async function findOrdersByProduct(collectionId, productId, params) {
-        const queryParams = new URLSearchParams();
-        if (params === null || params === void 0 ? void 0 : params.limit)
-            queryParams.append('limit', params.limit.toString());
-        if (params === null || params === void 0 ? void 0 : params.offset)
-            queryParams.append('offset', params.offset.toString());
-        if (params === null || params === void 0 ? void 0 : params.includeItems)
-            queryParams.append('includeItems', 'true');
-        const query = queryParams.toString();
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/orders/product/${encodeURIComponent(productId)}${query ? `?${query}` : ''}`;
-        return request(path);
-    }
-    order.findOrdersByProduct = findOrdersByProduct;
-    /**
-     * Get individual order items for a specific product.
-     * Returns all matching items with optional order summary.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param productId - Product ID to search for
-     * @param params - Optional pagination and includeOrder parameters
-     * @returns Promise resolving to a FindItemsByAttributeResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Get all items for a product
-     * const { items } = await order.findItemsByProduct('coll_123', 'prod_789', {
-     *   includeOrder: true
-     * })
-     *
-     * console.log(`Product delivered in ${items.length} order items`)
-     * ```
-     */
-    async function findItemsByProduct(collectionId, productId, params) {
-        const queryParams = new URLSearchParams();
-        if (params === null || params === void 0 ? void 0 : params.limit)
-            queryParams.append('limit', params.limit.toString());
-        if (params === null || params === void 0 ? void 0 : params.offset)
-            queryParams.append('offset', params.offset.toString());
-        if (params === null || params === void 0 ? void 0 : params.includeOrder)
-            queryParams.append('includeOrder', 'true');
-        const query = queryParams.toString();
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/orders/product/${encodeURIComponent(productId)}/items${query ? `?${query}` : ''}`;
-        return request(path);
-    }
-    order.findItemsByProduct = findItemsByProduct;
-    /**
-     * Get unique order IDs containing items for a specific product.
-     * Lightweight query that only returns order IDs, not full order objects.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param attribute - Attribute to search by ('productId')
-     * @param value - Product ID to search for
-     * @param params - Optional pagination parameters
-     * @returns Promise resolving to a GetOrderIdsResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Get order IDs for a product
-     * const productOrders = await order.getOrderIdsByAttribute(
-     *   'coll_123',
-     *   'productId',
-     *   'prod_789',
-     *   { limit: 500 }
-     * )
-     * ```
-     */
-    async function getOrderIdsByAttribute(collectionId, attribute, value, params) {
-        const queryParams = new URLSearchParams();
-        if (params === null || params === void 0 ? void 0 : params.limit)
-            queryParams.append('limit', params.limit.toString());
-        if (params === null || params === void 0 ? void 0 : params.offset)
-            queryParams.append('offset', params.offset.toString());
-        const query = queryParams.toString();
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/orders/ids/${attribute}/${encodeURIComponent(value)}${query ? `?${query}` : ''}`;
-        return request(path);
-    }
-    order.getOrderIdsByAttribute = getOrderIdsByAttribute;
 })(order || (order = {}));

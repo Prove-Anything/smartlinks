@@ -1,4 +1,5 @@
-import { OrderItem, CreateOrderRequest, CreateOrderResponse, GetOrderParams, GetOrderResponse, UpdateOrderRequest, UpdateOrderResponse, DeleteOrderResponse, ListOrdersRequest, ListOrdersResponse, GetOrderItemsParams, GetOrderItemsResponse, AddItemsRequest, AddItemsResponse, RemoveItemsRequest, RemoveItemsResponse, QueryOrdersRequest, QueryOrdersResponse, ReportsParams, ReportsResponse, LookupOrdersRequest, LookupOrdersResponse, LookupByProductParams, LookupByProductResponse, OrderAnalyticsResponse, TimelineRequest, TimelineResponse, LocationRequest, LocationResponse, BulkAnalyticsRequest, BulkAnalyticsResponse, SummaryRequest, CollectionSummaryResponse, FindOrdersByAttributeParams, FindOrdersByAttributeResponse, FindItemsByAttributeParams, FindItemsByAttributeResponse, GetOrderIdsParams, GetOrderIdsResponse } from "../types/order.js";
+import { Order, OrderItem, CreateOrderRequest, CreateOrderResponse, GetOrderParams, GetOrderResponse, UpdateOrderRequest, UpdateOrderResponse, DeleteOrderResponse, ListOrdersRequest, GetOrderItemsParams, AddItemsRequest, AddItemsResponse, RemoveItemsRequest, RemoveItemsResponse, QueryOrdersRequest, ReportsParams, ReportsResponse, OrderAnalyticsResponse, TimelineRequest, TagScanEvent, LocationRequest, LocationScan, BulkAnalyticsRequest, BulkAnalyticsResponse, SummaryRequest, CollectionSummaryResponse } from "../types/order.js";
+import type { ListResult } from "../types/list.js";
 /**
  * Order Management API
  *
@@ -91,60 +92,58 @@ export declare namespace order {
      */
     function remove(collectionId: string, orderId: string): Promise<DeleteOrderResponse>;
     /**
-     * List orders for a collection with optional filters and pagination.
+     * List orders for a collection with optional filters, a page at a time (default 100).
      * Orders are returned in descending order by createdAt (newest first).
      *
      * @param collectionId - Identifier of the parent collection
-     * @param params - Optional query parameters for filtering and pagination
-     * @returns Promise resolving to a ListOrdersResponse object
+     * @param params - Optional filters, plus `limit` and `cursor` for paging
+     * @returns Promise resolving to `{ items, nextCursor }`: the orders, and the cursor for the next page (null on the last)
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
-     * // List all orders (without items for better performance)
-     * const all = await order.list('coll_123')
+     * // The first page of orders (without items for better performance)
+     * const { items } = await order.list('coll_123')
      *
-     * // List with filters
-     * const pending = await order.list('coll_123', {
-     *   status: 'pending',
-     *   limit: 50,
-     *   offset: 0
-     * })
+     * // List with filters, page by page
+     * let page = await order.list('coll_123', { status: 'pending', limit: 50 })
+     * while (page.nextCursor) {
+     *   page = await order.list('coll_123', { status: 'pending', limit: 50, cursor: page.nextCursor })
+     * }
      *
      * // Filter by customer with items
      * const customerOrders = await order.list('coll_123', {
      *   customerId: 'CUST-789',
      *   includeItems: true
      * })
+     *
+     * // Purchase orders from one supplier
+     * const purchases = await order.list('coll_123', { direction: 'purchase', partyId: supplierId })
      * ```
      */
-    function list(collectionId: string, params?: ListOrdersRequest): Promise<ListOrdersResponse>;
+    function list(collectionId: string, params?: ListOrdersRequest): Promise<ListResult<Order>>;
     /**
      * Get items from an order with pagination support.
      * Use this for orders with many items instead of includeItems.
      *
      * @param collectionId - Identifier of the parent collection
      * @param orderId - Order ID
-     * @param params - Optional pagination parameters
-     * @returns Promise resolving to a GetOrderItemsResponse object
+     * @param params - Optional `limit` and `cursor` for paging
+     * @returns Promise resolving to `{ items, nextCursor }`: the order's items, and the cursor for the next page (null on the last)
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
      * // Get first page of items
-     * const page1 = await order.getItems('coll_123', 'order_abc123', {
-     *   limit: 100,
-     *   offset: 0
-     * })
+     * const page1 = await order.getItems('coll_123', 'order_abc123', { limit: 100 })
      *
      * // Get next page
-     * const page2 = await order.getItems('coll_123', 'order_abc123', {
-     *   limit: 100,
-     *   offset: 100
-     * })
+     * if (page1.nextCursor) {
+     *   const page2 = await order.getItems('coll_123', 'order_abc123', { limit: 100, cursor: page1.nextCursor })
+     * }
      * ```
      */
-    function getItems(collectionId: string, orderId: string, params?: GetOrderItemsParams): Promise<GetOrderItemsResponse>;
+    function getItems(collectionId: string, orderId: string, params?: GetOrderItemsParams): Promise<ListResult<OrderItem>>;
     /**
      * Add additional items to an existing order.
      *
@@ -195,48 +194,12 @@ export declare namespace order {
     function lineDone(collectionId: string, orderId: string, itemId: string, by: number): Promise<OrderItem>;
     function removeItems(collectionId: string, orderId: string, data: RemoveItemsRequest): Promise<RemoveItemsResponse>;
     /**
-     * Find all orders containing specific items (tags, proofs, or serial numbers).
-     * Use case: Scan a tag and immediately see if it's part of any order.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param data - Items to look up
-     * @returns Promise resolving to a LookupOrdersResponse with matching orders
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Scan a tag and find associated orders
-     * const result = await order.lookup('coll_123', {
-     *   items: [
-     *     { itemType: 'tag', itemId: 'TAG001' }
-     *   ]
-     * })
-     *
-     * if (result.orders.length > 0) {
-     *   console.log(`Tag is part of ${result.orders.length} order(s)`)
-     *   result.orders.forEach(ord => {
-     *     console.log(`Order ${ord.orderRef}: ${ord.status}`)
-     *   })
-     * }
-     *
-     * // Batch lookup multiple items
-     * const batchResult = await order.lookup('coll_123', {
-     *   items: [
-     *     { itemType: 'tag', itemId: 'TAG001' },
-     *     { itemType: 'serial', itemId: 'SN12345' },
-     *     { itemType: 'proof', itemId: 'proof_xyz' }
-     *   ]
-     * })
-     * ```
-     */
-    function lookup(collectionId: string, data: LookupOrdersRequest): Promise<LookupOrdersResponse>;
-    /**
      * Advanced query for orders with order-level and item-level filtering.
      * More powerful than the basic list() function.
      *
      * @param collectionId - Identifier of the parent collection
-     * @param data - Query parameters with filters, sorting, and pagination
-     * @returns Promise resolving to a QueryOrdersResponse
+     * @param data - Query parameters with filters and sorting, plus `limit` and `cursor` for paging
+     * @returns Promise resolving to `{ items, nextCursor }`: the matching orders, and the cursor for the next page (null on the last)
      * @throws ErrorResponse if the request fails
      *
      * @example
@@ -252,6 +215,16 @@ export declare namespace order {
      *   },
      *   limit: 50
      * })
+     * console.log(result.items.length)
+     *
+     * // The next page: the same query with the cursor
+     * if (result.nextCursor) {
+     *   const next = await order.query('coll_123', {
+     *     query: { status: 'pending', sortBy: 'createdAt', sortOrder: 'desc' },
+     *     limit: 50,
+     *     cursor: result.nextCursor
+     *   })
+     * }
      *
      * // Find orders with specific metadata and item count
      * const highPriority = await order.query('coll_123', {
@@ -284,7 +257,7 @@ export declare namespace order {
      * })
      * ```
      */
-    function query(collectionId: string, data: QueryOrdersRequest): Promise<QueryOrdersResponse>;
+    function query(collectionId: string, data: QueryOrdersRequest): Promise<ListResult<Order>>;
     /**
      * Get reports and aggregations for orders.
      * Provides analytics grouped by status, customer, product, date, etc.
@@ -321,31 +294,6 @@ export declare namespace order {
      */
     function reports(collectionId: string, params?: ReportsParams): Promise<ReportsResponse>;
     /**
-     * Find all orders containing items with a specific product ID.
-     * Uses the automatic productSummary tracking in order metadata.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param productId - Product ID to search for
-     * @param params - Optional pagination and includeItems parameters
-     * @returns Promise resolving to a LookupByProductResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Find all orders with a specific product
-     * const result = await order.findByProduct('coll_123', 'product_abc123', {
-     *   limit: 50,
-     *   includeItems: false
-     * })
-     *
-     * result.orders.forEach(ord => {
-     *   const count = ord.metadata.productSummary?.['product_abc123'] ?? 0
-     *   console.log(`Order ${ord.orderRef} has ${count} items of this product`)
-     * })
-     * ```
-     */
-    function findByProduct(collectionId: string, productId: string, params?: LookupByProductParams): Promise<LookupByProductResponse>;
-    /**
      * Get comprehensive scan analytics for all tags in an order.
      * Returns scan counts, timestamps, locations, devices, and per-tag summaries.
      *
@@ -378,7 +326,8 @@ export declare namespace order {
      * @param collectionId - Identifier of the parent collection
      * @param orderId - Order ID
      * @param params - Optional filters (limit, date range, isAdmin)
-     * @returns Promise resolving to a TimelineResponse with scan events
+     * @returns Promise resolving to `{ items, nextCursor, orderRef, orderId }`: the scan events (one list, no
+     *   pages: `limit` says how many, default 1000), with the order they belong to
      * @throws ErrorResponse if the request fails
      *
      * @example
@@ -386,7 +335,7 @@ export declare namespace order {
      * // Get all scan events
      * const timeline = await order.getTimeline('coll_123', 'order_abc123')
      *
-     * timeline.timeline.forEach(event => {
+     * timeline.items.forEach(event => {
      *   console.log(`${event.timestamp}: ${event.eventType} by ${event.isAdmin ? 'admin' : 'customer'}`)
      * })
      *
@@ -398,7 +347,10 @@ export declare namespace order {
      * })
      * ```
      */
-    function getTimeline(collectionId: string, orderId: string, params?: TimelineRequest): Promise<TimelineResponse>;
+    function getTimeline(collectionId: string, orderId: string, params?: TimelineRequest): Promise<ListResult<TagScanEvent> & {
+        orderRef: string;
+        orderId: string;
+    }>;
     /**
      * Get location-based scan history for an order's tags.
      * Shows where the order's tags have been scanned.
@@ -406,7 +358,8 @@ export declare namespace order {
      * @param collectionId - Identifier of the parent collection
      * @param orderId - Order ID
      * @param params - Optional limit parameter
-     * @returns Promise resolving to a LocationResponse with location scans
+     * @returns Promise resolving to `{ items, nextCursor, orderRef, orderId }`: the scans that have a location
+     *   (one list, no pages: `limit` says how many, default 1000), with the order they belong to
      * @throws ErrorResponse if the request fails
      *
      * @example
@@ -415,13 +368,16 @@ export declare namespace order {
      *   limit: 100
      * })
      *
-     * console.log(`Order scanned in ${locations.count} locations`)
-     * locations.locations.forEach(scan => {
+     * console.log(`Order has ${locations.items.length} scans with a location`)
+     * locations.items.forEach(scan => {
      *   console.log(`${scan.location} at ${scan.timestamp}`)
      * })
      * ```
      */
-    function getLocationHistory(collectionId: string, orderId: string, params?: LocationRequest): Promise<LocationResponse>;
+    function getLocationHistory(collectionId: string, orderId: string, params?: LocationRequest): Promise<ListResult<LocationScan> & {
+        orderRef: string;
+        orderId: string;
+    }>;
     /**
      * Get analytics summary for multiple orders at once.
      * Efficient way to retrieve scan data for many orders.
@@ -474,69 +430,4 @@ export declare namespace order {
      * ```
      */
     function getCollectionSummary(collectionId: string, params?: SummaryRequest): Promise<CollectionSummaryResponse>;
-    /**
-     * Find all orders containing items from a specific product.
-     * Uses indexed queries for fast lookups across order items.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param productId - Product ID to search for
-     * @param params - Optional pagination and includeItems parameters
-     * @returns Promise resolving to a FindOrdersByAttributeResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Find all orders containing a product
-     * const { orders, limit, offset } = await order.findOrdersByProduct('coll_123', 'prod_789', {
-     *   limit: 100
-     * })
-     *
-     * console.log(`Product appears in ${orders.length} orders`)
-     * ```
-     */
-    function findOrdersByProduct(collectionId: string, productId: string, params?: FindOrdersByAttributeParams): Promise<FindOrdersByAttributeResponse>;
-    /**
-     * Get individual order items for a specific product.
-     * Returns all matching items with optional order summary.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param productId - Product ID to search for
-     * @param params - Optional pagination and includeOrder parameters
-     * @returns Promise resolving to a FindItemsByAttributeResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Get all items for a product
-     * const { items } = await order.findItemsByProduct('coll_123', 'prod_789', {
-     *   includeOrder: true
-     * })
-     *
-     * console.log(`Product delivered in ${items.length} order items`)
-     * ```
-     */
-    function findItemsByProduct(collectionId: string, productId: string, params?: FindItemsByAttributeParams): Promise<FindItemsByAttributeResponse>;
-    /**
-     * Get unique order IDs containing items for a specific product.
-     * Lightweight query that only returns order IDs, not full order objects.
-     *
-     * @param collectionId - Identifier of the parent collection
-     * @param attribute - Attribute to search by ('productId')
-     * @param value - Product ID to search for
-     * @param params - Optional pagination parameters
-     * @returns Promise resolving to a GetOrderIdsResponse
-     * @throws ErrorResponse if the request fails
-     *
-     * @example
-     * ```typescript
-     * // Get order IDs for a product
-     * const productOrders = await order.getOrderIdsByAttribute(
-     *   'coll_123',
-     *   'productId',
-     *   'prod_789',
-     *   { limit: 500 }
-     * )
-     * ```
-     */
-    function getOrderIdsByAttribute(collectionId: string, attribute: 'productId', value: string, params?: GetOrderIdsParams): Promise<GetOrderIdsResponse>;
 }

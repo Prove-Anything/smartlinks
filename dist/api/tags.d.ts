@@ -1,4 +1,5 @@
-import type { TagIndexEntry, CreateTagRequest, CreateTagResponse, BatchCreateTagRequest, BatchCreateResult, UpdateTagRequest, UpdateTagResponse, DeleteTagResponse, GetTagResponse, ListTagsRequest, ListTagsResponse, LookupTagsRequest, LookupTagsQueryRequest, TagLookupResponse, PublicGetTagResponse, ByRefRequest, ByRefResponse, ReverseTagLookupParams, ReverseTagLookupResponse } from "../types/tags.js";
+import type { Tag, TagIndexEntry, CreateTagRequest, CreateTagResponse, BatchCreateTagRequest, BatchCreateResult, UpdateTagRequest, UpdateTagResponse, DeleteTagResponse, GetTagResponse, ListTagsRequest, LookupTagsRequest, LookupTagsQueryRequest, TagLookupResponse, PublicGetTagResponse, ByRefRequest, ByRefResponse, ReverseTagLookupParams } from "../types/tags.js";
+import type { ListResult } from "../types/list.js";
 /**
  * Tag Management API
  *
@@ -110,25 +111,28 @@ export declare namespace tags {
      */
     function remove(collectionId: string, tagId: string): Promise<DeleteTagResponse>;
     /**
-     * List tags with optional filters and pagination (admin).
+     * List tags with optional filters, a page at a time (admin).
      *
      * @param collectionId - Collection context
-     * @param params - Optional filter and pagination params
-     * @returns `{ tags: Tag[], limit: number, offset: number }`
+     * @param params - Optional filters, plus `limit` and `cursor`
+     * @returns `{ items: Tag[], nextCursor: string | null }`
      *
      * @example
      * ```typescript
-     * // All tags for a product
-     * const { tags: list } = await tags.list('coll_123', { productId: 'prod_456' })
+     * // Tags for a product, page by page
+     * let page = await tags.list('coll_123', { productId: 'prod_456', limit: 100 })
+     * while (page.nextCursor) {
+     *   page = await tags.list('coll_123', { productId: 'prod_456', limit: 100, cursor: page.nextCursor })
+     * }
      *
-     * // All tags linked to a container
-     * const { tags: linked } = await tags.list('coll_123', {
+     * // Tags linked to a container
+     * const { items: linked } = await tags.list('coll_123', {
      *   refType: 'container',
      *   refId:   'container-uuid',
      * })
      * ```
      */
-    function list(collectionId: string, params?: ListTagsRequest): Promise<ListTagsResponse>;
+    function list(collectionId: string, params?: ListTagsRequest): Promise<ListResult<Tag>>;
     /**
      * Reverse lookup — find all tags linked to a given object (admin).
      *
@@ -137,17 +141,17 @@ export declare namespace tags {
      *
      * @param collectionId - Collection context
      * @param params - `refType` and `refId` are required
-     * @returns `{ tags: Tag[] }`
+     * @returns `{ items: Tag[], nextCursor: null }`: every linked tag in one answer
      *
      * @example
      * ```typescript
-     * const { tags: linked } = await tags.byRef('coll_123', {
+     * const { items: linked } = await tags.byRef('coll_123', {
      *   refType: 'container',
      *   refId:   'container-uuid',
      * })
      * ```
      */
-    function byRef(collectionId: string, params: ReverseTagLookupParams): Promise<ReverseTagLookupResponse>;
+    function byRef(collectionId: string, params: ReverseTagLookupParams): Promise<ListResult<Tag>>;
     /**
      * Global tag resolve — returns `{ tagId, collectionId }` only.
      *
@@ -206,11 +210,11 @@ export declare namespace tags {
      *
      * @param collectionId - Collection context
      * @param data - `{ tagIds: string[], embed?: string }`
-     * @returns `{ count: number, tags: Tag[], embedded: TagEmbedded }`
+     * @returns `{ items: Tag[], nextCursor: null, count: number, embedded: TagEmbedded }`
      *
      * @example
      * ```typescript
-     * const { count, tags: list, embedded } = await tags.lookupTags('coll_123', {
+     * const { items, count, embedded } = await tags.lookupTags('coll_123', {
      *   tagIds: ['NFC-001', 'NFC-002', 'NFC-003'],
      *   embed:  'product,proof',
      * })
@@ -224,7 +228,15 @@ export declare namespace tags {
      *
      * @param collectionId - Collection context
      * @param params - `tagIds` is comma-separated; `embed` is optional
-     * @returns `{ count: number, tags: Tag[], embedded: TagEmbedded }`
+     * @returns `{ items: Tag[], nextCursor: null, count: number, embedded: TagEmbedded }`
+     *
+     * @example
+     * ```typescript
+     * const { items, embedded } = await tags.lookupTagsQuery('coll_123', {
+     *   tagIds: 'NFC-001,NFC-002',
+     *   embed:  'product',
+     * })
+     * ```
      */
     function lookupTagsQuery(collectionId: string, params: LookupTagsQueryRequest): Promise<TagLookupResponse>;
     /**
@@ -234,11 +246,11 @@ export declare namespace tags {
      *
      * @param collectionId - Collection context
      * @param params - `refType` and `refId` are required; `embed` is optional
-     * @returns `{ tags: Tag[], embedded: TagEmbedded }`
+     * @returns `{ items: Tag[], nextCursor: null, embedded: TagEmbedded }`
      *
      * @example
      * ```typescript
-     * const { tags: linked, embedded } = await tags.publicByRef('coll_123', {
+     * const { items: linked, embedded } = await tags.publicByRef('coll_123', {
      *   refType: 'container',
      *   refId:   'container-uuid',
      *   embed:   'container',
@@ -254,7 +266,16 @@ export declare namespace tags {
      *
      * @param collectionId - Collection context
      * @param data - `{ refType, refId, embed? }`
-     * @returns `{ tags: Tag[], embedded: TagEmbedded }`
+     * @returns `{ items: Tag[], nextCursor: null, embedded: TagEmbedded }`
+     *
+     * @example
+     * ```typescript
+     * const { items: linked, embedded } = await tags.publicByRefPost('coll_123', {
+     *   refType: 'container',
+     *   refId:   'container-uuid',
+     *   embed:   'container',
+     * })
+     * ```
      */
     function publicByRefPost(collectionId: string, data: ByRefRequest): Promise<ByRefResponse>;
 }

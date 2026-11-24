@@ -51,7 +51,13 @@ export var proof;
     }
     proof.get = get;
     /**
-     * List all Proofs for a Collection.
+     * List all Proofs for a Collection, in one list (no pages).
+     * GET /public/collection/:collectionId/proof
+     *
+     * @example
+     * ```typescript
+     * const { items } = await proof.list(collectionId)
+     * ```
      */
     async function list(collectionId, include) {
         const qp = include && include.length ? `?include=${encodeURIComponent(include.join(','))}` : '';
@@ -166,8 +172,13 @@ export var proof;
     }
     proof.remove = remove;
     /**
-     * Get proofs for a user in a collection (admin only).
+     * Get proofs for a user in a collection (admin only), in one list (no pages).
      * GET /admin/collection/:collectionId/proof/findByUser/:userId
+     *
+     * @example
+     * ```typescript
+     * const { items } = await proof.getByUser(collectionId, userId)
+     * ```
      */
     async function getByUser(collectionId, userId) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/proof/findByUser/${encodeURIComponent(userId)}`;
@@ -175,8 +186,13 @@ export var proof;
     }
     proof.getByUser = getByUser;
     /**
-     * Get proofs for a product (admin only).
+     * Get proofs for a product (admin only), in one list (no pages).
      * GET /admin/collection/:collectionId/product/:productId/proof
+     *
+     * @example
+     * ```typescript
+     * const { items } = await proof.getByProduct(collectionId, productId)
+     * ```
      */
     async function getByProduct(collectionId, productId) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof`;
@@ -184,17 +200,29 @@ export var proof;
     }
     proof.getByProduct = getByProduct;
     /**
-     * Find proofs for a product (admin only).
+     * Find proofs for a product (admin only): the newest `limit` (default 100), or every proof matching
+     * `filterBy`. For counting, sorting and paging through a collection's proofs use `proof.query`.
      * POST /admin/collection/:collectionId/product/:productId/proof/find
+     *
+     * @example
+     * ```typescript
+     * const { items } = await proof.findByProduct(collectionId, productId, { limit: 50, includes: ['assets'] })
+     * const red = await proof.findByProduct(collectionId, productId, { filterBy: [{ field: 'values.colour', value: 'red' }] })
+     * ```
      */
-    async function findByProduct(collectionId, productId, query) {
+    async function findByProduct(collectionId, productId, query = {}) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/find`;
         return post(path, query);
     }
     proof.findByProduct = findByProduct;
     /**
-     * Get proofs for a batch (admin only).
+     * Get proofs for a batch (admin only), in one list (no pages).
      * GET /admin/collection/:collectionId/product/:productId/batch/:batchId/proof
+     *
+     * @example
+     * ```typescript
+     * const { items } = await proof.getByBatch(collectionId, productId, batchId)
+     * ```
      */
     async function getByBatch(collectionId, productId, batchId) {
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/batch/${encodeURIComponent(batchId)}/proof`;
@@ -265,7 +293,15 @@ export var proof;
         return post(grantBase(collectionId, productId, proofId), body);
     }
     proof.createGrant = createGrant;
-    /** List the active + past grants on a proof (owner / collection admin only). Tokens are never returned here. */
+    /**
+     * List the active + past grants on a proof (owner / collection admin only), in one list (no pages).
+     * Tokens are never returned here.
+     *
+     * @example
+     * ```typescript
+     * const { items } = await proof.listGrants(collectionId, productId, proofId)
+     * ```
+     */
     async function listGrants(collectionId, productId, proofId) {
         return request(grantBase(collectionId, productId, proofId));
     }

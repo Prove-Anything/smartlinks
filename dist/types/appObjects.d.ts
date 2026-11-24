@@ -1,3 +1,4 @@
+import type { ListResult, ListOptions } from './list.js';
 /**
  * Visibility levels for app objects
  */
@@ -7,9 +8,10 @@ export type Visibility = 'public' | 'owner' | 'admin';
  */
 export type CallerRole = 'admin' | 'owner' | 'public';
 /**
- * Paginated response wrapper for list endpoints.
+ * The older list shape (`data` + `pagination`). `app.cases.list`, `app.threads.list` and
+ * `app.records.list` no longer return it: from SDK 3 they return {@link ListResult}
+ * (`{ items, nextCursor, count }`). Kept for server functions (`ctx.sl` bookings), which still answer this way.
  *
- * All list endpoints return this shape:
  * ```json
  * {
  *   "data": [ ...items ],
@@ -101,11 +103,10 @@ export interface AggregateResponse {
     avg_replies?: number;
 }
 /**
- * Common query parameters for list endpoints
+ * Common query parameters for list endpoints. Paging is `limit` and `cursor` (from {@link ListOptions}):
+ * pass the previous page's `nextCursor` as `cursor` to get the next page.
  */
-export interface ListQueryParams {
-    limit?: number;
-    offset?: number;
+export interface ListQueryParams extends ListOptions {
     sort?: string;
     includeDeleted?: boolean;
     status?: string;
@@ -450,13 +451,10 @@ export interface MatchEntry extends AppRecord {
     matchedClauseCount?: number;
 }
 /**
- * Response from the match endpoint.
+ * Response from the match endpoint: `items` are the matched records, most specific first; `count` is
+ * how many matched. It is not paged, so `nextCursor` is always `null`.
  */
-export interface MatchResult {
-    /** Matched records ordered by specificity descending (most specific first) */
-    data: MatchEntry[];
-    /** Total count of matched records */
-    total: number;
+export interface MatchResult extends ListResult<MatchEntry> {
     /** Strategy used for this result */
     strategy: 'all' | 'best';
 }
@@ -704,13 +702,11 @@ export interface ResolveAllParams {
     includeExpired?: boolean;
 }
 /**
- * Response from the resolve-all endpoint.
+ * Response from the resolve-all endpoint: `items` are every applicable record sorted by precedence
+ * (most specific first), each at most once; `count` is how many were returned. It is not paged, so
+ * `nextCursor` is always `null` (see `truncated`).
  */
-export interface ResolveAllResult {
-    /** Every applicable record sorted by precedence (most-specific first). Each appears at most once. */
-    records: ResolveAllEntry[];
-    /** Total count of returned records. */
-    total: number;
+export interface ResolveAllResult extends ListResult<ResolveAllEntry> {
     /** The context echoed back from the request (for verification). */
     context: ResolveAllContext;
     /** true if the result was capped at the safety limit. */

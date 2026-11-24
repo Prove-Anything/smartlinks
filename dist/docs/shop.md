@@ -62,7 +62,8 @@ order.downloads   // [{ name, url }] for bought files, once paid
 ### My orders
 
 ```typescript
-const { items } = await shop.myOrders(collectionId)       // signed in: their orders, newest first, with downloads
+const { items, nextCursor } = await shop.myOrders(collectionId)   // signed in: their orders, newest first, with downloads
+// more: shop.myOrders(collectionId, { cursor: nextCursor }) until nextCursor is null
 ```
 
 ### Errors
@@ -105,7 +106,8 @@ await shop.admin.setPrice(collectionId, {
 await shop.admin.setPrice(collectionId, { productId: 'founder-cert', amount: 2500, delivery: 'digital', deliveryConfig: { kind: 'proof' } })
 
 // Orders
-const { items } = await shop.admin.listOrders(collectionId, { status: 'paid' })
+const { items, nextCursor, count } = await shop.admin.listOrders(collectionId, { status: 'paid', limit: 50 })
+// next page: shop.admin.listOrders(collectionId, { status: 'paid', limit: 50, cursor: nextCursor })
 await shop.admin.ship(collectionId, orderId, { carrier: 'Royal Mail', trackingNumber: 'AB123456789GB' })
 await shop.admin.refund(collectionId, orderId, { lines: [{ itemId, quantity: 1 }], reason: 'Arrived damaged' })
 ```

@@ -19,8 +19,13 @@ export var nfc;
     }
     nfc.validate = validate;
     /**
-     * Lookup a tag by its ID (public).
+     * Lookup a tag by its ID (public): every code that tag is known as. One list, no pages.
      * GET /public/nfc/findByTag/:tagId
+     *
+     * @example
+     * ```typescript
+     * const { items } = await nfc.lookupTag('04A1B2C3D4E5F6')
+     * ```
      */
     async function lookupTag(tagId) {
         return request(`/public/nfc/findByTag/${encodeURIComponent(tagId)}`);

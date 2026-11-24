@@ -1,5 +1,6 @@
 import { CollectionWidgetsResponse, GetCollectionWidgetsOptions } from "../types/appManifest.js";
 import type { AppsConfigResponse } from "../types/collection.js";
+import type { ListResult } from "../types/list.js";
 import type { GetWidgetInstanceOptions, WidgetInstance, WidgetInstanceSummary, SystemBlock } from "../types/appConfiguration.js";
 /**
  * Options for collection/product-scoped app configuration.
@@ -47,7 +48,7 @@ export type AppConfigOptions = {
  * });
  *
  * // Get all user's data for this app
- * const beds = await userAppData.list('garden-planner');
+ * const { items: beds } = await userAppData.list('garden-planner');
  *
  * // Get specific item
  * const bed = await userAppData.get('garden-planner', 'bed-1');
@@ -99,18 +100,18 @@ export declare namespace userAppData {
     function deleteConfig(appId: string): Promise<void>;
     /**
      * List all user's data items for an app.
-     * Returns an array of objects, each with an `id` field.
      *
      * @param appId - The app ID
-     * @returns Array of data items
+     * @returns `{ items, nextCursor }`: the data items are in `items`, each with an `id` field. The list
+     *   is not paged, so `nextCursor` is always `null`.
      *
      * @example
      * ```typescript
-     * const beds = await userAppData.list('garden-planner');
-     * // Returns: [{ id: 'bed-1', name: 'Vegetables', ... }, { id: 'bed-2', ... }]
+     * const { items: beds } = await userAppData.list('garden-planner');
+     * // beds: [{ id: 'bed-1', name: 'Vegetables', ... }, { id: 'bed-2', ... }]
      * ```
      */
-    function list(appId: string): Promise<any[]>;
+    function list(appId: string): Promise<ListResult<any>>;
     /**
      * Get a specific user data item by ID.
      *
@@ -181,7 +182,7 @@ export declare namespace userAppData {
  * });
  *
  * // List product-level data items
- * const items = await appConfiguration.getData({
+ * const { items } = await appConfiguration.getData({
  *   appId: 'product-docs',
  *   collectionId: 'my-collection',
  *   productId: 'product-123'
@@ -286,18 +287,19 @@ export declare namespace appConfiguration {
       * or `app.threads` instead.
      *
      * @param opts - Options including appId and scope (collectionId, productId, etc.)
-     * @returns Array of data items
+     * @returns `{ items, nextCursor }`: the data items are in `items`. The list is not paged, so
+     *   `nextCursor` is always `null`.
      *
      * @example
      * ```typescript
-     * const items = await appConfiguration.getData({
+     * const { items } = await appConfiguration.getData({
      *   appId: 'product-docs',
      *   collectionId: 'my-collection',
      *   productId: 'product-123'
      * });
      * ```
      */
-    function getData(opts: AppConfigOptions): Promise<any[]>;
+    function getData(opts: AppConfigOptions): Promise<ListResult<any>>;
     /**
       * Get a single keyed data item by ID within a scope.
       * This is ideal when you already know the exact ID of a simple scoped document.
@@ -372,14 +374,15 @@ export declare namespace appConfiguration {
      *
      * @param collectionId - The collection ID
      * @param options - Optional settings (force: bypass cache)
-     * @returns Promise resolving to collection widgets with manifests and bundle files
+     * @returns `{ items, nextCursor }`: one entry per app with a widget, in `items`, with its manifest
+     *   and bundle files. The list is not paged, so `nextCursor` is always `null`.
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
      * // Fetch all widget data for a collection
-     * const { apps } = await Api.AppConfiguration.getWidgets(collectionId);
-     * // Returns: [{ appId, manifest, widget, container, admin }, ...]
+     * const { items: apps } = await Api.AppConfiguration.getWidgets(collectionId);
+     * // apps: [{ appId, manifest, widget, container, admin }, ...]
      * //   widget / container: { js: { umd?, esm? }, css?, source?, styles? }
      * //     source / styles - the bundle inlined (when small enough); js / css - URLs otherwise.
      * //   admin - URL of the app's app.admin.json (setup / tunable options), or null.
@@ -391,7 +394,7 @@ export declare namespace appConfiguration {
      * //   <EmbeddedWidget appId="raffle" size="standard" />   (docs/widgets.md)
      *
      * // Force refresh all widgets
-     * const { apps } = await Api.AppConfiguration.getWidgets(collectionId, { force: true });
+     * const { items: fresh } = await Api.AppConfiguration.getWidgets(collectionId, { force: true });
      * ```
      */
     function getWidgets(collectionId: string, options?: GetCollectionWidgetsOptions): Promise<CollectionWidgetsResponse>;

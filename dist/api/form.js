@@ -14,9 +14,15 @@ export var form;
     }
     form.get = get;
     /**
-     * List all forms for a collection.
+     * List all forms for a collection. All of them come back in one answer: `nextCursor` is always null.
      * @param collectionId – The collection identifier
      * @param admin – If true, use admin endpoint; otherwise, use public
+     * @returns Promise resolving to `{ items, nextCursor }`, where `items` are the forms
+     *
+     * @example
+     * ```typescript
+     * const { items: forms } = await form.list(collectionId, true)
+     * ```
      */
     async function list(collectionId, admin) {
         const base = admin ? '/admin' : '/public';

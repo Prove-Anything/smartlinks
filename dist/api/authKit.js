@@ -499,7 +499,16 @@ export var authKit;
         return requestWithOptions(path, { method: 'DELETE', body: JSON.stringify({ password }) });
     }
     authKit.removeMfaFactor = removeMfaFactor;
-    /** List devices trusted to skip MFA challenges for the current user (authenticated). */
+    /**
+     * List devices trusted to skip MFA challenges for the current user (authenticated). Returns
+     * `{ items, nextCursor }`: the devices are in `items`. The list is not paged, so `nextCursor` is
+     * always `null`.
+     *
+     * @example
+     * ```typescript
+     * const { items: devices } = await authKit.listTrustedDevices(clientId)
+     * ```
+     */
     async function listTrustedDevices(clientId) {
         return request(`/authkit/${encodeURIComponent(clientId)}/mfa/trusted-devices`);
     }
@@ -529,9 +538,17 @@ export var authKit;
         return request(path);
     }
     authKit.get = get;
-    async function list(collectionId, admin) {
-        const base = admin ? "/admin" : "/public";
-        const path = `${base}/collection/${encodeURIComponent(collectionId)}/authKit`;
+    /**
+     * List a collection's AuthKit configs (admin). Returns `{ items, nextCursor }`: the configs are in
+     * `items`. The list is not paged, so `nextCursor` is always `null`. There is no public list.
+     *
+     * @example
+     * ```typescript
+     * const { items: kits } = await authKit.list('coll_123')
+     * ```
+     */
+    async function list(collectionId) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit`;
         return request(path);
     }
     authKit.list = list;

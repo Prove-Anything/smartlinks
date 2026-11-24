@@ -1,4 +1,5 @@
-import type { ShopPublicConfig, ShopProduct, ShopCheckoutInput, ShopCheckoutResult, ShopBuyerOrder, ShopPage, ShopSettingsView, ShopSettingsPatch, ShopConnectStatus, ShopPrice, ShopPriceInput, ShopPriceUpdate, ShopPriceListParams, ShopAdminOrder, ShopOrderListParams, ShopShipInput, ShopRefundInput } from '../types/shop.js';
+import type { ShopPublicConfig, ShopProduct, ShopCheckoutInput, ShopCheckoutResult, ShopBuyerOrder, ShopSettingsView, ShopSettingsPatch, ShopConnectStatus, ShopPrice, ShopPriceInput, ShopPriceUpdate, ShopPriceListParams, ShopAdminOrder, ShopOrderListParams, ShopShipInput, ShopRefundInput } from '../types/shop.js';
+import type { ListResult, ListOptions } from '../types/list.js';
 export declare namespace shop {
     /**
      * What a shop front shows: currency, the seller's details (UK law: shown before paying), shipping rates,
@@ -7,19 +8,19 @@ export declare namespace shop {
     function config(collectionId: string): Promise<ShopPublicConfig>;
     /**
      * What is for sale, in the shop's currency, with stock (`inStock`, `available`) and whether the buyer must
-     * sign in first (`needsSignIn`: a proof or access goes to an account).
+     * sign in first (`needsSignIn`: a proof or access goes to an account). Everything for sale comes in one
+     * answer (`nextCursor` is always null), with the shop's `currency` beside the list.
      *
      * @example
      * ```typescript
-     * const { items } = await shop.products(collectionId)
+     * const { items, currency } = await shop.products(collectionId)
      * items.map((p) => `${p.name}: ${formatMoney(p.amount, p.currency)}${p.inStock ? '' : ' (sold out)'}`)
      * ```
      */
     function products(collectionId: string, params?: {
         productIds?: string[];
-    }): Promise<{
+    }): Promise<ListResult<ShopProduct> & {
         currency: string;
-        items: ShopProduct[];
     }>;
     /**
      * Start paying: the server prices the basket, holds the stock and returns Stripe's checkout page. Send the
@@ -45,11 +46,19 @@ export declare namespace shop {
      * `downloads` has links for bought files once it's paid.
      */
     function orderBySession(collectionId: string, sessionId: string): Promise<ShopBuyerOrder>;
-    /** The signed-in buyer's orders, newest first, with their download links. @throws `SIGN_IN_REQUIRED` */
-    function myOrders(collectionId: string, params?: {
-        limit?: number;
-        offset?: number;
-    }): Promise<ShopPage<ShopBuyerOrder>>;
+    /**
+     * The signed-in buyer's orders, newest first, with their download links, a page at a time. `count` is how
+     * many they have in all.
+     *
+     * @example
+     * ```typescript
+     * let page = await shop.myOrders(collectionId, { limit: 20 })
+     * page.items // ShopBuyerOrder[]
+     * if (page.nextCursor) page = await shop.myOrders(collectionId, { limit: 20, cursor: page.nextCursor })
+     * ```
+     * @throws `SIGN_IN_REQUIRED`
+     */
+    function myOrders(collectionId: string, params?: ListOptions): Promise<ListResult<ShopBuyerOrder>>;
     /**
      * Format minor units as money, in the page's language unless `locale` says otherwise:
      * `formatMoney(1299, 'EUR')` → "€12.99" in English, "12,99 €" in German. Zero-decimal currencies
@@ -75,7 +84,16 @@ export declare namespace shop {
         }>;
         /** Whether Stripe is connected, and whether it can take payments and pay out yet. */
         function connectStatus(collectionId: string): Promise<ShopConnectStatus>;
-        function listPrices(collectionId: string, params?: ShopPriceListParams): Promise<ShopPage<ShopPrice>>;
+        /**
+         * The shop's prices, a page at a time. Filter by product, currency, app, or whether it is on sale
+         * (`active`). `count` is how many match in all.
+         *
+         * @example
+         * ```typescript
+         * const { items, nextCursor, count } = await shop.admin.listPrices(collectionId, { productId: 'soap', active: true })
+         * ```
+         */
+        function listPrices(collectionId: string, params?: ShopPriceListParams): Promise<ListResult<ShopPrice>>;
         /**
          * Put a product (or variant) on sale, or change its price in that currency (one price per product per
          * currency). @throws `INVALID_INPUT`, `APP_NOT_INSTALLED`
@@ -86,8 +104,18 @@ export declare namespace shop {
         function removePrice(collectionId: string, priceId: string): Promise<{
             deleted: true;
         }>;
-        /** Shop orders, newest first. Unpaid and expired checkouts are left out unless asked for. */
-        function listOrders(collectionId: string, params?: ShopOrderListParams): Promise<ShopPage<ShopAdminOrder>>;
+        /**
+         * Shop orders, newest first, a page at a time. Unpaid and expired checkouts are left out unless asked
+         * for. `count` is how many match in all.
+         *
+         * @example
+         * ```typescript
+         * let page = await shop.admin.listOrders(collectionId, { status: 'paid', limit: 50 })
+         * page.items // ShopAdminOrder[]
+         * while (page.nextCursor) page = await shop.admin.listOrders(collectionId, { status: 'paid', limit: 50, cursor: page.nextCursor })
+         * ```
+         */
+        function listOrders(collectionId: string, params?: ShopOrderListParams): Promise<ListResult<ShopAdminOrder>>;
         function getOrder(collectionId: string, orderId: string): Promise<ShopAdminOrder>;
         /**
          * Send some or all of what's left, with tracking. The held stock leaves; the buyer's "shipped" email

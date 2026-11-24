@@ -1,3 +1,4 @@
+import type { ListResult, ListOptions } from './list.js';
 export interface InteractionFilterValue {
     interactionId: string;
     scope?: string;
@@ -77,16 +78,10 @@ export interface SegmentRecord {
         [key: string]: unknown;
     };
 }
-export interface ListSegmentsQuery {
+/** `segments.list` options: the filters, plus `limit` and `cursor`. */
+export interface ListSegmentsQuery extends ListOptions {
     appId?: string;
     filterType?: 'dynamic' | 'static';
-    limit?: number;
-    offset?: number;
-}
-export interface SegmentList {
-    items: SegmentRecord[];
-    limit: number;
-    offset: number;
 }
 export interface SegmentCalculateResult {
     scheduled: boolean;
@@ -94,10 +89,7 @@ export interface SegmentCalculateResult {
     estimatedCount?: number | null;
     note?: string;
 }
-export interface SegmentRecipientsResponse {
-    items: import('./comms.js').Recipient[];
-    limit: number;
-    offset: number;
-    total: number;
+/** What `segments.recipients` returns: a page of contacts (`count` = how many in all), and sometimes a note. */
+export interface SegmentRecipientsResponse extends ListResult<import('./comms.js').Recipient> {
     note?: string;
 }
