@@ -28,6 +28,7 @@
 //   Nested keys are read with dots. `{{name}}` is replaced from the values. With `count`, the plural
 //   form for the language is picked (`_one`, `_other`, …; Chinese has only `_other`).
 import { readContext } from './context.js';
+import { formatMinor } from './utils/money.js';
 let source = 'en';
 let current = 'en';
 let base = null;
@@ -94,8 +95,12 @@ function candidates(lang) {
         out.push(l);
     return Array.from(new Set(out));
 }
-/** Which language to start in: what the host passed, else the page's, else the browser's, else the source. */
-export function detectLanguage() {
+/**
+ * Which language to start in: what the host passed, else the page's, else the browser's when the site
+ * has turned that language on (`approved`), else the source. A language the business hasn't chosen is
+ * never picked from the browser alone.
+ */
+export function detectLanguage(approved) {
     try {
         const fromHost = normalizeLanguage(readContext().lang);
         if (fromHost)
@@ -106,14 +111,24 @@ export function detectLanguage() {
             if (fromPage)
                 return fromPage;
         }
-        if (typeof navigator !== 'undefined') {
+        if (approved && approved.length && typeof navigator !== 'undefined') {
             const fromBrowser = normalizeLanguage(navigator.language);
-            if (fromBrowser)
-                return fromBrowser;
+            const match = fromBrowser && pickApproved(fromBrowser, approved);
+            if (match)
+                return match;
         }
     }
     catch ( /* not in a browser */_a) { /* not in a browser */ }
     return source;
+}
+/** The approved language `lang` stands for: exact, else the same base language ("fr-CA" -> "fr"). */
+function pickApproved(lang, approved) {
+    const list = approved.map((l) => normalizeLanguage(l)).filter((l) => !!l);
+    const exact = list.find((l) => l.toLowerCase() === lang.toLowerCase());
+    if (exact)
+        return exact;
+    const base = lang.toLowerCase().split('-')[0];
+    return list.find((l) => l.toLowerCase().split('-')[0] === base) || null;
 }
 /** Mark the page with the language in use (screen readers, fonts), where there is a page. */
 function setPageLanguage(lang) {
@@ -177,7 +192,7 @@ export async function init(options = {}) {
             const key = normalizeLanguage(lang) || lang;
             supplied.set(key, cat);
         }
-    current = normalizeLanguage(options.language) || detectLanguage();
+    current = normalizeLanguage(options.language) || detectLanguage(options.languages);
     listen();
     await Promise.all([fetchCatalog(source), current === source ? null : fetchCatalog(current)]);
     setPageLanguage(current);
@@ -295,6 +310,8 @@ export const format = {
             return String(d);
         }
     },
+    /** Minor units as money in the current language: `money(129950, 'EUR')` → "1.299,50 €" in German. */
+    money: (minor, currency) => formatMinor(minor, currency, current),
 };
 /** Forget loaded catalogs and listeners (tests). */
 export function _reset() {

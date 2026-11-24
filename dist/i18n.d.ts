@@ -10,6 +10,12 @@ export interface I18nInitOptions {
     catalogs?: Record<string, Catalog>;
     /** The app's source language. Default 'en'. */
     sourceLanguage?: string;
+    /**
+     * The languages the site has turned on (its collection's languages). Languages are the business's
+     * choice: with no language from the host or the page, the browser's is used only when it is one of
+     * these; otherwise the app stays in its source language. Not given: never the browser's.
+     */
+    languages?: string[];
 }
 /**
  * The text direction for a language: 'rtl' for Arabic, Hebrew, Persian, Urdu and the like, else 'ltr'.
@@ -19,8 +25,12 @@ export interface I18nInitOptions {
 export declare function textDirection(code: string | null | undefined): 'rtl' | 'ltr';
 /** The language the host asked for, in a normal form ('zh-hans' -> 'zh-Hans', 'FR' -> 'fr'). */
 export declare function normalizeLanguage(code: string | null | undefined): string | null;
-/** Which language to start in: what the host passed, else the page's, else the browser's, else the source. */
-export declare function detectLanguage(): string;
+/**
+ * Which language to start in: what the host passed, else the page's, else the browser's when the site
+ * has turned that language on (`approved`), else the source. A language the business hasn't chosen is
+ * never picked from the browser alone.
+ */
+export declare function detectLanguage(approved?: string[]): string;
 /**
  * Load the source catalog and the current language's. Call once before the first render; safe to
  * call again. Never throws: with nothing found, `t` returns the keys' English or the keys.
@@ -50,6 +60,8 @@ export declare const format: {
     number: (n: number, opts?: Intl.NumberFormatOptions) => string;
     date: (d: Date | string | number, opts?: Intl.DateTimeFormatOptions) => string;
     dateTime: (d: Date | string | number, opts?: Intl.DateTimeFormatOptions) => string;
+    /** Minor units as money in the current language: `money(129950, 'EUR')` → "1.299,50 €" in German. */
+    money: (minor: number, currency: string) => string;
 };
 /** Forget loaded catalogs and listeners (tests). */
 export declare function _reset(): void;
