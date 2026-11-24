@@ -68,3 +68,21 @@ test('subscribers hear a language switch, and the snapshot changes', async () =>
   assert.equal(heard, 1)
   off()
 })
+
+test('the browser language is used only when the site has turned it on', async () => {
+  const nav = Object.getOwnPropertyDescriptor(globalThis, 'navigator')
+  Object.defineProperty(globalThis, 'navigator', { value: { language: 'fr-CA' }, configurable: true })
+  try {
+    // No host language, no page language: an English-only site stays English for a French browser.
+    await i18n.init({ catalogs: { en, fr: { contacts: { add: 'Ajouter' } } } })
+    assert.equal(i18n.language(), 'en')
+    i18n._reset()
+    // The site offers French: the French browser gets it (fr-CA → fr).
+    await i18n.init({ catalogs: { en, fr: { contacts: { add: 'Ajouter' } } }, languages: ['en', 'fr'] })
+    assert.equal(i18n.language(), 'fr')
+    assert.equal(i18n.t('contacts.add'), 'Ajouter')
+  } finally {
+    if (nav) Object.defineProperty(globalThis, 'navigator', nav)
+    else delete (globalThis as any).navigator
+  }
+})

@@ -29,6 +29,7 @@
 //   form for the language is picked (`_one`, `_other`, …; Chinese has only `_other`).
 
 import { readContext } from './context'
+import { formatMinor } from './utils/money'
 
 export type Catalog = { [key: string]: string | Catalog }
 
@@ -41,6 +42,12 @@ export interface I18nInitOptions {
   catalogs?: Record<string, Catalog>
   /** The app's source language. Default 'en'. */
   sourceLanguage?: string
+  /**
+   * The languages the site has turned on (its collection's languages). Languages are the business's
+   * choice: with no language from the host or the page, the browser's is used only when it is one of
+   * these; otherwise the app stays in its source language. Not given: never the browser's.
+   */
+  languages?: string[]
 }
 
 let source = 'en'
@@ -108,8 +115,12 @@ function candidates(lang: string): string[] {
   return Array.from(new Set(out))
 }
 
-/** Which language to start in: what the host passed, else the page's, else the browser's, else the source. */
-export function detectLanguage(): string {
+/**
+ * Which language to start in: what the host passed, else the page's, else the browser's when the site
+ * has turned that language on (`approved`), else the source. A language the business hasn't chosen is
+ * never picked from the browser alone.
+ */
+export function detectLanguage(approved?: string[]): string {
   try {
     const fromHost = normalizeLanguage(readContext().lang)
     if (fromHost) return fromHost
@@ -118,12 +129,22 @@ export function detectLanguage(): string {
       const fromPage = normalizeLanguage(root.getAttribute('lang'))
       if (fromPage) return fromPage
     }
-    if (typeof navigator !== 'undefined') {
+    if (approved && approved.length && typeof navigator !== 'undefined') {
       const fromBrowser = normalizeLanguage(navigator.language)
-      if (fromBrowser) return fromBrowser
+      const match = fromBrowser && pickApproved(fromBrowser, approved)
+      if (match) return match
     }
   } catch { /* not in a browser */ }
   return source
+}
+
+/** The approved language `lang` stands for: exact, else the same base language ("fr-CA" -> "fr"). */
+function pickApproved(lang: string, approved: string[]): string | null {
+  const list = approved.map((l) => normalizeLanguage(l)).filter((l): l is string => !!l)
+  const exact = list.find((l) => l.toLowerCase() === lang.toLowerCase())
+  if (exact) return exact
+  const base = lang.toLowerCase().split('-')[0]
+  return list.find((l) => l.toLowerCase().split('-')[0] === base) || null
 }
 
 /** Mark the page with the language in use (screen readers, fonts), where there is a page. */
@@ -179,7 +200,7 @@ export async function init(options: I18nInitOptions = {}): Promise<void> {
     const key = normalizeLanguage(lang) || lang
     supplied.set(key, cat)
   }
-  current = normalizeLanguage(options.language) || detectLanguage()
+  current = normalizeLanguage(options.language) || detectLanguage(options.languages)
   listen()
   await Promise.all([fetchCatalog(source), current === source ? null : fetchCatalog(current)])
   setPageLanguage(current)
@@ -281,6 +302,8 @@ export const format = {
   dateTime: (d: Date | string | number, opts?: Intl.DateTimeFormatOptions): string => {
     try { return new Intl.DateTimeFormat(current, opts ?? { dateStyle: 'medium', timeStyle: 'short' } as Intl.DateTimeFormatOptions).format(new Date(d)) } catch { return String(d) }
   },
+  /** Minor units as money in the current language: `money(129950, 'EUR')` → "1.299,50 €" in German. */
+  money: (minor: number, currency: string): string => formatMinor(minor, currency, current),
 }
 
 /** Forget loaded catalogs and listeners (tests). */
