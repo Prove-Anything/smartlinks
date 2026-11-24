@@ -3,6 +3,7 @@
 // in module-scope variables, and provides a shared `request<T>(path)` helper that will
 // be used by all namespaced files (collection.ts, product.ts, etc.).
 
+import { API_VERSION, API_VERSION_HEADER, SDK_HEADER, APP_HEADER, SDK_VERSION } from "./apiVersion"
 import { SmartlinksApiError, ErrorResponse, SmartlinksOfflineError } from "./types/error"
 import { idbGet, idbSet, idbClear } from './persistentCache'
 
@@ -16,6 +17,29 @@ let proxyMode: boolean = false
 let proxyTimeoutMs: number = 90_000
 let ngrokSkipBrowserWarning: boolean = false
 let extraHeadersGlobal: Record<string, string> = {}
+// Which API contract this client was built for, and who it is (see ./apiVersion). Sent on every request
+// the SDK makes itself, and passed to the host when the app runs in a frame. NOT part of getApiHeaders():
+// a host uses that to make calls on a framed app's behalf, and must send the APP's version, not its own.
+let apiVersionSent: string = API_VERSION
+let clientAppVersion: string | null = null
+
+/** The identity headers for this client: API version, SDK release and (in an app) the app. */
+export function getClientHeaders(): Record<string, string> {
+  const h: Record<string, string> = { [API_VERSION_HEADER]: apiVersionSent, [SDK_HEADER]: `js/${SDK_VERSION}` }
+  // The app is whichever app the SDK is running for (initializeApi({ appId }) / setAppContext).
+  if (appContextId) h[APP_HEADER] = `${String(appContextId).slice(0, 80)}${clientAppVersion ? `@${clientAppVersion}` : ""}`
+  return h
+}
+
+/** The API version this client asks for (the SDK's own, unless `initializeApi({ apiVersion })` set another). */
+export function getApiVersion(): string {
+  return apiVersionSent
+}
+
+function addClientHeaders(headers: Record<string, string>): void {
+  const lower = new Set(Object.keys(headers).map((k) => k.toLowerCase()))
+  for (const [k, v] of Object.entries(getClientHeaders())) if (!lower.has(k.toLowerCase())) headers[k] = v
+}
 /**
  * Client platform opt-in. When set to 'native', every request carries the
  * `X-Client-Platform: native` header, which tells AuthKit login endpoints to
@@ -521,6 +545,16 @@ export function initializeApi(options: {
    */
   appId?: string
   /**
+   * The app's own version (its manifest `meta.version`). With `appId`, it tells SmartLinks which release of
+   * which app is calling (the `SmartLinks-App` header), so an old route is never retired under an app still using it.
+   */
+  appVersion?: string
+  /**
+   * The API version to ask for, as year-month (for example `"2026-11"`). Defaults to the version this SDK
+   * release was built for (`API_VERSION`), which is what you want unless you are pinning an older contract.
+   */
+  apiVersion?: string
+  /**
    * The release channel this build is running as ('dev' | 'alpha' | 'beta' | 'stable'). Normally
    * left unset — hosts that run a non-production build (Forge preview of a Test build) pass
    * `appChannel` in the app's context and the SDK picks it up. Preserved across re-initialization
@@ -617,6 +651,8 @@ export function initializeApi(options: {
     ? !!options.ngrokSkipBrowserWarning
     : inferredNgrok
   extraHeadersGlobal = options.extraHeaders ? { ...options.extraHeaders } : {}
+  apiVersionSent = options.apiVersion && /^\d{4}-(0[1-9]|1[0-2])$/.test(options.apiVersion) ? options.apiVersion : API_VERSION
+  clientAppVersion = options.appVersion ? String(options.appVersion).slice(0, 30) : null
   // Platform opt-in (native refresh tokens). Preserve an earlier value when a
   // re-init call omits it, so long-lived native sessions aren't downgraded by a
   // later bootstrap that forgot to pass platform.
@@ -1223,7 +1259,9 @@ async function proxyRequest<T>(
     method,
     path,
     body: payloadBody,
-    headers,
+    // The app's own API version and identity: the host forwards these, so the answer is shaped for the
+    // app's SDK, not the host's.
+    headers: { ...getClientHeaders(), ...(headers || {}) },
     options: sanitizeProxyRequestOptions(options),
   }
   
@@ -1474,10 +1512,10 @@ export async function request<T>(path: string): Promise<T> {
         if (bearerToken) headers["AUTHORIZATION"] = `Bearer ${bearerToken}`
         if (clientPlatform) headers["X-Client-Platform"] = clientPlatform
         if (grantToken) headers["X-Grant-Token"] = grantToken
-  if (grantToken) headers["X-Grant-Token"] = grantToken
         if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
         const _getDomain = getSourceDomain(); if (_getDomain) headers["X-Source-Domain"] = _getDomain
         for (const [k, v] of Object.entries(extraHeadersGlobal)) headers[k] = v
+        addClientHeaders(headers)
 
         logDebug('[smartlinks] GET fetch', { url, headers: redactHeaders(headers) })
         const response = await fetch(url, { method: "GET", headers })
@@ -1562,6 +1600,7 @@ export async function post<T>(
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const _postDomain = getSourceDomain(); if (_postDomain) headers["X-Source-Domain"] = _postDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
+  addClientHeaders(headers)
 
   // Only set Content-Type for non-FormData bodies
   if (!(body instanceof FormData)) {
@@ -1625,6 +1664,7 @@ export async function put<T>(
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const _putDomain = getSourceDomain(); if (_putDomain) headers["X-Source-Domain"] = _putDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
+  addClientHeaders(headers)
 
   // Only set Content-Type for non-FormData bodies
   if (!(body instanceof FormData)) {
@@ -1688,6 +1728,7 @@ export async function patch<T>(
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const _patchDomain = getSourceDomain(); if (_patchDomain) headers["X-Source-Domain"] = _patchDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
+  addClientHeaders(headers)
 
   // Only set Content-Type for non-FormData bodies
   if (!(body instanceof FormData)) {
@@ -1806,6 +1847,7 @@ export async function requestWithOptions<T>(
       }
       // Merge global custom headers (do not override existing keys from options.headers)
       for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
+      addClientHeaders(headers)
 
       logDebug('[smartlinks] requestWithOptions fetch', { url, method: options.method || 'GET', headers: redactHeaders(headers), body: safeBodyPreview(options.body) })
       const response = await fetch(url, { ...options, headers })
@@ -1876,6 +1918,7 @@ export async function requestStream<T>(
     ...getApiHeaders(),
     Accept: 'text/event-stream',
   }
+  addClientHeaders(headers)
 
   if (!(typeof FormData !== 'undefined' && body instanceof FormData) && body !== undefined && !Object.keys(headers).some(k => k.toLowerCase() === 'content-type')) {
     headers['Content-Type'] = 'application/json'
@@ -1940,6 +1983,7 @@ export async function del<T>(
   if (ngrokSkipBrowserWarning) headers["ngrok-skip-browser-warning"] = "true"
   const _delDomain = getSourceDomain(); if (_delDomain) headers["X-Source-Domain"] = _delDomain
   for (const [k, v] of Object.entries(extraHeadersGlobal)) if (!(k in headers)) headers[k] = v
+  addClientHeaders(headers)
 
   logDebug('[smartlinks] DELETE fetch', { url, headers: redactHeaders(headers) })
   const response = await fetch(url, {

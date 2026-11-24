@@ -1,7 +1,7 @@
 // src/index.ts
 // Top-level entrypoint of the npm package. Re-export initializeApi + all namespaces.
 
-export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, getHttpCacheDiagnostics, resetHttpCacheDiagnostics, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, getBaseURL, isProxyEnabled, setBearerToken, getBearerToken, setGrantToken, getGrantToken, getAppContext, setAppContext, getAppChannel, setAppChannel } from "./http"
+export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, getHttpCacheDiagnostics, resetHttpCacheDiagnostics, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, getClientHeaders, getApiVersion, getBaseURL, isProxyEnabled, setBearerToken, getBearerToken, setGrantToken, getGrantToken, getAppContext, setAppContext, getAppChannel, setAppChannel } from "./http"
 export * from "./api"
 export * from "./types"
 // Iframe namespace
@@ -50,6 +50,8 @@ export type { SharedDependency, HostSharedDependencies } from './shared-dependen
 // The customer guide, what's on screen for AI, and the live client (ai.guide / ai.content / ai.live).
 export type { GuideSurface, GuideInfo, ScreenContent, GuideWhere, GuideNavigate, GuideCard, GuideStartOptions } from './api/aiGuide'
 export type { LiveState, LiveHandle, LiveOptions, LiveEndpoints, LiveEvent, LiveMintReply, LiveToolReply, LiveToolHandler } from './live'
+// API versions: the contract this SDK release is built for, and the headers that carry it (docs/api-versions.md)
+export { API_VERSION, SDK_VERSION, API_VERSION_HEADER, SDK_HEADER, APP_HEADER, CLIENT_HEADER_NAMES } from './apiVersion'
 export { AI_TOOL_NAMES, BUILTIN_AI_TOOLS, getBuiltinAiTool } from './ai-tools'
 export type { BuiltinAiToolDescriptor } from './ai-tools'
 
