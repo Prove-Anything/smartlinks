@@ -228,6 +228,8 @@ function generateAPISummary() {
   summary += '## Documentation\n\n';
   summary += 'For detailed guides on specific features:\n\n';
   summary += '- **[SmartLinks Microapp Overview](overview.md)** - Platform architecture, data model, auth patterns, storage, anti-patterns, and quick-reference for all SDK docs\n';
+  summary += '- **[Lists](lists.md)** - Every list returns `{ items, nextCursor, count? }` and pages with `limit` and `cursor`; `each` and `all` walk the pages\n';
+  summary += '- **[Upgrading to SDK 3](upgrading-to-3.md)** - What changed from SDK 2 and how to move each call (the same changes as data: `upgrade/3.json`)\n';
   summary += '- **[The Standard Query](standard-query.md)** - One request body to filter, sort, page, count, total and follow links, the same on proofs, contacts, products and app records: `proof.query`, `contact.query`, `products.standardQuery`, `app.records.query`\n';
   summary += '- **[Assets](assets.md)** - Asset object, AssetRef, upload, replace, soft-delete, restore, bulk-delete, and public token-based uploads\n';
   summary += '- **[AI & Chat Completions](ai.md)** - Chat completions, RAG (document-grounded Q&A), voice integration, streaming, tool calling, podcast generation\n';
@@ -444,9 +446,9 @@ function generateAPISummary() {
   summary += '### Usage Examples\n\n';
   summary += '**Basic Error Handling:**\n';
   summary += '```typescript\n';
-  summary += 'import { SmartlinksApiError, product } from \'@proveanything/smartlinks\'\n\n';
+  summary += 'import { SmartlinksApiError, products } from \'@proveanything/smartlinks\'\n\n';
   summary += 'try {\n';
-  summary += '  const item = await product.get(\'collectionId\', \'productId\')\n';
+  summary += '  const item = await products.get(\'collectionId\', \'productId\')\n';
   summary += '} catch (error) {\n';
   summary += '  if (error instanceof SmartlinksApiError) {\n';
   summary += '    console.error(\'Status:\', error.statusCode)      // 404\n';
@@ -459,7 +461,7 @@ function generateAPISummary() {
   summary += '**Using Helper Methods:**\n';
   summary += '```typescript\n';
   summary += 'try {\n';
-  summary += '  await product.create(\'collectionId\', data)\n';
+  summary += '  await products.create(\'collectionId\', data)\n';
   summary += '} catch (error) {\n';
   summary += '  if (error instanceof SmartlinksApiError) {\n';
   summary += '    if (error.isAuthError()) {\n';
@@ -529,7 +531,7 @@ function generateAPISummary() {
   summary += '**Handling Validation Errors:**\n';
   summary += '```typescript\n';
   summary += 'try {\n';
-  summary += '  await product.create(\'collectionId\', formData)\n';
+  summary += '  await products.create(\'collectionId\', formData)\n';
   summary += '} catch (error) {\n';
   summary += '  if (error instanceof SmartlinksApiError && error.statusCode === 400) {\n';
   summary += '    // Access field-specific validation errors if available\n';

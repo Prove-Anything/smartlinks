@@ -1,5 +1,6 @@
 import { request, post, put, del, getApiHeaders, getBaseURL, isProxyEnabled, proxyUploadFormData } from "../http"
 import { SmartlinksApiError } from "../types/error"
+import type { ListResult } from "../types/list"
 import {
   Asset,
   AssetResponse,
@@ -9,7 +10,6 @@ import {
   GetAssetOptions,
   RemoveAssetOptions,
   AdminListAssetsOptions,
-  AdminListAssetsResponse,
   UpdateAssetOptions,
   ReplaceAssetFileOptions,
   DeleteAssetOptions,
@@ -226,11 +226,20 @@ export namespace asset {
     return request<AssetResponse>(path)
   }
 
+  /**
+   * The collection's own assets (public). Returns `{ items, nextCursor }`: the assets are in `items`.
+   * The list is not paged, so `nextCursor` is always `null`.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await asset.listForCollection('my-collection')
+   * ```
+   */
   export async function listForCollection(
     collectionId: string
-  ): Promise<AssetResponse[]> {
+  ): Promise<ListResult<AssetResponse>> {
     const path = `/public/collection/${encodeURIComponent(collectionId)}/asset`
-    return request<AssetResponse[]>(path)
+    return request<ListResult<AssetResponse>>(path)
   }
 
   // Product-level
@@ -243,12 +252,21 @@ export namespace asset {
     return request<AssetResponse>(path)
   }
 
+  /**
+   * A product's assets (public). Returns `{ items, nextCursor }`: the assets are in `items`.
+   * The list is not paged, so `nextCursor` is always `null`.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await asset.listForProduct('my-collection', 'wine-bottle')
+   * ```
+   */
   export async function listForProduct(
     collectionId: string,
     productId: string
-  ): Promise<AssetResponse[]> {
+  ): Promise<ListResult<AssetResponse>> {
     const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/asset`
-    return request<AssetResponse[]>(path)
+    return request<ListResult<AssetResponse>>(path)
   }
 
   // Proof-level
@@ -262,62 +280,47 @@ export namespace asset {
     return request<AssetResponse>(path)
   }
 
+  /**
+   * A proof's assets (public), optionally only one app's. Returns `{ items, nextCursor }`: the assets
+   * are in `items`. The list is not paged, so `nextCursor` is always `null`.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await asset.listForProof('my-collection', 'wine-bottle', proofId, 'gallery')
+   * ```
+   */
   export async function listForProof(
     collectionId: string,
     productId: string,
     proofId: string,
     appId?: string
-  ): Promise<AssetResponse[]> {
+  ): Promise<ListResult<AssetResponse>> {
     let path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/asset`
     if (appId) {
       path += `?appId=${encodeURIComponent(appId)}`
     }
-    return request<AssetResponse[]>(path)
+    return request<ListResult<AssetResponse>>(path)
   }
 
   /**
-   * Uploads an asset file to a proof, with optional extraData as JSON.
-   * @deprecated Use `asset.upload(options)` instead.
-   * Supports progress reporting via onProgress callback (browser only).
-   * @param collectionId - The collection ID
-   * @param productId - The product ID
-   * @param proofId - The proof ID
-   * @param file - The file to upload
-   * @param extraData - Arbitrary extra data to include (will be stringified as JSON)
-   * @param onProgress - Optional callback for upload progress (0-100)
-   * @returns Promise resolving to an AssetResponse object
+   * List assets for a given scope (a collection, a product or a proof). Returns `{ items, nextCursor }`:
+   * the assets are in `items`. These lists are not paged, so `nextCursor` is always `null`.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await asset.list({
+   *   scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' },
+   *   appId: 'gallery',
+   * })
+   * ```
    */
-  export async function uploadAsset(
-    collectionId: string,
-    productId: string,
-    proofId: string,
-    file: File,
-    extraData?: Record<string, any>,
-    onProgress?: (percent: number) => void
-  ): Promise<AssetResponse> {
-    // Route through new upload API for backward compatibility
-    const res = await upload({
-      file,
-      name: file?.name,
-      metadata: extraData,
-      onProgress,
-      scope: { type: 'proof', collectionId, productId, proofId },
-    })
-    return res
-  }
-
-  /**
-   * List assets for a given scope
-   */
-  export async function list(options: ListAssetsOptions): Promise<Asset[]> {
+  export async function list(options: ListAssetsOptions): Promise<ListResult<Asset>> {
     const base = buildScopeBase(options.scope)
     const params = new URLSearchParams()
     if (options.appId) params.set('appId', options.appId)
-    if (options.mimeTypePrefix) params.set('mimeTypePrefix', options.mimeTypePrefix)
     if (typeof options.limit === 'number') params.set('limit', String(options.limit))
-    if (typeof options.offset === 'number') params.set('offset', String(options.offset))
     const path = `${base}/asset${params.toString() ? `?${params}` : ''}`
-    return request<Asset[]>(path)
+    return request<ListResult<Asset>>(path)
   }
 
   /**
@@ -351,9 +354,21 @@ export namespace asset {
   // ---------------------------------------------------------------------------
 
   /**
-   * List assets for a collection with full filtering options.
+   * List assets for a collection with full filtering options (admin). Returns `{ items, nextCursor }`:
+   * the assets are in `items`, 50 at a time unless you give a `limit` (at most 200). Pass `nextCursor`
+   * back as `cursor` for the next page; `null` means that was the last one. `count` (how many match in
+   * all) is there when you gave a `limit` or a `cursor`.
+   *
+   * @example
+   * ```typescript
+   * let page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', limit: 20 })
+   * console.log(`${page.count} images`)
+   * while (page.nextCursor) {
+   *   page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', limit: 20, cursor: page.nextCursor })
+   * }
+   * ```
    */
-  export async function listAdmin(options: AdminListAssetsOptions): Promise<AdminListAssetsResponse> {
+  export async function listAdmin(options: AdminListAssetsOptions): Promise<ListResult<Asset>> {
     const params = new URLSearchParams()
     if (options.productId) params.set('productId', options.productId)
     if (options.proofId) params.set('proofId', options.proofId)
@@ -363,11 +378,11 @@ export namespace asset {
     if (options.sort) params.set('sort', options.sort)
     if (options.order) params.set('order', options.order)
     if (typeof options.limit === 'number') params.set('limit', String(options.limit))
-    if (typeof options.offset === 'number') params.set('offset', String(options.offset))
+    if (options.cursor) params.set('cursor', options.cursor)
     if (options.include && options.include.length) params.set('include', options.include.join(','))
     const qs = params.toString()
     const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/asset${qs ? `?${qs}` : ''}`
-    return request<AdminListAssetsResponse>(path)
+    return request<ListResult<Asset>>(path)
   }
 
   /**

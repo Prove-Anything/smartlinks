@@ -8,7 +8,7 @@ async function testErrorHandling() {
 
   try {
     // This should fail with auth error or similar
-    const result = await collection.list(true)
+    const result = await collection.list()
     console.log('Success:', result)
   } catch (error) {
     // Verify error is SmartlinksApiError

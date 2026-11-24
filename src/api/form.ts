@@ -1,4 +1,5 @@
 import { request, post, put, del } from "../http";
+import type { ListResult } from "../types/list";
 
 export namespace form {
   /**
@@ -14,14 +15,20 @@ export namespace form {
   }
 
   /**
-   * List all forms for a collection.
+   * List all forms for a collection. All of them come back in one answer: `nextCursor` is always null.
    * @param collectionId – The collection identifier
    * @param admin – If true, use admin endpoint; otherwise, use public
+   * @returns Promise resolving to `{ items, nextCursor }`, where `items` are the forms
+   *
+   * @example
+   * ```typescript
+   * const { items: forms } = await form.list(collectionId, true)
+   * ```
    */
-  export async function list(collectionId: string, admin?: boolean): Promise<any[]> {
+  export async function list(collectionId: string, admin?: boolean): Promise<ListResult<any>> {
     const base = admin ? '/admin' : '/public';
     const path = `${base}/collection/${encodeURIComponent(collectionId)}/form`;
-    return request<any[]>(path);
+    return request<ListResult<any>>(path);
   }
 
   /**

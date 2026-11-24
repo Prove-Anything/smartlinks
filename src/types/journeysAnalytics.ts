@@ -32,8 +32,6 @@ export interface JourneyStepRecipientsRequest {
   limit?: number
 }
 
-export type JourneyStepRecipientsResponse = string[]
-
 // Funnel Report
 export interface JourneyFunnelReportRequest {
   idField?: IdField

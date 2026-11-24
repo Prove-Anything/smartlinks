@@ -9,7 +9,6 @@ import type {
   ShopCheckoutInput,
   ShopCheckoutResult,
   ShopBuyerOrder,
-  ShopPage,
   ShopSettingsView,
   ShopSettingsPatch,
   ShopConnectStatus,
@@ -22,6 +21,7 @@ import type {
   ShopShipInput,
   ShopRefundInput,
 } from '../types/shop'
+import type { ListResult, ListOptions } from '../types/list'
 
 const pub = (collectionId: string) => `/public/collection/${encodeURIComponent(collectionId)}/shop`
 const adm = (collectionId: string) => `/admin/collection/${encodeURIComponent(collectionId)}/shop`
@@ -47,15 +47,16 @@ export namespace shop {
 
   /**
    * What is for sale, in the shop's currency, with stock (`inStock`, `available`) and whether the buyer must
-   * sign in first (`needsSignIn`: a proof or access goes to an account).
+   * sign in first (`needsSignIn`: a proof or access goes to an account). Everything for sale comes in one
+   * answer (`nextCursor` is always null), with the shop's `currency` beside the list.
    *
    * @example
    * ```typescript
-   * const { items } = await shop.products(collectionId)
+   * const { items, currency } = await shop.products(collectionId)
    * items.map((p) => `${p.name}: ${formatMoney(p.amount, p.currency)}${p.inStock ? '' : ' (sold out)'}`)
    * ```
    */
-  export async function products(collectionId: string, params?: { productIds?: string[] }): Promise<{ currency: string; items: ShopProduct[] }> {
+  export async function products(collectionId: string, params?: { productIds?: string[] }): Promise<ListResult<ShopProduct> & { currency: string }> {
     return request(`${pub(collectionId)}/products${qs({ productIds: params?.productIds })}`)
   }
 
@@ -89,8 +90,19 @@ export namespace shop {
     return request<ShopBuyerOrder>(`${pub(collectionId)}/orders/by-session/${encodeURIComponent(sessionId)}`)
   }
 
-  /** The signed-in buyer's orders, newest first, with their download links. @throws `SIGN_IN_REQUIRED` */
-  export async function myOrders(collectionId: string, params?: { limit?: number; offset?: number }): Promise<ShopPage<ShopBuyerOrder>> {
+  /**
+   * The signed-in buyer's orders, newest first, with their download links, a page at a time. `count` is how
+   * many they have in all.
+   *
+   * @example
+   * ```typescript
+   * let page = await shop.myOrders(collectionId, { limit: 20 })
+   * page.items // ShopBuyerOrder[]
+   * if (page.nextCursor) page = await shop.myOrders(collectionId, { limit: 20, cursor: page.nextCursor })
+   * ```
+   * @throws `SIGN_IN_REQUIRED`
+   */
+  export async function myOrders(collectionId: string, params?: ListOptions): Promise<ListResult<ShopBuyerOrder>> {
     return request(`${pub(collectionId)}/orders/mine${qs(params)}`)
   }
 
@@ -128,7 +140,16 @@ export namespace shop {
       return request<ShopConnectStatus>(`${adm(collectionId)}/connect/status`)
     }
 
-    export async function listPrices(collectionId: string, params?: ShopPriceListParams): Promise<ShopPage<ShopPrice>> {
+    /**
+     * The shop's prices, a page at a time. Filter by product, currency, app, or whether it is on sale
+     * (`active`). `count` is how many match in all.
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor, count } = await shop.admin.listPrices(collectionId, { productId: 'soap', active: true })
+     * ```
+     */
+    export async function listPrices(collectionId: string, params?: ShopPriceListParams): Promise<ListResult<ShopPrice>> {
       return request(`${adm(collectionId)}/prices${qs(params)}`)
     }
 
@@ -149,8 +170,18 @@ export namespace shop {
       return del(`${adm(collectionId)}/prices/${encodeURIComponent(priceId)}`)
     }
 
-    /** Shop orders, newest first. Unpaid and expired checkouts are left out unless asked for. */
-    export async function listOrders(collectionId: string, params?: ShopOrderListParams): Promise<ShopPage<ShopAdminOrder>> {
+    /**
+     * Shop orders, newest first, a page at a time. Unpaid and expired checkouts are left out unless asked
+     * for. `count` is how many match in all.
+     *
+     * @example
+     * ```typescript
+     * let page = await shop.admin.listOrders(collectionId, { status: 'paid', limit: 50 })
+     * page.items // ShopAdminOrder[]
+     * while (page.nextCursor) page = await shop.admin.listOrders(collectionId, { status: 'paid', limit: 50, cursor: page.nextCursor })
+     * ```
+     */
+    export async function listOrders(collectionId: string, params?: ShopOrderListParams): Promise<ListResult<ShopAdminOrder>> {
       return request(`${adm(collectionId)}/orders${qs(params)}`)
     }
 

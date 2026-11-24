@@ -21,8 +21,6 @@ export interface VariantResponse {
  * Request payload for creating a new variant.
  */
 export interface VariantCreateRequest {
-  /** @deprecated Ignored — the server generates the variant id. (Use PUT with an id to choose one.) */
-  id?: string
   name?: string
   [key: string]: any
 }

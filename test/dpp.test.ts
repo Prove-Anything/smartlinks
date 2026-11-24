@@ -4,7 +4,8 @@ import { initializeApi, configureSdkCache } from '../src/http'
 import { dpp } from '../src/api/dpp'
 
 // dpp.*: each call goes to the route prove serves (server/api/admin/collectionAdmin/dpp.js and
-// server/api/public/dpp.js), with the method and body the server expects, and unwraps the reply.
+// server/api/public/dpp.js), with the method and body the server expects. Single things are unwrapped
+// from the reply; lists come back as the API sends them for version 2027-01: { items, nextCursor }.
 
 describe('dpp', () => {
   const realFetch = globalThis.fetch
@@ -29,8 +30,8 @@ describe('dpp', () => {
   const A = '/admin/collection/c1/dpp'
 
   test('connecting a brand to the registry', async () => {
-    reply = { registries: [{ environment: 'acc' }] }
-    assert.deepEqual(await dpp.registry.list('c1'), [{ environment: 'acc' }])
+    reply = { items: [{ environment: 'acc' }], nextCursor: null }
+    assert.deepEqual(await dpp.registry.list('c1'), { items: [{ environment: 'acc' }], nextCursor: null })
     assert.deepEqual(call(), ['GET', `${A}/registry`, undefined])
     reply = { registry: { environment: 'acc', nextStep: 'enter-service-account' } }
     assert.equal((await dpp.registry.makeKey('c1', 'acc', { alg: 'ES384' })).nextStep, 'enter-service-account')
@@ -54,15 +55,20 @@ describe('dpp', () => {
     assert.deepEqual(call(), ['PUT', `${A}/passports/by-anchor?replace=false`, input])
     await dpp.passports.upsertMany('c1', [input])
     assert.deepEqual(call(), ['POST', `${A}/passports/bulk`, { passports: [input] }])
-    await dpp.passports.list('c1', { productId: 'p1', status: 'active' })
-    assert.deepEqual(call(), ['GET', `${A}/passports?productId=p1&status=active`, undefined])
+    reply = { items: [{ id: 'x1' }], nextCursor: 'next-page' }
+    const page = await dpp.passports.list('c1', { productId: 'p1', status: 'active', limit: 1 })
+    assert.deepEqual(call(), ['GET', `${A}/passports?productId=p1&status=active&limit=1`, undefined])
+    assert.deepEqual(page, { items: [{ id: 'x1' }], nextCursor: 'next-page' })
+    reply = { items: [], nextCursor: null }
+    assert.equal((await dpp.passports.list('c1', { productId: 'p1', limit: 1, cursor: page.nextCursor! })).nextCursor, null)
+    assert.deepEqual(call(), ['GET', `${A}/passports?productId=p1&limit=1&cursor=next-page`, undefined])
     reply = { passport: { id: 'x/1' } }
     assert.equal((await dpp.passports.get('c1', 'x/1')).id, 'x/1')
     assert.deepEqual(call(), ['GET', `${A}/passports/x%2F1`, undefined])
     await dpp.passports.update('c1', 'x1', { public: { b: 2 } }, { replace: true })
     assert.deepEqual(call(), ['PUT', `${A}/passports/x1?replace=true`, { public: { b: 2 } }])
-    reply = { versions: [{ version: 2 }, { version: 1 }] }
-    assert.equal((await dpp.passports.versions('c1', 'x1')).length, 2)
+    reply = { items: [{ version: 2 }, { version: 1 }], nextCursor: null }
+    assert.deepEqual((await dpp.passports.versions('c1', 'x1')).items.map((v) => v.version), [2, 1])
     assert.deepEqual(call(), ['GET', `${A}/passports/x1/versions`, undefined])
     await dpp.passports.withdraw('c1', 'x1')
     assert.deepEqual(call(), ['POST', `${A}/passports/x1/withdraw`, {}])
@@ -73,14 +79,15 @@ describe('dpp', () => {
   test('registering, tasks, groups and the public read', async () => {
     await dpp.register('c1', 'acc', ['x1', 'x2'], { wait: true })
     assert.deepEqual(call(), ['POST', `${A}/registry/acc/register`, { passportIds: ['x1', 'x2'], wait: true }])
-    reply = { tasks: [] }
-    await dpp.tasks.list('c1', 'acc')
+    reply = { items: [], nextCursor: null }
+    assert.deepEqual(await dpp.tasks.list('c1', 'acc'), { items: [], nextCursor: null })
     assert.deepEqual(call(), ['GET', `${A}/registry/acc/tasks`, undefined])
     reply = { task: { taskId: 't1', status: 'COMPLETED' } }
     assert.equal((await dpp.tasks.refresh('c1', 'acc', 't1')).status, 'COMPLETED')
     assert.deepEqual(call(), ['POST', `${A}/registry/acc/tasks/t1/refresh`, {}])
-    reply = { groups: [{ productGroup: 'BATTERIES' }] }
-    assert.equal((await dpp.groups('c1'))[0].productGroup, 'BATTERIES')
+    reply = { items: [{ productGroup: 'BATTERIES' }], nextCursor: null }
+    assert.equal((await dpp.groups('c1')).items[0].productGroup, 'BATTERIES')
+    assert.deepEqual(call(), ['GET', `${A}/groups`, undefined])
     reply = { uniqueProductIdentifier: 'https://smartlinks.app/api/v1/public/dpp/c1/x1' }
     await dpp.read('c1', 'x1', { version: 2 })
     assert.deepEqual(call(), ['GET', '/public/dpp/c1/x1?version=2', undefined])

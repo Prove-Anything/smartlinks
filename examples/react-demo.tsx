@@ -5,7 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { initializeApi } from '../src/index';
 import { auth } from '../src/api/auth';
 import { collection } from '../src/api/collection';
-import { product } from '../src/api/product';
+import { products } from '../src/api/products';
 import { asset } from '../src/api/asset';
 import type { Asset } from '../src/types/asset';
 import type { CollectionResponse } from '../src/types/collection';
@@ -48,8 +48,8 @@ const SmartlinksDemo: React.FC = () => {
   const loadCollections = async () => {
     setLoading(true);
     try {
-      const data = await collection.list(false); // Public endpoint
-      setCollections(data);
+      const { items } = await collection.list(); // the collections you can work on (signed in)
+      setCollections(items);
     } catch (err: any) {
       setError(err.message || 'Failed to load collections');
     }
@@ -60,8 +60,8 @@ const SmartlinksDemo: React.FC = () => {
   const loadProducts = async (collectionId: string) => {
     setLoading(true);
     try {
-      const data = await product.list(collectionId, false); // Public endpoint
-      setProducts(data);
+      const { items } = await products.list(collectionId, false); // Public endpoint
+      setProducts(items);
     } catch (err: any) {
       setError(err.message || 'Failed to load products');
     }
@@ -71,8 +71,8 @@ const SmartlinksDemo: React.FC = () => {
   // Load assets for current collection
   const loadCollectionAssets = async (collectionId: string) => {
     try {
-      const list = await asset.list({ scope: { type: 'collection', collectionId }, mimeTypePrefix: 'image/' });
-      setAssets(list);
+      const { items } = await asset.list({ scope: { type: 'collection', collectionId } });
+      setAssets(items.filter((a) => a.mimeType?.startsWith('image/')));
     } catch (err: any) {
       setError(err.message || 'Failed to load assets');
     }

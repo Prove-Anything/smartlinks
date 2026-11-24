@@ -9,12 +9,22 @@ import type {
   TemplateRenderSourceRequest,
   TemplateRenderSourceResponse,
 } from "../types"
+import type { ListResult } from "../types/list"
 
 export namespace template {
   // Admin APIs
-  export async function getAll(collectionId: string): Promise<Template[]> {
+  /**
+   * Every template in the collection (admin), in one answer: `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await template.getAll('coll_123')
+   * items // Template[]
+   * ```
+   */
+  export async function getAll(collectionId: string): Promise<ListResult<Template>> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/template`
-    return request<Template[]>(path)
+    return request<ListResult<Template>>(path)
   }
 
   export async function get(collectionId: string, templateId: string): Promise<Template> {
@@ -54,9 +64,18 @@ export namespace template {
   }
 
   // Public APIs
-  export async function getAllowed(collectionId: string): Promise<TemplatePublic[]> {
+  /**
+   * The collection's templates that may be used publicly, in one answer: `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await template.getAllowed('coll_123')
+   * items // TemplatePublic[]
+   * ```
+   */
+  export async function getAllowed(collectionId: string): Promise<ListResult<TemplatePublic>> {
     const path = `/public/collection/${encodeURIComponent(collectionId)}/template/getAllowed`
-    return request<TemplatePublic[]>(path)
+    return request<ListResult<TemplatePublic>>(path)
   }
 
   export async function getPublic(collectionId: string, templateId: string): Promise<TemplatePublic> {
@@ -69,9 +88,18 @@ export namespace template {
     return request<TemplatePublic>(path)
   }
 
-  export async function getAllowedGlobal(collectionId: string): Promise<TemplatePublic[]> {
+  /**
+   * The global templates this collection may use, in one answer: `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await template.getAllowedGlobal('coll_123')
+   * items // TemplatePublic[]
+   * ```
+   */
+  export async function getAllowedGlobal(collectionId: string): Promise<ListResult<TemplatePublic>> {
     const path = `/public/template/getAllowed/${encodeURIComponent(collectionId)}`
-    return request<TemplatePublic[]>(path)
+    return request<ListResult<TemplatePublic>>(path)
   }
 
   // Render a template by ID (admin)

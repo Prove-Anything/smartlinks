@@ -7,9 +7,9 @@ import {
   UpdateCrateRequest,
   UpdateCrateResponse,
   DeleteCrateResponse,
-  ListCratesRequest,
-  ListCratesResponse
+  ListCratesRequest
 } from "../types/crate"
+import type { ListResult } from "../types/list"
 
 /**
  * Crate Management API
@@ -18,28 +18,28 @@ import {
  */
 export namespace crate {
   /**
-   * List crates for a collection with pagination support.
-   * Returns crates in pages, with support for soft-deleted crates.
-   * 
+   * List crates for a collection, a page at a time.
+   * Soft-deleted crates are left out unless `includeDeleted` is set.
+   *
    * @param collectionId - Identifier of the parent collection
-   * @param params - Optional query parameters for pagination and filtering
-   * @returns Promise resolving to a ListCratesResponse object
+   * @param params - `limit` (default 100, max 100), `cursor`, and `includeDeleted`
+   * @returns Promise resolving to `{ items, nextCursor }`, where `items` are Crate objects
    * @throws ErrorResponse if the request fails
-   * 
+   *
    * @example
    * ```typescript
    * // Get first page
    * const page1 = await crate.list('coll_123', { limit: 100 })
    * console.log(`Found ${page1.items.length} crates`)
-   * 
+   *
    * // Get next page
-   * if (page1.hasMore) {
+   * if (page1.nextCursor) {
    *   const page2 = await crate.list('coll_123', {
    *     limit: 100,
-   *     startAfter: page1.lastId
+   *     cursor: page1.nextCursor
    *   })
    * }
-   * 
+   *
    * // Include soft-deleted crates
    * const withDeleted = await crate.list('coll_123', {
    *   includeDeleted: true
@@ -49,15 +49,15 @@ export namespace crate {
   export async function list(
     collectionId: string,
     params?: ListCratesRequest
-  ): Promise<ListCratesResponse> {
+  ): Promise<ListResult<Crate>> {
     const queryParams = new URLSearchParams()
     if (params?.limit) queryParams.append('limit', params.limit.toString())
-    if (params?.startAfter) queryParams.append('startAfter', params.startAfter)
+    if (params?.cursor) queryParams.append('cursor', params.cursor)
     if (params?.includeDeleted) queryParams.append('includeDeleted', 'true')
-    
+
     const query = queryParams.toString()
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/crate${query ? `?${query}` : ''}`
-    return request<ListCratesResponse>(path)
+    return request<ListResult<Crate>>(path)
   }
 
   /**

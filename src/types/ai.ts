@@ -808,10 +808,6 @@ export interface AgentToolDefinition {
   parameters: any
 }
 
-export interface AgentToolsResponse {
-  tools: AgentToolDefinition[]
-}
-
 export interface AgentToolsQuery {
   allowCapabilities?: string
   only?: string
@@ -828,10 +824,6 @@ export interface SkillDescriptor {
   inputSchema: any
   outputSchema: any
   capabilities: string[]
-}
-
-export interface SkillsListResponse {
-  skills: SkillDescriptor[]
 }
 
 export interface CatalogResponse {

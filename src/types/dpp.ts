@@ -1,4 +1,5 @@
 // src/types/dpp.ts — EU Digital Product Passports hosted by SmartLinks, and the brand's EU registry connection (dpp.*)
+import type { ListOptions } from "./list"
 
 /**
  * The registry environments: `acc` = the EU test registry, `prod` = the live EU registry, `practice` = the SmartLinks
@@ -192,13 +193,12 @@ export interface DppPassportVersion {
   savedBy: string | null
 }
 
-export interface DppPassportListQuery {
+/** `dpp.passports.list` options: the filters, plus `limit` and `cursor`. */
+export interface DppPassportListQuery extends ListOptions {
   productId?: string
   batchId?: string
   proofId?: string
   status?: "active" | "withdrawn"
-  limit?: number
-  offset?: number
 }
 
 export interface DppRegisterResult {

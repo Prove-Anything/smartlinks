@@ -4,11 +4,13 @@ import {
   JsonValue,
   ProductClaimCreateRequestBody,
   ProductCreateRequest,
+  ProductQueryMeta,
   ProductQueryRequest,
-  ProductQueryResponse,
   ProductResponse,
   ProductUpdateRequest,
 } from "../types/product"
+import type { AssetResponse } from "../types/asset"
+import type { ListResult } from "../types/list"
 
 export namespace products {
   export async function get(
@@ -21,13 +23,25 @@ export namespace products {
     return request<ProductResponse>(path)
   }
 
+  /**
+   * Every product in a collection, in one list (no pages). For filtering, sorting and paging use
+   * `products.query`.
+   *
+   * @param collectionId - Identifier of the parent collection
+   * @param admin - When `true`, targets the `/admin` endpoint; otherwise the `/public` one
+   *
+   * @example
+   * ```typescript
+   * const { items } = await products.list(collectionId)
+   * ```
+   */
   export async function list(
     collectionId: string,
     admin?: boolean
-  ): Promise<ProductResponse[]> {
+  ): Promise<ListResult<ProductResponse>> {
     const base = admin ? '/admin' : '/public'
     const path = `${base}/collection/${encodeURIComponent(collectionId)}/products`
-    return request<ProductResponse[]>(path)
+    return request<ListResult<ProductResponse>>(path)
   }
 
   export async function create(
@@ -56,19 +70,26 @@ export namespace products {
   }
 
   /**
-   * Query products in a collection with filtering, sorting, and pagination.
+   * Query products in a collection with filtering, sorting, and paging.
    *
    * @param collectionId - Identifier of the parent collection
-   * @param body - Query parameters with filters, sorting, and pagination
+   * @param body - Filters and sorting, plus `limit` (default 50) and `cursor` for paging
    * @param admin - When `true`, targets the `/admin` endpoint (requires an
    *   authenticated admin context). Defaults to `false`, which targets the
    *   `/public` endpoint — consistent with `get`, `list`, and `listAssets`.
-   * @returns Promise resolving to a ProductQueryResponse
+   * @returns Promise resolving to `{ items, nextCursor, count?, meta? }`: the matching products, the cursor
+   *   for the next page (null on the last), how many match in all where the server counted, and `meta`
+   *   (how the query was run)
    *
    * @example
    * ```typescript
    * // Public query (default)
-   * await products.query(collectionId, { query: { search: 'cabernet' } })
+   * const { items, nextCursor, count } = await products.query(collectionId, { query: { search: 'cabernet' }, limit: 20 })
+   *
+   * // The next page: the same query with the cursor
+   * if (nextCursor) {
+   *   await products.query(collectionId, { query: { search: 'cabernet' }, limit: 20, cursor: nextCursor })
+   * }
    *
    * // Admin query (authenticated)
    * await products.query(collectionId, { query: { search: 'cabernet' } }, true)
@@ -78,10 +99,10 @@ export namespace products {
     collectionId: string,
     body: ProductQueryRequest,
     admin?: boolean
-  ): Promise<ProductQueryResponse> {
+  ): Promise<ListResult<ProductResponse> & { meta?: ProductQueryMeta }> {
     const base = admin ? '/admin' : '/public'
     const path = `${base}/collection/${encodeURIComponent(collectionId)}/products/query`
-    return post<ProductQueryResponse>(path, body)
+    return post<ListResult<ProductResponse> & { meta?: ProductQueryMeta }>(path, body)
   }
 
   /**
@@ -125,14 +146,24 @@ export namespace products {
     return post<ProductResponse>(path, body)
   }
 
+  /**
+   * A product's assets (images, documents), in one list (no pages).
+   *
+   * @param admin - When `true`, targets the `/admin` endpoint; otherwise the `/public` one
+   *
+   * @example
+   * ```typescript
+   * const { items } = await products.listAssets(collectionId, productId)
+   * ```
+   */
   export async function listAssets(
     collectionId: string,
     productId: string,
     admin?: boolean
-  ): Promise<unknown> {
+  ): Promise<ListResult<AssetResponse>> {
     const base = admin ? '/admin' : '/public'
     const path = `${base}/collection/${encodeURIComponent(collectionId)}/products/${encodeURIComponent(productId)}/asset`
-    return request<unknown>(path)
+    return request<ListResult<AssetResponse>>(path)
   }
 
   export async function createClaimWindow(

@@ -1,6 +1,7 @@
 // src/api/jobs.ts
 import { request } from "../http"
-import type { JobsPage, ListJobsQuery, Job } from "../types/jobs"
+import type { ListJobsQuery, Job } from "../types/jobs"
+import type { ListResult } from "../types/list"
 
 function enc(v: string) { return encodeURIComponent(v) }
 function encodeQuery(params: Record<string, any> = {}): string {
@@ -17,14 +18,20 @@ export namespace jobs {
   /**
    * List visible jobs for a collection
    * GET /admin/collection/:collectionId/jobs
+   *
+   * @example
+   * ```typescript
+   * let page = await jobs.listJobs('coll_123', { state: 'errored', limit: 50 })
+   * while (page.nextCursor) page = await jobs.listJobs('coll_123', { state: 'errored', limit: 50, cursor: page.nextCursor })
+   * ```
    */
   export async function listJobs(
     collectionId: string,
     query: ListJobsQuery = {}
-  ): Promise<JobsPage> {
+  ): Promise<ListResult<Job>> {
     const qs = encodeQuery(query as any)
     const path = `/admin/collection/${enc(collectionId)}/jobs${qs}`
-    return request<JobsPage>(path)
+    return request<ListResult<Job>>(path)
   }
 
   /**

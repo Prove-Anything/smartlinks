@@ -21,8 +21,8 @@ import type {
   UpdateInteractionTypeBody,
   ListInteractionTypesQuery,
   InteractionTypeRecord,
-  InteractionTypeList,
 } from "../types/interaction"
+import type { ListResult } from "../types/list"
 
 function encodeQuery(params: Record<string, any>): string {
   const search = new URLSearchParams()
@@ -41,14 +41,20 @@ function encodeQuery(params: Record<string, any>): string {
 export namespace interactions {
   /**
    * POST /admin/collection/:collectionId/interactions/query
-   * Flexible query for interaction events with optional includes.
+   * Flexible query for interaction events with optional includes. One list, no pages: `limit` in the
+   * body says how many events to return.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await interactions.query('coll_123', { appId: 'my-app', interactionId: voteTypeId, limit: 500 })
+   * ```
    */
   export async function query(
     collectionId: string,
     body: AdminInteractionsQueryRequest
-  ): Promise<InteractionEventRow[]> {
+  ): Promise<ListResult<InteractionEventRow>> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/query`
-    return post<InteractionEventRow[]>(path, body)
+    return post<ListResult<InteractionEventRow>>(path, body)
   }
 
   /**
@@ -144,13 +150,23 @@ export namespace interactions {
     return post<InteractionTypeRecord>(path, body)
   }
 
+  /**
+   * List the collection's interaction types (admin), optionally only one app's.
+   * GET /admin/collection/:collectionId/interactions
+   *
+   * @example
+   * ```typescript
+   * let page = await interactions.list('coll_123', { appId: 'my-app', limit: 100 })
+   * while (page.nextCursor) page = await interactions.list('coll_123', { appId: 'my-app', limit: 100, cursor: page.nextCursor })
+   * ```
+   */
   export async function list(
     collectionId: string,
     query: ListInteractionTypesQuery = {}
-  ): Promise<InteractionTypeList> {
+  ): Promise<ListResult<InteractionTypeRecord>> {
     const qs = encodeQuery(query as any)
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/${qs}`
-    return request<InteractionTypeList>(path)
+    return request<ListResult<InteractionTypeRecord>>(path)
   }
 
   /**
@@ -174,11 +190,13 @@ export namespace interactions {
   ): Promise<InteractionTypeRecord> {
     const { appId, key, permissions, display, data } = input
     if (!appId || !key) throw new Error('interactions.ensureType: appId and key are required')
-    for (let offset = 0; ; offset += 200) {
-      const page = await list(collectionId, { appId, limit: 200, offset })
+    let cursor: string | undefined
+    for (;;) {
+      const page = await list(collectionId, { appId, limit: 200, cursor })
       const found = (page.items || []).find((t) => t.data && t.data.interactionType === key)
       if (found) return found
-      if (!page.items || page.items.length < 200) break
+      if (!page.nextCursor) break
+      cursor = page.nextCursor
     }
     return create(collectionId, {
       appId,
@@ -223,24 +241,42 @@ export namespace interactions {
     return post<OutcomeCount[]>(path, body, headers)
   }
 
+  /**
+   * The signed-in person's own interaction events (where the type allows it). One list, no pages:
+   * `limit` in the body says how many.
+   * POST /public/collection/:collectionId/interactions/by-user
+   *
+   * @example
+   * ```typescript
+   * const { items } = await interactions.publicMyInteractions('coll_123', { appId: 'my-app', interactionId: voteTypeId })
+   * ```
+   */
   export async function publicMyInteractions(
     collectionId: string,
     body: PublicInteractionsByUserRequest,
     authToken?: string
-  ): Promise<InteractionEventRow[]> {
+  ): Promise<ListResult<InteractionEventRow>> {
     const path = `/public/collection/${encodeURIComponent(collectionId)}/interactions/by-user`
     const headers = authToken ? { AUTHORIZATION: `Bearer ${authToken}` } : undefined
-    return post<InteractionEventRow[]>(path, body, headers)
+    return post<ListResult<InteractionEventRow>>(path, body, headers)
   }
 
-  // Public: list interaction definitions (Postgres)
+  /**
+   * Public: list the collection's interaction types, optionally only one app's.
+   * GET /public/collection/:collectionId/interactions
+   *
+   * @example
+   * ```typescript
+   * const { items, nextCursor } = await interactions.publicList('coll_123', { appId: 'my-app', limit: 50 })
+   * ```
+   */
   export async function publicList(
     collectionId: string,
     query: ListInteractionTypesQuery = {}
-  ): Promise<InteractionTypeList> {
+  ): Promise<ListResult<InteractionTypeRecord>> {
     const qs = encodeQuery(query as any)
     const path = `/public/collection/${encodeURIComponent(collectionId)}/interactions/${qs}`
-    return request<InteractionTypeList>(path)
+    return request<ListResult<InteractionTypeRecord>>(path)
   }
 
   // Public: get a single interaction definition (Postgres)

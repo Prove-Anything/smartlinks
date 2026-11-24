@@ -9,7 +9,7 @@
  * - Convenient helper methods for error classification
  */
 
-import { initializeApi, collection, product, auth, SmartlinksApiError } from '@proveanything/smartlinks'
+import { initializeApi, collection, products, auth, SmartlinksApiError } from '@proveanything/smartlinks'
 
 // Initialize the SDK
 initializeApi({
@@ -22,7 +22,7 @@ initializeApi({
  */
 async function basicErrorHandling() {
   try {
-    const collections = await collection.list(false)
+    const { items: collections } = await collection.list()
     console.log('Collections:', collections)
   } catch (error) {
     // Check if it's a SmartlinksApiError
@@ -48,7 +48,7 @@ async function basicErrorHandling() {
  */
 async function handleSpecificErrors() {
   try {
-    const item = await product.get('collectionId', 'productId', false)
+    const item = await products.get('collectionId', 'productId', false)
     console.log('Product:', item)
   } catch (error) {
     if (error instanceof SmartlinksApiError) {
@@ -95,7 +95,7 @@ async function handleSpecificErrors() {
  */
 async function handleValidationErrors() {
   try {
-    await product.create('collectionId', {
+    await products.create('collectionId', {
       name: '', // Invalid: empty name
     })
   } catch (error) {
@@ -158,7 +158,7 @@ async function retryOnTransientErrors<T>(
 async function fetchWithRetry() {
   try {
     const collections = await retryOnTransientErrors(
-      () => collection.list(false),
+      () => collection.list(),
       3, // max retries
       1000 // initial delay
     )
@@ -189,7 +189,7 @@ async function handleAuthWithRefresh() {
       }
 
       // Make authenticated request
-      const collections = await collection.list(true) // admin endpoint
+      const collections = await collection.list() // admin endpoint
       return collections
     } catch (error) {
       if (error instanceof SmartlinksApiError && error.isAuthError()) {

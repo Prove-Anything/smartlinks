@@ -2,6 +2,7 @@
 // Basic commerce: prices, the shop's settings, checkout and shop orders — see docs/shop.md.
 //
 // Money is always a whole number of MINOR units (pence, cents): 1299 = £12.99. Prices include VAT.
+import type { ListOptions } from './list'
 
 /** How a price is delivered: shipped, or delivered when paid. */
 export type ShopDelivery = 'physical' | 'digital'
@@ -64,13 +65,12 @@ export interface ShopPriceInput {
 
 export type ShopPriceUpdate = Partial<Omit<ShopPriceInput, 'productId' | 'variantId' | 'currency'>>
 
-export interface ShopPriceListParams {
+/** `shop.admin.listPrices` options: the filters, plus `limit` and `cursor`. */
+export interface ShopPriceListParams extends ListOptions {
   productId?: string
   currency?: string
   active?: boolean
   appId?: string
-  limit?: number
-  offset?: number
 }
 
 export interface ShopShippingRate {
@@ -280,20 +280,12 @@ export interface ShopBuyerOrder extends ShopOrder {
   downloads: { name: string; url: string }[]
 }
 
-export interface ShopOrderListParams {
+/** `shop.admin.listOrders` options: the filters, plus `limit` and `cursor`. */
+export interface ShopOrderListParams extends ListOptions {
   /** One status or several, comma-separated. Unpaid and expired checkouts are left out unless asked for. */
   status?: string
   contactId?: string
   includeExpired?: boolean
-  limit?: number
-  offset?: number
-}
-
-export interface ShopPage<T> {
-  items: T[]
-  total: number
-  limit: number
-  offset: number
 }
 
 export interface ShopShipInput {

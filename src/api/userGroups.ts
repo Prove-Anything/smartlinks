@@ -10,6 +10,7 @@ import type {
   UserGroupChange,
   UserGroupHistoryParams,
 } from "../types/userGroups"
+import type { ListResult } from "../types/list"
 
 /**
  * User groups: named lists of people in a collection, used to say who may do what.
@@ -38,9 +39,17 @@ export namespace userGroups {
     return request<MyUserGroups>(`/public/collection/${encodeURIComponent(collectionId)}/userGroups/mine`)
   }
 
-  /** Every user group in the collection (admin). */
-  export async function list(collectionId: string): Promise<UserGroup[]> {
-    return request<UserGroup[]>(base(collectionId))
+  /**
+   * Every user group in the collection (admin), in one answer: `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await userGroups.list('coll_123')
+   * items.map((g) => g.name)
+   * ```
+   */
+  export async function list(collectionId: string): Promise<ListResult<UserGroup>> {
+    return request<ListResult<UserGroup>>(base(collectionId))
   }
 
   /** One user group (admin). */
@@ -78,9 +87,17 @@ export namespace userGroups {
     return del<UserGroup>(`${base(collectionId)}/${encodeURIComponent(userGroupId)}`)
   }
 
-  /** The people in a user group, with name and email (admin). */
-  export async function members(collectionId: string, userGroupId: string): Promise<UserGroupMember[]> {
-    return request<UserGroupMember[]>(`${base(collectionId)}/${encodeURIComponent(userGroupId)}/users`)
+  /**
+   * The people in a user group, with name and email (admin), in one answer: `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await userGroups.members('coll_123', qc.id)
+   * items // [{ uid, name, email }]
+   * ```
+   */
+  export async function members(collectionId: string, userGroupId: string): Promise<ListResult<UserGroupMember>> {
+    return request<ListResult<UserGroupMember>>(`${base(collectionId)}/${encodeURIComponent(userGroupId)}/users`)
   }
 
   /**
@@ -106,14 +123,15 @@ export namespace userGroups {
    * or removed, each with the admin who did it (`actorId`) and when (`at`). Give `userGroupId` for one
    * user group, `userId` for everything about one person, or neither for the whole collection.
    * Covers the last 30 days unless you give `from` / `to` (at most 400 days). Takes about a second.
+   * It has no further pages (`nextCursor` is always null): ask for more with `limit`, or narrow the dates.
    *
    * @example
    * ```typescript
-   * const who = await userGroups.history('coll_123', { userId: 'uid_1' })
-   * // [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }]
+   * const { items } = await userGroups.history('coll_123', { userId: 'uid_1' })
+   * // items: [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }]
    * ```
    */
-  export async function history(collectionId: string, params: UserGroupHistoryParams = {}): Promise<UserGroupChange[]> {
+  export async function history(collectionId: string, params: UserGroupHistoryParams = {}): Promise<ListResult<UserGroupChange>> {
     const q = new URLSearchParams()
     if (params.userId) q.append('userId', params.userId)
     if (params.from) q.append('from', params.from)
@@ -121,11 +139,19 @@ export namespace userGroups {
     if (params.limit) q.append('limit', String(params.limit))
     const qs = q.toString()
     const path = params.userGroupId ? `${base(collectionId)}/${encodeURIComponent(params.userGroupId)}/history` : `${base(collectionId)}/history`
-    return request<UserGroupChange[]>(`${path}${qs ? `?${qs}` : ''}`)
+    return request<ListResult<UserGroupChange>>(`${path}${qs ? `?${qs}` : ''}`)
   }
 
-  /** The user groups one person is in (admin). */
-  export async function ofUser(collectionId: string, userId: string): Promise<UserGroupRef[]> {
-    return request<UserGroupRef[]>(`${base(collectionId)}/of/${encodeURIComponent(userId)}`)
+  /**
+   * The user groups one person is in (admin), in one answer: `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await userGroups.ofUser('coll_123', 'uid_1')
+   * items // [{ id, key, name }]
+   * ```
+   */
+  export async function ofUser(collectionId: string, userId: string): Promise<ListResult<UserGroupRef>> {
+    return request<ListResult<UserGroupRef>>(`${base(collectionId)}/of/${encodeURIComponent(userId)}`)
   }
 }

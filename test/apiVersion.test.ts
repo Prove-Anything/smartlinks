@@ -23,8 +23,8 @@ describe('API version headers', () => {
   })
   afterEach(() => { globalThis.fetch = realFetch })
 
-  test('this release is built for the baseline and says which SDK it is', () => {
-    assert.equal(API_VERSION, '2026-11')
+  test('this release is built for 2027-01 and says which SDK it is', () => {
+    assert.equal(API_VERSION, '2027-01')
     assert.match(SDK_VERSION, /^\d+\.\d+\.\d+/)
   })
 
@@ -37,7 +37,7 @@ describe('API version headers', () => {
     await del('/a')
     assert.equal(seen.length, 5)
     for (const h of seen) {
-      assert.equal(h['smartlinks-version'], '2026-11')
+      assert.equal(h['smartlinks-version'], '2027-01')
       assert.equal(h['smartlinks-sdk'], `js/${SDK_VERSION}`)
     }
   })
@@ -51,13 +51,16 @@ describe('API version headers', () => {
     assert.equal(seen[1]['smartlinks-app'], 'faq')
   })
 
-  test('an app can pin another version; anything that is not year-month is ignored', async () => {
-    initializeApi({ baseURL: 'https://api.test/api/v1', apiVersion: '2027-01', force: true })
-    assert.equal(getApiVersion(), '2027-01')
+  test('an app can ask for a newer version; an older one, or anything that is not year-month, is ignored', async () => {
+    initializeApi({ baseURL: 'https://api.test/api/v1', apiVersion: '2027-06', force: true })
+    assert.equal(getApiVersion(), '2027-06')
     await request('/a')
-    assert.equal(seen[0]['smartlinks-version'], '2027-01')
+    assert.equal(seen[0]['smartlinks-version'], '2027-06')
+    // Older than the SDK itself: its functions return 2027-01 shapes, so it keeps asking for 2027-01.
+    initializeApi({ baseURL: 'https://api.test/api/v1', apiVersion: '2026-11', force: true })
+    assert.equal(getApiVersion(), '2027-01')
     initializeApi({ baseURL: 'https://api.test/api/v1', apiVersion: 'v2', force: true })
-    assert.equal(getApiVersion(), '2026-11')
+    assert.equal(getApiVersion(), '2027-01')
   })
 
   test("the headers a host uses for a framed app's calls carry no version of the host's own", () => {

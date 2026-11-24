@@ -92,7 +92,9 @@ key/value pair. Both params in a pair must be supplied together.
 | Param | Type | Default | Max |
 |---|---|---|---|
 | `limit` | `number` | `20` (`10` in typeahead mode) | `100` (`10` in typeahead mode) |
-| `offset` | `number` | `0` | — |
+| `cursor` | `string` | — | — |
+
+`cursor` is the `nextCursor` of the page before; leave it out for the first page.
 
 ---
 
@@ -101,8 +103,7 @@ key/value pair. Both params in a pair must be supplied together.
 ```ts
 {
   items: Contact[],
-  limit: number,
-  offset: number,
+  nextCursor: string | null, // pass back as `cursor` for the next page; null on the last
 }
 ```
 

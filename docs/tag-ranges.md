@@ -29,9 +29,9 @@ Assigning always needs you to be an admin of the collection the tags go to.
 ```ts
 import { partner, claimSet } from '@proveanything/smartlinks'
 
-const [p] = await partner.list()                       // the partners you belong to
+const { items: [p] } = await partner.list()            // the partners you belong to
 const scope = { partnerId: p.id }
-const [set] = await partner.claimSets(p.id)            // or partner.createClaimSet(p.id, { name, tagType: 'ntag424', tapDomain })
+const { items: [set] } = await partner.claimSets(p.id) // or partner.createClaimSet(p.id, { name, tagType: 'ntag424', tapDomain })
 
 // 1. Mint
 const range = await claimSet.ranges.create(scope, set.id, { name: 'Tap to donate - February', quantity: 100 })
@@ -53,7 +53,7 @@ await claimSet.ranges.assign(scope, set.id, range.id, { collectionId: 'reading-f
 **Programming on a phone instead of a manufacturer** (Sidekick): `ranges.next()` gives the lowest
 tag without a chip, with its URL and key; write it, then `ranges.recordTag(scope, set.id, range.id, code, { uid })` (add `password` for a plain tag's write password).
 
-To find where a chip or code went, `partner.lookupTags(partner.id, { uid })` or `{ code }` searches every set the partner owns and returns each hit's set, tag and range, never a key.
+To find where a chip or code went, `partner.lookupTags(partner.id, { uid })` or `{ code }` searches every set the partner owns and returns the hits in `items`, each with its set, tag and range, never a key.
 
 ## Open ranges and groups
 
@@ -81,7 +81,7 @@ Status reads `open` or `group` for these (and `assigned` once every member of a 
 `errors.report({ app: 'sidekick', operation: 'tag.program', errorCode: 'TAG_LOST', message, entityType: 'tag',
 entityId: chipUid, labels: { claimSetId, code, failedStep }, context: { steps, timings, hostLog } })` keeps what
 the phone saw in the platform's one error log (never a key: fields that look like one are dropped).
-`partner.tagAttempts(partner.id, chipUid)` and the platform's tag lookup read it back, newest first, so a
+`partner.tagAttempts(partner.id, chipUid)` (in `items`) and the platform's tag lookup read it back, newest first, so a
 failing chip can be understood by its UID without the phone's console.
 
 ## The printer file

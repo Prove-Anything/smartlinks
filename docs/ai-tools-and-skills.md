@@ -31,7 +31,7 @@ const { profile, sources } = await ai.skills.run(collectionId, 'research.brand',
 // sources → which signals were available (markdown, branding, schema.org)
 
 // Discover skills at runtime too (this catalog, live):
-const { skills } = await ai.skills.list(collectionId)
+const { items: skills } = await ai.skills.list(collectionId)
 ```
 
 ## Deterministic extraction (no AI)
@@ -58,7 +58,7 @@ const result = await ai.agent.run(collectionId, {
 })
 // result.finalText + result.toolResults (the trace of tools the AI called)
 
-const { tools } = await ai.agent.listTools(collectionId) // what the AI could reach for
+const { items: tools } = await ai.agent.listTools(collectionId) // what the AI could reach for
 ```
 
 `allowCapabilities` gates which tools a run may use (e.g. omit `ai:image` to forbid

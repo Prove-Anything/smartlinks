@@ -36,6 +36,7 @@
   "files": [
     "dist/",
     "docs/",
+    "upgrade/",
     "scripts/register-release.mjs",
     "scripts/publish.mjs",
     "scripts/doctor.mjs",
@@ -46,14 +47,15 @@
   ],
   "scripts": {
     "test": "node test/run.cjs",
-    "build": "node scripts/write-version.mjs && tsc && node scripts/fix-esm-extensions.mjs && node generate-api-summary.cjs && node generate-openapi.cjs && node scripts/copy-docs-to-dist.cjs && node scripts/build-baseline.mjs",
+    "build": "node scripts/write-version.mjs && node scripts/upgrade-table.mjs --check && tsc && node scripts/fix-esm-extensions.mjs && node generate-api-summary.cjs && node generate-openapi.cjs && node scripts/copy-docs-to-dist.cjs && node scripts/build-baseline.mjs",
     "docs": "typedoc",
     "docs:summary": "node generate-api-summary.cjs",
     "docs:openapi": "node generate-openapi.cjs",
     "docs:openapi:lint": "npx --yes @redocly/cli@latest lint openapi.yaml",
     "docs:openapi:check": "node generate-openapi.cjs && npx --yes @redocly/cli@latest lint openapi.yaml",
     "build:docs": "tsc build-docs.ts --outDir dist && node dist/build-docs.js",
-    "prepublishOnly": "npm run build"
+    "prepublishOnly": "npm run build",
+    "docs:upgrade": "node scripts/upgrade-table.mjs"
   },
   "keywords": [
     "smartlinks",

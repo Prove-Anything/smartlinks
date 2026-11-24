@@ -1,5 +1,6 @@
 import { request, post, put, del } from "../http"
 import type { ConditionSet } from "../utils/conditions"
+import type { ListResult } from "../types/list"
 
 /** A saved condition: a named rule set pages, Hub blocks and apps refer to by id. */
 export interface SavedCondition extends ConditionSet {
@@ -27,9 +28,18 @@ export namespace conditions {
   const pub = (collectionId: string) => `/public/collection/${encodeURIComponent(collectionId)}/condition`
   const adm = (collectionId: string) => `/admin/collection/${encodeURIComponent(collectionId)}/condition`
 
-  /** Every saved condition in the collection (removed ones left out). */
-  export async function list(collectionId: string, admin = false): Promise<SavedCondition[]> {
-    return request<SavedCondition[]>(admin ? adm(collectionId) : pub(collectionId))
+  /**
+   * Every saved condition in the collection (removed ones left out). All of them come back in one
+   * answer: `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await conditions.list('coll_123')
+   * items.map(c => c.title) // ["UK only", "In the stadium"]
+   * ```
+   */
+  export async function list(collectionId: string, admin = false): Promise<ListResult<SavedCondition>> {
+    return request<ListResult<SavedCondition>>(admin ? adm(collectionId) : pub(collectionId))
   }
 
   /**

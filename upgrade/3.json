@@ -1,0 +1,2196 @@
+{
+  "sdk": {
+    "from": "2",
+    "to": "3"
+  },
+  "apiVersion": {
+    "from": "2026-11",
+    "to": "2027-01"
+  },
+  "sharedDependencies": {
+    "from": "v7",
+    "to": "v8"
+  },
+  "guide": "docs/upgrading-to-3.md",
+  "about": "Every change between SDK 2 and SDK 3, as data. kind: \"renamed\" = the same call under a new name (mechanical: true means a script may rename it: same arguments, same result unless a \"list\" entry for the new name says otherwise); \"removed\" = no like-for-like call, the note says what to do (\"to\" names the nearest replacement); \"option\" = an option or argument that went; \"list\" = a function that now returns ListResult<T> = { items, nextCursor, count? } (\"paged\" says whether it takes limit + cursor); \"behaviour\" = something that changes at run time and the compiler cannot see.",
+  "hold": [
+    {
+      "when": "The app calls a writing function of the old `attestation` namespace (singular): attestation.create, attestation.update, attestation.remove.",
+      "why": "Its data has not been moved to the new `attestations` yet. SDK 3 keeps the namespace so the app still builds; leave those calls as they are."
+    }
+  ],
+  "unchanged": [
+    "The old `attestation` namespace (deprecated, kept until its data is moved).",
+    "`ctx.sl.*` inside an app's server functions: it runs on the server and keeps its shapes.",
+    "The standard query functions (proof.query, contact.query, products.standardQuery, app.records.query).",
+    "Every function that is not a list and was not deprecated."
+  ],
+  "changes": [
+    {
+      "kind": "renamed",
+      "name": "ContactSchema",
+      "to": "ContactSchemaResponse",
+      "mechanical": true,
+      "what": "type",
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "MobileAdminBundleManifest",
+      "to": "AdminMobileBundleManifest",
+      "mechanical": true,
+      "what": "type",
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "MobileAdminComponentManifest",
+      "to": "AdminMobileComponentManifest",
+      "mechanical": true,
+      "what": "type",
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "product.clone",
+      "to": "products.clone",
+      "mechanical": true,
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "product.create",
+      "to": "products.create",
+      "mechanical": true,
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "product.createClaimWindow",
+      "to": "products.createClaimWindow",
+      "mechanical": true,
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "product.get",
+      "to": "products.get",
+      "mechanical": true,
+      "note": "The whole `product` namespace (singular) is gone: use `products`."
+    },
+    {
+      "kind": "renamed",
+      "name": "product.getSN",
+      "to": "products.getSN",
+      "mechanical": true,
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "product.list",
+      "to": "products.list",
+      "mechanical": true,
+      "note": "Then treat it as a list: `products.list` returns ListResult<ProductResponse>."
+    },
+    {
+      "kind": "renamed",
+      "name": "product.listAssets",
+      "to": "products.listAssets",
+      "mechanical": true,
+      "note": "Then treat it as a list: `products.listAssets` returns ListResult<AssetResponse>."
+    },
+    {
+      "kind": "renamed",
+      "name": "product.lookupSN",
+      "to": "products.lookupSN",
+      "mechanical": true,
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "product.publicCreateClaim",
+      "to": "products.publicCreateClaim",
+      "mechanical": true,
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "product.publicLookupClaim",
+      "to": "products.publicLookupClaim",
+      "mechanical": true,
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "product.refresh",
+      "to": "products.refresh",
+      "mechanical": true,
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "product.remove",
+      "to": "products.remove",
+      "mechanical": true,
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "product.update",
+      "to": "products.update",
+      "mechanical": true,
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "product.updateClaimWindow",
+      "to": "products.updateClaimWindow",
+      "mechanical": true,
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "ScannerEventSubscriber",
+      "to": "AdminMobileEventCallback",
+      "mechanical": true,
+      "what": "type",
+      "note": ""
+    },
+    {
+      "kind": "removed",
+      "name": "ai.generateContent",
+      "to": "ai.chat.completions.create",
+      "mechanical": false,
+      "note": "A different call: it takes chat messages, not `contents`, and answers in the chat-completions shape (`choices[0].message.content`). `ai.chat.completions.create(collectionId, { messages: [{ role: \"user\", content }] })`."
+    },
+    {
+      "kind": "removed",
+      "name": "Asset.thumbnails",
+      "to": "Asset.thumbnail",
+      "mechanical": false,
+      "what": "field",
+      "note": "One thumbnail address (`string | null`), not a map of sizes."
+    },
+    {
+      "kind": "removed",
+      "name": "asset.uploadAsset",
+      "to": "asset.upload",
+      "mechanical": false,
+      "note": "Takes one options object: `asset.upload({ file, scope, … })` (type UploadAssetOptions)."
+    },
+    {
+      "kind": "removed",
+      "name": "BatchCreateRequest.id",
+      "to": null,
+      "mechanical": false,
+      "what": "field",
+      "note": "The server generates the batch id. Don't send one."
+    },
+    {
+      "kind": "removed",
+      "name": "comms.queryRecipientsWithAction",
+      "to": "comms.queryRecipientsWithInteraction",
+      "mechanical": false,
+      "note": "It posted to an address the API never had, so it never worked. The real call takes `interactionId` (not `actionId`) and returns a list of ids, or of `{ id, outcome }` with `includeOutcome: true`."
+    },
+    {
+      "kind": "removed",
+      "name": "comms.queryRecipientsWithoutAction",
+      "to": "comms.queryRecipientsWithoutInteraction",
+      "mechanical": false,
+      "note": "It posted to an address the API never had, so it never worked. The real call takes `interactionId` (not `actionId`) and returns a list of ids."
+    },
+    {
+      "kind": "removed",
+      "name": "CommsRecipientsWithActionQuery",
+      "to": "CommsRecipientsWithInteractionQuery",
+      "mechanical": false,
+      "what": "type",
+      "note": "`actionId` is `interactionId`."
+    },
+    {
+      "kind": "removed",
+      "name": "CommsRecipientsWithoutActionQuery",
+      "to": "CommsRecipientsWithoutInteractionQuery",
+      "mechanical": false,
+      "what": "type",
+      "note": "`actionId` is `interactionId`."
+    },
+    {
+      "kind": "removed",
+      "name": "evaluateCondition",
+      "to": "evaluateConditions",
+      "mechanical": false,
+      "what": "function",
+      "note": "Takes the field's whole condition list: `evaluateConditions(property.conditions, property.showWhen, values)`."
+    },
+    {
+      "kind": "removed",
+      "name": "FirebaseTimestamp",
+      "to": null,
+      "mechanical": false,
+      "what": "type",
+      "note": "Dates are ISO 8601 strings or a Date: `BatchCreateRequest.expiryDate` and `BatchUpdateRequest.expiryDate` are `string | Date`."
+    },
+    {
+      "kind": "removed",
+      "name": "order.findByProduct",
+      "to": "order.query",
+      "mechanical": false,
+      "note": "The API never had this address, so the call could only fail. Use `order.query(collectionId, { query: { productId } })`."
+    },
+    {
+      "kind": "removed",
+      "name": "order.findItemsByProduct",
+      "to": "order.query",
+      "mechanical": false,
+      "note": "The API never had this address, so the call could only fail. Use `order.query(collectionId, { query: { productId }, includeItems: true })` and read each order's items."
+    },
+    {
+      "kind": "removed",
+      "name": "order.findOrdersByProduct",
+      "to": "order.query",
+      "mechanical": false,
+      "note": "The API never had this address, so the call could only fail. Use `order.query(collectionId, { query: { productId } })`."
+    },
+    {
+      "kind": "removed",
+      "name": "order.getOrderIdsByAttribute",
+      "to": "order.query",
+      "mechanical": false,
+      "note": "The API never had this address, so the call could only fail. Use `order.query` with `productId`, `batchId` or `variantId` in `query`, and read the ids from `items`."
+    },
+    {
+      "kind": "removed",
+      "name": "order.lookup",
+      "to": "order.query",
+      "mechanical": false,
+      "note": "The API never had this address, so the call could only fail. Find the orders that hold items with `order.query(collectionId, { query: { items: [{ itemType, itemId }] } })`."
+    },
+    {
+      "kind": "removed",
+      "name": "product.find",
+      "to": "products.query",
+      "mechanical": false,
+      "note": "A different body (type ProductQueryRequest). Returns a list and pages with `limit` + `cursor`."
+    },
+    {
+      "kind": "removed",
+      "name": "product.publicFind",
+      "to": null,
+      "mechanical": false,
+      "note": "Use `products.get` when you know the id, `products.query` to search. The server retired this route some time ago."
+    },
+    {
+      "kind": "removed",
+      "name": "realtime.getAdminToken",
+      "to": "realtime.onMine",
+      "mechanical": false,
+      "note": "The SDK gets its own tokens. Subscribe with `realtime.onMine(scope, onMessage)`."
+    },
+    {
+      "kind": "removed",
+      "name": "realtime.getPublicToken",
+      "to": null,
+      "mechanical": false,
+      "note": "The SDK gets its own tokens. Subscribe with `realtime.channel(scope, name)` or `realtime.onChange(scope, filter, onChange)`."
+    },
+    {
+      "kind": "removed",
+      "name": "site.ready",
+      "to": null,
+      "mechanical": false,
+      "note": "Sites are server-rendered and nothing waits for the signal. Delete the call."
+    },
+    {
+      "kind": "removed",
+      "name": "VariantCreateRequest.id",
+      "to": null,
+      "mechanical": false,
+      "what": "field",
+      "note": "The server generates the variant id. Don't send one."
+    },
+    {
+      "kind": "option",
+      "name": "asset.list",
+      "option": "mimeTypePrefix",
+      "mechanical": false,
+      "note": "No asset list ever read it, so it never filtered anything. Filter the items you get back (`a.mimeType?.startsWith('image/')`), or as an admin use `asset.listAdmin` with `assetType`."
+    },
+    {
+      "kind": "option",
+      "name": "authKit.list",
+      "option": "admin (the argument)",
+      "mechanical": true,
+      "note": "There is no public list of AuthKit configs, so the call without `true` always failed. Call `authKit.list(collectionId)`."
+    },
+    {
+      "kind": "option",
+      "name": "bookings.mine",
+      "option": "contactId",
+      "mechanical": false,
+      "note": "`mine` is always the caller's own bookings. To list a contact's bookings as an admin use `bookings.list`."
+    },
+    {
+      "kind": "option",
+      "name": "collection.list",
+      "option": "admin (the argument)",
+      "mechanical": true,
+      "note": "There is no public list of collections, so `collection.list(false)` always failed. Call `collection.list()`: it lists the collections the signed-in user can work on."
+    },
+    {
+      "kind": "option",
+      "name": "comms.queryRecipientIds",
+      "option": "journeyStepId",
+      "mechanical": false,
+      "note": "The server never read it. For one journey step's recipients use `journeysAnalytics.recipients`."
+    },
+    {
+      "kind": "option",
+      "name": "containers.publicList",
+      "option": "status",
+      "mechanical": false,
+      "note": "The public list is always the active containers."
+    },
+    {
+      "kind": "option",
+      "name": "containers.publicList",
+      "option": "ref",
+      "mechanical": false,
+      "note": "The public list never filtered by ref."
+    },
+    {
+      "kind": "option",
+      "name": "facets.list",
+      "option": "includeValues",
+      "mechanical": false,
+      "note": "The list never read it: a facet list has no values. Read one facet with `facets.get(…, { includeValues: true })`, or its values with `facets.listValues`."
+    },
+    {
+      "kind": "option",
+      "name": "facets.publicList",
+      "option": "includeValues",
+      "mechanical": false,
+      "note": "The list never read it. Read a facet's values with `facets.publicListValues`."
+    },
+    {
+      "kind": "option",
+      "name": "interactions.publicMyInteractions",
+      "option": "scope",
+      "mechanical": false,
+      "note": "The server never read it."
+    },
+    {
+      "kind": "option",
+      "name": "lots.publicList",
+      "option": "includeDeleted",
+      "mechanical": false,
+      "note": "Admin only: use `lots.list`."
+    },
+    {
+      "kind": "list",
+      "name": "adminCards.list",
+      "before": "{ cards, hidden, layout }",
+      "after": "ListResult<AdminCard> & { hidden, layout }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "`cards` is `items`; `hidden` and `layout` stay beside it."
+    },
+    {
+      "kind": "list",
+      "name": "ai.agent.listTools",
+      "before": "AgentToolsResponse { tools }",
+      "after": "ListResult<AgentToolDefinition>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "`tools` is `items`."
+    },
+    {
+      "kind": "list",
+      "name": "ai.skills.list",
+      "before": "SkillsListResponse { skills }",
+      "after": "ListResult<SkillDescriptor>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "`skills` is `items`."
+    },
+    {
+      "kind": "list",
+      "name": "analytics.admin.events",
+      "before": "{ source, limit, offset, sort, count, rows }",
+      "after": "ListResult<Record<string, any>> & { source, sort }",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": "`limit` and `cursor` go at the top level of the body. The old `count` was the rows on this page; it is gone."
+    },
+    {
+      "kind": "list",
+      "name": "app.cases.list",
+      "before": "{ data, pagination: { total, limit, offset, hasMore } }",
+      "after": "ListResult<AppCase>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "app.options.get",
+      "before": "{ items, version, mode, total? } | { unchanged: true, version }",
+      "after": "(ListResult<AppOption> & { version, mode }) | { unchanged: true, version }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "`total` is `count`. The `{ unchanged: true, version }` answer is as before."
+    },
+    {
+      "kind": "list",
+      "name": "app.records.list",
+      "before": "{ data, pagination: { total, limit, offset, hasMore } }",
+      "after": "ListResult<AppRecord>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "app.records.match",
+      "before": "{ data, total, strategy }",
+      "after": "ListResult<MatchEntry> & { strategy }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "`total` is `count`."
+    },
+    {
+      "kind": "list",
+      "name": "app.records.resolveAll",
+      "before": "{ records, total, context, truncated }",
+      "after": "ListResult<ResolveAllEntry> & { context, truncated }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "`total` is `count`."
+    },
+    {
+      "kind": "list",
+      "name": "app.threads.list",
+      "before": "{ data, pagination: { total, limit, offset, hasMore } }",
+      "after": "ListResult<AppThread>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "appConfiguration.getData",
+      "before": "any[]",
+      "after": "ListResult<any>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "appConfiguration.getWidgets",
+      "before": "{ apps }",
+      "after": "ListResult<CollectionAppWidget>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "asset.list",
+      "before": "Asset[]",
+      "after": "ListResult<Asset>",
+      "paged": false,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "asset.listAdmin",
+      "before": "AdminListAssetsResponse { data, total, limit, offset }",
+      "after": "ListResult<Asset>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": "`data` is `items` and `total` is `count`. 50 at a time unless you ask (at most 200)."
+    },
+    {
+      "kind": "list",
+      "name": "asset.listForCollection",
+      "before": "Asset[]",
+      "after": "ListResult<Asset>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "asset.listForProduct",
+      "before": "Asset[]",
+      "after": "ListResult<Asset>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "asset.listForProof",
+      "before": "Asset[]",
+      "after": "ListResult<Asset>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "attestations.list",
+      "before": "{ attestations }",
+      "after": "ListResult<Attestation>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "attestations.publicContainerList",
+      "before": "{ attestations, audience }",
+      "after": "ListResult<Attestation> & { audience }",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "attestations.publicList",
+      "before": "{ attestations, audience }",
+      "after": "ListResult<Attestation> & { audience }",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "authKit.list",
+      "before": "AuthKitConfig[]",
+      "after": "ListResult<AuthKitConfig>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "authKit.listTrustedDevices",
+      "before": "{ devices: TrustedDevice[] }",
+      "after": "ListResult<TrustedDevice>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "`devices` is `items`."
+    },
+    {
+      "kind": "list",
+      "name": "batch.getBatchTags",
+      "before": "BatchTag[]",
+      "after": "ListResult<BatchTag>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "batch.list",
+      "before": "BatchResponse[]",
+      "after": "ListResult<BatchResponse>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "batch.searchInCollection",
+      "before": "BatchResponse[]",
+      "after": "ListResult<BatchResponse>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "bookings.blocks.list",
+      "before": "PaginatedResponse<BookingAllocation>",
+      "after": "ListResult<BookingAllocation> (with count)",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "bookings.list",
+      "before": "PaginatedResponse<Booking> = { data, pagination: { total, limit, offset, hasMore } }",
+      "after": "ListResult<Booking> (with count)",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "bookings.mine",
+      "before": "PaginatedResponse<Booking>",
+      "after": "ListResult<Booking> (with count)",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "bookings.slots.list",
+      "before": "PaginatedResponse<BookingSlot>",
+      "after": "ListResult<BookingSlot> (with count)",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "broadcasts.list",
+      "before": "BroadcastList = { items, limit, offset }",
+      "after": "ListResult<BroadcastRecord>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "BroadcastList"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "broadcasts.recipients",
+      "before": "{ items, total, limit, offset, note? }",
+      "after": "ListResult<Recipient> & { note?: string } (with count)",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "claimSet.getAll",
+      "before": "any[]",
+      "after": "ListResult<any>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "claimSet.getAssignedTags",
+      "before": "any (the claim set with its tags in `tags`)",
+      "after": "ListResult<any> & Record<string, any>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "The tags are in `items`; the claim set's own fields (id, name, …) stay beside them."
+    },
+    {
+      "kind": "list",
+      "name": "claimSet.ranges.list",
+      "before": "ClaimSetRange[]",
+      "after": "ListResult<ClaimSetRange>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "claimSet.ranges.tags",
+      "before": "ClaimSetRangeTagsPage { tags, next }",
+      "after": "ListResult<ClaimSetRangeTag>",
+      "paged": true,
+      "optionsRemoved": [
+        "from"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": "`from` (an index used as a place to carry on) is `cursor`; `limit` and `keys` stay."
+    },
+    {
+      "kind": "list",
+      "name": "collection.getUsers",
+      "before": "CollectionUser[]",
+      "after": "ListResult<CollectionUser>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "collection.list",
+      "before": "CollectionResponse[]",
+      "after": "ListResult<CollectionResponse>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "comms.listMethods",
+      "before": "{ ok: true, methods: CommMethod[] }",
+      "after": "ListResult<CommMethod>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "comms.queryByUser",
+      "before": "CommunicationEvent[]",
+      "after": "ListResult<CommunicationEvent>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "comms.queryRecipientIds",
+      "before": "RecipientId[]",
+      "after": "ListResult<RecipientId>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "conditions.list",
+      "before": "SavedCondition[]",
+      "after": "ListResult<SavedCondition>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "config.getFields",
+      "before": "FieldDefinition[]",
+      "after": "ListResult<FieldDefinition>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "config.getProofTypes",
+      "before": "ProofTypeDefinition[]",
+      "after": "ListResult<ProofTypeDefinition>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "contact.findDuplicates",
+      "before": "{ pairs, scanned, more }",
+      "after": "ListResult<ContactDuplicatePair> & { scanned: number }",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": "`more` is gone: check `nextCursor`. `scanned` stays beside the list."
+    },
+    {
+      "kind": "list",
+      "name": "contact.list",
+      "before": "ContactListResponse = { items, limit, offset }",
+      "after": "ListResult<Contact>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "ContactListResponse"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "contact.search",
+      "before": "ContactSearchResponse = { items, limit, offset }",
+      "after": "ListResult<Contact>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "ContactSearchResponse"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "containers.findForItem",
+      "before": "{ items: ContainerItem[], containers: Container[] }",
+      "after": "ListResult<ContainerItem> & { containers: Container[] }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "containers.list",
+      "before": "ListContainersResponse = { containers, limit, offset }",
+      "after": "ListResult<Container>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "ListContainersResponse"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "containers.listItems",
+      "before": "ContainerItemsResponse = { items, limit, offset }",
+      "after": "ListResult<ContainerItem>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "ContainerItemsResponse"
+      ],
+      "note": "Pages only with `history: true`; the current contents come back whole."
+    },
+    {
+      "kind": "list",
+      "name": "containers.publicList",
+      "before": "PublicListContainersResponse = { containers }",
+      "after": "ListResult<Container>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "PublicListContainersResponse"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "containers.publicListItems",
+      "before": "ContainerItemsResponse = { items, limit, offset }",
+      "after": "ListResult<ContainerItem>",
+      "paged": false,
+      "optionsRemoved": [
+        "limit",
+        "offset"
+      ],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "crate.list",
+      "before": "ListCratesResponse = { items, hasMore, lastId }",
+      "after": "ListResult<Crate>",
+      "paged": true,
+      "optionsRemoved": [
+        "startAfter"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "ListCratesResponse"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "dpp.groups",
+      "before": "DppGroup[] (the function unwrapped { groups })",
+      "after": "ListResult<DppGroup>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "dpp.passports.list",
+      "before": "DppPassport[] (unwrapped { passports })",
+      "after": "ListResult<DppPassport>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "dpp.passports.versions",
+      "before": "DppPassportVersion[] (unwrapped { versions })",
+      "after": "ListResult<DppPassportVersion>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "dpp.registry.list",
+      "before": "DppRegistry[] (unwrapped { registries })",
+      "after": "ListResult<DppRegistry>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "dpp.tasks.list",
+      "before": "DppTask[] (unwrapped { tasks })",
+      "after": "ListResult<DppTask>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "facets.list",
+      "before": "FacetListResponse = { items }",
+      "after": "ListResult<FacetDefinition>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "facets.listValues",
+      "before": "FacetValueListResponse = { facet, items }",
+      "after": "ListResult<FacetValue> & { facet: FacetDefinition }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "facets.namespaces",
+      "before": "FacetNamespaceListResponse = { namespaces: string[] }",
+      "after": "ListResult<string>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "facets.publicList",
+      "before": "FacetListResponse = { items }",
+      "after": "ListResult<FacetDefinition>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "facets.publicListValues",
+      "before": "FacetValueListResponse = { facet, items }",
+      "after": "ListResult<FacetValue> & { facet: FacetDefinition }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "facets.publicNamespaces",
+      "before": "FacetNamespaceListResponse = { namespaces: string[] }",
+      "after": "ListResult<string>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "facets.publicQuery",
+      "before": "FacetQueryResponse = { items, buckets, meta? }",
+      "after": "ListResult<{ facet, values }> & { buckets: FacetBucket[], meta? }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "facets.query",
+      "before": "FacetQueryResponse = { items, buckets, meta? }",
+      "after": "ListResult<{ facet, values }> & { buckets: FacetBucket[], meta? }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "files.list",
+      "before": "{ ok: true, files: FileRecord[] }",
+      "after": "ListResult<FileRecord>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "form.list",
+      "before": "any[]",
+      "after": "ListResult<any>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "integrations.listConnectorActions",
+      "before": "{ actions }",
+      "after": "ListResult<{ name, title, description?, visibility, input?, output? }>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "integrations.listConnectors",
+      "before": "{ connectors }",
+      "after": "ListResult<InstalledConnector>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "integrations.listEntityRuns",
+      "before": "{ runs, nextCursor? }",
+      "after": "ListResult<FlowRun>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "integrations.listFailed",
+      "before": "{ direction, items, nextCursor }",
+      "after": "ListResult<FailedRecord> & { direction: FlowDirection }",
+      "paged": true,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "typesRemoved": [
+        "FailedRecordList"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "integrations.listFlows",
+      "before": "{ flows }",
+      "after": "ListResult<IntegrationFlow>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "typesRemoved": [
+        "FlowList"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "integrations.listRecordTypes",
+      "before": "{ recordTypes }",
+      "after": "ListResult<RecordTypeInfo>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "typesRemoved": [
+        "RecordTypesResponse"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "integrations.listRunItems",
+      "before": "{ items, nextCursor? }",
+      "after": "ListResult<FlowRunItem>",
+      "paged": true,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "typesRemoved": [
+        "RunItemList"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "integrations.listRuns",
+      "before": "{ runs, nextCursor? }",
+      "after": "ListResult<FlowRun>",
+      "paged": true,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "typesRemoved": [
+        "RunList"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "interactions.list",
+      "before": "{ items, limit, offset }",
+      "after": "ListResult<InteractionTypeRecord>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "InteractionTypeList"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "interactions.publicList",
+      "before": "{ items, limit, offset }",
+      "after": "ListResult<InteractionTypeRecord>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "interactions.publicMyInteractions",
+      "before": "InteractionEventRow[]",
+      "after": "ListResult<InteractionEventRow>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "interactions.query",
+      "before": "InteractionEventRow[]",
+      "after": "ListResult<InteractionEventRow>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "jobs.listJobs",
+      "before": "{ items, limit, offset }",
+      "after": "ListResult<Job>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "JobsPage"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "journeys.list",
+      "before": "{ items, limit, offset }",
+      "after": "ListResult<JourneyRecord>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "JourneyList"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "journeysAnalytics.recipients",
+      "before": "string[]",
+      "after": "ListResult<string>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "typesRemoved": [
+        "JourneyStepRecipientsResponse"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "knowledge.listSets",
+      "before": "KnowledgeSet[]",
+      "after": "ListResult<KnowledgeSet>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "knowledge.listSources",
+      "before": "KnowledgeSource[]",
+      "after": "ListResult<KnowledgeSource>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "knowledge.publicSearch",
+      "before": "KnowledgeSearchResponse { query, results, mode }",
+      "after": "ListResult<KnowledgeSearchResult> & Pick<KnowledgeSearchResponse, 'query' | 'mode'>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "`results` is `items`; `query` and `mode` stay beside it."
+    },
+    {
+      "kind": "list",
+      "name": "knowledge.search",
+      "before": "{ query, results, mode }",
+      "after": "ListResult<KnowledgeSearchResult> & { query, mode }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "`results` is `items`; `query` and `mode` stay beside it."
+    },
+    {
+      "kind": "list",
+      "name": "location.search",
+      "before": "{ items, count }",
+      "after": "ListResult<Location>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "typesRemoved": [
+        "LocationSearchResponse"
+      ],
+      "note": "The old `count` was the number of rows returned; it is gone."
+    },
+    {
+      "kind": "list",
+      "name": "lots.list",
+      "before": "Lot[] (the SDK unwrapped { lots })",
+      "after": "ListResult<Lot>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "typesRemoved": [
+        "ListLotsResponse"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "lots.listProducts",
+      "before": "{ products, total, page, limit }",
+      "after": "ListResult<LotProductSummary>",
+      "paged": true,
+      "optionsRemoved": [
+        "page"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "ListLotProductsResponse"
+      ],
+      "note": "`total` is `count`."
+    },
+    {
+      "kind": "list",
+      "name": "lots.publicList",
+      "before": "Lot[] (the SDK unwrapped { lots })",
+      "after": "ListResult<Lot>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "lots.publicListProducts",
+      "before": "{ products, total, page, limit }",
+      "after": "ListResult<LotProductSummary>",
+      "paged": true,
+      "optionsRemoved": [
+        "page"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "loyalty.getMemberHistory",
+      "before": "{ items, limit, offset }",
+      "after": "ListResult<LoyaltyTransaction>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "loyalty.list",
+      "before": "LoyaltyScheme[]",
+      "after": "ListResult<LoyaltyScheme>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "loyalty.listEarningRules",
+      "before": "LoyaltyEarningRule[]",
+      "after": "ListResult<LoyaltyEarningRule>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "loyalty.listMembers",
+      "before": "{ items, limit, offset }",
+      "after": "ListResult<LoyaltyMember>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "LoyaltyPaginationParams",
+        "LoyaltyPaginatedResult"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "loyalty.publicGetMe",
+      "before": "LoyaltySchemeWithMembership[]",
+      "after": "ListResult<LoyaltySchemeWithMembership>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "loyalty.publicGetMineHistory",
+      "before": "{ items, limit, offset }",
+      "after": "ListResult<LoyaltyTransaction>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "loyalty.publicList",
+      "before": "LoyaltyScheme[]",
+      "after": "ListResult<LoyaltyScheme>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "loyalty.publicListEarningRules",
+      "before": "LoyaltyEarningRule[]",
+      "after": "ListResult<LoyaltyEarningRule>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "nfc.lookupTag",
+      "before": "NfcTagInfo[]",
+      "after": "ListResult<NfcTagInfo>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "order.getItems",
+      "before": "{ items, limit, offset }",
+      "after": "ListResult<OrderItem>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "GetOrderItemsResponse"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "order.getLocationHistory",
+      "before": "{ orderRef, orderId, locations, count }",
+      "after": "ListResult<LocationScan> & { orderRef: string; orderId: string }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "typesRemoved": [
+        "LocationResponse"
+      ],
+      "note": "The old `count` was the number of rows returned; it is gone."
+    },
+    {
+      "kind": "list",
+      "name": "order.getTimeline",
+      "before": "{ orderRef, orderId, timeline, count }",
+      "after": "ListResult<TagScanEvent> & { orderRef: string; orderId: string }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "typesRemoved": [
+        "TimelineResponse"
+      ],
+      "note": "The old `count` was the number of rows returned; it is gone."
+    },
+    {
+      "kind": "list",
+      "name": "order.list",
+      "before": "{ orders, limit, offset }",
+      "after": "ListResult<Order>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "ListOrdersResponse"
+      ],
+      "note": "Now sends `direction` and `partyId`, which SDK 2 accepted and silently dropped."
+    },
+    {
+      "kind": "list",
+      "name": "order.query",
+      "before": "{ orders, limit, offset }",
+      "after": "ListResult<Order>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "QueryOrdersResponse"
+      ],
+      "note": "`limit` and `cursor` go at the top level of the body."
+    },
+    {
+      "kind": "list",
+      "name": "partner.claimSets",
+      "before": "PartnerClaimSet[]",
+      "after": "ListResult<PartnerClaimSet>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "partner.list",
+      "before": "Partner[]",
+      "after": "ListResult<Partner>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "partner.lookupTags",
+      "before": "PartnerTagHit[]",
+      "after": "ListResult<PartnerTagHit>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "partner.tagAttempts",
+      "before": "ClientErrorEvent[]",
+      "after": "ListResult<ClientErrorEvent>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "products.list",
+      "before": "ProductResponse[]",
+      "after": "ListResult<ProductResponse>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "products.listAssets",
+      "before": "unknown",
+      "after": "ListResult<AssetResponse>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "products.query",
+      "before": "{ items, page: { limit, offset, returned, total, hasMore, nextCursor }, meta }",
+      "after": "ListResult<ProductResponse> & { meta?: ProductQueryMeta }",
+      "paged": true,
+      "optionsRemoved": [
+        "page.limit",
+        "page.offset",
+        "page.cursor"
+      ],
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "typesRemoved": [
+        "ProductQueryResponse"
+      ],
+      "note": "The nested `page` option is gone: `limit` and `cursor` go at the top level of the body. `page.total` is `count`."
+    },
+    {
+      "kind": "list",
+      "name": "proof.findByProduct",
+      "before": "ProofResponse[]",
+      "after": "ListResult<ProofResponse>",
+      "paged": false,
+      "optionsRemoved": [
+        "lastCursor",
+        "page",
+        "perPage"
+      ],
+      "optionsAdded": [
+        "limit"
+      ],
+      "note": "Not paged: it returns the newest `limit` (default 100), or every proof matching `filterBy`. Page through proofs with `proof.query`."
+    },
+    {
+      "kind": "list",
+      "name": "proof.getByBatch",
+      "before": "ProofResponse[]",
+      "after": "ListResult<ProofResponse>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "proof.getByProduct",
+      "before": "ProofResponse[]",
+      "after": "ListResult<ProofResponse>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "proof.getByUser",
+      "before": "ProofResponse[]",
+      "after": "ListResult<ProofResponse>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "proof.list",
+      "before": "ProofResponse[]",
+      "after": "ListResult<ProofResponse>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "proof.listGrants",
+      "before": "ProofGrant[]",
+      "after": "ListResult<ProofGrant>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "secrets.list",
+      "before": "SecretList { secrets }",
+      "after": "ListResult<SecretMeta>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "`secrets` is `items`."
+    },
+    {
+      "kind": "list",
+      "name": "secrets.listOwn",
+      "before": "SecretList { secrets }",
+      "after": "ListResult<SecretMeta>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "`secrets` is `items`."
+    },
+    {
+      "kind": "list",
+      "name": "segments.list",
+      "before": "{ items, limit, offset }",
+      "after": "ListResult<SegmentRecord>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "SegmentList"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "segments.recipients",
+      "before": "{ items, limit, offset, total, note? }",
+      "after": "ListResult<Recipient> & { note?: string }",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": "`total` is `count`."
+    },
+    {
+      "kind": "list",
+      "name": "serviceAccounts.list",
+      "before": "{ serviceAccounts, access }",
+      "after": "ListResult<ServiceAccount> & { access: ServiceAccountAccess[] }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "`serviceAccounts` is `items`; `access` stays beside it."
+    },
+    {
+      "kind": "list",
+      "name": "shop.admin.listOrders",
+      "before": "{ items, total, limit, offset }",
+      "after": "ListResult<ShopAdminOrder>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": "`total` is `count`."
+    },
+    {
+      "kind": "list",
+      "name": "shop.admin.listPrices",
+      "before": "{ items, total, limit, offset }",
+      "after": "ListResult<ShopPrice>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": "`total` is `count`."
+    },
+    {
+      "kind": "list",
+      "name": "shop.myOrders",
+      "before": "{ items, total, limit, offset }",
+      "after": "ListResult<ShopBuyerOrder>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": "`total` is `count`."
+    },
+    {
+      "kind": "list",
+      "name": "shop.products",
+      "before": "{ currency, items }",
+      "after": "ListResult<ShopProduct> & { currency: string }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "Only `nextCursor` (always null) is new."
+    },
+    {
+      "kind": "list",
+      "name": "subscriptions.admin.list",
+      "before": "{ items, total, limit, offset }",
+      "after": "ListResult<Membership>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": "`total` is `count`."
+    },
+    {
+      "kind": "list",
+      "name": "subscriptions.admin.listPlans",
+      "before": "{ items, total, limit, offset }",
+      "after": "ListResult<PlanWithPrices>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "subscriptions.mine",
+      "before": "MySubscription[]",
+      "after": "ListResult<MySubscription>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "subscriptions.plans",
+      "before": "PublicPlan[]",
+      "after": "ListResult<PublicPlan>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "tags.byRef",
+      "before": "{ tags }",
+      "after": "ListResult<Tag>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "typesRemoved": [
+        "ReverseTagLookupResponse"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "tags.list",
+      "before": "{ tags, limit, offset }",
+      "after": "ListResult<Tag>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "ListTagsResponse"
+      ],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "tags.lookupTags",
+      "before": "{ count, tags, embedded }",
+      "after": "ListResult<Tag> & { count: number; embedded: TagEmbedded }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "tags.lookupTagsQuery",
+      "before": "{ count, tags, embedded }",
+      "after": "ListResult<Tag> & { count: number; embedded: TagEmbedded }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "tags.publicByRef",
+      "before": "{ tags, embedded }",
+      "after": "ListResult<Tag> & { embedded: TagEmbedded }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "tags.publicByRefPost",
+      "before": "{ tags, embedded }",
+      "after": "ListResult<Tag> & { embedded: TagEmbedded }",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "template.getAll",
+      "before": "Template[]",
+      "after": "ListResult<Template>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "template.getAllowed",
+      "before": "TemplatePublic[]",
+      "after": "ListResult<TemplatePublic>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "template.getAllowedGlobal",
+      "before": "TemplatePublic[]",
+      "after": "ListResult<TemplatePublic>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "translations.list",
+      "before": "{ items, total?, limit?, offset? }",
+      "after": "ListResult<TranslationRecord>",
+      "paged": true,
+      "optionsRemoved": [
+        "offset"
+      ],
+      "optionsAdded": [
+        "cursor"
+      ],
+      "typesRemoved": [
+        "TranslationListResponse"
+      ],
+      "note": "`total` is `count`."
+    },
+    {
+      "kind": "list",
+      "name": "userAppData.list",
+      "before": "any[]",
+      "after": "ListResult<any>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "userGroups.history",
+      "before": "UserGroupChange[]",
+      "after": "ListResult<UserGroupChange>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "userGroups.list",
+      "before": "UserGroup[]",
+      "after": "ListResult<UserGroup>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "userGroups.members",
+      "before": "UserGroupMember[]",
+      "after": "ListResult<UserGroupMember>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "userGroups.ofUser",
+      "before": "UserGroupRef[]",
+      "after": "ListResult<UserGroupRef>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "variant.list",
+      "before": "VariantResponse[]",
+      "after": "ListResult<VariantResponse>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "wallet.list",
+      "before": "{ ok: true, passes }",
+      "after": "ListResult<WalletPass>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "`passes` is `items`; `ok` is gone."
+    },
+    {
+      "kind": "list",
+      "name": "wallet.mine",
+      "before": "{ ok: true, passes }",
+      "after": "ListResult<WalletPassSummary>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "`passes` is `items`; `ok` is gone."
+    },
+    {
+      "kind": "behaviour",
+      "name": "error codes",
+      "note": "Every error code is UPPER_SNAKE (`segments.list.failed` is now `SEGMENTS_LIST_FAILED`). Find string comparisons against `errorCode`, `details.errorCode` and `details.error`. Check `error.errorCode`; never match on message text."
+    },
+    {
+      "kind": "behaviour",
+      "name": "error statuses",
+      "note": "\"Not signed in\" sent as 400 by some routes is now 401. \"Signed in but not allowed\" sent as 401 by some routes is now 403. `isAuthError()` covers both."
+    },
+    {
+      "kind": "behaviour",
+      "name": "initializeApi({ apiVersion })",
+      "note": "A version older than 2027-01 is ignored: SDK 3 always asks for at least its own version."
+    },
+    {
+      "kind": "behaviour",
+      "name": "paging by offset",
+      "note": "There is no offset or page number. Page forward with `cursor`; cache keys built on offset or page must use the cursor. For a numbered pager use the standard query."
+    },
+    {
+      "kind": "behaviour",
+      "name": "shared dependencies",
+      "note": "Built on SDK 3, a component declares shared-dependency contract v8 and gets SDK 3 from the host. The window global is `SL3` (and `SmartlinksAuthUI3`); `SL` stays SDK 2."
+    },
+    {
+      "kind": "behaviour",
+      "name": "unknown list options",
+      "note": "A list refuses a query option it does not read (400 UNKNOWN_PARAMETER) instead of ignoring it. Watch for one options object shared by an admin call and a public call (includeDeleted, contactId, assignedTo; status, includeScheduled and includeExpired on public app records)."
+    }
+  ]
+}

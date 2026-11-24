@@ -3,10 +3,10 @@ import { request, post, patch, del } from "../http"
 import type {
   SegmentRecord,
   ListSegmentsQuery,
-  SegmentList,
   SegmentCalculateResult,
   SegmentRecipientsResponse,
 } from "../types/segments"
+import type { ListResult, ListOptions } from "../types/list"
 
 function encodeQuery(params: Record<string, any>): string {
   const search = new URLSearchParams()
@@ -29,13 +29,23 @@ export namespace segments {
     return post<SegmentRecord>(path, body)
   }
 
-  // List
+  /**
+   * The collection's segments, a page at a time. Filter by the app that owns them (`appId`) or by
+   * `filterType`.
+   *
+   * @example
+   * ```typescript
+   * let page = await segments.list('coll_123', { filterType: 'dynamic', limit: 50 })
+   * page.items // SegmentRecord[]
+   * while (page.nextCursor) page = await segments.list('coll_123', { filterType: 'dynamic', limit: 50, cursor: page.nextCursor })
+   * ```
+   */
   export async function list(
     collectionId: string,
     query: ListSegmentsQuery = {}
-  ): Promise<SegmentList> {
+  ): Promise<ListResult<SegmentRecord>> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/segments/${encodeQuery(query as any)}`
-    return request<SegmentList>(path)
+    return request<ListResult<SegmentRecord>>(path)
   }
 
   // Get
@@ -75,11 +85,21 @@ export namespace segments {
     return post<SegmentCalculateResult>(path, {})
   }
 
-  // Stub: recipients
+  /**
+   * The contacts in a segment, a page at a time. `count` is how many there are in all.
+   *
+   * @example
+   * ```typescript
+   * const page = await segments.recipients('coll_123', 'seg_1', { limit: 100 })
+   * page.items      // Recipient[]
+   * page.count      // total in the segment
+   * page.nextCursor // pass back as `cursor` for the next page; null on the last
+   * ```
+   */
   export async function recipients(
     collectionId: string,
     id: string,
-    query: { limit?: number; offset?: number } = {}
+    query: ListOptions = {}
   ): Promise<SegmentRecipientsResponse> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/segments/${encodeURIComponent(id)}/recipients${encodeQuery(query as any)}`
     return request<SegmentRecipientsResponse>(path)

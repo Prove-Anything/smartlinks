@@ -259,7 +259,7 @@ const { ref } = await secrets.set(collectionId, {
 })
 
 // list shows refs + masked hints only (safe to render)
-const { secrets: list } = await secrets.list(collectionId)
+const { items: list } = await secrets.list(collectionId)
 // → [{ ref, name: 'Acme API key', hint: '…live_1a2b', purpose, createdAt, ... }]
 ```
 

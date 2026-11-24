@@ -100,19 +100,6 @@ export interface LoyaltyTransactionResult {
   transaction: LoyaltyTransaction
 }
 
-// ── Pagination ────────────────────────────────────────────────────────────────
-
-export interface LoyaltyPaginationParams {
-  limit?: number  // default 50, max 200
-  offset?: number
-}
-
-export interface LoyaltyPaginatedResult<T> {
-  items: T[]
-  limit: number
-  offset: number
-}
-
 // ── Request payloads ──────────────────────────────────────────────────────────
 
 export interface CreateLoyaltySchemeBody {

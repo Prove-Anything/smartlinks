@@ -57,7 +57,8 @@ SL.seo.jsonLd('org', SL.seo.schema.organization(collection))
 `document`. In a server-rendered site, prefer the router's own head support (TanStack Start's route
 `head()`), so the tags are in the server's HTML; use `SL.seo.schema.*` to build the JSON-LD for it.
 
-`SL.site.ready()` is no longer needed: pages arrive finished from the server.
+`SL.site.ready()` was removed in SDK 3: pages arrive finished from the server, so nothing waits for it.
+Delete the call.
 
 ## Content that gets found
 

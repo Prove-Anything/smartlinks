@@ -93,12 +93,6 @@ test('schema builders: Product, FAQPage, Organization, LocalBusiness, Breadcrumb
   assert.equal(seo.schema.article({ headline: 'Spring', datePublished: '2026-03-01' }).dateModified, '2026-03-01')
 })
 
-test('site.ready marks the page rendered', () => {
-  delete (globalThis as any).__SL_READY__
-  site.ready()
-  assert.equal((globalThis as any).__SL_READY__, true)
-})
-
 test('site.fromRequest reads the router header; current() reads the page; junk is null', () => {
   const ctx = { host: 'acme.smartlinks.host', collectionId: 'c1', appId: 'acme', channel: 'stable', canonicalHost: 'www.acme.com' }
   const req = new Request('https://acme.smartlinks.host/', { headers: { 'x-sl-site': JSON.stringify(ctx) } })

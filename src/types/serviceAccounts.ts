@@ -1,4 +1,5 @@
 // src/types/serviceAccounts.ts — a collection's service accounts (serviceAccounts.*)
+import type { ListResult } from "./list"
 
 /** The access a service account can have on its collection (never Owner). */
 export type ServiceAccountAccess = "User" | "Reporter" | "Assigner" | "Admin"
@@ -46,8 +47,8 @@ export interface AddServiceAccountToCollectionInput {
   access: ServiceAccountAccess
 }
 
-export interface ServiceAccountList {
-  serviceAccounts: ServiceAccount[]
+/** What `serviceAccounts.list` returns: the service accounts (`items`) and the access levels that can be given. */
+export interface ServiceAccountList extends ListResult<ServiceAccount> {
   /** The access levels that can be given. */
   access: ServiceAccountAccess[]
 }

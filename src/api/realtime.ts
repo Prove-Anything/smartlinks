@@ -1,8 +1,6 @@
 // src/api/realtime.ts
-import { request, post } from "../http"
+import { post } from "../http"
 import type {
-  AblyTokenRequest,
-  RealtimeTokenRequest,
   RealtimeChangeEvent,
   RealtimeChangeFilter,
   RealtimeMessage,
@@ -271,27 +269,4 @@ export function onStaffChange(scope: RealtimeScope & { appId: string }, filter: 
  */
 export function onMine(scope: RealtimeScope, onMessage: (msg: RealtimeMessage) => void): () => void {
   return streamFor({ collectionId: scope.collectionId }).add("feed:me", onMessage)
-}
-
-// ---------------------------------------------------------------------------------------------------
-// Legacy (raw Ably tokens). New code uses channel / onChange above — no provider in your app.
-// ---------------------------------------------------------------------------------------------------
-
-/**
- * @deprecated Use `realtime.channel()` / `realtime.onChange()`. Returns a raw Ably TokenRequest for
- * `collection:{collectionId}:*` (subscribe; publish only for the collection's admins).
- */
-export async function getPublicToken(params: RealtimeTokenRequest): Promise<AblyTokenRequest> {
-  const queryParams = new URLSearchParams()
-  queryParams.append("collectionId", params.collectionId)
-  if (params.appId) queryParams.append("appId", params.appId)
-  return request<AblyTokenRequest>(`/public/push/token?${queryParams.toString()}`)
-}
-
-/**
- * @deprecated Use `realtime.onMine()`. Returns a raw Ably TokenRequest for `interaction:{userId}`
- * (subscribe only).
- */
-export async function getAdminToken(): Promise<AblyTokenRequest> {
-  return request<AblyTokenRequest>("/admin/auth/push")
 }

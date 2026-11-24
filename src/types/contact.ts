@@ -1,3 +1,5 @@
+import type { ListResult, ListOptions } from "./list"
+
 export type ContactCustomFields = Record<string, any>
 
 // Unified Contact domain model
@@ -51,12 +53,6 @@ export type ContactCreateRequest = Omit<
 >
 export type ContactUpdateRequest = Partial<ContactCreateRequest>
 
-export interface ContactListResponse {
-  items: Contact[]
-  limit: number
-  offset: number
-}
-
 /**
  * Two contacts that look like one person (`contact.findDuplicates`): `keep` has a sign-in but no email
  * (or phone); `merge` has no sign-in and holds that sign-in's verified email (or phone).
@@ -70,12 +66,10 @@ export interface ContactDuplicatePair {
   matchedOn: "email" | "phone"
 }
 
-export interface ContactDuplicatesResponse {
-  pairs: ContactDuplicatePair[]
+/** What `contact.findDuplicates` returns: the pairs found in this call (`items`), and how far it looked. */
+export interface ContactDuplicatesResponse extends ListResult<ContactDuplicatePair> {
   /** How many contacts with a sign-in were checked in this call. */
   scanned: number
-  /** More contacts remain beyond this window: call again with `offset` + `scanned`. */
-  more: boolean
 }
 
 /** What `contact.merge` did. */
@@ -123,7 +117,8 @@ export type ContactMergeErrorCode =
   | "LOGIN_CONFLICT"
   | "LOYALTY_CONFLICT"
 
-export interface ContactSearchParams {
+/** `contact.search` options: the collection, the filters, plus `limit` and `cursor`. */
+export interface ContactSearchParams extends ListOptions {
   collectionId: string
   // Free-text
   q?: string
@@ -146,15 +141,6 @@ export interface ContactSearchParams {
   externalIdValue?: string
   customFieldKey?: string
   customFieldValue?: string
-  // Pagination
-  limit?: number
-  offset?: number
-}
-
-export interface ContactSearchResponse {
-  items: Contact[]
-  limit: number
-  offset: number
 }
 
 // Public contact upsert (privacy-safe) derived from Contact
@@ -414,10 +400,6 @@ export interface ContactSchemaResponse {
   styling: Record<string, unknown>
 }
 
-// Keep ContactSchema as a deprecated alias so existing consumers don't hard-break
-/** @deprecated Use ContactSchemaResponse instead */
-export type ContactSchema = ContactSchemaResponse
-
 /**
  * Evaluate whether a field's conditions are satisfied given the current form values.
  * Returns `true` if the field should be visible.
@@ -479,22 +461,4 @@ export function evaluateConditions(
   return (showWhen ?? 'all') === 'any'
     ? results.some(Boolean)
     : results.every(Boolean)
-}
-
-/**
- * @deprecated Use evaluateConditions (plural) instead.
- * Shim for code using the old single-condition API.
- */
-export function evaluateCondition(
-  condition: { dependsOn?: string; targetFieldId?: string; operator: string; value?: unknown } | undefined,
-  fieldValues: Record<string, unknown>
-): boolean {
-  if (!condition) return true
-  const targetFieldId = (condition as any).dependsOn ?? (condition as any).targetFieldId
-  if (!targetFieldId) return true
-  return evaluateConditions(
-    [{ targetFieldId, operator: condition.operator as ConditionOperator, value: condition.value }],
-    'all',
-    fieldValues
-  )
 }

@@ -7,6 +7,8 @@
  * analytics, click tracking, and tag scan analytics for collection dashboards.
  */
 
+import type { ListResult, ListOptions } from './list'
+
 export type AnalyticsSource = 'events' | 'tag'
 /**
  * Includes `scan_redirect` - logged automatically by the server (not the
@@ -332,20 +334,16 @@ export interface AnalyticsBreakdownResponse {
 	rows: AnalyticsBreakdownRow[]
 }
 
-export interface AnalyticsEventsRequest extends AnalyticsFilterRequest {
+/** Paging is `limit` (default 100) and `cursor`: pass the previous page's `nextCursor`. */
+export interface AnalyticsEventsRequest extends AnalyticsFilterRequest, ListOptions {
 	source: AnalyticsSource
-	limit?: number
-	offset?: number
 	sort?: AnalyticsSortOrder
 }
 
-export interface AnalyticsEventsResponse {
+/** `{ items, nextCursor, source, sort }`: the event rows are in `items`. This list does not report a total. */
+export interface AnalyticsEventsResponse extends ListResult<Record<string, any>> {
 	source: AnalyticsSource
-	limit: number
-	offset: number
 	sort: 'ASC' | 'DESC'
-	count: number
-	rows: Array<Record<string, any>>
 }
 
 export interface LegacyAnalyticsRequest {

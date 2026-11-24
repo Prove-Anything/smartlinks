@@ -5,6 +5,8 @@
  * with flexible metadata.
  */
 
+import type { ListOptions } from './list'
+
 /**
  * Represents a single item within an order.
  */
@@ -139,26 +141,15 @@ export interface DeleteOrderResponse {
 }
 
 /**
- * Request parameters for listing orders.
+ * Request parameters for listing orders. `limit` (default 100) and `cursor` page the list.
  */
-export interface ListOrdersRequest {
-  limit?: number                    // Optional: Max results (default: 100)
-  offset?: number                   // Optional: Pagination offset (default: 0)
+export interface ListOrdersRequest extends ListOptions {
   status?: string                   // Optional: Filter by status
   orderRef?: string                 // Optional: Filter by order reference
   customerId?: string               // Optional: Filter by customer ID
   direction?: OrderDirection        // Optional: Only sales, or only purchase, orders
   partyId?: string                  // Optional: Filter by supplier
   includeItems?: boolean            // Optional: Include items array (default: false)
-}
-
-/**
- * Response from listing orders.
- */
-export interface ListOrdersResponse {
-  orders: Order[]
-  limit: number
-  offset: number
 }
 
 /**
@@ -190,43 +181,14 @@ export interface RemoveItemsRequest {
 export interface RemoveItemsResponse extends Order {}
 
 /**
- * Request to lookup orders by item.
+ * Query parameters for getting order items: `limit` (default 100) and `cursor` page the list.
  */
-export interface LookupOrdersRequest {
-  items: Array<{
-    itemType: 'tag' | 'proof' | 'serial' // Required: Type of item
-    itemId: string                        // Required: Item identifier
-  }>
-}
+export interface GetOrderItemsParams extends ListOptions {}
 
 /**
- * Response from looking up orders by item.
+ * Request for advanced order querying. `limit` (default 100) and `cursor` page the results.
  */
-export interface LookupOrdersResponse {
-  orders: Order[]                   // All orders containing any of the specified items
-}
-
-/**
- * Query parameters for getting order items.
- */
-export interface GetOrderItemsParams {
-  limit?: number                    // Optional: Max results (default: 100)
-  offset?: number                   // Optional: Pagination offset (default: 0)
-}
-
-/**
- * Response from getting order items.
- */
-export interface GetOrderItemsResponse {
-  items: OrderItem[]
-  limit: number
-  offset: number
-}
-
-/**
- * Request for advanced order querying.
- */
-export interface QueryOrdersRequest {
+export interface QueryOrdersRequest extends ListOptions {
   query?: {
     status?: string
     orderRef?: string
@@ -257,18 +219,7 @@ export interface QueryOrdersRequest {
     sortBy?: 'createdAt' | 'updatedAt' | 'status' | 'orderRef' | 'customerId' | 'itemCount' | (string & {})
     sortOrder?: 'asc' | 'desc'
   }
-  limit?: number                    // Optional: Max results (default: 100)
-  offset?: number                   // Optional: Pagination offset (default: 0)
   includeItems?: boolean            // Optional: Include items array (default: false)
-}
-
-/**
- * Response from advanced order querying.
- */
-export interface QueryOrdersResponse {
-  orders: Order[]
-  limit: number
-  offset: number
 }
 
 /**
@@ -306,79 +257,6 @@ export interface ReportsResponse {
     maxItemsInOrder: number
     minItemsInOrder: number
   }
-}
-
-/**
- * Query parameters for looking up orders by product.
- */
-export interface LookupByProductParams {
-  limit?: number                    // Optional: Max results (default: 100)
-  offset?: number                   // Optional: Pagination offset (default: 0)
-  includeItems?: boolean            // Optional: Include items array (default: false)
-}
-
-/**
- * Response from looking up orders by product.
- */
-export interface LookupByProductResponse {
-  orders: Order[]
-  limit: number
-  offset: number
-}
-
-/**
- * Query parameters for finding orders by batch/product/variant.
- */
-export interface FindOrdersByAttributeParams {
-  limit?: number                    // Max results (default: 100)
-  offset?: number                   // Pagination offset (default: 0)
-  includeItems?: boolean            // Include items array (default: false)
-}
-
-/**
- * Response from finding orders by batch/product/variant.
- */
-export interface FindOrdersByAttributeResponse {
-  orders: Order[]
-  limit: number
-  offset: number
-}
-
-/**
- * Query parameters for finding items by batch/product/variant.
- */
-export interface FindItemsByAttributeParams {
-  limit?: number                    // Max results (default: 100)
-  offset?: number                   // Pagination offset (default: 0)
-  includeOrder?: boolean            // Include order summary (default: false)
-}
-
-/**
- * Response from finding items by batch/product/variant.
- */
-export interface FindItemsByAttributeResponse {
-  items: OrderItem[]
-  count: number
-  limit: number
-  offset: number
-}
-
-/**
- * Query parameters for getting order IDs by attribute.
- */
-export interface GetOrderIdsParams {
-  limit?: number                    // Max results (default: 1000)
-  offset?: number                   // Pagination offset (default: 0)
-}
-
-/**
- * Response from getting order IDs by attribute.
- */
-export interface GetOrderIdsResponse {
-  orderIds: string[]
-  count: number
-  attribute: 'productId'
-  value: string
 }
 
 /**
@@ -454,16 +332,6 @@ export interface TimelineRequest {
 }
 
 /**
- * Response with scan timeline.
- */
-export interface TimelineResponse {
-  orderRef: string
-  orderId: string
-  timeline: TagScanEvent[]
-  count: number
-}
-
-/**
  * Location-based scan event.
  */
 export interface LocationScan extends TagScanEvent {
@@ -475,16 +343,6 @@ export interface LocationScan extends TagScanEvent {
  */
 export interface LocationRequest {
   limit?: number                        // Max results (default: 1000)
-}
-
-/**
- * Response with location history.
- */
-export interface LocationResponse {
-  orderRef: string
-  orderId: string
-  locations: LocationScan[]
-  count: number
 }
 
 /**

@@ -15,7 +15,6 @@ import type {
   ResolvedTranslationResponse,
   TranslationHashOptions,
   TranslationListParams,
-  TranslationListResponse,
   TranslationLookupRequest,
   TranslationLookupResponse,
   TranslationRecord,
@@ -23,6 +22,7 @@ import type {
   TranslationRules,
   TranslationUpdateRequest,
 } from '../types/translations'
+import type { ListResult } from '../types/list'
 
 interface NormalizedLookupRequest {
   targetLanguage: string
@@ -354,13 +354,27 @@ export namespace translations {
     }
   }
 
+  /**
+   * Admin: the collection's stored translations, a page at a time. Filter by language, content type, where
+   * the text appears (`contextKey`), a search (`q`), whether a person edited it (`isOverride`), or whether
+   * it misses the site's required wording (`termIssues`). `count` is how many match in all.
+   *
+   * @example
+   * ```typescript
+   * let page = await translations.list('coll_123', { targetLanguage: 'de', limit: 50 })
+   * page.items // TranslationRecord[]
+   * while (page.nextCursor) {
+   *   page = await translations.list('coll_123', { targetLanguage: 'de', limit: 50, cursor: page.nextCursor })
+   * }
+   * ```
+   */
   export async function list(
     collectionId: string,
     params?: TranslationListParams
-  ): Promise<TranslationListResponse> {
+  ): Promise<ListResult<TranslationRecord>> {
     const query = buildTranslationListQuery(params)
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/translations${query}`
-    return request<TranslationListResponse>(path)
+    return request<ListResult<TranslationRecord>>(path)
   }
 
   export async function get(

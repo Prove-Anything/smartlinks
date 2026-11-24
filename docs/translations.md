@@ -320,8 +320,13 @@ const page = await translations.list('collection-123', {
   targetLanguage: 'fr',
   q: 'authenticity',
   limit: 20,
-  offset: 0,
 })
+// { items: [...], nextCursor: '…' | null, count: 57 }
+
+// The next page: pass nextCursor back as cursor (null = that was the last page).
+if (page.nextCursor) {
+  await translations.list('collection-123', { targetLanguage: 'fr', q: 'authenticity', limit: 20, cursor: page.nextCursor })
+}
 ```
 
 ### Get One

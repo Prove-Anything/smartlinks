@@ -1,7 +1,8 @@
 import { request, post, del, patch } from "../http"
-import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactListResponse, ContactSearchParams, ContactSearchResponse, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse, ContactPublic, ContactPatch, PublicGetMyContactResponse, PublicUpdateMyContactResponse, ContactSchemaResponse, ContactDuplicatesResponse, ContactMergeResponse, ContactLinkLoginResponse } from "../types"
+import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactSearchParams, PublicContactUpsertRequest, PublicContactUpsertResponse, UserSearchResponse, ContactPublic, ContactPatch, PublicGetMyContactResponse, PublicUpdateMyContactResponse, ContactSchemaResponse, ContactDuplicatesResponse, ContactMergeResponse, ContactLinkLoginResponse } from "../types"
 
 import type { StandardQuery, QueryResult, QueryDescription } from "../types/query"
+import type { ListResult, ListOptions } from "../types/list"
 
 export namespace contact {
   /**
@@ -41,19 +42,43 @@ export namespace contact {
     return post<ContactResponse>(path, data)
   }
 
+  /**
+   * The collection's contacts, a page at a time (admin only). Pass `includeDeleted: true` to include
+   * deleted contacts. For filters, sorting and totals use `contact.query` or `contact.search`.
+   * GET /admin/collection/:collectionId/contacts
+   *
+   * @example
+   * ```typescript
+   * let page = await contact.list('coll_123', { limit: 50 })
+   * page.items // Contact[]
+   * while (page.nextCursor) page = await contact.list('coll_123', { limit: 50, cursor: page.nextCursor })
+   * ```
+   */
   export async function list(
     collectionId: string,
-    params?: { limit?: number; offset?: number; includeDeleted?: boolean }
-  ): Promise<ContactListResponse> {
+    params?: ListOptions & { includeDeleted?: boolean }
+  ): Promise<ListResult<ContactResponse>> {
     const query = new URLSearchParams()
     if (params?.limit !== undefined) query.set("limit", String(params.limit))
-    if (params?.offset !== undefined) query.set("offset", String(params.offset))
+    if (params?.cursor !== undefined) query.set("cursor", params.cursor)
     if (params?.includeDeleted !== undefined) query.set("includeDeleted", String(params.includeDeleted))
     const qs = query.toString()
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts${qs ? `?${qs}` : ""}`
-    return request<ContactListResponse>(path)
+    return request<ListResult<ContactResponse>>(path)
   }
 
+  /**
+   * Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead`
+   * for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields.
+   * GET /admin/collection/:collectionId/contacts/search
+   *
+   * @example
+   * ```typescript
+   * let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 })
+   * page.items // Contact[]
+   * if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor })
+   * ```
+   */
   export async function search({
     collectionId,
     q,
@@ -73,8 +98,8 @@ export namespace contact {
     customFieldKey,
     customFieldValue,
     limit,
-    offset,
-  }: ContactSearchParams): Promise<ContactSearchResponse> {
+    cursor,
+  }: ContactSearchParams): Promise<ListResult<ContactResponse>> {
     const query = new URLSearchParams()
     if (q !== undefined) query.set("q", q)
     if (typeahead !== undefined) query.set("typeahead", String(typeahead))
@@ -99,9 +124,9 @@ export namespace contact {
     if (customFieldKey !== undefined) query.set("customFieldKey", customFieldKey)
     if (customFieldValue !== undefined) query.set("customFieldValue", customFieldValue)
     if (limit !== undefined) query.set("limit", String(limit))
-    if (offset !== undefined) query.set("offset", String(offset))
+    if (cursor !== undefined) query.set("cursor", cursor)
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/search?${query.toString()}`
-    return request<ContactSearchResponse>(path)
+    return request<ListResult<ContactResponse>>(path)
   }
 
   export async function get(
@@ -224,12 +249,13 @@ export namespace contact {
    * already held — so one contact has the email and no sign-in, the other the sign-in (and everything
    * they did) and no email. The match is made on the server, on verified addresses only.
    *
-   * Checks a window of contacts per call; while `more` is true, call again with `offset` moved on by
-   * `scanned`.
+   * Checks a window of contacts per call and returns the pairs found in it (`items`); `scanned` is how
+   * many contacts it checked. While `nextCursor` is not null, call again with it as `cursor` to check
+   * the next window.
    *
    * @example
    * ```typescript
-   * const { pairs } = await contact.findDuplicates(collectionId)
+   * const { items: pairs } = await contact.findDuplicates(collectionId)
    * for (const pair of pairs) {
    *   await contact.merge(collectionId, pair.keep.contactId, pair.merge.contactId)
    * }
@@ -237,11 +263,11 @@ export namespace contact {
    */
   export async function findDuplicates(
     collectionId: string,
-    params?: { limit?: number; offset?: number }
+    params?: ListOptions
   ): Promise<ContactDuplicatesResponse> {
     const query = new URLSearchParams()
     if (params?.limit !== undefined) query.set("limit", String(params.limit))
-    if (params?.offset !== undefined) query.set("offset", String(params.offset))
+    if (params?.cursor !== undefined) query.set("cursor", params.cursor)
     const qs = query.toString()
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/duplicates${qs ? `?${qs}` : ""}`
     return request<ContactDuplicatesResponse>(path)

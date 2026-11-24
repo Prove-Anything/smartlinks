@@ -60,6 +60,29 @@ export default defineConfig({
 })
 ```
 
+## Contract v8: SDK 3, beside SDK 2
+
+SDK 3 changes what the SDK's functions return and drops the deprecated calls
+([upgrading-to-3.md](upgrading-to-3.md)), so a host can't swap it in under apps built for SDK 2. The
+contract version is what keeps both working:
+
+| The app's manifest says | It gets | Import map | Window global |
+|---|---|---|---|
+| `sharedDependencies: "v7"` (or older) | SDK 2 | `/sl-shared/v7/proveanything-smartlinks.js` | `window.SL` |
+| `sharedDependencies: "v8"` | SDK 3 | `/sl-shared/v8/proveanything-smartlinks.js` | `window.SL3` |
+
+- **For an app:** build on SDK 3 and take your externals from `SHARED_DEPENDENCY_SPECIFIERS` as before.
+  The build then declares `"v8"`, and the host gives you SDK 3. Nothing else in your config changes.
+- **For a host:** serve both SDK copies, and sign both in. Whatever you do to one (`initializeApi`, the
+  sign-in token, a grant token) you do to the other. The auth UI package follows the SDK: its SDK-3 major
+  is served for v8 as `window.SmartlinksAuthUI3`, beside the current one for v7.
+- **Everything else is one copy.** React, the router, Radix and the rest are the same library at the same
+  version in v7 and v8: the v8 shims re-export the same instances. Two Reacts on a page is still the one
+  hard failure.
+- **SDK 2 stays** until no released app still declares v7 (see *Version retention* below).
+
+In the table below, read the SmartLinks rows as: SDK 3 for v8 (`window.SL3`), SDK 2 for v7 (`window.SL`).
+
 ## Host-provided globals (build against versions ≤ these)
 
 > **The SmartLinks packages on the host are always the latest published.** `@proveanything/smartlinks`
@@ -168,7 +191,7 @@ never drift:
 
 ```ts
 import {
-  SHARED_DEPENDENCY_CONTRACT_VERSION, // 'v7'
+  SHARED_DEPENDENCY_CONTRACT_VERSION, // 'v8' in SDK 3 ('v7' in SDK 2)
   SHARED_DEPENDENCIES,                // [{ specifier, globalName, minVersion, importMapPath }, …] (29)
   SHARED_DEPENDENCY_SPECIFIERS,       // bare specifiers — drop straight into a bundler `external` list
   getHostSharedDependencies,          // what the live host advertises at runtime, or null

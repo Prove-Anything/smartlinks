@@ -1,5 +1,6 @@
 // src/types/product.ts
 import { AssetRef } from "./asset"
+import type { ListOptions } from "./list"
 
 export type JsonPrimitive = string | number | boolean | null
 
@@ -48,7 +49,8 @@ export interface ProductFacetValue {
  */
 export type ProductFacetMap = Record<string, string[]>
 
-export interface ProductQueryRequest {
+/** Body for products.query(): filters and sorting, with `limit` (default 50) and `cursor` for paging. */
+export interface ProductQueryRequest extends ListOptions {
   query?: {
     search?: string
     status?: string[]
@@ -65,11 +67,6 @@ export interface ProductQueryRequest {
     field: string
     direction: 'asc' | 'desc'
   }>
-  page?: {
-    limit?: number
-    offset?: number
-    cursor?: string | null
-  }
   includeDeleted?: boolean
 }
 
@@ -149,24 +146,14 @@ export interface ProductWriteInput {
   validCollections?: string[]
 }
 
-export interface ProductQueryResponse {
-  items: Product[]
-  page?: {
-    limit?: number
-    offset?: number
-    returned?: number
-    total?: number
-    hasMore?: boolean
-    nextCursor?: string | null
-  }
-  meta?: {
-    apiVersion?: 'v1'
-    mode?: 'canonical-products' | 'legacy-product-compatibility'
-    source?: 'postgres' | 'firestore' | 'compatibility-layer'
-    queryMode?: 'canonical' | 'compatibility'
-    unsupportedFilters?: string[]
-    supportedSortFields?: string[]
-  }
+/** How a products.query() was run: returned as `meta` beside the list. */
+export interface ProductQueryMeta {
+  apiVersion?: 'v1'
+  mode?: 'canonical-products' | 'legacy-product-compatibility'
+  source?: 'postgres' | 'firestore' | 'compatibility-layer'
+  queryMode?: 'canonical' | 'compatibility'
+  unsupportedFilters?: string[]
+  supportedSortFields?: string[]
 }
 
 export interface ProductClaimLookupInput extends ProductKey {

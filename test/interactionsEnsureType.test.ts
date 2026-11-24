@@ -21,7 +21,7 @@ describe('interactions.ensureType', () => {
       const body = init.body ? JSON.parse(init.body) : undefined
       calls.push({ method, url: String(url), body })
       const json = method === 'GET'
-        ? { items: existing, limit: 200, offset: 0 }
+        ? { items: existing, nextCursor: null }
         : { id: '52bab6fa-d868-4616-9342-6731b0f332b2', collectionId: 'c1', ...body, createdAt: 'now' }
       return new Response(JSON.stringify(json), { status: method === 'POST' ? 201 : 200, headers: { 'content-type': 'application/json' } })
     }

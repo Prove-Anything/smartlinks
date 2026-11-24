@@ -2,9 +2,10 @@
 import { request, post, put, del } from "../http"
 import {
   Lot, LotCreateInput, LotUpdateInput,
-  ListLotsParams, ListLotsResponse,
-  ResolveLotResponse, ListLotProductsResponse,
+  ListLotsParams,
+  ResolveLotResponse, LotProductSummary,
 } from "../types/lots"
+import type { ListResult, ListOptions } from "../types/list"
 
 /**
  * Lots — collection-scoped production groupings that span one or more products.
@@ -28,10 +29,10 @@ export namespace lots {
     const s = qs.toString()
     return s ? `?${s}` : ''
   }
-  function pageQuery(opts: { page?: number; limit?: number } = {}): string {
+  function pageQuery(opts: ListOptions = {}): string {
     const qs = new URLSearchParams()
-    if (opts.page) qs.append('page', String(opts.page))
     if (opts.limit) qs.append('limit', String(opts.limit))
+    if (opts.cursor) qs.append('cursor', opts.cursor)
     const s = qs.toString()
     return s ? `?${s}` : ''
   }
@@ -43,10 +44,17 @@ export namespace lots {
     return post<Lot>(adminBase(collectionId), lot)
   }
 
-  /** List lots (summary rows; `payload`/`productIds` omitted). Filter by status, search, or containing productId. */
-  export async function list(collectionId: string, params: ListLotsParams = {}): Promise<Lot[]> {
-    const res = await request<ListLotsResponse>(`${adminBase(collectionId)}${listQuery(params)}`)
-    return res.lots
+  /**
+   * List lots (summary rows; `payload`/`productIds` omitted). Filter by status, search, or containing
+   * productId. One list, no pages.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await lots.list('coll_123', { status: 'open' })
+   * ```
+   */
+  export async function list(collectionId: string, params: ListLotsParams = {}): Promise<ListResult<Lot>> {
+    return request<ListResult<Lot>>(`${adminBase(collectionId)}${listQuery(params)}`)
   }
 
   /** Get the full lot record. Pass `{ includeDeleted: true }` to fetch a soft-deleted one. */
@@ -89,16 +97,31 @@ export namespace lots {
     return post<ResolveLotResponse>(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}/resolve`, {})
   }
 
-  /** Paginated member product summaries. */
-  export async function listProducts(collectionId: string, lotId: string, opts: { page?: number; limit?: number } = {}): Promise<ListLotProductsResponse> {
-    return request<ListLotProductsResponse>(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}/products${pageQuery(opts)}`)
+  /**
+   * A lot's member products (summaries), a page at a time. `count` is how many members there are in all.
+   *
+   * @example
+   * ```typescript
+   * let page = await lots.listProducts('coll_123', lotId, { limit: 50 })
+   * while (page.nextCursor) page = await lots.listProducts('coll_123', lotId, { limit: 50, cursor: page.nextCursor })
+   * ```
+   */
+  export async function listProducts(collectionId: string, lotId: string, opts: ListOptions = {}): Promise<ListResult<LotProductSummary>> {
+    return request<ListResult<LotProductSummary>>(`${adminBase(collectionId)}/${encodeURIComponent(lotId)}/products${pageQuery(opts)}`)
   }
 
   // ── Public (cross-app reads) ──
 
-  export async function publicList(collectionId: string, params: ListLotsParams = {}): Promise<Lot[]> {
-    const res = await request<ListLotsResponse>(`${publicBase(collectionId)}${listQuery(params)}`)
-    return res.lots
+  /**
+   * List lots from a public context (summary rows). One list, no pages.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await lots.publicList('coll_123', { productId: 'prod_789' })
+   * ```
+   */
+  export async function publicList(collectionId: string, params: Omit<ListLotsParams, 'includeDeleted'> = {}): Promise<ListResult<Lot>> {
+    return request<ListResult<Lot>>(`${publicBase(collectionId)}${listQuery(params)}`)
   }
   export async function publicGet(collectionId: string, lotId: string): Promise<Lot> {
     return request<Lot>(`${publicBase(collectionId)}/${encodeURIComponent(lotId)}`)
@@ -106,7 +129,15 @@ export namespace lots {
   export async function publicGetByNumber(collectionId: string, lotNumber: string): Promise<Lot> {
     return request<Lot>(`${publicBase(collectionId)}/by-number/${encodeURIComponent(lotNumber)}`)
   }
-  export async function publicListProducts(collectionId: string, lotId: string, opts: { page?: number; limit?: number } = {}): Promise<ListLotProductsResponse> {
-    return request<ListLotProductsResponse>(`${publicBase(collectionId)}/${encodeURIComponent(lotId)}/products${pageQuery(opts)}`)
+  /**
+   * A lot's member products (summaries) from a public context, a page at a time.
+   *
+   * @example
+   * ```typescript
+   * const { items, nextCursor, count } = await lots.publicListProducts('coll_123', lotId, { limit: 50 })
+   * ```
+   */
+  export async function publicListProducts(collectionId: string, lotId: string, opts: ListOptions = {}): Promise<ListResult<LotProductSummary>> {
+    return request<ListResult<LotProductSummary>>(`${publicBase(collectionId)}/${encodeURIComponent(lotId)}/products${pageQuery(opts)}`)
   }
 }

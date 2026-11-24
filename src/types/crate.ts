@@ -4,6 +4,8 @@
  * Types for managing crates (containers for tags/products).
  */
 
+import type { ListOptions } from './list'
+
 /**
  * Item within a crate.
  */
@@ -30,21 +32,11 @@ export interface Crate {
 }
 
 /**
- * Query parameters for listing crates.
+ * `crate.list` options: `limit` (default 100, max 100) and `cursor`, plus whether to include
+ * soft-deleted crates.
  */
-export interface ListCratesRequest {
-  limit?: number                  // Number of results per page (default: 100, max: 100)
-  startAfter?: string             // Crate ID to start after for pagination
+export interface ListCratesRequest extends ListOptions {
   includeDeleted?: boolean        // Include soft-deleted crates (default: false)
-}
-
-/**
- * Response from listing crates.
- */
-export interface ListCratesResponse {
-  items: Crate[]                  // Array of crates
-  hasMore: boolean                // Whether more results are available
-  lastId: string | null           // ID of last crate (use as startAfter for next page)
 }
 
 /**

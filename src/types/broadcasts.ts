@@ -1,4 +1,5 @@
 // src/types/broadcasts.ts
+import type { ListResult, ListOptions } from './list'
 
 // Broadcast analytics and logging have moved to the comms namespace.
 
@@ -7,9 +8,8 @@
 // create body: Omit<BroadcastRecord, 'id' | 'collectionId' | 'createdAt'>
 // update body: Partial<Omit<BroadcastRecord, 'id' | 'collectionId' | 'createdAt'>>
 
-export interface ListBroadcastsQuery {
-  limit?: number
-  offset?: number
+/** `broadcasts.list` options: the app that owns them, plus `limit` and `cursor`. */
+export interface ListBroadcastsQuery extends ListOptions {
   appId?: string
 }
 
@@ -53,18 +53,9 @@ export interface BroadcastRecord {
   createdAt: string
 }
 
-export interface BroadcastList {
-  items: BroadcastRecord[]
-  limit: number
-  offset: number
-}
-
 // New broadcast helpers for recipients and sending flows
-export interface BroadcastRecipientsResponse {
-  items: import('./comms').Recipient[]
-  total: number
-  limit: number
-  offset: number
+/** What `broadcasts.recipients` returns: a page of contacts (`count` = how many in all), and sometimes a note. */
+export interface BroadcastRecipientsResponse extends ListResult<import('./comms').Recipient> {
   note?: string
 }
 

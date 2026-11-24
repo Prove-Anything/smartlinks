@@ -2,7 +2,6 @@
 // Re-export all resource namespaces so the consumer can import them in one line.
 export { collection } from "./collection"
 export { facets } from "./facets"
-export { product } from "./product"
 export { products } from "./products"
 export { proof } from "./proof"
 export { appConfiguration, userAppData } from "./appConfiguration"

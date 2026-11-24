@@ -4,10 +4,10 @@ import type {
   JourneyStatsRequest,
   JourneyStatsResponse,
   JourneyStepRecipientsRequest,
-  JourneyStepRecipientsResponse,
   JourneyFunnelReportRequest,
   JourneyFunnelReportResponse,
 } from "../types/journeysAnalytics"
+import type { ListResult } from "../types/list"
 
 export namespace journeysAnalytics {
   /**
@@ -26,17 +26,25 @@ export namespace journeysAnalytics {
 
   /**
    * POST /admin/collection/:collectionId/journeys.analytics/:journeyId/steps/:stepId/recipients
-   * Returns recipient IDs for a given journey step.
+   * Returns recipient IDs for a given journey step, as a list of ids. One list, no pages: `limit` in
+   * the body says how many.
    * For completed/pending, `interactionId` is required; outcome defaults to 'success'.
+   *
+   * @example
+   * ```typescript
+   * const { items: contactIds } = await journeysAnalytics.recipients('coll_123', journeyId, stepId, {
+   *   status: 'completed', interactionId, idField: 'contactId', limit: 1000,
+   * })
+   * ```
    */
   export async function recipients(
     collectionId: string,
     journeyId: string,
     stepId: string,
     body: JourneyStepRecipientsRequest = {}
-  ): Promise<JourneyStepRecipientsResponse> {
+  ): Promise<ListResult<string>> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/journeys.analytics/${encodeURIComponent(journeyId)}/steps/${encodeURIComponent(stepId)}/recipients`
-    return post<JourneyStepRecipientsResponse>(path, body)
+    return post<ListResult<string>>(path, body)
   }
 
   /**

@@ -16,11 +16,11 @@ import type {
   PlanPrice,
   PlanPriceInput,
   Membership,
-  SubscriptionListParams,
+  SubscriptionListOptions,
   SubscriptionGrantInput,
-  SubscriptionPage,
   PlanGrants,
 } from '../types/subscriptions'
+import type { ListResult, ListOptions } from '../types/list'
 
 const pub = (collectionId: string) => `/public/collection/${encodeURIComponent(collectionId)}/memberships`
 const adm = (collectionId: string) => `/admin/collection/${encodeURIComponent(collectionId)}/memberships`
@@ -36,9 +36,18 @@ function qs(params?: Record<string, any>): string {
 }
 
 export namespace subscriptions {
-  /** Plans open to new members, each with its prices (monthly, yearly, one-off). */
-  export async function plans(collectionId: string): Promise<PublicPlan[]> {
-    return request<PublicPlan[]>(`${pub(collectionId)}/plans`)
+  /**
+   * Plans open to new members, each with its prices (monthly, yearly, one-off). All of them in one answer:
+   * `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items: plans } = await subscriptions.plans(collectionId)
+   * plans.map((p) => p.prices.map((price) => subscriptions.describePrice(price)))
+   * ```
+   */
+  export async function plans(collectionId: string): Promise<ListResult<PublicPlan>> {
+    return request<ListResult<PublicPlan>>(`${pub(collectionId)}/plans`)
   }
 
   /**
@@ -47,7 +56,7 @@ export namespace subscriptions {
    *
    * @example
    * ```typescript
-   * const plans = await subscriptions.plans(collectionId)
+   * const { items: plans } = await subscriptions.plans(collectionId)
    * const yearly = plans[0].prices.find((p) => p.interval === 'year')
    * const { checkoutUrl } = await subscriptions.start(collectionId, {
    *   priceId: yearly.id,
@@ -62,9 +71,18 @@ export namespace subscriptions {
     return post<SubscriptionStartResult>(`${pub(collectionId)}/start`, input)
   }
 
-  /** The signed-in member's memberships, newest first (ended ones too: check `live`). */
-  export async function mine(collectionId: string): Promise<MySubscription[]> {
-    return request<MySubscription[]>(`${pub(collectionId)}/mine`)
+  /**
+   * The signed-in member's memberships, newest first (ended ones too: check `live`). All of them in one
+   * answer: `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await subscriptions.mine(collectionId)
+   * const current = items.find((s) => s.live)
+   * ```
+   */
+  export async function mine(collectionId: string): Promise<ListResult<MySubscription>> {
+    return request<ListResult<MySubscription>>(`${pub(collectionId)}/mine`)
   }
 
   /**
@@ -110,7 +128,16 @@ export namespace subscriptions {
 
   /** The business's side: plans, prices and members (collection admins). Payments use the shop's Stripe set-up. */
   export namespace admin {
-    export async function listPlans(collectionId: string, params?: { active?: boolean; limit?: number; offset?: number }): Promise<SubscriptionPage<PlanWithPrices>> {
+    /**
+     * The collection's plans with their prices, a page at a time. `active: true` for only the ones open to
+     * new members.
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor } = await subscriptions.admin.listPlans(collectionId, { active: true })
+     * ```
+     */
+    export async function listPlans(collectionId: string, params?: ListOptions & { active?: boolean }): Promise<ListResult<PlanWithPrices>> {
       return request(`${adm(collectionId)}/plans${qs(params)}`)
     }
 
@@ -151,8 +178,17 @@ export namespace subscriptions {
       return del(`${adm(collectionId)}/prices/${encodeURIComponent(priceId)}`)
     }
 
-    /** Memberships, newest first, with each one's plan. */
-    export async function list(collectionId: string, params?: SubscriptionListParams): Promise<SubscriptionPage<Membership>> {
+    /**
+     * Memberships, newest first, with each one's plan, a page at a time. `count` is how many match in all.
+     *
+     * @example
+     * ```typescript
+     * let page = await subscriptions.admin.list(collectionId, { live: true, limit: 50 })
+     * page.items // Membership[]
+     * while (page.nextCursor) page = await subscriptions.admin.list(collectionId, { live: true, limit: 50, cursor: page.nextCursor })
+     * ```
+     */
+    export async function list(collectionId: string, params?: SubscriptionListOptions): Promise<ListResult<Membership>> {
       return request(`${adm(collectionId)}/subscriptions${qs(params)}`)
     }
 

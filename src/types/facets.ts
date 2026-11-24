@@ -1,4 +1,5 @@
 import type { JsonValue, ProductQueryRequest } from "./product"
+import type { ListResult } from "./list"
 
 export interface FacetDefinition {
   id?: string
@@ -75,13 +76,12 @@ export interface FacetValueWriteInput {
   enabled?: boolean
 }
 
-export interface FacetListResponse {
-  items: FacetDefinition[]
-}
+/** What `facets.list` / `facets.publicList` return: every facet in `items` (`nextCursor` is always null). */
+export type FacetListResponse = ListResult<FacetDefinition>
 
-export interface FacetValueListResponse {
+/** What `facets.listValues` / `facets.publicListValues` return: the facet, and all its values in `items`. */
+export interface FacetValueListResponse extends ListResult<FacetValue> {
   facet: FacetDefinition
-  items: FacetValue[]
 }
 
 export interface FacetValueResponse {
@@ -106,11 +106,14 @@ export interface FacetBucket {
   count: number
 }
 
-export interface FacetQueryResponse {
-  items: Array<{
-    facet: FacetDefinition
-    values: FacetValue[]
-  }>
+/**
+ * What `facets.query` / `facets.publicQuery` return: each facet with its values in `items`
+ * (`nextCursor` is always null), and the counts in `buckets`.
+ */
+export interface FacetQueryResponse extends ListResult<{
+  facet: FacetDefinition
+  values: FacetValue[]
+}> {
   buckets: FacetBucket[]
   meta?: {
     source?: "postgres"
@@ -119,7 +122,6 @@ export interface FacetQueryResponse {
 }
 
 export interface FacetListParams {
-  includeValues?: boolean
   includeDeleted?: boolean
   kind?: "system" | "custom"
   reserved?: boolean
@@ -127,13 +129,11 @@ export interface FacetListParams {
 }
 
 export interface PublicFacetListParams {
-  includeValues?: boolean
   namespace?: string
 }
 
-export interface FacetNamespaceListResponse {
-  namespaces: string[]
-}
+/** What `facets.namespaces` / `facets.publicNamespaces` return: the namespace names in `items` (`nextCursor` is always null). */
+export type FacetNamespaceListResponse = ListResult<string>
 
 export interface FacetGetParams {
   includeValues?: boolean

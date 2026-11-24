@@ -1,6 +1,7 @@
 // src/api/variant.ts
 import { request, post, put, del } from "../http"
 import { VariantResponse, VariantCreateRequest, VariantUpdateRequest } from "../types/variant"
+import type { ListResult } from "../types/list"
 
 export namespace variant {
   // Admin CRUD operations
@@ -26,20 +27,27 @@ export namespace variant {
   }
 
   /**
-   * List all variants for a collection and product (admin only).
+   * List all variants for a collection and product (admin only). All of them come in one answer:
+   * `nextCursor` is always null.
    * @param collectionId - Identifier of the parent collection
    * @param productId - Identifier of the parent product
-   * @returns Promise resolving to an array of VariantResponse objects
+   * @returns Promise resolving to `{ items: VariantResponse[], nextCursor: null }`
    * @throws ErrorResponse if the request fails
+   *
+   * @example
+   * ```typescript
+   * const { items } = await variant.list('coll_123', 'prod_456')
+   * items.map((v) => v.name)
+   * ```
    */
   export async function list(
     collectionId: string,
     productId: string
-  ): Promise<VariantResponse[]> {
+  ): Promise<ListResult<VariantResponse>> {
     const path = `/admin/collection/${encodeURIComponent(
       collectionId
     )}/product/${encodeURIComponent(productId)}/variant`
-    return request<VariantResponse[]>(path)
+    return request<ListResult<VariantResponse>>(path)
   }
 
   /**

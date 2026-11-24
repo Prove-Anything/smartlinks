@@ -28,8 +28,8 @@ with the SDK's own release and, in an app, the app:
 
 | Header | Example | Meaning |
 |---|---|---|
-| `SmartLinks-Version` | `2026-11` | the API version this SDK release was built for |
-| `SmartLinks-SDK` | `js/2.2.0` | the SDK release |
+| `SmartLinks-Version` | `2027-01` | the API version this SDK release was built for |
+| `SmartLinks-SDK` | `js/3.0.0` | the SDK release |
 | `SmartLinks-App` | `faq@1.0.23` | the app (`appId`, and `appVersion` when given to `initializeApi`) |
 
 So an app moves to a newer version of the API by upgrading its SDK, and never by surprise.
@@ -43,12 +43,21 @@ initializeApi({
   appVersion: '1.0.23',        // your manifest's meta.version
 })
 
-API_VERSION      // '2026-11': what this SDK release is built for
+API_VERSION      // '2027-01': what this SDK release is built for
 getApiVersion()  // what this app is asking for
 ```
 
-To hold an app on an older version while you upgrade the SDK for another reason, pin it:
-`initializeApi({ …, apiVersion: '2026-11' })`.
+An app can ask for a **newer** version than its SDK was built for, to try it:
+`initializeApi({ …, apiVersion: '2027-06' })`. An older one is ignored: this SDK's functions return the
+shapes of its own version. To stay on an older version of the API, stay on the SDK built for it (SDK 2
+asks for `2026-11`).
+
+## The versions
+
+| Version | SDK | What changed |
+|---|---|---|
+| `2026-11` | 2.x | The baseline: the API as it was when versions were introduced. |
+| `2027-01` | 3.x | Every list answers `{ items, nextCursor, count? }` and pages with `limit` and `cursor` ([lists.md](lists.md)). Every error is `{ error: { code, message, details, requestId } }`, with codes in `UPPER_SNAKE`. A list refuses a query parameter it doesn't read (`400 UNKNOWN_PARAMETER`). See [upgrading-to-3.md](upgrading-to-3.md). |
 
 ## Without the SDK
 
@@ -57,7 +66,7 @@ Send the header yourself:
 ```
 GET /api/v1/admin/collection/abc/products/p1
 Authorization: Bearer …
-SmartLinks-Version: 2026-11
+SmartLinks-Version: 2027-01
 ```
 
 Something that isn't a version (`v2`, `latest`) is refused with `400 UNKNOWN_API_VERSION` and the list of

@@ -6,8 +6,8 @@ import type {
   CommunicationEvent,
   CommsQueryByUser,
   CommsRecipientIdsQuery,
-  CommsRecipientsWithoutActionQuery,
-  CommsRecipientsWithActionQuery,
+  CommsRecipientsWithoutInteractionQuery,
+  CommsRecipientsWithInteractionQuery,
   RecipientId,
   RecipientWithOutcome,
   LogCommunicationEventBody,
@@ -17,6 +17,7 @@ import type {
   TransactionalSendRequest,
   TransactionalSendResult,
 } from "../types/comms"
+import type { ListResult } from "../types/list"
 
 /**
  * Communications namespace for sending notifications and managing user communications.
@@ -183,8 +184,14 @@ export namespace comms {
   }
 
   /**
-   * Public: List registered contact methods.
+   * Public: List registered contact methods. All of them come back in one answer: `nextCursor` is
+   * always null.
    * GET /public/collection/:collectionId/comm/methods
+   *
+   * @example
+   * ```typescript
+   * const { items: methods } = await comms.listMethods(collectionId, { type: 'email' })
+   * ```
    */
   export async function listMethods(
     collectionId: string,
@@ -235,51 +242,75 @@ export namespace comms {
   }
 
   /**
-   * Analytics: Query communication events by user or contact.
+   * Analytics: Query communication events by user or contact. The events come back in one answer
+   * (`nextCursor` is always null); `limit` is the most it returns.
    * POST /admin/collection/:collectionId/comm/query/by-user
+   *
+   * @example
+   * ```typescript
+   * const { items: events } = await comms.queryByUser(collectionId, { contactId, from: '2026-01-01', limit: 200 })
+   * ```
    */
   export async function queryByUser(
     collectionId: string,
     body: CommsQueryByUser = {}
-  ): Promise<CommunicationEvent[]> {
+  ): Promise<ListResult<CommunicationEvent>> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/query/by-user`
-    return post<CommunicationEvent[]>(path, body)
+    return post<ListResult<CommunicationEvent>>(path, body)
   }
 
   /**
-   * Analytics: Recipient IDs for a communication source.
+   * Analytics: Recipient IDs for a communication source. The ids come back in one answer
+   * (`nextCursor` is always null); `limit` is the most it returns.
    * POST /admin/collection/:collectionId/comm/query/recipient-ids
+   *
+   * @example
+   * ```typescript
+   * const { items: ids } = await comms.queryRecipientIds(collectionId, { broadcastId, idField: 'contactId' })
+   * ```
    */
   export async function queryRecipientIds(
     collectionId: string,
     body: CommsRecipientIdsQuery
-  ): Promise<RecipientId[]> {
+  ): Promise<ListResult<RecipientId>> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/query/recipient-ids`
-    return post<RecipientId[]>(path, body)
+    return post<ListResult<RecipientId>>(path, body)
   }
 
   /**
-   * Analytics: Recipients who did not perform an action.
-   * POST /admin/collection/:collectionId/comm/query/recipients/without-action
+   * Analytics: the recipients of a broadcast or journey who did NOT then do an interaction. The ids come
+   * back in one answer (`nextCursor` is always null); `limit` is the most it returns.
+   * POST /admin/collection/:collectionId/comm/query/recipients/without-interaction
+   *
+   * @example
+   * ```typescript
+   * const { items: ids } = await comms.queryRecipientsWithoutInteraction(collectionId, { broadcastId, interactionId: 'survey-done' })
+   * ```
    */
-  export async function queryRecipientsWithoutAction(
+  export async function queryRecipientsWithoutInteraction(
     collectionId: string,
-    body: CommsRecipientsWithoutActionQuery
-  ): Promise<RecipientId[]> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/query/recipients/without-action`
-    return post<RecipientId[]>(path, body)
+    body: CommsRecipientsWithoutInteractionQuery
+  ): Promise<ListResult<RecipientId>> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/query/recipients/without-interaction`
+    return post<ListResult<RecipientId>>(path, body)
   }
 
   /**
-   * Analytics: Recipients who performed an action, optionally with outcome.
-   * POST /admin/collection/:collectionId/comm/query/recipients/with-action
+   * Analytics: the recipients of a broadcast or journey who then did an interaction. With
+   * `includeOutcome: true` each item is `{ id, outcome }` instead of an id. One answer, no pages.
+   * POST /admin/collection/:collectionId/comm/query/recipients/with-interaction
+   *
+   * @example
+   * ```typescript
+   * const { items } = await comms.queryRecipientsWithInteraction(collectionId, { broadcastId, interactionId: 'survey-done', includeOutcome: true })
+   * ```
    */
-  export async function queryRecipientsWithAction(
+  export async function queryRecipientsWithInteraction(
     collectionId: string,
-    body: CommsRecipientsWithActionQuery
-  ): Promise<RecipientId[] | RecipientWithOutcome[]> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/query/recipients/with-action`
-    return post<RecipientId[] | RecipientWithOutcome[]>(path, body)
+    body: CommsRecipientsWithInteractionQuery
+  ): Promise<ListResult<RecipientId | RecipientWithOutcome>> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/comm/query/recipients/with-interaction`
+    return post<ListResult<RecipientId | RecipientWithOutcome>>(path, body)
   }
 
   /**

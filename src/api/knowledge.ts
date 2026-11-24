@@ -2,8 +2,9 @@ import { request, post, patch, del } from "../http"
 import type {
   KnowledgeSet, SaveKnowledgeSetRequest, UpdateKnowledgeSetRequest,
   KnowledgeSource, AddKnowledgeSourceRequest, UpdateKnowledgeSourceRequest,
-  KnowledgeDocument, KnowledgeSearchRequest, KnowledgeSearchResponse,
+  KnowledgeDocument, KnowledgeSearchRequest, KnowledgeSearchResponse, KnowledgeSearchResult,
 } from "../types/knowledge"
+import type { ListResult } from "../types/list"
 
 /**
  * Knowledge search: make a collection's content searchable by meaning and keywords, for people and for AI.
@@ -25,7 +26,7 @@ import type {
  * await knowledge.upsertDocuments('coll_123', src.id, [
  *   { ref: 'kettle', title: 'Kettle manual', body: '## Descaling\n\nDescale monthly…', meta: { productId: 'p1' } },
  * ])
- * const { results } = await knowledge.publicSearch('coll_123', { query: 'how do I descale', filters: { productId: 'p1' } })
+ * const { items } = await knowledge.publicSearch('coll_123', { query: 'how do I descale', filters: { productId: 'p1' } })
  * ```
  */
 export namespace knowledge {
@@ -33,8 +34,15 @@ export namespace knowledge {
   const pub = (collectionId: string) => `/public/collection/${encodeURIComponent(collectionId)}/knowledge`
   const enc = encodeURIComponent
 
-  /** Every set, with its source and passage counts (admin). */
-  export async function listSets(collectionId: string): Promise<KnowledgeSet[]> {
+  /**
+   * Every set, with its source and passage counts (admin). One list, no pages.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await knowledge.listSets('coll_123')
+   * ```
+   */
+  export async function listSets(collectionId: string): Promise<ListResult<KnowledgeSet>> {
     return request(`${adm(collectionId)}/sets`)
   }
 
@@ -57,8 +65,15 @@ export namespace knowledge {
     return del(`${adm(collectionId)}/sets/${enc(set)}`)
   }
 
-  /** A set's sources, with their status (admin). */
-  export async function listSources(collectionId: string, set: string): Promise<KnowledgeSource[]> {
+  /**
+   * A set's sources, with their status (admin). One list, no pages.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await knowledge.listSources('coll_123', 'manuals')
+   * ```
+   */
+  export async function listSources(collectionId: string, set: string): Promise<ListResult<KnowledgeSource>> {
     return request(`${adm(collectionId)}/sets/${enc(set)}/sources`)
   }
 
@@ -90,13 +105,37 @@ export namespace knowledge {
     return post(`${adm(collectionId)}/sources/${enc(sourceId)}/documents/remove`, { refs })
   }
 
-  /** Search every set, staff ones included (admin). */
-  export async function search(collectionId: string, body: KnowledgeSearchRequest): Promise<KnowledgeSearchResponse> {
+  /**
+   * Search every set, staff ones included (admin). The matches come back as `items`, best first, with the
+   * `query` and the search `mode` beside them. There are no pages: `k` says how many matches to return.
+   *
+   * @example
+   * ```typescript
+   * const { items, mode } = await knowledge.search('coll_123', { query: 'how do I descale', k: 5 })
+   * ```
+   */
+  export async function search(
+    collectionId: string,
+    body: KnowledgeSearchRequest
+  ): Promise<ListResult<KnowledgeSearchResult> & Pick<KnowledgeSearchResponse, 'query' | 'mode'>> {
     return post(`${adm(collectionId)}/search`, body)
   }
 
-  /** Search from a website, Portal or Hub: public sets, plus customer sets for a signed-in person. */
-  export async function publicSearch(collectionId: string, body: KnowledgeSearchRequest): Promise<KnowledgeSearchResponse> {
+  /**
+   * Search from a website, Portal or Hub: public sets, plus customer sets for a signed-in person. The
+   * answer has the same shape as the admin `search`: the matches come back as `items`, best first, with the
+   * `query` and the search `mode` beside them. There are no pages: `k` says how many matches to return.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await knowledge.publicSearch('coll_123', { query: 'how do I descale', k: 5 })
+   * for (const r of items) console.log(r.title, r.heading, r.url, r.snippet)
+   * ```
+   */
+  export async function publicSearch(
+    collectionId: string,
+    body: KnowledgeSearchRequest
+  ): Promise<ListResult<KnowledgeSearchResult> & Pick<KnowledgeSearchResponse, 'query' | 'mode'>> {
     return post(`${pub(collectionId)}/search`, body)
   }
 }

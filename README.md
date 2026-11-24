@@ -82,18 +82,18 @@ initializeApi({
 })
 ```
 
-List public collections and fetch products:
+Read a collection and list its products:
 
 ```ts
 import { collection, products } from '@proveanything/smartlinks'
 
-const collections = await collection.list(false) // public endpoint
-const first = collections[0]
-if (first) {
-  const items = await products.list(first.id, false) // public endpoint
-  console.log('First product:', items[0])
-}
+const site = await collection.get('collectionId')        // public endpoint
+const { items } = await products.list('collectionId')    // public endpoint
+console.log(site.title, 'first product:', items[0])
 ```
+
+Every list answers the same way: `{ items, nextCursor, count? }`. Pass `nextCursor` back as `cursor` for
+the next page, or let `each` / `all` walk the pages for you (see [docs/lists.md](docs/lists.md)).
 
 ### Quick start by scenario
 
@@ -104,8 +104,8 @@ import { initializeApi, collection, products } from '@proveanything/smartlinks'
 
 initializeApi({ baseURL: 'https://smartlinks.app/api/v1' })
 
-const collections = await collection.list(false)
-const items = await products.list('collectionId', false)
+const site = await collection.get('collectionId')
+const { items } = await products.list('collectionId')
 ```
 
 **Server-side admin scripts or back office tools**
@@ -122,29 +122,23 @@ const created = await products.create('collectionId', { name: 'New product' })
 console.log(created.id)
 ```
 
-### Product API migration: use products (plural)
+### Moving from SDK 2
 
-The SDK keeps `product` (singular) for backward compatibility, but it is deprecated.
-For all new integrations, use `products` (plural).
+SDK 3 asks for API version `2027-01`: every list returns `{ items, nextCursor, count? }` and pages with
+`limit` and `cursor`, errors have one shape, and the calls that were marked deprecated in SDK 2 are gone
+(the old `product` namespace among them: use `products`). SDK 2 keeps working against the API as it is.
+
+- [docs/upgrading-to-3.md](docs/upgrading-to-3.md): what changed and how to move each call
+- `upgrade/3.json` in this package: the same changes as data, for scripts and AI agents
 
 ```ts
-// Preferred
 import { products } from '@proveanything/smartlinks'
 
-await products.get(collectionId, productId, false)
-await products.list(collectionId, false)
+await products.get(collectionId, productId)
+const { items } = await products.list(collectionId)
 await products.query(collectionId, { query: { search: 'cabernet' } }) // public
 await products.query(collectionId, { query: { search: 'cabernet' } }, true) // admin
 ```
-
-Quick mapping:
-
-- `product.get` -> `products.get`
-- `product.list` -> `products.list`
-- `product.create` -> `products.create`
-- `product.update` -> `products.update`
-- `product.remove` -> `products.remove`
-- `product.find` / `product.publicFind` -> `products.query` / `products.get`
 
 **AI-powered assistant or setup flow**
 
@@ -351,28 +345,24 @@ const uploaded = await asset.upload({
 console.log('Uploaded asset:', uploaded)
 ```
 
-Deprecated upload helper (wraps to the new `upload` internally):
-
-```ts
-// @deprecated Use asset.upload(options)
-const legacy = await asset.uploadAsset(collectionId, productId, proofId, file)
-```
-
 #### List
 
 ```ts
-// Collection assets, first 20 images
-const list1 = await asset.list({
+// A collection's assets
+const { items } = await asset.list({
   scope: { type: 'collection', collectionId },
-  mimeTypePrefix: 'image/',
-  limit: 20,
 })
+const images = items.filter((a) => a.mimeType?.startsWith('image/'))
 
-// Product assets, filter by appId
-const list2 = await asset.list({
+// Product assets, only those an app added
+const { items: appAssets } = await asset.list({
   scope: { type: 'product', collectionId, productId },
   appId: 'microapp-123',
 })
+
+// Admin: every asset in the collection, a page at a time, with a total
+const page = await asset.listAdmin({ collectionId, assetType: 'Image', limit: 50 })
+console.log(page.items.length, 'of', page.count, 'next:', page.nextCursor)
 ```
 
 #### Get (scoped)
@@ -519,13 +509,10 @@ If you maintain the parent proxy, ensure its handler for `_smartlinksProxyReques
 ```ts
 import { ai } from '@proveanything/smartlinks'
 
-const content = await ai.generateContent('collectionId', {
-  contents: 'Write a friendly product blurb for our coffee beans.',
-  responseMimeType: 'text/plain',
-  provider: 'openai',
-  model: 'gpt-4o'
+const reply = await ai.chat.completions.create('collectionId', {
+  messages: [{ role: 'user', content: 'Write a friendly product blurb for our coffee beans.' }],
 })
-console.log(content)
+console.log(reply.choices[0].message.content)
 ```
 
 ### Analytics (Actions & Broadcasts)

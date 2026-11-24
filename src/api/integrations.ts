@@ -13,27 +13,27 @@ import type {
   CreateFlowInput,
   UpdateFlowInput,
   ListFlowsQuery,
-  FlowList,
   RunFlowInput,
   RunFlowResult,
   RunFlowSummary,
   RunFlowEnqueued,
-  RecordTypesResponse,
+  RecordTypeInfo,
   FlowRun,
+  FlowRunItem,
   ListRunsQuery,
-  RunList,
   ListRunItemsQuery,
-  RunItemList,
   LoggingWindow,
   SetLoggingInput,
   InstalledConnector,
   SaveConnectorInstallationInput,
   ConnectorConsoleStep,
-  FailedRecordList,
+  FailedRecord,
+  FlowDirection,
   FlowHealth,
   IntegrationHealth,
   ProductLineage,
 } from "../types/integrations"
+import type { ListResult } from "../types/list"
 
 function enc(v: string) { return encodeURIComponent(v) }
 function encodeQuery(params: Record<string, any> = {}): string {
@@ -50,18 +50,31 @@ export namespace integrations {
   const base = (collectionId: string) =>
     `/admin/collection/${enc(collectionId)}/integrations/flows`
 
-  /** List flows in a collection. GET /integrations/flows */
-  export async function listFlows(collectionId: string, query: ListFlowsQuery = {}): Promise<FlowList> {
-    return request<FlowList>(`${base(collectionId)}${encodeQuery(query as any)}`)
+  /**
+   * List flows in a collection (all of them: this list has no pages). GET /integrations/flows
+   *
+   * @example
+   * ```typescript
+   * const { items } = await integrations.listFlows('coll_123', { direction: 'outbound', status: 'active' })
+   * ```
+   */
+  export async function listFlows(collectionId: string, query: ListFlowsQuery = {}): Promise<ListResult<IntegrationFlow>> {
+    return request<ListResult<IntegrationFlow>>(`${base(collectionId)}${encodeQuery(query as any)}`)
   }
 
   /**
    * Discover the app-record types present in a collection + which app owns each
-   * (introspected), for picking a sub-record source/trigger.
+   * (introspected), for picking a sub-record source/trigger. One list, no pages.
    * GET /integrations/record-types
+   *
+   * @example
+   * ```typescript
+   * const { items } = await integrations.listRecordTypes('coll_123')
+   * // items: [{ appId: 'warranty', recordType: 'claim', count: 42 }, …]
+   * ```
    */
-  export async function listRecordTypes(collectionId: string): Promise<RecordTypesResponse> {
-    return request<RecordTypesResponse>(`/admin/collection/${enc(collectionId)}/integrations/record-types`)
+  export async function listRecordTypes(collectionId: string): Promise<ListResult<RecordTypeInfo>> {
+    return request<ListResult<RecordTypeInfo>>(`/admin/collection/${enc(collectionId)}/integrations/record-types`)
   }
 
   /** Create a flow. POST /integrations/flows */
@@ -115,9 +128,19 @@ export namespace integrations {
   // request/response detail is captured only while enhanced logging is active for the
   // connection (see setLogging); otherwise runs carry metadata only.
 
-  /** List a flow's runs, newest first. GET /integrations/flows/:id/runs */
-  export async function listRuns(collectionId: string, flowId: string, query: ListRunsQuery = {}): Promise<RunList> {
-    return request<RunList>(`${base(collectionId)}/${enc(flowId)}/runs${encodeQuery(query as any)}`)
+  /**
+   * List a flow's runs, newest first. GET /integrations/flows/:id/runs
+   *
+   * @example
+   * ```typescript
+   * let page = await integrations.listRuns('coll_123', flowId, { status: 'failed', limit: 50 })
+   * while (page.nextCursor) {
+   *   page = await integrations.listRuns('coll_123', flowId, { status: 'failed', limit: 50, cursor: page.nextCursor })
+   * }
+   * ```
+   */
+  export async function listRuns(collectionId: string, flowId: string, query: ListRunsQuery = {}): Promise<ListResult<FlowRun>> {
+    return request<ListResult<FlowRun>>(`${base(collectionId)}/${enc(flowId)}/runs${encodeQuery(query as any)}`)
   }
 
   /** Get one run's summary. GET /integrations/flows/:id/runs/:runId */
@@ -129,16 +152,29 @@ export namespace integrations {
    * List a run's per-record items. GET /integrations/flows/:id/runs/:runId/items
    * `request`/`response` are populated only for items captured while enhanced logging
    * was active (and before the 24h body purge).
+   *
+   * @example
+   * ```typescript
+   * const { items, nextCursor } = await integrations.listRunItems('coll_123', flowId, runId, { status: 'failed', limit: 100 })
+   * ```
    */
   export async function listRunItems(
     collectionId: string, flowId: string, runId: string, query: ListRunItemsQuery = {}
-  ): Promise<RunItemList> {
-    return request<RunItemList>(`${base(collectionId)}/${enc(flowId)}/runs/${enc(runId)}/items${encodeQuery(query as any)}`)
+  ): Promise<ListResult<FlowRunItem>> {
+    return request<ListResult<FlowRunItem>>(`${base(collectionId)}/${enc(flowId)}/runs/${enc(runId)}/items${encodeQuery(query as any)}`)
   }
 
-  /** Every run touching an entity (e.g. a product), across flows. GET /integrations/runs/entity/:entityId */
-  export async function listEntityRuns(collectionId: string, entityId: string, query: { limit?: number } = {}): Promise<RunList> {
-    return request<RunList>(`/admin/collection/${enc(collectionId)}/integrations/runs/entity/${enc(entityId)}${encodeQuery(query as any)}`)
+  /**
+   * Every run touching an entity (e.g. a product), across flows, newest first. One list, no pages:
+   * `limit` says how many. GET /integrations/runs/entity/:entityId
+   *
+   * @example
+   * ```typescript
+   * const { items } = await integrations.listEntityRuns('coll_123', productId, { limit: 20 })
+   * ```
+   */
+  export async function listEntityRuns(collectionId: string, entityId: string, query: { limit?: number } = {}): Promise<ListResult<FlowRun>> {
+    return request<ListResult<FlowRun>>(`/admin/collection/${enc(collectionId)}/integrations/runs/entity/${enc(entityId)}${encodeQuery(query as any)}`)
   }
 
   // --- Enhanced logging window (per connection) ---------------------------
@@ -164,13 +200,20 @@ export namespace integrations {
   // A failed record is retried on its own with backoff; a permanent failure, or one out of attempts, is
   // 'dead' and waits for someone to retry it (or for the record to change).
 
-  /** A flow's failed / dead records. GET /integrations/flows/:id/failed */
+  /**
+   * A flow's failed / dead records, with the flow's `direction` beside the list. GET /integrations/flows/:id/failed
+   *
+   * @example
+   * ```typescript
+   * const { items, nextCursor, direction } = await integrations.listFailed('coll_123', flowId, { status: 'dead' })
+   * ```
+   */
   export async function listFailed(
     collectionId: string,
     flowId: string,
     query: { status?: 'failed' | 'dead'; limit?: number; cursor?: string } = {}
-  ): Promise<FailedRecordList> {
-    return request<FailedRecordList>(`${base(collectionId)}/${enc(flowId)}/failed${encodeQuery(query)}`)
+  ): Promise<ListResult<FailedRecord> & { direction: FlowDirection }> {
+    return request<ListResult<FailedRecord> & { direction: FlowDirection }>(`${base(collectionId)}/${enc(flowId)}/failed${encodeQuery(query)}`)
   }
 
   /** Retry failed / dead records now (all of them when `ids` is omitted). POST /integrations/flows/:id/failed/retry */
@@ -220,9 +263,16 @@ export namespace integrations {
   const connectorsBase = (collectionId: string) =>
     `/admin/collection/${enc(collectionId)}/integrations/connectors`
 
-  /** The collection's installed connector apps. GET /integrations/connectors */
-  export async function listConnectors(collectionId: string): Promise<{ connectors: InstalledConnector[] }> {
-    return request<{ connectors: InstalledConnector[] }>(connectorsBase(collectionId))
+  /**
+   * The collection's installed connector apps (all of them: this list has no pages). GET /integrations/connectors
+   *
+   * @example
+   * ```typescript
+   * const { items } = await integrations.listConnectors('coll_123')
+   * ```
+   */
+  export async function listConnectors(collectionId: string): Promise<ListResult<InstalledConnector>> {
+    return request<ListResult<InstalledConnector>>(connectorsBase(collectionId))
   }
 
   /** Save a connector's non-secret Connect-form values and/or settings. PUT /integrations/connectors/:appId/installation */
@@ -266,13 +316,19 @@ export namespace integrations {
 
   /**
    * PUBLIC (the Hub, a site): the connector actions the caller may invoke — those declared `public`,
-   * plus `member` ones when signed in.
+   * plus `member` ones when signed in. One list, no pages.
    * GET /public/collection/:collectionId/connectors/:appId/actions
+   *
+   * @example
+   * ```typescript
+   * const { items } = await integrations.listConnectorActions('coll_123', 'sessionm')
+   * const canRedeem = items.some((a) => a.name === 'redeem')
+   * ```
    */
   export async function listConnectorActions(
     collectionId: string,
     appId: string
-  ): Promise<{ actions: Array<{ name: string; title: string; description?: string; visibility: 'public' | 'member' | 'admin'; input?: Record<string, unknown>; output?: Record<string, unknown> }> }> {
+  ): Promise<ListResult<{ name: string; title: string; description?: string; visibility: 'public' | 'member' | 'admin'; input?: Record<string, unknown>; output?: Record<string, unknown> }>> {
     return request(`/public/collection/${enc(collectionId)}/connectors/${enc(appId)}/actions`)
   }
 

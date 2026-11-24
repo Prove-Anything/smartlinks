@@ -1,5 +1,6 @@
 import { request, post, patch } from "../http"
 import type { WalletPass, WalletPassRef, WalletPassSummary, WalletPassContent, IssueWalletPassRequest } from "../types/wallet"
+import type { ListResult } from "../types/list"
 
 /**
  * Wallet passes: an event ticket, booking, membership card or loyalty card in the person's Apple Wallet or
@@ -32,8 +33,17 @@ export namespace wallet {
     return post(`${pub(collectionId)}/links`, { ref })
   }
 
-  /** The signed-in person's active passes on this site, with their links. */
-  export async function mine(collectionId: string): Promise<{ ok: true; passes: WalletPassSummary[] }> {
+  /**
+   * The signed-in person's active passes on this site, with their links. All of them in one answer:
+   * `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await wallet.mine('coll_123')
+   * items.map((pass) => pass.links.google)
+   * ```
+   */
+  export async function mine(collectionId: string): Promise<ListResult<WalletPassSummary>> {
     return request(`${pub(collectionId)}/mine`)
   }
 
@@ -42,8 +52,17 @@ export namespace wallet {
     return request(`${adm(collectionId)}/status`)
   }
 
-  /** Passes for one thing (`refType` + `refId`) or one person (`contactId`) (admin). */
-  export async function list(collectionId: string, query: { refType?: string; refId?: string; contactId?: string; includeVoided?: boolean }): Promise<{ ok: true; passes: WalletPass[] }> {
+  /**
+   * Passes for one thing (`refType` + `refId`) or one person (`contactId`) (admin). All of them in one
+   * answer: `nextCursor` is always null. Voided passes are left out unless `includeVoided` is true.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await wallet.list('coll_123', { refType: 'event', refId: eventId })
+   * items // WalletPass[]
+   * ```
+   */
+  export async function list(collectionId: string, query: { refType?: string; refId?: string; contactId?: string; includeVoided?: boolean }): Promise<ListResult<WalletPass>> {
     const qs = new URLSearchParams(Object.entries(query).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)])).toString()
     return request(`${adm(collectionId)}/passes${qs ? `?${qs}` : ""}`)
   }

@@ -69,8 +69,8 @@ await bookings.slots.create(collectionId, appId, {
 await bookings.slots.createMany(collectionId, appId, sessions, { seriesId })
 
 // Public: open slots with places left
-const { data } = await bookings.slots.list(collectionId, appId, { from, to, available: true })
-data[0].remaining
+const { items, nextCursor } = await bookings.slots.list(collectionId, appId, { from, to, available: true })
+items[0].remaining
 ```
 
 Book seats:
@@ -234,7 +234,7 @@ confirm.
 ```ts
 // Signed-in booker
 await bookings.cancel(collectionId, appId, bookingId)
-const mine = await bookings.mine(collectionId, appId, { from: new Date() })
+const { items: mine } = await bookings.mine(collectionId, appId, { from: new Date() })
 
 // Guest, with the token from create
 const b = await bookings.get(collectionId, appId, bookingId, false, { editToken })

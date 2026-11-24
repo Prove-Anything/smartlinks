@@ -4,7 +4,7 @@
 import { initializeApi } from "../src/index";
 import { auth } from "../src/api/auth";
 import { collection } from "../src/api/collection";
-import { product } from "../src/api/product";
+import { products } from "../src/api/products";
 import { proof } from "../src/api/proof";
 import { batch } from "../src/api/batch";
 import { actions } from "../src/api/actions";
@@ -28,7 +28,7 @@ async function main() {
     // Example 2: Working with Collections (public access)
     console.log('\n=== Collections Example ===')
     try {
-      const collections = await collection.list(false) // Public endpoint
+      const { items: collections } = await collection.list() // the collections you can work on (signed in)
       console.log(`Found ${collections.length} collections`)
       
       if (collections.length > 0) {
@@ -45,15 +45,15 @@ async function main() {
         
         // Example 3: Working with Products
         console.log('\n=== Products Example ===')
-        const products = await product.list(firstCollection.id, false)
-        console.log(`Found ${products.length} products in collection`)
+        const { items: found } = await products.list(firstCollection.id, false)
+        console.log(`Found ${found.length} products in collection`)
         
-        if (products.length > 0) {
-          const firstProduct = products[0]
+        if (found.length > 0) {
+          const firstProduct = found[0]
           console.log(`First product: ${firstProduct.name}`)
           
           // Get product details
-          const productDetails = await product.get(firstCollection.id, firstProduct.id, false)
+          const productDetails = await products.get(firstCollection.id, firstProduct.id, false)
           console.log(`Product ID: ${productDetails.id}`)
         }
       }

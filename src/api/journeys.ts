@@ -2,11 +2,11 @@
 import { request, post, patch, del } from "../http"
 import type {
   JourneyRecord,
-  JourneyList,
   ListJourneysQuery,
   CreateJourneyBody,
   UpdateJourneyBody,
 } from "../types/journeys"
+import type { ListResult } from "../types/list"
 
 function encodeQuery(params: Record<string, any>): string {
   const search = new URLSearchParams()
@@ -29,13 +29,22 @@ export namespace journeys {
     return post<JourneyRecord>(path, body)
   }
 
-  // List
+  /**
+   * List the collection's journeys (admin).
+   * GET /admin/collection/:collectionId/journeys
+   *
+   * @example
+   * ```typescript
+   * let page = await journeys.list('coll_123', { active: true, limit: 50 })
+   * while (page.nextCursor) page = await journeys.list('coll_123', { active: true, limit: 50, cursor: page.nextCursor })
+   * ```
+   */
   export async function list(
     collectionId: string,
     query: ListJourneysQuery = {}
-  ): Promise<JourneyList> {
+  ): Promise<ListResult<JourneyRecord>> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/journeys/${encodeQuery(query as any)}`
-    return request<JourneyList>(path)
+    return request<ListResult<JourneyRecord>>(path)
   }
 
   // Get

@@ -1,5 +1,6 @@
 import { request, post } from "../http";
 import { Partner, PartnerClaimSet, CreatePartnerClaimSetRequest, PartnerTagHit, ClientErrorEvent } from "../types";
+import type { ListResult } from "../types/list";
 
 /**
  * Partners: organisations above collections (FanConnect, Zenith Coins, …) that own NFC claim sets and
@@ -8,9 +9,17 @@ import { Partner, PartnerClaimSet, CreatePartnerClaimSetRequest, PartnerTagHit, 
  * claimSet.ranges.* with scope { partnerId }.
  */
 export namespace partner {
-  /** The partners you belong to, with your role in each. Empty for everyone else. */
-  export async function list(): Promise<Partner[]> {
-    return request<Partner[]>(`/admin/partner`)
+  /**
+   * The partners you belong to, with your role in each. Returns `{ items, nextCursor }`: the partners are
+   * in `items` (empty for everyone else). The list is not paged, so `nextCursor` is always `null`.
+   *
+   * @example
+   * ```typescript
+   * const { items: partners } = await partner.list()
+   * ```
+   */
+  export async function list(): Promise<ListResult<Partner>> {
+    return request<ListResult<Partner>>(`/admin/partner`)
   }
 
   /** One partner (owners also see its members). */
@@ -18,9 +27,17 @@ export namespace partner {
     return request<Partner>(`/admin/partner/${encodeURIComponent(partnerId)}`)
   }
 
-  /** The partner's claim sets. */
-  export async function claimSets(partnerId: string): Promise<PartnerClaimSet[]> {
-    return request<PartnerClaimSet[]>(`/admin/partner/${encodeURIComponent(partnerId)}/claimSet`)
+  /**
+   * The partner's claim sets. Returns `{ items, nextCursor }`: the sets are in `items`. The list is not
+   * paged, so `nextCursor` is always `null`.
+   *
+   * @example
+   * ```typescript
+   * const { items: sets } = await partner.claimSets(partnerId)
+   * ```
+   */
+  export async function claimSets(partnerId: string): Promise<ListResult<PartnerClaimSet>> {
+    return request<ListResult<PartnerClaimSet>>(`/admin/partner/${encodeURIComponent(partnerId)}/claimSet`)
   }
 
   /** One of the partner's claim sets. */
@@ -33,20 +50,36 @@ export namespace partner {
     return post<PartnerClaimSet>(`/admin/partner/${encodeURIComponent(partnerId)}/claimSet`, params)
   }
 
-  /** Find a tag across the partner's sets by its chip UID (8 or 14 hex) or its code (printed or bare). Never returns keys. */
-  export async function lookupTags(partnerId: string, query: { uid?: string; code?: string }): Promise<PartnerTagHit[]> {
+  /**
+   * Find a tag across the partner's sets by its chip UID (8 or 14 hex) or its code (printed or bare).
+   * Returns `{ items, nextCursor }`: `items` has one hit for each of the partner's sets the tag is in
+   * (usually one; none if the tag isn't the partner's). Never returns keys. The list is not paged, so
+   * `nextCursor` is always `null`.
+   *
+   * @example
+   * ```typescript
+   * const { items: hits } = await partner.lookupTags(partnerId, { uid: '04A1B2C3D4E5F6' })
+   * ```
+   */
+  export async function lookupTags(partnerId: string, query: { uid?: string; code?: string }): Promise<ListResult<PartnerTagHit>> {
     const q = new URLSearchParams()
     if (query.uid) q.set('uid', query.uid)
     if (query.code) q.set('code', query.code)
-    return request<PartnerTagHit[]>(`/admin/partner/${encodeURIComponent(partnerId)}/tags/lookup?${q}`)
+    return request<ListResult<PartnerTagHit>>(`/admin/partner/${encodeURIComponent(partnerId)}/tags/lookup?${q}`)
   }
 
   /**
    * What phones reported about one chip (errors.report with entityType 'tag'), newest first: a tag that
    * failed to program or register, with the host's NFC log in context. For a chip in the partner's sets,
-   * or attempts that named one of them.
+   * or attempts that named one of them. Returns `{ items, nextCursor }`: the ten latest reports are in
+   * `items`. The list is not paged, so `nextCursor` is always `null`.
+   *
+   * @example
+   * ```typescript
+   * const { items: attempts } = await partner.tagAttempts(partnerId, '04A1B2C3D4E5F6')
+   * ```
    */
-  export async function tagAttempts(partnerId: string, uid: string): Promise<ClientErrorEvent[]> {
-    return request<ClientErrorEvent[]>(`/admin/partner/${encodeURIComponent(partnerId)}/tags/attempts?uid=${encodeURIComponent(uid)}`)
+  export async function tagAttempts(partnerId: string, uid: string): Promise<ListResult<ClientErrorEvent>> {
+    return request<ListResult<ClientErrorEvent>>(`/admin/partner/${encodeURIComponent(partnerId)}/tags/attempts?uid=${encodeURIComponent(uid)}`)
   }
 }

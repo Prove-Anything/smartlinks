@@ -1,6 +1,8 @@
 // Pickers: the small, cached list behind "pick a machine" or "pick a hold reason".
 // docs/admin-lists-and-pickers.md
 
+import type { ListResult } from './list';
+
 /** One entry a picker shows. */
 export interface AppOption {
   /** A record's id, or a value list value's code: what a record stores. */
@@ -17,6 +19,17 @@ export interface AppOption {
 export type AppOptionsResponse =
   /** `all`: every entry. `search`: the type is too large to send whole; these match `q`. */
   | { items: AppOption[]; version: string; mode: 'all' | 'search'; total?: number; unchanged?: undefined }
+  /** You already hold this version. */
+  | { unchanged: true; version: string };
+
+/**
+ * What `app.options.get` returns: the standard list shape plus the picker's `version` and `mode`.
+ * `count` is how many entries there are in all, where the server reports it. Pickers are not paged, so
+ * `nextCursor` is always `null`.
+ */
+export type AppOptionsList =
+  /** `all`: every entry. `search`: the type is too large to send whole; these match `q`. */
+  | (ListResult<AppOption> & { version: string; mode: 'all' | 'search'; unchanged?: undefined })
   /** You already hold this version. */
   | { unchanged: true; version: string };
 

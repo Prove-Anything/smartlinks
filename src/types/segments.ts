@@ -1,4 +1,5 @@
 // src/types/segments.ts
+import type { ListResult, ListOptions } from './list'
 
 // Filter rule types based on actual segment code
 export interface InteractionFilterValue {
@@ -93,17 +94,10 @@ export interface SegmentRecord {
 // create body: Omit<SegmentRecord, 'id' | 'collectionId' | 'createdAt'>
 // update body: Partial<Omit<SegmentRecord, 'id' | 'collectionId' | 'createdAt'>>
 
-export interface ListSegmentsQuery {
+/** `segments.list` options: the filters, plus `limit` and `cursor`. */
+export interface ListSegmentsQuery extends ListOptions {
   appId?: string
   filterType?: 'dynamic' | 'static'
-  limit?: number
-  offset?: number
-}
-
-export interface SegmentList {
-  items: SegmentRecord[]
-  limit: number
-  offset: number
 }
 
 export interface SegmentCalculateResult {
@@ -113,10 +107,7 @@ export interface SegmentCalculateResult {
   note?: string
 }
 
-export interface SegmentRecipientsResponse {
-  items: import('./comms').Recipient[]
-  limit: number
-  offset: number
-  total: number
+/** What `segments.recipients` returns: a page of contacts (`count` = how many in all), and sometimes a note. */
+export interface SegmentRecipientsResponse extends ListResult<import('./comms').Recipient> {
   note?: string
 }

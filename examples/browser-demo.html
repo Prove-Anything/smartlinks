@@ -54,7 +54,7 @@
     import { initializeApi, setBearerToken } from '../dist/index.js';
     import { auth } from '../dist/api/auth.js';
     import { collection } from '../dist/api/collection.js';
-    import { product } from '../dist/api/product.js';
+    import { products as productsApi } from '../dist/api/products.js';
 
     // Initialize the SDK
     initializeApi({
@@ -109,7 +109,7 @@
     window.loadCollections = async function() {
       try {
         log('Loading collections...');
-        const collections = await collection.list(false); // Public endpoint
+        const { items: collections } = await collection.list(); // the collections you can work on (signed in)
         currentCollections = collections;
         
         const select = document.getElementById('collection-select');
@@ -152,7 +152,7 @@
 
       try {
         log(`Loading products for collection ${selectedCollectionId}...`);
-        const products = await product.list(selectedCollectionId, false); // Public endpoint
+        const { items: products } = await productsApi.list(selectedCollectionId, false); // Public endpoint
         
         const productsDiv = document.getElementById('products-list');
         if (products.length === 0) {

@@ -14,12 +14,12 @@ import type {
   CreateBookingInput,
   UpdateBookingInput,
   MoveBookingInput,
-  BookingListQueryParams,
+  BookingListOptions,
   CreateSlotInput,
   UpdateSlotInput,
-  SlotListQueryParams,
+  SlotListOptions,
   CreateBlockInput,
-  BlockListQueryParams,
+  BlockListOptions,
   FreeBusyQuery,
   FreeBusyResponse,
   BookingAccessOptions,
@@ -27,7 +27,7 @@ import type {
   MessageBookersInput,
   MessageBookersResult,
 } from '../types/bookings'
-import type { PaginatedResponse } from '../types/appObjects'
+import type { ListResult } from '../types/list'
 
 function basePath(collectionId: string, appId: string, admin: boolean): string {
   const zone = admin ? 'admin' : 'public'
@@ -68,14 +68,34 @@ export namespace bookings {
     return post<Booking>(basePath(collectionId, appId, admin), input)
   }
 
-  /** List bookings (admin). GET /bookings */
-  export async function list(collectionId: string, appId: string, params?: BookingListQueryParams, admin: boolean = true): Promise<PaginatedResponse<Booking>> {
-    return request<PaginatedResponse<Booking>>(`${basePath(collectionId, appId, admin)}${query(params)}`)
+  /**
+   * List bookings (admin), a page at a time. `count` is how many match in all. There is no public
+   * list: a signed-in booker uses {@link mine}. GET /bookings
+   *
+   * @example
+   * ```typescript
+   * let page = await bookings.list(collectionId, appId, { status: 'confirmed', from: new Date(), limit: 50 })
+   * page.items      // Booking[]
+   * page.count      // how many match in all
+   * while (page.nextCursor) {
+   *   page = await bookings.list(collectionId, appId, { status: 'confirmed', from: new Date(), limit: 50, cursor: page.nextCursor })
+   * }
+   * ```
+   */
+  export async function list(collectionId: string, appId: string, params?: BookingListOptions, admin: boolean = true): Promise<ListResult<Booking>> {
+    return request<ListResult<Booking>>(`${basePath(collectionId, appId, admin)}${query(params)}`)
   }
 
-  /** The signed-in caller's own bookings (public). GET /bookings/mine */
-  export async function mine(collectionId: string, appId: string, params?: BookingListQueryParams): Promise<PaginatedResponse<Booking>> {
-    return request<PaginatedResponse<Booking>>(`${basePath(collectionId, appId, false)}/mine${query(params)}`)
+  /**
+   * The signed-in caller's own bookings (public), a page at a time. GET /bookings/mine
+   *
+   * @example
+   * ```typescript
+   * const { items, nextCursor, count } = await bookings.mine(collectionId, appId, { from: new Date() })
+   * ```
+   */
+  export async function mine(collectionId: string, appId: string, params?: Omit<BookingListOptions, 'contactId'>): Promise<ListResult<Booking>> {
+    return request<ListResult<Booking>>(`${basePath(collectionId, appId, false)}/mine${query(params)}`)
   }
 
   /**
@@ -167,9 +187,17 @@ export namespace bookings {
       return post<{ data: BookingSlot[] }>(`${basePath(collectionId, appId, true)}/slots/batch`, { slots, seriesId: opts?.seriesId })
     }
 
-    /** List slots. Public: open, public slots only, each with `remaining`. GET /bookings/slots */
-    export async function list(collectionId: string, appId: string, params?: SlotListQueryParams, admin: boolean = false): Promise<PaginatedResponse<BookingSlot>> {
-      return request<PaginatedResponse<BookingSlot>>(`${basePath(collectionId, appId, admin)}/slots${query(params)}`)
+    /**
+     * List slots, a page at a time. Public: open, public slots only, each with `remaining`.
+     * GET /bookings/slots
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor, count } = await bookings.slots.list(collectionId, appId, { from, to, available: true })
+     * ```
+     */
+    export async function list(collectionId: string, appId: string, params?: SlotListOptions, admin: boolean = false): Promise<ListResult<BookingSlot>> {
+      return request<ListResult<BookingSlot>>(`${basePath(collectionId, appId, admin)}/slots${query(params)}`)
     }
 
     /** GET /bookings/slots/:slotId */
@@ -199,8 +227,16 @@ export namespace bookings {
       return post<BookingAllocation>(`${basePath(collectionId, appId, true)}/blocks`, input)
     }
 
-    export async function list(collectionId: string, appId: string, params?: BlockListQueryParams): Promise<PaginatedResponse<BookingAllocation>> {
-      return request<PaginatedResponse<BookingAllocation>>(`${basePath(collectionId, appId, true)}/blocks${query(params)}`)
+    /**
+     * The blocks on a resource and/or in a date range, a page at a time. GET /bookings/blocks
+     *
+     * @example
+     * ```typescript
+     * const { items, nextCursor } = await bookings.blocks.list(collectionId, appId, { resourceType: 'record', resourceId: 'staff-1' })
+     * ```
+     */
+    export async function list(collectionId: string, appId: string, params?: BlockListOptions): Promise<ListResult<BookingAllocation>> {
+      return request<ListResult<BookingAllocation>>(`${basePath(collectionId, appId, true)}/blocks${query(params)}`)
     }
 
     export async function remove(collectionId: string, appId: string, blockId: string): Promise<{ success: boolean }> {

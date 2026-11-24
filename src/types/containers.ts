@@ -8,6 +8,8 @@
  * @see docs/container-tracking.md
  */
 
+import type { ListResult, ListOptions } from './list'
+
 // ─── Shared primitives ────────────────────────────────────────────────────────
 
 /** Lifecycle status of a container. Custom strings are permitted. */
@@ -151,26 +153,12 @@ export interface RemoveContainerItemsInput {
 
 // ─── Response shapes ──────────────────────────────────────────────────────────
 
-export interface ListContainersResponse {
+/**
+ * What findForItem answers: the item's current membership rows in `items` (each has `containerId`) and
+ * those containers. All of them in one answer: `nextCursor` is always null.
+ */
+export interface FindContainersForItemResponse extends ListResult<ContainerItem> {
   containers: Container[]
-  limit: number
-  offset: number
-}
-
-export interface PublicListContainersResponse {
-  containers: Container[]
-}
-
-/** What findForItem answers: the item's current membership rows (each has `containerId`) and those containers. */
-export interface FindContainersForItemResponse {
-  items: ContainerItem[]
-  containers: Container[]
-}
-
-export interface ContainerItemsResponse {
-  items: ContainerItem[]
-  limit: number
-  offset: number
 }
 
 export interface AddContainerItemsResponse {
@@ -184,7 +172,8 @@ export interface RemoveContainerItemsResponse {
 
 // ─── Query-parameter shapes ───────────────────────────────────────────────────
 
-export interface ListContainersParams {
+/** `containers.list` / `containers.publicList` options: the filters, plus `limit` (default 100) and `cursor`. */
+export interface ListContainersParams extends ListOptions {
   /** Filter by container type label */
   containerType?: string
   /** Filter by status */
@@ -195,11 +184,10 @@ export interface ListContainersParams {
   parentContainerId?: string
   /** When `true`, return only top-level containers (no `parentContainerId`) */
   topLevel?: boolean
-  /** Default 100 */
-  limit?: number
-  /** Default 0 */
-  offset?: number
 }
+
+/** What `containers.publicList` takes: the public list is always the active containers, so it has no `status` or `ref`. */
+export type PublicListContainersParams = Omit<ListContainersParams, 'status' | 'ref'>
 
 export interface GetContainerParams {
   /** When `true`, recursively embed child containers up to `treeDepth` levels */
@@ -210,13 +198,13 @@ export interface GetContainerParams {
   includeContents?: boolean
 }
 
-export interface ListContainerItemsParams {
+/**
+ * `containers.listItems` options. `limit` (default 200) and `cursor` page the membership log
+ * (`history: true`); the current contents come back whole.
+ */
+export interface ListContainerItemsParams extends ListOptions {
   /** When `true`, include removed items (full membership log); default `false` */
   history?: boolean
-  /** Default 100 */
-  limit?: number
-  /** Default 0 */
-  offset?: number
 }
 
 export interface FindContainersForItemParams {

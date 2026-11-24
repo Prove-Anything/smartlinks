@@ -577,8 +577,9 @@ export function initializeApi(options: {
    */
   appVersion?: string
   /**
-   * The API version to ask for, as year-month (for example `"2026-11"`). Defaults to the version this SDK
-   * release was built for (`API_VERSION`), which is what you want unless you are pinning an older contract.
+   * The API version to ask for, as year-month (for example `"2027-06"`). Defaults to the version this SDK
+   * release was built for (`API_VERSION`), which is what you want. A NEWER version can be asked for, to try
+   * it; an older one is ignored, because this SDK's functions return the shapes of its own version.
    */
   apiVersion?: string
   /**
@@ -678,7 +679,8 @@ export function initializeApi(options: {
     ? !!options.ngrokSkipBrowserWarning
     : inferredNgrok
   extraHeadersGlobal = options.extraHeaders ? { ...options.extraHeaders } : {}
-  apiVersionSent = options.apiVersion && /^\d{4}-(0[1-9]|1[0-2])$/.test(options.apiVersion) ? options.apiVersion : API_VERSION
+  // Year-month sorts as text, so "newer" is a plain comparison.
+  apiVersionSent = options.apiVersion && /^\d{4}-(0[1-9]|1[0-2])$/.test(options.apiVersion) && options.apiVersion >= API_VERSION ? options.apiVersion : API_VERSION
   clientAppVersion = options.appVersion ? String(options.appVersion).slice(0, 30) : null
   // Platform opt-in (native refresh tokens). Preserve an earlier value when a
   // re-init call omits it, so long-lived native sessions aren't downgraded by a

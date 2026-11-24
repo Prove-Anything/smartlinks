@@ -3,6 +3,7 @@ import type {
   FileRecord, PutFileRequest, FetchFileRequest, FetchedFile, ListFilesQuery,
   ExtractFileRequest, ExtractFileResponse, ReadFileResponse, FileLinkResponse,
 } from "../types/files"
+import type { ListResult } from "../types/list"
 
 /**
  * Files: temporary or kept files, web pages and documents fetched by address, and what's extracted from them
@@ -30,8 +31,16 @@ export namespace files {
   const adm = (collectionId: string) => `/admin/collection/${encodeURIComponent(collectionId)}/files`
   const one = (collectionId: string, fileId: string) => `${adm(collectionId)}/${encodeURIComponent(fileId)}`
 
-  /** Files on this site that aren't ordinary uploads: temporary, fetched, derived or generated (admin). */
-  export async function list(collectionId: string, query: ListFilesQuery = {}): Promise<{ ok: true; files: FileRecord[] }> {
+  /**
+   * Files on this site that aren't ordinary uploads: temporary, fetched, derived or generated (admin).
+   * They come back in one answer (`nextCursor` is always null); `limit` is the most it returns.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await files.list('coll_123', { appId: 'my-app', origin: 'fetched' })
+   * ```
+   */
+  export async function list(collectionId: string, query: ListFilesQuery = {}): Promise<ListResult<FileRecord>> {
     const qs = new URLSearchParams(Object.entries(query).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)])).toString()
     return request(`${adm(collectionId)}${qs ? `?${qs}` : ""}`)
   }

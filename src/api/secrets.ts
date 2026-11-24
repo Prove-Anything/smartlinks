@@ -17,11 +17,11 @@
 import { request, post, put as put_, del, getAppContext } from "../http"
 import type {
   SecretMeta,
-  SecretList,
   SetSecretInput,
   SetSecretResult,
   ListSecretsQuery,
 } from "../types/integrations"
+import type { ListResult } from "../types/list"
 
 function enc(v: string) { return encodeURIComponent(v) }
 function encodeQuery(params: Record<string, any> = {}): string {
@@ -57,9 +57,19 @@ export namespace secrets {
     return put_<SetSecretResult>(`${appBase(collectionId, opts)}/${enc(name)}`, { value })
   }
 
-  /** This app's secrets on the collection: names + masked hints (never values). GET /app/:appId/secrets */
-  export async function listOwn(collectionId: string, opts: AppSecretOptions = {}): Promise<SecretList> {
-    return request<SecretList>(appBase(collectionId, opts))
+  /**
+   * This app's secrets on the collection: names + masked hints (never values). Returns
+   * `{ items, nextCursor }`: the secrets are in `items`, each `ref` being the name you saved it under. The
+   * list is not paged, so `nextCursor` is always `null`. GET /app/:appId/secrets
+   *
+   * @example
+   * ```typescript
+   * const { items } = await secrets.listOwn('coll_123')
+   * // items: [{ ref: 'shop-api-key', hint: '••••1234', ... }]
+   * ```
+   */
+  export async function listOwn(collectionId: string, opts: AppSecretOptions = {}): Promise<ListResult<SecretMeta>> {
+    return request<ListResult<SecretMeta>>(appBase(collectionId, opts))
   }
 
   /** Delete this app's secret `name`. DELETE /app/:appId/secrets/:name */
@@ -67,9 +77,18 @@ export namespace secrets {
     return del<{ deleted: boolean }>(`${appBase(collectionId, opts)}/${enc(name)}`)
   }
 
-  /** List secrets as refs + masked hints + metadata (never values). GET /secrets */
-  export async function list(collectionId: string, query: ListSecretsQuery = {}): Promise<SecretList> {
-    return request<SecretList>(`${base(collectionId)}${encodeQuery(query as any)}`)
+  /**
+   * List secrets as refs + masked hints + metadata (never values). Returns `{ items, nextCursor }`: the
+   * secrets are in `items`, newest first. The list is not paged, so `nextCursor` is always `null`.
+   * `purpose` narrows it to one purpose. GET /secrets
+   *
+   * @example
+   * ```typescript
+   * const { items } = await secrets.list('coll_123', { purpose: 'integration' })
+   * ```
+   */
+  export async function list(collectionId: string, query: ListSecretsQuery = {}): Promise<ListResult<SecretMeta>> {
+    return request<ListResult<SecretMeta>>(`${base(collectionId)}${encodeQuery(query as any)}`)
   }
 
   /**

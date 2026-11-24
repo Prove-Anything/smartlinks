@@ -1,4 +1,5 @@
 // src/types/journeys.ts
+import type { ListOptions } from './list'
 
 export interface JourneyRecord {
   id: string
@@ -25,19 +26,12 @@ export interface JourneyRecord {
   updatedAt: string
 }
 
-export interface JourneyList {
-  items: JourneyRecord[]
-  limit: number
-  offset: number
-}
-
 // Query and body helper types used inline by API signatures
-export interface ListJourneysQuery {
+/** Options for journeys.list(): `limit` and `cursor` page the list. */
+export interface ListJourneysQuery extends ListOptions {
   appId?: string
   active?: boolean
   journeyType?: 'event_triggered' | 'scheduled'
-  limit?: number
-  offset?: number
 }
 
 export interface CreateJourneyBody {

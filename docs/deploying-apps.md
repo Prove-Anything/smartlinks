@@ -1,7 +1,7 @@
 # Deploying & registering an app
 
 > **SmartLinks SDK 2.x** (current `latest`). Part of the installable-app platform. Install
-> `@proveanything/smartlinks@^2`.
+> `@proveanything/smartlinks@^3`.
 
 A SmartLinks app is a bundle (widgets, containers, and — new — [server functions](server-functions.md))
 described by an `app.manifest.json`. Deploying an app has two halves:

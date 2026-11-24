@@ -39,8 +39,3 @@ export interface LocationSearchQuery {
   limit?: number // default 20; max 100
   sort?: 'name' | 'countryCode' | 'countryName' // default 'name'
 }
-
-export interface LocationSearchResponse {
-  items: Location[]
-  count: number
-}

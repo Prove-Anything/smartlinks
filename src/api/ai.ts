@@ -26,7 +26,7 @@ import type {
   AgentRunRequest,
   AgentRunResult,
   AgentToolsQuery,
-  AgentToolsResponse,
+  AgentToolDefinition,
   ToolRunResult,
   AiToolName,
   AiToolArgsMap,
@@ -36,7 +36,7 @@ import type {
   ClientToolDeclaration,
   RunWithClientToolsOptions,
   // Skills + catalog types
-  SkillsListResponse,
+  SkillDescriptor,
   CatalogResponse,
   Session,
   RateLimitStatus,
@@ -69,6 +69,7 @@ import type {
   AIUploadedFile,
   AICacheRef,
 } from "../types/ai"
+import type { ListResult } from "../types/list"
 
 // Re-export types for backwards compatibility
 export type {
@@ -197,15 +198,22 @@ namespace aiInternal {
     }
 
     /**
-     * List the tools the agent can use (optionally scoped by capability / name).
+     * List the tools the agent can use (optionally scoped by capability / name). Returns
+     * `{ items, nextCursor }`: the tools are in `items`. The list is not paged, so `nextCursor` is
+     * always `null`.
      * GET /admin/collection/:collectionId/ai/agent/tools
+     *
+     * @example
+     * ```typescript
+     * const { items: tools } = await ai.agent.listTools('coll_123', { allowCapabilities: 'read' })
+     * ```
      */
-    export async function listTools(collectionId: string, query: AgentToolsQuery = {}): Promise<AgentToolsResponse> {
+    export async function listTools(collectionId: string, query: AgentToolsQuery = {}): Promise<ListResult<AgentToolDefinition>> {
       const search = new URLSearchParams()
       for (const [k, v] of Object.entries(query)) { if (v) search.set(k, String(v)) }
       const qs = search.toString()
       const path = `/admin/collection/${encodeURIComponent(collectionId)}/ai/agent/tools${qs ? `?${qs}` : ''}`
-      return request<AgentToolsResponse>(path)
+      return request<ListResult<AgentToolDefinition>>(path)
     }
   }
 
@@ -249,9 +257,18 @@ namespace aiInternal {
   // ============================================================================
 
   export namespace skills {
-    /** List the skills apps can invoke (name, description, input/output schema). */
-    export async function list(collectionId: string): Promise<SkillsListResponse> {
-      return request<SkillsListResponse>(`/admin/collection/${encodeURIComponent(collectionId)}/ai/skills`)
+    /**
+     * List the skills apps can invoke (name, description, input/output schema). Returns
+     * `{ items, nextCursor }`: the skills are in `items`. The list is not paged, so `nextCursor` is
+     * always `null`.
+     *
+     * @example
+     * ```typescript
+     * const { items: skills } = await ai.skills.list('coll_123')
+     * ```
+     */
+    export async function list(collectionId: string): Promise<ListResult<SkillDescriptor>> {
+      return request<ListResult<SkillDescriptor>>(`/admin/collection/${encodeURIComponent(collectionId)}/ai/skills`)
     }
 
     /**
@@ -590,21 +607,6 @@ namespace aiInternal {
   // ============================================================================
 
   /**
-   * Generate text/content via AI (admin)
-   * @deprecated Use ai.chat.completions.create() instead
-   */
-  export async function generateContent(
-    collectionId: string,
-    params: AIGenerateContentRequest,
-    admin: boolean = true
-  ): Promise<AIGenerateContentResponse> {
-    const base = admin ? '/admin' : '/public'
-    const path = `${base}/collection/${encodeURIComponent(collectionId)}/ai/generateContent`
-    // Normalised envelope — text is at candidates[0].content.parts[0].text.
-    return post<AIGenerateContentResponse>(path, params)
-  }
-
-  /**
    * Generate an image via AI (admin)
    */
   export async function generateImage(collectionId: string, params: AIGenerateImageRequest): Promise<AIGenerateImageResponse> {
@@ -761,7 +763,6 @@ export const ai = {
     run: aiInternal.skills.run,
   },
   catalog: aiInternal.catalog,
-  generateContent: aiInternal.generateContent,
   generateImage: aiInternal.generateImage,
   searchPhotos: aiInternal.searchPhotos,
   uploadFile: aiInternal.uploadFile,

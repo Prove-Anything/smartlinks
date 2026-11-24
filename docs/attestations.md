@@ -238,13 +238,14 @@ const records = await attestations.createBatch('coll_123', [
 #### List attestations
 
 ```typescript
-const { attestations: records } = await attestations.list('coll_123', {
+const { items: records, nextCursor } = await attestations.list('coll_123', {
   subjectType:     'container',
   subjectId:       'cask-uuid',
   attestationType: 'temperature',
   recordedAfter:   '2025-01-01T00:00:00Z',
   limit:           50,
 })
+// nextCursor is null on the last page; otherwise pass it back as `cursor` for the next 50
 ```
 
 #### Time-series summary
@@ -315,7 +316,7 @@ const { latest, subjectCount } = await attestations.treeLatest('coll_123', {
 #### List (with optional owner elevation)
 
 ```typescript
-const { attestations: records, audience } = await attestations.publicList('coll_123', {
+const { items: records, nextCursor, audience } = await attestations.publicList('coll_123', {
   subjectType: 'proof',
   subjectId:   'proof-uuid',
 })
@@ -362,7 +363,7 @@ The public containers router re-exposes attestation endpoints pre-scoped to `sub
 
 ```typescript
 // List attestations for a container
-const { attestations: records } = await attestations.publicContainerList(
+const { items: records } = await attestations.publicContainerList(
   'coll_123',
   'cask-uuid',
   { attestationType: 'temperature', limit: 10 }
@@ -438,7 +439,7 @@ GET    /api/v1/admin/collection/:collectionId/attestations/tree-latest
 | `recordedAfter` | — | ISO 8601 lower bound |
 | `recordedBefore` | — | ISO 8601 upper bound |
 | `limit` | — | Default `100` |
-| `offset` | — | Default `0` |
+| `cursor` | — | The previous page's `nextCursor` |
 
 #### GET query parameters (summary)
 

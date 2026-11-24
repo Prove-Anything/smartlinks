@@ -86,8 +86,8 @@ export type {
   CommunicationEvent,
   CommsQueryByUser,
   CommsRecipientIdsQuery,
-  CommsRecipientsWithoutActionQuery,
-  CommsRecipientsWithActionQuery,
+  CommsRecipientsWithoutInteractionQuery,
+  CommsRecipientsWithInteractionQuery,
   RecipientId,
   RecipientWithOutcome,
   LogCommunicationEventBody,
@@ -128,11 +128,9 @@ export type {
   LotCreateInput,
   LotUpdateInput,
   ListLotsParams,
-  ListLotsResponse,
   LotMemberDiff,
   ResolveLotResponse,
   LotProductSummary,
-  ListLotProductsResponse,
   LotResolutionResult,
 } from "./types/lots"
 export type {
@@ -155,8 +153,8 @@ export type {
   ProductFacetValue,
   ProductImageUrlInput,
   ProductKey,
+  ProductQueryMeta,
   ProductQueryRequest,
-  ProductQueryResponse,
   ProductUpdateRequest,
   Product,
   ProductWriteInput,
@@ -182,7 +180,6 @@ export type {
   TranslationResolveOptions,
   TranslationRecord,
   TranslationListParams,
-  TranslationListResponse,
   TranslationUpdateRequest,
   TranslationRules,
   TranslationTerm,
@@ -247,7 +244,6 @@ export type {
 // Tags — polymorphic ref additions
 export type {
   ReverseTagLookupParams,
-  ReverseTagLookupResponse,
 } from "./types/tags"
 
 // Mobile Admin Container types & errors
@@ -271,12 +267,9 @@ export type {
   RfidLocateOptions,
   RfidLocateUpdate,
   RfidLocateSession,
-  ScannerEventSubscriber, // @deprecated — use AdminMobileEventCallback
   AdminMobileHostContext,
   AdminMobileComponentManifest,
   AdminMobileBundleManifest,
-  MobileAdminComponentManifest, // @deprecated — use AdminMobileComponentManifest
-  MobileAdminBundleManifest, // @deprecated — use AdminMobileBundleManifest
 } from './mobile-admin/types';
 export {
   HostCapabilityUnavailableError,

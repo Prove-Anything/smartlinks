@@ -4,8 +4,8 @@ import type {
   Location,
   LocationPayload,
   LocationSearchQuery,
-  LocationSearchResponse,
 } from "../types/location"
+import type { ListResult } from "../types/list"
 
 function buildQueryString(q: LocationSearchQuery = {}): string {
   const params = new URLSearchParams()
@@ -41,16 +41,22 @@ export namespace location {
   }
 
   /**
-   * Admin: Search locations to pick during setup (combines collection + global)
+   * Admin: Search locations to pick during setup (combines collection + global). One list, no pages:
+   * `limit` says how many (default 20, at most 100).
    * GET /admin/collection/:collectionId/location/search
+   *
+   * @example
+   * ```typescript
+   * const { items } = await location.search('coll_123', { q: 'distillery', countryCode: 'GB', limit: 10 })
+   * ```
    */
   export async function search(
     collectionId: string,
     query: LocationSearchQuery = {}
-  ): Promise<LocationSearchResponse> {
+  ): Promise<ListResult<Location>> {
     const qs = buildQueryString(query)
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/location/search${qs}`
-    return request<LocationSearchResponse>(path)
+    return request<ListResult<Location>>(path)
   }
 
   /**

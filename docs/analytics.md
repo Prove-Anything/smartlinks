@@ -576,15 +576,16 @@ There is no singular `source` filter field for this reason - use `sources: ['por
 ### Raw events
 
 ```typescript
-const rows = await analytics.admin.events('demo-collection', {
+const page = await analytics.admin.events('demo-collection', {
   source: 'tag',
   eventType: 'scan_tag',
   from: '2026-03-01T00:00:00Z',
   to: '2026-03-31T23:59:59Z',
   limit: 100,
-  offset: 0,
   sort: 'desc',
 })
+// page.items → the event rows
+// page.nextCursor → pass it back as `cursor` (with the same filters) for the next 100; null on the last page
 ```
 
 ---

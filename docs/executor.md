@@ -1,6 +1,6 @@
 # SmartLinks Executor Model
 
-> **SDK:** `@proveanything/smartlinks@^2.0` (R5 baseline; build against 2.0.7+)
+> **SDK:** `@proveanything/smartlinks@^3` (R5 baseline)
 
 ---
 

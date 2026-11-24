@@ -128,7 +128,7 @@ GET /asset
 | `sort`      | string | `createdAt` (default), `name`, `size`, `assetType` |
 | `order`     | string | `desc` (default), `asc` |
 | `limit`     | number | Max results (default 50, max 200) |
-| `offset`    | number | Pagination offset |
+| `cursor`    | string | The `nextCursor` from the previous page |
 | `include`   | string | `temporary`, `derived` (comma-separated): also list files that are normally left out |
 
 Lists show only what people put there. Temporary files and files extracted from other files (see
@@ -137,18 +137,32 @@ Lists show only what people put there. Temporary files and files extracted from 
 **Response:**
 
 ```typescript
-{ data: Asset[], total: number, limit: number, offset: number }
+{ items: Asset[], nextCursor: string | null, count?: number }
 ```
+
+`nextCursor` is `null` on the last page. `count` (how many match in all) is there when you gave a `limit`
+or a `cursor`.
 
 **SDK:**
 
 ```typescript
-const { data, total } = await Api.asset.listAdmin({
+let page = await Api.asset.listAdmin({
   collectionId: 'my-collection',
   assetType: 'Image',
   labels: 'hero,banner',
   limit: 20,
 })
+const images = [...page.items]
+while (page.nextCursor) {
+  page = await Api.asset.listAdmin({
+    collectionId: 'my-collection',
+    assetType: 'Image',
+    labels: 'hero,banner',
+    limit: 20,
+    cursor: page.nextCursor,
+  })
+  images.push(...page.items)
+}
 ```
 
 ---

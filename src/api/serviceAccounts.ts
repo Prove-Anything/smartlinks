@@ -37,7 +37,14 @@ export namespace serviceAccounts {
   /**
    * The service accounts that work on this collection — its own (`home: true`, with `alsoOn`) and other
    * collections' (`home: false`, with `homeCollection`) — never their keys, and the access levels that can be
-   * given. GET /service-accounts
+   * given (`access`). All of them in one answer: `nextCursor` is always null. GET /service-accounts
+   *
+   * @example
+   * ```typescript
+   * const { items, access } = await serviceAccounts.list('coll_123')
+   * items  // ServiceAccount[]
+   * access // ["User", "Reporter", "Assigner", "Admin"]
+   * ```
    */
   export async function list(collectionId: string): Promise<ServiceAccountList> {
     return request<ServiceAccountList>(base(collectionId))

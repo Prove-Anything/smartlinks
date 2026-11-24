@@ -1,6 +1,7 @@
 // src/types/interaction.ts
 
 import type { IdField } from './common'
+import type { ListOptions } from './list'
 
 // Admin analytics inputs (Interactions)
 export interface AdminInteractionsQueryRequest {
@@ -85,7 +86,6 @@ export interface PublicInteractionsCountsByOutcomeRequest {
 export interface PublicInteractionsByUserRequest {
   appId?: string
   interactionId?: string
-  scope?: string
   from?: string
   to?: string
   limit?: number
@@ -227,12 +227,6 @@ export interface InteractionTypeRecord {
   createdAt: string
 }
 
-export interface InteractionTypeList {
-  items: InteractionTypeRecord[]
-  limit: number
-  offset: number
-}
-
 /**
  * Body for interactions.create(). The SERVER mints the type's id (a UUID) — read it from the
  * returned record. Prefer interactions.ensureType(), which also finds an existing type by its key.
@@ -262,10 +256,9 @@ export interface UpdateInteractionTypeBody {
   data?: Record<string, unknown>
 }
 
-export interface ListInteractionTypesQuery {
+/** Options for interactions.list() / publicList(): `limit` and `cursor` page the list. */
+export interface ListInteractionTypesQuery extends ListOptions {
   appId?: string
-  limit?: number
-  offset?: number
 }
 
 export interface SubmitInteractionResponse {

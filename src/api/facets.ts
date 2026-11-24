@@ -42,6 +42,15 @@ function buildQueryString(params?: object): string {
  * aggregation buckets for browse and filter UIs.
  */
 export namespace facets {
+  /**
+   * The collection's facets (admin). All of them come back in one answer: `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await facets.list('coll_123', { kind: 'custom' })
+   * items.map(f => f.key) // ["brand", "material", …]
+   * ```
+   */
   export async function list(
     collectionId: string,
     params?: FacetListParams
@@ -84,6 +93,15 @@ export namespace facets {
     return del<void>(path)
   }
 
+  /**
+   * One facet and all its values (admin). The values are in `items`; `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { facet, items } = await facets.listValues('coll_123', 'brand')
+   * items.map(v => v.name)
+   * ```
+   */
   export async function listValues(
     collectionId: string,
     facetKey: string,
@@ -131,6 +149,18 @@ export namespace facets {
     return del<void>(path)
   }
 
+  /**
+   * Facet counts for a set of products (admin): each facet with its values in `items`, and the
+   * count for each value in `buckets`. Everything comes back in one answer: `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items, buckets, meta } = await facets.query('coll_123', {
+   *   facetKeys: ['brand', 'material'],
+   *   query: { facetEquals: { brand: 'acme' } },
+   * })
+   * ```
+   */
   export async function query(
     collectionId: string,
     body: FacetQueryRequest
@@ -139,6 +169,14 @@ export namespace facets {
     return post<FacetQueryResponse>(path, body)
   }
 
+  /**
+   * The facet namespaces in use (admin). The names are in `items`; `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await facets.namespaces('coll_123') // items: string[]
+   * ```
+   */
   export async function namespaces(
     collectionId: string
   ): Promise<FacetNamespaceListResponse> {
@@ -146,6 +184,14 @@ export namespace facets {
     return request<FacetNamespaceListResponse>(path)
   }
 
+  /**
+   * The collection's facets (public). All of them come back in one answer: `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await facets.publicList('coll_123', { namespace: 'catalog' })
+   * ```
+   */
   export async function publicList(
     collectionId: string,
     params?: PublicFacetListParams
@@ -163,6 +209,14 @@ export namespace facets {
     return request<FacetDefinition>(path)
   }
 
+  /**
+   * One facet and all its values (public). The values are in `items`; `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { facet, items } = await facets.publicListValues('coll_123', 'brand')
+   * ```
+   */
   export async function publicListValues(
     collectionId: string,
     facetKey: string
@@ -180,6 +234,15 @@ export namespace facets {
     return request<FacetValueResponse>(path)
   }
 
+  /**
+   * Facet counts for a set of products (public): each facet with its values in `items`, and the
+   * count for each value in `buckets`. Everything comes back in one answer: `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items, buckets } = await facets.publicQuery('coll_123', { facetKeys: ['brand'] })
+   * ```
+   */
   export async function publicQuery(
     collectionId: string,
     body: FacetQueryRequest
@@ -188,6 +251,14 @@ export namespace facets {
     return post<FacetQueryResponse>(path, body)
   }
 
+  /**
+   * The facet namespaces in use (public). The names are in `items`; `nextCursor` is always null.
+   *
+   * @example
+   * ```typescript
+   * const { items } = await facets.publicNamespaces('coll_123') // items: string[]
+   * ```
+   */
   export async function publicNamespaces(
     collectionId: string
   ): Promise<FacetNamespaceListResponse> {

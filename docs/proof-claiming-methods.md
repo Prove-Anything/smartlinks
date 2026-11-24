@@ -132,7 +132,7 @@ console.log('You now own this product');
 Apps typically know which method to use based on product configuration:
 
 ```typescript
-const product = await product.get(collectionId, productId);
+const product = await products.get(collectionId, productId);
 
 if (product.admin?.allowAutoGenerateClaims) {
   // Show simple registration button
@@ -654,7 +654,7 @@ await collection.update('my-collection', {
 });
 
 // Or override at product level
-await product.update('my-collection', 'moisturizer-pro', {
+await products.update('my-collection', 'moisturizer-pro', {
   admin: {
     allowAutoGenerateClaims: true
   }
@@ -819,7 +819,7 @@ if (proofData.claimable && proofData.virtual) {
 ### Admin: Check Product Settings
 
 ```typescript
-const product = await product.get(collectionId, productId);
+const product = await products.get(collectionId, productId);
 
 // Check what claiming methods are available
 const methods = {
@@ -839,11 +839,11 @@ console.log('Available claiming methods:', methods);
 
 ```typescript
 // Enable for all cosmetics products
-const products = await product.list('beauty-collection');
+const { items } = await products.list('beauty-collection');
 
-for (const prod of products) {
+for (const prod of items) {
   if (prod.category === 'cosmetics') {
-    await product.update('beauty-collection', prod.id, {
+    await products.update('beauty-collection', prod.id, {
       admin: {
         ...prod.admin,
         allowAutoGenerateClaims: true

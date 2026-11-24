@@ -69,19 +69,11 @@ export interface ListLotsParams {
   includeDeleted?: boolean
 }
 
-export interface ListLotsResponse { lots: Lot[] }
-
 /** Member changes returned by resolve/update-with-selector-change. */
 export interface LotMemberDiff { added: string[]; removed: string[] }
 export interface ResolveLotResponse { lot: Lot; diff: LotMemberDiff }
 
 export interface LotProductSummary { id: string; name?: string; gtin?: string | null }
-export interface ListLotProductsResponse {
-  products: LotProductSummary[]
-  total: number
-  page: number
-  limit: number
-}
 
 /**
  * Typed result of GS1 AI(10) resolution. The server decides batch-vs-lot based on

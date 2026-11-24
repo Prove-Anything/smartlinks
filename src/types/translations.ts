@@ -1,3 +1,5 @@
+import type { ListOptions } from './list'
+
 export type TranslationLookupMode = 'cache-fill' | 'cache-only'
 
 export type TranslationContentType = 'text/plain' | 'text/html' | 'text/x-liquid' | (string & {})
@@ -100,7 +102,8 @@ export interface TranslationRecord {
   updatedAt: string
 }
 
-export interface TranslationListParams {
+/** `translations.list` options: the filters, plus `limit` and `cursor`. */
+export interface TranslationListParams extends ListOptions {
   targetLanguage?: string
   sourceLanguage?: string
   contentType?: string
@@ -109,15 +112,6 @@ export interface TranslationListParams {
   isOverride?: boolean
   /** Only translations that don't use the site's required wording (see TranslationRules). */
   termIssues?: boolean
-  limit?: number
-  offset?: number
-}
-
-export interface TranslationListResponse {
-  items: TranslationRecord[]
-  total?: number
-  limit?: number
-  offset?: number
 }
 
 export interface TranslationUpdateRequest {

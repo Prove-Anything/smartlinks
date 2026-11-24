@@ -50,6 +50,7 @@ import type {
   MfaFactorsResponse,
   TrustedDevice,
 } from "../types/authKit"
+import type { ListResult } from "../types/list"
 
 /**
  * Namespace containing helper functions for the new AuthKit API.
@@ -512,9 +513,18 @@ export namespace authKit {
     return requestWithOptions<SuccessResponse>(path, { method: 'DELETE', body: JSON.stringify({ password }) })
   }
 
-  /** List devices trusted to skip MFA challenges for the current user (authenticated). */
-  export async function listTrustedDevices(clientId: string): Promise<{ devices: TrustedDevice[] }> {
-    return request<{ devices: TrustedDevice[] }>(`/authkit/${encodeURIComponent(clientId)}/mfa/trusted-devices`)
+  /**
+   * List devices trusted to skip MFA challenges for the current user (authenticated). Returns
+   * `{ items, nextCursor }`: the devices are in `items`. The list is not paged, so `nextCursor` is
+   * always `null`.
+   *
+   * @example
+   * ```typescript
+   * const { items: devices } = await authKit.listTrustedDevices(clientId)
+   * ```
+   */
+  export async function listTrustedDevices(clientId: string): Promise<ListResult<TrustedDevice>> {
+    return request<ListResult<TrustedDevice>>(`/authkit/${encodeURIComponent(clientId)}/mfa/trusted-devices`)
   }
 
   /** Revoke a single trusted device by id (authenticated). */
@@ -545,10 +555,18 @@ export namespace authKit {
     return request<AuthKitConfig>(path)
   }
 
-  export async function list(collectionId: string, admin?: boolean): Promise<AuthKitConfig[]> {
-    const base = admin ? "/admin" : "/public"
-    const path = `${base}/collection/${encodeURIComponent(collectionId)}/authKit`
-    return request<AuthKitConfig[]>(path)
+  /**
+   * List a collection's AuthKit configs (admin). Returns `{ items, nextCursor }`: the configs are in
+   * `items`. The list is not paged, so `nextCursor` is always `null`. There is no public list.
+   *
+   * @example
+   * ```typescript
+   * const { items: kits } = await authKit.list('coll_123')
+   * ```
+   */
+  export async function list(collectionId: string): Promise<ListResult<AuthKitConfig>> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit`
+    return request<ListResult<AuthKitConfig>>(path)
   }
 
   /** Create an AuthKit client config (admin). Accepts the account `security` policy — see {@link AuthKitConfigInput}. */

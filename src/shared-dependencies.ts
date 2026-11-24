@@ -12,7 +12,7 @@
 // See docs/host-dependency-contract.md.
 
 /** Current contract revision. Bumped when the entry list or host versions change. */
-export const SHARED_DEPENDENCY_CONTRACT_VERSION = 'v7' as const;
+export const SHARED_DEPENDENCY_CONTRACT_VERSION = 'v8' as const;
 
 export interface SharedDependency {
   /** Bare import specifier the app writes, e.g. `react-dom/client`. */
@@ -28,8 +28,8 @@ export interface SharedDependency {
 /**
  * Canonical import-map path for a specifier: drop the leading `@` scope marker and
  * turn every `/` into `-`.
- *   'react-dom/client'      -> '/sl-shared/v7/react-dom-client.js'
- *   '@radix-ui/react-slot'  -> '/sl-shared/v7/radix-ui-react-slot.js'
+ *   'react-dom/client'      -> '/sl-shared/v8/react-dom-client.js'
+ *   '@radix-ui/react-slot'  -> '/sl-shared/v8/radix-ui-react-slot.js'
  * Hosts MUST serve shims at these paths so the map the SDK advertises resolves.
  */
 export function importMapPathFor(
@@ -42,7 +42,14 @@ export function importMapPathFor(
 
 type ContractEntry = Omit<SharedDependency, 'importMapPath'>;
 
-// The 29-entry v7 contract: the v6 set plus `dompurify` (HTML sanitizer — pairs with
+// v8 is the v7 set with SDK 3 in place of SDK 2. SDK 3 changes what the SDK's functions return (every
+// list is { items, nextCursor, count? }) and drops the deprecated calls, so a host cannot swap it in under
+// apps built for SDK 2. Instead a host serves BOTH: a v7 app keeps resolving SDK 2 (/sl-shared/v7/…,
+// window.SL) and a v8 app resolves SDK 3 (/sl-shared/v8/…, window.SL3). The same goes for the auth UI
+// package, which imports the SDK: its SDK-3 major is window.SmartlinksAuthUI3. Every other entry is the
+// same library at the same version in both, and the host serves ONE copy of each (two Reacts would crash).
+//
+// The 29-entry v7 contract was: the v6 set plus `dompurify` (HTML sanitizer — pairs with
 // the shared `marked` so output apps sanitize instead of each bundling their own),
 // `clsx` + `tailwind-merge` (the standard `cn()` pair the portal/hub already ship, now
 // exposed to apps). All small, version-stable, ubiquitous — apps stop bundling copies.
@@ -54,8 +61,8 @@ const CONTRACT: ContractEntry[] = [
   { specifier: 'react-dom/client', globalName: 'ReactDOMClient', minVersion: '19.0.0' },
   { specifier: 'react/jsx-runtime', globalName: 'jsxRuntime', minVersion: '19.0.0' },
   { specifier: 'react/jsx-dev-runtime', globalName: 'jsxDevRuntime', minVersion: '19.0.0' },
-  { specifier: '@proveanything/smartlinks', globalName: 'SL', minVersion: '2.0.0' },
-  { specifier: '@proveanything/smartlinks-auth-ui', globalName: 'SmartlinksAuthUI', minVersion: '2.0.0' },
+  { specifier: '@proveanything/smartlinks', globalName: 'SL3', minVersion: '3.0.0' },
+  { specifier: '@proveanything/smartlinks-auth-ui', globalName: 'SmartlinksAuthUI3', minVersion: '3.0.0' },
   { specifier: 'react-router-dom', globalName: 'ReactRouterDOM', minVersion: '7.18.4' },
   { specifier: '@tanstack/react-query', globalName: 'ReactQuery', minVersion: '5.0.0' },
   { specifier: 'lucide-react', globalName: 'LucideReact', minVersion: '1.0.0' },

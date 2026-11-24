@@ -232,13 +232,6 @@ export type AdminMobileEventCallback = (event: AdminMobileEvent) => void;
 export type AdminMobileEventSubscriber = (cb: AdminMobileEventCallback) => () => void;
 
 /**
- * @deprecated Renamed to `AdminMobileEventCallback` in 1.12.
- * Will be removed in a future minor release.
- * @see AdminMobileEventCallback
- */
-export type ScannerEventSubscriber = AdminMobileEventCallback;
-
-/**
  * The `host` prop passed to every mobile admin container component.
  *
  * @example
@@ -433,15 +426,3 @@ export interface AdminMobileBundleManifest {
   };
   components: AdminMobileComponentManifest[];
 }
-
-/**
- * @deprecated Renamed to `AdminMobileComponentManifest` in 1.12.
- * @see AdminMobileComponentManifest
- */
-export type MobileAdminComponentManifest = AdminMobileComponentManifest;
-
-/**
- * @deprecated Renamed to `AdminMobileBundleManifest` in 1.12.
- * @see AdminMobileBundleManifest
- */
-export type MobileAdminBundleManifest = AdminMobileBundleManifest;

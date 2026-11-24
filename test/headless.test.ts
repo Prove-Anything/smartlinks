@@ -109,7 +109,7 @@ test('every recipe says what the call returns and where the fields are — even 
   m.data.types['tip.item'].read = { list: "SL.app.records.list(collectionId, appId, { recordType: 'tip', limit: 200 })" }
   const r = validate(m).recipes['tip.item']
   assert.match(r.list, /limit: 200/) // the app's own recipe is kept…
-  assert.match(r.returns, /items are in response\.data \(not response\.items/) // …and the platform's shape is added
+  assert.match(r.returns, /items are in response\.items \(not response\.data/) // …and the platform's shape is added
   assert.match(r.item, /record\.data \(e\.g\. record\.data\.title\)/)
   assert.match(validate(good()).recipes['tip.topic'].item, /record\.data\.name/)
 })

@@ -1,6 +1,7 @@
 // src/api/nfc.ts
 import { post, request } from "../http"
 import type { NfcValidateRequest, NfcValidateResponse, NfcTagInfo, NfcClaimTagRequest } from "../types/nfc"
+import type { ListResult } from "../types/list"
 
 export namespace nfc {
   /**
@@ -20,10 +21,15 @@ export namespace nfc {
   }
 
   /**
-   * Lookup a tag by its ID (public).
+   * Lookup a tag by its ID (public): every code that tag is known as. One list, no pages.
    * GET /public/nfc/findByTag/:tagId
+   *
+   * @example
+   * ```typescript
+   * const { items } = await nfc.lookupTag('04A1B2C3D4E5F6')
+   * ```
    */
-  export async function lookupTag(tagId: string): Promise<NfcTagInfo[]> {
-    return request<NfcTagInfo[]>(`/public/nfc/findByTag/${encodeURIComponent(tagId)}`)
+  export async function lookupTag(tagId: string): Promise<ListResult<NfcTagInfo>> {
+    return request<ListResult<NfcTagInfo>>(`/public/nfc/findByTag/${encodeURIComponent(tagId)}`)
   }
 }

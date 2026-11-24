@@ -1,4 +1,5 @@
 // src/types/jobs.ts
+import type { ListOptions } from './list'
 
 export type JobStatus = 'queued' | 'running' | 'errored'
 
@@ -17,19 +18,12 @@ export interface Job {
   status: JobStatus
 }
 
-export interface ListJobsQuery {
+/** Options for jobs.listJobs(): `limit` and `cursor` page the list. */
+export interface ListJobsQuery extends ListOptions {
   state?: JobStatus
   task?: string
-  limit?: number
-  offset?: number
   from?: string
   to?: string
-}
-
-export interface JobsPage {
-  items: Job[]
-  limit: number
-  offset: number
 }
 
 export interface EnqueueAsyncJobRequest {

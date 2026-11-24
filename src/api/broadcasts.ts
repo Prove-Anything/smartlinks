@@ -3,7 +3,6 @@ import { request, post, patch, del } from "../http"
 import type {
   ListBroadcastsQuery,
   BroadcastRecord,
-  BroadcastList,
   BroadcastRecipientsResponse,
   BroadcastPreviewRequest,
   BroadcastPreviewResponse,
@@ -17,6 +16,7 @@ import type {
   BroadcastSendRequest,
 } from "../types/broadcasts"
 import type { AppendResult, AppendBulkResult } from "../types/comms"
+import type { ListResult, ListOptions } from "../types/list"
 
 function encodeQuery(params: Record<string, any>): string {
   const search = new URLSearchParams()
@@ -42,13 +42,22 @@ export namespace broadcasts {
     return post<BroadcastRecord>(path, body)
   }
 
-  // CRUD: List broadcasts (GET with query)
+  /**
+   * The collection's broadcasts, a page at a time. Filter by the app that owns them (`appId`).
+   *
+   * @example
+   * ```typescript
+   * let page = await broadcasts.list('coll_123', { appId: 'newsletter', limit: 50 })
+   * page.items // BroadcastRecord[]
+   * while (page.nextCursor) page = await broadcasts.list('coll_123', { appId: 'newsletter', limit: 50, cursor: page.nextCursor })
+   * ```
+   */
   export async function list(
     collectionId: string,
     query: ListBroadcastsQuery = {}
-  ): Promise<BroadcastList> {
+  ): Promise<ListResult<BroadcastRecord>> {
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeQuery(query as any)}`
-    return request<BroadcastList>(path)
+    return request<ListResult<BroadcastRecord>>(path)
   }
 
   // CRUD: Get a single broadcast
@@ -79,11 +88,22 @@ export namespace broadcasts {
     return del<void>(path)
   }
 
-  // Recipients listing for a broadcast
+  /**
+   * The contacts a broadcast goes to (its segment), a page at a time. `count` is how many there are in
+   * all. A broadcast with no segment answers an empty page with a `note`.
+   *
+   * @example
+   * ```typescript
+   * const page = await broadcasts.recipients('coll_123', 'broadcast_1', { limit: 50 })
+   * page.items      // Recipient[]
+   * page.count      // how many in all
+   * page.nextCursor // pass back as `cursor` for the next page; null on the last
+   * ```
+   */
   export async function recipients(
     collectionId: string,
     id: string,
-    query: { limit?: number; offset?: number } = {}
+    query: ListOptions = {}
   ): Promise<BroadcastRecipientsResponse> {
     const qs = encodeQuery(query as any)
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/recipients${qs}`

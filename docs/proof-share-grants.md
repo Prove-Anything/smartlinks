@@ -54,7 +54,7 @@ const grant = await proof.createGrant(collectionId, productId, proofId, {
 const shareUrl = `https://app.example.com/album?proofId=${proofId}&shareToken=${grant.token}`
 
 // List active + past grants (tokens are never included).
-const grants = await proof.listGrants(collectionId, productId, proofId)
+const { items: grants } = await proof.listGrants(collectionId, productId, proofId)
 
 // Stop sharing — takes effect on the very next request from any client.
 await proof.revokeGrant(collectionId, productId, proofId, grant.grantId)
