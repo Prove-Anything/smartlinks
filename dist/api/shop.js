@@ -4,19 +4,9 @@
 // basket, and only Stripe's webhook marks an order paid.
 import { request, post, put, patch, del } from '../http.js';
 import { formatMinor } from '../utils/money.js';
+import { listQuery } from '../list.js';
 const pub = (collectionId) => `/public/collection/${encodeURIComponent(collectionId)}/shop`;
 const adm = (collectionId) => `/admin/collection/${encodeURIComponent(collectionId)}/shop`;
-function qs(params) {
-    if (!params)
-        return '';
-    const parts = [];
-    for (const [k, v] of Object.entries(params)) {
-        if (v === undefined || v === null || v === '')
-            continue;
-        parts.push(`${encodeURIComponent(k)}=${encodeURIComponent(Array.isArray(v) ? v.join(',') : String(v))}`);
-    }
-    return parts.length ? `?${parts.join('&')}` : '';
-}
 export var shop;
 (function (shop) {
     /**
@@ -29,17 +19,21 @@ export var shop;
     shop.config = config;
     /**
      * What is for sale, in the shop's currency, with stock (`inStock`, `available`) and whether the buyer must
-     * sign in first (`needsSignIn`: a proof or access goes to an account). Everything for sale comes in one
-     * answer (`nextCursor` is always null), with the shop's `currency` beside the list.
+     * sign in first (`needsSignIn`: a proof or access goes to an account). A page at a time: page with
+     * `limit` (50 unless you say) and `cursor`. The shop's `currency` comes beside the list. Pass
+     * `productIds` for just those products.
      *
      * @example
      * ```typescript
-     * const { items, currency } = await shop.products(collectionId)
-     * items.map((p) => `${p.name}: ${formatMoney(p.amount, p.currency)}${p.inStock ? '' : ' (sold out)'}`)
+     * let page = await shop.products(collectionId, { limit: 50 })
+     * page.items.map((p) => `${p.name}: ${formatMoney(p.amount, p.currency)}${p.inStock ? '' : ' (sold out)'}`)
+     * while (page.nextCursor) page = await shop.products(collectionId, { limit: 50, cursor: page.nextCursor })
      * ```
      */
     async function products(collectionId, params) {
-        return request(`${pub(collectionId)}/products${qs({ productIds: params === null || params === void 0 ? void 0 : params.productIds })}`);
+        var _a;
+        // productIds goes as one comma list, as it always has.
+        return request(`${pub(collectionId)}/products${listQuery(Object.assign(Object.assign({}, params), { productIds: (_a = params === null || params === void 0 ? void 0 : params.productIds) === null || _a === void 0 ? void 0 : _a.join(',') }))}`);
     }
     shop.products = products;
     /**
@@ -85,7 +79,7 @@ export var shop;
      * @throws `SIGN_IN_REQUIRED`
      */
     async function myOrders(collectionId, params) {
-        return request(`${pub(collectionId)}/orders/mine${qs(params)}`);
+        return request(`${pub(collectionId)}/orders/mine${listQuery(params)}`);
     }
     shop.myOrders = myOrders;
     /**
@@ -133,7 +127,7 @@ export var shop;
          * ```
          */
         async function listPrices(collectionId, params) {
-            return request(`${adm(collectionId)}/prices${qs(params)}`);
+            return request(`${adm(collectionId)}/prices${listQuery(params)}`);
         }
         admin.listPrices = listPrices;
         /**
@@ -165,7 +159,7 @@ export var shop;
          * ```
          */
         async function listOrders(collectionId, params) {
-            return request(`${adm(collectionId)}/orders${qs(params)}`);
+            return request(`${adm(collectionId)}/orders${listQuery(params)}`);
         }
         admin.listOrders = listOrders;
         async function getOrder(collectionId, orderId) {

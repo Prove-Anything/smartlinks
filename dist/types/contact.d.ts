@@ -1,4 +1,4 @@
-import type { ListResult, ListOptions } from "./list.js";
+import type { ListResult, ListOptions, DateRange } from "./list.js";
 export type ContactCustomFields = Record<string, any>;
 export interface Contact {
     contactId: string;
@@ -83,7 +83,10 @@ export interface ContactLinkLoginResponse {
 }
 /** `error` codes `contact.merge` can refuse with. */
 export type ContactMergeErrorCode = "INVALID_CONTACT" | "SAME_CONTACT" | "NOT_FOUND" | "KEEP_DELETED" | "LOGIN_CONFLICT" | "LOYALTY_CONFLICT";
-/** `contact.search` options: the collection, the filters, plus `limit` and `cursor`. */
+/**
+ * `contact.search` options: the collection, the filters, plus `limit` and `cursor`. Free text is `q`;
+ * the creation date is a range, `createdAt: { gte, lte }`.
+ */
 export interface ContactSearchParams extends ListOptions {
     collectionId: string;
     q?: string;
@@ -96,8 +99,8 @@ export interface ContactSearchParams extends ListOptions {
     tagsAll?: string | string[];
     source?: string;
     locale?: string;
-    createdFrom?: string;
-    createdTo?: string;
+    /** When the contact was created: on or after `gte`, on or before `lte`. */
+    createdAt?: DateRange;
     externalIdKey?: string;
     externalIdValue?: string;
     customFieldKey?: string;

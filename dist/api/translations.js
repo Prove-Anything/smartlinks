@@ -1,6 +1,7 @@
 import { isProxyEnabled, patch, post, put, request } from '../http.js';
 import { clearCachedTranslations, deriveTranslationContextKey, getCachedTranslations, getDefaultTranslationCacheTtlMs, hashTranslationText, normalizeTranslationText, setCachedTranslations, } from '../translationCache.js';
 import { trackTranslation, onActivity as onTranslationActivity, activity as translationActivity, translatingMessage as translatingLine } from '../translationActivity.js';
+import { listQuery } from '../list.js';
 function normalizeLookupRequest(body) {
     var _a, _b, _c;
     const texts = Array.isArray(body.texts)
@@ -31,16 +32,6 @@ function normalizeLookupRequest(body) {
         },
         texts,
     };
-}
-function buildTranslationListQuery(params = {}) {
-    const query = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-        if (value === undefined || value === null)
-            continue;
-        query.append(key, String(value));
-    }
-    const queryString = query.toString();
-    return queryString ? `?${queryString}` : '';
 }
 function sameLanguage(left, right) {
     return left.trim().toLowerCase() === right.trim().toLowerCase();
@@ -289,8 +280,7 @@ export var translations;
      * ```
      */
     async function list(collectionId, params) {
-        const query = buildTranslationListQuery(params);
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/translations${query}`;
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/translations${listQuery(params)}`;
         return request(path);
     }
     translations.list = list;

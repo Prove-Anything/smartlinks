@@ -2,18 +2,23 @@ import { ClaimSetScope, ClaimSetRange, CreateClaimSetRangeRequest, UpdateClaimSe
 import type { ListResult, ListOptions } from "../types/list.js";
 export declare namespace claimSet {
     /**
-     * Get all claim sets. Returns `{ items, nextCursor }`: the claim sets are in `items`. The list is not
-     * paged, so `nextCursor` is always `null`.
+     * Get all claim sets, a page at a time. Returns `{ items, nextCursor }`: the claim sets are in `items`;
+     * pass `nextCursor` back as `cursor` for the next page (`null` means that was the last one).
      * When collectionId is provided, returns claim sets for that collection.
      * When omitted, returns all claim sets owned by the authenticated user.
      * @param collectionId – Optional collection identifier
+     * @param options – `limit` (default 50) and `cursor`
      *
      * @example
      * ```typescript
-     * const { items } = await claimSet.getAll('coll_123')
+     * let page = await claimSet.getAll('coll_123', { limit: 50 })
+     * while (page.nextCursor) page = await claimSet.getAll('coll_123', { limit: 50, cursor: page.nextCursor })
+     *
+     * // Your own claim sets (no collection)
+     * const { items } = await claimSet.getAll(undefined, { limit: 50 })
      * ```
      */
-    function getAll(collectionId?: string): Promise<ListResult<any>>;
+    function getAll(collectionId?: string, options?: ListOptions): Promise<ListResult<any>>;
     /**
      * Get a specific claim set by ID.
      * @param claimSetId – The claim set identifier
@@ -52,17 +57,22 @@ export declare namespace claimSet {
     /**
      * Get assigned tags for a claim set — tags soft-assigned to a collection or product. Returns
      * `{ items, nextCursor }` with the claim set's own fields (`id`, `name`, …) beside them: the tags are
-     * in `items`. The list is not paged, so `nextCursor` is always `null`.
+     * in `items`, a page at a time. Pass `nextCursor` back as `cursor` for the next page (`null` means that
+     * was the last one).
      * @param claimSetId – The claim set identifier
      * @param collectionId – Optional collection identifier; omit for user-scoped access
+     * @param options – `limit` (default 50) and `cursor`
      *
      * @example
      * ```typescript
-     * const { items, name } = await claimSet.getAssignedTags('12', 'coll_123')
-     * console.log(`${items.length} tags of ${name} are assigned`)
+     * let page = await claimSet.getAssignedTags('12', 'coll_123', { limit: 50 })
+     * console.log(`Assigned tags of ${page.name}:`, page.items)
+     * while (page.nextCursor) {
+     *   page = await claimSet.getAssignedTags('12', 'coll_123', { limit: 50, cursor: page.nextCursor })
+     * }
      * ```
      */
-    function getAssignedTags(claimSetId: string, collectionId?: string): Promise<ListResult<any> & Record<string, any>>;
+    function getAssignedTags(claimSetId: string, collectionId?: string, options?: ListOptions): Promise<ListResult<any> & Record<string, any>>;
     /**
      * Create a single tag inside a claim set.
      * @param claimSetId – The claim set identifier
@@ -114,15 +124,19 @@ export declare namespace claimSet {
     function updateClaimData(collectionId: string, data: UpdateClaimDataRequest): Promise<any>;
     namespace ranges {
         /**
-         * The ranges in a set, lowest index first. Returns `{ items, nextCursor }`: the ranges are in `items`.
-         * The list is not paged, so `nextCursor` is always `null`.
+         * The ranges in a set, lowest index first, a page at a time (50 unless you give a `limit`). Returns
+         * `{ items, nextCursor }`: the ranges are in `items`; pass `nextCursor` back as `cursor` for the next
+         * page (`null` means that was the last one).
          *
          * @example
          * ```typescript
-         * const { items: ranges } = await claimSet.ranges.list({ collectionId: 'coll_123' }, '12')
+         * let page = await claimSet.ranges.list({ collectionId: 'coll_123' }, '12', { limit: 50 })
+         * while (page.nextCursor) {
+         *   page = await claimSet.ranges.list({ collectionId: 'coll_123' }, '12', { limit: 50, cursor: page.nextCursor })
+         * }
          * ```
          */
-        function list(scope: ClaimSetScope, claimSetId: string): Promise<ListResult<ClaimSetRange>>;
+        function list(scope: ClaimSetScope, claimSetId: string, options?: ListOptions): Promise<ListResult<ClaimSetRange>>;
         /** Reserve the set's next indexes and mint a code (and, for NTAG 424, a key) for each. */
         function create(scope: ClaimSetScope, claimSetId: string, params: CreateClaimSetRangeRequest): Promise<ClaimSetRange>;
         /** One range, with its counts refreshed. */

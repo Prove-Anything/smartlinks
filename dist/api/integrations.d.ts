@@ -1,18 +1,23 @@
 import type { IntegrationFlow, CreateFlowInput, UpdateFlowInput, ListFlowsQuery, RunFlowInput, RunFlowResult, RunFlowSummary, RunFlowEnqueued, RecordTypeInfo, FlowRun, FlowRunItem, ListRunsQuery, ListRunItemsQuery, LoggingWindow, SetLoggingInput, InstalledConnector, SaveConnectorInstallationInput, ConnectorConsoleStep, FailedRecord, FlowDirection, FlowHealth, IntegrationHealth, ProductLineage } from "../types/integrations.js";
-import type { ListResult } from "../types/list.js";
+import type { ListResult, ListOptions } from "../types/list.js";
 export declare namespace integrations {
     /**
-     * List flows in a collection (all of them: this list has no pages). GET /integrations/flows
+     * List flows in a collection, a page at a time (`limit` and `cursor`; 50 unless you say otherwise).
+     * GET /integrations/flows
      *
      * @example
      * ```typescript
-     * const { items } = await integrations.listFlows('coll_123', { direction: 'outbound', status: 'active' })
+     * let page = await integrations.listFlows('coll_123', { direction: 'outbound', status: 'active' })
+     * while (page.nextCursor) {
+     *   page = await integrations.listFlows('coll_123', { direction: 'outbound', status: 'active', cursor: page.nextCursor })
+     * }
      * ```
      */
     function listFlows(collectionId: string, query?: ListFlowsQuery): Promise<ListResult<IntegrationFlow>>;
     /**
      * Discover the app-record types present in a collection + which app owns each
-     * (introspected), for picking a sub-record source/trigger. One list, no pages.
+     * (introspected), for picking a sub-record source/trigger. A fixed set: always all of them in one
+     * answer, so it takes no `limit` or `cursor`.
      * GET /integrations/record-types
      *
      * @example
@@ -71,17 +76,19 @@ export declare namespace integrations {
      */
     function listRunItems(collectionId: string, flowId: string, runId: string, query?: ListRunItemsQuery): Promise<ListResult<FlowRunItem>>;
     /**
-     * Every run touching an entity (e.g. a product), across flows, newest first. One list, no pages:
-     * `limit` says how many. GET /integrations/runs/entity/:entityId
+     * Every run touching an entity (e.g. a product), across flows, newest first. A page at a time:
+     * `limit` says how many, `cursor` is the previous page's `nextCursor`.
+     * GET /integrations/runs/entity/:entityId
      *
      * @example
      * ```typescript
-     * const { items } = await integrations.listEntityRuns('coll_123', productId, { limit: 20 })
+     * let page = await integrations.listEntityRuns('coll_123', productId, { limit: 20 })
+     * while (page.nextCursor) {
+     *   page = await integrations.listEntityRuns('coll_123', productId, { limit: 20, cursor: page.nextCursor })
+     * }
      * ```
      */
-    function listEntityRuns(collectionId: string, entityId: string, query?: {
-        limit?: number;
-    }): Promise<ListResult<FlowRun>>;
+    function listEntityRuns(collectionId: string, entityId: string, query?: ListOptions): Promise<ListResult<FlowRun>>;
     /** Is enhanced logging active for a connection? GET /integrations/logging/:connectionId */
     function getLogging(collectionId: string, connectionId: string): Promise<{
         window: LoggingWindow | null;
@@ -91,17 +98,20 @@ export declare namespace integrations {
         window: LoggingWindow;
     }>;
     /**
-     * A flow's failed / dead records, with the flow's `direction` beside the list. GET /integrations/flows/:id/failed
+     * A flow's failed / dead records, a page at a time (`limit` and `cursor`), with the flow's
+     * `direction` beside the list. GET /integrations/flows/:id/failed
      *
      * @example
      * ```typescript
-     * const { items, nextCursor, direction } = await integrations.listFailed('coll_123', flowId, { status: 'dead' })
+     * let page = await integrations.listFailed('coll_123', flowId, { status: 'dead', limit: 100 })
+     * page.direction // 'inbound' | 'outbound'
+     * while (page.nextCursor) {
+     *   page = await integrations.listFailed('coll_123', flowId, { status: 'dead', limit: 100, cursor: page.nextCursor })
+     * }
      * ```
      */
-    function listFailed(collectionId: string, flowId: string, query?: {
+    function listFailed(collectionId: string, flowId: string, query?: ListOptions & {
         status?: 'failed' | 'dead';
-        limit?: number;
-        cursor?: string;
     }): Promise<ListResult<FailedRecord> & {
         direction: FlowDirection;
     }>;
@@ -131,7 +141,8 @@ export declare namespace integrations {
         canceled: boolean;
     }>;
     /**
-     * The collection's installed connector apps (all of them: this list has no pages). GET /integrations/connectors
+     * The collection's installed connector apps. A fixed set: always all of them in one answer, so it
+     * takes no `limit` or `cursor`. GET /integrations/connectors
      *
      * @example
      * ```typescript
@@ -164,7 +175,8 @@ export declare namespace integrations {
     function runConnectorAction<T = unknown>(collectionId: string, appId: string, action: string, input?: Record<string, unknown>): Promise<T>;
     /**
      * PUBLIC (the Hub, a site): the connector actions the caller may invoke — those declared `public`,
-     * plus `member` ones when signed in. One list, no pages.
+     * plus `member` ones when signed in. A fixed set: always all of them in one answer, so it takes no
+     * `limit` or `cursor`.
      * GET /public/collection/:collectionId/connectors/:appId/actions
      *
      * @example

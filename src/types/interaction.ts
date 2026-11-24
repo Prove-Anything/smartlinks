@@ -1,26 +1,30 @@
 // src/types/interaction.ts
 
 import type { IdField } from './common'
-import type { ListOptions } from './list'
+import type { ListOptions, OrderBy } from './list'
 
 // Admin analytics inputs (Interactions)
-export interface AdminInteractionsQueryRequest {
+/**
+ * Options for interactions.query(): the filters, the time window (`from` / `to`), plus `limit` and
+ * `cursor` to page the list.
+ */
+export interface AdminInteractionsQueryRequest extends ListOptions {
   userId?: string
   contactId?: string
   appId?: string
   interactionId?: string
-  scope?: string 
+  scope?: string
   interactionIds?: string[]
   broadcastId?: string
   outcome?: string | null
   from?: string
   to?: string
-  limit?: number
   includeDeleted?: boolean
   latestPerEventId?: boolean
-  order?: 'ASC' | 'DESC'
-  include?: Array<'interaction'>
-
+  /** Sort by the event's time: `[{ timestamp: 'asc' }]` or `[{ timestamp: 'desc' }]`. */
+  orderBy?: OrderBy<'timestamp'>
+  /** Bring each event's interaction type along: `['interaction']`. */
+  expand?: Array<'interaction'>
 }
 
 export interface AdminInteractionsCountsByOutcomeRequest {
@@ -83,12 +87,15 @@ export interface PublicInteractionsCountsByOutcomeRequest {
   limit?: number
 }
 
-export interface PublicInteractionsByUserRequest {
+/**
+ * Options for interactions.publicMyInteractions(): the filters, the time window (`from` / `to`), plus
+ * `limit` and `cursor` to page the list.
+ */
+export interface PublicInteractionsByUserRequest extends ListOptions {
   appId?: string
   interactionId?: string
   from?: string
   to?: string
-  limit?: number
 }
 
 // BigQuery analytics rows (Interactions)

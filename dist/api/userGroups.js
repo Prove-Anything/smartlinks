@@ -1,4 +1,16 @@
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 import { request, post, put, del } from "../http.js";
+import { listQuery } from "../list.js";
 /**
  * User groups: named lists of people in a collection, used to say who may do what.
  *
@@ -27,16 +39,18 @@ export var userGroups;
     }
     userGroups.mine = mine;
     /**
-     * Every user group in the collection (admin), in one answer: `nextCursor` is always null.
+     * The collection's user groups (admin), a page at a time. Page with `limit` (50 unless you say)
+     * and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await userGroups.list('coll_123')
-     * items.map((g) => g.name)
+     * let page = await userGroups.list('coll_123', { limit: 50 })
+     * page.items.map((g) => g.name)
+     * while (page.nextCursor) page = await userGroups.list('coll_123', { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    async function list(collectionId) {
-        return request(base(collectionId));
+    async function list(collectionId, options = {}) {
+        return request(`${base(collectionId)}${listQuery(options)}`);
     }
     userGroups.list = list;
     /** One user group (admin). */
@@ -75,16 +89,18 @@ export var userGroups;
     }
     userGroups.remove = remove;
     /**
-     * The people in a user group, with name and email (admin), in one answer: `nextCursor` is always null.
+     * The people in a user group, with name and email (admin), a page at a time. Page with `limit`
+     * (50 unless you say) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await userGroups.members('coll_123', qc.id)
-     * items // [{ uid, name, email }]
+     * let page = await userGroups.members('coll_123', qc.id, { limit: 50 })
+     * page.items // [{ uid, name, email }]
+     * while (page.nextCursor) page = await userGroups.members('coll_123', qc.id, { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    async function members(collectionId, userGroupId) {
-        return request(`${base(collectionId)}/${encodeURIComponent(userGroupId)}/users`);
+    async function members(collectionId, userGroupId, options = {}) {
+        return request(`${base(collectionId)}/${encodeURIComponent(userGroupId)}/users${listQuery(options)}`);
     }
     userGroups.members = members;
     /**
@@ -110,40 +126,37 @@ export var userGroups;
      * or removed, each with the admin who did it (`actorId`) and when (`at`). Give `userGroupId` for one
      * user group, `userId` for everything about one person, or neither for the whole collection.
      * Covers the last 30 days unless you give `from` / `to` (at most 400 days). Takes about a second.
-     * It has no further pages (`nextCursor` is always null): ask for more with `limit`, or narrow the dates.
+     * A page at a time: `limit` says how many (default 100, at most 1000); pass `nextCursor` back as
+     * `cursor` for the next page.
      *
      * @example
      * ```typescript
-     * const { items } = await userGroups.history('coll_123', { userId: 'uid_1' })
-     * // items: [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }]
+     * let page = await userGroups.history('coll_123', { userId: 'uid_1', from: '2026-11-01T00:00:00Z' })
+     * // page.items: [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }]
+     * while (page.nextCursor) {
+     *   page = await userGroups.history('coll_123', { userId: 'uid_1', from: '2026-11-01T00:00:00Z', cursor: page.nextCursor })
+     * }
      * ```
      */
     async function history(collectionId, params = {}) {
-        const q = new URLSearchParams();
-        if (params.userId)
-            q.append('userId', params.userId);
-        if (params.from)
-            q.append('from', params.from);
-        if (params.to)
-            q.append('to', params.to);
-        if (params.limit)
-            q.append('limit', String(params.limit));
-        const qs = q.toString();
-        const path = params.userGroupId ? `${base(collectionId)}/${encodeURIComponent(params.userGroupId)}/history` : `${base(collectionId)}/history`;
-        return request(`${path}${qs ? `?${qs}` : ''}`);
+        const { userGroupId } = params, query = __rest(params, ["userGroupId"]);
+        const path = userGroupId ? `${base(collectionId)}/${encodeURIComponent(userGroupId)}/history` : `${base(collectionId)}/history`;
+        return request(`${path}${listQuery(query)}`);
     }
     userGroups.history = history;
     /**
-     * The user groups one person is in (admin), in one answer: `nextCursor` is always null.
+     * The user groups one person is in (admin), a page at a time. Page with `limit` (50 unless you
+     * say) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await userGroups.ofUser('coll_123', 'uid_1')
-     * items // [{ id, key, name }]
+     * let page = await userGroups.ofUser('coll_123', 'uid_1')
+     * page.items // [{ id, key, name }]
+     * while (page.nextCursor) page = await userGroups.ofUser('coll_123', 'uid_1', { cursor: page.nextCursor })
      * ```
      */
-    async function ofUser(collectionId, userId) {
-        return request(`${base(collectionId)}/of/${encodeURIComponent(userId)}`);
+    async function ofUser(collectionId, userId, options = {}) {
+        return request(`${base(collectionId)}/of/${encodeURIComponent(userId)}${listQuery(options)}`);
     }
     userGroups.ofUser = ofUser;
 })(userGroups || (userGroups = {}));

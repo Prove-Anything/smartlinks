@@ -1,4 +1,4 @@
-import type { ListResult, ListOptions } from "./list"
+import type { ListResult, ListOptions, DateRange } from "./list"
 
 export type ContactCustomFields = Record<string, any>
 
@@ -117,7 +117,10 @@ export type ContactMergeErrorCode =
   | "LOGIN_CONFLICT"
   | "LOYALTY_CONFLICT"
 
-/** `contact.search` options: the collection, the filters, plus `limit` and `cursor`. */
+/**
+ * `contact.search` options: the collection, the filters, plus `limit` and `cursor`. Free text is `q`;
+ * the creation date is a range, `createdAt: { gte, lte }`.
+ */
 export interface ContactSearchParams extends ListOptions {
   collectionId: string
   // Free-text
@@ -134,8 +137,8 @@ export interface ContactSearchParams extends ListOptions {
   tagsAll?: string | string[]
   source?: string
   locale?: string
-  createdFrom?: string
-  createdTo?: string
+  /** When the contact was created: on or after `gte`, on or before `lte`. */
+  createdAt?: DateRange
   // JSONB field filters
   externalIdKey?: string
   externalIdValue?: string

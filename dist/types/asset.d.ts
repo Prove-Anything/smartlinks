@@ -1,4 +1,4 @@
-import type { ListOptions } from './list.js';
+import type { ListOptions, OrderBy } from './list.js';
 /**
  * Slim reference to an asset embedded inside product and collection documents.
  * Use `asset.get()` with the `id` to retrieve the full `Asset` record.
@@ -177,7 +177,8 @@ export interface UploadFromUrlOptions {
     /** Optional: Upload via admin route instead of public */
     admin?: boolean;
 }
-export interface ListAssetsOptions {
+/** `asset.list` options: the scope, an optional app, and paging (`limit`, 50 unless you say, and `cursor`). */
+export interface ListAssetsOptions extends ListOptions {
     scope: {
         type: 'collection';
         collectionId: string;
@@ -193,8 +194,6 @@ export interface ListAssetsOptions {
     };
     /** Filter by app ID */
     appId?: string;
-    /** How many to return. These lists are not paged: there is no cursor, and `nextCursor` is always `null`. */
-    limit?: number;
 }
 export interface GetAssetOptions {
     assetId: string;
@@ -236,8 +235,8 @@ export interface AdminListAssetsOptions extends ListOptions {
     assetType?: 'Image' | 'Video' | 'Audio' | 'Document';
     /** Comma-separated label filter (any match) */
     labels?: string;
-    sort?: 'createdAt' | 'name' | 'size' | 'assetType';
-    order?: 'asc' | 'desc';
+    /** What to sort by: `[{ name: 'asc' }]`. */
+    orderBy?: OrderBy<'createdAt' | 'name' | 'size' | 'assetType'>;
     /**
      * Also list files that are normally left out: `temporary` (not kept yet) and `derived` (text, Markdown or fields
      * extracted from another file). Lists show only what people put there unless asked.

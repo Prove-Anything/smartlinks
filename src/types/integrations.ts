@@ -253,7 +253,8 @@ export type UpdateFlowInput = Partial<Omit<CreateFlowInput, 'direction'>> & {
   status?: FlowStatus
 }
 
-export interface ListFlowsQuery {
+/** `integrations.listFlows` options: the filters, plus `limit` and `cursor`. */
+export interface ListFlowsQuery extends ListOptions {
   direction?: FlowDirection
   status?: FlowStatus
   appId?: string

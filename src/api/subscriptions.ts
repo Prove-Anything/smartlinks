@@ -22,33 +22,25 @@ import type {
   PlanGrants,
 } from '../types/subscriptions'
 import type { ListResult, ListOptions } from '../types/list'
+import { listQuery } from '../list'
 
 const pub = (collectionId: string) => `/public/collection/${encodeURIComponent(collectionId)}/memberships`
 const adm = (collectionId: string) => `/admin/collection/${encodeURIComponent(collectionId)}/memberships`
 
-function qs(params?: Record<string, any>): string {
-  if (!params) return ''
-  const parts: string[] = []
-  for (const [k, v] of Object.entries(params)) {
-    if (v === undefined || v === null || v === '') continue
-    parts.push(`${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`)
-  }
-  return parts.length ? `?${parts.join('&')}` : ''
-}
-
 export namespace subscriptions {
   /**
-   * Plans open to new members, each with its prices (monthly, yearly, one-off). All of them in one answer:
-   * `nextCursor` is always null.
+   * Plans open to new members, each with its prices (monthly, yearly, one-off), a page at a time. Page
+   * with `limit` (50 unless you say) and `cursor`.
    *
    * @example
    * ```typescript
-   * const { items: plans } = await subscriptions.plans(collectionId)
-   * plans.map((p) => p.prices.map((price) => subscriptions.describePrice(price)))
+   * let page = await subscriptions.plans(collectionId, { limit: 50 })
+   * page.items.map((p) => p.prices.map((price) => subscriptions.describePrice(price)))
+   * while (page.nextCursor) page = await subscriptions.plans(collectionId, { limit: 50, cursor: page.nextCursor })
    * ```
    */
-  export async function plans(collectionId: string): Promise<ListResult<PublicPlan>> {
-    return request<ListResult<PublicPlan>>(`${pub(collectionId)}/plans`)
+  export async function plans(collectionId: string, options: ListOptions = {}): Promise<ListResult<PublicPlan>> {
+    return request<ListResult<PublicPlan>>(`${pub(collectionId)}/plans${listQuery(options)}`)
   }
 
   /**
@@ -73,17 +65,18 @@ export namespace subscriptions {
   }
 
   /**
-   * The signed-in member's memberships, newest first (ended ones too: check `live`). All of them in one
-   * answer: `nextCursor` is always null.
+   * The signed-in member's memberships, newest first (ended ones too: check `live`), a page at a time.
+   * Page with `limit` (50 unless you say) and `cursor`.
    *
    * @example
    * ```typescript
-   * const { items } = await subscriptions.mine(collectionId)
-   * const current = items.find((s) => s.live)
+   * let page = await subscriptions.mine(collectionId)
+   * const current = page.items.find((s) => s.live)
+   * while (page.nextCursor) page = await subscriptions.mine(collectionId, { cursor: page.nextCursor })
    * ```
    */
-  export async function mine(collectionId: string): Promise<ListResult<MySubscription>> {
-    return request<ListResult<MySubscription>>(`${pub(collectionId)}/mine`)
+  export async function mine(collectionId: string, options: ListOptions = {}): Promise<ListResult<MySubscription>> {
+    return request<ListResult<MySubscription>>(`${pub(collectionId)}/mine${listQuery(options)}`)
   }
 
   /**
@@ -132,7 +125,7 @@ export namespace subscriptions {
      * ```
      */
     export async function listPlans(collectionId: string, params?: ListOptions & { active?: boolean }): Promise<ListResult<PlanWithPrices>> {
-      return request(`${adm(collectionId)}/plans${qs(params)}`)
+      return request(`${adm(collectionId)}/plans${listQuery(params)}`)
     }
 
     /** A plan with its prices and how many live members it has. */
@@ -183,7 +176,7 @@ export namespace subscriptions {
      * ```
      */
     export async function list(collectionId: string, params?: SubscriptionListOptions): Promise<ListResult<Membership>> {
-      return request(`${adm(collectionId)}/subscriptions${qs(params)}`)
+      return request(`${adm(collectionId)}/subscriptions${listQuery(params)}`)
     }
 
     export async function get(collectionId: string, subscriptionId: string): Promise<Membership> {

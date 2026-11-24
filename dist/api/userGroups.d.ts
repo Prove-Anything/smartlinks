@@ -1,5 +1,5 @@
 import type { UserGroup, CreateUserGroupRequest, UpdateUserGroupRequest, UserGroupMember, AddUserGroupMemberRequest, UserGroupRef, MyUserGroups, UserGroupChange, UserGroupHistoryParams } from "../types/userGroups.js";
-import type { ListResult } from "../types/list.js";
+import type { ListResult, ListOptions } from "../types/list.js";
 /**
  * User groups: named lists of people in a collection, used to say who may do what.
  *
@@ -23,15 +23,17 @@ export declare namespace userGroups {
      */
     function mine(collectionId: string): Promise<MyUserGroups>;
     /**
-     * Every user group in the collection (admin), in one answer: `nextCursor` is always null.
+     * The collection's user groups (admin), a page at a time. Page with `limit` (50 unless you say)
+     * and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await userGroups.list('coll_123')
-     * items.map((g) => g.name)
+     * let page = await userGroups.list('coll_123', { limit: 50 })
+     * page.items.map((g) => g.name)
+     * while (page.nextCursor) page = await userGroups.list('coll_123', { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    function list(collectionId: string): Promise<ListResult<UserGroup>>;
+    function list(collectionId: string, options?: ListOptions): Promise<ListResult<UserGroup>>;
     /** One user group (admin). */
     function get(collectionId: string, userGroupId: string): Promise<UserGroup>;
     /**
@@ -56,15 +58,17 @@ export declare namespace userGroups {
     /** Delete a user group (admin). Its members lose whatever it allowed. */
     function remove(collectionId: string, userGroupId: string): Promise<UserGroup>;
     /**
-     * The people in a user group, with name and email (admin), in one answer: `nextCursor` is always null.
+     * The people in a user group, with name and email (admin), a page at a time. Page with `limit`
+     * (50 unless you say) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await userGroups.members('coll_123', qc.id)
-     * items // [{ uid, name, email }]
+     * let page = await userGroups.members('coll_123', qc.id, { limit: 50 })
+     * page.items // [{ uid, name, email }]
+     * while (page.nextCursor) page = await userGroups.members('coll_123', qc.id, { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    function members(collectionId: string, userGroupId: string): Promise<ListResult<UserGroupMember>>;
+    function members(collectionId: string, userGroupId: string, options?: ListOptions): Promise<ListResult<UserGroupMember>>;
     /**
      * Add one person (admin), by user id or by email. By email, the person is found in the collection's
      * logins or added to them (no welcome email is sent). Adding someone who is already in changes nothing.
@@ -82,23 +86,29 @@ export declare namespace userGroups {
      * or removed, each with the admin who did it (`actorId`) and when (`at`). Give `userGroupId` for one
      * user group, `userId` for everything about one person, or neither for the whole collection.
      * Covers the last 30 days unless you give `from` / `to` (at most 400 days). Takes about a second.
-     * It has no further pages (`nextCursor` is always null): ask for more with `limit`, or narrow the dates.
+     * A page at a time: `limit` says how many (default 100, at most 1000); pass `nextCursor` back as
+     * `cursor` for the next page.
      *
      * @example
      * ```typescript
-     * const { items } = await userGroups.history('coll_123', { userId: 'uid_1' })
-     * // items: [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }]
+     * let page = await userGroups.history('coll_123', { userId: 'uid_1', from: '2026-11-01T00:00:00Z' })
+     * // page.items: [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }]
+     * while (page.nextCursor) {
+     *   page = await userGroups.history('coll_123', { userId: 'uid_1', from: '2026-11-01T00:00:00Z', cursor: page.nextCursor })
+     * }
      * ```
      */
     function history(collectionId: string, params?: UserGroupHistoryParams): Promise<ListResult<UserGroupChange>>;
     /**
-     * The user groups one person is in (admin), in one answer: `nextCursor` is always null.
+     * The user groups one person is in (admin), a page at a time. Page with `limit` (50 unless you
+     * say) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await userGroups.ofUser('coll_123', 'uid_1')
-     * items // [{ id, key, name }]
+     * let page = await userGroups.ofUser('coll_123', 'uid_1')
+     * page.items // [{ id, key, name }]
+     * while (page.nextCursor) page = await userGroups.ofUser('coll_123', 'uid_1', { cursor: page.nextCursor })
      * ```
      */
-    function ofUser(collectionId: string, userId: string): Promise<ListResult<UserGroupRef>>;
+    function ofUser(collectionId: string, userId: string, options?: ListOptions): Promise<ListResult<UserGroupRef>>;
 }

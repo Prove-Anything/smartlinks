@@ -1,4 +1,6 @@
 // src/types/batch.ts
+import type { ListOptions } from './list'
+
 /**
  * Represents a Batch object. Dates are **ISO 8601 strings**.
  */
@@ -40,13 +42,12 @@ export interface BatchUpdateRequest {
 }
 
 /**
- * Options for `batch.searchInCollection`. The search answers in one page (it has no cursor):
- * `limit` is the most it returns.
+ * Options for `batch.searchInCollection`. `limit` is how many it returns (100 unless you say); when
+ * there are more, pass the answer's `nextCursor` back as `cursor`.
  */
-export interface SearchBatchesRequest {
-  search?: string                 // Search term (batch ID or name)
+export interface SearchBatchesRequest extends ListOptions {
+  q?: string                      // Search term (batch ID or name)
   productId?: string              // Filter by specific product
-  limit?: number                  // Max results (default: 100)
 }
 
 /**

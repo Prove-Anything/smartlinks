@@ -26,15 +26,18 @@ export namespace journeysAnalytics {
 
   /**
    * POST /admin/collection/:collectionId/journeys.analytics/:journeyId/steps/:stepId/recipients
-   * Returns recipient IDs for a given journey step, as a list of ids. One list, no pages: `limit` in
-   * the body says how many.
+   * Returns recipient IDs for a given journey step, a page at a time (`limit` and `cursor` in the
+   * body). The time window is `from` / `to`.
    * For completed/pending, `interactionId` is required; outcome defaults to 'success'.
    *
    * @example
    * ```typescript
-   * const { items: contactIds } = await journeysAnalytics.recipients('coll_123', journeyId, stepId, {
-   *   status: 'completed', interactionId, idField: 'contactId', limit: 1000,
-   * })
+   * const query = { status: 'completed' as const, interactionId, idField: 'contactId' as const, limit: 1000 }
+   * let page = await journeysAnalytics.recipients('coll_123', journeyId, stepId, query)
+   * page.items // contact ids
+   * while (page.nextCursor) {
+   *   page = await journeysAnalytics.recipients('coll_123', journeyId, stepId, { ...query, cursor: page.nextCursor })
+   * }
    * ```
    */
   export async function recipients(

@@ -1,5 +1,5 @@
 import type { Container, ContainerItem, CreateContainerInput, UpdateContainerInput, AddContainerItemsInput, RemoveContainerItemsInput, ListContainersParams, PublicListContainersParams, GetContainerParams, ListContainerItemsParams, AddContainerItemsResponse, RemoveContainerItemsResponse, FindContainersForItemParams, FindContainersForItemResponse } from "../types/containers.js";
-import type { ListResult } from "../types/list.js";
+import type { ListResult, ListOptions } from "../types/list.js";
 /**
  * Container Tracking API.
  *
@@ -72,16 +72,17 @@ export declare namespace containers {
      * Reverse lookup — find all containers currently holding a specific item (admin).
      *
      * @param collectionId - Collection context
-     * @param params - `itemType` and `itemId` are required
+     * @param params - `itemType` and `itemId` are required; plus `limit` (default 50) and `cursor`
      * @returns `{ items, containers, nextCursor }`: the current membership rows (`items`) and those
-     *   containers. All of them in one answer: `nextCursor` is always null.
+     *   containers, a page at a time. Pass `nextCursor` back as `cursor` for the next page.
      *
      * @example
      * ```typescript
-     * const { containers: holding } = await containers.findForItem('coll_123', {
+     * const { containers: holding, nextCursor } = await containers.findForItem('coll_123', {
      *   itemType: 'proof',
      *   itemId:   'unit-0007',
      *   productId: 'drill',
+     *   limit:    50,
      * })
      * ```
      */
@@ -236,20 +237,23 @@ export declare namespace containers {
      */
     function publicGet(collectionId: string, containerId: string, params?: GetContainerParams): Promise<Container>;
     /**
-     * List current contents of a container (public).
+     * List current contents of a container (public), a page at a time.
      *
      * Returns only items where `removedAt` is null.  No `?history` option on
-     * the public side.  All of them come back in one answer: `nextCursor` is
-     * always null.
+     * the public side.
      *
      * @param collectionId - Collection context
      * @param containerId - Container UUID
-     * @returns `{ items: ContainerItem[], nextCursor: null }`
+     * @param options - `limit` (default 50) and `cursor`
+     * @returns `{ items: ContainerItem[], nextCursor: string | null }`
      *
      * @example
      * ```typescript
-     * const { items } = await containers.publicListItems('coll_123', 'cask-uuid')
+     * let page = await containers.publicListItems('coll_123', 'cask-uuid', { limit: 50 })
+     * while (page.nextCursor) {
+     *   page = await containers.publicListItems('coll_123', 'cask-uuid', { limit: 50, cursor: page.nextCursor })
+     * }
      * ```
      */
-    function publicListItems(collectionId: string, containerId: string): Promise<ListResult<ContainerItem>>;
+    function publicListItems(collectionId: string, containerId: string, options?: ListOptions): Promise<ListResult<ContainerItem>>;
 }

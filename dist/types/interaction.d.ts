@@ -1,6 +1,10 @@
 import type { IdField } from './common.js';
-import type { ListOptions } from './list.js';
-export interface AdminInteractionsQueryRequest {
+import type { ListOptions, OrderBy } from './list.js';
+/**
+ * Options for interactions.query(): the filters, the time window (`from` / `to`), plus `limit` and
+ * `cursor` to page the list.
+ */
+export interface AdminInteractionsQueryRequest extends ListOptions {
     userId?: string;
     contactId?: string;
     appId?: string;
@@ -11,11 +15,12 @@ export interface AdminInteractionsQueryRequest {
     outcome?: string | null;
     from?: string;
     to?: string;
-    limit?: number;
     includeDeleted?: boolean;
     latestPerEventId?: boolean;
-    order?: 'ASC' | 'DESC';
-    include?: Array<'interaction'>;
+    /** Sort by the event's time: `[{ timestamp: 'asc' }]` or `[{ timestamp: 'desc' }]`. */
+    orderBy?: OrderBy<'timestamp'>;
+    /** Bring each event's interaction type along: `['interaction']`. */
+    expand?: Array<'interaction'>;
 }
 export interface AdminInteractionsCountsByOutcomeRequest {
     appId?: string;
@@ -69,12 +74,15 @@ export interface PublicInteractionsCountsByOutcomeRequest {
     to?: string;
     limit?: number;
 }
-export interface PublicInteractionsByUserRequest {
+/**
+ * Options for interactions.publicMyInteractions(): the filters, the time window (`from` / `to`), plus
+ * `limit` and `cursor` to page the list.
+ */
+export interface PublicInteractionsByUserRequest extends ListOptions {
     appId?: string;
     interactionId?: string;
     from?: string;
     to?: string;
-    limit?: number;
 }
 export interface InteractionEventRow {
     orgId: string;

@@ -27,8 +27,8 @@ export type AppOptionsResponse =
 };
 /**
  * What `app.options.get` returns: the standard list shape plus the picker's `version` and `mode`.
- * `count` is how many entries there are in all, where the server reports it. Pickers are not paged, so
- * `nextCursor` is always `null`.
+ * `count` is how many entries there are in all, where the server reports it. Entries come 50 at a time
+ * unless you give a `limit`; `nextCursor` is `null` on the last page.
  */
 export type AppOptionsList = 
 /** `all`: every entry. `search`: the type is too large to send whole; these match `q`. */

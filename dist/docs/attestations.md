@@ -242,7 +242,7 @@ const { items: records, nextCursor } = await attestations.list('coll_123', {
   subjectType:     'container',
   subjectId:       'cask-uuid',
   attestationType: 'temperature',
-  recordedAfter:   '2025-01-01T00:00:00Z',
+  recordedAt:      { gte: '2025-01-01T00:00:00Z' },
   limit:           50,
 })
 // nextCursor is null on the last page; otherwise pass it back as `cursor` for the next 50
@@ -436,8 +436,8 @@ GET    /api/v1/admin/collection/:collectionId/attestations/tree-latest
 | `subjectType` | ✅ | Subject type |
 | `subjectId` | ✅ | Subject UUID |
 | `attestationType` | — | Filter by type |
-| `recordedAfter` | — | ISO 8601 lower bound |
-| `recordedBefore` | — | ISO 8601 upper bound |
+| `recordedAt[gte]` | — | Recorded on or after this date and time (ISO 8601). In the SDK: `recordedAt: { gte }` |
+| `recordedAt[lte]` | — | Recorded on or before this date and time. In the SDK: `recordedAt: { lte }` |
 | `limit` | — | Default `100` |
 | `cursor` | — | The previous page's `nextCursor` |
 
@@ -450,8 +450,8 @@ GET    /api/v1/admin/collection/:collectionId/attestations/tree-latest
 | `attestationType` | ✅ | |
 | `valueField` | — | Dot-path inside `value` to aggregate |
 | `groupBy` | — | `hour` \| `day` \| `week` \| `month` (default `day`) |
-| `recordedAfter` | — | ISO 8601 |
-| `recordedBefore` | — | ISO 8601 |
+| `recordedAt[gte]` | — | ISO 8601 |
+| `recordedAt[lte]` | — | ISO 8601 |
 | `limit` | — | Max buckets (default `200`) |
 
 #### GET query parameters (tree-summary / tree-latest)
@@ -463,8 +463,8 @@ GET    /api/v1/admin/collection/:collectionId/attestations/tree-latest
 | `attestationType` | ✅ (tree-summary) | |
 | `valueField` | — | |
 | `groupBy` | — | |
-| `recordedAfter` | — | |
-| `recordedBefore` | — | |
+| `recordedAt[gte]` | — | |
+| `recordedAt[lte]` | — | |
 | `limit` | — | |
 | `includeItems` | — | Include container items in BFS traversal (default `true`) |
 
@@ -520,7 +520,7 @@ const { summary } = await attestations.publicTreeSummary('coll_123', {
   attestationType: 'temperature',
   valueField:      'celsius',
   groupBy:         'day',
-  recordedAfter:   sevenDaysAgo,
+  recordedAt:      { gte: sevenDaysAgo },
 })
 ```
 

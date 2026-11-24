@@ -1,18 +1,6 @@
 // src/api/segments.ts
 import { request, post, patch, del } from "../http.js";
-function encodeQuery(params) {
-    const search = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-        if (value === undefined || value === null || value === "")
-            continue;
-        if (typeof value === "boolean")
-            search.set(key, value ? "true" : "false");
-        else
-            search.set(key, String(value));
-    }
-    const qs = search.toString();
-    return qs ? `?${qs}` : "";
-}
+import { listQuery } from "../list.js";
 export var segments;
 (function (segments) {
     // Create
@@ -33,7 +21,7 @@ export var segments;
      * ```
      */
     async function list(collectionId, query = {}) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/segments/${encodeQuery(query)}`;
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/segments/${listQuery(query)}`;
         return request(path);
     }
     segments.list = list;
@@ -73,7 +61,7 @@ export var segments;
      * ```
      */
     async function recipients(collectionId, id, query = {}) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/segments/${encodeURIComponent(id)}/recipients${encodeQuery(query)}`;
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/segments/${encodeURIComponent(id)}/recipients${listQuery(query)}`;
         return request(path);
     }
     segments.recipients = recipients;

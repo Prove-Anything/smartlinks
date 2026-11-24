@@ -18,7 +18,7 @@ export interface Job {
   status: JobStatus
 }
 
-/** Options for jobs.listJobs(): `limit` and `cursor` page the list. */
+/** Options for jobs.list(): `limit` and `cursor` page the list. */
 export interface ListJobsQuery extends ListOptions {
   state?: JobStatus
   task?: string

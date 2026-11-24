@@ -127,6 +127,46 @@ describe('smartlinks-upgrade: moving an app to SDK 3', () => {
     assert.match(report, /What the script will change/)
   })
 
+  test('the two job namespaces become one: async.* and the old jobs names move to jobs.*', async () => {
+    await run({ 'src/j.ts': [
+      "import { async as slAsync, jobs } from '@proveanything/smartlinks'",
+      "import * as SL from '@proveanything/smartlinks'",
+      "export const start = (c: string) => slAsync.enqueueAsyncJob(c, { task: 'x' })",
+      'export const follow = (c: string, id: number) => SL.async.getAsyncJobStatus(c, id)',
+      'export const one = (c: string, id: number) => jobs.getJob(c, id)',
+      'export const recent = (c: string) => jobs.listJobs(c, { limit: 20 })',
+      '',
+    ].join('\n') })
+    const out = read('src/j.ts')
+    assert.match(out, /SL\.jobs\.status\(c, id\)/)
+    assert.match(out, /jobs\.get\(c, id\)/)
+    assert.match(out, /jobs\.list\(c, \{ limit: 20 \}\)/)
+    assert.match(out, /\.enqueue\(c, \{ task: 'x' \}\)/)
+    assert.doesNotMatch(out, /enqueueAsyncJob|getAsyncJobStatus|listJobs|getJob\b/)
+  })
+
+  test('a list that used to return everything is marked, with what to do; a fixed set is said to be whole', async () => {
+    const { work, report } = await run({ 'src/k.ts': [
+      "import { variant, facets, lots, knowledge } from '@proveanything/smartlinks'",
+      'export const a = (c: string, p: string) => variant.list(c, p)',
+      'export const b = (c: string) => facets.list(c)',
+      "export const d = (c: string) => lots.list(c, { search: 'oak' })",
+      "export const e = (c: string) => knowledge.search(c, { query: 'descale', k: 3 })",
+      '',
+    ].join('\n') }, { write: false })
+    const lists = work.filter((w) => w.kind === 'list')
+    assert.deepEqual(lists.map((w) => [w.name, w.firstPageOnly, w.paged, w.passes]), [
+      ['variant.list', true, true, []],
+      ['facets.list', false, false, []],
+      ['lots.list', true, true, ['search']],
+      ['knowledge.search', false, true, ['query', 'k']],
+    ])
+    assert.match(report, /line 2 `variant\.list`: was `VariantResponse\[\]`; \*\*used to return everything\*\*, now one page/)
+    assert.match(report, /line 3 `facets\.list`: .*always returned whole/)
+    assert.match(report, /line 4 `lots\.list`: .*\*\*passes `search`\*\*, which is gone; \*\*used to return everything\*\*/)
+    assert.match(report, /replace the call with `all\(\(cursor\) => theList/)
+  })
+
   test('finds SDK calls reached through a name taken from the SDK', async () => {
     const { work } = await run({ 'src/j.ts': "export function f(host: any, c: string) {\n  const { tags, product } = host.SL\n  const records = host.SL.app.records\n  return [tags.list(c), product.find(c, {}), records.list(c, 'a')]\n}\n" }, { write: false })
     assert.deepEqual(work.filter((w) => w.kind === 'list').map((w) => w.name).sort(), ['app.records.list', 'tags.list'])

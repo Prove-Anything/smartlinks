@@ -41,7 +41,8 @@ import type {
   DppTaskRefreshResult,
   DppDocument,
 } from "../types/dpp"
-import type { ListResult } from "../types/list"
+import type { ListResult, ListOptions } from "../types/list"
+import { listQuery } from "../list"
 
 function enc(v: string) { return encodeURIComponent(v) }
 const base = (collectionId: string) => `/admin/collection/${enc(collectionId)}/dpp`
@@ -56,7 +57,8 @@ function query(q: Record<string, unknown>): string {
 export namespace dpp {
   /**
    * What passports can be made: product groups, their kinds, and each view's fields and required fields.
-   * All of them in one answer (`nextCursor` is always null). GET /dpp/groups
+   * A fixed set: always all of them in one answer (`nextCursor` is always null), so it takes no `limit`
+   * or `cursor`. GET /dpp/groups
    *
    * @example
    * ```typescript
@@ -89,8 +91,8 @@ export namespace dpp {
   /** The brand's EU registry connection (one per environment). Managed by the collection's admins. */
   export namespace registry {
     /**
-     * Both environments, each with `nextStep` (what's left to connect). All of them in one answer
-     * (`nextCursor` is always null). GET /dpp/registry
+     * Both environments, each with `nextStep` (what's left to connect). A fixed set: always all of them
+     * in one answer (`nextCursor` is always null), so it takes no `limit` or `cursor`. GET /dpp/registry
      *
      * @example
      * ```typescript
@@ -155,7 +157,7 @@ export namespace dpp {
      * ```
      */
     export async function list(collectionId: string, q: DppPassportListQuery = {}): Promise<ListResult<DppPassport>> {
-      return request<ListResult<DppPassport>>(`${base(collectionId)}/passports${query(q as Record<string, unknown>)}`)
+      return request<ListResult<DppPassport>>(`${base(collectionId)}/passports${listQuery(q)}`)
     }
 
     /** One passport, with `check` (what it's still missing) and its `url`. GET /dpp/passports/:id */
@@ -203,17 +205,20 @@ export namespace dpp {
     }
 
     /**
-     * Its versions, newest first, all in one answer (`nextCursor` is always null); read one with
-     * `dpp.read(collectionId, id, { version })`. GET /dpp/passports/:id/versions
+     * Its versions, newest first, a page at a time (`limit` and `cursor`; 50 unless you say otherwise).
+     * Read one with `dpp.read(collectionId, id, { version })`. GET /dpp/passports/:id/versions
      *
      * @example
      * ```typescript
-     * const { items } = await dpp.passports.versions(collectionId, passportId)
-     * const latest = items[0].version
+     * let page = await dpp.passports.versions(collectionId, passportId, { limit: 20 })
+     * const latest = page.items[0].version
+     * while (page.nextCursor) {
+     *   page = await dpp.passports.versions(collectionId, passportId, { limit: 20, cursor: page.nextCursor })
+     * }
      * ```
      */
-    export async function versions(collectionId: string, passportId: string): Promise<ListResult<DppPassportVersion>> {
-      return request<ListResult<DppPassportVersion>>(`${base(collectionId)}/passports/${enc(passportId)}/versions`)
+    export async function versions(collectionId: string, passportId: string, options: ListOptions = {}): Promise<ListResult<DppPassportVersion>> {
+      return request<ListResult<DppPassportVersion>>(`${base(collectionId)}/passports/${enc(passportId)}/versions${listQuery(options)}`)
     }
 
     /** No longer valid: stays at its address, marked invalid (the registry keeps its record). POST /dpp/passports/:id/withdraw */
@@ -232,16 +237,19 @@ export namespace dpp {
   /** Registry requests and their outcomes. */
   export namespace tasks {
     /**
-     * Requests sent to one environment, newest first, all in one answer (`nextCursor` is always null).
-     * GET /dpp/registry/:env/tasks
+     * Requests sent to one environment, newest first, a page at a time (`limit` and `cursor`; 50 unless
+     * you say otherwise). GET /dpp/registry/:env/tasks
      *
      * @example
      * ```typescript
-     * const { items } = await dpp.tasks.list(collectionId, 'acc')
+     * let page = await dpp.tasks.list(collectionId, 'acc', { limit: 20 })
+     * while (page.nextCursor) {
+     *   page = await dpp.tasks.list(collectionId, 'acc', { limit: 20, cursor: page.nextCursor })
+     * }
      * ```
      */
-    export async function list(collectionId: string, env: DppEnvironment): Promise<ListResult<DppTask>> {
-      return request<ListResult<DppTask>>(`${base(collectionId)}/registry/${enc(env)}/tasks`)
+    export async function list(collectionId: string, env: DppEnvironment, options: ListOptions = {}): Promise<ListResult<DppTask>> {
+      return request<ListResult<DppTask>>(`${base(collectionId)}/registry/${enc(env)}/tasks${listQuery(options)}`)
     }
 
     /** Ask the registry how a request went and record it on its passports. POST /dpp/registry/:env/tasks/:taskId/refresh */

@@ -13,26 +13,29 @@ export declare namespace bookings {
      */
     function create(collectionId: string, appId: string, input: CreateBookingInput, admin?: boolean): Promise<Booking>;
     /**
-     * List bookings (admin), a page at a time. `count` is how many match in all. There is no public
-     * list: a signed-in booker uses {@link mine}. GET /bookings
+     * List bookings (admin), a page at a time. `count` is how many match in all. `from` / `to` pick
+     * the bookings overlapping that time; `orderBy` sorts (earliest start first unless you say). There
+     * is no public list: a signed-in booker uses {@link mine}. GET /bookings
      *
      * @example
      * ```typescript
-     * let page = await bookings.list(collectionId, appId, { status: 'confirmed', from: new Date(), limit: 50 })
+     * const from = new Date()
+     * let page = await bookings.list(collectionId, appId, { status: 'confirmed', from, orderBy: [{ startsAt: 'desc' }], limit: 50 })
      * page.items      // Booking[]
      * page.count      // how many match in all
      * while (page.nextCursor) {
-     *   page = await bookings.list(collectionId, appId, { status: 'confirmed', from: new Date(), limit: 50, cursor: page.nextCursor })
+     *   page = await bookings.list(collectionId, appId, { status: 'confirmed', from, orderBy: [{ startsAt: 'desc' }], limit: 50, cursor: page.nextCursor })
      * }
      * ```
      */
     function list(collectionId: string, appId: string, params?: BookingListOptions, admin?: boolean): Promise<ListResult<Booking>>;
     /**
-     * The signed-in caller's own bookings (public), a page at a time. GET /bookings/mine
+     * The signed-in caller's own bookings (public), a page at a time. Takes the same options as
+     * {@link list}, except `contactId`. GET /bookings/mine
      *
      * @example
      * ```typescript
-     * const { items, nextCursor, count } = await bookings.mine(collectionId, appId, { from: new Date() })
+     * const { items, nextCursor, count } = await bookings.mine(collectionId, appId, { from: new Date(), orderBy: [{ startsAt: 'asc' }], limit: 20 })
      * ```
      */
     function mine(collectionId: string, appId: string, params?: Omit<BookingListOptions, 'contactId'>): Promise<ListResult<Booking>>;
@@ -92,11 +95,14 @@ export declare namespace bookings {
         }>;
         /**
          * List slots, a page at a time. Public: open, public slots only, each with `remaining`.
+         * `from` / `to` pick the slots in that time; `orderBy` sorts them.
          * GET /bookings/slots
          *
          * @example
          * ```typescript
-         * const { items, nextCursor, count } = await bookings.slots.list(collectionId, appId, { from, to, available: true })
+         * const { items, nextCursor, count } = await bookings.slots.list(collectionId, appId, {
+         *   from, to, available: true, orderBy: [{ startsAt: 'asc' }], limit: 50,
+         * })
          * ```
          */
         function list(collectionId: string, appId: string, params?: SlotListOptions, admin?: boolean): Promise<ListResult<BookingSlot>>;
@@ -116,11 +122,14 @@ export declare namespace bookings {
     namespace blocks {
         function create(collectionId: string, appId: string, input: CreateBlockInput): Promise<BookingAllocation>;
         /**
-         * The blocks on a resource and/or in a date range, a page at a time. GET /bookings/blocks
+         * The blocks on a resource and/or in a date range (`from` / `to`), a page at a time (`limit`,
+         * `cursor`). GET /bookings/blocks
          *
          * @example
          * ```typescript
-         * const { items, nextCursor } = await bookings.blocks.list(collectionId, appId, { resourceType: 'record', resourceId: 'staff-1' })
+         * const { items, nextCursor } = await bookings.blocks.list(collectionId, appId, {
+         *   resourceType: 'record', resourceId: 'staff-1', from: '2026-12-01T00:00:00Z', to: '2027-01-01T00:00:00Z', limit: 50,
+         * })
          * ```
          */
         function list(collectionId: string, appId: string, params?: BlockListOptions): Promise<ListResult<BookingAllocation>>;

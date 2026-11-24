@@ -1,3 +1,4 @@
+import type { ListOptions } from './list.js';
 /**
  * Represents a Batch object. Dates are **ISO 8601 strings**.
  */
@@ -36,13 +37,12 @@ export interface BatchUpdateRequest {
     [key: string]: any;
 }
 /**
- * Options for `batch.searchInCollection`. The search answers in one page (it has no cursor):
- * `limit` is the most it returns.
+ * Options for `batch.searchInCollection`. `limit` is how many it returns (100 unless you say); when
+ * there are more, pass the answer's `nextCursor` back as `cursor`.
  */
-export interface SearchBatchesRequest {
-    search?: string;
+export interface SearchBatchesRequest extends ListOptions {
+    q?: string;
     productId?: string;
-    limit?: number;
 }
 /**
  * Tag/code assigned to a batch.

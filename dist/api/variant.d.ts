@@ -1,5 +1,5 @@
 import { VariantResponse, VariantCreateRequest, VariantUpdateRequest } from "../types/variant.js";
-import type { ListResult } from "../types/list.js";
+import type { ListResult, ListOptions } from "../types/list.js";
 export declare namespace variant {
     /**
      * Get a single variant by ID for a collection and product (admin only).
@@ -11,20 +11,23 @@ export declare namespace variant {
      */
     function get(collectionId: string, productId: string, variantId: string): Promise<VariantResponse>;
     /**
-     * List all variants for a collection and product (admin only). All of them come in one answer:
-     * `nextCursor` is always null.
+     * List the variants for a collection and product (admin only), 50 at a time unless you give a
+     * `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that
+     * was the last one.
      * @param collectionId - Identifier of the parent collection
      * @param productId - Identifier of the parent product
-     * @returns Promise resolving to `{ items: VariantResponse[], nextCursor: null }`
+     * @param options - Paging: `limit` and `cursor`
+     * @returns Promise resolving to `{ items: VariantResponse[], nextCursor, count }`
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
-     * const { items } = await variant.list('coll_123', 'prod_456')
-     * items.map((v) => v.name)
+     * let page = await variant.list('coll_123', 'prod_456', { limit: 100 })
+     * page.items.map((v) => v.name)
+     * while (page.nextCursor) page = await variant.list('coll_123', 'prod_456', { limit: 100, cursor: page.nextCursor })
      * ```
      */
-    function list(collectionId: string, productId: string): Promise<ListResult<VariantResponse>>;
+    function list(collectionId: string, productId: string, options?: ListOptions): Promise<ListResult<VariantResponse>>;
     /**
      * Create a new variant for a collection and product (admin only).
      * @param collectionId - Identifier of the parent collection

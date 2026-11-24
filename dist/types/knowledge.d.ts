@@ -1,3 +1,4 @@
+import type { ListOptions } from './list.js';
 /** Who may search a set: anyone, signed-in people, or the business's own staff and assistants. */
 export type KnowledgeVisibility = 'public' | 'customer' | 'staff';
 /** Where a set's passages come from. */
@@ -82,14 +83,16 @@ export interface KnowledgeDocument {
     /** Details to filter searches on, e.g. `{ productId: 'p1' }`. */
     meta?: Record<string, any>;
 }
-export interface KnowledgeSearchRequest {
-    query: string;
+/** What `knowledge.search` and `knowledge.publicSearch` take. */
+export interface KnowledgeSearchRequest extends ListOptions {
+    /** What to look for, in words. */
+    q: string;
     /** Only these sets (ids or keys). Default: every set the caller may read. */
     sets?: string[];
     /** Exact matches on a passage's details, e.g. `{ productId: 'p1' }`. */
     filters?: Record<string, any>;
     /** How many results (default 8, at most 25). */
-    k?: number;
+    limit?: number;
 }
 export interface KnowledgeSearchResult {
     id: string;

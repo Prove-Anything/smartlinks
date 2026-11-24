@@ -4,6 +4,7 @@
 // (SKUs). Unlike a batch (a single production run of a single product), a lot is a
 // first-class entity with a selector (how members are matched), a materialised
 // product list, and a shared payload. Lots are never fanned out into batches.
+import type { ListOptions } from './list'
 
 export type LotStatus = 'open' | 'closed' | 'recalled' | 'archived'
 
@@ -60,9 +61,11 @@ export interface LotCreateInput {
 
 export type LotUpdateInput = Partial<LotCreateInput>
 
-export interface ListLotsParams {
+/** `lots.list` / `lots.publicList` options: the filters, plus `limit` (default 50) and `cursor`. */
+export interface ListLotsParams extends ListOptions {
   status?: LotStatus
-  search?: string
+  /** Search text. */
+  q?: string
   /** Reverse lookup — lots containing this product id. */
   productId?: string
   /** Admin only: include soft-deleted lots (default false). */

@@ -1,5 +1,6 @@
 // src/api/proof.ts
 import { request, post, put, del } from "../http.js";
+import { listQuery } from "../list.js";
 export var proof;
 (function (proof) {
     /**
@@ -51,16 +52,22 @@ export var proof;
     }
     proof.get = get;
     /**
-     * List all Proofs for a Collection, in one list (no pages).
+     * List all Proofs for a Collection, a page at a time.
      * GET /public/collection/:collectionId/proof
+     *
+     * @param collectionId - Identifier of the collection
+     * @param options - `limit` (default 50) and `cursor`; `expand: ['product']` brings each proof's product along
      *
      * @example
      * ```typescript
-     * const { items } = await proof.list(collectionId)
+     * let page = await proof.list(collectionId, { limit: 50, expand: ['product'] })
+     * while (page.nextCursor) {
+     *   page = await proof.list(collectionId, { limit: 50, expand: ['product'], cursor: page.nextCursor })
+     * }
      * ```
      */
-    async function list(collectionId, include) {
-        const qp = include && include.length ? `?include=${encodeURIComponent(include.join(','))}` : '';
+    async function list(collectionId, options = {}) {
+        const qp = listQuery({ limit: options.limit, cursor: options.cursor, expand: options.expand });
         const path = `/public/collection/${encodeURIComponent(collectionId)}/proof${qp}`;
         return request(path);
     }
@@ -172,41 +179,48 @@ export var proof;
     }
     proof.remove = remove;
     /**
-     * Get proofs for a user in a collection (admin only), in one list (no pages).
+     * Get proofs for a user in a collection (admin only), a page at a time.
      * GET /admin/collection/:collectionId/proof/findByUser/:userId
+     *
+     * @param options - `limit` (default 50) and `cursor`
      *
      * @example
      * ```typescript
-     * const { items } = await proof.getByUser(collectionId, userId)
+     * let page = await proof.getByUser(collectionId, userId, { limit: 50 })
+     * while (page.nextCursor) page = await proof.getByUser(collectionId, userId, { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    async function getByUser(collectionId, userId) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/proof/findByUser/${encodeURIComponent(userId)}`;
+    async function getByUser(collectionId, userId, options = {}) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/proof/findByUser/${encodeURIComponent(userId)}${listQuery({ limit: options.limit, cursor: options.cursor })}`;
         return request(path);
     }
     proof.getByUser = getByUser;
     /**
-     * Get proofs for a product (admin only), in one list (no pages).
+     * Get proofs for a product (admin only), a page at a time.
      * GET /admin/collection/:collectionId/product/:productId/proof
+     *
+     * @param options - `limit` (default 50) and `cursor`
      *
      * @example
      * ```typescript
-     * const { items } = await proof.getByProduct(collectionId, productId)
+     * let page = await proof.getByProduct(collectionId, productId, { limit: 50 })
+     * while (page.nextCursor) page = await proof.getByProduct(collectionId, productId, { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    async function getByProduct(collectionId, productId) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof`;
+    async function getByProduct(collectionId, productId, options = {}) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof${listQuery({ limit: options.limit, cursor: options.cursor })}`;
         return request(path);
     }
     proof.getByProduct = getByProduct;
     /**
-     * Find proofs for a product (admin only): the newest `limit` (default 100), or every proof matching
-     * `filterBy`. For counting, sorting and paging through a collection's proofs use `proof.query`.
+     * Find proofs for a product (admin only): the newest ones, `limit` at a time (default 100), or the
+     * proofs matching `filterBy`. `expand: ['assets']` attaches each proof's assets. Pass `nextCursor` back
+     * as `cursor` for the next page. For counting and sorting a collection's proofs use `proof.query`.
      * POST /admin/collection/:collectionId/product/:productId/proof/find
      *
      * @example
      * ```typescript
-     * const { items } = await proof.findByProduct(collectionId, productId, { limit: 50, includes: ['assets'] })
+     * const { items, nextCursor } = await proof.findByProduct(collectionId, productId, { limit: 50, expand: ['assets'] })
      * const red = await proof.findByProduct(collectionId, productId, { filterBy: [{ field: 'values.colour', value: 'red' }] })
      * ```
      */
@@ -216,16 +230,21 @@ export var proof;
     }
     proof.findByProduct = findByProduct;
     /**
-     * Get proofs for a batch (admin only), in one list (no pages).
+     * Get proofs for a batch (admin only), a page at a time.
      * GET /admin/collection/:collectionId/product/:productId/batch/:batchId/proof
+     *
+     * @param options - `limit` (default 50) and `cursor`
      *
      * @example
      * ```typescript
-     * const { items } = await proof.getByBatch(collectionId, productId, batchId)
+     * let page = await proof.getByBatch(collectionId, productId, batchId, { limit: 50 })
+     * while (page.nextCursor) {
+     *   page = await proof.getByBatch(collectionId, productId, batchId, { limit: 50, cursor: page.nextCursor })
+     * }
      * ```
      */
-    async function getByBatch(collectionId, productId, batchId) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/batch/${encodeURIComponent(batchId)}/proof`;
+    async function getByBatch(collectionId, productId, batchId, options = {}) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/batch/${encodeURIComponent(batchId)}/proof${listQuery({ limit: options.limit, cursor: options.cursor })}`;
         return request(path);
     }
     proof.getByBatch = getByBatch;
@@ -294,16 +313,18 @@ export var proof;
     }
     proof.createGrant = createGrant;
     /**
-     * List the active + past grants on a proof (owner / collection admin only), in one list (no pages).
+     * List the active + past grants on a proof (owner / collection admin only), a page at a time.
      * Tokens are never returned here.
+     *
+     * @param options - `limit` (default 50) and `cursor`
      *
      * @example
      * ```typescript
-     * const { items } = await proof.listGrants(collectionId, productId, proofId)
+     * const { items, nextCursor } = await proof.listGrants(collectionId, productId, proofId, { limit: 50 })
      * ```
      */
-    async function listGrants(collectionId, productId, proofId) {
-        return request(grantBase(collectionId, productId, proofId));
+    async function listGrants(collectionId, productId, proofId, options = {}) {
+        return request(`${grantBase(collectionId, productId, proofId)}${listQuery({ limit: options.limit, cursor: options.cursor })}`);
     }
     proof.listGrants = listGrants;
     /** Revoke a grant by id (owner / collection admin only). Takes effect immediately. */

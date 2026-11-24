@@ -96,10 +96,10 @@ describe('lists: claim sets, partners, assets, secrets, AuthKit, knowledge, AI s
     const page = answer({ items: [{ id: 'as1', name: 'hero.png' }], nextCursor: 'next-1', count: 41 })
     const got = await asset.listAdmin({
       collectionId: 'c1', productId: 'p1', proofId: 'pr1', appId: 'gallery', assetType: 'Image', labels: 'hero,banner',
-      sort: 'name', order: 'asc', limit: 20, include: ['temporary', 'derived'],
+      orderBy: [{ name: 'asc' }], limit: 20, include: ['temporary', 'derived'],
     })
     assert.deepEqual(got, page)
-    assert.deepEqual(call(), ['GET', '/admin/collection/c1/asset?productId=p1&proofId=pr1&appId=gallery&assetType=Image&labels=hero%2Cbanner&sort=name&order=asc&limit=20&include=temporary%2Cderived'])
+    assert.deepEqual(call(), ['GET', '/admin/collection/c1/asset?productId=p1&proofId=pr1&appId=gallery&assetType=Image&labels=hero%2Cbanner&orderBy=name%3Aasc&limit=20&include=temporary%2Cderived'])
     await asset.listAdmin({ collectionId: 'c1', limit: 20, cursor: 'next-1' })
     assert.deepEqual(call(), ['GET', '/admin/collection/c1/asset?limit=20&cursor=next-1'])
     await asset.listAdmin({ collectionId: 'c1', offset: 20 } as any)
@@ -134,13 +134,13 @@ describe('lists: claim sets, partners, assets, secrets, AuthKit, knowledge, AI s
 
   test('knowledge: the public search answers in the same shape as the admin search', async () => {
     const found = answer({ items: [{ title: 'Kettle manual', heading: 'Descaling', score: 0.9 }], nextCursor: null, query: 'descale', mode: 'hybrid' })
-    const open = await knowledge.publicSearch('c1', { query: 'descale', filters: { productId: 'p1' }, k: 5 })
+    const open = await knowledge.publicSearch('c1', { q: 'descale', filters: { productId: 'p1' }, limit: 5 })
     assert.deepEqual(call(), ['POST', '/public/collection/c1/knowledge/search'])
-    assert.deepEqual(last().body, { query: 'descale', filters: { productId: 'p1' }, k: 5 })
+    assert.deepEqual(last().body, { q: 'descale', filters: { productId: 'p1' }, limit: 5 })
     assert.deepEqual(open, found)
     assert.equal(open.mode, 'hybrid')
 
-    const staff = await knowledge.search('c1', { query: 'descale', k: 5 })
+    const staff = await knowledge.search('c1', { q: 'descale', limit: 5 })
     assert.deepEqual(call(), ['POST', '/admin/collection/c1/knowledge/search'])
     assert.deepEqual(staff, open)
   })

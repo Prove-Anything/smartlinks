@@ -5,7 +5,7 @@
  * with flexible metadata.
  */
 
-import type { ListOptions } from './list'
+import type { ListOptions, OrderBy, DateRange } from './list'
 
 /**
  * Represents a single item within an order.
@@ -142,6 +142,7 @@ export interface DeleteOrderResponse {
 
 /**
  * Request parameters for listing orders. `limit` (default 100) and `cursor` page the list.
+ * `expand: ['items']` brings each order's items along.
  */
 export interface ListOrdersRequest extends ListOptions {
   status?: string                   // Optional: Filter by status
@@ -149,7 +150,8 @@ export interface ListOrdersRequest extends ListOptions {
   customerId?: string               // Optional: Filter by customer ID
   direction?: OrderDirection        // Optional: Only sales, or only purchase, orders
   partyId?: string                  // Optional: Filter by supplier
-  includeItems?: boolean            // Optional: Include items array (default: false)
+  /** Bring each order's items along: `['items']` (left out by default). */
+  expand?: Array<'items'>
 }
 
 /**
@@ -187,16 +189,25 @@ export interface GetOrderItemsParams extends ListOptions {}
 
 /**
  * Request for advanced order querying. `limit` (default 100) and `cursor` page the results.
+ * Sorting (`orderBy`), the date ranges (`createdAt`, `updatedAt`) and `expand` sit beside `query`,
+ * not inside it.
  */
 export interface QueryOrdersRequest extends ListOptions {
+  /**
+   * What to sort by, most important first: `createdAt` (the default, newest first), `updatedAt`,
+   * `status`, `orderRef`, `customerId` or `itemCount`. Example: `[{ status: 'asc' }, { createdAt: 'desc' }]`.
+   */
+  orderBy?: OrderBy<'createdAt' | 'updatedAt' | 'status' | 'orderRef' | 'customerId' | 'itemCount'>
+  /** When the order was created: on or after `gte`, on or before `lte`. */
+  createdAt?: DateRange
+  /** When the order was last updated: on or after `gte`, on or before `lte`. */
+  updatedAt?: DateRange
+  /** Bring each order's items along: `['items']` (left out by default). */
+  expand?: Array<'items'>
   query?: {
     status?: string
     orderRef?: string
     customerId?: string
-    createdAfter?: string           // ISO 8601 date
-    createdBefore?: string          // ISO 8601 date
-    updatedAfter?: string           // ISO 8601 date
-    updatedBefore?: string          // ISO 8601 date
     minItemCount?: number
     maxItemCount?: number
     productId?: string
@@ -211,15 +222,7 @@ export interface QueryOrdersRequest extends ListOptions {
       itemId: string
     }>
     metadata?: Record<string, any>
-    /**
-     * Sort field: `createdAt` (default), `updatedAt`, `status`, `orderRef`, `customerId` or `itemCount`
-     * (snake_case works too). Also accepts `"-updatedAt"` (descending) / `"+status"` (ascending) or
-     * `"status:asc,createdAt:desc"`. Any other field is a 400 listing the allowed ones.
-     */
-    sortBy?: 'createdAt' | 'updatedAt' | 'status' | 'orderRef' | 'customerId' | 'itemCount' | (string & {})
-    sortOrder?: 'asc' | 'desc'
   }
-  includeItems?: boolean            // Optional: Include items array (default: false)
 }
 
 /**
@@ -322,10 +325,10 @@ export interface TagScanEvent {
 }
 
 /**
- * Request for timeline analytics.
+ * Request for timeline analytics. `limit` (default 1000) and `cursor` page the events; the time
+ * window is `from` / `to`.
  */
-export interface TimelineRequest {
-  limit?: number                        // Max results (default: 1000)
+export interface TimelineRequest extends ListOptions {
   from?: string                         // ISO 8601 start date filter
   to?: string                           // ISO 8601 end date filter
   isAdmin?: boolean                     // Filter by admin scans only
@@ -339,11 +342,9 @@ export interface LocationScan extends TagScanEvent {
 }
 
 /**
- * Request for location history.
+ * Request for location history: `limit` (default 1000) and `cursor` page the scans.
  */
-export interface LocationRequest {
-  limit?: number                        // Max results (default: 1000)
-}
+export interface LocationRequest extends ListOptions {}
 
 /**
  * Request for bulk analytics.

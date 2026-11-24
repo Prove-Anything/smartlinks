@@ -1,18 +1,6 @@
 // src/api/journeys.ts
 import { request, post, patch, del } from "../http.js";
-function encodeQuery(params) {
-    const search = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-        if (value === undefined || value === null || value === "")
-            continue;
-        if (typeof value === "boolean")
-            search.set(key, value ? "true" : "false");
-        else
-            search.set(key, String(value));
-    }
-    const qs = search.toString();
-    return qs ? `?${qs}` : "";
-}
+import { listQuery } from "../list.js";
 export var journeys;
 (function (journeys) {
     // Create
@@ -32,7 +20,7 @@ export var journeys;
      * ```
      */
     async function list(collectionId, query = {}) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/journeys/${encodeQuery(query)}`;
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/journeys/${listQuery(query)}`;
         return request(path);
     }
     journeys.list = list;

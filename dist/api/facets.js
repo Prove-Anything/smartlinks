@@ -1,4 +1,5 @@
 import { del, post, put, request } from "../http.js";
+import { listQuery } from "../list.js";
 function appendSearchParam(searchParams, key, value) {
     if (value === undefined || value === null)
         return;
@@ -24,7 +25,8 @@ function buildQueryString(params) {
 export var facets;
 (function (facets) {
     /**
-     * The collection's facets (admin). All of them come back in one answer: `nextCursor` is always null.
+     * The collection's facets (admin). A small fixed set: all of them come back in one answer, so there is
+     * no `limit` or `cursor` and `nextCursor` is always null.
      *
      * @example
      * ```typescript
@@ -58,16 +60,23 @@ export var facets;
     }
     facets.remove = remove;
     /**
-     * One facet and all its values (admin). The values are in `items`; `nextCursor` is always null.
+     * One facet and its values (admin), a page at a time. The values are in `items`; pass `nextCursor` back
+     * as `cursor` for the next page (null means that was the last one).
+     *
+     * @param params - `includeDeleted`, plus `limit` (default 50) and `cursor`
      *
      * @example
      * ```typescript
-     * const { facet, items } = await facets.listValues('coll_123', 'brand')
-     * items.map(v => v.name)
+     * let page = await facets.listValues('coll_123', 'brand', { limit: 50 })
+     * const names = page.items.map(v => v.name)
+     * while (page.nextCursor) {
+     *   page = await facets.listValues('coll_123', 'brand', { limit: 50, cursor: page.nextCursor })
+     *   names.push(...page.items.map(v => v.name))
+     * }
      * ```
      */
     async function listValues(collectionId, facetKey, params) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/facets/${encodeURIComponent(facetKey)}/values${buildQueryString(params)}`;
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/facets/${encodeURIComponent(facetKey)}/values${listQuery(params)}`;
         return request(path);
     }
     facets.listValues = listValues;
@@ -93,12 +102,18 @@ export var facets;
     facets.removeValue = removeValue;
     /**
      * Facet counts for a set of products (admin): each facet with its values in `items`, and the
-     * count for each value in `buckets`. Everything comes back in one answer: `nextCursor` is always null.
+     * count for each value in `buckets`. Everything comes back in one answer, so there is no `limit` or
+     * `cursor` and `nextCursor` is always null.
+     *
+     * Which products are counted: `q` (search text), `createdAt` / `updatedAt` (date ranges) and the
+     * filters in `query`, the same as `products.query`.
      *
      * @example
      * ```typescript
      * const { items, buckets, meta } = await facets.query('coll_123', {
      *   facetKeys: ['brand', 'material'],
+     *   q: 'oak',
+     *   createdAt: { gte: '2026-11-01T00:00:00Z' },
      *   query: { facetEquals: { brand: 'acme' } },
      * })
      * ```
@@ -109,7 +124,8 @@ export var facets;
     }
     facets.query = query;
     /**
-     * The facet namespaces in use (admin). The names are in `items`; `nextCursor` is always null.
+     * The facet namespaces in use (admin). A small fixed set: all the names are in `items`, there is no
+     * `limit` or `cursor`, and `nextCursor` is always null.
      *
      * @example
      * ```typescript
@@ -122,7 +138,8 @@ export var facets;
     }
     facets.namespaces = namespaces;
     /**
-     * The collection's facets (public). All of them come back in one answer: `nextCursor` is always null.
+     * The collection's facets (public). A small fixed set: all of them come back in one answer, so there is
+     * no `limit` or `cursor` and `nextCursor` is always null.
      *
      * @example
      * ```typescript
@@ -140,15 +157,18 @@ export var facets;
     }
     facets.publicGet = publicGet;
     /**
-     * One facet and all its values (public). The values are in `items`; `nextCursor` is always null.
+     * One facet and its values (public), a page at a time. The values are in `items`; pass `nextCursor`
+     * back as `cursor` for the next page (null means that was the last one).
+     *
+     * @param options - `limit` (default 50) and `cursor`
      *
      * @example
      * ```typescript
-     * const { facet, items } = await facets.publicListValues('coll_123', 'brand')
+     * const { facet, items, nextCursor } = await facets.publicListValues('coll_123', 'brand', { limit: 50 })
      * ```
      */
-    async function publicListValues(collectionId, facetKey) {
-        const path = `/public/collection/${encodeURIComponent(collectionId)}/facets/${encodeURIComponent(facetKey)}/values`;
+    async function publicListValues(collectionId, facetKey, options = {}) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/facets/${encodeURIComponent(facetKey)}/values${listQuery({ limit: options.limit, cursor: options.cursor })}`;
         return request(path);
     }
     facets.publicListValues = publicListValues;
@@ -159,11 +179,15 @@ export var facets;
     facets.publicGetValue = publicGetValue;
     /**
      * Facet counts for a set of products (public): each facet with its values in `items`, and the
-     * count for each value in `buckets`. Everything comes back in one answer: `nextCursor` is always null.
+     * count for each value in `buckets`. Everything comes back in one answer, so there is no `limit` or
+     * `cursor` and `nextCursor` is always null.
+     *
+     * Which products are counted: `q` (search text), `createdAt` / `updatedAt` (date ranges) and the
+     * filters in `query`, the same as `products.query`.
      *
      * @example
      * ```typescript
-     * const { items, buckets } = await facets.publicQuery('coll_123', { facetKeys: ['brand'] })
+     * const { items, buckets } = await facets.publicQuery('coll_123', { facetKeys: ['brand'], q: 'oak' })
      * ```
      */
     async function publicQuery(collectionId, body) {
@@ -172,7 +196,8 @@ export var facets;
     }
     facets.publicQuery = publicQuery;
     /**
-     * The facet namespaces in use (public). The names are in `items`; `nextCursor` is always null.
+     * The facet namespaces in use (public). A small fixed set: all the names are in `items`, there is no
+     * `limit` or `cursor`, and `nextCursor` is always null.
      *
      * @example
      * ```typescript

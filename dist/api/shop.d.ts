@@ -8,16 +8,18 @@ export declare namespace shop {
     function config(collectionId: string): Promise<ShopPublicConfig>;
     /**
      * What is for sale, in the shop's currency, with stock (`inStock`, `available`) and whether the buyer must
-     * sign in first (`needsSignIn`: a proof or access goes to an account). Everything for sale comes in one
-     * answer (`nextCursor` is always null), with the shop's `currency` beside the list.
+     * sign in first (`needsSignIn`: a proof or access goes to an account). A page at a time: page with
+     * `limit` (50 unless you say) and `cursor`. The shop's `currency` comes beside the list. Pass
+     * `productIds` for just those products.
      *
      * @example
      * ```typescript
-     * const { items, currency } = await shop.products(collectionId)
-     * items.map((p) => `${p.name}: ${formatMoney(p.amount, p.currency)}${p.inStock ? '' : ' (sold out)'}`)
+     * let page = await shop.products(collectionId, { limit: 50 })
+     * page.items.map((p) => `${p.name}: ${formatMoney(p.amount, p.currency)}${p.inStock ? '' : ' (sold out)'}`)
+     * while (page.nextCursor) page = await shop.products(collectionId, { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    function products(collectionId: string, params?: {
+    function products(collectionId: string, params?: ListOptions & {
         productIds?: string[];
     }): Promise<ListResult<ShopProduct> & {
         currency: string;

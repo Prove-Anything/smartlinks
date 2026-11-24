@@ -10,6 +10,7 @@ import {
   ListCratesRequest
 } from "../types/crate"
 import type { ListResult } from "../types/list"
+import { listQuery } from "../list"
 
 /**
  * Crate Management API
@@ -50,13 +51,12 @@ export namespace crate {
     collectionId: string,
     params?: ListCratesRequest
   ): Promise<ListResult<Crate>> {
-    const queryParams = new URLSearchParams()
-    if (params?.limit) queryParams.append('limit', params.limit.toString())
-    if (params?.cursor) queryParams.append('cursor', params.cursor)
-    if (params?.includeDeleted) queryParams.append('includeDeleted', 'true')
-
-    const query = queryParams.toString()
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/crate${query ? `?${query}` : ''}`
+    const query = listQuery({
+      limit: params?.limit || undefined,
+      cursor: params?.cursor,
+      includeDeleted: params?.includeDeleted ? 'true' : undefined,
+    })
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/crate${query}`
     return request<ListResult<Crate>>(path)
   }
 

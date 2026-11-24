@@ -1,5 +1,5 @@
 import type { AuthLoginResponse, AppleLoginOptions, MicrosoftLoginOptions, RefreshResponse, LogoutResponse, PhoneSendCodeResponse, PhoneVerifyResponse, PasswordResetRequestResponse, VerifyResetTokenResponse, PasswordResetCompleteResponse, EmailVerificationActionResponse, EmailVerifyTokenResponse, AuthKitConfig, AuthKitConfigInput, AuthKitSetIdentityResponse, AuthKitInviteRequest, AuthKitInviteResponse, AuthKitSchema, AuthKitSettingsResponse, AuthKitRedirectDomainsResponse, AuthKitSetupRequest, AuthKitSetupResponse, AuthKitEmailKind, AuthKitEmailPreview, AuthKitSecretLink, MagicLinkSendResponse, MagicLinkVerifyResponse, UserProfile, UpdateProfileResponse, ProfileUpdateData, SuccessResponse, SendWhatsAppRequest, SendWhatsAppResponse, ExchangeWhatsAppSessionResponse, VerifyWhatsAppResponse, WhatsAppStatusResponse, SendSmsVerifyRequest, SendSmsVerifyResponse, VerifySmsResponse, UpsertContactRequest, UpsertContactResponse, MfaChallengeSendResponse, MfaFinalizeResponse, MfaEnrollSendResponse, MfaTotpEnrollResponse, MfaEnrolledResponse, MfaFactor, MfaFactorsResponse, TrustedDevice } from "../types/authKit.js";
-import type { ListResult } from "../types/list.js";
+import type { ListResult, ListOptions } from "../types/list.js";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
@@ -273,16 +273,18 @@ export declare namespace authKit {
     /** Remove an enrolled MFA factor (authenticated). Server route is DELETE with a body. */
     function removeMfaFactor(clientId: string, factor: MfaFactor, password: string): Promise<SuccessResponse>;
     /**
-     * List devices trusted to skip MFA challenges for the current user (authenticated). Returns
-     * `{ items, nextCursor }`: the devices are in `items`. The list is not paged, so `nextCursor` is
-     * always `null`.
+     * List devices trusted to skip MFA challenges for the current user (authenticated), a page at a
+     * time. Returns `{ items, nextCursor }`: the devices are in `items`. Page with `limit` (50 unless
+     * you say) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items: devices } = await authKit.listTrustedDevices(clientId)
+     * let page = await authKit.listTrustedDevices(clientId, { limit: 50 })
+     * page.items // TrustedDevice[]
+     * while (page.nextCursor) page = await authKit.listTrustedDevices(clientId, { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    function listTrustedDevices(clientId: string): Promise<ListResult<TrustedDevice>>;
+    function listTrustedDevices(clientId: string, options?: ListOptions): Promise<ListResult<TrustedDevice>>;
     /** Revoke a single trusted device by id (authenticated). */
     function revokeTrustedDevice(clientId: string, id: string): Promise<SuccessResponse>;
     /**
@@ -295,15 +297,18 @@ export declare namespace authKit {
     /** Get the full AuthKit config, including admin-only fields like `security.lockout` (admin auth). */
     function get(collectionId: string, authKitId: string): Promise<AuthKitConfig>;
     /**
-     * List a collection's AuthKit configs (admin). Returns `{ items, nextCursor }`: the configs are in
-     * `items`. The list is not paged, so `nextCursor` is always `null`. There is no public list.
+     * List a collection's AuthKit configs (admin), a page at a time. Returns `{ items, nextCursor }`:
+     * the configs are in `items`. Page with `limit` (50 unless you say) and `cursor`. There is no
+     * public list.
      *
      * @example
      * ```typescript
-     * const { items: kits } = await authKit.list('coll_123')
+     * let page = await authKit.list('coll_123', { limit: 50 })
+     * page.items // AuthKitConfig[]
+     * while (page.nextCursor) page = await authKit.list('coll_123', { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    function list(collectionId: string): Promise<ListResult<AuthKitConfig>>;
+    function list(collectionId: string, options?: ListOptions): Promise<ListResult<AuthKitConfig>>;
     /** Create an AuthKit client config (admin). Accepts the account `security` policy — see {@link AuthKitConfigInput}. */
     function create(collectionId: string, data: AuthKitConfigInput): Promise<AuthKitConfig>;
     /**

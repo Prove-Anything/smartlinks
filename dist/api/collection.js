@@ -1,5 +1,6 @@
 // src/api/collection.ts
 import { request, post, put, del } from "../http.js";
+import { listQuery } from "../list.js";
 export var collection;
 (function (collection) {
     /**
@@ -26,19 +27,22 @@ export var collection;
     }
     collection.get = get;
     /**
-     * The collections the signed-in user can work on (admin). All of them come back in one answer:
-     * `nextCursor` is always null. There is no public list of collections: read one with `collection.get`.
+     * The collections the signed-in user can work on (admin), a page at a time. Page with `limit`
+     * (50 unless you say) and `cursor`. There is no public list of collections: read one with
+     * `collection.get`.
+     * @param options - `limit` and `cursor`
      * @returns Promise resolving to `{ items, nextCursor }`, where `items` are CollectionResponse objects
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
-     * const { items } = await collection.list()
-     * items.forEach(c => console.log(c.id, c.title))
+     * let page = await collection.list({ limit: 50 })
+     * page.items.forEach(c => console.log(c.id, c.title))
+     * while (page.nextCursor) page = await collection.list({ limit: 50, cursor: page.nextCursor })
      * ```
      */
-    async function list() {
-        return request('/admin/collection');
+    async function list(options = {}) {
+        return request(`/admin/collection${listQuery(options)}`);
     }
     collection.list = list;
     /**
@@ -282,19 +286,21 @@ export var collection;
     /**
      * List the users with access to a collection, each with their access level (admin only). Access is
      * stored in the collection's `roles` map (userId → level); this resolves each to name/email.
-     * All of them come back in one answer: `nextCursor` is always null.
+     * A page at a time: page with `limit` (50 unless you say) and `cursor`.
      * GET /admin/collection/:collectionId/getUsers
      * @param collectionId - Identifier of the collection
+     * @param options - `limit` and `cursor`
      * @returns Promise resolving to `{ items, nextCursor }`, where `items` are the collection's users
      *
      * @example
      * ```typescript
-     * const { items: users } = await collection.getUsers('coll_123')
-     * users.forEach(u => console.log(u.email, u.access))
+     * let page = await collection.getUsers('coll_123', { limit: 50 })
+     * page.items.forEach(u => console.log(u.email, u.access))
+     * while (page.nextCursor) page = await collection.getUsers('coll_123', { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    async function getUsers(collectionId) {
-        return request(`/admin/collection/${encodeURIComponent(collectionId)}/getUsers`);
+    async function getUsers(collectionId, options = {}) {
+        return request(`/admin/collection/${encodeURIComponent(collectionId)}/getUsers${listQuery(options)}`);
     }
     collection.getUsers = getUsers;
     /**

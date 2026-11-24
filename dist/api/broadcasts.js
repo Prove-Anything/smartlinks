@@ -1,20 +1,6 @@
 // src/api/broadcasts.ts
 import { request, post, patch, del } from "../http.js";
-function encodeQuery(params) {
-    const search = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-        if (value === undefined || value === null || value === "")
-            continue;
-        if (typeof value === "boolean") {
-            search.set(key, value ? "true" : "false");
-        }
-        else {
-            search.set(key, String(value));
-        }
-    }
-    const qs = search.toString();
-    return qs ? `?${qs}` : "";
-}
+import { listQuery } from "../list.js";
 export var broadcasts;
 (function (broadcasts) {
     // CRUD: Create broadcast
@@ -34,7 +20,7 @@ export var broadcasts;
      * ```
      */
     async function list(collectionId, query = {}) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeQuery(query)}`;
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${listQuery(query)}`;
         return request(path);
     }
     broadcasts.list = list;
@@ -69,7 +55,7 @@ export var broadcasts;
      * ```
      */
     async function recipients(collectionId, id, query = {}) {
-        const qs = encodeQuery(query);
+        const qs = listQuery(query);
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/recipients${qs}`;
         return request(path);
     }

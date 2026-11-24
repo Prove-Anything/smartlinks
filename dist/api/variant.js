@@ -1,5 +1,6 @@
 // src/api/variant.ts
 import { request, post, put, del } from "../http.js";
+import { listQuery } from "../list.js";
 export var variant;
 (function (variant) {
     // Admin CRUD operations
@@ -17,21 +18,24 @@ export var variant;
     }
     variant.get = get;
     /**
-     * List all variants for a collection and product (admin only). All of them come in one answer:
-     * `nextCursor` is always null.
+     * List the variants for a collection and product (admin only), 50 at a time unless you give a
+     * `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that
+     * was the last one.
      * @param collectionId - Identifier of the parent collection
      * @param productId - Identifier of the parent product
-     * @returns Promise resolving to `{ items: VariantResponse[], nextCursor: null }`
+     * @param options - Paging: `limit` and `cursor`
+     * @returns Promise resolving to `{ items: VariantResponse[], nextCursor, count }`
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
-     * const { items } = await variant.list('coll_123', 'prod_456')
-     * items.map((v) => v.name)
+     * let page = await variant.list('coll_123', 'prod_456', { limit: 100 })
+     * page.items.map((v) => v.name)
+     * while (page.nextCursor) page = await variant.list('coll_123', 'prod_456', { limit: 100, cursor: page.nextCursor })
      * ```
      */
-    async function list(collectionId, productId) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/variant`;
+    async function list(collectionId, productId, options = {}) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/variant${listQuery({ limit: options.limit, cursor: options.cursor })}`;
         return request(path);
     }
     variant.list = list;

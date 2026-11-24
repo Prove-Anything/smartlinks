@@ -1,5 +1,5 @@
 import type { StandardQuery, QueryResult, QueryDescription } from "../types/query.js";
-import type { ListResult } from "../types/list.js";
+import type { ListResult, ListOptions } from "../types/list.js";
 import type { AppCase, CreateCaseInput, UpdateCaseInput, AppendHistoryInput, CaseSummaryRequest, CaseSummaryResponse, CaseListQueryParams, AppThread, CreateThreadInput, UpdateThreadInput, ReplyInput, ThreadListQueryParams, AppRecord, CreateRecordInput, CreateRecordResponse, UpdateRecordInput, UpsertRecordInput, UpsertRecordResponse, MatchRecordsInput, MatchResult, BulkUpsertItem, BulkUpsertResult, BulkDeleteResult, BulkDeleteInput, RecordListQueryParams, ResolveAllParams, ResolveAllResult, PreviewRuleParams, PreviewRuleResult, AggregateRequest, AggregateResponse, RelatedResponse } from '../types/appObjects.js';
 export declare namespace app {
     /**
@@ -12,16 +12,20 @@ export declare namespace app {
          * see every entry; the public API lists public records and lists the app declares public. Hold on
          * to `version` and pass it back to get `{ unchanged: true }` when nothing changed.
          *
-         * Returns `{ items, nextCursor, count?, version, mode }`: the entries are in `items`, already sorted.
-         * A picker is not paged, so `nextCursor` is always `null`.
+         * Returns `{ items, nextCursor, count?, version, mode }`: the entries are in `items`, already sorted,
+         * 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the
+         * next page; `null` means that was the last one. `q` searches the entries.
          *
          * @example
          * ```typescript
-         * const res = await app.options.get(collectionId, appId, 'type:machine', { admin: true })
+         * const res = await app.options.get(collectionId, appId, 'type:machine', { admin: true, limit: 200 })
          * if (!res.unchanged) { options = res.items; version = res.version }
+         *
+         * // A type too large to send whole: search it
+         * const found = await app.options.get(collectionId, appId, 'type:machine', { q: 'mix', limit: 20 })
          * ```
          */
-        function get(collectionId: string, appId: string, source: string, opts?: {
+        function get(collectionId: string, appId: string, source: string, opts?: ListOptions & {
             q?: string;
             version?: string;
             admin?: boolean;
@@ -44,6 +48,7 @@ export declare namespace app {
          *
          * Returns `{ items, nextCursor, count }`: the cases are in `items`, `count` is how many match in
          * all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`.
+         * Sort with `orderBy`. A date field (`createdAt`, `updatedAt`, `closedAt`) takes a range: `{ gte, lte }`.
          * `includeDeleted`, `contactId` and `assignedTo` are for admin calls (`admin = true`) only: the
          * public list refuses a parameter it does not read.
          *
@@ -54,6 +59,12 @@ export declare namespace app {
          * while (page.nextCursor) {
          *   page = await app.cases.list(collectionId, appId, { status: 'open', limit: 50, cursor: page.nextCursor })
          * }
+         *
+         * // This month's cases, most urgent first
+         * await app.cases.list(collectionId, appId, {
+         *   createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' },
+         *   orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+         * })
          * ```
          */
         function list(collectionId: string, appId: string, params?: CaseListQueryParams, admin?: boolean): Promise<ListResult<AppCase>>;
@@ -108,6 +119,7 @@ export declare namespace app {
          *
          * Returns `{ items, nextCursor, count }`: the threads are in `items`, `count` is how many match in
          * all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`.
+         * Sort with `orderBy`. A date field (`createdAt`, `updatedAt`) takes a range: `{ gte, lte }`.
          * `includeDeleted` and `contactId` are for admin calls (`admin = true`) only: the public list
          * refuses a parameter it does not read.
          *
@@ -118,6 +130,12 @@ export declare namespace app {
          * while (page.nextCursor) {
          *   page = await app.threads.list(collectionId, appId, { parentType: 'case', parentId: caseId, limit: 50, cursor: page.nextCursor })
          * }
+         *
+         * // The threads with the newest replies, started this month
+         * await app.threads.list(collectionId, appId, {
+         *   createdAt: { gte: '2026-11-01T00:00:00Z' },
+         *   orderBy: [{ lastReplyAt: 'desc' }],
+         * })
          * ```
          */
         function list(collectionId: string, appId: string, params?: ThreadListQueryParams, admin?: boolean): Promise<ListResult<AppThread>>;
@@ -201,6 +219,8 @@ export declare namespace app {
          *
          * Returns `{ items, nextCursor, count }`: the records are in `items`, `count` is how many match in
          * all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`.
+         * Search with `q`, sort with `orderBy`. A date field (`createdAt`, `updatedAt`, `startsAt`,
+         * `expiresAt`) takes a range: `{ gte, lte }`.
          *
          * Public/owner callers only receive records with `status: "active"`.
          * Admin callers can query all statuses (for example `draft`/`archived`).
@@ -214,6 +234,14 @@ export declare namespace app {
          * while (page.nextCursor) {
          *   page = await app.records.list(collectionId, appId, { recordType: 'tip', limit: 100, cursor: page.nextCursor })
          * }
+         *
+         * // Tips about watering, changed this month, newest change first
+         * await app.records.list(collectionId, appId, {
+         *   recordType: 'tip',
+         *   q: 'watering',
+         *   updatedAt: { gte: '2026-11-01T00:00:00Z' },
+         *   orderBy: [{ updatedAt: 'desc' }],
+         * })
          * ```
          */
         function list(collectionId: string, appId: string, params?: RecordListQueryParams, admin?: boolean): Promise<ListResult<AppRecord>>;
@@ -301,8 +329,9 @@ export declare namespace app {
         /**
          * Match records against a runtime target scope.
          * Returns `{ items, nextCursor, count, strategy }`: `items` are the records whose scope is satisfied
-         * by the target, most specific first, and `count` is how many matched. It is not paged
-         * (`nextCursor` is always `null`); cap the answer with `limit`.
+         * by the target, most specific first, and `count` is how many matched. Without a `limit` it answers
+         * up to 100. Give a `limit` (in `input`) to page: when there are more, pass `nextCursor` back as
+         * `cursor`.
          * POST /records/match
          *
          * @param admin - false for public endpoint (visibility-filtered, active-only), true for admin
@@ -315,6 +344,13 @@ export declare namespace app {
          *   recordType: 'nutrition',
          * }, true);
          * const best = items[0] // the single highest-specificity nutrition record
+         *
+         * // 50 at a time
+         * const target = { productId: 'prod_abc' }
+         * let page = await app.records.match(collectionId, appId, { target, limit: 50 })
+         * while (page.nextCursor) {
+         *   page = await app.records.match(collectionId, appId, { target, limit: 50, cursor: page.nextCursor })
+         * }
          * ```
          */
         function match(collectionId: string, appId: string, input: MatchRecordsInput, admin?: boolean): Promise<MatchResult>;
@@ -352,19 +388,27 @@ export declare namespace app {
          * Resolve every applicable record for a product context in one call.
          * Returns `{ items, nextCursor, count, context, truncated }`: `items` are the records across all
          * tiers (proof, batch, variant, product, rule, facet, collection), deduplicated and sorted by
-         * specificity descending, each as `{ record, matchedAt, specificity }`. It is not paged
-         * (`nextCursor` is always `null`); `truncated` says the answer was cut at `limit`.
+         * specificity descending, each as `{ record, matchedAt, specificity }`. Without a `limit` it answers
+         * up to 500. Give a `limit` (in `input`) to page: when there are more, pass `nextCursor` back as
+         * `cursor`.
          * POST /records/resolve-all
          *
          * @param admin - false for public (visibility-filtered, active-only), true for admin (all statuses)
          *
          * @example
          * ```ts
-         * const { items, truncated } = await app.records.resolveAll(collectionId, appId, {
+         * const { items } = await app.records.resolveAll(collectionId, appId, {
          *   context: { productId: 'prod_abc' },
          *   recordType: 'nutrition',
          * })
          * for (const { record, matchedAt } of items) console.log(matchedAt, record.data)
+         *
+         * // 100 at a time
+         * const context = { productId: 'prod_abc' }
+         * let page = await app.records.resolveAll(collectionId, appId, { context, limit: 100 })
+         * while (page.nextCursor) {
+         *   page = await app.records.resolveAll(collectionId, appId, { context, limit: 100, cursor: page.nextCursor })
+         * }
          * ```
          */
         function resolveAll(collectionId: string, appId: string, input: ResolveAllParams, admin?: boolean): Promise<ResolveAllResult>;

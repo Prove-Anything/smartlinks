@@ -11,6 +11,7 @@ var __rest = (this && this.__rest) || function (s, e) {
 };
 import { request, post, put, del, getApiHeaders, getBaseURL, isProxyEnabled, proxyUploadFormData } from "../http.js";
 import { SmartlinksApiError } from "../types/error.js";
+import { listQuery } from "../list.js";
 export var asset;
 (function (asset) {
     function resolveApiUrl(path) {
@@ -209,16 +210,18 @@ export var asset;
     }
     asset.getForCollection = getForCollection;
     /**
-     * The collection's own assets (public). Returns `{ items, nextCursor }`: the assets are in `items`.
-     * The list is not paged, so `nextCursor` is always `null`.
+     * The collection's own assets (public). Returns `{ items, nextCursor, count }`: the assets are in
+     * `items`, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor`
+     * for the next page; `null` means that was the last one.
      *
      * @example
      * ```typescript
-     * const { items } = await asset.listForCollection('my-collection')
+     * let page = await asset.listForCollection('my-collection', { limit: 100 })
+     * while (page.nextCursor) page = await asset.listForCollection('my-collection', { limit: 100, cursor: page.nextCursor })
      * ```
      */
-    async function listForCollection(collectionId) {
-        const path = `/public/collection/${encodeURIComponent(collectionId)}/asset`;
+    async function listForCollection(collectionId, options = {}) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/asset${listQuery({ limit: options.limit, cursor: options.cursor })}`;
         return request(path);
     }
     asset.listForCollection = listForCollection;
@@ -229,16 +232,17 @@ export var asset;
     }
     asset.getForProduct = getForProduct;
     /**
-     * A product's assets (public). Returns `{ items, nextCursor }`: the assets are in `items`.
-     * The list is not paged, so `nextCursor` is always `null`.
+     * A product's assets (public). Returns `{ items, nextCursor, count }`: the assets are in `items`,
+     * 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the
+     * next page; `null` means that was the last one.
      *
      * @example
      * ```typescript
-     * const { items } = await asset.listForProduct('my-collection', 'wine-bottle')
+     * const { items, nextCursor } = await asset.listForProduct('my-collection', 'wine-bottle', { limit: 100 })
      * ```
      */
-    async function listForProduct(collectionId, productId) {
-        const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/asset`;
+    async function listForProduct(collectionId, productId, options = {}) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/asset${listQuery({ limit: options.limit, cursor: options.cursor })}`;
         return request(path);
     }
     asset.listForProduct = listForProduct;
@@ -249,42 +253,36 @@ export var asset;
     }
     asset.getForProof = getForProof;
     /**
-     * A proof's assets (public), optionally only one app's. Returns `{ items, nextCursor }`: the assets
-     * are in `items`. The list is not paged, so `nextCursor` is always `null`.
+     * A proof's assets (public), optionally only one app's. Returns `{ items, nextCursor, count }`: the
+     * assets are in `items`, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor`
+     * back as `cursor` for the next page; `null` means that was the last one.
      *
      * @example
      * ```typescript
-     * const { items } = await asset.listForProof('my-collection', 'wine-bottle', proofId, 'gallery')
+     * const { items, nextCursor } = await asset.listForProof('my-collection', 'wine-bottle', proofId, 'gallery', { limit: 100 })
      * ```
      */
-    async function listForProof(collectionId, productId, proofId, appId) {
-        let path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/asset`;
-        if (appId) {
-            path += `?appId=${encodeURIComponent(appId)}`;
-        }
+    async function listForProof(collectionId, productId, proofId, appId, options = {}) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/asset${listQuery({ appId, limit: options.limit, cursor: options.cursor })}`;
         return request(path);
     }
     asset.listForProof = listForProof;
     /**
-     * List assets for a given scope (a collection, a product or a proof). Returns `{ items, nextCursor }`:
-     * the assets are in `items`. These lists are not paged, so `nextCursor` is always `null`.
+     * List assets for a given scope (a collection, a product or a proof). Returns
+     * `{ items, nextCursor, count }`: the assets are in `items`, 50 at a time unless you give a `limit`
+     * (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the
+     * last one.
      *
      * @example
      * ```typescript
-     * const { items } = await asset.list({
-     *   scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' },
-     *   appId: 'gallery',
-     * })
+     * const scope = { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' } as const
+     * let page = await asset.list({ scope, appId: 'gallery', limit: 100 })
+     * while (page.nextCursor) page = await asset.list({ scope, appId: 'gallery', limit: 100, cursor: page.nextCursor })
      * ```
      */
     async function list(options) {
         const base = buildScopeBase(options.scope);
-        const params = new URLSearchParams();
-        if (options.appId)
-            params.set('appId', options.appId);
-        if (typeof options.limit === 'number')
-            params.set('limit', String(options.limit));
-        const path = `${base}/asset${params.toString() ? `?${params}` : ''}`;
+        const path = `${base}/asset${listQuery({ appId: options.appId, limit: options.limit, cursor: options.cursor })}`;
         return request(path);
     }
     asset.list = list;
@@ -323,41 +321,32 @@ export var asset;
      * List assets for a collection with full filtering options (admin). Returns `{ items, nextCursor }`:
      * the assets are in `items`, 50 at a time unless you give a `limit` (at most 200). Pass `nextCursor`
      * back as `cursor` for the next page; `null` means that was the last one. `count` (how many match in
-     * all) is there when you gave a `limit` or a `cursor`.
+     * all) is there when you gave a `limit` or a `cursor`. Sort with `orderBy` (`createdAt`, `name`,
+     * `size` or `assetType`).
      *
      * @example
      * ```typescript
-     * let page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', limit: 20 })
+     * let page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', orderBy: [{ name: 'asc' }], limit: 20 })
      * console.log(`${page.count} images`)
      * while (page.nextCursor) {
-     *   page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', limit: 20, cursor: page.nextCursor })
+     *   page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', orderBy: [{ name: 'asc' }], limit: 20, cursor: page.nextCursor })
      * }
      * ```
      */
     async function listAdmin(options) {
-        const params = new URLSearchParams();
-        if (options.productId)
-            params.set('productId', options.productId);
-        if (options.proofId)
-            params.set('proofId', options.proofId);
-        if (options.appId)
-            params.set('appId', options.appId);
-        if (options.assetType)
-            params.set('assetType', options.assetType);
-        if (options.labels)
-            params.set('labels', options.labels);
-        if (options.sort)
-            params.set('sort', options.sort);
-        if (options.order)
-            params.set('order', options.order);
-        if (typeof options.limit === 'number')
-            params.set('limit', String(options.limit));
-        if (options.cursor)
-            params.set('cursor', options.cursor);
-        if (options.include && options.include.length)
-            params.set('include', options.include.join(','));
-        const qs = params.toString();
-        const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/asset${qs ? `?${qs}` : ''}`;
+        const qs = listQuery({
+            productId: options.productId,
+            proofId: options.proofId,
+            appId: options.appId,
+            assetType: options.assetType,
+            labels: options.labels,
+            orderBy: options.orderBy,
+            limit: options.limit,
+            cursor: options.cursor,
+            // not a list word here: sent comma-joined, as the route reads it
+            include: options.include && options.include.length ? options.include.join(',') : undefined,
+        });
+        const path = `/admin/collection/${encodeURIComponent(options.collectionId)}/asset${qs}`;
         return request(path);
     }
     asset.listAdmin = listAdmin;

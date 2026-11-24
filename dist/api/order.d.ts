@@ -114,7 +114,7 @@ export declare namespace order {
      * // Filter by customer with items
      * const customerOrders = await order.list('coll_123', {
      *   customerId: 'CUST-789',
-     *   includeItems: true
+     *   expand: ['items']
      * })
      *
      * // Purchase orders from one supplier
@@ -124,7 +124,7 @@ export declare namespace order {
     function list(collectionId: string, params?: ListOrdersRequest): Promise<ListResult<Order>>;
     /**
      * Get items from an order with pagination support.
-     * Use this for orders with many items instead of includeItems.
+     * Use this for orders with many items instead of `expand: ['items']`.
      *
      * @param collectionId - Identifier of the parent collection
      * @param orderId - Order ID
@@ -198,21 +198,18 @@ export declare namespace order {
      * More powerful than the basic list() function.
      *
      * @param collectionId - Identifier of the parent collection
-     * @param data - Query parameters with filters and sorting, plus `limit` and `cursor` for paging
+     * @param data - The filters (`query`), plus `orderBy`, the date ranges `createdAt` / `updatedAt`,
+     *   `expand: ['items']`, and `limit` and `cursor` for paging. These all sit beside `query`, not inside it.
      * @returns Promise resolving to `{ items, nextCursor }`: the matching orders, and the cursor for the next page (null on the last)
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
-     * // Find pending orders created in January 2026
+     * // Find pending orders created in January 2026, newest first
      * const result = await order.query('coll_123', {
-     *   query: {
-     *     status: 'pending',
-     *     createdAfter: '2026-01-01T00:00:00Z',
-     *     createdBefore: '2026-02-01T00:00:00Z',
-     *     sortBy: 'createdAt',
-     *     sortOrder: 'desc'
-     *   },
+     *   query: { status: 'pending' },
+     *   createdAt: { gte: '2026-01-01T00:00:00Z', lte: '2026-02-01T00:00:00Z' },
+     *   orderBy: [{ createdAt: 'desc' }],
      *   limit: 50
      * })
      * console.log(result.items.length)
@@ -220,40 +217,42 @@ export declare namespace order {
      * // The next page: the same query with the cursor
      * if (result.nextCursor) {
      *   const next = await order.query('coll_123', {
-     *     query: { status: 'pending', sortBy: 'createdAt', sortOrder: 'desc' },
+     *     query: { status: 'pending' },
+     *     createdAt: { gte: '2026-01-01T00:00:00Z', lte: '2026-02-01T00:00:00Z' },
+     *     orderBy: [{ createdAt: 'desc' }],
      *     limit: 50,
      *     cursor: result.nextCursor
      *   })
      * }
      *
-     * // Find orders with specific metadata and item count
+     * // Find orders with specific metadata and item count, with their items
      * const highPriority = await order.query('coll_123', {
      *   query: {
      *     metadata: { priority: 'high' },
      *     minItemCount: 10,
      *     maxItemCount: 100
      *   },
-     *   includeItems: true
+     *   expand: ['items']
      * })
      *
-    * // Find orders containing a specific product batch
+     * // Find orders containing a specific product batch
      * const batchOrders = await order.query('coll_123', {
      *   query: {
-    *     productId: 'prod_789',
-    *     batchId: 'BATCH-2024-001'
-    *   },
-    *   includeItems: true
-    * })
-    *
-    * // Find an order containing one of several specific items
-    * const matched = await order.query('coll_123', {
-    *   query: {
-    *     items: [
-    *       { itemType: 'tag', itemId: 'TAG001' },
-    *       { itemType: 'serial', itemId: 'SN12345' }
-    *     ]
+     *     productId: 'prod_789',
+     *     batchId: 'BATCH-2024-001'
      *   },
-     *   includeItems: true
+     *   expand: ['items']
+     * })
+     *
+     * // Find an order containing one of several specific items
+     * const matched = await order.query('coll_123', {
+     *   query: {
+     *     items: [
+     *       { itemType: 'tag', itemId: 'TAG001' },
+     *       { itemType: 'serial', itemId: 'SN12345' }
+     *     ]
+     *   },
+     *   expand: ['items']
      * })
      * ```
      */
@@ -325,19 +324,22 @@ export declare namespace order {
      *
      * @param collectionId - Identifier of the parent collection
      * @param orderId - Order ID
-     * @param params - Optional filters (limit, date range, isAdmin)
-     * @returns Promise resolving to `{ items, nextCursor, orderRef, orderId }`: the scan events (one list, no
-     *   pages: `limit` says how many, default 1000), with the order they belong to
+     * @param params - Optional filters (`from` / `to` time window, `isAdmin`), plus `limit` and `cursor` for paging
+     * @returns Promise resolving to `{ items, nextCursor, orderRef, orderId }`: the scan events, a page at a
+     *   time (`limit` says how many, default 1000), with the order they belong to
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
-     * // Get all scan events
-     * const timeline = await order.getTimeline('coll_123', 'order_abc123')
+     * // The first page of scan events
+     * let timeline = await order.getTimeline('coll_123', 'order_abc123')
      *
      * timeline.items.forEach(event => {
      *   console.log(`${event.timestamp}: ${event.eventType} by ${event.isAdmin ? 'admin' : 'customer'}`)
      * })
+     *
+     * // The next page
+     * if (timeline.nextCursor) timeline = await order.getTimeline('coll_123', 'order_abc123', { cursor: timeline.nextCursor })
      *
      * // Get admin scans only from last week
      * const adminScans = await order.getTimeline('coll_123', 'order_abc123', {
@@ -357,21 +359,25 @@ export declare namespace order {
      *
      * @param collectionId - Identifier of the parent collection
      * @param orderId - Order ID
-     * @param params - Optional limit parameter
-     * @returns Promise resolving to `{ items, nextCursor, orderRef, orderId }`: the scans that have a location
-     *   (one list, no pages: `limit` says how many, default 1000), with the order they belong to
+     * @param params - Optional `limit` and `cursor` for paging
+     * @returns Promise resolving to `{ items, nextCursor, orderRef, orderId }`: the scans that have a location,
+     *   a page at a time (`limit` says how many, default 1000), with the order they belong to
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
-     * const locations = await order.getLocationHistory('coll_123', 'order_abc123', {
+     * let locations = await order.getLocationHistory('coll_123', 'order_abc123', {
      *   limit: 100
      * })
      *
-     * console.log(`Order has ${locations.items.length} scans with a location`)
      * locations.items.forEach(scan => {
      *   console.log(`${scan.location} at ${scan.timestamp}`)
      * })
+     *
+     * // The next page
+     * if (locations.nextCursor) {
+     *   locations = await order.getLocationHistory('coll_123', 'order_abc123', { limit: 100, cursor: locations.nextCursor })
+     * }
      * ```
      */
     function getLocationHistory(collectionId: string, orderId: string, params?: LocationRequest): Promise<ListResult<LocationScan> & {

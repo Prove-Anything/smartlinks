@@ -28,6 +28,8 @@ import type {
   ServiceAccountKeyResult,
   AddServiceAccountToCollectionInput,
 } from "../types/serviceAccounts"
+import type { ListOptions } from "../types/list"
+import { listQuery } from "../list"
 
 function enc(v: string) { return encodeURIComponent(v) }
 
@@ -37,17 +39,19 @@ export namespace serviceAccounts {
   /**
    * The service accounts that work on this collection — its own (`home: true`, with `alsoOn`) and other
    * collections' (`home: false`, with `homeCollection`) — never their keys, and the access levels that can be
-   * given (`access`). All of them in one answer: `nextCursor` is always null. GET /service-accounts
+   * given (`access`). A page at a time (`limit` and `cursor`; 50 unless you say otherwise).
+   * GET /service-accounts
    *
    * @example
    * ```typescript
-   * const { items, access } = await serviceAccounts.list('coll_123')
-   * items  // ServiceAccount[]
-   * access // ["User", "Reporter", "Assigner", "Admin"]
+   * let page = await serviceAccounts.list('coll_123')
+   * page.items  // ServiceAccount[]
+   * page.access // ["User", "Reporter", "Assigner", "Admin"]
+   * while (page.nextCursor) page = await serviceAccounts.list('coll_123', { cursor: page.nextCursor })
    * ```
    */
-  export async function list(collectionId: string): Promise<ServiceAccountList> {
-    return request<ServiceAccountList>(base(collectionId))
+  export async function list(collectionId: string, options: ListOptions = {}): Promise<ServiceAccountList> {
+    return request<ServiceAccountList>(`${base(collectionId)}${listQuery(options)}`)
   }
 
   /**

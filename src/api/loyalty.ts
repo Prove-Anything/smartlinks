@@ -14,34 +14,28 @@ import type {
   RecordLoyaltyTransactionBody,
 } from "../types/loyalty"
 import type { ListResult, ListOptions } from "../types/list"
-
-function encodeQuery(params: Record<string, any>): string {
-  const q = new URLSearchParams()
-  for (const [k, v] of Object.entries(params)) {
-    if (v !== undefined) q.set(k, String(v))
-  }
-  const s = q.toString()
-  return s ? `?${s}` : ""
-}
+import { listQuery } from "../list"
 
 export namespace loyalty {
 
   // ── Admin — Schemes ───────────────────────────────────────────────────────────
 
   /**
-   * The collection's loyalty schemes (admin). One list, no pages.
+   * The collection's loyalty schemes (admin), a page at a time. Page with `limit` (50 unless you
+   * say) and `cursor`. Pass `includeDeleted: true` to include deleted schemes.
    *
    * @example
    * ```typescript
-   * const { items } = await loyalty.list('coll_123')
+   * let page = await loyalty.list('coll_123', { limit: 50 })
+   * while (page.nextCursor) page = await loyalty.list('coll_123', { limit: 50, cursor: page.nextCursor })
    * ```
    */
   export async function list(
     collectionId: string,
-    params: { includeDeleted?: boolean } = {}
+    params: ListOptions & { includeDeleted?: boolean } = {}
   ): Promise<ListResult<LoyaltyScheme>> {
     return request<ListResult<LoyaltyScheme>>(
-      `/admin/collection/${encodeURIComponent(collectionId)}/loyaltyScheme${encodeQuery(params)}`
+      `/admin/collection/${encodeURIComponent(collectionId)}/loyaltyScheme${listQuery(params)}`
     )
   }
 
@@ -87,19 +81,22 @@ export namespace loyalty {
   // ── Admin — Earning Rules ─────────────────────────────────────────────────────
 
   /**
-   * A scheme's earning rules (admin). One list, no pages.
+   * A scheme's earning rules (admin), a page at a time. Page with `limit` (50 unless you say) and
+   * `cursor`.
    *
    * @example
    * ```typescript
-   * const { items } = await loyalty.listEarningRules('coll_123', schemeId)
+   * let page = await loyalty.listEarningRules('coll_123', schemeId, { limit: 50 })
+   * while (page.nextCursor) page = await loyalty.listEarningRules('coll_123', schemeId, { limit: 50, cursor: page.nextCursor })
    * ```
    */
   export async function listEarningRules(
     collectionId: string,
-    schemeId: string
+    schemeId: string,
+    options: ListOptions = {}
   ): Promise<ListResult<LoyaltyEarningRule>> {
     return request<ListResult<LoyaltyEarningRule>>(
-      `/admin/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/earningRule`
+      `/admin/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/earningRule${listQuery(options)}`
     )
   }
 
@@ -163,7 +160,7 @@ export namespace loyalty {
     params: ListOptions = {}
   ): Promise<ListResult<LoyaltyMember>> {
     return request<ListResult<LoyaltyMember>>(
-      `/admin/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/member${encodeQuery(params)}`
+      `/admin/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/member${listQuery(params)}`
     )
   }
 
@@ -217,23 +214,25 @@ export namespace loyalty {
     params: ListOptions = {}
   ): Promise<ListResult<LoyaltyTransaction>> {
     return request<ListResult<LoyaltyTransaction>>(
-      `/admin/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/member/${encodeURIComponent(contactId)}/history${encodeQuery(params)}`
+      `/admin/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/member/${encodeURIComponent(contactId)}/history${listQuery(params)}`
     )
   }
 
   // ── Public ────────────────────────────────────────────────────────────────────
 
   /**
-   * List active schemes for a collection. No authentication required. One list, no pages.
+   * List active schemes for a collection, a page at a time. No authentication required. Page with
+   * `limit` (50 unless you say) and `cursor`.
    *
    * @example
    * ```typescript
-   * const { items } = await loyalty.publicList('coll_123')
+   * let page = await loyalty.publicList('coll_123', { limit: 50 })
+   * while (page.nextCursor) page = await loyalty.publicList('coll_123', { limit: 50, cursor: page.nextCursor })
    * ```
    */
-  export async function publicList(collectionId: string): Promise<ListResult<LoyaltyScheme>> {
+  export async function publicList(collectionId: string, options: ListOptions = {}): Promise<ListResult<LoyaltyScheme>> {
     return request<ListResult<LoyaltyScheme>>(
-      `/public/collection/${encodeURIComponent(collectionId)}/loyaltyScheme`
+      `/public/collection/${encodeURIComponent(collectionId)}/loyaltyScheme${listQuery(options)}`
     )
   }
 
@@ -251,19 +250,22 @@ export namespace loyalty {
 
   /**
    * List active earning rules for a scheme — useful for showing "how to earn"
-   * in a loyalty UI. No authentication required. One list, no pages.
+   * in a loyalty UI. No authentication required. A page at a time: page with `limit` (50 unless you
+   * say) and `cursor`.
    *
    * @example
    * ```typescript
-   * const { items } = await loyalty.publicListEarningRules('coll_123', schemeId)
+   * let page = await loyalty.publicListEarningRules('coll_123', schemeId, { limit: 50 })
+   * while (page.nextCursor) page = await loyalty.publicListEarningRules('coll_123', schemeId, { limit: 50, cursor: page.nextCursor })
    * ```
    */
   export async function publicListEarningRules(
     collectionId: string,
-    schemeId: string
+    schemeId: string,
+    options: ListOptions = {}
   ): Promise<ListResult<LoyaltyEarningRule>> {
     return request<ListResult<LoyaltyEarningRule>>(
-      `/public/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/earningRule`
+      `/public/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/earningRule${listQuery(options)}`
     )
   }
 
@@ -278,19 +280,21 @@ export namespace loyalty {
    *   (or null if not yet enrolled in that scheme)
    * - Unauthenticated: `member` is null on all schemes
    *
-   * One list, no pages.
+   * A page at a time: page with `limit` (50 unless you say) and `cursor`.
    *
    * @example
    * ```typescript
-   * const { items } = await loyalty.publicGetMe('coll_123')
-   * for (const scheme of items) console.log(scheme.name, scheme.member?.balance ?? 0)
+   * let page = await loyalty.publicGetMe('coll_123')
+   * for (const scheme of page.items) console.log(scheme.name, scheme.member?.balance ?? 0)
+   * while (page.nextCursor) page = await loyalty.publicGetMe('coll_123', { cursor: page.nextCursor })
    * ```
    */
   export async function publicGetMe(
-    collectionId: string
+    collectionId: string,
+    options: ListOptions = {}
   ): Promise<ListResult<LoyaltySchemeWithMembership>> {
     return request<ListResult<LoyaltySchemeWithMembership>>(
-      `/public/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/me`
+      `/public/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/me${listQuery(options)}`
     )
   }
 
@@ -323,7 +327,7 @@ export namespace loyalty {
     params: ListOptions = {}
   ): Promise<ListResult<LoyaltyTransaction>> {
     return request<ListResult<LoyaltyTransaction>>(
-      `/public/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/member/me/history${encodeQuery(params)}`
+      `/public/collection/${encodeURIComponent(collectionId)}/loyaltyScheme/${encodeURIComponent(schemeId)}/member/me/history${listQuery(params)}`
     )
   }
 }

@@ -17,20 +17,7 @@ import type {
 } from "../types/broadcasts"
 import type { AppendResult, AppendBulkResult } from "../types/comms"
 import type { ListResult, ListOptions } from "../types/list"
-
-function encodeQuery(params: Record<string, any>): string {
-  const search = new URLSearchParams()
-  for (const [key, value] of Object.entries(params)) {
-    if (value === undefined || value === null || value === "") continue
-    if (typeof value === "boolean") {
-      search.set(key, value ? "true" : "false")
-    } else {
-      search.set(key, String(value))
-    }
-  }
-  const qs = search.toString()
-  return qs ? `?${qs}` : ""
-}
+import { listQuery } from "../list"
 
 export namespace broadcasts {
   // CRUD: Create broadcast
@@ -56,7 +43,7 @@ export namespace broadcasts {
     collectionId: string,
     query: ListBroadcastsQuery = {}
   ): Promise<ListResult<BroadcastRecord>> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeQuery(query as any)}`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${listQuery(query)}`
     return request<ListResult<BroadcastRecord>>(path)
   }
 
@@ -105,7 +92,7 @@ export namespace broadcasts {
     id: string,
     query: ListOptions = {}
   ): Promise<BroadcastRecipientsResponse> {
-    const qs = encodeQuery(query as any)
+    const qs = listQuery(query)
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/broadcasts/${encodeURIComponent(id)}/recipients${qs}`
     return request<BroadcastRecipientsResponse>(path)
   }

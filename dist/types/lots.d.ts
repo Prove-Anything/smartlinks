@@ -1,3 +1,4 @@
+import type { ListOptions } from './list.js';
 export type LotStatus = 'open' | 'closed' | 'recalled' | 'archived';
 /** How a lot's member products are resolved. */
 export type LotSelector = {
@@ -54,9 +55,11 @@ export interface LotCreateInput {
     id?: string;
 }
 export type LotUpdateInput = Partial<LotCreateInput>;
-export interface ListLotsParams {
+/** `lots.list` / `lots.publicList` options: the filters, plus `limit` (default 50) and `cursor`. */
+export interface ListLotsParams extends ListOptions {
     status?: LotStatus;
-    search?: string;
+    /** Search text. */
+    q?: string;
     /** Reverse lookup — lots containing this product id. */
     productId?: string;
     /** Admin only: include soft-deleted lots (default false). */

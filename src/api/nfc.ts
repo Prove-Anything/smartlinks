@@ -1,7 +1,8 @@
 // src/api/nfc.ts
 import { post, request } from "../http"
 import type { NfcValidateRequest, NfcValidateResponse, NfcTagInfo, NfcClaimTagRequest } from "../types/nfc"
-import type { ListResult } from "../types/list"
+import type { ListResult, ListOptions } from "../types/list"
+import { listQuery } from "../list"
 
 export namespace nfc {
   /**
@@ -21,8 +22,10 @@ export namespace nfc {
   }
 
   /**
-   * Lookup a tag by its ID (public): every code that tag is known as. One list, no pages.
+   * Lookup a tag by its ID (public): every code that tag is known as, a page at a time.
    * GET /public/nfc/findByTag/:tagId
+   *
+   * @param tagId - The tag's ID
    *
    * @example
    * ```typescript

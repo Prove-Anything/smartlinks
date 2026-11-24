@@ -186,7 +186,7 @@ async function fetchAllRecords(collectionId: string, appId: string) {
     const page: ListResult<AppRecord> = await app.records.list(
       collectionId,
       appId,
-      { limit: 100, cursor, sort: 'createdAt:desc' }
+      { limit: 100, cursor, orderBy: [{ createdAt: 'desc' }] }
     );
 
     results.push(...page.items);
@@ -376,7 +376,7 @@ List filters that pair with this (see `ThreadListQueryParams`):
 const feed = await app.threads.list(collectionId, appId, {
   parentType: 'memory',
   parentIds: visibleMemoryIds,
-  sort: 'createdAt:desc',
+  orderBy: [{ createdAt: 'desc' }],
 });
 ```
 
@@ -919,7 +919,7 @@ const activeRegistrations = await app.records.list(collectionId, appId, {
 // Find expiring registrations (admin)
 const expiringSoon = await app.records.list(collectionId, appId, {
   recordType: 'product_registration',
-  expiresAt: `lte:${new Date(Date.now() + 30*24*60*60*1000).toISOString()}` // next 30 days
+  expiresAt: { lte: new Date(Date.now() + 30*24*60*60*1000) } // next 30 days
 }, true);
 ```
 
@@ -1572,7 +1572,7 @@ const newCase: AppCase = await app.cases.create(collectionId, appId, {
 const threadList: ListResult<AppThread> = await app.threads.list(
   collectionId,
   appId,
-  { limit: 50, sort: 'createdAt:desc' }
+  { limit: 50, orderBy: [{ createdAt: 'desc' }] }
 );
 ```
 

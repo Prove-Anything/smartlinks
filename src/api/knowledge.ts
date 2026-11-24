@@ -4,7 +4,8 @@ import type {
   KnowledgeSource, AddKnowledgeSourceRequest, UpdateKnowledgeSourceRequest,
   KnowledgeDocument, KnowledgeSearchRequest, KnowledgeSearchResponse, KnowledgeSearchResult,
 } from "../types/knowledge"
-import type { ListResult } from "../types/list"
+import type { ListResult, ListOptions } from "../types/list"
+import { listQuery } from "../list"
 
 /**
  * Knowledge search: make a collection's content searchable by meaning and keywords, for people and for AI.
@@ -26,7 +27,7 @@ import type { ListResult } from "../types/list"
  * await knowledge.upsertDocuments('coll_123', src.id, [
  *   { ref: 'kettle', title: 'Kettle manual', body: '## Descaling\n\nDescale monthly…', meta: { productId: 'p1' } },
  * ])
- * const { items } = await knowledge.publicSearch('coll_123', { query: 'how do I descale', filters: { productId: 'p1' } })
+ * const { items } = await knowledge.publicSearch('coll_123', { q: 'how do I descale', filters: { productId: 'p1' } })
  * ```
  */
 export namespace knowledge {
@@ -35,15 +36,17 @@ export namespace knowledge {
   const enc = encodeURIComponent
 
   /**
-   * Every set, with its source and passage counts (admin). One list, no pages.
+   * The collection's sets, with their source and passage counts (admin). A page at a time (`limit` and
+   * `cursor`; 50 unless you say otherwise).
    *
    * @example
    * ```typescript
-   * const { items } = await knowledge.listSets('coll_123')
+   * let page = await knowledge.listSets('coll_123')
+   * while (page.nextCursor) page = await knowledge.listSets('coll_123', { cursor: page.nextCursor })
    * ```
    */
-  export async function listSets(collectionId: string): Promise<ListResult<KnowledgeSet>> {
-    return request(`${adm(collectionId)}/sets`)
+  export async function listSets(collectionId: string, options: ListOptions = {}): Promise<ListResult<KnowledgeSet>> {
+    return request(`${adm(collectionId)}/sets${listQuery(options)}`)
   }
 
   /** Create a set, or update the one with this key (admin). */
@@ -66,15 +69,17 @@ export namespace knowledge {
   }
 
   /**
-   * A set's sources, with their status (admin). One list, no pages.
+   * A set's sources, with their status (admin). A page at a time (`limit` and `cursor`; 50 unless you
+   * say otherwise).
    *
    * @example
    * ```typescript
-   * const { items } = await knowledge.listSources('coll_123', 'manuals')
+   * let page = await knowledge.listSources('coll_123', 'manuals')
+   * while (page.nextCursor) page = await knowledge.listSources('coll_123', 'manuals', { cursor: page.nextCursor })
    * ```
    */
-  export async function listSources(collectionId: string, set: string): Promise<ListResult<KnowledgeSource>> {
-    return request(`${adm(collectionId)}/sets/${enc(set)}/sources`)
+  export async function listSources(collectionId: string, set: string, options: ListOptions = {}): Promise<ListResult<KnowledgeSource>> {
+    return request(`${adm(collectionId)}/sets/${enc(set)}/sources${listQuery(options)}`)
   }
 
   /** Add a source; feeds and pages are read in the background (admin). */
@@ -106,12 +111,13 @@ export namespace knowledge {
   }
 
   /**
-   * Search every set, staff ones included (admin). The matches come back as `items`, best first, with the
-   * `query` and the search `mode` beside them. There are no pages: `k` says how many matches to return.
+   * Search every set, staff ones included (admin). `q` is what to look for. The matches come back as
+   * `items`, best first, with the `query` and the search `mode` beside them. `limit` says how many matches
+   * to return (default 8, at most 25); `cursor` is the previous page's `nextCursor`.
    *
    * @example
    * ```typescript
-   * const { items, mode } = await knowledge.search('coll_123', { query: 'how do I descale', k: 5 })
+   * const { items, mode } = await knowledge.search('coll_123', { q: 'how do I descale', limit: 5 })
    * ```
    */
   export async function search(
@@ -123,12 +129,13 @@ export namespace knowledge {
 
   /**
    * Search from a website, Portal or Hub: public sets, plus customer sets for a signed-in person. The
-   * answer has the same shape as the admin `search`: the matches come back as `items`, best first, with the
-   * `query` and the search `mode` beside them. There are no pages: `k` says how many matches to return.
+   * options and the answer are the same as the admin `search`: `q` is what to look for, and the matches come
+   * back as `items`, best first, with the `query` and the search `mode` beside them. `limit` says how many
+   * matches to return (default 8, at most 25); `cursor` is the previous page's `nextCursor`.
    *
    * @example
    * ```typescript
-   * const { items } = await knowledge.publicSearch('coll_123', { query: 'how do I descale', k: 5 })
+   * const { items } = await knowledge.publicSearch('coll_123', { q: 'how do I descale', limit: 5 })
    * for (const r of items) console.log(r.title, r.heading, r.url, r.snippet)
    * ```
    */

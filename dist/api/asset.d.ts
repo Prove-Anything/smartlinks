@@ -1,4 +1,4 @@
-import type { ListResult } from "../types/list.js";
+import type { ListResult, ListOptions } from "../types/list.js";
 import { Asset, AssetResponse, UploadAssetOptions, UploadFromUrlOptions, ListAssetsOptions, GetAssetOptions, RemoveAssetOptions, AdminListAssetsOptions, UpdateAssetOptions, ReplaceAssetFileOptions, DeleteAssetOptions, BulkDeleteAssetsOptions, RequestUploadTokenOptions, UploadTokenResponse, PublicTokenUploadOptions, CreateResumableUploadOptions, ResumableUploadHandle } from "../types/asset.js";
 export declare namespace asset {
     /**
@@ -45,47 +45,52 @@ export declare namespace asset {
     function uploadFromUrl(options: UploadFromUrlOptions): Promise<Asset>;
     function getForCollection(collectionId: string, assetId: string): Promise<AssetResponse>;
     /**
-     * The collection's own assets (public). Returns `{ items, nextCursor }`: the assets are in `items`.
-     * The list is not paged, so `nextCursor` is always `null`.
+     * The collection's own assets (public). Returns `{ items, nextCursor, count }`: the assets are in
+     * `items`, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor`
+     * for the next page; `null` means that was the last one.
      *
      * @example
      * ```typescript
-     * const { items } = await asset.listForCollection('my-collection')
+     * let page = await asset.listForCollection('my-collection', { limit: 100 })
+     * while (page.nextCursor) page = await asset.listForCollection('my-collection', { limit: 100, cursor: page.nextCursor })
      * ```
      */
-    function listForCollection(collectionId: string): Promise<ListResult<AssetResponse>>;
+    function listForCollection(collectionId: string, options?: ListOptions): Promise<ListResult<AssetResponse>>;
     function getForProduct(collectionId: string, productId: string, assetId: string): Promise<AssetResponse>;
     /**
-     * A product's assets (public). Returns `{ items, nextCursor }`: the assets are in `items`.
-     * The list is not paged, so `nextCursor` is always `null`.
+     * A product's assets (public). Returns `{ items, nextCursor, count }`: the assets are in `items`,
+     * 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the
+     * next page; `null` means that was the last one.
      *
      * @example
      * ```typescript
-     * const { items } = await asset.listForProduct('my-collection', 'wine-bottle')
+     * const { items, nextCursor } = await asset.listForProduct('my-collection', 'wine-bottle', { limit: 100 })
      * ```
      */
-    function listForProduct(collectionId: string, productId: string): Promise<ListResult<AssetResponse>>;
+    function listForProduct(collectionId: string, productId: string, options?: ListOptions): Promise<ListResult<AssetResponse>>;
     function getForProof(collectionId: string, productId: string, proofId: string, assetId: string): Promise<AssetResponse>;
     /**
-     * A proof's assets (public), optionally only one app's. Returns `{ items, nextCursor }`: the assets
-     * are in `items`. The list is not paged, so `nextCursor` is always `null`.
+     * A proof's assets (public), optionally only one app's. Returns `{ items, nextCursor, count }`: the
+     * assets are in `items`, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor`
+     * back as `cursor` for the next page; `null` means that was the last one.
      *
      * @example
      * ```typescript
-     * const { items } = await asset.listForProof('my-collection', 'wine-bottle', proofId, 'gallery')
+     * const { items, nextCursor } = await asset.listForProof('my-collection', 'wine-bottle', proofId, 'gallery', { limit: 100 })
      * ```
      */
-    function listForProof(collectionId: string, productId: string, proofId: string, appId?: string): Promise<ListResult<AssetResponse>>;
+    function listForProof(collectionId: string, productId: string, proofId: string, appId?: string, options?: ListOptions): Promise<ListResult<AssetResponse>>;
     /**
-     * List assets for a given scope (a collection, a product or a proof). Returns `{ items, nextCursor }`:
-     * the assets are in `items`. These lists are not paged, so `nextCursor` is always `null`.
+     * List assets for a given scope (a collection, a product or a proof). Returns
+     * `{ items, nextCursor, count }`: the assets are in `items`, 50 at a time unless you give a `limit`
+     * (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the
+     * last one.
      *
      * @example
      * ```typescript
-     * const { items } = await asset.list({
-     *   scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' },
-     *   appId: 'gallery',
-     * })
+     * const scope = { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' } as const
+     * let page = await asset.list({ scope, appId: 'gallery', limit: 100 })
+     * while (page.nextCursor) page = await asset.list({ scope, appId: 'gallery', limit: 100, cursor: page.nextCursor })
      * ```
      */
     function list(options: ListAssetsOptions): Promise<ListResult<Asset>>;
@@ -101,14 +106,15 @@ export declare namespace asset {
      * List assets for a collection with full filtering options (admin). Returns `{ items, nextCursor }`:
      * the assets are in `items`, 50 at a time unless you give a `limit` (at most 200). Pass `nextCursor`
      * back as `cursor` for the next page; `null` means that was the last one. `count` (how many match in
-     * all) is there when you gave a `limit` or a `cursor`.
+     * all) is there when you gave a `limit` or a `cursor`. Sort with `orderBy` (`createdAt`, `name`,
+     * `size` or `assetType`).
      *
      * @example
      * ```typescript
-     * let page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', limit: 20 })
+     * let page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', orderBy: [{ name: 'asc' }], limit: 20 })
      * console.log(`${page.count} images`)
      * while (page.nextCursor) {
-     *   page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', limit: 20, cursor: page.nextCursor })
+     *   page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', orderBy: [{ name: 'asc' }], limit: 20, cursor: page.nextCursor })
      * }
      * ```
      */

@@ -1,6 +1,6 @@
 import { CollectionWidgetsResponse, GetCollectionWidgetsOptions } from "../types/appManifest.js";
 import type { AppsConfigResponse } from "../types/collection.js";
-import type { ListResult } from "../types/list.js";
+import type { ListResult, ListOptions } from "../types/list.js";
 import type { GetWidgetInstanceOptions, WidgetInstance, WidgetInstanceSummary, SystemBlock } from "../types/appConfiguration.js";
 /**
  * Options for collection/product-scoped app configuration.
@@ -48,7 +48,7 @@ export type AppConfigOptions = {
  * });
  *
  * // Get all user's data for this app
- * const { items: beds } = await userAppData.list('garden-planner');
+ * const { items: beds } = await userAppData.list('garden-planner', { limit: 50 });
  *
  * // Get specific item
  * const bed = await userAppData.get('garden-planner', 'bed-1');
@@ -99,19 +99,21 @@ export declare namespace userAppData {
      */
     function deleteConfig(appId: string): Promise<void>;
     /**
-     * List all user's data items for an app.
+     * List the user's data items for an app, a page at a time.
      *
      * @param appId - The app ID
-     * @returns `{ items, nextCursor }`: the data items are in `items`, each with an `id` field. The list
-     *   is not paged, so `nextCursor` is always `null`.
+     * @param options - `limit` (50 unless you say) and `cursor`
+     * @returns `{ items, nextCursor }`: the data items are in `items`, each with an `id` field; pass
+     *   `nextCursor` back as `cursor` for the next page (null on the last).
      *
      * @example
      * ```typescript
-     * const { items: beds } = await userAppData.list('garden-planner');
-     * // beds: [{ id: 'bed-1', name: 'Vegetables', ... }, { id: 'bed-2', ... }]
+     * let page = await userAppData.list('garden-planner', { limit: 50 });
+     * // page.items: [{ id: 'bed-1', name: 'Vegetables', ... }, { id: 'bed-2', ... }]
+     * while (page.nextCursor) page = await userAppData.list('garden-planner', { limit: 50, cursor: page.nextCursor });
      * ```
      */
-    function list(appId: string): Promise<ListResult<any>>;
+    function list(appId: string, options?: ListOptions): Promise<ListResult<any>>;
     /**
      * Get a specific user data item by ID.
      *
@@ -286,20 +288,22 @@ export declare namespace appConfiguration {
       * visibility, ownership, or relationships, prefer `app.records`, `app.cases`,
       * or `app.threads` instead.
      *
-     * @param opts - Options including appId and scope (collectionId, productId, etc.)
-     * @returns `{ items, nextCursor }`: the data items are in `items`. The list is not paged, so
-     *   `nextCursor` is always `null`.
+     * @param opts - Options including appId and scope (collectionId, productId, etc.), plus paging:
+     *   `limit` and `cursor`
+     * @returns `{ items, nextCursor, count }`: the data items are in `items`, 50 at a time unless you
+     *   give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null`
+     *   means that was the last one.
      *
      * @example
      * ```typescript
-     * const { items } = await appConfiguration.getData({
-     *   appId: 'product-docs',
-     *   collectionId: 'my-collection',
-     *   productId: 'product-123'
-     * });
+     * const scope = { appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123' }
+     * let page = await appConfiguration.getData({ ...scope, limit: 100 });
+     * while (page.nextCursor) {
+     *   page = await appConfiguration.getData({ ...scope, limit: 100, cursor: page.nextCursor });
+     * }
      * ```
      */
-    function getData(opts: AppConfigOptions): Promise<ListResult<any>>;
+    function getData(opts: AppConfigOptions & ListOptions): Promise<ListResult<any>>;
     /**
       * Get a single keyed data item by ID within a scope.
       * This is ideal when you already know the exact ID of a simple scoped document.
@@ -375,7 +379,8 @@ export declare namespace appConfiguration {
      * @param collectionId - The collection ID
      * @param options - Optional settings (force: bypass cache)
      * @returns `{ items, nextCursor }`: one entry per app with a widget, in `items`, with its manifest
-     *   and bundle files. The list is not paged, so `nextCursor` is always `null`.
+     *   and bundle files. It always comes back whole: there is no `limit` or `cursor`, and `nextCursor`
+     *   is always `null`.
      * @throws ErrorResponse if the request fails
      *
      * @example

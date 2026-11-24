@@ -1,5 +1,5 @@
 import { BatchResponse, BatchCreateRequest, BatchUpdateRequest, SearchBatchesRequest, BatchTag } from "../types/batch.js";
-import type { ListResult } from "../types/list.js";
+import type { ListResult, ListOptions } from "../types/list.js";
 export declare namespace batch {
     /**
      * Get a single batch by ID for a collection and product (admin only).
@@ -11,20 +11,23 @@ export declare namespace batch {
      */
     function get(collectionId: string, productId: string, batchId: string): Promise<BatchResponse>;
     /**
-     * List all batches for a collection and product (admin only). All of them come back in one answer:
-     * `nextCursor` is always null.
+     * List the batches for a collection and product (admin only), 50 at a time unless you give a
+     * `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that
+     * was the last one.
      * @param collectionId - Identifier of the parent collection
      * @param productId - Identifier of the parent product
-     * @returns Promise resolving to `{ items, nextCursor }`, where `items` are BatchResponse objects
+     * @param options - Paging: `limit` and `cursor`
+     * @returns Promise resolving to `{ items, nextCursor, count }`, where `items` are BatchResponse objects
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
-     * const { items } = await batch.list('coll_123', 'prod_abc')
-     * console.log(`${items.length} batches`)
+     * let page = await batch.list('coll_123', 'prod_abc', { limit: 100 })
+     * console.log(`${page.count} batches`)
+     * while (page.nextCursor) page = await batch.list('coll_123', 'prod_abc', { limit: 100, cursor: page.nextCursor })
      * ```
      */
-    function list(collectionId: string, productId: string): Promise<ListResult<BatchResponse>>;
+    function list(collectionId: string, productId: string, options?: ListOptions): Promise<ListResult<BatchResponse>>;
     /**
      * Create a new batch for a collection and product (admin only).
      * @param collectionId - Identifier of the parent collection
@@ -85,21 +88,24 @@ export declare namespace batch {
     function lookupSN(collectionId: string, productId: string, batchId: string, codeId: string): Promise<any>;
     /**
      * Search for batches across all products in a collection.
-     * Allows searching by batch ID or name, with optional product filtering.
-     * The matches come back in one answer (`nextCursor` is always null); `limit` is the most it returns.
+     * Allows searching by batch ID or name (`q`), with optional product filtering.
+     * `limit` is how many it returns (100 unless you say). When there are more, pass `nextCursor` back
+     * as `cursor` for the next ones; `null` means there are no more.
      *
      * @param collectionId - Identifier of the collection
-     * @param params - Optional search parameters (search term, productId filter, limit)
+     * @param params - Optional search parameters (`q`, `productId`) and paging (`limit`, `cursor`)
      * @returns Promise resolving to `{ items, nextCursor }`, where `items` are the matching BatchResponse objects
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
-     * // Search for batches containing "2024"
-     * const { items: batches } = await batch.searchInCollection('coll_123', {
-     *   search: 'BATCH-2024',
-     *   limit: 50
-     * })
+     * // Search for batches containing "2024", 50 at a time
+     * let page = await batch.searchInCollection('coll_123', { q: 'BATCH-2024', limit: 50 })
+     * const batches = [...page.items]
+     * while (page.nextCursor) {
+     *   page = await batch.searchInCollection('coll_123', { q: 'BATCH-2024', limit: 50, cursor: page.nextCursor })
+     *   batches.push(...page.items)
+     * }
      *
      * // Filter batches for a specific product
      * const productBatches = await batch.searchInCollection('coll_123', {
@@ -107,8 +113,8 @@ export declare namespace batch {
      *   limit: 100
      * })
      *
-     * // Get all batches in collection
-     * const allBatches = await batch.searchInCollection('coll_123')
+     * // The first batches in the collection
+     * const firstBatches = await batch.searchInCollection('coll_123')
      *
      * // Check for expired batches (expiryDate is an ISO 8601 string)
      * batches.forEach(batch => {
@@ -139,27 +145,32 @@ export declare namespace batch {
     function findInCollection(collectionId: string, batchId: string): Promise<BatchResponse>;
     /**
      * Get all tags/codes assigned to a specific batch.
-     * Shows which claim set codes have been assigned to this batch. All of them come back in one
-     * answer: `nextCursor` is always null.
+     * Shows which claim set codes have been assigned to this batch, 50 at a time unless you give a
+     * `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that
+     * was the last one. `count` is how many there are in all.
      *
      * @param collectionId - Identifier of the collection
      * @param batchId - Batch ID
      * @param claimSetId - Optional claim set ID to filter results
-     * @returns Promise resolving to `{ items, nextCursor }`, where `items` are BatchTag objects
+     * @param options - Paging: `limit` and `cursor`
+     * @returns Promise resolving to `{ items, nextCursor, count }`, where `items` are BatchTag objects
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
-     * // Get all tags assigned to a batch
-     * const { items: tags } = await batch.getBatchTags('coll_123', 'BATCH-2024-001')
-     * console.log(`Batch has ${tags.length} tags assigned`)
-     * tags.forEach(tag => {
+     * // The tags assigned to a batch, 200 at a time
+     * let page = await batch.getBatchTags('coll_123', 'BATCH-2024-001', undefined, { limit: 200 })
+     * console.log(`Batch has ${page.count} tags assigned`)
+     * page.items.forEach(tag => {
      *   console.log(`Code: ${tag.code}, ClaimSet: ${tag.claimSetId}, TagID: ${tag.tagId}`)
      * })
+     * while (page.nextCursor) {
+     *   page = await batch.getBatchTags('coll_123', 'BATCH-2024-001', undefined, { limit: 200, cursor: page.nextCursor })
+     * }
      *
      * // Get tags from a specific claim set
      * const claimSetTags = await batch.getBatchTags('coll_123', 'BATCH-2024-001', '000001')
      * ```
      */
-    function getBatchTags(collectionId: string, batchId: string, claimSetId?: string): Promise<ListResult<BatchTag>>;
+    function getBatchTags(collectionId: string, batchId: string, claimSetId?: string, options?: ListOptions): Promise<ListResult<BatchTag>>;
 }

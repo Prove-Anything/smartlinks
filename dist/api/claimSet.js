@@ -1,4 +1,5 @@
 import { request, post, put, patch, del } from "../http.js";
+import { listQuery } from "../list.js";
 /**
  * Returns the base path for claim set endpoints.
  * When collectionId is provided, routes to the collection-scoped admin API.
@@ -19,19 +20,24 @@ function rangesBase(scope, claimSetId) {
 export var claimSet;
 (function (claimSet) {
     /**
-     * Get all claim sets. Returns `{ items, nextCursor }`: the claim sets are in `items`. The list is not
-     * paged, so `nextCursor` is always `null`.
+     * Get all claim sets, a page at a time. Returns `{ items, nextCursor }`: the claim sets are in `items`;
+     * pass `nextCursor` back as `cursor` for the next page (`null` means that was the last one).
      * When collectionId is provided, returns claim sets for that collection.
      * When omitted, returns all claim sets owned by the authenticated user.
      * @param collectionId – Optional collection identifier
+     * @param options – `limit` (default 50) and `cursor`
      *
      * @example
      * ```typescript
-     * const { items } = await claimSet.getAll('coll_123')
+     * let page = await claimSet.getAll('coll_123', { limit: 50 })
+     * while (page.nextCursor) page = await claimSet.getAll('coll_123', { limit: 50, cursor: page.nextCursor })
+     *
+     * // Your own claim sets (no collection)
+     * const { items } = await claimSet.getAll(undefined, { limit: 50 })
      * ```
      */
-    async function getAll(collectionId) {
-        return request(base(collectionId));
+    async function getAll(collectionId, options = {}) {
+        return request(`${base(collectionId)}${listQuery({ limit: options.limit, cursor: options.cursor })}`);
     }
     claimSet.getAll = getAll;
     /**
@@ -87,18 +93,23 @@ export var claimSet;
     /**
      * Get assigned tags for a claim set — tags soft-assigned to a collection or product. Returns
      * `{ items, nextCursor }` with the claim set's own fields (`id`, `name`, …) beside them: the tags are
-     * in `items`. The list is not paged, so `nextCursor` is always `null`.
+     * in `items`, a page at a time. Pass `nextCursor` back as `cursor` for the next page (`null` means that
+     * was the last one).
      * @param claimSetId – The claim set identifier
      * @param collectionId – Optional collection identifier; omit for user-scoped access
+     * @param options – `limit` (default 50) and `cursor`
      *
      * @example
      * ```typescript
-     * const { items, name } = await claimSet.getAssignedTags('12', 'coll_123')
-     * console.log(`${items.length} tags of ${name} are assigned`)
+     * let page = await claimSet.getAssignedTags('12', 'coll_123', { limit: 50 })
+     * console.log(`Assigned tags of ${page.name}:`, page.items)
+     * while (page.nextCursor) {
+     *   page = await claimSet.getAssignedTags('12', 'coll_123', { limit: 50, cursor: page.nextCursor })
+     * }
      * ```
      */
-    async function getAssignedTags(claimSetId, collectionId) {
-        return request(`${base(collectionId)}/${encodeURIComponent(claimSetId)}/assignedTags`);
+    async function getAssignedTags(claimSetId, collectionId, options = {}) {
+        return request(`${base(collectionId)}/${encodeURIComponent(claimSetId)}/assignedTags${listQuery({ limit: options.limit, cursor: options.cursor })}`);
     }
     claimSet.getAssignedTags = getAssignedTags;
     /**
@@ -182,16 +193,20 @@ export var claimSet;
     let ranges;
     (function (ranges) {
         /**
-         * The ranges in a set, lowest index first. Returns `{ items, nextCursor }`: the ranges are in `items`.
-         * The list is not paged, so `nextCursor` is always `null`.
+         * The ranges in a set, lowest index first, a page at a time (50 unless you give a `limit`). Returns
+         * `{ items, nextCursor }`: the ranges are in `items`; pass `nextCursor` back as `cursor` for the next
+         * page (`null` means that was the last one).
          *
          * @example
          * ```typescript
-         * const { items: ranges } = await claimSet.ranges.list({ collectionId: 'coll_123' }, '12')
+         * let page = await claimSet.ranges.list({ collectionId: 'coll_123' }, '12', { limit: 50 })
+         * while (page.nextCursor) {
+         *   page = await claimSet.ranges.list({ collectionId: 'coll_123' }, '12', { limit: 50, cursor: page.nextCursor })
+         * }
          * ```
          */
-        async function list(scope, claimSetId) {
-            return request(rangesBase(scope, claimSetId));
+        async function list(scope, claimSetId, options = {}) {
+            return request(`${rangesBase(scope, claimSetId)}${listQuery({ limit: options.limit, cursor: options.cursor })}`);
         }
         ranges.list = list;
         /** Reserve the set's next indexes and mint a code (and, for NTAG 424, a key) for each. */
@@ -243,15 +258,8 @@ export var claimSet;
          * ```
          */
         async function tags(scope, claimSetId, rangeId, options = {}) {
-            const q = new URLSearchParams();
-            if (options.limit !== undefined)
-                q.set('limit', String(options.limit));
-            if (options.cursor)
-                q.set('cursor', options.cursor);
-            if (options.keys)
-                q.set('keys', '1');
-            const qs = q.toString();
-            return request(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/tags${qs ? `?${qs}` : ''}`);
+            const qs = listQuery({ limit: options.limit, cursor: options.cursor, keys: options.keys ? '1' : undefined });
+            return request(`${rangesBase(scope, claimSetId)}/${encodeURIComponent(rangeId)}/tags${qs}`);
         }
         ranges.tags = tags;
         /** The next tag to program on a phone (lowest index without a chip), with its URL and key. */

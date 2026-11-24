@@ -1,6 +1,7 @@
 import { request, post, put, del } from "../http"
 import type { ConditionSet } from "../utils/conditions"
-import type { ListResult } from "../types/list"
+import type { ListResult, ListOptions } from "../types/list"
+import { listQuery } from "../list"
 
 /** A saved condition: a named rule set pages, Hub blocks and apps refer to by id. */
 export interface SavedCondition extends ConditionSet {
@@ -29,17 +30,18 @@ export namespace conditions {
   const adm = (collectionId: string) => `/admin/collection/${encodeURIComponent(collectionId)}/condition`
 
   /**
-   * Every saved condition in the collection (removed ones left out). All of them come back in one
-   * answer: `nextCursor` is always null.
+   * The collection's saved conditions (removed ones left out), a page at a time. Page with `limit`
+   * (50 unless you say) and `cursor`.
    *
    * @example
    * ```typescript
-   * const { items } = await conditions.list('coll_123')
-   * items.map(c => c.title) // ["UK only", "In the stadium"]
+   * let page = await conditions.list('coll_123')
+   * page.items.map(c => c.title) // ["UK only", "In the stadium"]
+   * while (page.nextCursor) page = await conditions.list('coll_123', false, { cursor: page.nextCursor })
    * ```
    */
-  export async function list(collectionId: string, admin = false): Promise<ListResult<SavedCondition>> {
-    return request<ListResult<SavedCondition>>(admin ? adm(collectionId) : pub(collectionId))
+  export async function list(collectionId: string, admin = false, options: ListOptions = {}): Promise<ListResult<SavedCondition>> {
+    return request<ListResult<SavedCondition>>(`${admin ? adm(collectionId) : pub(collectionId)}${listQuery(options)}`)
   }
 
   /**

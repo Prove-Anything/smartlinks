@@ -1,5 +1,6 @@
 // src/api/tags.ts
 import { request, post, put, del } from "../http.js";
+import { listQuery } from "../list.js";
 /**
  * Tag Management API
  *
@@ -157,23 +158,16 @@ export var tags;
      * ```
      */
     async function list(collectionId, params) {
-        const q = new URLSearchParams();
-        if (params === null || params === void 0 ? void 0 : params.limit)
-            q.append('limit', params.limit.toString());
-        if (params === null || params === void 0 ? void 0 : params.cursor)
-            q.append('cursor', params.cursor);
-        if (params === null || params === void 0 ? void 0 : params.productId)
-            q.append('productId', params.productId);
-        if (params === null || params === void 0 ? void 0 : params.variantId)
-            q.append('variantId', params.variantId);
-        if (params === null || params === void 0 ? void 0 : params.batchId)
-            q.append('batchId', params.batchId);
-        if (params === null || params === void 0 ? void 0 : params.refType)
-            q.append('refType', params.refType);
-        if (params === null || params === void 0 ? void 0 : params.refId)
-            q.append('refId', params.refId);
-        const qs = q.toString();
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags${qs ? `?${qs}` : ''}`;
+        const qs = listQuery({
+            limit: (params === null || params === void 0 ? void 0 : params.limit) || undefined,
+            cursor: params === null || params === void 0 ? void 0 : params.cursor,
+            productId: params === null || params === void 0 ? void 0 : params.productId,
+            variantId: params === null || params === void 0 ? void 0 : params.variantId,
+            batchId: params === null || params === void 0 ? void 0 : params.batchId,
+            refType: params === null || params === void 0 ? void 0 : params.refType,
+            refId: params === null || params === void 0 ? void 0 : params.refId,
+        });
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags${qs}`;
         return request(path);
     }
     tags.list = list;
@@ -184,22 +178,20 @@ export var tags;
      * No embed support on the admin side.
      *
      * @param collectionId - Collection context
-     * @param params - `refType` and `refId` are required
-     * @returns `{ items: Tag[], nextCursor: null }`: every linked tag in one answer
+     * @param params - `refType` and `refId` are required; plus `limit` (default 50) and `cursor`
+     * @returns `{ items: Tag[], nextCursor: string | null }`: the linked tags, a page at a time
      *
      * @example
      * ```typescript
-     * const { items: linked } = await tags.byRef('coll_123', {
-     *   refType: 'container',
-     *   refId:   'container-uuid',
-     * })
+     * let page = await tags.byRef('coll_123', { refType: 'container', refId: 'container-uuid', limit: 50 })
+     * while (page.nextCursor) {
+     *   page = await tags.byRef('coll_123', { refType: 'container', refId: 'container-uuid', limit: 50, cursor: page.nextCursor })
+     * }
      * ```
      */
     async function byRef(collectionId, params) {
-        const q = new URLSearchParams();
-        q.append('refType', params.refType);
-        q.append('refId', params.refId);
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags/by-ref?${q.toString()}`;
+        const qs = listQuery({ refType: params.refType, refId: params.refId, limit: params.limit, cursor: params.cursor });
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/tags/by-ref${qs}`;
         return request(path);
     }
     tags.byRef = byRef;
@@ -278,15 +270,15 @@ export var tags;
      * Returns deduplicated embedded objects alongside the tag array.
      *
      * @param collectionId - Collection context
-     * @param data - `{ tagIds: string[], embed?: string }`
-     * @returns `{ items: Tag[], nextCursor: null, count: number, embedded: TagEmbedded }`
+     * @param data - `{ tagIds: string[], embed?: string }`, plus `limit` (default 50) and `cursor`
+     * @returns `{ items: Tag[], nextCursor: string | null, count: number, embedded: TagEmbedded }`:
+     *   the tags found, a page at a time
      *
      * @example
      * ```typescript
-     * const { items, count, embedded } = await tags.lookupTags('coll_123', {
-     *   tagIds: ['NFC-001', 'NFC-002', 'NFC-003'],
-     *   embed:  'product,proof',
-     * })
+     * const tagIds = ['NFC-001', 'NFC-002', 'NFC-003']
+     * // Every tag found comes back in the one answer: a look-up is never paged.
+     * const { items, embedded } = await tags.lookupTags('coll_123', { tagIds, embed: 'product,proof' })
      * ```
      */
     async function lookupTags(collectionId, data) {
@@ -300,8 +292,9 @@ export var tags;
      * `GET /public/collection/:collectionId/tags/lookup?tagIds=NFC-001,NFC-002&embed=product`
      *
      * @param collectionId - Collection context
-     * @param params - `tagIds` is comma-separated; `embed` is optional
-     * @returns `{ items: Tag[], nextCursor: null, count: number, embedded: TagEmbedded }`
+     * @param params - `tagIds` is comma-separated; `embed` is optional; plus `limit` (default 50) and `cursor`
+     * @returns `{ items: Tag[], nextCursor: string | null, count: number, embedded: TagEmbedded }`:
+     *   the tags found, a page at a time
      *
      * @example
      * ```typescript
@@ -312,11 +305,8 @@ export var tags;
      * ```
      */
     async function lookupTagsQuery(collectionId, params) {
-        const q = new URLSearchParams();
-        q.append('tagIds', params.tagIds);
-        if (params.embed)
-            q.append('embed', params.embed);
-        const path = `/public/collection/${encodeURIComponent(collectionId)}/tags/lookup?${q.toString()}`;
+        const qs = listQuery({ tagIds: String(params.tagIds), embed: params.embed });
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/tags/lookup${qs}`;
         return request(path);
     }
     tags.lookupTagsQuery = lookupTagsQuery;
@@ -326,26 +316,23 @@ export var tags;
      * `GET /public/collection/:collectionId/tags/by-ref?refType=container&refId=<uuid>&embed=ref`
      *
      * @param collectionId - Collection context
-     * @param params - `refType` and `refId` are required; `embed` is optional
-     * @returns `{ items: Tag[], nextCursor: null, embedded: TagEmbedded }`
+     * @param params - `refType` and `refId` are required; `embed` is optional; plus `limit` (default 50) and `cursor`
+     * @returns `{ items: Tag[], nextCursor: string | null, embedded: TagEmbedded }`: the linked tags, a page at a time
      *
      * @example
      * ```typescript
-     * const { items: linked, embedded } = await tags.publicByRef('coll_123', {
+     * const { items: linked, embedded, nextCursor } = await tags.publicByRef('coll_123', {
      *   refType: 'container',
      *   refId:   'container-uuid',
      *   embed:   'container',
+     *   limit:   50,
      * })
      * const container = embedded.containers?.[containerId]
      * ```
      */
     async function publicByRef(collectionId, params) {
-        const q = new URLSearchParams();
-        q.append('refType', params.refType);
-        q.append('refId', params.refId);
-        if (params.embed)
-            q.append('embed', params.embed);
-        const path = `/public/collection/${encodeURIComponent(collectionId)}/tags/by-ref?${q.toString()}`;
+        const qs = listQuery({ refType: params.refType, refId: params.refId, embed: params.embed, limit: params.limit, cursor: params.cursor });
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/tags/by-ref${qs}`;
         return request(path);
     }
     tags.publicByRef = publicByRef;
@@ -355,15 +342,16 @@ export var tags;
      * `POST /public/collection/:collectionId/tags/by-ref`
      *
      * @param collectionId - Collection context
-     * @param data - `{ refType, refId, embed? }`
-     * @returns `{ items: Tag[], nextCursor: null, embedded: TagEmbedded }`
+     * @param data - `{ refType, refId, embed? }`, plus `limit` (default 50) and `cursor`
+     * @returns `{ items: Tag[], nextCursor: string | null, embedded: TagEmbedded }`: the linked tags, a page at a time
      *
      * @example
      * ```typescript
-     * const { items: linked, embedded } = await tags.publicByRefPost('coll_123', {
+     * const { items: linked, embedded, nextCursor } = await tags.publicByRefPost('coll_123', {
      *   refType: 'container',
      *   refId:   'container-uuid',
      *   embed:   'container',
+     *   limit:   50,
      * })
      * ```
      */

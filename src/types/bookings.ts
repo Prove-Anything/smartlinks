@@ -1,7 +1,7 @@
 // src/types/bookings.ts
 // Generic booking objects (Slots, Bookings, Allocations) — see docs/bookings.md.
 
-import type { ListResult, ListOptions } from './list'
+import type { ListResult, ListOptions, OrderBy } from './list'
 
 export type BookingStatus =
   | 'held'        // claimed, waiting for payment / the booker's confirm; expires at holdExpiresAt
@@ -206,8 +206,13 @@ export interface BookingListQueryParams {
   offset?: number
 }
 
-/** `bookings.list` / `bookings.mine` options: the filters, plus `limit` and `cursor`. */
-export interface BookingListOptions extends Omit<BookingListQueryParams, 'offset'>, ListOptions {}
+/**
+ * `bookings.list` / `bookings.mine` options: the filters, plus `limit`, `cursor` and `orderBy`
+ * (earliest start first unless you say: `[{ startsAt: 'asc' }]`).
+ */
+export interface BookingListOptions extends Omit<BookingListQueryParams, 'offset' | 'sort'>, ListOptions {
+  orderBy?: OrderBy<'startsAt' | 'endsAt' | 'createdAt' | 'updatedAt' | 'status' | 'ref' | 'customId' | 'sourceSystem'>
+}
 
 export interface CreateSlotInput {
   startsAt: string | Date
@@ -252,8 +257,10 @@ export interface SlotListQueryParams {
   offset?: number
 }
 
-/** `bookings.slots.list` options: the filters, plus `limit` and `cursor`. */
-export interface SlotListOptions extends Omit<SlotListQueryParams, 'offset'>, ListOptions {}
+/** `bookings.slots.list` options: the filters, plus `limit`, `cursor` and `orderBy` (`[{ startsAt: 'asc' }]`). */
+export interface SlotListOptions extends Omit<SlotListQueryParams, 'offset' | 'sort'>, ListOptions {
+  orderBy?: OrderBy<'startsAt' | 'endsAt' | 'createdAt' | 'updatedAt' | 'status' | 'capacity' | 'ref' | 'customId'>
+}
 
 export interface CreateBlockInput {
   resourceType: string

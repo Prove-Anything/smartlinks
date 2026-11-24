@@ -1,4 +1,5 @@
 // src/types/location.ts
+import type { ListOptions, OrderBy } from './list'
 
 export type Geofence =
   | { type: 'bbox'; minLat: number; minLon: number; maxLat: number; maxLon: number }
@@ -31,11 +32,15 @@ export interface Location {
   updatedAt: string
 }
 
-export interface LocationSearchQuery {
+/** `location.search` options: the filters, plus `limit` and `cursor`. */
+export interface LocationSearchQuery extends ListOptions {
+  /** Search text. */
   q?: string
   category?: string
   countryCode?: string
   countryName?: string
-  limit?: number // default 20; max 100
-  sort?: 'name' | 'countryCode' | 'countryName' // default 'name'
+  /** How many to return: 20 unless you say otherwise, at most 100. */
+  limit?: number
+  /** Sort by one field: `[{ countryName: 'desc' }]`. By name unless you say otherwise. */
+  orderBy?: OrderBy<'name' | 'countryCode' | 'countryName'>
 }

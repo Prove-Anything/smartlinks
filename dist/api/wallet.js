@@ -1,4 +1,5 @@
 import { request, post, patch } from "../http.js";
+import { listQuery } from "../list.js";
 /**
  * Wallet passes: an event ticket, booking, membership card or loyalty card in the person's Apple Wallet or
  * Google Wallet, branded from the site (docs/wallet-passes.md).
@@ -31,17 +32,18 @@ export var wallet;
     }
     wallet.addLinks = addLinks;
     /**
-     * The signed-in person's active passes on this site, with their links. All of them in one answer:
-     * `nextCursor` is always null.
+     * The signed-in person's active passes on this site, with their links, a page at a time. Page with
+     * `limit` (50 unless you say) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await wallet.mine('coll_123')
-     * items.map((pass) => pass.links.google)
+     * let page = await wallet.mine('coll_123')
+     * page.items.map((pass) => pass.links.google)
+     * while (page.nextCursor) page = await wallet.mine('coll_123', { cursor: page.nextCursor })
      * ```
      */
-    async function mine(collectionId) {
-        return request(`${pub(collectionId)}/mine`);
+    async function mine(collectionId, options = {}) {
+        return request(`${pub(collectionId)}/mine${listQuery(options)}`);
     }
     wallet.mine = mine;
     /** Which wallets are switched on (admin). */
@@ -50,18 +52,19 @@ export var wallet;
     }
     wallet.status = status;
     /**
-     * Passes for one thing (`refType` + `refId`) or one person (`contactId`) (admin). All of them in one
-     * answer: `nextCursor` is always null. Voided passes are left out unless `includeVoided` is true.
+     * Passes for one thing (`refType` + `refId`) or one person (`contactId`) (admin), a page at a time.
+     * Page with `limit` (50 unless you say) and `cursor`. Voided passes are left out unless
+     * `includeVoided` is true.
      *
      * @example
      * ```typescript
-     * const { items } = await wallet.list('coll_123', { refType: 'event', refId: eventId })
-     * items // WalletPass[]
+     * let page = await wallet.list('coll_123', { refType: 'event', refId: eventId, limit: 50 })
+     * page.items // WalletPass[]
+     * while (page.nextCursor) page = await wallet.list('coll_123', { refType: 'event', refId: eventId, limit: 50, cursor: page.nextCursor })
      * ```
      */
     async function list(collectionId, query) {
-        const qs = new URLSearchParams(Object.entries(query).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)])).toString();
-        return request(`${adm(collectionId)}/passes${qs ? `?${qs}` : ""}`);
+        return request(`${adm(collectionId)}/passes${listQuery(query)}`);
     }
     wallet.list = list;
     /** One pass, with its links (admin). */

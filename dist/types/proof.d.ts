@@ -1,4 +1,5 @@
 import { JsonValue, ScopedFieldDef } from './product.js';
+import type { ListOptions } from './list.js';
 /**
  * `proof.values` — the owner + business-writable bag.
  * Public keys sit at the root (business + current owner can write, everyone
@@ -121,19 +122,17 @@ export type ProofUpdateRequest = Partial<ProofWrite> & {
     proof?: ProofWrite;
 };
 /**
- * Body for proof.findByProduct(): the newest `limit` proofs of a product (default 100), or every proof
- * matching `filterBy`. This list hands out no cursor: use `proof.query` to page through proofs.
+ * Body for proof.findByProduct(): the newest proofs of a product, `limit` at a time (default 100), or the
+ * proofs matching `filterBy`. Pass a page's `nextCursor` back as `cursor` for the next one.
  */
-export interface ProofFindQuery {
-    /** The most to return (default 100). */
-    limit?: number;
-    /** Only proofs where each field (a dot-path, e.g. 'values.colour') equals its value. Not limited. */
+export interface ProofFindQuery extends ListOptions {
+    /** Only proofs where each field (a dot-path, e.g. 'values.colour') equals its value. */
     filterBy?: Array<{
         field: string;
         value: JsonValue;
     }>;
-    /** Extras to attach to each proof: 'assets'. */
-    includes?: string[];
+    /** Related things to attach to each proof: 'assets'. */
+    expand?: Array<'assets'>;
     [key: string]: any;
 }
 /**

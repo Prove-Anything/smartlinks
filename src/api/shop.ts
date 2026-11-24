@@ -23,19 +23,10 @@ import type {
   ShopRefundInput,
 } from '../types/shop'
 import type { ListResult, ListOptions } from '../types/list'
+import { listQuery } from '../list'
 
 const pub = (collectionId: string) => `/public/collection/${encodeURIComponent(collectionId)}/shop`
 const adm = (collectionId: string) => `/admin/collection/${encodeURIComponent(collectionId)}/shop`
-
-function qs(params?: Record<string, any>): string {
-  if (!params) return ''
-  const parts: string[] = []
-  for (const [k, v] of Object.entries(params)) {
-    if (v === undefined || v === null || v === '') continue
-    parts.push(`${encodeURIComponent(k)}=${encodeURIComponent(Array.isArray(v) ? v.join(',') : String(v))}`)
-  }
-  return parts.length ? `?${parts.join('&')}` : ''
-}
 
 export namespace shop {
   /**
@@ -48,17 +39,20 @@ export namespace shop {
 
   /**
    * What is for sale, in the shop's currency, with stock (`inStock`, `available`) and whether the buyer must
-   * sign in first (`needsSignIn`: a proof or access goes to an account). Everything for sale comes in one
-   * answer (`nextCursor` is always null), with the shop's `currency` beside the list.
+   * sign in first (`needsSignIn`: a proof or access goes to an account). A page at a time: page with
+   * `limit` (50 unless you say) and `cursor`. The shop's `currency` comes beside the list. Pass
+   * `productIds` for just those products.
    *
    * @example
    * ```typescript
-   * const { items, currency } = await shop.products(collectionId)
-   * items.map((p) => `${p.name}: ${formatMoney(p.amount, p.currency)}${p.inStock ? '' : ' (sold out)'}`)
+   * let page = await shop.products(collectionId, { limit: 50 })
+   * page.items.map((p) => `${p.name}: ${formatMoney(p.amount, p.currency)}${p.inStock ? '' : ' (sold out)'}`)
+   * while (page.nextCursor) page = await shop.products(collectionId, { limit: 50, cursor: page.nextCursor })
    * ```
    */
-  export async function products(collectionId: string, params?: { productIds?: string[] }): Promise<ListResult<ShopProduct> & { currency: string }> {
-    return request(`${pub(collectionId)}/products${qs({ productIds: params?.productIds })}`)
+  export async function products(collectionId: string, params?: ListOptions & { productIds?: string[] }): Promise<ListResult<ShopProduct> & { currency: string }> {
+    // productIds goes as one comma list, as it always has.
+    return request(`${pub(collectionId)}/products${listQuery({ ...params, productIds: params?.productIds?.join(',') })}`)
   }
 
   /**
@@ -104,7 +98,7 @@ export namespace shop {
    * @throws `SIGN_IN_REQUIRED`
    */
   export async function myOrders(collectionId: string, params?: ListOptions): Promise<ListResult<ShopBuyerOrder>> {
-    return request(`${pub(collectionId)}/orders/mine${qs(params)}`)
+    return request(`${pub(collectionId)}/orders/mine${listQuery(params)}`)
   }
 
   /**
@@ -151,7 +145,7 @@ export namespace shop {
      * ```
      */
     export async function listPrices(collectionId: string, params?: ShopPriceListParams): Promise<ListResult<ShopPrice>> {
-      return request(`${adm(collectionId)}/prices${qs(params)}`)
+      return request(`${adm(collectionId)}/prices${listQuery(params)}`)
     }
 
     /**
@@ -183,7 +177,7 @@ export namespace shop {
      * ```
      */
     export async function listOrders(collectionId: string, params?: ShopOrderListParams): Promise<ListResult<ShopAdminOrder>> {
-      return request(`${adm(collectionId)}/orders${qs(params)}`)
+      return request(`${adm(collectionId)}/orders${listQuery(params)}`)
     }
 
     export async function getOrder(collectionId: string, orderId: string): Promise<ShopAdminOrder> {

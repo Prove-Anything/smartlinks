@@ -8,7 +8,7 @@
  *
  * @see docs/attestations.md
  */
-import type { ListResult, ListOptions } from './list.js';
+import type { ListResult, ListOptions, DateRange } from './list.js';
 /** Types of entities that can be the subject of an attestation. */
 export type AttestationSubjectType = 'container' | 'proof' | 'product' | 'tag' | 'serial' | 'order_item' | string;
 /**
@@ -245,10 +245,8 @@ export interface ListAttestationsParams extends ListOptions {
      * public caller can never use it to widen access.
      */
     moderationStatus?: AttestationModerationStatus;
-    /** ISO 8601 lower bound (inclusive) */
-    recordedAfter?: string;
-    /** ISO 8601 upper bound (inclusive) */
-    recordedBefore?: string;
+    /** Recorded on or after `gte`, on or before `lte` (both inclusive). */
+    recordedAt?: DateRange;
 }
 export interface AttestationSummaryParams {
     /** Required */
@@ -261,8 +259,8 @@ export interface AttestationSummaryParams {
     valueField?: string;
     /** Default `'day'` */
     groupBy?: AttestationGroupBy;
-    recordedAfter?: string;
-    recordedBefore?: string;
+    /** When it was recorded: `{ gte, lte }`, the same as on the list. */
+    recordedAt?: DateRange;
     /** Max number of buckets; default 200 */
     limit?: number;
 }
@@ -288,8 +286,8 @@ export interface AttestationTreeSummaryParams {
     valueField?: string;
     /** Default `'day'` */
     groupBy?: AttestationGroupBy;
-    recordedAfter?: string;
-    recordedBefore?: string;
+    /** When it was recorded: `{ gte, lte }`, the same as on the list. */
+    recordedAt?: DateRange;
     /** Max number of buckets; default 200 */
     limit?: number;
     /** Include container items in BFS traversal; default `true` */

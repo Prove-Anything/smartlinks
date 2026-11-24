@@ -1,5 +1,5 @@
 import { CollectionResponse, CollectionCreateRequest, CollectionUpdateRequest, AppsConfigResponse, DomainTarget, HubAvailabilityResponse, CollectionUser, CollectionAccessLevel, InviteUserInput, CollectionReadiness } from "../types/collection.js";
-import type { ListResult } from "../types/list.js";
+import type { ListResult, ListOptions } from "../types/list.js";
 export declare namespace collection {
     /**
      * What the collection's installed apps need and whether it's there (sign-in, customers, products,
@@ -17,18 +17,21 @@ export declare namespace collection {
      */
     function get(collectionId: string, admin?: boolean): Promise<CollectionResponse>;
     /**
-     * The collections the signed-in user can work on (admin). All of them come back in one answer:
-     * `nextCursor` is always null. There is no public list of collections: read one with `collection.get`.
+     * The collections the signed-in user can work on (admin), a page at a time. Page with `limit`
+     * (50 unless you say) and `cursor`. There is no public list of collections: read one with
+     * `collection.get`.
+     * @param options - `limit` and `cursor`
      * @returns Promise resolving to `{ items, nextCursor }`, where `items` are CollectionResponse objects
      * @throws ErrorResponse if the request fails
      *
      * @example
      * ```typescript
-     * const { items } = await collection.list()
-     * items.forEach(c => console.log(c.id, c.title))
+     * let page = await collection.list({ limit: 50 })
+     * page.items.forEach(c => console.log(c.id, c.title))
+     * while (page.nextCursor) page = await collection.list({ limit: 50, cursor: page.nextCursor })
      * ```
      */
-    function list(): Promise<ListResult<CollectionResponse>>;
+    function list(options?: ListOptions): Promise<ListResult<CollectionResponse>>;
     /**
      * Retrieve a collection by its shortId (public endpoint).
      * @param shortId – The short identifier of the collection
@@ -197,18 +200,20 @@ export declare namespace collection {
     /**
      * List the users with access to a collection, each with their access level (admin only). Access is
      * stored in the collection's `roles` map (userId → level); this resolves each to name/email.
-     * All of them come back in one answer: `nextCursor` is always null.
+     * A page at a time: page with `limit` (50 unless you say) and `cursor`.
      * GET /admin/collection/:collectionId/getUsers
      * @param collectionId - Identifier of the collection
+     * @param options - `limit` and `cursor`
      * @returns Promise resolving to `{ items, nextCursor }`, where `items` are the collection's users
      *
      * @example
      * ```typescript
-     * const { items: users } = await collection.getUsers('coll_123')
-     * users.forEach(u => console.log(u.email, u.access))
+     * let page = await collection.getUsers('coll_123', { limit: 50 })
+     * page.items.forEach(u => console.log(u.email, u.access))
+     * while (page.nextCursor) page = await collection.getUsers('coll_123', { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    function getUsers(collectionId: string): Promise<ListResult<CollectionUser>>;
+    function getUsers(collectionId: string, options?: ListOptions): Promise<ListResult<CollectionUser>>;
     /**
      * Grant, change, or remove a user's access level on a collection (admin only). Pass `null` or
      * `'None'` to remove access. The server enforces privilege-escalation rules — you cannot grant an

@@ -104,9 +104,9 @@ import { initializeApi, knowledge } from '@proveanything/smartlinks';
 initializeApi({ baseURL: 'https://smartlinks.app/api/v1' });
 
 const { items: results } = await knowledge.publicSearch('my-collection', {
-  query: 'How do I descale this machine?',
+  q: 'How do I descale this machine?',
   filters: { productId: 'coffee-maker-deluxe' },
-  k: 3
+  limit: 3
 });
 
 for (const r of results) {
@@ -156,7 +156,7 @@ Public endpoints don't require an API key. Anonymous callers see public content 
 ```typescript
 // No API key needed
 const { items: results } = await knowledge.publicSearch('my-collection', {
-  query: 'How do I clean this?'
+  q: 'How do I clean this?'
 });
 ```
 
@@ -723,10 +723,10 @@ const { items: sources } = await knowledge.listSources('my-collection', 'manuals
 
 ```typescript
 const { items: results, mode } = await knowledge.publicSearch('my-collection', {
-  query: 'How do I descale my coffee maker?',
+  q: 'How do I descale my coffee maker?',
   sets: ['manuals'],                              // optional: ids or keys
   filters: { productId: 'coffee-maker-deluxe' },  // optional: exact matches on a document's meta
-  k: 5                                            // optional: default 8, at most 25
+  limit: 5                                            // optional: default 8, at most 25 at a time
 });
 
 for (const r of results) {
@@ -737,7 +737,7 @@ for (const r of results) {
 }
 ```
 
-`mode` says how the search ran: `hybrid` (meaning and keywords), `keywords`, or `none` (there were no sets to search). Admins can search every set, staff ones included, with `knowledge.search(collectionId, { query })`. Both searches return their matches as `items`, with `query` and `mode` beside them.
+`mode` says how the search ran: `hybrid` (meaning and keywords), `keywords`, or `none` (there were no sets to search). Admins can search every set, staff ones included, with `knowledge.search(collectionId, { q })`. Both searches return their matches as `items`, with `query` (what was searched for) and `mode` beside them.
 
 ### AI-written answers (admin agent with `knowledge.search`)
 
@@ -802,9 +802,9 @@ if (ai.voice.isSupported()) {
   
   // Find the best passage in the manuals
   const { items: results } = await knowledge.publicSearch('my-collection', {
-    query: question,
+    q: question,
     filters: { productId: 'coffee-maker-deluxe' },
-    k: 1
+    limit: 1
   });
 
   // Speak it
@@ -827,9 +827,9 @@ class ProductVoiceAssistant {
 
     // Find the best passage
     const { items: results } = await knowledge.publicSearch(this.collectionId, {
-      query: question,
+      q: question,
       filters: { productId: this.productId },
-      k: 1
+      limit: 1
     });
     const answer = results[0]?.text ?? "Sorry, I couldn't find that in the manual.";
 
@@ -1017,9 +1017,9 @@ Fill the basket, tamp firmly, press the espresso button...',
 // Website, any time: show the matching sections
 async function answerQuestion(collectionId: string, question: string) {
   const { items: results } = await knowledge.publicSearch(collectionId, {
-    query: question,
+    q: question,
     filters: { productId: 'coffee-maker-deluxe' },
-    k: 3
+    limit: 3
   });
   return results.map(r => ({ title: r.heading ?? r.title, snippet: r.snippet, url: r.url }));
 }
@@ -1089,7 +1089,7 @@ export function useProductHelp(collectionId: string, productId: string) {
     setLoading(true);
     setError(null);
     try {
-      const res = await knowledge.publicSearch(collectionId, { query, filters: { productId }, k: 3 });
+      const res = await knowledge.publicSearch(collectionId, { q: query, filters: { productId }, limit: 3 });
       setResults(res.items);
     } catch (err: any) {
       setError(err.message);
@@ -1343,7 +1343,7 @@ async function voiceAssistant() {
     const question = await ai.voice.listen();
 
     showStatus('Searching...');
-    const { items: results } = await knowledge.publicSearch('my-collection', { query: question, k: 1 });
+    const { items: results } = await knowledge.publicSearch('my-collection', { q: question, limit: 1 });
     const answer = results[0]?.text ?? "Sorry, I couldn't find that.";
 
     showStatus('Speaking...');
@@ -1585,7 +1585,7 @@ For the `rag` strategy to find anything, the product's documents must be in a kn
 
 ```typescript
 const { items: results } = await SL.knowledge.publicSearch(collectionId, {
-  query: userQuestion,
+  q: userQuestion,
   filters: { productId: ragHint.productId },
 });
 ```

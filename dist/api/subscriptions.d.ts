@@ -2,16 +2,17 @@ import type { PublicPlan, MySubscription, SubscriptionStartInput, SubscriptionSt
 import type { ListResult, ListOptions } from '../types/list.js';
 export declare namespace subscriptions {
     /**
-     * Plans open to new members, each with its prices (monthly, yearly, one-off). All of them in one answer:
-     * `nextCursor` is always null.
+     * Plans open to new members, each with its prices (monthly, yearly, one-off), a page at a time. Page
+     * with `limit` (50 unless you say) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items: plans } = await subscriptions.plans(collectionId)
-     * plans.map((p) => p.prices.map((price) => subscriptions.describePrice(price)))
+     * let page = await subscriptions.plans(collectionId, { limit: 50 })
+     * page.items.map((p) => p.prices.map((price) => subscriptions.describePrice(price)))
+     * while (page.nextCursor) page = await subscriptions.plans(collectionId, { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    function plans(collectionId: string): Promise<ListResult<PublicPlan>>;
+    function plans(collectionId: string, options?: ListOptions): Promise<ListResult<PublicPlan>>;
     /**
      * Join a plan: Stripe's checkout page for the chosen price. Send them to `checkoutUrl`. Signed in only (a
      * membership belongs to an account). The membership exists once Stripe confirms the payment.
@@ -31,16 +32,17 @@ export declare namespace subscriptions {
      */
     function start(collectionId: string, input: SubscriptionStartInput): Promise<SubscriptionStartResult>;
     /**
-     * The signed-in member's memberships, newest first (ended ones too: check `live`). All of them in one
-     * answer: `nextCursor` is always null.
+     * The signed-in member's memberships, newest first (ended ones too: check `live`), a page at a time.
+     * Page with `limit` (50 unless you say) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await subscriptions.mine(collectionId)
-     * const current = items.find((s) => s.live)
+     * let page = await subscriptions.mine(collectionId)
+     * const current = page.items.find((s) => s.live)
+     * while (page.nextCursor) page = await subscriptions.mine(collectionId, { cursor: page.nextCursor })
      * ```
      */
-    function mine(collectionId: string): Promise<ListResult<MySubscription>>;
+    function mine(collectionId: string, options?: ListOptions): Promise<ListResult<MySubscription>>;
     /**
      * Cancel: it ends at the end of the paid period, and access stays until then. A one-off plan or a staff
      * grant ends now. Undo with `resume` before the period ends.

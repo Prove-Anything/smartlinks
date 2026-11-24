@@ -207,7 +207,8 @@ export interface ListContainerItemsParams extends ListOptions {
   history?: boolean
 }
 
-export interface FindContainersForItemParams {
+/** `containers.findForItem` options: the item to look for, plus `limit` (default 50) and `cursor`. */
+export interface FindContainersForItemParams extends ListOptions {
   /** Required */
   itemType: ContainerItemType
   /** Required: a tag's id, or an item's proof id (or its uid, `itm_…`) */

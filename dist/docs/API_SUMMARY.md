@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 3.0.0-alpha.1  |  Generated: 2026-11-24T15:23:46.728Z
+Version: 3.0.0-alpha.2  |  Generated: 2026-11-24T16:34:33.961Z
 
 This is a concise summary of all available API functions and types.
 
@@ -141,7 +141,6 @@ The Smartlinks SDK is organized into the following namespaces:
 - **adminCards** - Functions for adminCards operations
 - **aiGuide** - Functions for aiGuide operations
 - **analytics** - Functions for analytics operations
-- **async** - Functions for async operations
 - **attestation** - Functions for attestation operations
 - **attestations** - Functions for attestations operations
 - **bookings** - Functions for bookings operations
@@ -3774,6 +3773,7 @@ interface MatchRecordsInput {
   strategy?: 'all' | 'best'
   recordType?: string
   limit?: number
+  cursor?: string
   includeScheduled?: boolean
   includeExpired?: boolean
   at?: string
@@ -3889,6 +3889,7 @@ interface ResolveAllParams {
   recordType?: string
   tiers?: Array<'proof' | 'batch' | 'variant' | 'product' | 'rule' | 'facet' | 'collection'>
   limit?: number
+  cursor?: string
   at?: string
   includeScheduled?: boolean
   includeExpired?: boolean
@@ -4106,18 +4107,6 @@ interface UploadFromUrlOptions {
   metadata?: Record<string, any>
   appId?: string
   admin?: boolean
-}
-```
-
-**ListAssetsOptions** (interface)
-```typescript
-interface ListAssetsOptions {
-  scope:
-  | { type: 'collection'; collectionId: string }
-  | { type: 'product'; collectionId: string; productId: string }
-  | { type: 'proof'; collectionId: string; productId: string; proofId: string }
-  appId?: string
-  limit?: number
 }
 ```
 
@@ -4493,8 +4482,7 @@ interface AttestationSummaryParams {
   attestationType: string
   valueField?: string
   groupBy?: AttestationGroupBy
-  recordedAfter?: string
-  recordedBefore?: string
+  recordedAt?: DateRange
   limit?: number
 }
 ```
@@ -4523,8 +4511,7 @@ interface AttestationTreeSummaryParams {
   attestationType: string
   valueField?: string
   groupBy?: AttestationGroupBy
-  recordedAfter?: string
-  recordedBefore?: string
+  recordedAt?: DateRange
   limit?: number
   includeItems?: boolean
 }
@@ -5379,15 +5366,6 @@ interface BatchUpdateRequest {
   name?: string
   expiryDate?: string | Date
   [key: string]: any              // Additional batch fields
-}
-```
-
-**SearchBatchesRequest** (interface)
-```typescript
-interface SearchBatchesRequest {
-  search?: string                 // Search term (batch ID or name)
-  productId?: string              // Filter by specific product
-  limit?: number                  // Max results (default: 100)
 }
 ```
 
@@ -6462,33 +6440,10 @@ interface CommunicationEvent {
 }
 ```
 
-**CommsQueryByUser** (interface)
-```typescript
-interface CommsQueryByUser {
-  userId?: string
-  contactId?: string
-  from?: string
-  to?: string
-  limit?: number
-}
-```
-
 **RecipientWithOutcome** (interface)
 ```typescript
 interface RecipientWithOutcome {
   id: string; outcome: string
-}
-```
-
-**CommsRecipientIdsQuery** (interface)
-```typescript
-interface CommsRecipientIdsQuery {
-  broadcastId?: string
-  journeyId?: string
-  idField?: IdField
-  from?: string
-  to?: string
-  limit?: number
 }
 ```
 
@@ -6503,6 +6458,7 @@ interface CommsRecipientsWithoutInteractionQuery {
   from?: string
   to?: string
   limit?: number
+  cursor?: string
 }
 ```
 
@@ -6519,6 +6475,7 @@ interface CommsRecipientsWithInteractionQuery {
   from?: string
   to?: string
   limit?: number
+  cursor?: string
 }
 ```
 
@@ -6880,7 +6837,7 @@ interface TransactionalSendError {
 // Communication and notification types for the Smartlinks API
 import type { IdField } from './common'
 import type { BroadcastChannel } from './broadcasts'
-import type { ListResult } from './list'
+import type { ListResult, ListOptions } from './list'
 
 /**
  * Target subject for notifications (product, collection, etc.)
@@ -6909,24 +6866,24 @@ export interface CommunicationEvent {
   [k: string]: any
 }
 
-export interface CommsQueryByUser {
+/** `comms.queryByUser` options: who, the time window (`from` / `to`), plus `limit` and `cursor`. */
+export interface CommsQueryByUser extends ListOptions {
   userId?: string
   contactId?: string
   from?: string
   to?: string
-  limit?: number
 }
 
 export type RecipientId = string
 export interface RecipientWithOutcome { id: string; outcome: string }
 
-export interface CommsRecipientIdsQuery {
+/** `comms.queryRecipientIds` options: the source, the time window (`from` / `to`), plus `limit` and `cursor`. */
+export interface CommsRecipientIdsQuery extends ListOptions {
   broadcastId?: string
   journeyId?: string
   idField?: IdField
   from?: string
   to?: string
-  limit?: number
 }
 
 /** Who a broadcast or journey reached that did NOT then do an interaction. */
@@ -6940,6 +6897,8 @@ export interface CommsRecipientsWithoutInteractionQuery {
   from?: string
   to?: string
   limit?: number
+  /** A `nextCursor` from the previous page. */
+  cursor?: string
 }
 
 /** Who a broadcast or journey reached that then did an interaction. */
@@ -6955,6 +6914,8 @@ export interface CommsRecipientsWithInteractionQuery {
   from?: string
   to?: string
   limit?: number
+  /** A `nextCursor` from the previous page. */
+  cursor?: string
 }
 
 export interface LogCommunicationEventBody {
@@ -7741,15 +7702,6 @@ interface GetContainerParams {
 }
 ```
 
-**FindContainersForItemParams** (interface)
-```typescript
-interface FindContainersForItemParams {
-  itemType: ContainerItemType
-  itemId: string
-  productId?: string
-}
-```
-
 **ContainerStatus** = `'active' | 'archived' | string`
 
 **ContainerItemType** = `'tag' | 'proof'`
@@ -8162,6 +8114,9 @@ interface FacetQueryRequest {
   includeEmpty?: boolean
   includeDeleted?: boolean
   namespace?: string | null
+  q?: string
+  createdAt?: DateRange
+  updatedAt?: DateRange
   query?: ProductQueryRequest["query"] & {
   facetEquals?: Record<string, JsonValue | JsonValue[]>
   }
@@ -8203,13 +8158,6 @@ interface FacetGetParams {
 }
 ```
 
-**FacetValueListParams** (interface)
-```typescript
-interface FacetValueListParams {
-  includeDeleted?: boolean
-}
-```
-
 **FacetValueGetParams** (interface)
 ```typescript
 interface FacetValueGetParams {
@@ -8246,17 +8194,6 @@ interface FetchFileRequest {
   maxAge?: FileTtl
   force?: boolean
   appId?: string
-}
-```
-
-**ListFilesQuery** (interface)
-```typescript
-interface ListFilesQuery {
-  origin?: "upload" | "fetched" | "derived" | "generated"
-  retention?: "temporary" | "permanent"
-  appId?: string
-  derivedFromId?: string
-  limit?: number
 }
 ```
 
@@ -8803,15 +8740,6 @@ interface CreateFlowInput {
 }
 ```
 
-**ListFlowsQuery** (interface)
-```typescript
-interface ListFlowsQuery {
-  direction?: FlowDirection
-  status?: FlowStatus
-  appId?: string
-}
-```
-
 **RunFlowInput** (interface)
 ```typescript
 interface RunFlowInput {
@@ -9100,27 +9028,6 @@ interface RecordTypeInfo {
 
 ### interaction
 
-**AdminInteractionsQueryRequest** (interface)
-```typescript
-interface AdminInteractionsQueryRequest {
-  userId?: string
-  contactId?: string
-  appId?: string
-  interactionId?: string
-  scope?: string
-  interactionIds?: string[]
-  broadcastId?: string
-  outcome?: string | null
-  from?: string
-  to?: string
-  limit?: number
-  includeDeleted?: boolean
-  latestPerEventId?: boolean
-  order?: 'ASC' | 'DESC'
-  include?: Array<'interaction'>
-}
-```
-
 **AdminInteractionsCountsByOutcomeRequest** (interface)
 ```typescript
 interface AdminInteractionsCountsByOutcomeRequest {
@@ -9187,17 +9094,6 @@ interface PublicInteractionsCountsByOutcomeRequest {
   appId: string
   interactionId: string
   scope?: string
-  from?: string
-  to?: string
-  limit?: number
-}
-```
-
-**PublicInteractionsByUserRequest** (interface)
-```typescript
-interface PublicInteractionsByUserRequest {
-  appId?: string
-  interactionId?: string
   from?: string
   to?: string
   limit?: number
@@ -9599,19 +9495,6 @@ interface JourneyStatsResponse {
 }
 ```
 
-**JourneyStepRecipientsRequest** (interface)
-```typescript
-interface JourneyStepRecipientsRequest {
-  status?: 'entered' | 'completed' | 'pending'
-  idField?: IdField
-  interactionId?: string
-  outcome?: string
-  from?: string
-  to?: string
-  limit?: number
-}
-```
-
 **JourneyFunnelReportRequest** (interface)
 ```typescript
 interface JourneyFunnelReportRequest {
@@ -9724,16 +9607,6 @@ interface KnowledgeDocument {
 }
 ```
 
-**KnowledgeSearchRequest** (interface)
-```typescript
-interface KnowledgeSearchRequest {
-  query: string
-  sets?: string[]
-  filters?: Record<string, any>
-  k?: number
-}
-```
-
 **KnowledgeSearchResult** (interface)
 ```typescript
 interface KnowledgeSearchResult {
@@ -9782,6 +9655,16 @@ interface ListOptions {
 }
 ```
 
+**DateRange** (interface)
+```typescript
+interface DateRange {
+  gte?: string | Date
+  lte?: string | Date
+}
+```
+
+**SortDirection** = `'asc' | 'desc'`
+
 ### location
 
 **Location** (interface)
@@ -9803,18 +9686,6 @@ interface Location {
   metadata?: Record<string, unknown>
   createdAt: string
   updatedAt: string
-}
-```
-
-**LocationSearchQuery** (interface)
-```typescript
-interface LocationSearchQuery {
-  q?: string
-  category?: string
-  countryCode?: string
-  countryName?: string
-  limit?: number // default 20; max 100
-  sort?: 'name' | 'countryCode' | 'countryName' // default 'name'
 }
 ```
 
@@ -9869,16 +9740,6 @@ interface LotCreateInput {
   destination?: Record<string, any> | null
   status?: LotStatus
   id?: string
-}
-```
-
-**ListLotsParams** (interface)
-```typescript
-interface ListLotsParams {
-  status?: LotStatus
-  search?: string
-  productId?: string
-  includeDeleted?: boolean
 }
 ```
 
@@ -10759,23 +10620,6 @@ interface TagScanEvent {
 }
 ```
 
-**TimelineRequest** (interface)
-```typescript
-interface TimelineRequest {
-  limit?: number                        // Max results (default: 1000)
-  from?: string                         // ISO 8601 start date filter
-  to?: string                           // ISO 8601 end date filter
-  isAdmin?: boolean                     // Filter by admin scans only
-}
-```
-
-**LocationRequest** (interface)
-```typescript
-interface LocationRequest {
-  limit?: number                        // Max results (default: 1000)
-}
-```
-
 **BulkAnalyticsRequest** (interface)
 ```typescript
 interface BulkAnalyticsRequest {
@@ -11034,16 +10878,6 @@ interface ProofCreateRequest {
   core?: ProofWrite
   data?: Record<string, JsonValue>
   admin?: Record<string, JsonValue>
-}
-```
-
-**ProofFindQuery** (interface)
-```typescript
-interface ProofFindQuery {
-  limit?: number
-  filterBy?: Array<{ field: string; value: JsonValue }>
-  includes?: string[]
-  [key: string]: any
 }
 ```
 
@@ -12100,24 +11934,6 @@ interface LookupTagsQueryRequest {
 }
 ```
 
-**ByRefRequest** (interface)
-```typescript
-interface ByRefRequest {
-  refType: string
-  refId:   string
-  embed?:  string
-}
-```
-
-**ReverseTagLookupParams** (interface)
-```typescript
-interface ReverseTagLookupParams {
-  refType: string
-  refId:   string
-  embed?:  string
-}
-```
-
 **PublicGetTagResponse** (interface)
 ```typescript
 interface PublicGetTagResponse {
@@ -12425,17 +12241,6 @@ interface UserGroupChange {
   }
   actorType: string | null
   actorId: string | null
-}
-```
-
-**UserGroupHistoryParams** (interface)
-```typescript
-interface UserGroupHistoryParams {
-  userGroupId?: string
-  userId?: string
-  from?: string
-  to?: string
-  limit?: number
 }
 ```
 
@@ -13060,59 +12865,59 @@ List the tools the agent can use (optionally scoped by capability / name). Retur
 
 **events**(collectionId: string,
       body: AnalyticsEventsRequest) → `Promise<AnalyticsEventsResponse>`
-The raw events behind the reports, newest first unless `sort` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. ```typescript let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor }) } ```
+The raw events behind the reports, newest first unless `orderBy` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`; the time window is `from` / `to`. ```typescript const query = { source: 'events' as const, eventType: 'page_view', from: '2026-11-01T00:00:00Z', limit: 100 } let page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }] }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }], cursor: page.nextCursor }) } ```
 
 **web**(collectionId: string,
       body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsDashboardResponse>`
-The raw events behind the reports, newest first unless `sort` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. ```typescript let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor }) } ```
+The raw events behind the reports, newest first unless `orderBy` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`; the time window is `from` / `to`. ```typescript const query = { source: 'events' as const, eventType: 'page_view', from: '2026-11-01T00:00:00Z', limit: 100 } let page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }] }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }], cursor: page.nextCursor }) } ```
 
 **clicks**(collectionId: string,
       body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsDashboardResponse>`
-The raw events behind the reports, newest first unless `sort` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. ```typescript let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor }) } ```
+The raw events behind the reports, newest first unless `orderBy` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`; the time window is `from` / `to`. ```typescript const query = { source: 'events' as const, eventType: 'page_view', from: '2026-11-01T00:00:00Z', limit: 100 } let page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }] }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }], cursor: page.nextCursor }) } ```
 
 **tagScans**(collectionId: string,
       body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsDashboardResponse>`
-The raw events behind the reports, newest first unless `sort` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. ```typescript let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor }) } ```
+The raw events behind the reports, newest first unless `orderBy` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`; the time window is `from` / `to`. ```typescript const query = { source: 'events' as const, eventType: 'page_view', from: '2026-11-01T00:00:00Z', limit: 100 } let page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }] }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }], cursor: page.nextCursor }) } ```
 
 **products**(collectionId: string,
       body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsProductsResponse>`
-The raw events behind the reports, newest first unless `sort` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. ```typescript let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor }) } ```
+The raw events behind the reports, newest first unless `orderBy` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`; the time window is `from` / `to`. ```typescript const query = { source: 'events' as const, eventType: 'page_view', from: '2026-11-01T00:00:00Z', limit: 100 } let page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }] }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }], cursor: page.nextCursor }) } ```
 
 **qrCodes**(collectionId: string,
       body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsQrCodesResponse>`
-The raw events behind the reports, newest first unless `sort` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. ```typescript let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor }) } ```
+The raw events behind the reports, newest first unless `orderBy` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`; the time window is `from` / `to`. ```typescript const query = { source: 'events' as const, eventType: 'page_view', from: '2026-11-01T00:00:00Z', limit: 100 } let page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }] }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }], cursor: page.nextCursor }) } ```
 
 **tags**(collectionId: string,
       body: LegacyAnalyticsRequest = {}) → `Promise<AnalyticsTagsResponse>`
-The raw events behind the reports, newest first unless `sort` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. ```typescript let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor }) } ```
+The raw events behind the reports, newest first unless `orderBy` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`; the time window is `from` / `to`. ```typescript const query = { source: 'events' as const, eventType: 'page_view', from: '2026-11-01T00:00:00Z', limit: 100 } let page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }] }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }], cursor: page.nextCursor }) } ```
 
 **weekly**(collectionId: string,
       body: AnalyticsWeeklyRequest = {}) → `Promise<AnalyticsTimeseriesResponse>`
-The raw events behind the reports, newest first unless `sort` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. ```typescript let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor }) } ```
+The raw events behind the reports, newest first unless `orderBy` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`; the time window is `from` / `to`. ```typescript const query = { source: 'events' as const, eventType: 'page_view', from: '2026-11-01T00:00:00Z', limit: 100 } let page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }] }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }], cursor: page.nextCursor }) } ```
 
 **country**(collectionId: string,
       body: AnalyticsCountryRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
-The raw events behind the reports, newest first unless `sort` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. ```typescript let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor }) } ```
+The raw events behind the reports, newest first unless `orderBy` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`; the time window is `from` / `to`. ```typescript const query = { source: 'events' as const, eventType: 'page_view', from: '2026-11-01T00:00:00Z', limit: 100 } let page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }] }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }], cursor: page.nextCursor }) } ```
 
 **topPages**(collectionId: string,
       body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
-The raw events behind the reports, newest first unless `sort` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. ```typescript let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor }) } ```
+The raw events behind the reports, newest first unless `orderBy` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`; the time window is `from` / `to`. ```typescript const query = { source: 'events' as const, eventType: 'page_view', from: '2026-11-01T00:00:00Z', limit: 100 } let page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }] }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }], cursor: page.nextCursor }) } ```
 
 **topReferrers**(collectionId: string,
       body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
-The raw events behind the reports, newest first unless `sort` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. ```typescript let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor }) } ```
+The raw events behind the reports, newest first unless `orderBy` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`; the time window is `from` / `to`. ```typescript const query = { source: 'events' as const, eventType: 'page_view', from: '2026-11-01T00:00:00Z', limit: 100 } let page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }] }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }], cursor: page.nextCursor }) } ```
 
 **topCampaigns**(collectionId: string,
       body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
-The raw events behind the reports, newest first unless `sort` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. ```typescript let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor }) } ```
+The raw events behind the reports, newest first unless `orderBy` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`; the time window is `from` / `to`. ```typescript const query = { source: 'events' as const, eventType: 'page_view', from: '2026-11-01T00:00:00Z', limit: 100 } let page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }] }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }], cursor: page.nextCursor }) } ```
 
 **topSources**(collectionId: string,
       body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
-The raw events behind the reports, newest first unless `sort` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. ```typescript let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor }) } ```
+The raw events behind the reports, newest first unless `orderBy` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`; the time window is `from` / `to`. ```typescript const query = { source: 'events' as const, eventType: 'page_view', from: '2026-11-01T00:00:00Z', limit: 100 } let page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }] }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }], cursor: page.nextCursor }) } ```
 
 **topDestinations**(collectionId: string,
       body: AnalyticsClassicReportRequest = {}) → `Promise<AnalyticsBreakdownResponse>`
-The raw events behind the reports, newest first unless `sort` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. ```typescript let page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100 }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { source: 'events', eventType: 'page_view', limit: 100, cursor: page.nextCursor }) } ```
+The raw events behind the reports, newest first unless `orderBy` says otherwise. Returns `{ items, nextCursor, source, sort }`: the event rows are in `items`; `nextCursor` is `null` on the last page. Page with `limit` and `cursor`; the time window is `from` / `to`. ```typescript const query = { source: 'events' as const, eventType: 'page_view', from: '2026-11-01T00:00:00Z', limit: 100 } let page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }] }) while (page.nextCursor) { page = await analytics.admin.events(collectionId, { ...query, orderBy: [{ timestamp: 'asc' }], cursor: page.nextCursor }) } ```
 
 ### analytics.browser
 
@@ -13184,7 +12989,7 @@ Create a new case POST /cases
     appId: string,
     params?: CaseListQueryParams,
     admin: boolean = false) → `Promise<ListResult<AppCase>>`
-List cases with optional query parameters GET /cases Returns `{ items, nextCursor, count }`: the cases are in `items`, `count` is how many match in all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. `includeDeleted`, `contactId` and `assignedTo` are for admin calls (`admin = true`) only: the public list refuses a parameter it does not read. ```typescript let page = await app.cases.list(collectionId, appId, { status: 'open', limit: 50 }) console.log(page.items, page.count) while (page.nextCursor) { page = await app.cases.list(collectionId, appId, { status: 'open', limit: 50, cursor: page.nextCursor }) } ```
+List cases with optional query parameters GET /cases Returns `{ items, nextCursor, count }`: the cases are in `items`, `count` is how many match in all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. Sort with `orderBy`. A date field (`createdAt`, `updatedAt`, `closedAt`) takes a range: `{ gte, lte }`. `includeDeleted`, `contactId` and `assignedTo` are for admin calls (`admin = true`) only: the public list refuses a parameter it does not read. ```typescript let page = await app.cases.list(collectionId, appId, { status: 'open', limit: 50 }) console.log(page.items, page.count) while (page.nextCursor) { page = await app.cases.list(collectionId, appId, { status: 'open', limit: 50, cursor: page.nextCursor }) } // This month's cases, most urgent first await app.cases.list(collectionId, appId, { createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' }, orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }], }) ```
 
 **get**(collectionId: string,
     appId: string,
@@ -13232,8 +13037,8 @@ Get related threads and records for a case (admin only) GET /cases/:caseId/relat
 **get**(collectionId: string,
     appId: string,
     source: string,
-    opts: { q?: string; version?: string; admin?: boolean } = {},) → `Promise<import('../types/appOptions').AppOptionsList>`
-`source` = `type:<record type or declared type id>` | `list:<list id>`. Admins (`admin: true`) see every entry; the public API lists public records and lists the app declares public. Hold on to `version` and pass it back to get `{ unchanged: true }` when nothing changed. Returns `{ items, nextCursor, count?, version, mode }`: the entries are in `items`, already sorted. A picker is not paged, so `nextCursor` is always `null`. ```typescript const res = await app.options.get(collectionId, appId, 'type:machine', { admin: true }) if (!res.unchanged) { options = res.items; version = res.version } ```
+    opts: ListOptions & { q?: string; version?: string; admin?: boolean } = {},) → `Promise<import('../types/appOptions').AppOptionsList>`
+`source` = `type:<record type or declared type id>` | `list:<list id>`. Admins (`admin: true`) see every entry; the public API lists public records and lists the app declares public. Hold on to `version` and pass it back to get `{ unchanged: true }` when nothing changed. Returns `{ items, nextCursor, count?, version, mode }`: the entries are in `items`, already sorted, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. `q` searches the entries. ```typescript const res = await app.options.get(collectionId, appId, 'type:machine', { admin: true, limit: 200 }) if (!res.unchanged) { options = res.items; version = res.version } // A type too large to send whole: search it const found = await app.options.get(collectionId, appId, 'type:machine', { q: 'mix', limit: 20 }) ```
 
 **saveList**(collectionId: string,
     appId: string,
@@ -13263,7 +13068,7 @@ What a records query can use: its fields, what each can filter, sort, group or t
     appId: string,
     params?: RecordListQueryParams,
     admin: boolean = false) → `Promise<ListResult<AppRecord>>`
-List records with optional query parameters GET /records Returns `{ items, nextCursor, count }`: the records are in `items`, `count` is how many match in all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. Public/owner callers only receive records with `status: "active"`. Admin callers can query all statuses (for example `draft`/`archived`). `qFields`, `dataFilter`, `contactId` and `includeDeleted` are for admin calls (`admin = true`) only: the public list refuses a parameter it does not read. ```typescript let page = await app.records.list(collectionId, appId, { recordType: 'tip', limit: 100 }) console.log(page.items, page.count) while (page.nextCursor) { page = await app.records.list(collectionId, appId, { recordType: 'tip', limit: 100, cursor: page.nextCursor }) } ```
+List records with optional query parameters GET /records Returns `{ items, nextCursor, count }`: the records are in `items`, `count` is how many match in all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. Search with `q`, sort with `orderBy`. A date field (`createdAt`, `updatedAt`, `startsAt`, `expiresAt`) takes a range: `{ gte, lte }`. Public/owner callers only receive records with `status: "active"`. Admin callers can query all statuses (for example `draft`/`archived`). `qFields`, `dataFilter`, `contactId` and `includeDeleted` are for admin calls (`admin = true`) only: the public list refuses a parameter it does not read. ```typescript let page = await app.records.list(collectionId, appId, { recordType: 'tip', limit: 100 }) console.log(page.items, page.count) while (page.nextCursor) { page = await app.records.list(collectionId, appId, { recordType: 'tip', limit: 100, cursor: page.nextCursor }) } // Tips about watering, changed this month, newest change first await app.records.list(collectionId, appId, { recordType: 'tip', q: 'watering', updatedAt: { gte: '2026-11-01T00:00:00Z' }, orderBy: [{ updatedAt: 'desc' }], }) ```
 
 **get**(collectionId: string,
     appId: string,
@@ -13311,7 +13116,7 @@ Upsert a record by ref — creates if no record with that ref exists, otherwise 
     appId: string,
     input: MatchRecordsInput,
     admin: boolean = false) → `Promise<MatchResult>`
-Match records against a runtime target scope. Returns `{ items, nextCursor, count, strategy }`: `items` are the records whose scope is satisfied by the target, most specific first, and `count` is how many matched. It is not paged (`nextCursor` is always `null`); cap the answer with `limit`. POST /records/match ```ts const { items } = await app.records.match(collectionId, appId, { target: { productId: 'prod_abc', facets: { tier: ['gold'] } }, strategy: 'best', recordType: 'nutrition', }, true); const best = items[0] // the single highest-specificity nutrition record ```
+Match records against a runtime target scope. Returns `{ items, nextCursor, count, strategy }`: `items` are the records whose scope is satisfied by the target, most specific first, and `count` is how many matched. Without a `limit` it answers up to 100. Give a `limit` (in `input`) to page: when there are more, pass `nextCursor` back as `cursor`. POST /records/match ```ts const { items } = await app.records.match(collectionId, appId, { target: { productId: 'prod_abc', facets: { tier: ['gold'] } }, strategy: 'best', recordType: 'nutrition', }, true); const best = items[0] // the single highest-specificity nutrition record // 50 at a time const target = { productId: 'prod_abc' } let page = await app.records.match(collectionId, appId, { target, limit: 50 }) while (page.nextCursor) { page = await app.records.match(collectionId, appId, { target, limit: 50, cursor: page.nextCursor }) } ```
 
 **bulkUpsert**(collectionId: string,
     appId: string,
@@ -13327,7 +13132,7 @@ Soft-delete records in bulk. Supports two modes: - **refs mode**: explicit list 
     appId: string,
     input: ResolveAllParams,
     admin: boolean = false) → `Promise<ResolveAllResult>`
-Resolve every applicable record for a product context in one call. Returns `{ items, nextCursor, count, context, truncated }`: `items` are the records across all tiers (proof, batch, variant, product, rule, facet, collection), deduplicated and sorted by specificity descending, each as `{ record, matchedAt, specificity }`. It is not paged (`nextCursor` is always `null`); `truncated` says the answer was cut at `limit`. POST /records/resolve-all ```ts const { items, truncated } = await app.records.resolveAll(collectionId, appId, { context: { productId: 'prod_abc' }, recordType: 'nutrition', }) for (const { record, matchedAt } of items) console.log(matchedAt, record.data) ```
+Resolve every applicable record for a product context in one call. Returns `{ items, nextCursor, count, context, truncated }`: `items` are the records across all tiers (proof, batch, variant, product, rule, facet, collection), deduplicated and sorted by specificity descending, each as `{ record, matchedAt, specificity }`. Without a `limit` it answers up to 500. Give a `limit` (in `input`) to page: when there are more, pass `nextCursor` back as `cursor`. POST /records/resolve-all ```ts const { items } = await app.records.resolveAll(collectionId, appId, { context: { productId: 'prod_abc' }, recordType: 'nutrition', }) for (const { record, matchedAt } of items) console.log(matchedAt, record.data) // 100 at a time const context = { productId: 'prod_abc' } let page = await app.records.resolveAll(collectionId, appId, { context, limit: 100 }) while (page.nextCursor) { page = await app.records.resolveAll(collectionId, appId, { context, limit: 100, cursor: page.nextCursor }) } ```
 
 **previewRule**(collectionId: string,
     appId: string,
@@ -13348,7 +13153,7 @@ Create a new thread POST /threads
     appId: string,
     params?: ThreadListQueryParams,
     admin: boolean = false) → `Promise<ListResult<AppThread>>`
-List threads with optional query parameters GET /threads Returns `{ items, nextCursor, count }`: the threads are in `items`, `count` is how many match in all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. `includeDeleted` and `contactId` are for admin calls (`admin = true`) only: the public list refuses a parameter it does not read. ```typescript let page = await app.threads.list(collectionId, appId, { parentType: 'case', parentId: caseId, limit: 50 }) console.log(page.items, page.count) while (page.nextCursor) { page = await app.threads.list(collectionId, appId, { parentType: 'case', parentId: caseId, limit: 50, cursor: page.nextCursor }) } ```
+List threads with optional query parameters GET /threads Returns `{ items, nextCursor, count }`: the threads are in `items`, `count` is how many match in all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`. Sort with `orderBy`. A date field (`createdAt`, `updatedAt`) takes a range: `{ gte, lte }`. `includeDeleted` and `contactId` are for admin calls (`admin = true`) only: the public list refuses a parameter it does not read. ```typescript let page = await app.threads.list(collectionId, appId, { parentType: 'case', parentId: caseId, limit: 50 }) console.log(page.items, page.count) while (page.nextCursor) { page = await app.threads.list(collectionId, appId, { parentType: 'case', parentId: caseId, limit: 50, cursor: page.nextCursor }) } // The threads with the newest replies, started this month await app.threads.list(collectionId, appId, { createdAt: { gte: '2026-11-01T00:00:00Z' }, orderBy: [{ lastReplyAt: 'desc' }], }) ```
 
 **get**(collectionId: string,
     appId: string,
@@ -13408,8 +13213,8 @@ Set app configuration for a collection/product scope. Requires admin authenticat
 **deleteConfig**(opts: AppConfigOptions) → `Promise<void>`
 Delete app configuration for a collection/product scope. Requires admin authentication. ```typescript await appConfiguration.deleteConfig({ appId: 'warranty-portal', collectionId: 'my-collection', admin: true }); ```
 
-**getData**(opts: AppConfigOptions) → `Promise<ListResult<any>>`
-Get all keyed data items for an app within a scope. Best for a small set of standalone documents such as FAQs, menus, lookup tables, or content fragments where the caller typically knows the item IDs. If you are modelling richer app entities that need filtering, lifecycle fields, visibility, ownership, or relationships, prefer `app.records`, `app.cases`, or `app.threads` instead. `nextCursor` is always `null`. ```typescript const { items } = await appConfiguration.getData({ appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123' }); ```
+**getData**(opts: AppConfigOptions & ListOptions) → `Promise<ListResult<any>>`
+Get all keyed data items for an app within a scope. Best for a small set of standalone documents such as FAQs, menus, lookup tables, or content fragments where the caller typically knows the item IDs. If you are modelling richer app entities that need filtering, lifecycle fields, visibility, ownership, or relationships, prefer `app.records`, `app.cases`, or `app.threads` instead. `limit` and `cursor` give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript const scope = { appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123' } let page = await appConfiguration.getData({ ...scope, limit: 100 }); while (page.nextCursor) { page = await appConfiguration.getData({ ...scope, limit: 100, cursor: page.nextCursor }); } ```
 
 **getDataItem**(opts: AppConfigOptions) → `Promise<any>`
 Get a single keyed data item by ID within a scope. This is ideal when you already know the exact ID of a simple scoped document. For richer domain objects that users browse or query, prefer `app.records`, `app.cases`, or `app.threads`. ```typescript const item = await appConfiguration.getDataItem({ appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123', itemId: 'manual-1' }); ```
@@ -13422,7 +13227,7 @@ Delete a keyed data item by ID within a scope. Requires admin authentication. ``
 
 **getWidgets**(collectionId: string,
     options?: GetCollectionWidgetsOptions) → `Promise<CollectionWidgetsResponse>`
-Fetches ALL widget data (manifests + bundle files) for a collection in one call. Returns everything needed to render widgets with zero additional requests. This solves N+1 query problems by fetching manifests, JavaScript bundles, and CSS files in parallel on the server. and bundle files. The list is not paged, so `nextCursor` is always `null`. ```typescript // Fetch all widget data for a collection const { items: apps } = await Api.AppConfiguration.getWidgets(collectionId); // apps: [{ appId, manifest, widget, container, admin }, ...] //   widget / container: { js: { umd?, esm? }, css?, source?, styles? } //     source / styles - the bundle inlined (when small enough); js / css - URLs otherwise. //   admin - URL of the app's app.admin.json (setup / tunable options), or null. // Bundles don't ship React: they resolve shared libraries from the HOST's globals // (host-dependency-contract.md), so loading one is a host's job. // // Inside a host (Portal / Hub), an app showing ANOTHER app's widget should not load // bundles itself - use the host-provided EmbeddedWidget prop: //   <EmbeddedWidget appId="raffle" size="standard" />   (docs/widgets.md) // Force refresh all widgets const { items: fresh } = await Api.AppConfiguration.getWidgets(collectionId, { force: true }); ```
+Fetches ALL widget data (manifests + bundle files) for a collection in one call. Returns everything needed to render widgets with zero additional requests. This solves N+1 query problems by fetching manifests, JavaScript bundles, and CSS files in parallel on the server. and bundle files. It always comes back whole: there is no `limit` or `cursor`, and `nextCursor` is always `null`. ```typescript // Fetch all widget data for a collection const { items: apps } = await Api.AppConfiguration.getWidgets(collectionId); // apps: [{ appId, manifest, widget, container, admin }, ...] //   widget / container: { js: { umd?, esm? }, css?, source?, styles? } //     source / styles - the bundle inlined (when small enough); js / css - URLs otherwise. //   admin - URL of the app's app.admin.json (setup / tunable options), or null. // Bundles don't ship React: they resolve shared libraries from the HOST's globals // (host-dependency-contract.md), so loading one is a host's job. // // Inside a host (Portal / Hub), an app showing ANOTHER app's widget should not load // bundles itself - use the host-provided EmbeddedWidget prop: //   <EmbeddedWidget appId="raffle" size="standard" />   (docs/widgets.md) // Force refresh all widgets const { items: fresh } = await Api.AppConfiguration.getWidgets(collectionId, { force: true }); ```
 
 **resolveFeature**(system: SystemBlock | undefined, flag: string) → `boolean`
 Resolve whether a feature flag is on, applying the `accountType` default: `enterprise` accounts default every flag to **on** unless `features[flag]` is explicitly `false`; `standard` accounts (or missing `accountType`) default every flag to **off** unless `features[flag]` is explicitly `true`. An explicit value always wins over the default either way. This is the same logic `isFeatureEnabled()` / `isFeatureEnabledSync()` use internally — call those instead in normal code. `system.features` and `accountType` are public data (no admin-only feature-check path exists), so there's no reason to fetch differently for an admin surface. This is exposed separately only for the rare case where you already have a `system` block in hand from somewhere other than `getAppConfig()` (e.g. server-rendered props) and want to resolve a flag from it directly. ```typescript const enabled = appConfiguration.resolveFeature(someSystemBlock, 'custom_domain'); ```
@@ -13460,32 +13265,35 @@ Upload an asset from a URL The server will fetch the file from the provided URL 
     assetId: string) → `Promise<AssetResponse>`
 Upload an asset from a URL The server will fetch the file from the provided URL and store it permanently in your CDN. This solves CORS issues and ensures files are permanently stored. ```typescript // Upload AI-generated image const asset = await asset.uploadFromUrl({ url: 'https://oaidalleapiprodscus.blob.core.windows.net/...', scope: { type: 'collection', collectionId: 'my-collection' }, metadata: { name: 'AI Generated Image', app: 'gallery' } }); // Upload stock photo const asset = await asset.uploadFromUrl({ url: 'https://images.unsplash.com/photo-...', scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' }, folder: 'images', metadata: { name: 'Product Photo' } }); ```
 
-**listForCollection**(collectionId: string) → `Promise<ListResult<AssetResponse>>`
-The collection's own assets (public). Returns `{ items, nextCursor }`: the assets are in `items`. The list is not paged, so `nextCursor` is always `null`. ```typescript const { items } = await asset.listForCollection('my-collection') ```
+**listForCollection**(collectionId: string,
+    options: ListOptions = {}) → `Promise<ListResult<AssetResponse>>`
+The collection's own assets (public). Returns `{ items, nextCursor, count }`: the assets are in `items`, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript let page = await asset.listForCollection('my-collection', { limit: 100 }) while (page.nextCursor) page = await asset.listForCollection('my-collection', { limit: 100, cursor: page.nextCursor }) ```
 
 **getForProduct**(collectionId: string,
     productId: string,
     assetId: string) → `Promise<AssetResponse>`
-The collection's own assets (public). Returns `{ items, nextCursor }`: the assets are in `items`. The list is not paged, so `nextCursor` is always `null`. ```typescript const { items } = await asset.listForCollection('my-collection') ```
+The collection's own assets (public). Returns `{ items, nextCursor, count }`: the assets are in `items`, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript let page = await asset.listForCollection('my-collection', { limit: 100 }) while (page.nextCursor) page = await asset.listForCollection('my-collection', { limit: 100, cursor: page.nextCursor }) ```
 
 **listForProduct**(collectionId: string,
-    productId: string) → `Promise<ListResult<AssetResponse>>`
-A product's assets (public). Returns `{ items, nextCursor }`: the assets are in `items`. The list is not paged, so `nextCursor` is always `null`. ```typescript const { items } = await asset.listForProduct('my-collection', 'wine-bottle') ```
+    productId: string,
+    options: ListOptions = {}) → `Promise<ListResult<AssetResponse>>`
+A product's assets (public). Returns `{ items, nextCursor, count }`: the assets are in `items`, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript const { items, nextCursor } = await asset.listForProduct('my-collection', 'wine-bottle', { limit: 100 }) ```
 
 **getForProof**(collectionId: string,
     productId: string,
     proofId: string,
     assetId: string) → `Promise<AssetResponse>`
-A product's assets (public). Returns `{ items, nextCursor }`: the assets are in `items`. The list is not paged, so `nextCursor` is always `null`. ```typescript const { items } = await asset.listForProduct('my-collection', 'wine-bottle') ```
+A product's assets (public). Returns `{ items, nextCursor, count }`: the assets are in `items`, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript const { items, nextCursor } = await asset.listForProduct('my-collection', 'wine-bottle', { limit: 100 }) ```
 
 **listForProof**(collectionId: string,
     productId: string,
     proofId: string,
-    appId?: string) → `Promise<ListResult<AssetResponse>>`
-A proof's assets (public), optionally only one app's. Returns `{ items, nextCursor }`: the assets are in `items`. The list is not paged, so `nextCursor` is always `null`. ```typescript const { items } = await asset.listForProof('my-collection', 'wine-bottle', proofId, 'gallery') ```
+    appId?: string,
+    options: ListOptions = {}) → `Promise<ListResult<AssetResponse>>`
+A proof's assets (public), optionally only one app's. Returns `{ items, nextCursor, count }`: the assets are in `items`, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript const { items, nextCursor } = await asset.listForProof('my-collection', 'wine-bottle', proofId, 'gallery', { limit: 100 }) ```
 
 **list**(options: ListAssetsOptions) → `Promise<ListResult<Asset>>`
-List assets for a given scope (a collection, a product or a proof). Returns `{ items, nextCursor }`: the assets are in `items`. These lists are not paged, so `nextCursor` is always `null`. ```typescript const { items } = await asset.list({ scope: { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' }, appId: 'gallery', }) ```
+List assets for a given scope (a collection, a product or a proof). Returns `{ items, nextCursor, count }`: the assets are in `items`, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript const scope = { type: 'product', collectionId: 'my-collection', productId: 'wine-bottle' } as const let page = await asset.list({ scope, appId: 'gallery', limit: 100 }) while (page.nextCursor) page = await asset.list({ scope, appId: 'gallery', limit: 100, cursor: page.nextCursor }) ```
 
 **get**(options: GetAssetOptions) → `Promise<Asset>`
 Get an asset by id within a scope (public)
@@ -13494,7 +13302,7 @@ Get an asset by id within a scope (public)
 Remove an asset by id within a scope (admin)
 
 **listAdmin**(options: AdminListAssetsOptions) → `Promise<ListResult<Asset>>`
-List assets for a collection with full filtering options (admin). Returns `{ items, nextCursor }`: the assets are in `items`, 50 at a time unless you give a `limit` (at most 200). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. `count` (how many match in all) is there when you gave a `limit` or a `cursor`. ```typescript let page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', limit: 20 }) console.log(`${page.count} images`) while (page.nextCursor) { page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', limit: 20, cursor: page.nextCursor }) } ```
+List assets for a collection with full filtering options (admin). Returns `{ items, nextCursor }`: the assets are in `items`, 50 at a time unless you give a `limit` (at most 200). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. `count` (how many match in all) is there when you gave a `limit` or a `cursor`. Sort with `orderBy` (`createdAt`, `name`, `size` or `assetType`). ```typescript let page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', orderBy: [{ name: 'asc' }], limit: 20 }) console.log(`${page.count} images`) while (page.nextCursor) { page = await asset.listAdmin({ collectionId: 'my-collection', assetType: 'Image', orderBy: [{ name: 'asc' }], limit: 20, cursor: page.nextCursor }) } ```
 
 **getAdmin**(collectionId: string, assetId: string) → `Promise<Asset>`
 Get a single asset by ID (admin).
@@ -13529,22 +13337,13 @@ Open a resumable upload for a large file (e.g. video). The bytes are chunked dir
 **resumeUpload**(handleId: string, file: File) → `Promise<ResumableUploadHandle>`
 Resume a previously-created resumable upload after a reload/app restart. Pass the persisted `handle.id` and the same `File`; the transfer continues from the offset storage already holds rather than restarting.
 
-### async
-
-**enqueueAsyncJob**(collectionId: string,
-    params: EnqueueAsyncJobRequest) → `Promise<EnqueueAsyncJobResponse>`
-Enqueue a background job for a collection POST /admin/collection/:collectionId/async/jobs (202)
-
-**getAsyncJobStatus**(collectionId: string,
-    jobId: number) → `Promise<Job>`
-Get job status by ID (may return 404 if completed/removed) GET /admin/collection/:collectionId/async/jobs/:jobId
-
 ### attestation
 
 **list**(collectionId: string,
     productId: string,
-    proofId: string) → `Promise<ListResult<AttestationResponse>>`
-List all attestations for a proof, in one list (no pages): `{ items, nextCursor: null }`.
+    proofId: string,
+    options: ListOptions = {}) → `Promise<ListResult<AttestationResponse>>`
+List the attestations for a proof: `{ items, nextCursor, count }`, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript let page = await attestation.list('coll_123', 'prod_abc', 'proof_1', { limit: 100 }) while (page.nextCursor) page = await attestation.list('coll_123', 'prod_abc', 'proof_1', { limit: 100, cursor: page.nextCursor }) ```
 
 **get**(collectionId: string,
     productId: string,
@@ -13583,11 +13382,11 @@ Batch-create attestations (admin). Sends an array of `CreateAttestationInput` ob
 
 **list**(collectionId: string,
     params: ListAttestationsParams) → `Promise<ListAttestationsResponse>`
-List attestations for a subject (admin). Returns all three data zones. Supports filtering by type and date range. `limit` and `cursor` ```typescript let page = await attestations.list('coll_123', { subjectType: 'container', subjectId:   'uuid-of-cask', attestationType: 'temperature', recordedAfter:   '2025-01-01T00:00:00Z', limit: 50, }) const records = page.items // next page: pass the cursor back with the same filters if (page.nextCursor) page = await attestations.list('coll_123', { ...filters, limit: 50, cursor: page.nextCursor }) ```
+List attestations for a subject (admin). Returns all three data zones. Supports filtering by type and by when it was recorded (`recordedAt: { gte, lte }`). `limit` and `cursor` ```typescript const filters = { subjectType: 'container', subjectId:   'uuid-of-cask', attestationType: 'temperature', recordedAt:  { gte: '2025-01-01T00:00:00Z' }, } as const let page = await attestations.list('coll_123', { ...filters, limit: 50 }) const records = page.items // next page: pass the cursor back with the same filters if (page.nextCursor) page = await attestations.list('coll_123', { ...filters, limit: 50, cursor: page.nextCursor }) ```
 
 **summary**(collectionId: string,
     params: AttestationSummaryParams) → `Promise<AttestationSummaryResponse>`
-Time-series summary of attestations (admin). Aggregates attestation counts (and optionally a numeric `value` field) into time buckets.  Useful for charting trends. `attestationType` are required ```typescript const { summary } = await attestations.summary('coll_123', { subjectType:     'container', subjectId:       'uuid-of-cask', attestationType: 'temperature', valueField:      'celsius', groupBy:         'day', recordedAfter:   '2025-01-01T00:00:00Z', }) ```
+Time-series summary of attestations (admin). Aggregates attestation counts (and optionally a numeric `value` field) into time buckets.  Useful for charting trends. `attestationType` are required ```typescript const { summary } = await attestations.summary('coll_123', { subjectType:     'container', subjectId:       'uuid-of-cask', attestationType: 'temperature', valueField:      'celsius', groupBy:         'day', recordedAt:      { gte: '2025-01-01T00:00:00Z' }, }) ```
 
 **latest**(collectionId: string,
     params: AttestationLatestParams) → `Promise<AttestationLatestResponse>`
@@ -13607,7 +13406,7 @@ Tree latest snapshot — most-recent record per type across a container subtree 
 
 **publicList**(collectionId: string,
     params: ListAttestationsParams) → `Promise<PublicListAttestationsResponse>`
-List attestations for a subject (public). Records with `visibility='admin'` are always excluded. Records with `visibility='owner'` are included only when the caller provides a valid Firebase ID token that resolves to the subject owner. The `audience` field in the response indicates the tier that was served. `limit` and `cursor` `null` on the last page ```typescript const { items: records, nextCursor, audience } = await attestations.publicList('coll_123', { subjectType: 'proof', subjectId:   'proof-uuid', }) ```
+List attestations for a subject (public). Records with `visibility='admin'` are always excluded. Records with `visibility='owner'` are included only when the caller provides a valid Firebase ID token that resolves to the subject owner. The `audience` field in the response indicates the tier that was served. `limit` and `cursor`; filter by when it was recorded with `recordedAt: { gte, lte }` `null` on the last page ```typescript const { items: records, nextCursor, audience } = await attestations.publicList('coll_123', { subjectType: 'proof', subjectId:   'proof-uuid', recordedAt:  { gte: '2025-01-01T00:00:00Z', lte: '2025-12-31T23:59:59Z' }, limit: 50, }) ```
 
 **publicCreate**(collectionId: string,
     data: OwnerAttestationInput) → `Promise<CreateOwnerAttestationResponse>`
@@ -13637,7 +13436,7 @@ Tree latest snapshot (public).
 **publicContainerList**(collectionId: string,
     containerId: string,
     params?: Omit<ListAttestationsParams, 'subjectType' | 'subjectId'>) → `Promise<PublicListAttestationsResponse>`
-List attestations for a specific container (public shortcut). Equivalent to `publicList` with `subjectType='container'` and `subjectId=containerId` pre-filled. ```typescript const { items: records, nextCursor } = await attestations.publicContainerList('coll_123', containerId, { attestationType: 'temperature', limit: 50, }) ```
+List attestations for a specific container (public shortcut). Equivalent to `publicList` with `subjectType='container'` and `subjectId=containerId` pre-filled. ```typescript const { items: records, nextCursor } = await attestations.publicContainerList('coll_123', containerId, { attestationType: 'temperature', recordedAt: { gte: '2025-01-01T00:00:00Z' }, limit: 50, }) ```
 
 **publicContainerSummary**(collectionId: string,
     containerId: string,
@@ -13832,8 +13631,8 @@ Generate a fresh set of recovery codes, invalidating any previous set (authentic
 **removeMfaFactor**(clientId: string, factor: MfaFactor, password: string) → `Promise<SuccessResponse>`
 Remove an enrolled MFA factor (authenticated). Server route is DELETE with a body.
 
-**listTrustedDevices**(clientId: string) → `Promise<ListResult<TrustedDevice>>`
-List devices trusted to skip MFA challenges for the current user (authenticated). Returns `{ items, nextCursor }`: the devices are in `items`. The list is not paged, so `nextCursor` is always `null`. ```typescript const { items: devices } = await authKit.listTrustedDevices(clientId) ```
+**listTrustedDevices**(clientId: string, options: ListOptions = {}) → `Promise<ListResult<TrustedDevice>>`
+List devices trusted to skip MFA challenges for the current user (authenticated), a page at a time. Returns `{ items, nextCursor }`: the devices are in `items`. Page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await authKit.listTrustedDevices(clientId, { limit: 50 }) page.items // TrustedDevice[] while (page.nextCursor) page = await authKit.listTrustedDevices(clientId, { limit: 50, cursor: page.nextCursor }) ```
 
 **revokeTrustedDevice**(clientId: string, id: string) → `Promise<SuccessResponse>`
 Revoke a single trusted device by id (authenticated).
@@ -13844,8 +13643,8 @@ Load the **public** AuthKit config for a client (no auth). Returns branding + th
 **get**(collectionId: string, authKitId: string) → `Promise<AuthKitConfig>`
 Get the full AuthKit config, including admin-only fields like `security.lockout` (admin auth).
 
-**list**(collectionId: string) → `Promise<ListResult<AuthKitConfig>>`
-List a collection's AuthKit configs (admin). Returns `{ items, nextCursor }`: the configs are in `items`. The list is not paged, so `nextCursor` is always `null`. There is no public list. ```typescript const { items: kits } = await authKit.list('coll_123') ```
+**list**(collectionId: string, options: ListOptions = {}) → `Promise<ListResult<AuthKitConfig>>`
+List a collection's AuthKit configs (admin), a page at a time. Returns `{ items, nextCursor }`: the configs are in `items`. Page with `limit` (50 unless you say) and `cursor`. There is no public list. ```typescript let page = await authKit.list('coll_123', { limit: 50 }) page.items // AuthKitConfig[] while (page.nextCursor) page = await authKit.list('coll_123', { limit: 50, cursor: page.nextCursor }) ```
 
 **create**(collectionId: string, data: AuthKitConfigInput) → `Promise<AuthKitConfig>`
 Create an AuthKit client config (admin). Accepts the account `security` policy — see {@link AuthKitConfigInput}.
@@ -13894,8 +13693,9 @@ An account email as it would be sent now — or with draft settings (`emailTempl
 Get a single batch by ID for a collection and product (admin only).
 
 **list**(collectionId: string,
-    productId: string) → `Promise<ListResult<BatchResponse>>`
-List all batches for a collection and product (admin only). All of them come back in one answer: `nextCursor` is always null. ```typescript const { items } = await batch.list('coll_123', 'prod_abc') console.log(`${items.length} batches`) ```
+    productId: string,
+    options: ListOptions = {}) → `Promise<ListResult<BatchResponse>>`
+List the batches for a collection and product (admin only), 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript let page = await batch.list('coll_123', 'prod_abc', { limit: 100 }) console.log(`${page.count} batches`) while (page.nextCursor) page = await batch.list('coll_123', 'prod_abc', { limit: 100, cursor: page.nextCursor }) ```
 
 **create**(collectionId: string,
     productId: string,
@@ -13933,7 +13733,7 @@ Look up a serial number by code for a batch (admin only).
 
 **searchInCollection**(collectionId: string,
     params?: SearchBatchesRequest) → `Promise<ListResult<BatchResponse>>`
-Search for batches across all products in a collection. Allows searching by batch ID or name, with optional product filtering. The matches come back in one answer (`nextCursor` is always null); `limit` is the most it returns. ```typescript // Search for batches containing "2024" const { items: batches } = await batch.searchInCollection('coll_123', { search: 'BATCH-2024', limit: 50 }) // Filter batches for a specific product const productBatches = await batch.searchInCollection('coll_123', { productId: 'prod_abc', limit: 100 }) // Get all batches in collection const allBatches = await batch.searchInCollection('coll_123') // Check for expired batches (expiryDate is an ISO 8601 string) batches.forEach(batch => { if (batch.expiryDate && new Date(batch.expiryDate) < new Date()) { console.log(`Batch ${batch.id} is expired`) } }) ```
+Search for batches across all products in a collection. Allows searching by batch ID or name (`q`), with optional product filtering. `limit` is how many it returns (100 unless you say). When there are more, pass `nextCursor` back as `cursor` for the next ones; `null` means there are no more. ```typescript // Search for batches containing "2024", 50 at a time let page = await batch.searchInCollection('coll_123', { q: 'BATCH-2024', limit: 50 }) const batches = [...page.items] while (page.nextCursor) { page = await batch.searchInCollection('coll_123', { q: 'BATCH-2024', limit: 50, cursor: page.nextCursor }) batches.push(...page.items) } // Filter batches for a specific product const productBatches = await batch.searchInCollection('coll_123', { productId: 'prod_abc', limit: 100 }) // The first batches in the collection const firstBatches = await batch.searchInCollection('coll_123') // Check for expired batches (expiryDate is an ISO 8601 string) batches.forEach(batch => { if (batch.expiryDate && new Date(batch.expiryDate) < new Date()) { console.log(`Batch ${batch.id} is expired`) } }) ```
 
 **findInCollection**(collectionId: string,
     batchId: string) → `Promise<BatchResponse>`
@@ -13941,8 +13741,9 @@ Find a specific batch by ID across all products in a collection. Returns the bat
 
 **getBatchTags**(collectionId: string,
     batchId: string,
-    claimSetId?: string) → `Promise<ListResult<BatchTag>>`
-Get all tags/codes assigned to a specific batch. Shows which claim set codes have been assigned to this batch. All of them come back in one answer: `nextCursor` is always null. ```typescript // Get all tags assigned to a batch const { items: tags } = await batch.getBatchTags('coll_123', 'BATCH-2024-001') console.log(`Batch has ${tags.length} tags assigned`) tags.forEach(tag => { console.log(`Code: ${tag.code}, ClaimSet: ${tag.claimSetId}, TagID: ${tag.tagId}`) }) // Get tags from a specific claim set const claimSetTags = await batch.getBatchTags('coll_123', 'BATCH-2024-001', '000001') ```
+    claimSetId?: string,
+    options: ListOptions = {}) → `Promise<ListResult<BatchTag>>`
+Get all tags/codes assigned to a specific batch. Shows which claim set codes have been assigned to this batch, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. `count` is how many there are in all. ```typescript // The tags assigned to a batch, 200 at a time let page = await batch.getBatchTags('coll_123', 'BATCH-2024-001', undefined, { limit: 200 }) console.log(`Batch has ${page.count} tags assigned`) page.items.forEach(tag => { console.log(`Code: ${tag.code}, ClaimSet: ${tag.claimSetId}, TagID: ${tag.tagId}`) }) while (page.nextCursor) { page = await batch.getBatchTags('coll_123', 'BATCH-2024-001', undefined, { limit: 200, cursor: page.nextCursor }) } // Get tags from a specific claim set const claimSetTags = await batch.getBatchTags('coll_123', 'BATCH-2024-001', '000001') ```
 
 ### bookings
 
@@ -13950,10 +13751,10 @@ Get all tags/codes assigned to a specific batch. Shows which claim set codes hav
 Book. All claims succeed together or nothing is written; a clash fails with 409 (`SLOT_FULL`, `RESOURCE_TAKEN`, `PER_CONTACT_LIMIT`, …). Pass `idempotencyKey` so a retry never books twice. Public (admin = false): the app's `publicCreate.bookings` rules decide the status and limits; an anonymous guest may get `editToken` back (once) to manage the booking later. POST /bookings
 
 **list**(collectionId: string, appId: string, params?: BookingListOptions, admin: boolean = true) → `Promise<ListResult<Booking>>`
-List bookings (admin), a page at a time. `count` is how many match in all. There is no public list: a signed-in booker uses {@link mine}. GET /bookings ```typescript let page = await bookings.list(collectionId, appId, { status: 'confirmed', from: new Date(), limit: 50 }) page.items      // Booking[] page.count      // how many match in all while (page.nextCursor) { page = await bookings.list(collectionId, appId, { status: 'confirmed', from: new Date(), limit: 50, cursor: page.nextCursor }) } ```
+List bookings (admin), a page at a time. `count` is how many match in all. `from` / `to` pick the bookings overlapping that time; `orderBy` sorts (earliest start first unless you say). There is no public list: a signed-in booker uses {@link mine}. GET /bookings ```typescript const from = new Date() let page = await bookings.list(collectionId, appId, { status: 'confirmed', from, orderBy: [{ startsAt: 'desc' }], limit: 50 }) page.items      // Booking[] page.count      // how many match in all while (page.nextCursor) { page = await bookings.list(collectionId, appId, { status: 'confirmed', from, orderBy: [{ startsAt: 'desc' }], limit: 50, cursor: page.nextCursor }) } ```
 
 **mine**(collectionId: string, appId: string, params?: Omit<BookingListOptions, 'contactId'>) → `Promise<ListResult<Booking>>`
-The signed-in caller's own bookings (public), a page at a time. GET /bookings/mine ```typescript const { items, nextCursor, count } = await bookings.mine(collectionId, appId, { from: new Date() }) ```
+The signed-in caller's own bookings (public), a page at a time. Takes the same options as {@link list}, except `contactId`. GET /bookings/mine ```typescript const { items, nextCursor, count } = await bookings.mine(collectionId, appId, { from: new Date(), orderBy: [{ startsAt: 'asc' }], limit: 20 }) ```
 
 **get**(collectionId: string, appId: string, bookingId: string, admin: boolean = false, opts?: BookingAccessOptions) → `Promise<Booking>`
 Get one booking. Public: the signed-in booker, or a guest passing `{ editToken }`. GET /bookings/:bookingId
@@ -13990,10 +13791,10 @@ Message the people booked (admin): a template to everyone on a slot, or everyone
 **create**(collectionId: string, appId: string, input: CreateBlockInput) → `Promise<BookingAllocation>`
 
 **list**(collectionId: string, appId: string, params?: BlockListOptions) → `Promise<ListResult<BookingAllocation>>`
-The blocks on a resource and/or in a date range, a page at a time. GET /bookings/blocks ```typescript const { items, nextCursor } = await bookings.blocks.list(collectionId, appId, { resourceType: 'record', resourceId: 'staff-1' }) ```
+The blocks on a resource and/or in a date range (`from` / `to`), a page at a time (`limit`, `cursor`). GET /bookings/blocks ```typescript const { items, nextCursor } = await bookings.blocks.list(collectionId, appId, { resourceType: 'record', resourceId: 'staff-1', from: '2026-12-01T00:00:00Z', to: '2027-01-01T00:00:00Z', limit: 50, }) ```
 
 **remove**(collectionId: string, appId: string, blockId: string) → `Promise<`
-The blocks on a resource and/or in a date range, a page at a time. GET /bookings/blocks ```typescript const { items, nextCursor } = await bookings.blocks.list(collectionId, appId, { resourceType: 'record', resourceId: 'staff-1' }) ```
+The blocks on a resource and/or in a date range (`from` / `to`), a page at a time (`limit`, `cursor`). GET /bookings/blocks ```typescript const { items, nextCursor } = await bookings.blocks.list(collectionId, appId, { resourceType: 'record', resourceId: 'staff-1', from: '2026-12-01T00:00:00Z', to: '2027-01-01T00:00:00Z', limit: 50, }) ```
 
 ### bookings.slots
 
@@ -14004,7 +13805,7 @@ Create a slot (admin). POST /bookings/slots
 Create many slots at once — a series — all-or-nothing (admin, max 500). POST /bookings/slots/batch
 
 **list**(collectionId: string, appId: string, params?: SlotListOptions, admin: boolean = false) → `Promise<ListResult<BookingSlot>>`
-List slots, a page at a time. Public: open, public slots only, each with `remaining`. GET /bookings/slots ```typescript const { items, nextCursor, count } = await bookings.slots.list(collectionId, appId, { from, to, available: true }) ```
+List slots, a page at a time. Public: open, public slots only, each with `remaining`. `from` / `to` pick the slots in that time; `orderBy` sorts them. GET /bookings/slots ```typescript const { items, nextCursor, count } = await bookings.slots.list(collectionId, appId, { from, to, available: true, orderBy: [{ startsAt: 'asc' }], limit: 50, }) ```
 
 **get**(collectionId: string, appId: string, slotId: string, admin: boolean = false) → `Promise<BookingSlot>`
 GET /bookings/slots/:slotId
@@ -14084,8 +13885,8 @@ Create a Responses API request (streaming or non-streaming)
 
 ### claimSet
 
-**getAll**(collectionId?: string) → `Promise<ListResult<any>>`
-Get all claim sets. Returns `{ items, nextCursor }`: the claim sets are in `items`. The list is not paged, so `nextCursor` is always `null`. When collectionId is provided, returns claim sets for that collection. When omitted, returns all claim sets owned by the authenticated user. ```typescript const { items } = await claimSet.getAll('coll_123') ```
+**getAll**(collectionId?: string, options: ListOptions = {}) → `Promise<ListResult<any>>`
+Get all claim sets, a page at a time. Returns `{ items, nextCursor }`: the claim sets are in `items`; pass `nextCursor` back as `cursor` for the next page (`null` means that was the last one). When collectionId is provided, returns claim sets for that collection. When omitted, returns all claim sets owned by the authenticated user. ```typescript let page = await claimSet.getAll('coll_123', { limit: 50 }) while (page.nextCursor) page = await claimSet.getAll('coll_123', { limit: 50, cursor: page.nextCursor }) // Your own claim sets (no collection) const { items } = await claimSet.getAll(undefined, { limit: 50 }) ```
 
 **get**(claimSetId: string, collectionId?: string) → `Promise<any>`
 Get a specific claim set by ID.
@@ -14102,8 +13903,8 @@ Delete (soft-delete) a claim set.
 **getAllTags**(claimSetId: string, collectionId?: string) → `Promise<any>`
 Get all tags for a claim set (including data). This is not one of the SDK 3 lists: the answer is the claim set itself with its tags inside. Without a collectionId (your own claim set) they are in `tags`; with one they are in `codes` (the tag ids), or in `codeMap` (id → key) for a secure set.
 
-**getAssignedTags**(claimSetId: string, collectionId?: string) → `Promise<ListResult<any> & Record<string, any>>`
-Get assigned tags for a claim set — tags soft-assigned to a collection or product. Returns `{ items, nextCursor }` with the claim set's own fields (`id`, `name`, …) beside them: the tags are in `items`. The list is not paged, so `nextCursor` is always `null`. ```typescript const { items, name } = await claimSet.getAssignedTags('12', 'coll_123') console.log(`${items.length} tags of ${name} are assigned`) ```
+**getAssignedTags**(claimSetId: string, collectionId?: string, options: ListOptions = {}) → `Promise<ListResult<any> & Record<string, any>>`
+Get assigned tags for a claim set — tags soft-assigned to a collection or product. Returns `{ items, nextCursor }` with the claim set's own fields (`id`, `name`, …) beside them: the tags are in `items`, a page at a time. Pass `nextCursor` back as `cursor` for the next page (`null` means that was the last one). ```typescript let page = await claimSet.getAssignedTags('12', 'coll_123', { limit: 50 }) console.log(`Assigned tags of ${page.name}:`, page.items) while (page.nextCursor) { page = await claimSet.getAssignedTags('12', 'coll_123', { limit: 50, cursor: page.nextCursor }) } ```
 
 **createTag**(claimSetId: string,
     data: CreateClaimSetTagRequest,
@@ -14135,8 +13936,8 @@ Update claim data for a claim set (collection-scoped).
 
 ### claimSet.ranges
 
-**list**(scope: ClaimSetScope, claimSetId: string) → `Promise<ListResult<ClaimSetRange>>`
-The ranges in a set, lowest index first. Returns `{ items, nextCursor }`: the ranges are in `items`. The list is not paged, so `nextCursor` is always `null`. ```typescript const { items: ranges } = await claimSet.ranges.list({ collectionId: 'coll_123' }, '12') ```
+**list**(scope: ClaimSetScope, claimSetId: string, options: ListOptions = {}) → `Promise<ListResult<ClaimSetRange>>`
+The ranges in a set, lowest index first, a page at a time (50 unless you give a `limit`). Returns `{ items, nextCursor }`: the ranges are in `items`; pass `nextCursor` back as `cursor` for the next page (`null` means that was the last one). ```typescript let page = await claimSet.ranges.list({ collectionId: 'coll_123' }, '12', { limit: 50 }) while (page.nextCursor) { page = await claimSet.ranges.list({ collectionId: 'coll_123' }, '12', { limit: 50, cursor: page.nextCursor }) } ```
 
 **create**(scope: ClaimSetScope, claimSetId: string, params: CreateClaimSetRangeRequest) → `Promise<ClaimSetRange>`
 Reserve the set's next indexes and mint a code (and, for NTAG 424, a key) for each.
@@ -14178,8 +13979,8 @@ What the collection's installed apps need and whether it's there (sign-in, custo
 **get**(collectionId: string, admin?: boolean) → `Promise<CollectionResponse>`
 Retrieves a single Collection by its ID.
 
-**list**() → `Promise<ListResult<CollectionResponse>>`
-The collections the signed-in user can work on (admin). All of them come back in one answer: `nextCursor` is always null. There is no public list of collections: read one with `collection.get`. ```typescript const { items } = await collection.list() items.forEach(c => console.log(c.id, c.title)) ```
+**list**(options: ListOptions = {}) → `Promise<ListResult<CollectionResponse>>`
+The collections the signed-in user can work on (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. There is no public list of collections: read one with `collection.get`. ```typescript let page = await collection.list({ limit: 50 }) page.items.forEach(c => console.log(c.id, c.title)) while (page.nextCursor) page = await collection.list({ limit: 50, cursor: page.nextCursor }) ```
 
 **getShortId**(shortId: string) → `Promise<CollectionResponse>`
 Retrieve a collection by its shortId (public endpoint).
@@ -14237,8 +14038,8 @@ Look up a serial number by code for a collection (admin only).
     value: any) → `Promise<any>`
 Assign a value to a serial number for a collection (admin only).
 
-**getUsers**(collectionId: string) → `Promise<ListResult<CollectionUser>>`
-List the users with access to a collection, each with their access level (admin only). Access is stored in the collection's `roles` map (userId → level); this resolves each to name/email. All of them come back in one answer: `nextCursor` is always null. GET /admin/collection/:collectionId/getUsers ```typescript const { items: users } = await collection.getUsers('coll_123') users.forEach(u => console.log(u.email, u.access)) ```
+**getUsers**(collectionId: string, options: ListOptions = {}) → `Promise<ListResult<CollectionUser>>`
+List the users with access to a collection, each with their access level (admin only). Access is stored in the collection's `roles` map (userId → level); this resolves each to name/email. A page at a time: page with `limit` (50 unless you say) and `cursor`. GET /admin/collection/:collectionId/getUsers ```typescript let page = await collection.getUsers('coll_123', { limit: 50 }) page.items.forEach(u => console.log(u.email, u.access)) while (page.nextCursor) page = await collection.getUsers('coll_123', { limit: 50, cursor: page.nextCursor }) ```
 
 **setUserAccess**(collectionId: string,
     userId: string,
@@ -14311,11 +14112,11 @@ Public: Resolve contacts for a subject with identity hints. POST /public/collect
 
 **queryByUser**(collectionId: string,
     body: CommsQueryByUser = {}) → `Promise<ListResult<CommunicationEvent>>`
-Analytics: Query communication events by user or contact. The events come back in one answer (`nextCursor` is always null); `limit` is the most it returns. POST /admin/collection/:collectionId/comm/query/by-user ```typescript const { items: events } = await comms.queryByUser(collectionId, { contactId, from: '2026-01-01', limit: 200 }) ```
+Analytics: Query communication events by user or contact, a page at a time (`limit` and `cursor` in the body). The time window is `from` / `to`. POST /admin/collection/:collectionId/comm/query/by-user ```typescript const query = { contactId, from: '2026-01-01T00:00:00Z', limit: 200 } let page = await comms.queryByUser(collectionId, query) page.items // CommunicationEvent[] while (page.nextCursor) page = await comms.queryByUser(collectionId, { ...query, cursor: page.nextCursor }) ```
 
 **queryRecipientIds**(collectionId: string,
     body: CommsRecipientIdsQuery) → `Promise<ListResult<RecipientId>>`
-Analytics: Recipient IDs for a communication source. The ids come back in one answer (`nextCursor` is always null); `limit` is the most it returns. POST /admin/collection/:collectionId/comm/query/recipient-ids ```typescript const { items: ids } = await comms.queryRecipientIds(collectionId, { broadcastId, idField: 'contactId' }) ```
+Analytics: Recipient IDs for a communication source, a page at a time (`limit` and `cursor` in the body). The time window is `from` / `to`. POST /admin/collection/:collectionId/comm/query/recipient-ids ```typescript const query = { broadcastId, idField: 'contactId' as const, limit: 500 } let page = await comms.queryRecipientIds(collectionId, query) page.items // the ids while (page.nextCursor) page = await comms.queryRecipientIds(collectionId, { ...query, cursor: page.nextCursor }) ```
 
 **queryRecipientsWithoutInteraction**(collectionId: string,
     body: CommsRecipientsWithoutInteractionQuery) → `Promise<ListResult<RecipientId>>`
@@ -14339,8 +14140,8 @@ Logging: Append many communication events for a list of IDs. POST /admin/collect
 
 ### conditions
 
-**list**(collectionId: string, admin = false) → `Promise<ListResult<SavedCondition>>`
-Every saved condition in the collection (removed ones left out). All of them come back in one answer: `nextCursor` is always null. ```typescript const { items } = await conditions.list('coll_123') items.map(c => c.title) // ["UK only", "In the stadium"] ```
+**list**(collectionId: string, admin = false, options: ListOptions = {}) → `Promise<ListResult<SavedCondition>>`
+The collection's saved conditions (removed ones left out), a page at a time. Page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await conditions.list('coll_123') page.items.map(c => c.title) // ["UK only", "In the stadium"] while (page.nextCursor) page = await conditions.list('coll_123', false, { cursor: page.nextCursor }) ```
 
 **get**(collectionId: string, conditionId: string, admin = false) → `Promise<SavedCondition>`
 One saved condition. Public reads 404 for a removed one; an admin read returns it with `deleted: true`. ```typescript const ukOnly = await conditions.get('coll_123', 'nfCmuWDY') ```
@@ -14380,58 +14181,43 @@ The collection's contacts, a page at a time (admin only). Pass `includeDeleted: 
 
 **search**({
     collectionId,
-    q,
-    typeahead,
-    email,
-    phone,
-    id,
-    userId,
     tags,
     tagsAll,
-    source,
-    locale,
-    createdFrom,
-    createdTo,
-    externalIdKey,
-    externalIdValue,
-    customFieldKey,
-    customFieldValue,
-    limit,
-    cursor,
+    ...rest
   }: ContactSearchParams) → `Promise<ListResult<ContactResponse>>`
-Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) ```
+Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source and custom fields. Filter by when the contact was created with a range: `createdAt: { gte, lte }`. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) // Contacts created in November await contact.search({ collectionId, createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' } }) ```
 
 **get**(collectionId: string,
     contactId: string,
     params?: { includeDeleted?: boolean }) → `Promise<ContactResponse>`
-Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) ```
+Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source and custom fields. Filter by when the contact was created with a range: `createdAt: { gte, lte }`. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) // Contacts created in November await contact.search({ collectionId, createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' } }) ```
 
 **update**(collectionId: string,
     contactId: string,
     data: ContactUpdateRequest) → `Promise<ContactResponse>`
-Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) ```
+Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source and custom fields. Filter by when the contact was created with a range: `createdAt: { gte, lte }`. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) // Contacts created in November await contact.search({ collectionId, createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' } }) ```
 
 **remove**(collectionId: string, contactId: string) → `Promise<void>`
-Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) ```
+Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source and custom fields. Filter by when the contact was created with a range: `createdAt: { gte, lte }`. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) // Contacts created in November await contact.search({ collectionId, createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' } }) ```
 
 **lookup**(collectionId: string,
     params: { email?: string; phone?: string }) → `Promise<ContactResponse>`
-Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) ```
+Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source and custom fields. Filter by when the contact was created with a range: `createdAt: { gte, lte }`. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) // Contacts created in November await contact.search({ collectionId, createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' } }) ```
 
 **upsert**(collectionId: string,
     data: ContactCreateRequest) → `Promise<ContactResponse>`
-Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) ```
+Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source and custom fields. Filter by when the contact was created with a range: `createdAt: { gte, lte }`. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) // Contacts created in November await contact.search({ collectionId, createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' } }) ```
 
 **publicUpsert**(collectionId: string,
     data: PublicContactUpsertRequest) → `Promise<PublicContactUpsertResponse>`
-Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) ```
+Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source and custom fields. Filter by when the contact was created with a range: `createdAt: { gte, lte }`. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) // Contacts created in November await contact.search({ collectionId, createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' } }) ```
 
 **publicGetMine**(collectionId: string) → `Promise<PublicGetMyContactResponse>`
-Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) ```
+Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source and custom fields. Filter by when the contact was created with a range: `createdAt: { gte, lte }`. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) // Contacts created in November await contact.search({ collectionId, createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' } }) ```
 
 **publicUpdateMine**(collectionId: string,
     data: ContactPatch) → `Promise<PublicUpdateMyContactResponse>`
-Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) ```
+Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead` for search-as-you-type), or filters on email, phone, id, tags, source and custom fields. Filter by when the contact was created with a range: `createdAt: { gte, lte }`. GET /admin/collection/:collectionId/contacts/search ```typescript let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 }) page.items // Contact[] if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor }) // Contacts created in November await contact.search({ collectionId, createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' } }) ```
 
 **publicGetSchema**(collectionId: string) → `Promise<ContactSchemaResponse>`
 Public: Get the contact schema for a collection. GET /public/collection/:collectionId/contact/schema Returns a ContactSchemaResponse describing all publicly visible contact fields. Core fields and collection-defined custom fields are merged into a single flat schema. Fields not in `publicVisibleFields` are stripped entirely from the response. Fields visible but not in `publicEditableFields` have `ui:disabled: true` in `uiSchema`. Use `fieldOrder` to render fields in the correct sequence, and `evaluateConditions` from the types package to handle conditional field visibility. ```typescript import { contact, evaluateConditions } from '@proveanything/smartlinks' const schema = await contact.publicGetSchema(collectionId) for (const fieldId of schema.fieldOrder) { const property = schema.schema.properties[fieldId] const ui       = schema.uiSchema[fieldId] || {} const visible  = evaluateConditions(property.conditions, property.showWhen, formValues) const disabled = ui['ui:disabled'] === true if (visible) renderField({ fieldId, property, ui, disabled }) } ```
@@ -14468,7 +14254,7 @@ List containers (admin), a page at a time. Supports filtering by type, status, r
 
 **findForItem**(collectionId: string,
     params: FindContainersForItemParams) → `Promise<FindContainersForItemResponse>`
-Reverse lookup — find all containers currently holding a specific item (admin). containers. All of them in one answer: `nextCursor` is always null. ```typescript const { containers: holding } = await containers.findForItem('coll_123', { itemType: 'proof', itemId:   'unit-0007', productId: 'drill', }) ```
+Reverse lookup — find all containers currently holding a specific item (admin). containers, a page at a time. Pass `nextCursor` back as `cursor` for the next page. ```typescript const { containers: holding, nextCursor } = await containers.findForItem('coll_123', { itemType: 'proof', itemId:   'unit-0007', productId: 'drill', limit:    50, }) ```
 
 **get**(collectionId: string,
     containerId: string,
@@ -14509,8 +14295,9 @@ List containers (public), a page at a time. Only active containers are listed; s
 Get a single container (public). Soft-deleted containers return a 404.  Same `?tree` and `?includeContents` options as the admin version.
 
 **publicListItems**(collectionId: string,
-    containerId: string) → `Promise<ListResult<ContainerItem>>`
-List current contents of a container (public). Returns only items where `removedAt` is null.  No `?history` option on the public side.  All of them come back in one answer: `nextCursor` is always null. ```typescript const { items } = await containers.publicListItems('coll_123', 'cask-uuid') ```
+    containerId: string,
+    options: ListOptions = {}) → `Promise<ListResult<ContainerItem>>`
+List current contents of a container (public), a page at a time. Returns only items where `removedAt` is null.  No `?history` option on the public side. ```typescript let page = await containers.publicListItems('coll_123', 'cask-uuid', { limit: 50 }) while (page.nextCursor) { page = await containers.publicListItems('coll_123', 'cask-uuid', { limit: 50, cursor: page.nextCursor }) } ```
 
 ### content
 
@@ -14546,7 +14333,7 @@ Delete a crate for a collection (admin only). This performs a soft delete. ```ty
 ### dpp
 
 **groups**(collectionId: string) → `Promise<ListResult<DppGroup>>`
-What passports can be made: product groups, their kinds, and each view's fields and required fields. All of them in one answer (`nextCursor` is always null). GET /dpp/groups ```typescript const { items } = await dpp.groups(collectionId) items.map(g => g.productGroup) // ["BATTERIES", …] ```
+What passports can be made: product groups, their kinds, and each view's fields and required fields. A fixed set: always all of them in one answer (`nextCursor` is always null), so it takes no `limit` or `cursor`. GET /dpp/groups ```typescript const { items } = await dpp.groups(collectionId) items.map(g => g.productGroup) // ["BATTERIES", …] ```
 
 **read**(collectionId: string, passportId: string, opts: { version?: number } = {}) → `Promise<DppDocument>`
 Read a passport as the public sees it, at its address (the EU JSON document), or an earlier version of it. No sign-in needed. GET /public/dpp/:collectionId/:passportId
@@ -14574,8 +14361,8 @@ Publish the passport for a product, batch or item (`productId` / `batchId` / `pr
 **upsertMany**(collectionId: string, items: DppPassportUpsertInput[], opts: { merge?: boolean } = {}) → `Promise<DppPassportBulkResult>`
 `upsert` for up to 500 passports at once (e.g. one per battery); each answers on its own. POST /dpp/passports/bulk
 
-**versions**(collectionId: string, passportId: string) → `Promise<ListResult<DppPassportVersion>>`
-Its versions, newest first, all in one answer (`nextCursor` is always null); read one with `dpp.read(collectionId, id, { version })`. GET /dpp/passports/:id/versions ```typescript const { items } = await dpp.passports.versions(collectionId, passportId) const latest = items[0].version ```
+**versions**(collectionId: string, passportId: string, options: ListOptions = {}) → `Promise<ListResult<DppPassportVersion>>`
+Its versions, newest first, a page at a time (`limit` and `cursor`; 50 unless you say otherwise). Read one with `dpp.read(collectionId, id, { version })`. GET /dpp/passports/:id/versions ```typescript let page = await dpp.passports.versions(collectionId, passportId, { limit: 20 }) const latest = page.items[0].version while (page.nextCursor) { page = await dpp.passports.versions(collectionId, passportId, { limit: 20, cursor: page.nextCursor }) } ```
 
 **withdraw**(collectionId: string, passportId: string) → `Promise<DppPassport>`
 No longer valid: stays at its address, marked invalid (the registry keeps its record). POST /dpp/passports/:id/withdraw
@@ -14586,7 +14373,7 @@ Valid again. POST /dpp/passports/:id/restore
 ### dpp.registry
 
 **list**(collectionId: string) → `Promise<ListResult<DppRegistry>>`
-Both environments, each with `nextStep` (what's left to connect). All of them in one answer (`nextCursor` is always null). GET /dpp/registry ```typescript const { items } = await dpp.registry.list(collectionId) const acc = items.find(r => r.environment === 'acc') ```
+Both environments, each with `nextStep` (what's left to connect). A fixed set: always all of them in one answer (`nextCursor` is always null), so it takes no `limit` or `cursor`. GET /dpp/registry ```typescript const { items } = await dpp.registry.list(collectionId) const acc = items.find(r => r.environment === 'acc') ```
 
 **get**(collectionId: string, env: DppEnvironment) → `Promise<DppRegistry>`
 One environment. GET /dpp/registry/:env
@@ -14605,8 +14392,8 @@ Sign in to the registry and read its product groups — proves the connection wo
 
 ### dpp.tasks
 
-**list**(collectionId: string, env: DppEnvironment) → `Promise<ListResult<DppTask>>`
-Requests sent to one environment, newest first, all in one answer (`nextCursor` is always null). GET /dpp/registry/:env/tasks ```typescript const { items } = await dpp.tasks.list(collectionId, 'acc') ```
+**list**(collectionId: string, env: DppEnvironment, options: ListOptions = {}) → `Promise<ListResult<DppTask>>`
+Requests sent to one environment, newest first, a page at a time (`limit` and `cursor`; 50 unless you say otherwise). GET /dpp/registry/:env/tasks ```typescript let page = await dpp.tasks.list(collectionId, 'acc', { limit: 20 }) while (page.nextCursor) { page = await dpp.tasks.list(collectionId, 'acc', { limit: 20, cursor: page.nextCursor }) } ```
 
 **refresh**(collectionId: string, env: DppEnvironment, taskId: string) → `Promise<DppTaskRefreshResult>`
 Ask the registry how a request went and record it on its passports. POST /dpp/registry/:env/tasks/:taskId/refresh
@@ -14619,89 +14406,90 @@ Ask the registry how a request went and record it on its passports. POST /dpp/re
 
 **list**(collectionId: string,
     params?: FacetListParams) → `Promise<FacetListResponse>`
-The collection's facets (admin). All of them come back in one answer: `nextCursor` is always null. ```typescript const { items } = await facets.list('coll_123', { kind: 'custom' }) items.map(f => f.key) // ["brand", "material", …] ```
+The collection's facets (admin). A small fixed set: all of them come back in one answer, so there is no `limit` or `cursor` and `nextCursor` is always null. ```typescript const { items } = await facets.list('coll_123', { kind: 'custom' }) items.map(f => f.key) // ["brand", "material", …] ```
 
 **create**(collectionId: string,
     data: FacetDefinitionWriteInput) → `Promise<FacetDefinition>`
-The collection's facets (admin). All of them come back in one answer: `nextCursor` is always null. ```typescript const { items } = await facets.list('coll_123', { kind: 'custom' }) items.map(f => f.key) // ["brand", "material", …] ```
+The collection's facets (admin). A small fixed set: all of them come back in one answer, so there is no `limit` or `cursor` and `nextCursor` is always null. ```typescript const { items } = await facets.list('coll_123', { kind: 'custom' }) items.map(f => f.key) // ["brand", "material", …] ```
 
 **get**(collectionId: string,
     facetKey: string,
     params?: FacetGetParams) → `Promise<FacetDefinition>`
-The collection's facets (admin). All of them come back in one answer: `nextCursor` is always null. ```typescript const { items } = await facets.list('coll_123', { kind: 'custom' }) items.map(f => f.key) // ["brand", "material", …] ```
+The collection's facets (admin). A small fixed set: all of them come back in one answer, so there is no `limit` or `cursor` and `nextCursor` is always null. ```typescript const { items } = await facets.list('coll_123', { kind: 'custom' }) items.map(f => f.key) // ["brand", "material", …] ```
 
 **update**(collectionId: string,
     facetKey: string,
     data: FacetDefinitionWriteInput) → `Promise<FacetDefinition>`
-The collection's facets (admin). All of them come back in one answer: `nextCursor` is always null. ```typescript const { items } = await facets.list('coll_123', { kind: 'custom' }) items.map(f => f.key) // ["brand", "material", …] ```
+The collection's facets (admin). A small fixed set: all of them come back in one answer, so there is no `limit` or `cursor` and `nextCursor` is always null. ```typescript const { items } = await facets.list('coll_123', { kind: 'custom' }) items.map(f => f.key) // ["brand", "material", …] ```
 
 **remove**(collectionId: string,
     facetKey: string) → `Promise<void>`
-The collection's facets (admin). All of them come back in one answer: `nextCursor` is always null. ```typescript const { items } = await facets.list('coll_123', { kind: 'custom' }) items.map(f => f.key) // ["brand", "material", …] ```
+The collection's facets (admin). A small fixed set: all of them come back in one answer, so there is no `limit` or `cursor` and `nextCursor` is always null. ```typescript const { items } = await facets.list('coll_123', { kind: 'custom' }) items.map(f => f.key) // ["brand", "material", …] ```
 
 **listValues**(collectionId: string,
     facetKey: string,
     params?: FacetValueListParams) → `Promise<FacetValueListResponse>`
-One facet and all its values (admin). The values are in `items`; `nextCursor` is always null. ```typescript const { facet, items } = await facets.listValues('coll_123', 'brand') items.map(v => v.name) ```
+One facet and its values (admin), a page at a time. The values are in `items`; pass `nextCursor` back as `cursor` for the next page (null means that was the last one). ```typescript let page = await facets.listValues('coll_123', 'brand', { limit: 50 }) const names = page.items.map(v => v.name) while (page.nextCursor) { page = await facets.listValues('coll_123', 'brand', { limit: 50, cursor: page.nextCursor }) names.push(...page.items.map(v => v.name)) } ```
 
 **createValue**(collectionId: string,
     facetKey: string,
     data: FacetValueWriteInput) → `Promise<FacetValueResponse>`
-One facet and all its values (admin). The values are in `items`; `nextCursor` is always null. ```typescript const { facet, items } = await facets.listValues('coll_123', 'brand') items.map(v => v.name) ```
+One facet and its values (admin), a page at a time. The values are in `items`; pass `nextCursor` back as `cursor` for the next page (null means that was the last one). ```typescript let page = await facets.listValues('coll_123', 'brand', { limit: 50 }) const names = page.items.map(v => v.name) while (page.nextCursor) { page = await facets.listValues('coll_123', 'brand', { limit: 50, cursor: page.nextCursor }) names.push(...page.items.map(v => v.name)) } ```
 
 **getValue**(collectionId: string,
     facetKey: string,
     valueKey: string,
     params?: FacetValueGetParams) → `Promise<FacetValueResponse>`
-One facet and all its values (admin). The values are in `items`; `nextCursor` is always null. ```typescript const { facet, items } = await facets.listValues('coll_123', 'brand') items.map(v => v.name) ```
+One facet and its values (admin), a page at a time. The values are in `items`; pass `nextCursor` back as `cursor` for the next page (null means that was the last one). ```typescript let page = await facets.listValues('coll_123', 'brand', { limit: 50 }) const names = page.items.map(v => v.name) while (page.nextCursor) { page = await facets.listValues('coll_123', 'brand', { limit: 50, cursor: page.nextCursor }) names.push(...page.items.map(v => v.name)) } ```
 
 **updateValue**(collectionId: string,
     facetKey: string,
     valueKey: string,
     data: FacetValueWriteInput) → `Promise<FacetValueResponse>`
-One facet and all its values (admin). The values are in `items`; `nextCursor` is always null. ```typescript const { facet, items } = await facets.listValues('coll_123', 'brand') items.map(v => v.name) ```
+One facet and its values (admin), a page at a time. The values are in `items`; pass `nextCursor` back as `cursor` for the next page (null means that was the last one). ```typescript let page = await facets.listValues('coll_123', 'brand', { limit: 50 }) const names = page.items.map(v => v.name) while (page.nextCursor) { page = await facets.listValues('coll_123', 'brand', { limit: 50, cursor: page.nextCursor }) names.push(...page.items.map(v => v.name)) } ```
 
 **removeValue**(collectionId: string,
     facetKey: string,
     valueKey: string) → `Promise<void>`
-One facet and all its values (admin). The values are in `items`; `nextCursor` is always null. ```typescript const { facet, items } = await facets.listValues('coll_123', 'brand') items.map(v => v.name) ```
+One facet and its values (admin), a page at a time. The values are in `items`; pass `nextCursor` back as `cursor` for the next page (null means that was the last one). ```typescript let page = await facets.listValues('coll_123', 'brand', { limit: 50 }) const names = page.items.map(v => v.name) while (page.nextCursor) { page = await facets.listValues('coll_123', 'brand', { limit: 50, cursor: page.nextCursor }) names.push(...page.items.map(v => v.name)) } ```
 
 **query**(collectionId: string,
     body: FacetQueryRequest) → `Promise<FacetQueryResponse>`
-Facet counts for a set of products (admin): each facet with its values in `items`, and the count for each value in `buckets`. Everything comes back in one answer: `nextCursor` is always null. ```typescript const { items, buckets, meta } = await facets.query('coll_123', { facetKeys: ['brand', 'material'], query: { facetEquals: { brand: 'acme' } }, }) ```
+Facet counts for a set of products (admin): each facet with its values in `items`, and the count for each value in `buckets`. Everything comes back in one answer, so there is no `limit` or `cursor` and `nextCursor` is always null. Which products are counted: `q` (search text), `createdAt` / `updatedAt` (date ranges) and the filters in `query`, the same as `products.query`. ```typescript const { items, buckets, meta } = await facets.query('coll_123', { facetKeys: ['brand', 'material'], q: 'oak', createdAt: { gte: '2026-11-01T00:00:00Z' }, query: { facetEquals: { brand: 'acme' } }, }) ```
 
 **namespaces**(collectionId: string) → `Promise<FacetNamespaceListResponse>`
-The facet namespaces in use (admin). The names are in `items`; `nextCursor` is always null. ```typescript const { items } = await facets.namespaces('coll_123') // items: string[] ```
+The facet namespaces in use (admin). A small fixed set: all the names are in `items`, there is no `limit` or `cursor`, and `nextCursor` is always null. ```typescript const { items } = await facets.namespaces('coll_123') // items: string[] ```
 
 **publicList**(collectionId: string,
     params?: PublicFacetListParams) → `Promise<FacetListResponse>`
-The collection's facets (public). All of them come back in one answer: `nextCursor` is always null. ```typescript const { items } = await facets.publicList('coll_123', { namespace: 'catalog' }) ```
+The collection's facets (public). A small fixed set: all of them come back in one answer, so there is no `limit` or `cursor` and `nextCursor` is always null. ```typescript const { items } = await facets.publicList('coll_123', { namespace: 'catalog' }) ```
 
 **publicGet**(collectionId: string,
     facetKey: string,
     params?: PublicFacetListParams) → `Promise<FacetDefinition>`
-The collection's facets (public). All of them come back in one answer: `nextCursor` is always null. ```typescript const { items } = await facets.publicList('coll_123', { namespace: 'catalog' }) ```
+The collection's facets (public). A small fixed set: all of them come back in one answer, so there is no `limit` or `cursor` and `nextCursor` is always null. ```typescript const { items } = await facets.publicList('coll_123', { namespace: 'catalog' }) ```
 
 **publicListValues**(collectionId: string,
-    facetKey: string) → `Promise<FacetValueListResponse>`
-One facet and all its values (public). The values are in `items`; `nextCursor` is always null. ```typescript const { facet, items } = await facets.publicListValues('coll_123', 'brand') ```
+    facetKey: string,
+    options: ListOptions = {}) → `Promise<FacetValueListResponse>`
+One facet and its values (public), a page at a time. The values are in `items`; pass `nextCursor` back as `cursor` for the next page (null means that was the last one). ```typescript const { facet, items, nextCursor } = await facets.publicListValues('coll_123', 'brand', { limit: 50 }) ```
 
 **publicGetValue**(collectionId: string,
     facetKey: string,
     valueKey: string) → `Promise<FacetValueResponse>`
-One facet and all its values (public). The values are in `items`; `nextCursor` is always null. ```typescript const { facet, items } = await facets.publicListValues('coll_123', 'brand') ```
+One facet and its values (public), a page at a time. The values are in `items`; pass `nextCursor` back as `cursor` for the next page (null means that was the last one). ```typescript const { facet, items, nextCursor } = await facets.publicListValues('coll_123', 'brand', { limit: 50 }) ```
 
 **publicQuery**(collectionId: string,
     body: FacetQueryRequest) → `Promise<FacetQueryResponse>`
-Facet counts for a set of products (public): each facet with its values in `items`, and the count for each value in `buckets`. Everything comes back in one answer: `nextCursor` is always null. ```typescript const { items, buckets } = await facets.publicQuery('coll_123', { facetKeys: ['brand'] }) ```
+Facet counts for a set of products (public): each facet with its values in `items`, and the count for each value in `buckets`. Everything comes back in one answer, so there is no `limit` or `cursor` and `nextCursor` is always null. Which products are counted: `q` (search text), `createdAt` / `updatedAt` (date ranges) and the filters in `query`, the same as `products.query`. ```typescript const { items, buckets } = await facets.publicQuery('coll_123', { facetKeys: ['brand'], q: 'oak' }) ```
 
 **publicNamespaces**(collectionId: string) → `Promise<FacetNamespaceListResponse>`
-The facet namespaces in use (public). The names are in `items`; `nextCursor` is always null. ```typescript const { items } = await facets.publicNamespaces('coll_123') // items: string[] ```
+The facet namespaces in use (public). A small fixed set: all the names are in `items`, there is no `limit` or `cursor`, and `nextCursor` is always null. ```typescript const { items } = await facets.publicNamespaces('coll_123') // items: string[] ```
 
 ### files
 
 **list**(collectionId: string, query: ListFilesQuery = {}) → `Promise<ListResult<FileRecord>>`
-Files on this site that aren't ordinary uploads: temporary, fetched, derived or generated (admin). They come back in one answer (`nextCursor` is always null); `limit` is the most it returns. ```typescript const { items } = await files.list('coll_123', { appId: 'my-app', origin: 'fetched' }) ```
+Files on this site that aren't ordinary uploads: temporary, fetched, derived or generated (admin). A page at a time: `limit` says how many, `cursor` is the previous page's `nextCursor`. ```typescript let page = await files.list('coll_123', { appId: 'my-app', origin: 'fetched', limit: 50 }) while (page.nextCursor) { page = await files.list('coll_123', { appId: 'my-app', origin: 'fetched', limit: 50, cursor: page.nextCursor }) } ```
 
 **put**(collectionId: string, body: PutFileRequest) → `Promise<`
 A new file from text, base64 or JSON. Temporary (default 1 day) and private.
@@ -14732,8 +14520,8 @@ Remove a file (a kept file is deleted like any asset, and can be restored).
 **get**(collectionId: string, formId: string, admin?: boolean) → `Promise<any>`
 Get a single form by ID for a collection.
 
-**list**(collectionId: string, admin?: boolean) → `Promise<ListResult<any>>`
-List all forms for a collection. All of them come back in one answer: `nextCursor` is always null. ```typescript const { items: forms } = await form.list(collectionId, true) ```
+**list**(collectionId: string, admin?: boolean, options: ListOptions = {}) → `Promise<ListResult<any>>`
+List the forms for a collection, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript let page = await form.list(collectionId, true, { limit: 100 }) while (page.nextCursor) page = await form.list(collectionId, true, { limit: 100, cursor: page.nextCursor }) ```
 
 **create**(collectionId: string, data: any) → `Promise<any>`
 Create a new form for a collection (admin only).
@@ -14800,10 +14588,10 @@ Perform a DELETE request to any API endpoint.
 ### integrations
 
 **listFlows**(collectionId: string, query: ListFlowsQuery = {}) → `Promise<ListResult<IntegrationFlow>>`
-List flows in a collection (all of them: this list has no pages). GET /integrations/flows ```typescript const { items } = await integrations.listFlows('coll_123', { direction: 'outbound', status: 'active' }) ```
+List flows in a collection, a page at a time (`limit` and `cursor`; 50 unless you say otherwise). GET /integrations/flows ```typescript let page = await integrations.listFlows('coll_123', { direction: 'outbound', status: 'active' }) while (page.nextCursor) { page = await integrations.listFlows('coll_123', { direction: 'outbound', status: 'active', cursor: page.nextCursor }) } ```
 
 **listRecordTypes**(collectionId: string) → `Promise<ListResult<RecordTypeInfo>>`
-Discover the app-record types present in a collection + which app owns each (introspected), for picking a sub-record source/trigger. One list, no pages. GET /integrations/record-types ```typescript const { items } = await integrations.listRecordTypes('coll_123') // items: [{ appId: 'warranty', recordType: 'claim', count: 42 }, …] ```
+Discover the app-record types present in a collection + which app owns each (introspected), for picking a sub-record source/trigger. A fixed set: always all of them in one answer, so it takes no `limit` or `cursor`. GET /integrations/record-types ```typescript const { items } = await integrations.listRecordTypes('coll_123') // items: [{ appId: 'warranty', recordType: 'claim', count: 42 }, …] ```
 
 **createFlow**(collectionId: string, input: CreateFlowInput) → `Promise<IntegrationFlow>`
 Create a flow. POST /integrations/flows
@@ -14837,8 +14625,8 @@ Get one run's summary. GET /integrations/flows/:id/runs/:runId
 **listRunItems**(collectionId: string, flowId: string, runId: string, query: ListRunItemsQuery = {}) → `Promise<ListResult<FlowRunItem>>`
 List a run's per-record items. GET /integrations/flows/:id/runs/:runId/items `request`/`response` are populated only for items captured while enhanced logging was active (and before the 24h body purge). ```typescript const { items, nextCursor } = await integrations.listRunItems('coll_123', flowId, runId, { status: 'failed', limit: 100 }) ```
 
-**listEntityRuns**(collectionId: string, entityId: string, query: { limit?: number } = {}) → `Promise<ListResult<FlowRun>>`
-Every run touching an entity (e.g. a product), across flows, newest first. One list, no pages: `limit` says how many. GET /integrations/runs/entity/:entityId ```typescript const { items } = await integrations.listEntityRuns('coll_123', productId, { limit: 20 }) ```
+**listEntityRuns**(collectionId: string, entityId: string, query: ListOptions = {}) → `Promise<ListResult<FlowRun>>`
+Every run touching an entity (e.g. a product), across flows, newest first. A page at a time: `limit` says how many, `cursor` is the previous page's `nextCursor`. GET /integrations/runs/entity/:entityId ```typescript let page = await integrations.listEntityRuns('coll_123', productId, { limit: 20 }) while (page.nextCursor) { page = await integrations.listEntityRuns('coll_123', productId, { limit: 20, cursor: page.nextCursor }) } ```
 
 **getLogging**(collectionId: string, connectionId: string) → `Promise<`
 Is enhanced logging active for a connection? GET /integrations/logging/:connectionId
@@ -14848,8 +14636,8 @@ Enable enhanced logging. POST /integrations/logging/:connectionId (omit ttlMinut
 
 **listFailed**(collectionId: string,
     flowId: string,
-    query: { status?: 'failed' | 'dead'; limit?: number; cursor?: string } = {}) → `Promise<ListResult<FailedRecord> &`
-A flow's failed / dead records, with the flow's `direction` beside the list. GET /integrations/flows/:id/failed ```typescript const { items, nextCursor, direction } = await integrations.listFailed('coll_123', flowId, { status: 'dead' }) ```
+    query: ListOptions & { status?: 'failed' | 'dead' } = {}) → `Promise<ListResult<FailedRecord> &`
+A flow's failed / dead records, a page at a time (`limit` and `cursor`), with the flow's `direction` beside the list. GET /integrations/flows/:id/failed ```typescript let page = await integrations.listFailed('coll_123', flowId, { status: 'dead', limit: 100 }) page.direction // 'inbound' | 'outbound' while (page.nextCursor) { page = await integrations.listFailed('coll_123', flowId, { status: 'dead', limit: 100, cursor: page.nextCursor }) } ```
 
 **retryFailed**(collectionId: string, flowId: string, ids?: string[]) → `Promise<`
 Retry failed / dead records now (all of them when `ids` is omitted). POST /integrations/flows/:id/failed/retry
@@ -14870,7 +14658,7 @@ Resume a flow that paused itself (circuit open): held records go out now. POST /
 Cancel enhanced logging now. DELETE /integrations/logging/:connectionId
 
 **listConnectors**(collectionId: string) → `Promise<ListResult<InstalledConnector>>`
-The collection's installed connector apps (all of them: this list has no pages). GET /integrations/connectors ```typescript const { items } = await integrations.listConnectors('coll_123') ```
+The collection's installed connector apps. A fixed set: always all of them in one answer, so it takes no `limit` or `cursor`. GET /integrations/connectors ```typescript const { items } = await integrations.listConnectors('coll_123') ```
 
 **saveConnectorInstallation**(collectionId: string,
     appId: string,
@@ -14891,7 +14679,7 @@ Invoke a connector ACTION from the console (any visibility): redeem, enrol, adju
 
 **listConnectorActions**(collectionId: string,
     appId: string) → `Promise<ListResult<`
-PUBLIC (the Hub, a site): the connector actions the caller may invoke — those declared `public`, plus `member` ones when signed in. One list, no pages. GET /public/collection/:collectionId/connectors/:appId/actions ```typescript const { items } = await integrations.listConnectorActions('coll_123', 'sessionm') const canRedeem = items.some((a) => a.name === 'redeem') ```
+PUBLIC (the Hub, a site): the connector actions the caller may invoke — those declared `public`, plus `member` ones when signed in. A fixed set: always all of them in one answer, so it takes no `limit` or `cursor`. GET /public/collection/:collectionId/connectors/:appId/actions ```typescript const { items } = await integrations.listConnectorActions('coll_123', 'sessionm') const canRedeem = items.some((a) => a.name === 'redeem') ```
 
 **callConnectorAction**(collectionId: string,
     appId: string,
@@ -14903,7 +14691,7 @@ PUBLIC (the Hub, a site): invoke a connector action — e.g. redeem a reward for
 
 **query**(collectionId: string,
     body: AdminInteractionsQueryRequest) → `Promise<ListResult<InteractionEventRow>>`
-POST /admin/collection/:collectionId/interactions/query Flexible query for interaction events with optional includes. One list, no pages: `limit` in the body says how many events to return. ```typescript const { items } = await interactions.query('coll_123', { appId: 'my-app', interactionId: voteTypeId, limit: 500 }) ```
+POST /admin/collection/:collectionId/interactions/query Flexible query for interaction events, a page at a time (`limit` and `cursor` in the body). The time window is `from` / `to`. Sort with `orderBy: [{ timestamp: 'asc' }]`; bring each event's interaction type along with `expand: ['interaction']`. ```typescript const query = { appId: 'my-app', interactionId: voteTypeId, from: '2026-11-01T00:00:00Z', limit: 500 } let page = await interactions.query('coll_123', { ...query, orderBy: [{ timestamp: 'desc' }], expand: ['interaction'] }) while (page.nextCursor) page = await interactions.query('coll_123', { ...query, cursor: page.nextCursor }) ```
 
 **countsByOutcome**(collectionId: string,
     query: AdminInteractionsCountsByOutcomeRequest = {}) → `Promise<OutcomeCount[]>`
@@ -14962,7 +14750,7 @@ Find this app's interaction type by its readable `key` (data.interactionType), o
 **publicMyInteractions**(collectionId: string,
     body: PublicInteractionsByUserRequest,
     authToken?: string) → `Promise<ListResult<InteractionEventRow>>`
-The signed-in person's own interaction events (where the type allows it). One list, no pages: `limit` in the body says how many. POST /public/collection/:collectionId/interactions/by-user ```typescript const { items } = await interactions.publicMyInteractions('coll_123', { appId: 'my-app', interactionId: voteTypeId }) ```
+The signed-in person's own interaction events (where the type allows it), a page at a time (`limit` and `cursor` in the body). The time window is `from` / `to`. POST /public/collection/:collectionId/interactions/by-user ```typescript const query = { appId: 'my-app', interactionId: voteTypeId, limit: 50 } let page = await interactions.publicMyInteractions('coll_123', query) while (page.nextCursor) page = await interactions.publicMyInteractions('coll_123', { ...query, cursor: page.nextCursor }) ```
 
 **publicList**(collectionId: string,
     query: ListInteractionTypesQuery = {}) → `Promise<ListResult<InteractionTypeRecord>>`
@@ -14974,13 +14762,21 @@ Public: list the collection's interaction types, optionally only one app's. GET 
 
 ### jobs
 
-**listJobs**(collectionId: string,
+**list**(collectionId: string,
     query: ListJobsQuery = {}) → `Promise<ListResult<Job>>`
-List visible jobs for a collection GET /admin/collection/:collectionId/jobs ```typescript let page = await jobs.listJobs('coll_123', { state: 'errored', limit: 50 }) while (page.nextCursor) page = await jobs.listJobs('coll_123', { state: 'errored', limit: 50, cursor: page.nextCursor }) ```
+List visible jobs for a collection, newest first. GET /admin/collection/:collectionId/jobs ```typescript let page = await jobs.list('coll_123', { state: 'errored', limit: 50 }) while (page.nextCursor) page = await jobs.list('coll_123', { state: 'errored', limit: 50, cursor: page.nextCursor }) ```
 
-**getJob**(collectionId: string,
+**get**(collectionId: string,
     jobId: number) → `Promise<Job>`
 Get a single job GET /admin/collection/:collectionId/jobs/:jobId
+
+**enqueue**(collectionId: string,
+    params: EnqueueAsyncJobRequest) → `Promise<EnqueueAsyncJobResponse>`
+Start a background job for a collection. POST /admin/collection/:collectionId/async/jobs (202)
+
+**status**(collectionId: string,
+    jobId: number) → `Promise<Job>`
+How a job you started is getting on (may answer 404 once it has finished and been cleared away). GET /admin/collection/:collectionId/async/jobs/:jobId
 
 ### journeys
 
@@ -15015,7 +14811,7 @@ POST /admin/collection/:collectionId/journeys.analytics/:journeyId/stats Compute
     journeyId: string,
     stepId: string,
     body: JourneyStepRecipientsRequest = {}) → `Promise<ListResult<string>>`
-POST /admin/collection/:collectionId/journeys.analytics/:journeyId/steps/:stepId/recipients Returns recipient IDs for a given journey step, as a list of ids. One list, no pages: `limit` in the body says how many. For completed/pending, `interactionId` is required; outcome defaults to 'success'. ```typescript const { items: contactIds } = await journeysAnalytics.recipients('coll_123', journeyId, stepId, { status: 'completed', interactionId, idField: 'contactId', limit: 1000, }) ```
+POST /admin/collection/:collectionId/journeys.analytics/:journeyId/steps/:stepId/recipients Returns recipient IDs for a given journey step, a page at a time (`limit` and `cursor` in the body). The time window is `from` / `to`. For completed/pending, `interactionId` is required; outcome defaults to 'success'. ```typescript const query = { status: 'completed' as const, interactionId, idField: 'contactId' as const, limit: 1000 } let page = await journeysAnalytics.recipients('coll_123', journeyId, stepId, query) page.items // contact ids while (page.nextCursor) { page = await journeysAnalytics.recipients('coll_123', journeyId, stepId, { ...query, cursor: page.nextCursor }) } ```
 
 **funnelReport**(collectionId: string,
     journeyId: string,
@@ -15024,8 +14820,8 @@ POST /admin/collection/:collectionId/journeys.analytics/:journeyId/funnel-report
 
 ### knowledge
 
-**listSets**(collectionId: string) → `Promise<ListResult<KnowledgeSet>>`
-Every set, with its source and passage counts (admin). One list, no pages. ```typescript const { items } = await knowledge.listSets('coll_123') ```
+**listSets**(collectionId: string, options: ListOptions = {}) → `Promise<ListResult<KnowledgeSet>>`
+The collection's sets, with their source and passage counts (admin). A page at a time (`limit` and `cursor`; 50 unless you say otherwise). ```typescript let page = await knowledge.listSets('coll_123') while (page.nextCursor) page = await knowledge.listSets('coll_123', { cursor: page.nextCursor }) ```
 
 **saveSet**(collectionId: string, body: SaveKnowledgeSetRequest) → `Promise<KnowledgeSet>`
 Create a set, or update the one with this key (admin).
@@ -15039,8 +14835,8 @@ One set, by id or key (admin).
 **deleteSet**(collectionId: string, set: string) → `Promise<`
 Delete a set with its sources and passages (admin).
 
-**listSources**(collectionId: string, set: string) → `Promise<ListResult<KnowledgeSource>>`
-A set's sources, with their status (admin). One list, no pages. ```typescript const { items } = await knowledge.listSources('coll_123', 'manuals') ```
+**listSources**(collectionId: string, set: string, options: ListOptions = {}) → `Promise<ListResult<KnowledgeSource>>`
+A set's sources, with their status (admin). A page at a time (`limit` and `cursor`; 50 unless you say otherwise). ```typescript let page = await knowledge.listSources('coll_123', 'manuals') while (page.nextCursor) page = await knowledge.listSources('coll_123', 'manuals', { cursor: page.nextCursor }) ```
 
 **addSource**(collectionId: string, set: string, body: AddKnowledgeSourceRequest) → `Promise<KnowledgeSource>`
 Add a source; feeds and pages are read in the background (admin).
@@ -15062,11 +14858,11 @@ Remove pushed documents by `ref` (admin).
 
 **search**(collectionId: string,
     body: KnowledgeSearchRequest) → `Promise<ListResult<KnowledgeSearchResult> & Pick<KnowledgeSearchResponse, 'query' | 'mode'>>`
-Search every set, staff ones included (admin). The matches come back as `items`, best first, with the `query` and the search `mode` beside them. There are no pages: `k` says how many matches to return. ```typescript const { items, mode } = await knowledge.search('coll_123', { query: 'how do I descale', k: 5 }) ```
+Search every set, staff ones included (admin). `q` is what to look for. The matches come back as `items`, best first, with the `query` and the search `mode` beside them. `limit` says how many matches to return (default 8, at most 25); `cursor` is the previous page's `nextCursor`. ```typescript const { items, mode } = await knowledge.search('coll_123', { q: 'how do I descale', limit: 5 }) ```
 
 **publicSearch**(collectionId: string,
     body: KnowledgeSearchRequest) → `Promise<ListResult<KnowledgeSearchResult> & Pick<KnowledgeSearchResponse, 'query' | 'mode'>>`
-Search from a website, Portal or Hub: public sets, plus customer sets for a signed-in person. The answer has the same shape as the admin `search`: the matches come back as `items`, best first, with the `query` and the search `mode` beside them. There are no pages: `k` says how many matches to return. ```typescript const { items } = await knowledge.publicSearch('coll_123', { query: 'how do I descale', k: 5 }) for (const r of items) console.log(r.title, r.heading, r.url, r.snippet) ```
+Search from a website, Portal or Hub: public sets, plus customer sets for a signed-in person. The options and the answer are the same as the admin `search`: `q` is what to look for, and the matches come back as `items`, best first, with the `query` and the search `mode` beside them. `limit` says how many matches to return (default 8, at most 25); `cursor` is the previous page's `nextCursor`. ```typescript const { items } = await knowledge.publicSearch('coll_123', { q: 'how do I descale', limit: 5 }) for (const r of items) console.log(r.title, r.heading, r.url, r.snippet) ```
 
 ### location
 
@@ -15078,7 +14874,7 @@ Admin: Create a collection-scoped location POST /admin/collection/:collectionId/
 
 **search**(collectionId: string,
     query: LocationSearchQuery = {}) → `Promise<ListResult<Location>>`
-Admin: Search locations to pick during setup (combines collection + global). One list, no pages: `limit` says how many (default 20, at most 100). GET /admin/collection/:collectionId/location/search ```typescript const { items } = await location.search('coll_123', { q: 'distillery', countryCode: 'GB', limit: 10 }) ```
+Admin: Search locations to pick during setup (combines collection + global). `q` is the search text. `limit` says how many (default 20, at most 100) and `cursor` is the previous page's `nextCursor`. `orderBy` sorts by one field: `name` (the default), `countryCode` or `countryName`. GET /admin/collection/:collectionId/location/search ```typescript const { items, nextCursor } = await location.search('coll_123', { q: 'distillery', countryCode: 'GB', limit: 10, orderBy: [{ countryName: 'asc' }], }) ```
 
 **getPublic**(locationId: string) → `Promise<Location>`
 Public: Fetch a global location by ID GET /public/location/:locationId
@@ -15093,7 +14889,7 @@ Public: Fetch a location for a collection; returns either a collection-owned or 
 Create a lot (resolves its selector into members).
 
 **list**(collectionId: string, params: ListLotsParams = {}) → `Promise<ListResult<Lot>>`
-List lots (summary rows; `payload`/`productIds` omitted). Filter by status, search, or containing productId. One list, no pages. ```typescript const { items } = await lots.list('coll_123', { status: 'open' }) ```
+List lots (summary rows; `payload`/`productIds` omitted), a page at a time. Filter by `status`, search text (`q`), or containing `productId`; page with `limit` (default 50) and `cursor`. ```typescript let page = await lots.list('coll_123', { status: 'open', q: 'spring', limit: 50 }) while (page.nextCursor) { page = await lots.list('coll_123', { status: 'open', q: 'spring', limit: 50, cursor: page.nextCursor }) } ```
 
 **get**(collectionId: string, lotId: string, opts: { includeDeleted?: boolean } = {}) → `Promise<Lot>`
 Get the full lot record. Pass `{ includeDeleted: true }` to fetch a soft-deleted one.
@@ -15120,13 +14916,13 @@ Re-resolve members from the current selector; returns the lot + a member diff.
 A lot's member products (summaries), a page at a time. `count` is how many members there are in all. ```typescript let page = await lots.listProducts('coll_123', lotId, { limit: 50 }) while (page.nextCursor) page = await lots.listProducts('coll_123', lotId, { limit: 50, cursor: page.nextCursor }) ```
 
 **publicList**(collectionId: string, params: Omit<ListLotsParams, 'includeDeleted'> = {}) → `Promise<ListResult<Lot>>`
-List lots from a public context (summary rows). One list, no pages. ```typescript const { items } = await lots.publicList('coll_123', { productId: 'prod_789' }) ```
+List lots from a public context (summary rows), a page at a time. Filter by `status`, search text (`q`), or containing `productId`; page with `limit` (default 50) and `cursor`. ```typescript const { items, nextCursor } = await lots.publicList('coll_123', { productId: 'prod_789', limit: 50 }) ```
 
 **publicGet**(collectionId: string, lotId: string) → `Promise<Lot>`
-List lots from a public context (summary rows). One list, no pages. ```typescript const { items } = await lots.publicList('coll_123', { productId: 'prod_789' }) ```
+List lots from a public context (summary rows), a page at a time. Filter by `status`, search text (`q`), or containing `productId`; page with `limit` (default 50) and `cursor`. ```typescript const { items, nextCursor } = await lots.publicList('coll_123', { productId: 'prod_789', limit: 50 }) ```
 
 **publicGetByNumber**(collectionId: string, lotNumber: string) → `Promise<Lot>`
-List lots from a public context (summary rows). One list, no pages. ```typescript const { items } = await lots.publicList('coll_123', { productId: 'prod_789' }) ```
+List lots from a public context (summary rows), a page at a time. Filter by `status`, search text (`q`), or containing `productId`; page with `limit` (default 50) and `cursor`. ```typescript const { items, nextCursor } = await lots.publicList('coll_123', { productId: 'prod_789', limit: 50 }) ```
 
 **publicListProducts**(collectionId: string, lotId: string, opts: ListOptions = {}) → `Promise<ListResult<LotProductSummary>>`
 A lot's member products (summaries) from a public context, a page at a time. ```typescript const { items, nextCursor, count } = await lots.publicListProducts('coll_123', lotId, { limit: 50 }) ```
@@ -15136,50 +14932,51 @@ A lot's member products (summaries) from a public context, a page at a time. ```
 Loyalty programmes built on top of collections. Configure schemes and earning rules; contacts earn points automatically via interaction events. See the [Loyalty guide](loyalty.md) for the full walkthrough.
 
 **list**(collectionId: string,
-    params: { includeDeleted?: boolean } = {}) → `Promise<ListResult<LoyaltyScheme>>`
-The collection's loyalty schemes (admin). One list, no pages. ```typescript const { items } = await loyalty.list('coll_123') ```
+    params: ListOptions & { includeDeleted?: boolean } = {}) → `Promise<ListResult<LoyaltyScheme>>`
+The collection's loyalty schemes (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. Pass `includeDeleted: true` to include deleted schemes. ```typescript let page = await loyalty.list('coll_123', { limit: 50 }) while (page.nextCursor) page = await loyalty.list('coll_123', { limit: 50, cursor: page.nextCursor }) ```
 
 **get**(collectionId: string,
     schemeId: string) → `Promise<LoyaltyScheme>`
-The collection's loyalty schemes (admin). One list, no pages. ```typescript const { items } = await loyalty.list('coll_123') ```
+The collection's loyalty schemes (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. Pass `includeDeleted: true` to include deleted schemes. ```typescript let page = await loyalty.list('coll_123', { limit: 50 }) while (page.nextCursor) page = await loyalty.list('coll_123', { limit: 50, cursor: page.nextCursor }) ```
 
 **create**(collectionId: string,
     body: CreateLoyaltySchemeBody) → `Promise<LoyaltyScheme>`
-The collection's loyalty schemes (admin). One list, no pages. ```typescript const { items } = await loyalty.list('coll_123') ```
+The collection's loyalty schemes (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. Pass `includeDeleted: true` to include deleted schemes. ```typescript let page = await loyalty.list('coll_123', { limit: 50 }) while (page.nextCursor) page = await loyalty.list('coll_123', { limit: 50, cursor: page.nextCursor }) ```
 
 **update**(collectionId: string,
     schemeId: string,
     body: UpdateLoyaltySchemeBody) → `Promise<LoyaltyScheme>`
-The collection's loyalty schemes (admin). One list, no pages. ```typescript const { items } = await loyalty.list('coll_123') ```
+The collection's loyalty schemes (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. Pass `includeDeleted: true` to include deleted schemes. ```typescript let page = await loyalty.list('coll_123', { limit: 50 }) while (page.nextCursor) page = await loyalty.list('coll_123', { limit: 50, cursor: page.nextCursor }) ```
 
 **remove**(collectionId: string,
     schemeId: string) → `Promise<LoyaltyScheme>`
-The collection's loyalty schemes (admin). One list, no pages. ```typescript const { items } = await loyalty.list('coll_123') ```
+The collection's loyalty schemes (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. Pass `includeDeleted: true` to include deleted schemes. ```typescript let page = await loyalty.list('coll_123', { limit: 50 }) while (page.nextCursor) page = await loyalty.list('coll_123', { limit: 50, cursor: page.nextCursor }) ```
 
 **listEarningRules**(collectionId: string,
-    schemeId: string) → `Promise<ListResult<LoyaltyEarningRule>>`
-A scheme's earning rules (admin). One list, no pages. ```typescript const { items } = await loyalty.listEarningRules('coll_123', schemeId) ```
+    schemeId: string,
+    options: ListOptions = {}) → `Promise<ListResult<LoyaltyEarningRule>>`
+A scheme's earning rules (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await loyalty.listEarningRules('coll_123', schemeId, { limit: 50 }) while (page.nextCursor) page = await loyalty.listEarningRules('coll_123', schemeId, { limit: 50, cursor: page.nextCursor }) ```
 
 **getEarningRule**(collectionId: string,
     schemeId: string,
     ruleId: string) → `Promise<LoyaltyEarningRule>`
-A scheme's earning rules (admin). One list, no pages. ```typescript const { items } = await loyalty.listEarningRules('coll_123', schemeId) ```
+A scheme's earning rules (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await loyalty.listEarningRules('coll_123', schemeId, { limit: 50 }) while (page.nextCursor) page = await loyalty.listEarningRules('coll_123', schemeId, { limit: 50, cursor: page.nextCursor }) ```
 
 **createEarningRule**(collectionId: string,
     schemeId: string,
     body: CreateLoyaltyEarningRuleBody) → `Promise<LoyaltyEarningRule>`
-A scheme's earning rules (admin). One list, no pages. ```typescript const { items } = await loyalty.listEarningRules('coll_123', schemeId) ```
+A scheme's earning rules (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await loyalty.listEarningRules('coll_123', schemeId, { limit: 50 }) while (page.nextCursor) page = await loyalty.listEarningRules('coll_123', schemeId, { limit: 50, cursor: page.nextCursor }) ```
 
 **updateEarningRule**(collectionId: string,
     schemeId: string,
     ruleId: string,
     body: UpdateLoyaltyEarningRuleBody) → `Promise<LoyaltyEarningRule>`
-A scheme's earning rules (admin). One list, no pages. ```typescript const { items } = await loyalty.listEarningRules('coll_123', schemeId) ```
+A scheme's earning rules (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await loyalty.listEarningRules('coll_123', schemeId, { limit: 50 }) while (page.nextCursor) page = await loyalty.listEarningRules('coll_123', schemeId, { limit: 50, cursor: page.nextCursor }) ```
 
 **removeEarningRule**(collectionId: string,
     schemeId: string,
     ruleId: string) → `Promise<LoyaltyEarningRule>`
-A scheme's earning rules (admin). One list, no pages. ```typescript const { items } = await loyalty.listEarningRules('coll_123', schemeId) ```
+A scheme's earning rules (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await loyalty.listEarningRules('coll_123', schemeId, { limit: 50 }) while (page.nextCursor) page = await loyalty.listEarningRules('coll_123', schemeId, { limit: 50, cursor: page.nextCursor }) ```
 
 **listMembers**(collectionId: string,
     schemeId: string,
@@ -15203,19 +15000,21 @@ Manually award or deduct points for a contact. - `points` must be a non-zero int
     params: ListOptions = {}) → `Promise<ListResult<LoyaltyTransaction>>`
 One member's points transactions (admin), newest first, a page at a time. ```typescript const { items, nextCursor } = await loyalty.getMemberHistory('coll_123', schemeId, contactId, { limit: 50 }) ```
 
-**publicList**(collectionId: string) → `Promise<ListResult<LoyaltyScheme>>`
-List active schemes for a collection. No authentication required. One list, no pages. ```typescript const { items } = await loyalty.publicList('coll_123') ```
+**publicList**(collectionId: string, options: ListOptions = {}) → `Promise<ListResult<LoyaltyScheme>>`
+List active schemes for a collection, a page at a time. No authentication required. Page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await loyalty.publicList('coll_123', { limit: 50 }) while (page.nextCursor) page = await loyalty.publicList('coll_123', { limit: 50, cursor: page.nextCursor }) ```
 
 **publicGet**(collectionId: string,
     schemeId: string) → `Promise<LoyaltyScheme>`
 Get a single active scheme. No authentication required.
 
 **publicListEarningRules**(collectionId: string,
-    schemeId: string) → `Promise<ListResult<LoyaltyEarningRule>>`
-List active earning rules for a scheme — useful for showing "how to earn" in a loyalty UI. No authentication required. One list, no pages. ```typescript const { items } = await loyalty.publicListEarningRules('coll_123', schemeId) ```
+    schemeId: string,
+    options: ListOptions = {}) → `Promise<ListResult<LoyaltyEarningRule>>`
+List active earning rules for a scheme — useful for showing "how to earn" in a loyalty UI. No authentication required. A page at a time: page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await loyalty.publicListEarningRules('coll_123', schemeId, { limit: 50 }) while (page.nextCursor) page = await loyalty.publicListEarningRules('coll_123', schemeId, { limit: 50, cursor: page.nextCursor }) ```
 
-**publicGetMe**(collectionId: string) → `Promise<ListResult<LoyaltySchemeWithMembership>>`
-Get all active schemes with the caller's membership embedded in each. This is the primary entry point for a loyalty widget — one call gives you everything needed to render a user's loyalty status across all programs in a collection. - Authenticated: `member` is populated with balance + lifetimePoints (or null if not yet enrolled in that scheme) - Unauthenticated: `member` is null on all schemes One list, no pages. ```typescript const { items } = await loyalty.publicGetMe('coll_123') for (const scheme of items) console.log(scheme.name, scheme.member?.balance ?? 0) ```
+**publicGetMe**(collectionId: string,
+    options: ListOptions = {}) → `Promise<ListResult<LoyaltySchemeWithMembership>>`
+Get all active schemes with the caller's membership embedded in each. This is the primary entry point for a loyalty widget — one call gives you everything needed to render a user's loyalty status across all programs in a collection. - Authenticated: `member` is populated with balance + lifetimePoints (or null if not yet enrolled in that scheme) - Unauthenticated: `member` is null on all schemes A page at a time: page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await loyalty.publicGetMe('coll_123') for (const scheme of page.items) console.log(scheme.name, scheme.member?.balance ?? 0) while (page.nextCursor) page = await loyalty.publicGetMe('coll_123', { cursor: page.nextCursor }) ```
 
 **publicGetMine**(collectionId: string,
     schemeId: string) → `Promise<LoyaltyMember>`
@@ -15248,7 +15047,7 @@ Claim an NFC tag (public). POST /public/nfc/claimTag
 Validate an NFC tag payload (public). POST /public/nfc/validate
 
 **lookupTag**(tagId: string) → `Promise<ListResult<NfcTagInfo>>`
-Lookup a tag by its ID (public): every code that tag is known as. One list, no pages. GET /public/nfc/findByTag/:tagId ```typescript const { items } = await nfc.lookupTag('04A1B2C3D4E5F6') ```
+Lookup a tag by its ID (public): every code that tag is known as, a page at a time. GET /public/nfc/findByTag/:tagId ```typescript const { items } = await nfc.lookupTag('04A1B2C3D4E5F6') ```
 
 ### operations
 
@@ -15280,12 +15079,12 @@ Delete an order and all its items (cascade delete). ```typescript await order.re
 
 **list**(collectionId: string,
     params?: ListOrdersRequest) → `Promise<ListResult<Order>>`
-List orders for a collection with optional filters, a page at a time (default 100). Orders are returned in descending order by createdAt (newest first). ```typescript // The first page of orders (without items for better performance) const { items } = await order.list('coll_123') // List with filters, page by page let page = await order.list('coll_123', { status: 'pending', limit: 50 }) while (page.nextCursor) { page = await order.list('coll_123', { status: 'pending', limit: 50, cursor: page.nextCursor }) } // Filter by customer with items const customerOrders = await order.list('coll_123', { customerId: 'CUST-789', includeItems: true }) // Purchase orders from one supplier const purchases = await order.list('coll_123', { direction: 'purchase', partyId: supplierId }) ```
+List orders for a collection with optional filters, a page at a time (default 100). Orders are returned in descending order by createdAt (newest first). ```typescript // The first page of orders (without items for better performance) const { items } = await order.list('coll_123') // List with filters, page by page let page = await order.list('coll_123', { status: 'pending', limit: 50 }) while (page.nextCursor) { page = await order.list('coll_123', { status: 'pending', limit: 50, cursor: page.nextCursor }) } // Filter by customer with items const customerOrders = await order.list('coll_123', { customerId: 'CUST-789', expand: ['items'] }) // Purchase orders from one supplier const purchases = await order.list('coll_123', { direction: 'purchase', partyId: supplierId }) ```
 
 **getItems**(collectionId: string,
     orderId: string,
     params?: GetOrderItemsParams) → `Promise<ListResult<OrderItem>>`
-Get items from an order with pagination support. Use this for orders with many items instead of includeItems. ```typescript // Get first page of items const page1 = await order.getItems('coll_123', 'order_abc123', { limit: 100 }) // Get next page if (page1.nextCursor) { const page2 = await order.getItems('coll_123', 'order_abc123', { limit: 100, cursor: page1.nextCursor }) } ```
+Get items from an order with pagination support. Use this for orders with many items instead of `expand: ['items']`. ```typescript // Get first page of items const page1 = await order.getItems('coll_123', 'order_abc123', { limit: 100 }) // Get next page if (page1.nextCursor) { const page2 = await order.getItems('coll_123', 'order_abc123', { limit: 100, cursor: page1.nextCursor }) } ```
 
 **addItems**(collectionId: string,
     orderId: string,
@@ -15302,7 +15101,7 @@ Add to (or take from) how much of a line has been shipped or received. Atomic, s
 
 **query**(collectionId: string,
     data: QueryOrdersRequest) → `Promise<ListResult<Order>>`
-Advanced query for orders with order-level and item-level filtering. More powerful than the basic list() function. ```typescript // Find pending orders created in January 2026 const result = await order.query('coll_123', { query: { status: 'pending', createdAfter: '2026-01-01T00:00:00Z', createdBefore: '2026-02-01T00:00:00Z', sortBy: 'createdAt', sortOrder: 'desc' }, limit: 50 }) console.log(result.items.length) // The next page: the same query with the cursor if (result.nextCursor) { const next = await order.query('coll_123', { query: { status: 'pending', sortBy: 'createdAt', sortOrder: 'desc' }, limit: 50, cursor: result.nextCursor }) } // Find orders with specific metadata and item count const highPriority = await order.query('coll_123', { query: { metadata: { priority: 'high' }, minItemCount: 10, maxItemCount: 100 }, includeItems: true }) // Find orders containing a specific product batch const batchOrders = await order.query('coll_123', { query: { productId: 'prod_789', batchId: 'BATCH-2024-001' }, includeItems: true }) // Find an order containing one of several specific items const matched = await order.query('coll_123', { query: { items: [ { itemType: 'tag', itemId: 'TAG001' }, { itemType: 'serial', itemId: 'SN12345' } ] }, includeItems: true }) ```
+Advanced query for orders with order-level and item-level filtering. More powerful than the basic list() function. `expand: ['items']`, and `limit` and `cursor` for paging. These all sit beside `query`, not inside it. ```typescript // Find pending orders created in January 2026, newest first const result = await order.query('coll_123', { query: { status: 'pending' }, createdAt: { gte: '2026-01-01T00:00:00Z', lte: '2026-02-01T00:00:00Z' }, orderBy: [{ createdAt: 'desc' }], limit: 50 }) console.log(result.items.length) // The next page: the same query with the cursor if (result.nextCursor) { const next = await order.query('coll_123', { query: { status: 'pending' }, createdAt: { gte: '2026-01-01T00:00:00Z', lte: '2026-02-01T00:00:00Z' }, orderBy: [{ createdAt: 'desc' }], limit: 50, cursor: result.nextCursor }) } // Find orders with specific metadata and item count, with their items const highPriority = await order.query('coll_123', { query: { metadata: { priority: 'high' }, minItemCount: 10, maxItemCount: 100 }, expand: ['items'] }) // Find orders containing a specific product batch const batchOrders = await order.query('coll_123', { query: { productId: 'prod_789', batchId: 'BATCH-2024-001' }, expand: ['items'] }) // Find an order containing one of several specific items const matched = await order.query('coll_123', { query: { items: [ { itemType: 'tag', itemId: 'TAG001' }, { itemType: 'serial', itemId: 'SN12345' } ] }, expand: ['items'] }) ```
 
 **reports**(collectionId: string,
     params?: ReportsParams) → `Promise<ReportsResponse>`
@@ -15315,12 +15114,12 @@ Get comprehensive scan analytics for all tags in an order. Returns scan counts, 
 **getTimeline**(collectionId: string,
     orderId: string,
     params?: TimelineRequest) → `Promise<ListResult<TagScanEvent> &`
-Get chronological timeline of all scan events for an order's tags. Supports filtering by date range and admin/customer scans. pages: `limit` says how many, default 1000), with the order they belong to ```typescript // Get all scan events const timeline = await order.getTimeline('coll_123', 'order_abc123') timeline.items.forEach(event => { console.log(`${event.timestamp}: ${event.eventType} by ${event.isAdmin ? 'admin' : 'customer'}`) }) // Get admin scans only from last week const adminScans = await order.getTimeline('coll_123', 'order_abc123', { isAdmin: true, from: '2026-02-01T00:00:00Z', limit: 500 }) ```
+Get chronological timeline of all scan events for an order's tags. Supports filtering by date range and admin/customer scans. time (`limit` says how many, default 1000), with the order they belong to ```typescript // The first page of scan events let timeline = await order.getTimeline('coll_123', 'order_abc123') timeline.items.forEach(event => { console.log(`${event.timestamp}: ${event.eventType} by ${event.isAdmin ? 'admin' : 'customer'}`) }) // The next page if (timeline.nextCursor) timeline = await order.getTimeline('coll_123', 'order_abc123', { cursor: timeline.nextCursor }) // Get admin scans only from last week const adminScans = await order.getTimeline('coll_123', 'order_abc123', { isAdmin: true, from: '2026-02-01T00:00:00Z', limit: 500 }) ```
 
 **getLocationHistory**(collectionId: string,
     orderId: string,
     params?: LocationRequest) → `Promise<ListResult<LocationScan> &`
-Get location-based scan history for an order's tags. Shows where the order's tags have been scanned. (one list, no pages: `limit` says how many, default 1000), with the order they belong to ```typescript const locations = await order.getLocationHistory('coll_123', 'order_abc123', { limit: 100 }) console.log(`Order has ${locations.items.length} scans with a location`) locations.items.forEach(scan => { console.log(`${scan.location} at ${scan.timestamp}`) }) ```
+Get location-based scan history for an order's tags. Shows where the order's tags have been scanned. a page at a time (`limit` says how many, default 1000), with the order they belong to ```typescript let locations = await order.getLocationHistory('coll_123', 'order_abc123', { limit: 100 }) locations.items.forEach(scan => { console.log(`${scan.location} at ${scan.timestamp}`) }) // The next page if (locations.nextCursor) { locations = await order.getLocationHistory('coll_123', 'order_abc123', { limit: 100, cursor: locations.nextCursor }) } ```
 
 **getBulkAnalytics**(collectionId: string,
     data: BulkAnalyticsRequest) → `Promise<BulkAnalyticsResponse>`
@@ -15332,14 +15131,14 @@ Get collection-wide analytics summary across all orders. Returns daily scan coun
 
 ### partner
 
-**list**() → `Promise<ListResult<Partner>>`
-The partners you belong to, with your role in each. Returns `{ items, nextCursor }`: the partners are in `items` (empty for everyone else). The list is not paged, so `nextCursor` is always `null`. ```typescript const { items: partners } = await partner.list() ```
+**list**(options: ListOptions = {}) → `Promise<ListResult<Partner>>`
+The partners you belong to, with your role in each. Returns `{ items, nextCursor }`: the partners are in `items` (empty for everyone else). A page at a time (`limit` and `cursor`; 50 unless you say otherwise). ```typescript let page = await partner.list() while (page.nextCursor) page = await partner.list({ cursor: page.nextCursor }) ```
 
 **get**(partnerId: string) → `Promise<Partner>`
 One partner (owners also see its members).
 
-**claimSets**(partnerId: string) → `Promise<ListResult<PartnerClaimSet>>`
-The partner's claim sets. Returns `{ items, nextCursor }`: the sets are in `items`. The list is not paged, so `nextCursor` is always `null`. ```typescript const { items: sets } = await partner.claimSets(partnerId) ```
+**claimSets**(partnerId: string, options: ListOptions = {}) → `Promise<ListResult<PartnerClaimSet>>`
+The partner's claim sets. Returns `{ items, nextCursor }`: the sets are in `items`. A page at a time (`limit` and `cursor`; 50 unless you say otherwise). ```typescript let page = await partner.claimSets(partnerId) while (page.nextCursor) page = await partner.claimSets(partnerId, { cursor: page.nextCursor }) ```
 
 **getClaimSet**(partnerId: string, claimSetId: string) → `Promise<PartnerClaimSet>`
 One of the partner's claim sets.
@@ -15348,10 +15147,10 @@ One of the partner's claim sets.
 A new claim set for the partner, on one of its tap domains (owners and admins).
 
 **lookupTags**(partnerId: string, query: { uid?: string; code?: string }) → `Promise<ListResult<PartnerTagHit>>`
-Find a tag across the partner's sets by its chip UID (8 or 14 hex) or its code (printed or bare). Returns `{ items, nextCursor }`: `items` has one hit for each of the partner's sets the tag is in (usually one; none if the tag isn't the partner's). Never returns keys. The list is not paged, so `nextCursor` is always `null`. ```typescript const { items: hits } = await partner.lookupTags(partnerId, { uid: '04A1B2C3D4E5F6' }) ```
+Find a tag across the partner's sets by its chip UID (8 or 14 hex) or its code (printed or bare). Returns `{ items, nextCursor }`: `items` has one hit for each of the partner's sets the tag is in (usually one; none if the tag isn't the partner's). Never returns keys. A look-up is never paged: every hit comes back in the one answer. ```typescript const { items: hits } = await partner.lookupTags(partnerId, { uid: '04A1B2C3D4E5F6' }) ```
 
-**tagAttempts**(partnerId: string, uid: string) → `Promise<ListResult<ClientErrorEvent>>`
-What phones reported about one chip (errors.report with entityType 'tag'), newest first: a tag that failed to program or register, with the host's NFC log in context. For a chip in the partner's sets, or attempts that named one of them. Returns `{ items, nextCursor }`: the ten latest reports are in `items`. The list is not paged, so `nextCursor` is always `null`. ```typescript const { items: attempts } = await partner.tagAttempts(partnerId, '04A1B2C3D4E5F6') ```
+**tagAttempts**(partnerId: string, uid: string, options: ListOptions = {}) → `Promise<ListResult<ClientErrorEvent>>`
+What phones reported about one chip (errors.report with entityType 'tag'), newest first: a tag that failed to program or register, with the host's NFC log in context. For a chip in the partner's sets, or attempts that named one of them. Returns `{ items, nextCursor }`: the latest reports are in `items` (ten unless `limit` says otherwise); `cursor` is the previous page's `nextCursor`. ```typescript const { items: attempts } = await partner.tagAttempts(partnerId, '04A1B2C3D4E5F6', { limit: 20 }) ```
 
 ### places
 
@@ -15374,26 +15173,27 @@ Get podcast generation status
     admin?: boolean) → `Promise<ProductResponse>`
 
 **list**(collectionId: string,
-    admin?: boolean) → `Promise<ListResult<ProductResponse>>`
-Every product in a collection, in one list (no pages). For filtering, sorting and paging use `products.query`. ```typescript const { items } = await products.list(collectionId) ```
+    admin?: boolean,
+    options: ListOptions & { expand?: Array<'facets'> } = {}) → `Promise<ListResult<ProductResponse>>`
+The products in a collection, a page at a time. For searching, filtering and sorting use `products.query`. as full values instead of their keys ```typescript let page = await products.list(collectionId, false, { limit: 50 }) while (page.nextCursor) { page = await products.list(collectionId, false, { limit: 50, cursor: page.nextCursor }) } // Admin, with full facet values const { items } = await products.list(collectionId, true, { expand: ['facets'] }) ```
 
 **create**(collectionId: string,
     data: ProductCreateRequest) → `Promise<ProductResponse>`
-Every product in a collection, in one list (no pages). For filtering, sorting and paging use `products.query`. ```typescript const { items } = await products.list(collectionId) ```
+The products in a collection, a page at a time. For searching, filtering and sorting use `products.query`. as full values instead of their keys ```typescript let page = await products.list(collectionId, false, { limit: 50 }) while (page.nextCursor) { page = await products.list(collectionId, false, { limit: 50, cursor: page.nextCursor }) } // Admin, with full facet values const { items } = await products.list(collectionId, true, { expand: ['facets'] }) ```
 
 **update**(collectionId: string,
     productId: string,
     data: ProductUpdateRequest) → `Promise<ProductResponse>`
-Every product in a collection, in one list (no pages). For filtering, sorting and paging use `products.query`. ```typescript const { items } = await products.list(collectionId) ```
+The products in a collection, a page at a time. For searching, filtering and sorting use `products.query`. as full values instead of their keys ```typescript let page = await products.list(collectionId, false, { limit: 50 }) while (page.nextCursor) { page = await products.list(collectionId, false, { limit: 50, cursor: page.nextCursor }) } // Admin, with full facet values const { items } = await products.list(collectionId, true, { expand: ['facets'] }) ```
 
 **remove**(collectionId: string,
     productId: string) → `Promise<void>`
-Every product in a collection, in one list (no pages). For filtering, sorting and paging use `products.query`. ```typescript const { items } = await products.list(collectionId) ```
+The products in a collection, a page at a time. For searching, filtering and sorting use `products.query`. as full values instead of their keys ```typescript let page = await products.list(collectionId, false, { limit: 50 }) while (page.nextCursor) { page = await products.list(collectionId, false, { limit: 50, cursor: page.nextCursor }) } // Admin, with full facet values const { items } = await products.list(collectionId, true, { expand: ['facets'] }) ```
 
 **query**(collectionId: string,
     body: ProductQueryRequest,
     admin?: boolean) → `Promise<ListResult<ProductResponse> &`
-Query products in a collection with filtering, sorting, and paging. authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. for the next page (null on the last), how many match in all where the server counted, and `meta` (how the query was run) ```typescript // Public query (default) const { items, nextCursor, count } = await products.query(collectionId, { query: { search: 'cabernet' }, limit: 20 }) // The next page: the same query with the cursor if (nextCursor) { await products.query(collectionId, { query: { search: 'cabernet' }, limit: 20, cursor: nextCursor }) } // Admin query (authenticated) await products.query(collectionId, { query: { search: 'cabernet' } }, true) ```
+Query products in a collection with search, filtering, sorting, and paging. and the other filters in `query`, plus `limit` (default 50) and `cursor` for paging authenticated admin context). Defaults to `false`, which targets the `/public` endpoint — consistent with `get`, `list`, and `listAssets`. for the next page (null on the last), how many match in all where the server counted, and `meta` (how the query was run) ```typescript // Public query (default) const { items, nextCursor, count } = await products.query(collectionId, { q: 'cabernet', limit: 20 }) // The next page: the same query with the cursor if (nextCursor) { await products.query(collectionId, { q: 'cabernet', limit: 20, cursor: nextCursor }) } // Newest first, created this month, active only, with full facet values await products.query(collectionId, { orderBy: [{ createdAt: 'desc' }], createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' }, query: { status: ['active'] }, expand: ['facets'], }) // Admin query (authenticated) await products.query(collectionId, { q: 'cabernet' }, true) ```
 
 **standardQuery**(collectionId: string,
     body: StandardQuery = {}) → `Promise<QueryResult>`
@@ -15409,44 +15209,45 @@ What a products standard query can use: its fields and what each can filter, sor
 
 **listAssets**(collectionId: string,
     productId: string,
-    admin?: boolean) → `Promise<ListResult<AssetResponse>>`
-A product's assets (images, documents), in one list (no pages). ```typescript const { items } = await products.listAssets(collectionId, productId) ```
+    admin?: boolean,
+    options: ListOptions = {}) → `Promise<ListResult<AssetResponse>>`
+A product's assets (images, documents), a page at a time. ```typescript let page = await products.listAssets(collectionId, productId, false, { limit: 50 }) while (page.nextCursor) { page = await products.listAssets(collectionId, productId, false, { limit: 50, cursor: page.nextCursor }) } ```
 
 **createClaimWindow**(collectionId: string,
     productId: string,
     body: Record<string, JsonValue>) → `Promise<unknown>`
-A product's assets (images, documents), in one list (no pages). ```typescript const { items } = await products.listAssets(collectionId, productId) ```
+A product's assets (images, documents), a page at a time. ```typescript let page = await products.listAssets(collectionId, productId, false, { limit: 50 }) while (page.nextCursor) { page = await products.listAssets(collectionId, productId, false, { limit: 50, cursor: page.nextCursor }) } ```
 
 **updateClaimWindow**(collectionId: string,
     productId: string,
     claimId: string,
     body: Record<string, JsonValue>) → `Promise<unknown>`
-A product's assets (images, documents), in one list (no pages). ```typescript const { items } = await products.listAssets(collectionId, productId) ```
+A product's assets (images, documents), a page at a time. ```typescript let page = await products.listAssets(collectionId, productId, false, { limit: 50 }) while (page.nextCursor) { page = await products.listAssets(collectionId, productId, false, { limit: 50, cursor: page.nextCursor }) } ```
 
 **refresh**(collectionId: string,
     productId: string) → `Promise<ProductResponse>`
-A product's assets (images, documents), in one list (no pages). ```typescript const { items } = await products.listAssets(collectionId, productId) ```
+A product's assets (images, documents), a page at a time. ```typescript let page = await products.listAssets(collectionId, productId, false, { limit: 50 }) while (page.nextCursor) { page = await products.listAssets(collectionId, productId, false, { limit: 50, cursor: page.nextCursor }) } ```
 
 **getSN**(collectionId: string,
     productId: string,
     startIndex: number = 0,
     count: number = 10) → `Promise<unknown>`
-A product's assets (images, documents), in one list (no pages). ```typescript const { items } = await products.listAssets(collectionId, productId) ```
+A product's assets (images, documents), a page at a time. ```typescript let page = await products.listAssets(collectionId, productId, false, { limit: 50 }) while (page.nextCursor) { page = await products.listAssets(collectionId, productId, false, { limit: 50, cursor: page.nextCursor }) } ```
 
 **lookupSN**(collectionId: string,
     productId: string,
     codeId: string) → `Promise<unknown>`
-A product's assets (images, documents), in one list (no pages). ```typescript const { items } = await products.listAssets(collectionId, productId) ```
+A product's assets (images, documents), a page at a time. ```typescript let page = await products.listAssets(collectionId, productId, false, { limit: 50 }) while (page.nextCursor) { page = await products.listAssets(collectionId, productId, false, { limit: 50, cursor: page.nextCursor }) } ```
 
 **publicLookupClaim**(collectionId: string,
     productId: string,
     claimId: string) → `Promise<unknown>`
-A product's assets (images, documents), in one list (no pages). ```typescript const { items } = await products.listAssets(collectionId, productId) ```
+A product's assets (images, documents), a page at a time. ```typescript let page = await products.listAssets(collectionId, productId, false, { limit: 50 }) while (page.nextCursor) { page = await products.listAssets(collectionId, productId, false, { limit: 50, cursor: page.nextCursor }) } ```
 
 **publicCreateClaim**(collectionId: string,
     productId: string,
     body: ProductClaimCreateRequestBody) → `Promise<unknown>`
-A product's assets (images, documents), in one list (no pages). ```typescript const { items } = await products.listAssets(collectionId, productId) ```
+A product's assets (images, documents), a page at a time. ```typescript let page = await products.listAssets(collectionId, productId, false, { limit: 50 }) while (page.nextCursor) { page = await products.listAssets(collectionId, productId, false, { limit: 50, cursor: page.nextCursor }) } ```
 
 ### proof
 
@@ -15465,8 +15266,8 @@ What a proofs query can use: its fields, what each can filter, sort, group or to
 Retrieves a single Proof by Collection ID, Product ID, and Proof ID. Both public and admin endpoints now include productId in the path.
 
 **list**(collectionId: string,
-    include?: string[]) → `Promise<ListResult<ProofResponse>>`
-List all Proofs for a Collection, in one list (no pages). GET /public/collection/:collectionId/proof ```typescript const { items } = await proof.list(collectionId) ```
+    options: ListOptions & { expand?: Array<'product'> } = {}) → `Promise<ListResult<ProofResponse>>`
+List all Proofs for a Collection, a page at a time. GET /public/collection/:collectionId/proof ```typescript let page = await proof.list(collectionId, { limit: 50, expand: ['product'] }) while (page.nextCursor) { page = await proof.list(collectionId, { limit: 50, expand: ['product'], cursor: page.nextCursor }) } ```
 
 **create**(collectionId: string,
     productId: string,
@@ -15502,22 +15303,25 @@ Claim a product without providing a proof ID. System auto-generates a unique ser
 Delete a proof for a product (admin only). DELETE /admin/collection/:collectionId/product/:productId/proof/:proofId
 
 **getByUser**(collectionId: string,
-    userId: string) → `Promise<ListResult<ProofResponse>>`
-Get proofs for a user in a collection (admin only), in one list (no pages). GET /admin/collection/:collectionId/proof/findByUser/:userId ```typescript const { items } = await proof.getByUser(collectionId, userId) ```
+    userId: string,
+    options: ListOptions = {}) → `Promise<ListResult<ProofResponse>>`
+Get proofs for a user in a collection (admin only), a page at a time. GET /admin/collection/:collectionId/proof/findByUser/:userId ```typescript let page = await proof.getByUser(collectionId, userId, { limit: 50 }) while (page.nextCursor) page = await proof.getByUser(collectionId, userId, { limit: 50, cursor: page.nextCursor }) ```
 
 **getByProduct**(collectionId: string,
-    productId: string) → `Promise<ListResult<ProofResponse>>`
-Get proofs for a product (admin only), in one list (no pages). GET /admin/collection/:collectionId/product/:productId/proof ```typescript const { items } = await proof.getByProduct(collectionId, productId) ```
+    productId: string,
+    options: ListOptions = {}) → `Promise<ListResult<ProofResponse>>`
+Get proofs for a product (admin only), a page at a time. GET /admin/collection/:collectionId/product/:productId/proof ```typescript let page = await proof.getByProduct(collectionId, productId, { limit: 50 }) while (page.nextCursor) page = await proof.getByProduct(collectionId, productId, { limit: 50, cursor: page.nextCursor }) ```
 
 **findByProduct**(collectionId: string,
     productId: string,
     query: ProofFindQuery = {}) → `Promise<ListResult<ProofResponse>>`
-Find proofs for a product (admin only): the newest `limit` (default 100), or every proof matching `filterBy`. For counting, sorting and paging through a collection's proofs use `proof.query`. POST /admin/collection/:collectionId/product/:productId/proof/find ```typescript const { items } = await proof.findByProduct(collectionId, productId, { limit: 50, includes: ['assets'] }) const red = await proof.findByProduct(collectionId, productId, { filterBy: [{ field: 'values.colour', value: 'red' }] }) ```
+Find proofs for a product (admin only): the newest ones, `limit` at a time (default 100), or the proofs matching `filterBy`. `expand: ['assets']` attaches each proof's assets. Pass `nextCursor` back as `cursor` for the next page. For counting and sorting a collection's proofs use `proof.query`. POST /admin/collection/:collectionId/product/:productId/proof/find ```typescript const { items, nextCursor } = await proof.findByProduct(collectionId, productId, { limit: 50, expand: ['assets'] }) const red = await proof.findByProduct(collectionId, productId, { filterBy: [{ field: 'values.colour', value: 'red' }] }) ```
 
 **getByBatch**(collectionId: string,
     productId: string,
-    batchId: string) → `Promise<ListResult<ProofResponse>>`
-Get proofs for a batch (admin only), in one list (no pages). GET /admin/collection/:collectionId/product/:productId/batch/:batchId/proof ```typescript const { items } = await proof.getByBatch(collectionId, productId, batchId) ```
+    batchId: string,
+    options: ListOptions = {}) → `Promise<ListResult<ProofResponse>>`
+Get proofs for a batch (admin only), a page at a time. GET /admin/collection/:collectionId/product/:productId/batch/:batchId/proof ```typescript let page = await proof.getByBatch(collectionId, productId, batchId, { limit: 50 }) while (page.nextCursor) { page = await proof.getByBatch(collectionId, productId, batchId, { limit: 50, cursor: page.nextCursor }) } ```
 
 **migrate**(collectionId: string,
     productId: string,
@@ -15534,8 +15338,9 @@ Create a share grant on a proof (owner / collection admin only). The returned gr
 
 **listGrants**(collectionId: string,
     productId: string,
-    proofId: string) → `Promise<ListResult<ProofGrant>>`
-List the active + past grants on a proof (owner / collection admin only), in one list (no pages). Tokens are never returned here. ```typescript const { items } = await proof.listGrants(collectionId, productId, proofId) ```
+    proofId: string,
+    options: ListOptions = {}) → `Promise<ListResult<ProofGrant>>`
+List the active + past grants on a proof (owner / collection admin only), a page at a time. Tokens are never returned here. ```typescript const { items, nextCursor } = await proof.listGrants(collectionId, productId, proofId, { limit: 50 }) ```
 
 **revokeGrant**(collectionId: string,
     productId: string,
@@ -15697,8 +15502,8 @@ The contacts in a segment, a page at a time. `count` is how many there are in al
 
 ### serviceAccounts
 
-**list**(collectionId: string) → `Promise<ServiceAccountList>`
-The service accounts that work on this collection — its own (`home: true`, with `alsoOn`) and other collections' (`home: false`, with `homeCollection`) — never their keys, and the access levels that can be given (`access`). All of them in one answer: `nextCursor` is always null. GET /service-accounts ```typescript const { items, access } = await serviceAccounts.list('coll_123') items  // ServiceAccount[] access // ["User", "Reporter", "Assigner", "Admin"] ```
+**list**(collectionId: string, options: ListOptions = {}) → `Promise<ServiceAccountList>`
+The service accounts that work on this collection — its own (`home: true`, with `alsoOn`) and other collections' (`home: false`, with `homeCollection`) — never their keys, and the access levels that can be given (`access`). A page at a time (`limit` and `cursor`; 50 unless you say otherwise). GET /service-accounts ```typescript let page = await serviceAccounts.list('coll_123') page.items  // ServiceAccount[] page.access // ["User", "Reporter", "Assigner", "Admin"] while (page.nextCursor) page = await serviceAccounts.list('coll_123', { cursor: page.nextCursor }) ```
 
 **create**(collectionId: string, input: CreateServiceAccountInput) → `Promise<CreateServiceAccountResult>`
 Make a service account → `{ serviceAccount, key }`. Show the key once — it can't be read again. You can't give it more access than you have. POST /service-accounts
@@ -15746,8 +15551,8 @@ Archive (soft-delete) a session.
 **config**(collectionId: string) → `Promise<ShopPublicConfig>`
 What a shop front shows: currency, the seller's details (UK law: shown before paying), shipping rates, policies, and `ready` (false until the shop can take payments).
 
-**products**(collectionId: string, params?: { productIds?: string[] }) → `Promise<ListResult<ShopProduct> &`
-What is for sale, in the shop's currency, with stock (`inStock`, `available`) and whether the buyer must sign in first (`needsSignIn`: a proof or access goes to an account). Everything for sale comes in one answer (`nextCursor` is always null), with the shop's `currency` beside the list. ```typescript const { items, currency } = await shop.products(collectionId) items.map((p) => `${p.name}: ${formatMoney(p.amount, p.currency)}${p.inStock ? '' : ' (sold out)'}`) ```
+**products**(collectionId: string, params?: ListOptions & { productIds?: string[] }) → `Promise<ListResult<ShopProduct> &`
+What is for sale, in the shop's currency, with stock (`inStock`, `available`) and whether the buyer must sign in first (`needsSignIn`: a proof or access goes to an account). A page at a time: page with `limit` (50 unless you say) and `cursor`. The shop's `currency` comes beside the list. Pass `productIds` for just those products. ```typescript let page = await shop.products(collectionId, { limit: 50 }) page.items.map((p) => `${p.name}: ${formatMoney(p.amount, p.currency)}${p.inStock ? '' : ' (sold out)'}`) while (page.nextCursor) page = await shop.products(collectionId, { limit: 50, cursor: page.nextCursor }) ```
 
 **checkout**(collectionId: string, input: ShopCheckoutInput) → `Promise<ShopCheckoutResult>`
 Start paying: the server prices the basket, holds the stock and returns Stripe's checkout page. Send the buyer to `checkoutUrl`. Signed-in buyers' orders are theirs (`shop.myOrders`). ```typescript const { checkoutUrl } = await shop.checkout(collectionId, { lines: [{ productId: 'soap', quantity: 2 }], shippingRateId: 'std', successUrl: `${location.origin}/thanks`,   // ?session_id= is added cancelUrl: `${location.origin}/basket`, }) location.href = checkoutUrl ``` `DIGITAL_CONSENT_REQUIRED`, `INVALID_INPUT` (e.g. a return page on another site), `PAYMENT_UNAVAILABLE` (nothing was charged)
@@ -15815,14 +15620,14 @@ Invoke a skill by name with structured input — the app-facing verb; no prompt-
 
 ### subscriptions
 
-**plans**(collectionId: string) → `Promise<ListResult<PublicPlan>>`
-Plans open to new members, each with its prices (monthly, yearly, one-off). All of them in one answer: `nextCursor` is always null. ```typescript const { items: plans } = await subscriptions.plans(collectionId) plans.map((p) => p.prices.map((price) => subscriptions.describePrice(price))) ```
+**plans**(collectionId: string, options: ListOptions = {}) → `Promise<ListResult<PublicPlan>>`
+Plans open to new members, each with its prices (monthly, yearly, one-off), a page at a time. Page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await subscriptions.plans(collectionId, { limit: 50 }) page.items.map((p) => p.prices.map((price) => subscriptions.describePrice(price))) while (page.nextCursor) page = await subscriptions.plans(collectionId, { limit: 50, cursor: page.nextCursor }) ```
 
 **start**(collectionId: string, input: SubscriptionStartInput) → `Promise<SubscriptionStartResult>`
 Join a plan: Stripe's checkout page for the chosen price. Send them to `checkoutUrl`. Signed in only (a membership belongs to an account). The membership exists once Stripe confirms the payment. ```typescript const { items: plans } = await subscriptions.plans(collectionId) const yearly = plans[0].prices.find((p) => p.interval === 'year') const { checkoutUrl } = await subscriptions.start(collectionId, { priceId: yearly.id, successUrl: `${location.origin}/welcome`, cancelUrl: `${location.origin}/join`, }) location.href = checkoutUrl ```
 
-**mine**(collectionId: string) → `Promise<ListResult<MySubscription>>`
-The signed-in member's memberships, newest first (ended ones too: check `live`). All of them in one answer: `nextCursor` is always null. ```typescript const { items } = await subscriptions.mine(collectionId) const current = items.find((s) => s.live) ```
+**mine**(collectionId: string, options: ListOptions = {}) → `Promise<ListResult<MySubscription>>`
+The signed-in member's memberships, newest first (ended ones too: check `live`), a page at a time. Page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await subscriptions.mine(collectionId) const current = page.items.find((s) => s.live) while (page.nextCursor) page = await subscriptions.mine(collectionId, { cursor: page.nextCursor }) ```
 
 **cancel**(collectionId: string, subscriptionId: string) → `Promise<MySubscription>`
 Cancel: it ends at the end of the paid period, and access stays until then. A one-off plan or a staff grant ends now. Undo with `resume` before the period ends.
@@ -15928,7 +15733,7 @@ List tags with optional filters, a page at a time (admin). ```typescript // Tags
 
 **byRef**(collectionId: string,
     params: ReverseTagLookupParams) → `Promise<ListResult<Tag>>`
-Reverse lookup — find all tags linked to a given object (admin). Uses a compound index on `(orgId, refType, refId)` on the per-org shard. No embed support on the admin side. ```typescript const { items: linked } = await tags.byRef('coll_123', { refType: 'container', refId:   'container-uuid', }) ```
+Reverse lookup — find all tags linked to a given object (admin). Uses a compound index on `(orgId, refType, refId)` on the per-org shard. No embed support on the admin side. ```typescript let page = await tags.byRef('coll_123', { refType: 'container', refId: 'container-uuid', limit: 50 }) while (page.nextCursor) { page = await tags.byRef('coll_123', { refType: 'container', refId: 'container-uuid', limit: 50, cursor: page.nextCursor }) } ```
 
 **resolveTag**(tagId: string) → `Promise<TagIndexEntry>`
 Global tag resolve — returns `{ tagId, collectionId }` only. Use this **only** when you have a raw `tagId` and do not yet know which collection it belongs to.  Queries the shared `tag_index` shard. Once `collectionId` is resolved, call `publicGetByCollection` for full data. > The global `/public/tags/by-ref` endpoint has been removed. > Use the collection-scoped `publicByRef` instead. ```typescript // Step 1: resolve collection const { collectionId } = await tags.resolveTag('NFC-001') // Step 2: full lookup with embedded data const { tag, embedded } = await tags.publicGetByCollection( collectionId, 'NFC-001', 'product,proof' ) ```
@@ -15940,64 +15745,64 @@ Single tag lookup with optional embedded data (public). `GET /public/collection/
 
 **lookupTags**(collectionId: string,
     data: LookupTagsRequest) → `Promise<TagLookupResponse>`
-Batch tag lookup via POST (public). `POST /public/collection/:collectionId/tags/lookup` Tags not belonging to this collection are filtered out silently. Returns deduplicated embedded objects alongside the tag array. ```typescript const { items, count, embedded } = await tags.lookupTags('coll_123', { tagIds: ['NFC-001', 'NFC-002', 'NFC-003'], embed:  'product,proof', }) ```
+Batch tag lookup via POST (public). `POST /public/collection/:collectionId/tags/lookup` Tags not belonging to this collection are filtered out silently. Returns deduplicated embedded objects alongside the tag array. the tags found, a page at a time ```typescript const tagIds = ['NFC-001', 'NFC-002', 'NFC-003'] // Every tag found comes back in the one answer: a look-up is never paged. const { items, embedded } = await tags.lookupTags('coll_123', { tagIds, embed: 'product,proof' }) ```
 
 **lookupTagsQuery**(collectionId: string,
     params: LookupTagsQueryRequest) → `Promise<TagLookupResponse>`
-Batch tag lookup via GET (public). `GET /public/collection/:collectionId/tags/lookup?tagIds=NFC-001,NFC-002&embed=product` ```typescript const { items, embedded } = await tags.lookupTagsQuery('coll_123', { tagIds: 'NFC-001,NFC-002', embed:  'product', }) ```
+Batch tag lookup via GET (public). `GET /public/collection/:collectionId/tags/lookup?tagIds=NFC-001,NFC-002&embed=product` the tags found, a page at a time ```typescript const { items, embedded } = await tags.lookupTagsQuery('coll_123', { tagIds: 'NFC-001,NFC-002', embed:  'product', }) ```
 
 **publicByRef**(collectionId: string,
     params: ReverseTagLookupParams) → `Promise<ByRefResponse>`
-Reverse lookup by ref via GET (public). `GET /public/collection/:collectionId/tags/by-ref?refType=container&refId=<uuid>&embed=ref` ```typescript const { items: linked, embedded } = await tags.publicByRef('coll_123', { refType: 'container', refId:   'container-uuid', embed:   'container', }) const container = embedded.containers?.[containerId] ```
+Reverse lookup by ref via GET (public). `GET /public/collection/:collectionId/tags/by-ref?refType=container&refId=<uuid>&embed=ref` ```typescript const { items: linked, embedded, nextCursor } = await tags.publicByRef('coll_123', { refType: 'container', refId:   'container-uuid', embed:   'container', limit:   50, }) const container = embedded.containers?.[containerId] ```
 
 **publicByRefPost**(collectionId: string,
     data: ByRefRequest) → `Promise<ByRefResponse>`
-Reverse lookup by ref via POST (public). `POST /public/collection/:collectionId/tags/by-ref` ```typescript const { items: linked, embedded } = await tags.publicByRefPost('coll_123', { refType: 'container', refId:   'container-uuid', embed:   'container', }) ```
+Reverse lookup by ref via POST (public). `POST /public/collection/:collectionId/tags/by-ref` ```typescript const { items: linked, embedded, nextCursor } = await tags.publicByRefPost('coll_123', { refType: 'container', refId:   'container-uuid', embed:   'container', limit:   50, }) ```
 
 ### template
 
-**getAll**(collectionId: string) → `Promise<ListResult<Template>>`
-Every template in the collection (admin), in one answer: `nextCursor` is always null. ```typescript const { items } = await template.getAll('coll_123') items // Template[] ```
+**getAll**(collectionId: string, options: ListOptions = {}) → `Promise<ListResult<Template>>`
+The templates in the collection (admin), 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript let page = await template.getAll('coll_123', { limit: 100 }) page.items // Template[] while (page.nextCursor) page = await template.getAll('coll_123', { limit: 100, cursor: page.nextCursor }) ```
 
 **get**(collectionId: string, templateId: string) → `Promise<Template>`
-Every template in the collection (admin), in one answer: `nextCursor` is always null. ```typescript const { items } = await template.getAll('coll_123') items // Template[] ```
+The templates in the collection (admin), 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript let page = await template.getAll('coll_123', { limit: 100 }) page.items // Template[] while (page.nextCursor) page = await template.getAll('coll_123', { limit: 100, cursor: page.nextCursor }) ```
 
 **create**(collectionId: string, data: TemplateInput) → `Promise<Template>`
-Every template in the collection (admin), in one answer: `nextCursor` is always null. ```typescript const { items } = await template.getAll('coll_123') items // Template[] ```
+The templates in the collection (admin), 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript let page = await template.getAll('coll_123', { limit: 100 }) page.items // Template[] while (page.nextCursor) page = await template.getAll('coll_123', { limit: 100, cursor: page.nextCursor }) ```
 
 **update**(collectionId: string,
     templateId: string,
     data: TemplateUpdate) → `Promise<Template>`
-Every template in the collection (admin), in one answer: `nextCursor` is always null. ```typescript const { items } = await template.getAll('coll_123') items // Template[] ```
+The templates in the collection (admin), 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript let page = await template.getAll('coll_123', { limit: 100 }) page.items // Template[] while (page.nextCursor) page = await template.getAll('coll_123', { limit: 100, cursor: page.nextCursor }) ```
 
 **del**(collectionId: string, templateId: string) → `Promise<Template>`
-Every template in the collection (admin), in one answer: `nextCursor` is always null. ```typescript const { items } = await template.getAll('coll_123') items // Template[] ```
+The templates in the collection (admin), 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript let page = await template.getAll('coll_123', { limit: 100 }) page.items // Template[] while (page.nextCursor) page = await template.getAll('coll_123', { limit: 100, cursor: page.nextCursor }) ```
 
 **uploadAsset**(collectionId: string,
     templateId: string,
     file: File | Blob) → `Promise<`
-Every template in the collection (admin), in one answer: `nextCursor` is always null. ```typescript const { items } = await template.getAll('coll_123') items // Template[] ```
+The templates in the collection (admin), 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript let page = await template.getAll('coll_123', { limit: 100 }) page.items // Template[] while (page.nextCursor) page = await template.getAll('coll_123', { limit: 100, cursor: page.nextCursor }) ```
 
-**getAllowed**(collectionId: string) → `Promise<ListResult<TemplatePublic>>`
-The collection's templates that may be used publicly, in one answer: `nextCursor` is always null. ```typescript const { items } = await template.getAllowed('coll_123') items // TemplatePublic[] ```
+**getAllowed**(collectionId: string, options: ListOptions = {}) → `Promise<ListResult<TemplatePublic>>`
+The collection's templates that may be used publicly, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript const { items, nextCursor } = await template.getAllowed('coll_123', { limit: 100 }) items // TemplatePublic[] ```
 
 **getPublic**(collectionId: string, templateId: string) → `Promise<TemplatePublic>`
-The collection's templates that may be used publicly, in one answer: `nextCursor` is always null. ```typescript const { items } = await template.getAllowed('coll_123') items // TemplatePublic[] ```
+The collection's templates that may be used publicly, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript const { items, nextCursor } = await template.getAllowed('coll_123', { limit: 100 }) items // TemplatePublic[] ```
 
 **getGlobal**(templateId: string) → `Promise<TemplatePublic>`
-The collection's templates that may be used publicly, in one answer: `nextCursor` is always null. ```typescript const { items } = await template.getAllowed('coll_123') items // TemplatePublic[] ```
+The collection's templates that may be used publicly, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript const { items, nextCursor } = await template.getAllowed('coll_123', { limit: 100 }) items // TemplatePublic[] ```
 
-**getAllowedGlobal**(collectionId: string) → `Promise<ListResult<TemplatePublic>>`
-The global templates this collection may use, in one answer: `nextCursor` is always null. ```typescript const { items } = await template.getAllowedGlobal('coll_123') items // TemplatePublic[] ```
+**getAllowedGlobal**(collectionId: string, options: ListOptions = {}) → `Promise<ListResult<TemplatePublic>>`
+The global templates this collection may use, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript const { items, nextCursor } = await template.getAllowedGlobal('coll_123', { limit: 100 }) items // TemplatePublic[] ```
 
 **render**(collectionId: string,
     templateId: string,
     body: TemplateRenderRequest) → `Promise<TemplateRenderResponse>`
-The global templates this collection may use, in one answer: `nextCursor` is always null. ```typescript const { items } = await template.getAllowedGlobal('coll_123') items // TemplatePublic[] ```
+The global templates this collection may use, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript const { items, nextCursor } = await template.getAllowedGlobal('coll_123', { limit: 100 }) items // TemplatePublic[] ```
 
 **renderSource**(collectionId: string,
     body: TemplateRenderSourceRequest) → `Promise<TemplateRenderSourceResponse>`
-The global templates this collection may use, in one answer: `nextCursor` is always null. ```typescript const { items } = await template.getAllowedGlobal('coll_123') items // TemplatePublic[] ```
+The global templates this collection may use, 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript const { items, nextCursor } = await template.getAllowedGlobal('coll_123', { limit: 100 }) items // TemplatePublic[] ```
 
 ### tools
 
@@ -16092,8 +15897,8 @@ Set user's config blob for an app. ```typescript await userAppData.setConfig('al
 **deleteConfig**(appId: string) → `Promise<void>`
 Delete user's config blob for an app. ```typescript await userAppData.deleteConfig('allergy-tracker'); ```
 
-**list**(appId: string) → `Promise<ListResult<any>>`
-List all user's data items for an app. is not paged, so `nextCursor` is always `null`. ```typescript const { items: beds } = await userAppData.list('garden-planner'); // beds: [{ id: 'bed-1', name: 'Vegetables', ... }, { id: 'bed-2', ... }] ```
+**list**(appId: string, options: ListOptions = {}) → `Promise<ListResult<any>>`
+List the user's data items for an app, a page at a time. `nextCursor` back as `cursor` for the next page (null on the last). ```typescript let page = await userAppData.list('garden-planner', { limit: 50 }); // page.items: [{ id: 'bed-1', name: 'Vegetables', ... }, { id: 'bed-2', ... }] while (page.nextCursor) page = await userAppData.list('garden-planner', { limit: 50, cursor: page.nextCursor }); ```
 
 **get**(appId: string, itemId: string) → `Promise<any>`
 Get a specific user data item by ID. ```typescript const bed = await userAppData.get('garden-planner', 'bed-1'); // Returns: { id: 'bed-1', name: 'Vegetable Bed', plants: [...] } ```
@@ -16109,8 +15914,8 @@ Delete a user data item by ID. ```typescript await userAppData.remove('garden-pl
 **mine**(collectionId: string) → `Promise<MyUserGroups>`
 The signed-in person's own user groups in this collection. Not signed in → both lists empty. Nobody can ask about anyone else with this. ```typescript const { userGroups: mine } = await userGroups.mine('coll_123') const canRelease = mine.includes('qc-controller') ```
 
-**list**(collectionId: string) → `Promise<ListResult<UserGroup>>`
-Every user group in the collection (admin), in one answer: `nextCursor` is always null. ```typescript const { items } = await userGroups.list('coll_123') items.map((g) => g.name) ```
+**list**(collectionId: string, options: ListOptions = {}) → `Promise<ListResult<UserGroup>>`
+The collection's user groups (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await userGroups.list('coll_123', { limit: 50 }) page.items.map((g) => g.name) while (page.nextCursor) page = await userGroups.list('coll_123', { limit: 50, cursor: page.nextCursor }) ```
 
 **get**(collectionId: string, userGroupId: string) → `Promise<UserGroup>`
 One user group (admin).
@@ -16124,8 +15929,8 @@ Change a user group (admin): its name, description, or anything else you keep on
 **remove**(collectionId: string, userGroupId: string) → `Promise<UserGroup>`
 Delete a user group (admin). Its members lose whatever it allowed.
 
-**members**(collectionId: string, userGroupId: string) → `Promise<ListResult<UserGroupMember>>`
-The people in a user group, with name and email (admin), in one answer: `nextCursor` is always null. ```typescript const { items } = await userGroups.members('coll_123', qc.id) items // [{ uid, name, email }] ```
+**members**(collectionId: string, userGroupId: string, options: ListOptions = {}) → `Promise<ListResult<UserGroupMember>>`
+The people in a user group, with name and email (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await userGroups.members('coll_123', qc.id, { limit: 50 }) page.items // [{ uid, name, email }] while (page.nextCursor) page = await userGroups.members('coll_123', qc.id, { limit: 50, cursor: page.nextCursor }) ```
 
 **addMember**(collectionId: string, userGroupId: string, who: AddUserGroupMemberRequest) → `Promise<UserGroup>`
 Add one person (admin), by user id or by email. By email, the person is found in the collection's logins or added to them (no welcome email is sent). Adding someone who is already in changes nothing. ```typescript await userGroups.addMember('coll_123', qc.id, { email: 'sam@example.com', name: 'Sam' }) ```
@@ -16134,10 +15939,10 @@ Add one person (admin), by user id or by email. By email, the person is found in
 Remove one person (admin).
 
 **history**(collectionId: string, params: UserGroupHistoryParams = {}) → `Promise<ListResult<UserGroupChange>>`
-What changed, newest first (admin): user groups created, renamed and deleted, and every person added or removed, each with the admin who did it (`actorId`) and when (`at`). Give `userGroupId` for one user group, `userId` for everything about one person, or neither for the whole collection. Covers the last 30 days unless you give `from` / `to` (at most 400 days). Takes about a second. It has no further pages (`nextCursor` is always null): ask for more with `limit`, or narrow the dates. ```typescript const { items } = await userGroups.history('coll_123', { userId: 'uid_1' }) // items: [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }] ```
+What changed, newest first (admin): user groups created, renamed and deleted, and every person added or removed, each with the admin who did it (`actorId`) and when (`at`). Give `userGroupId` for one user group, `userId` for everything about one person, or neither for the whole collection. Covers the last 30 days unless you give `from` / `to` (at most 400 days). Takes about a second. A page at a time: `limit` says how many (default 100, at most 1000); pass `nextCursor` back as `cursor` for the next page. ```typescript let page = await userGroups.history('coll_123', { userId: 'uid_1', from: '2026-11-01T00:00:00Z' }) // page.items: [{ at, type: 'usergroup.member-added', actorId: 'uid_admin', data: { key: 'qc-controllers', userId: 'uid_1', … } }] while (page.nextCursor) { page = await userGroups.history('coll_123', { userId: 'uid_1', from: '2026-11-01T00:00:00Z', cursor: page.nextCursor }) } ```
 
-**ofUser**(collectionId: string, userId: string) → `Promise<ListResult<UserGroupRef>>`
-The user groups one person is in (admin), in one answer: `nextCursor` is always null. ```typescript const { items } = await userGroups.ofUser('coll_123', 'uid_1') items // [{ id, key, name }] ```
+**ofUser**(collectionId: string, userId: string, options: ListOptions = {}) → `Promise<ListResult<UserGroupRef>>`
+The user groups one person is in (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await userGroups.ofUser('coll_123', 'uid_1') page.items // [{ id, key, name }] while (page.nextCursor) page = await userGroups.ofUser('coll_123', 'uid_1', { cursor: page.nextCursor }) ```
 
 ### variant
 
@@ -16147,8 +15952,9 @@ The user groups one person is in (admin), in one answer: `nextCursor` is always 
 Get a single variant by ID for a collection and product (admin only).
 
 **list**(collectionId: string,
-    productId: string) → `Promise<ListResult<VariantResponse>>`
-List all variants for a collection and product (admin only). All of them come in one answer: `nextCursor` is always null. ```typescript const { items } = await variant.list('coll_123', 'prod_456') items.map((v) => v.name) ```
+    productId: string,
+    options: ListOptions = {}) → `Promise<ListResult<VariantResponse>>`
+List the variants for a collection and product (admin only), 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one. ```typescript let page = await variant.list('coll_123', 'prod_456', { limit: 100 }) page.items.map((v) => v.name) while (page.nextCursor) page = await variant.list('coll_123', 'prod_456', { limit: 100, cursor: page.nextCursor }) ```
 
 **create**(collectionId: string,
     productId: string,
@@ -16200,14 +16006,14 @@ Speak text
 **addLinks**(collectionId: string, ref: WalletPassRef) → `Promise<`
 "Add to Wallet" links for the signed-in person's pass about `ref` (made on first ask for a booking or a membership card). ```typescript const { pass } = await wallet.addLinks('coll_123', { type: 'booking', id: booking.id }) if (pass.links.apple) appleButton.href = pass.links.apple if (pass.links.google) googleButton.href = pass.links.google ```
 
-**mine**(collectionId: string) → `Promise<ListResult<WalletPassSummary>>`
-The signed-in person's active passes on this site, with their links. All of them in one answer: `nextCursor` is always null. ```typescript const { items } = await wallet.mine('coll_123') items.map((pass) => pass.links.google) ```
+**mine**(collectionId: string, options: ListOptions = {}) → `Promise<ListResult<WalletPassSummary>>`
+The signed-in person's active passes on this site, with their links, a page at a time. Page with `limit` (50 unless you say) and `cursor`. ```typescript let page = await wallet.mine('coll_123') page.items.map((pass) => pass.links.google) while (page.nextCursor) page = await wallet.mine('coll_123', { cursor: page.nextCursor }) ```
 
 **status**(collectionId: string) → `Promise<`
 Which wallets are switched on (admin).
 
-**list**(collectionId: string, query: { refType?: string; refId?: string; contactId?: string; includeVoided?: boolean }) → `Promise<ListResult<WalletPass>>`
-Passes for one thing (`refType` + `refId`) or one person (`contactId`) (admin). All of them in one answer: `nextCursor` is always null. Voided passes are left out unless `includeVoided` is true. ```typescript const { items } = await wallet.list('coll_123', { refType: 'event', refId: eventId }) items // WalletPass[] ```
+**list**(collectionId: string, query: ListOptions & { refType?: string; refId?: string; contactId?: string; includeVoided?: boolean }) → `Promise<ListResult<WalletPass>>`
+Passes for one thing (`refType` + `refId`) or one person (`contactId`) (admin), a page at a time. Page with `limit` (50 unless you say) and `cursor`. Voided passes are left out unless `includeVoided` is true. ```typescript let page = await wallet.list('coll_123', { refType: 'event', refId: eventId, limit: 50 }) page.items // WalletPass[] while (page.nextCursor) page = await wallet.list('coll_123', { refType: 'event', refId: eventId, limit: 50, cursor: page.nextCursor }) ```
 
 **get**(collectionId: string, passId: string) → `Promise<`
 One pass, with its links (admin).

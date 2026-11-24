@@ -7,7 +7,7 @@
  * analytics, click tracking, and tag scan analytics for collection dashboards.
  */
 
-import type { ListResult, ListOptions } from './list'
+import type { ListResult, ListOptions, OrderBy } from './list'
 
 export type AnalyticsSource = 'events' | 'tag'
 /**
@@ -334,10 +334,14 @@ export interface AnalyticsBreakdownResponse {
 	rows: AnalyticsBreakdownRow[]
 }
 
-/** Paging is `limit` (default 100) and `cursor`: pass the previous page's `nextCursor`. */
+/**
+ * Paging is `limit` (default 100) and `cursor`: pass the previous page's `nextCursor`.
+ * The time window is `from` / `to`. Sort with `orderBy: [{ timestamp: 'asc' }]` (newest first without it).
+ */
 export interface AnalyticsEventsRequest extends AnalyticsFilterRequest, ListOptions {
 	source: AnalyticsSource
-	sort?: AnalyticsSortOrder
+	/** Sort by the event's time: `[{ timestamp: 'asc' }]` or `[{ timestamp: 'desc' }]` (the default). */
+	orderBy?: OrderBy<'timestamp'>
 }
 
 /** `{ items, nextCursor, source, sort }`: the event rows are in `items`. This list does not report a total. */

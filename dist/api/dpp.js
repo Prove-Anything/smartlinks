@@ -21,6 +21,7 @@
 //
 // Endpoints: /admin/collection/:collectionId/dpp/…  and  /public/dpp/:collectionId/:passportId
 import { request, post, put } from "../http.js";
+import { listQuery } from "../list.js";
 function enc(v) { return encodeURIComponent(v); }
 const base = (collectionId) => `/admin/collection/${enc(collectionId)}/dpp`;
 function query(q) {
@@ -35,7 +36,8 @@ export var dpp;
 (function (dpp) {
     /**
      * What passports can be made: product groups, their kinds, and each view's fields and required fields.
-     * All of them in one answer (`nextCursor` is always null). GET /dpp/groups
+     * A fixed set: always all of them in one answer (`nextCursor` is always null), so it takes no `limit`
+     * or `cursor`. GET /dpp/groups
      *
      * @example
      * ```typescript
@@ -69,8 +71,8 @@ export var dpp;
     let registry;
     (function (registry) {
         /**
-         * Both environments, each with `nextStep` (what's left to connect). All of them in one answer
-         * (`nextCursor` is always null). GET /dpp/registry
+         * Both environments, each with `nextStep` (what's left to connect). A fixed set: always all of them
+         * in one answer (`nextCursor` is always null), so it takes no `limit` or `cursor`. GET /dpp/registry
          *
          * @example
          * ```typescript
@@ -136,7 +138,7 @@ export var dpp;
          * ```
          */
         async function list(collectionId, q = {}) {
-            return request(`${base(collectionId)}/passports${query(q)}`);
+            return request(`${base(collectionId)}/passports${listQuery(q)}`);
         }
         passports.list = list;
         /** One passport, with `check` (what it's still missing) and its `url`. GET /dpp/passports/:id */
@@ -184,17 +186,20 @@ export var dpp;
         }
         passports.upsertMany = upsertMany;
         /**
-         * Its versions, newest first, all in one answer (`nextCursor` is always null); read one with
-         * `dpp.read(collectionId, id, { version })`. GET /dpp/passports/:id/versions
+         * Its versions, newest first, a page at a time (`limit` and `cursor`; 50 unless you say otherwise).
+         * Read one with `dpp.read(collectionId, id, { version })`. GET /dpp/passports/:id/versions
          *
          * @example
          * ```typescript
-         * const { items } = await dpp.passports.versions(collectionId, passportId)
-         * const latest = items[0].version
+         * let page = await dpp.passports.versions(collectionId, passportId, { limit: 20 })
+         * const latest = page.items[0].version
+         * while (page.nextCursor) {
+         *   page = await dpp.passports.versions(collectionId, passportId, { limit: 20, cursor: page.nextCursor })
+         * }
          * ```
          */
-        async function versions(collectionId, passportId) {
-            return request(`${base(collectionId)}/passports/${enc(passportId)}/versions`);
+        async function versions(collectionId, passportId, options = {}) {
+            return request(`${base(collectionId)}/passports/${enc(passportId)}/versions${listQuery(options)}`);
         }
         passports.versions = versions;
         /** No longer valid: stays at its address, marked invalid (the registry keeps its record). POST /dpp/passports/:id/withdraw */
@@ -214,16 +219,19 @@ export var dpp;
     let tasks;
     (function (tasks) {
         /**
-         * Requests sent to one environment, newest first, all in one answer (`nextCursor` is always null).
-         * GET /dpp/registry/:env/tasks
+         * Requests sent to one environment, newest first, a page at a time (`limit` and `cursor`; 50 unless
+         * you say otherwise). GET /dpp/registry/:env/tasks
          *
          * @example
          * ```typescript
-         * const { items } = await dpp.tasks.list(collectionId, 'acc')
+         * let page = await dpp.tasks.list(collectionId, 'acc', { limit: 20 })
+         * while (page.nextCursor) {
+         *   page = await dpp.tasks.list(collectionId, 'acc', { limit: 20, cursor: page.nextCursor })
+         * }
          * ```
          */
-        async function list(collectionId, env) {
-            return request(`${base(collectionId)}/registry/${enc(env)}/tasks`);
+        async function list(collectionId, env, options = {}) {
+            return request(`${base(collectionId)}/registry/${enc(env)}/tasks${listQuery(options)}`);
         }
         tasks.list = list;
         /** Ask the registry how a request went and record it on its passports. POST /dpp/registry/:env/tasks/:taskId/refresh */

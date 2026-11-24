@@ -18,6 +18,7 @@
 //
 // Endpoints: /admin/collection/:collectionId/service-accounts
 import { request, post, put, del } from "../http.js";
+import { listQuery } from "../list.js";
 function enc(v) { return encodeURIComponent(v); }
 export var serviceAccounts;
 (function (serviceAccounts) {
@@ -25,17 +26,19 @@ export var serviceAccounts;
     /**
      * The service accounts that work on this collection — its own (`home: true`, with `alsoOn`) and other
      * collections' (`home: false`, with `homeCollection`) — never their keys, and the access levels that can be
-     * given (`access`). All of them in one answer: `nextCursor` is always null. GET /service-accounts
+     * given (`access`). A page at a time (`limit` and `cursor`; 50 unless you say otherwise).
+     * GET /service-accounts
      *
      * @example
      * ```typescript
-     * const { items, access } = await serviceAccounts.list('coll_123')
-     * items  // ServiceAccount[]
-     * access // ["User", "Reporter", "Assigner", "Admin"]
+     * let page = await serviceAccounts.list('coll_123')
+     * page.items  // ServiceAccount[]
+     * page.access // ["User", "Reporter", "Assigner", "Admin"]
+     * while (page.nextCursor) page = await serviceAccounts.list('coll_123', { cursor: page.nextCursor })
      * ```
      */
-    async function list(collectionId) {
-        return request(base(collectionId));
+    async function list(collectionId, options = {}) {
+        return request(`${base(collectionId)}${listQuery(options)}`);
     }
     serviceAccounts.list = list;
     /**

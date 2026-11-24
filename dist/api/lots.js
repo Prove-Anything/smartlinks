@@ -1,5 +1,6 @@
 // src/api/lots.ts
 import { request, post, put, del } from "../http.js";
+import { listQuery } from "../list.js";
 /**
  * Lots — collection-scoped production groupings that span one or more products.
  * Writes and admin reads hit `/admin/collection/:cid/lots`; the `public*` reads hit
@@ -14,27 +15,18 @@ export var lots;
     function publicBase(collectionId) {
         return `/public/collection/${encodeURIComponent(collectionId)}/lots`;
     }
-    function listQuery(params = {}) {
-        const qs = new URLSearchParams();
-        if (params.status)
-            qs.append('status', params.status);
-        if (params.search)
-            qs.append('search', params.search);
-        if (params.productId)
-            qs.append('productId', params.productId);
-        if (params.includeDeleted)
-            qs.append('includeDeleted', 'true');
-        const s = qs.toString();
-        return s ? `?${s}` : '';
+    function lotsQuery(params = {}) {
+        return listQuery({
+            status: params.status,
+            q: params.q,
+            productId: params.productId,
+            includeDeleted: params.includeDeleted ? 'true' : undefined,
+            limit: params.limit,
+            cursor: params.cursor,
+        });
     }
     function pageQuery(opts = {}) {
-        const qs = new URLSearchParams();
-        if (opts.limit)
-            qs.append('limit', String(opts.limit));
-        if (opts.cursor)
-            qs.append('cursor', opts.cursor);
-        const s = qs.toString();
-        return s ? `?${s}` : '';
+        return listQuery({ limit: opts.limit || undefined, cursor: opts.cursor });
     }
     // ── Admin (writes + admin reads) ──
     /** Create a lot (resolves its selector into members). */
@@ -43,16 +35,19 @@ export var lots;
     }
     lots.create = create;
     /**
-     * List lots (summary rows; `payload`/`productIds` omitted). Filter by status, search, or containing
-     * productId. One list, no pages.
+     * List lots (summary rows; `payload`/`productIds` omitted), a page at a time. Filter by `status`, search
+     * text (`q`), or containing `productId`; page with `limit` (default 50) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await lots.list('coll_123', { status: 'open' })
+     * let page = await lots.list('coll_123', { status: 'open', q: 'spring', limit: 50 })
+     * while (page.nextCursor) {
+     *   page = await lots.list('coll_123', { status: 'open', q: 'spring', limit: 50, cursor: page.nextCursor })
+     * }
      * ```
      */
     async function list(collectionId, params = {}) {
-        return request(`${adminBase(collectionId)}${listQuery(params)}`);
+        return request(`${adminBase(collectionId)}${lotsQuery(params)}`);
     }
     lots.list = list;
     /** Get the full lot record. Pass `{ includeDeleted: true }` to fetch a soft-deleted one. */
@@ -110,15 +105,16 @@ export var lots;
     lots.listProducts = listProducts;
     // ── Public (cross-app reads) ──
     /**
-     * List lots from a public context (summary rows). One list, no pages.
+     * List lots from a public context (summary rows), a page at a time. Filter by `status`, search text
+     * (`q`), or containing `productId`; page with `limit` (default 50) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await lots.publicList('coll_123', { productId: 'prod_789' })
+     * const { items, nextCursor } = await lots.publicList('coll_123', { productId: 'prod_789', limit: 50 })
      * ```
      */
     async function publicList(collectionId, params = {}) {
-        return request(`${publicBase(collectionId)}${listQuery(params)}`);
+        return request(`${publicBase(collectionId)}${lotsQuery(params)}`);
     }
     lots.publicList = publicList;
     async function publicGet(collectionId, lotId) {

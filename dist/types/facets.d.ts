@@ -1,5 +1,5 @@
 import type { JsonValue, ProductQueryRequest } from "./product.js";
-import type { ListResult } from "./list.js";
+import type { ListResult, ListOptions, DateRange } from "./list.js";
 export interface FacetDefinition {
     id?: string;
     orgId?: string;
@@ -81,11 +81,22 @@ export interface FacetValueResponse {
     facet: FacetDefinition;
     item: FacetValue;
 }
+/**
+ * Body for `facets.query` / `facets.publicQuery`: which facets to count, and which products to count
+ * them over (`q`, `createdAt`, `updatedAt` and the filters in `query`, as in `products.query`). The answer
+ * is always complete, so there is no `limit` or `cursor`.
+ */
 export interface FacetQueryRequest {
     facetKeys?: string[];
     includeEmpty?: boolean;
     includeDeleted?: boolean;
     namespace?: string | null;
+    /** Search text: count only products that match it. */
+    q?: string;
+    /** Count only products created in this range. */
+    createdAt?: DateRange;
+    /** Count only products last updated in this range. */
+    updatedAt?: DateRange;
     query?: ProductQueryRequest["query"] & {
         facetEquals?: Record<string, JsonValue | JsonValue[]>;
     };
@@ -125,7 +136,8 @@ export interface FacetGetParams {
     includeValues?: boolean;
     includeDeleted?: boolean;
 }
-export interface FacetValueListParams {
+/** `facets.listValues` options: `includeDeleted`, plus `limit` (default 50) and `cursor`. */
+export interface FacetValueListParams extends ListOptions {
     includeDeleted?: boolean;
 }
 export interface FacetValueGetParams {

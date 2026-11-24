@@ -1,18 +1,21 @@
 import { request, post, put, del as httpDel } from "../http.js";
+import { listQuery } from "../list.js";
 export var template;
 (function (template) {
     // Admin APIs
     /**
-     * Every template in the collection (admin), in one answer: `nextCursor` is always null.
+     * The templates in the collection (admin), 50 at a time unless you give a `limit` (at most 1000).
+     * Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one.
      *
      * @example
      * ```typescript
-     * const { items } = await template.getAll('coll_123')
-     * items // Template[]
+     * let page = await template.getAll('coll_123', { limit: 100 })
+     * page.items // Template[]
+     * while (page.nextCursor) page = await template.getAll('coll_123', { limit: 100, cursor: page.nextCursor })
      * ```
      */
-    async function getAll(collectionId) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/template`;
+    async function getAll(collectionId, options = {}) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/template${listQuery({ limit: options.limit, cursor: options.cursor })}`;
         return request(path);
     }
     template.getAll = getAll;
@@ -46,16 +49,18 @@ export var template;
     template.uploadAsset = uploadAsset;
     // Public APIs
     /**
-     * The collection's templates that may be used publicly, in one answer: `nextCursor` is always null.
+     * The collection's templates that may be used publicly, 50 at a time unless you give a `limit`
+     * (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the
+     * last one.
      *
      * @example
      * ```typescript
-     * const { items } = await template.getAllowed('coll_123')
+     * const { items, nextCursor } = await template.getAllowed('coll_123', { limit: 100 })
      * items // TemplatePublic[]
      * ```
      */
-    async function getAllowed(collectionId) {
-        const path = `/public/collection/${encodeURIComponent(collectionId)}/template/getAllowed`;
+    async function getAllowed(collectionId, options = {}) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/template/getAllowed${listQuery({ limit: options.limit, cursor: options.cursor })}`;
         return request(path);
     }
     template.getAllowed = getAllowed;
@@ -70,16 +75,17 @@ export var template;
     }
     template.getGlobal = getGlobal;
     /**
-     * The global templates this collection may use, in one answer: `nextCursor` is always null.
+     * The global templates this collection may use, 50 at a time unless you give a `limit` (at most
+     * 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one.
      *
      * @example
      * ```typescript
-     * const { items } = await template.getAllowedGlobal('coll_123')
+     * const { items, nextCursor } = await template.getAllowedGlobal('coll_123', { limit: 100 })
      * items // TemplatePublic[]
      * ```
      */
-    async function getAllowedGlobal(collectionId) {
-        const path = `/public/template/getAllowed/${encodeURIComponent(collectionId)}`;
+    async function getAllowedGlobal(collectionId, options = {}) {
+        const path = `/public/template/getAllowed/${encodeURIComponent(collectionId)}${listQuery({ limit: options.limit, cursor: options.cursor })}`;
         return request(path);
     }
     template.getAllowedGlobal = getAllowedGlobal;

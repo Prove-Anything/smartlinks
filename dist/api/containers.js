@@ -1,5 +1,6 @@
 // src/api/containers.ts
 import { request, post, patch, del, requestWithOptions } from "../http.js";
+import { listQuery } from "../list.js";
 // ─── Internal helper ──────────────────────────────────────────────────────────
 function buildContainerQuery(params) {
     const q = new URLSearchParams();
@@ -88,7 +89,7 @@ export var containers;
      * ```
      */
     async function list(collectionId, params) {
-        const qs = buildContainerQuery(params !== null && params !== void 0 ? params : {});
+        const qs = listQuery(params);
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/containers${qs}`;
         return request(path);
     }
@@ -97,21 +98,22 @@ export var containers;
      * Reverse lookup — find all containers currently holding a specific item (admin).
      *
      * @param collectionId - Collection context
-     * @param params - `itemType` and `itemId` are required
+     * @param params - `itemType` and `itemId` are required; plus `limit` (default 50) and `cursor`
      * @returns `{ items, containers, nextCursor }`: the current membership rows (`items`) and those
-     *   containers. All of them in one answer: `nextCursor` is always null.
+     *   containers, a page at a time. Pass `nextCursor` back as `cursor` for the next page.
      *
      * @example
      * ```typescript
-     * const { containers: holding } = await containers.findForItem('coll_123', {
+     * const { containers: holding, nextCursor } = await containers.findForItem('coll_123', {
      *   itemType: 'proof',
      *   itemId:   'unit-0007',
      *   productId: 'drill',
+     *   limit:    50,
      * })
      * ```
      */
     async function findForItem(collectionId, params) {
-        const qs = buildContainerQuery(params);
+        const qs = listQuery(params);
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/containers/find-for-item${qs}`;
         return request(path);
     }
@@ -209,7 +211,7 @@ export var containers;
      * ```
      */
     async function listItems(collectionId, containerId, params) {
-        const qs = buildContainerQuery(params !== null && params !== void 0 ? params : {});
+        const qs = listQuery(params);
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/containers/${encodeURIComponent(containerId)}/items${qs}`;
         return request(path);
     }
@@ -287,7 +289,7 @@ export var containers;
      * ```
      */
     async function publicList(collectionId, params) {
-        const qs = buildContainerQuery(params !== null && params !== void 0 ? params : {});
+        const qs = listQuery(params);
         const path = `/public/collection/${encodeURIComponent(collectionId)}/containers${qs}`;
         return request(path);
     }
@@ -310,23 +312,26 @@ export var containers;
     }
     containers.publicGet = publicGet;
     /**
-     * List current contents of a container (public).
+     * List current contents of a container (public), a page at a time.
      *
      * Returns only items where `removedAt` is null.  No `?history` option on
-     * the public side.  All of them come back in one answer: `nextCursor` is
-     * always null.
+     * the public side.
      *
      * @param collectionId - Collection context
      * @param containerId - Container UUID
-     * @returns `{ items: ContainerItem[], nextCursor: null }`
+     * @param options - `limit` (default 50) and `cursor`
+     * @returns `{ items: ContainerItem[], nextCursor: string | null }`
      *
      * @example
      * ```typescript
-     * const { items } = await containers.publicListItems('coll_123', 'cask-uuid')
+     * let page = await containers.publicListItems('coll_123', 'cask-uuid', { limit: 50 })
+     * while (page.nextCursor) {
+     *   page = await containers.publicListItems('coll_123', 'cask-uuid', { limit: 50, cursor: page.nextCursor })
+     * }
      * ```
      */
-    async function publicListItems(collectionId, containerId) {
-        const path = `/public/collection/${encodeURIComponent(collectionId)}/containers/${encodeURIComponent(containerId)}/items`;
+    async function publicListItems(collectionId, containerId, options = {}) {
+        const path = `/public/collection/${encodeURIComponent(collectionId)}/containers/${encodeURIComponent(containerId)}/items${listQuery({ limit: options.limit, cursor: options.cursor })}`;
         return request(path);
     }
     containers.publicListItems = publicListItems;

@@ -16,7 +16,8 @@ import type {
   FindContainersForItemParams,
   FindContainersForItemResponse,
 } from "../types/containers"
-import type { ListResult } from "../types/list"
+import type { ListResult, ListOptions } from "../types/list"
+import { listQuery } from "../list"
 
 // ─── Internal helper ──────────────────────────────────────────────────────────
 
@@ -116,7 +117,7 @@ export namespace containers {
     collectionId: string,
     params?: ListContainersParams
   ): Promise<ListResult<Container>> {
-    const qs = buildContainerQuery(params ?? {})
+    const qs = listQuery(params)
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/containers${qs}`
     return request<ListResult<Container>>(path)
   }
@@ -125,16 +126,17 @@ export namespace containers {
    * Reverse lookup — find all containers currently holding a specific item (admin).
    *
    * @param collectionId - Collection context
-   * @param params - `itemType` and `itemId` are required
+   * @param params - `itemType` and `itemId` are required; plus `limit` (default 50) and `cursor`
    * @returns `{ items, containers, nextCursor }`: the current membership rows (`items`) and those
-   *   containers. All of them in one answer: `nextCursor` is always null.
+   *   containers, a page at a time. Pass `nextCursor` back as `cursor` for the next page.
    *
    * @example
    * ```typescript
-   * const { containers: holding } = await containers.findForItem('coll_123', {
+   * const { containers: holding, nextCursor } = await containers.findForItem('coll_123', {
    *   itemType: 'proof',
    *   itemId:   'unit-0007',
    *   productId: 'drill',
+   *   limit:    50,
    * })
    * ```
    */
@@ -142,7 +144,7 @@ export namespace containers {
     collectionId: string,
     params: FindContainersForItemParams
   ): Promise<FindContainersForItemResponse> {
-    const qs = buildContainerQuery(params)
+    const qs = listQuery(params)
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/containers/find-for-item${qs}`
     return request<FindContainersForItemResponse>(path)
   }
@@ -256,7 +258,7 @@ export namespace containers {
     containerId: string,
     params?: ListContainerItemsParams
   ): Promise<ListResult<ContainerItem>> {
-    const qs = buildContainerQuery(params ?? {})
+    const qs = listQuery(params)
     const path = `/admin/collection/${encodeURIComponent(collectionId)}/containers/${encodeURIComponent(containerId)}/items${qs}`
     return request<ListResult<ContainerItem>>(path)
   }
@@ -346,7 +348,7 @@ export namespace containers {
     collectionId: string,
     params?: PublicListContainersParams
   ): Promise<ListResult<Container>> {
-    const qs = buildContainerQuery(params ?? {})
+    const qs = listQuery(params)
     const path = `/public/collection/${encodeURIComponent(collectionId)}/containers${qs}`
     return request<ListResult<Container>>(path)
   }
@@ -373,26 +375,30 @@ export namespace containers {
   }
 
   /**
-   * List current contents of a container (public).
+   * List current contents of a container (public), a page at a time.
    *
    * Returns only items where `removedAt` is null.  No `?history` option on
-   * the public side.  All of them come back in one answer: `nextCursor` is
-   * always null.
+   * the public side.
    *
    * @param collectionId - Collection context
    * @param containerId - Container UUID
-   * @returns `{ items: ContainerItem[], nextCursor: null }`
+   * @param options - `limit` (default 50) and `cursor`
+   * @returns `{ items: ContainerItem[], nextCursor: string | null }`
    *
    * @example
    * ```typescript
-   * const { items } = await containers.publicListItems('coll_123', 'cask-uuid')
+   * let page = await containers.publicListItems('coll_123', 'cask-uuid', { limit: 50 })
+   * while (page.nextCursor) {
+   *   page = await containers.publicListItems('coll_123', 'cask-uuid', { limit: 50, cursor: page.nextCursor })
+   * }
    * ```
    */
   export async function publicListItems(
     collectionId: string,
-    containerId: string
+    containerId: string,
+    options: ListOptions = {}
   ): Promise<ListResult<ContainerItem>> {
-    const path = `/public/collection/${encodeURIComponent(collectionId)}/containers/${encodeURIComponent(containerId)}/items`
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/containers/${encodeURIComponent(containerId)}/items${listQuery({ limit: options.limit, cursor: options.cursor })}`
     return request<ListResult<ContainerItem>>(path)
   }
 }

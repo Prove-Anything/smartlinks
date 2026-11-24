@@ -19,8 +19,10 @@ export var nfc;
     }
     nfc.validate = validate;
     /**
-     * Lookup a tag by its ID (public): every code that tag is known as. One list, no pages.
+     * Lookup a tag by its ID (public): every code that tag is known as, a page at a time.
      * GET /public/nfc/findByTag/:tagId
+     *
+     * @param tagId - The tag's ID
      *
      * @example
      * ```typescript

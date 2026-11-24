@@ -42,7 +42,8 @@ export declare namespace contact {
     }): Promise<ListResult<ContactResponse>>;
     /**
      * Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead`
-     * for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields.
+     * for search-as-you-type), or filters on email, phone, id, tags, source and custom fields. Filter by
+     * when the contact was created with a range: `createdAt: { gte, lte }`.
      * GET /admin/collection/:collectionId/contacts/search
      *
      * @example
@@ -50,9 +51,12 @@ export declare namespace contact {
      * let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 })
      * page.items // Contact[]
      * if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor })
+     *
+     * // Contacts created in November
+     * await contact.search({ collectionId, createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' } })
      * ```
      */
-    function search({ collectionId, q, typeahead, email, phone, id, userId, tags, tagsAll, source, locale, createdFrom, createdTo, externalIdKey, externalIdValue, customFieldKey, customFieldValue, limit, cursor, }: ContactSearchParams): Promise<ListResult<ContactResponse>>;
+    function search({ collectionId, tags, tagsAll, ...rest }: ContactSearchParams): Promise<ListResult<ContactResponse>>;
     function get(collectionId: string, contactId: string, params?: {
         includeDeleted?: boolean;
     }): Promise<ContactResponse>;

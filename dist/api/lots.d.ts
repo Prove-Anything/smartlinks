@@ -10,12 +10,15 @@ export declare namespace lots {
     /** Create a lot (resolves its selector into members). */
     function create(collectionId: string, lot: LotCreateInput): Promise<Lot>;
     /**
-     * List lots (summary rows; `payload`/`productIds` omitted). Filter by status, search, or containing
-     * productId. One list, no pages.
+     * List lots (summary rows; `payload`/`productIds` omitted), a page at a time. Filter by `status`, search
+     * text (`q`), or containing `productId`; page with `limit` (default 50) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await lots.list('coll_123', { status: 'open' })
+     * let page = await lots.list('coll_123', { status: 'open', q: 'spring', limit: 50 })
+     * while (page.nextCursor) {
+     *   page = await lots.list('coll_123', { status: 'open', q: 'spring', limit: 50, cursor: page.nextCursor })
+     * }
      * ```
      */
     function list(collectionId: string, params?: ListLotsParams): Promise<ListResult<Lot>>;
@@ -55,11 +58,12 @@ export declare namespace lots {
      */
     function listProducts(collectionId: string, lotId: string, opts?: ListOptions): Promise<ListResult<LotProductSummary>>;
     /**
-     * List lots from a public context (summary rows). One list, no pages.
+     * List lots from a public context (summary rows), a page at a time. Filter by `status`, search text
+     * (`q`), or containing `productId`; page with `limit` (default 50) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await lots.publicList('coll_123', { productId: 'prod_789' })
+     * const { items, nextCursor } = await lots.publicList('coll_123', { productId: 'prod_789', limit: 50 })
      * ```
      */
     function publicList(collectionId: string, params?: Omit<ListLotsParams, 'includeDeleted'>): Promise<ListResult<Lot>>;

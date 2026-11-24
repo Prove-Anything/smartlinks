@@ -47,9 +47,9 @@ describe('the standard query', () => {
   })
 
   test("products' own query keeps its address and its body", async () => {
-    await products.query('c1', { query: { search: 'gin' } } as any, true)
+    await products.query('c1', { q: 'gin' }, true)
     assert.equal(new URL(calls[0].url).pathname, '/api/v1/admin/collection/c1/products/query')
-    assert.deepEqual(calls[0].body, { query: { search: 'gin' } })
+    assert.deepEqual(calls[0].body, { q: 'gin' })
   })
 
   test('what a query can use is a GET on the same address', async () => {

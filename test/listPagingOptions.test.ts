@@ -53,7 +53,9 @@ describe('lists page with limit + cursor and return { items, nextCursor }', () =
     assert.equal(path(), `${C}/contacts?limit=1&cursor=n1`)
 
     await contact.search({ collectionId: 'c1', q: 'joh', tags: ['vip', 'trade'], limit: 20, cursor: 'n2' })
-    assert.equal(path(), `${C}/contacts/search?q=joh&tags=vip&tags=trade&limit=20&cursor=n2`)
+    assert.equal(path(), `${C}/contacts/search?q=joh&limit=20&cursor=n2&tags=vip&tags=trade`)
+    await contact.search({ collectionId: 'c1', tags: 'vip, trade', createdAt: { gte: '2026-11-01T00:00:00Z' } })
+    assert.equal(path(), `${C}/contacts/search?createdAt%5Bgte%5D=2026-11-01T00%3A00%3A00Z&tags=vip&tags=trade`)
 
     reply = { items: [{ keep: { contactId: 'k' }, merge: { contactId: 'm' }, matchedOn: 'email' }], nextCursor: null, scanned: 12 }
     const dupes = await contact.findDuplicates('c1', { limit: 50 })
@@ -112,8 +114,8 @@ describe('lists page with limit + cursor and return { items, nextCursor }', () =
     const whole = { items: [{ id: 'x' }], nextCursor: null }
     assert.deepEqual(await batch.list('c1', 'p1'), whole)
     assert.equal(path(), `${C}/product/p1/batch`)
-    assert.deepEqual(await batch.searchInCollection('c1', { search: 'B-1', limit: 5 }), whole)
-    assert.equal(path(), `${C}/batch?search=B-1&limit=5`)
+    assert.deepEqual(await batch.searchInCollection('c1', { q: 'B-1', limit: 5 }), whole)
+    assert.equal(path(), `${C}/batch?q=B-1&limit=5`)
     assert.deepEqual(await batch.getBatchTags('c1', 'b1', '000001'), whole)
     assert.equal(path(), `${C}/batch/b1/tags?claimSetId=000001`)
     assert.deepEqual(await collection.list(), whole)

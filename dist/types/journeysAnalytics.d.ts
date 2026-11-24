@@ -1,4 +1,5 @@
 import type { IdField } from './common.js';
+import type { ListOptions } from './list.js';
 export interface JourneyStatsRequest {
     idField?: IdField;
     from?: string;
@@ -24,14 +25,14 @@ export interface JourneyStatsResponse {
         pending: number;
     }>;
 }
-export interface JourneyStepRecipientsRequest {
+/** `journeysAnalytics.recipients` options: the filters, the time window (`from` / `to`), plus `limit` and `cursor`. */
+export interface JourneyStepRecipientsRequest extends ListOptions {
     status?: 'entered' | 'completed' | 'pending';
     idField?: IdField;
     interactionId?: string;
     outcome?: string;
     from?: string;
     to?: string;
-    limit?: number;
 }
 export interface JourneyFunnelReportRequest {
     idField?: IdField;

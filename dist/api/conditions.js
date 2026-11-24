@@ -1,4 +1,5 @@
 import { request, post, put, del } from "../http.js";
+import { listQuery } from "../list.js";
 /**
  * Saved conditions: named rule sets kept per collection (e.g. "UK only", "In the stadium"), so the same rule can be
  * reused by id. They're checked on the device with `utils.validateCondition({ conditionId, collection })`, which
@@ -12,17 +13,18 @@ export var conditions;
     const pub = (collectionId) => `/public/collection/${encodeURIComponent(collectionId)}/condition`;
     const adm = (collectionId) => `/admin/collection/${encodeURIComponent(collectionId)}/condition`;
     /**
-     * Every saved condition in the collection (removed ones left out). All of them come back in one
-     * answer: `nextCursor` is always null.
+     * The collection's saved conditions (removed ones left out), a page at a time. Page with `limit`
+     * (50 unless you say) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await conditions.list('coll_123')
-     * items.map(c => c.title) // ["UK only", "In the stadium"]
+     * let page = await conditions.list('coll_123')
+     * page.items.map(c => c.title) // ["UK only", "In the stadium"]
+     * while (page.nextCursor) page = await conditions.list('coll_123', false, { cursor: page.nextCursor })
      * ```
      */
-    async function list(collectionId, admin = false) {
-        return request(admin ? adm(collectionId) : pub(collectionId));
+    async function list(collectionId, admin = false, options = {}) {
+        return request(`${admin ? adm(collectionId) : pub(collectionId)}${listQuery(options)}`);
     }
     conditions.list = list;
     /**

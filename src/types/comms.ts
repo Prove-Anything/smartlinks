@@ -2,7 +2,7 @@
 // Communication and notification types for the Smartlinks API
 import type { IdField } from './common'
 import type { BroadcastChannel } from './broadcasts'
-import type { ListResult } from './list'
+import type { ListResult, ListOptions } from './list'
 
 /**
  * Target subject for notifications (product, collection, etc.)
@@ -31,24 +31,24 @@ export interface CommunicationEvent {
   [k: string]: any
 }
 
-export interface CommsQueryByUser {
+/** `comms.queryByUser` options: who, the time window (`from` / `to`), plus `limit` and `cursor`. */
+export interface CommsQueryByUser extends ListOptions {
   userId?: string
   contactId?: string
   from?: string
   to?: string
-  limit?: number
 }
 
 export type RecipientId = string
 export interface RecipientWithOutcome { id: string; outcome: string }
 
-export interface CommsRecipientIdsQuery {
+/** `comms.queryRecipientIds` options: the source, the time window (`from` / `to`), plus `limit` and `cursor`. */
+export interface CommsRecipientIdsQuery extends ListOptions {
   broadcastId?: string
   journeyId?: string
   idField?: IdField
   from?: string
   to?: string
-  limit?: number
 }
 
 /** Who a broadcast or journey reached that did NOT then do an interaction. */
@@ -62,6 +62,8 @@ export interface CommsRecipientsWithoutInteractionQuery {
   from?: string
   to?: string
   limit?: number
+  /** A `nextCursor` from the previous page. */
+  cursor?: string
 }
 
 /** Who a broadcast or journey reached that then did an interaction. */
@@ -77,6 +79,8 @@ export interface CommsRecipientsWithInteractionQuery {
   from?: string
   to?: string
   limit?: number
+  /** A `nextCursor` from the previous page. */
+  cursor?: string
 }
 
 export interface LogCommunicationEventBody {

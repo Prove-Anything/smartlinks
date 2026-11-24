@@ -136,8 +136,8 @@ import { products } from '@proveanything/smartlinks'
 
 await products.get(collectionId, productId)
 const { items } = await products.list(collectionId)
-await products.query(collectionId, { query: { search: 'cabernet' } }) // public
-await products.query(collectionId, { query: { search: 'cabernet' } }, true) // admin
+await products.query(collectionId, { q: 'cabernet' }) // public
+await products.query(collectionId, { q: 'cabernet' }, true) // admin
 ```
 
 **AI-powered assistant or setup flow**
@@ -596,10 +596,10 @@ End-to-end explainer covering comms settings (unsubscribe, types), Web Push regi
 ### Async jobs
 
 ```ts
-import { async as slAsync, jobs } from '@proveanything/smartlinks'
+import { jobs } from '@proveanything/smartlinks'
 
 // Enqueue an async job
-const queued = await slAsync.enqueueAsyncJob('collectionId', {
+const queued = await jobs.enqueue('collectionId', {
   task: 'email:daily-digest',
   payload: { segmentId: 'seg_1' },
   priority: 5,
@@ -607,13 +607,13 @@ const queued = await slAsync.enqueueAsyncJob('collectionId', {
 })
 
 // Check job status
-const status = await slAsync.getAsyncJobStatus('collectionId', queued.id)
+const status = await jobs.status('collectionId', queued.id)
 
 // List recent jobs
-const recent = await jobs.listJobs('collectionId', { state: 'queued', limit: 20 })
+const recent = await jobs.list('collectionId', { state: 'queued', limit: 20 })
 
 // Get a single job
-const job = await jobs.getJob('collectionId', queued.id)
+const job = await jobs.get('collectionId', queued.id)
 ```
 
 ## Browser and React

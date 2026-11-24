@@ -9,21 +9,24 @@ import type {
   TemplateRenderSourceRequest,
   TemplateRenderSourceResponse,
 } from "../types"
-import type { ListResult } from "../types/list"
+import type { ListResult, ListOptions } from "../types/list"
+import { listQuery } from "../list"
 
 export namespace template {
   // Admin APIs
   /**
-   * Every template in the collection (admin), in one answer: `nextCursor` is always null.
+   * The templates in the collection (admin), 50 at a time unless you give a `limit` (at most 1000).
+   * Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one.
    *
    * @example
    * ```typescript
-   * const { items } = await template.getAll('coll_123')
-   * items // Template[]
+   * let page = await template.getAll('coll_123', { limit: 100 })
+   * page.items // Template[]
+   * while (page.nextCursor) page = await template.getAll('coll_123', { limit: 100, cursor: page.nextCursor })
    * ```
    */
-  export async function getAll(collectionId: string): Promise<ListResult<Template>> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/template`
+  export async function getAll(collectionId: string, options: ListOptions = {}): Promise<ListResult<Template>> {
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/template${listQuery({ limit: options.limit, cursor: options.cursor })}`
     return request<ListResult<Template>>(path)
   }
 
@@ -65,16 +68,18 @@ export namespace template {
 
   // Public APIs
   /**
-   * The collection's templates that may be used publicly, in one answer: `nextCursor` is always null.
+   * The collection's templates that may be used publicly, 50 at a time unless you give a `limit`
+   * (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the
+   * last one.
    *
    * @example
    * ```typescript
-   * const { items } = await template.getAllowed('coll_123')
+   * const { items, nextCursor } = await template.getAllowed('coll_123', { limit: 100 })
    * items // TemplatePublic[]
    * ```
    */
-  export async function getAllowed(collectionId: string): Promise<ListResult<TemplatePublic>> {
-    const path = `/public/collection/${encodeURIComponent(collectionId)}/template/getAllowed`
+  export async function getAllowed(collectionId: string, options: ListOptions = {}): Promise<ListResult<TemplatePublic>> {
+    const path = `/public/collection/${encodeURIComponent(collectionId)}/template/getAllowed${listQuery({ limit: options.limit, cursor: options.cursor })}`
     return request<ListResult<TemplatePublic>>(path)
   }
 
@@ -89,16 +94,17 @@ export namespace template {
   }
 
   /**
-   * The global templates this collection may use, in one answer: `nextCursor` is always null.
+   * The global templates this collection may use, 50 at a time unless you give a `limit` (at most
+   * 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that was the last one.
    *
    * @example
    * ```typescript
-   * const { items } = await template.getAllowedGlobal('coll_123')
+   * const { items, nextCursor } = await template.getAllowedGlobal('coll_123', { limit: 100 })
    * items // TemplatePublic[]
    * ```
    */
-  export async function getAllowedGlobal(collectionId: string): Promise<ListResult<TemplatePublic>> {
-    const path = `/public/template/getAllowed/${encodeURIComponent(collectionId)}`
+  export async function getAllowedGlobal(collectionId: string, options: ListOptions = {}): Promise<ListResult<TemplatePublic>> {
+    const path = `/public/template/getAllowed/${encodeURIComponent(collectionId)}${listQuery({ limit: options.limit, cursor: options.cursor })}`
     return request<ListResult<TemplatePublic>>(path)
   }
 

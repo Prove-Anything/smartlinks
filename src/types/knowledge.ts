@@ -1,4 +1,5 @@
 // Knowledge search: a collection's AI-searchable content (prove docs/design/knowledge-search.md).
+import type { ListOptions } from './list'
 
 /** Who may search a set: anyone, signed-in people, or the business's own staff and assistants. */
 export type KnowledgeVisibility = 'public' | 'customer' | 'staff'
@@ -87,14 +88,16 @@ export interface KnowledgeDocument {
   meta?: Record<string, any>
 }
 
-export interface KnowledgeSearchRequest {
-  query: string
+/** What `knowledge.search` and `knowledge.publicSearch` take. */
+export interface KnowledgeSearchRequest extends ListOptions {
+  /** What to look for, in words. */
+  q: string
   /** Only these sets (ids or keys). Default: every set the caller may read. */
   sets?: string[]
   /** Exact matches on a passage's details, e.g. `{ productId: 'p1' }`. */
   filters?: Record<string, any>
   /** How many results (default 8, at most 25). */
-  k?: number
+  limit?: number
 }
 
 export interface KnowledgeSearchResult {

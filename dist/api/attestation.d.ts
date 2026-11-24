@@ -1,5 +1,5 @@
 import type { AttestationResponse, AttestationCreateRequest, AttestationUpdateRequest } from "../types/attestation.js";
-import type { ListResult } from "../types/list.js";
+import type { ListResult, ListOptions } from "../types/list.js";
 /**
  * @deprecated Legacy Firestore-backed attestation API.
  *
@@ -17,10 +17,18 @@ import type { ListResult } from "../types/list.js";
  */
 export declare namespace attestation {
     /**
-     * List all attestations for a proof, in one list (no pages): `{ items, nextCursor: null }`.
+     * List the attestations for a proof: `{ items, nextCursor, count }`, 50 at a time unless you give a
+     * `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null` means that
+     * was the last one.
      * @deprecated Use `attestations.list()` with `subjectType='proof'` instead.
+     *
+     * @example
+     * ```typescript
+     * let page = await attestation.list('coll_123', 'prod_abc', 'proof_1', { limit: 100 })
+     * while (page.nextCursor) page = await attestation.list('coll_123', 'prod_abc', 'proof_1', { limit: 100, cursor: page.nextCursor })
+     * ```
      */
-    function list(collectionId: string, productId: string, proofId: string): Promise<ListResult<AttestationResponse>>;
+    function list(collectionId: string, productId: string, proofId: string, options?: ListOptions): Promise<ListResult<AttestationResponse>>;
     /**
      * Get a single attestation by ID.
      * @deprecated Use `attestations.list()` with `subjectType='proof'` and filter by ID instead.

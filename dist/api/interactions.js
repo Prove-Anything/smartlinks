@@ -1,30 +1,19 @@
 // src/api/interactions.ts
 import { request, post, patch, del } from "../http.js";
-function encodeQuery(params) {
-    const search = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-        if (value === undefined || value === null || value === "")
-            continue;
-        if (typeof value === "boolean") {
-            search.set(key, value ? "true" : "false");
-        }
-        else {
-            search.set(key, String(value));
-        }
-    }
-    const qs = search.toString();
-    return qs ? `?${qs}` : "";
-}
+import { listQuery } from "../list.js";
 export var interactions;
 (function (interactions) {
     /**
      * POST /admin/collection/:collectionId/interactions/query
-     * Flexible query for interaction events with optional includes. One list, no pages: `limit` in the
-     * body says how many events to return.
+     * Flexible query for interaction events, a page at a time (`limit` and `cursor` in the body). The
+     * time window is `from` / `to`. Sort with `orderBy: [{ timestamp: 'asc' }]`; bring each event's
+     * interaction type along with `expand: ['interaction']`.
      *
      * @example
      * ```typescript
-     * const { items } = await interactions.query('coll_123', { appId: 'my-app', interactionId: voteTypeId, limit: 500 })
+     * const query = { appId: 'my-app', interactionId: voteTypeId, from: '2026-11-01T00:00:00Z', limit: 500 }
+     * let page = await interactions.query('coll_123', { ...query, orderBy: [{ timestamp: 'desc' }], expand: ['interaction'] })
+     * while (page.nextCursor) page = await interactions.query('coll_123', { ...query, cursor: page.nextCursor })
      * ```
      */
     async function query(collectionId, body) {
@@ -113,7 +102,7 @@ export var interactions;
      * ```
      */
     async function list(collectionId, query = {}) {
-        const qs = encodeQuery(query);
+        const qs = listQuery(query);
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/interactions/${qs}`;
         return request(path);
     }
@@ -173,13 +162,15 @@ export var interactions;
     }
     interactions.publicCountsByOutcome = publicCountsByOutcome;
     /**
-     * The signed-in person's own interaction events (where the type allows it). One list, no pages:
-     * `limit` in the body says how many.
+     * The signed-in person's own interaction events (where the type allows it), a page at a time
+     * (`limit` and `cursor` in the body). The time window is `from` / `to`.
      * POST /public/collection/:collectionId/interactions/by-user
      *
      * @example
      * ```typescript
-     * const { items } = await interactions.publicMyInteractions('coll_123', { appId: 'my-app', interactionId: voteTypeId })
+     * const query = { appId: 'my-app', interactionId: voteTypeId, limit: 50 }
+     * let page = await interactions.publicMyInteractions('coll_123', query)
+     * while (page.nextCursor) page = await interactions.publicMyInteractions('coll_123', { ...query, cursor: page.nextCursor })
      * ```
      */
     async function publicMyInteractions(collectionId, body, authToken) {
@@ -198,7 +189,7 @@ export var interactions;
      * ```
      */
     async function publicList(collectionId, query = {}) {
-        const qs = encodeQuery(query);
+        const qs = listQuery(query);
         const path = `/public/collection/${encodeURIComponent(collectionId)}/interactions/${qs}`;
         return request(path);
     }

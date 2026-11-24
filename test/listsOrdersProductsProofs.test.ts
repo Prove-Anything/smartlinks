@@ -113,9 +113,9 @@ describe('lists: integrations, interactions, jobs, journeys, knowledge, location
 
   test('jobs and journeys page by limit and cursor', async () => {
     const page = answer({ items: [{ id: 7, task: 'send', status: 'errored' }], nextCursor: 'next-1' })
-    assert.deepEqual(await jobs.listJobs('c1', { state: 'errored', limit: 50 }), page)
+    assert.deepEqual(await jobs.list('c1', { state: 'errored', limit: 50 }), page)
     assert.deepEqual(call(), ['GET', '/admin/collection/c1/jobs?state=errored&limit=50'])
-    await jobs.listJobs('c1', { cursor: 'next-1' })
+    await jobs.list('c1', { cursor: 'next-1' })
     assert.deepEqual(call(), ['GET', '/admin/collection/c1/jobs?cursor=next-1'])
 
     const list = answer({ items: [{ id: 'j1', name: 'Welcome' }], nextCursor: null })
@@ -136,17 +136,17 @@ describe('lists: integrations, interactions, jobs, journeys, knowledge, location
     assert.deepEqual(call(), ['GET', '/admin/collection/c1/knowledge/sets/manuals/sources'])
 
     const found = answer({ items: [{ id: 'p1', title: 'Kettle manual', score: 0.9 }], nextCursor: null, query: 'descale', mode: 'hybrid' })
-    const got = await knowledge.search('c1', { query: 'descale', k: 5 })
+    const got = await knowledge.search('c1', { q: 'descale', limit: 5 })
     assert.deepEqual(got, found)
     assert.equal(got.mode, 'hybrid')
     assert.deepEqual(call(), ['POST', '/admin/collection/c1/knowledge/search'])
-    assert.deepEqual(last().body, { query: 'descale', k: 5 })
+    assert.deepEqual(last().body, { q: 'descale', limit: 5 })
   })
 
   test('location search and nfc tag lookup return items', async () => {
     const places = answer({ items: [{ locationId: 'l1', name: 'Islay' }], nextCursor: null })
-    assert.deepEqual(await location.search('c1', { q: 'islay', countryCode: 'GB', limit: 10 }), places)
-    assert.deepEqual(call(), ['GET', '/admin/collection/c1/location/search?q=islay&countryCode=GB&limit=10&sort=name'])
+    assert.deepEqual(await location.search('c1', { q: 'islay', countryCode: 'GB', limit: 10, orderBy: [{ countryName: 'desc' }] }), places)
+    assert.deepEqual(call(), ['GET', '/admin/collection/c1/location/search?q=islay&countryCode=GB&limit=10&orderBy=countryName%3Adesc'])
 
     const codes = answer({ items: [{ id: 'code1', tagId: '04A1', claimSetId: 'cs1' }], nextCursor: null })
     assert.deepEqual(await nfc.lookupTag('04A1'), codes)
@@ -193,9 +193,9 @@ describe('lists: integrations, interactions, jobs, journeys, knowledge, location
   test('orders: list, items and query page by limit and cursor; scan history keeps the order beside the list', async () => {
     const page = answer({ items: [{ id: 'o1', orderRef: 'ORD-1' }], nextCursor: 'next-1' })
     assert.deepEqual(await order.list('c1', { status: 'pending', direction: 'purchase', partyId: 'sup1', limit: 50 }), page)
-    assert.deepEqual(call(), ['GET', '/admin/collection/c1/orders?limit=50&status=pending&direction=purchase&partyId=sup1'])
-    await order.list('c1', { cursor: 'next-1', includeItems: true })
-    assert.deepEqual(call(), ['GET', '/admin/collection/c1/orders?cursor=next-1&includeItems=true'])
+    assert.deepEqual(call(), ['GET', '/admin/collection/c1/orders?status=pending&direction=purchase&partyId=sup1&limit=50'])
+    await order.list('c1', { cursor: 'next-1', expand: ['items'] })
+    assert.deepEqual(call(), ['GET', '/admin/collection/c1/orders?cursor=next-1&expand=items'])
 
     await order.getItems('c1', 'o1', { limit: 100, cursor: 'next-2' })
     assert.deepEqual(call(), ['GET', '/admin/collection/c1/orders/o1/items?limit=100&cursor=next-2'])
@@ -222,11 +222,11 @@ describe('lists: integrations, interactions, jobs, journeys, knowledge, location
     assert.deepEqual(call(), ['GET', '/admin/collection/c1/products'])
 
     const found = answer({ items: [{ id: 'p1', name: 'Gin' }], nextCursor: 'next-1', count: 31, meta: { source: 'postgres' } })
-    const got = await products.query('c1', { query: { search: 'gin' }, limit: 20, cursor: 'next-0' })
+    const got = await products.query('c1', { q: 'gin', limit: 20, cursor: 'next-0' })
     assert.deepEqual(got, found)
     assert.equal(got.meta?.source, 'postgres')
     assert.deepEqual(call(), ['POST', '/public/collection/c1/products/query'])
-    assert.deepEqual(last().body, { query: { search: 'gin' }, limit: 20, cursor: 'next-0' })
+    assert.deepEqual(last().body, { q: 'gin', limit: 20, cursor: 'next-0' })
 
     const assets = answer({ items: [{ id: 'a1', url: 'https://cdn.test/a1.jpg' }], nextCursor: null })
     assert.deepEqual(await products.listAssets('c1', 'p1', true), assets)
@@ -240,8 +240,8 @@ describe('lists: integrations, interactions, jobs, journeys, knowledge, location
 
   test('proofs: every proof list returns items', async () => {
     const all = answer({ items: [{ id: 'pr1', productId: 'p1' }], nextCursor: null })
-    assert.deepEqual(await proof.list('c1', ['product']), all)
-    assert.deepEqual(call(), ['GET', '/public/collection/c1/proof?include=product'])
+    assert.deepEqual(await proof.list('c1', { expand: ['product'] }), all)
+    assert.deepEqual(call(), ['GET', '/public/collection/c1/proof?expand=product'])
     assert.deepEqual(await proof.getByUser('c1', 'u1'), all)
     assert.deepEqual(call(), ['GET', '/admin/collection/c1/proof/findByUser/u1'])
     assert.deepEqual(await proof.getByProduct('c1', 'p1'), all)
@@ -249,9 +249,9 @@ describe('lists: integrations, interactions, jobs, journeys, knowledge, location
     assert.deepEqual(await proof.getByBatch('c1', 'p1', 'b1'), all)
     assert.deepEqual(call(), ['GET', '/admin/collection/c1/product/p1/batch/b1/proof'])
 
-    assert.deepEqual(await proof.findByProduct('c1', 'p1', { limit: 50, includes: ['assets'] }), all)
+    assert.deepEqual(await proof.findByProduct('c1', 'p1', { limit: 50, expand: ['assets'] }), all)
     assert.deepEqual(call(), ['POST', '/admin/collection/c1/product/p1/proof/find'])
-    assert.deepEqual(last().body, { limit: 50, includes: ['assets'] })
+    assert.deepEqual(last().body, { limit: 50, expand: ['assets'] })
 
     const grants = answer({ items: [{ id: 'g1', scope: ['read'] }], nextCursor: null })
     assert.deepEqual(await proof.listGrants('c1', 'p1', 'pr1'), grants)

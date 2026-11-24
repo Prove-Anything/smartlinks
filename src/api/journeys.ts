@@ -7,17 +7,7 @@ import type {
   UpdateJourneyBody,
 } from "../types/journeys"
 import type { ListResult } from "../types/list"
-
-function encodeQuery(params: Record<string, any>): string {
-  const search = new URLSearchParams()
-  for (const [key, value] of Object.entries(params)) {
-    if (value === undefined || value === null || value === "") continue
-    if (typeof value === "boolean") search.set(key, value ? "true" : "false")
-    else search.set(key, String(value))
-  }
-  const qs = search.toString()
-  return qs ? `?${qs}` : ""
-}
+import { listQuery } from "../list"
 
 export namespace journeys {
   // Create
@@ -43,7 +33,7 @@ export namespace journeys {
     collectionId: string,
     query: ListJourneysQuery = {}
   ): Promise<ListResult<JourneyRecord>> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/journeys/${encodeQuery(query as any)}`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/journeys/${listQuery(query)}`
     return request<ListResult<JourneyRecord>>(path)
   }
 

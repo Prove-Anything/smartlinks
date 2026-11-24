@@ -1,7 +1,8 @@
 // src/api/appObjects.ts
 import type { StandardQuery, QueryResult, QueryDescription } from "../types/query"
-import type { ListResult } from "../types/list"
+import type { ListResult, ListOptions } from "../types/list"
 import { request, post, patch, del, put } from '../http'
+import { listQuery } from '../list'
 import type {
   AppCase,
   CreateCaseInput,
@@ -53,27 +54,28 @@ export namespace options {
    * see every entry; the public API lists public records and lists the app declares public. Hold on
    * to `version` and pass it back to get `{ unchanged: true }` when nothing changed.
    *
-   * Returns `{ items, nextCursor, count?, version, mode }`: the entries are in `items`, already sorted.
-   * A picker is not paged, so `nextCursor` is always `null`.
+   * Returns `{ items, nextCursor, count?, version, mode }`: the entries are in `items`, already sorted,
+   * 50 at a time unless you give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the
+   * next page; `null` means that was the last one. `q` searches the entries.
    *
    * @example
    * ```typescript
-   * const res = await app.options.get(collectionId, appId, 'type:machine', { admin: true })
+   * const res = await app.options.get(collectionId, appId, 'type:machine', { admin: true, limit: 200 })
    * if (!res.unchanged) { options = res.items; version = res.version }
+   *
+   * // A type too large to send whole: search it
+   * const found = await app.options.get(collectionId, appId, 'type:machine', { q: 'mix', limit: 20 })
    * ```
    */
   export async function get(
     collectionId: string,
     appId: string,
     source: string,
-    opts: { q?: string; version?: string; admin?: boolean } = {},
+    opts: ListOptions & { q?: string; version?: string; admin?: boolean } = {},
   ): Promise<import('../types/appOptions').AppOptionsList> {
     const zone = opts.admin ? 'admin' : 'public'
-    const qs = new URLSearchParams()
-    if (opts.q) qs.set('q', opts.q)
-    if (opts.version) qs.set('version', opts.version)
-    const query = qs.toString()
-    return request(`/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/options/${encodeURIComponent(source)}${query ? `?${query}` : ''}`)
+    const query = listQuery({ q: opts.q, version: opts.version, limit: opts.limit, cursor: opts.cursor })
+    return request(`/${zone}/collection/${encodeURIComponent(collectionId)}/app/${encodeURIComponent(appId)}/options/${encodeURIComponent(source)}${query}`)
   }
 
   /**
@@ -121,6 +123,7 @@ export namespace cases {
    *
    * Returns `{ items, nextCursor, count }`: the cases are in `items`, `count` is how many match in
    * all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`.
+   * Sort with `orderBy`. A date field (`createdAt`, `updatedAt`, `closedAt`) takes a range: `{ gte, lte }`.
    * `includeDeleted`, `contactId` and `assignedTo` are for admin calls (`admin = true`) only: the
    * public list refuses a parameter it does not read.
    *
@@ -131,6 +134,12 @@ export namespace cases {
    * while (page.nextCursor) {
    *   page = await app.cases.list(collectionId, appId, { status: 'open', limit: 50, cursor: page.nextCursor })
    * }
+   *
+   * // This month's cases, most urgent first
+   * await app.cases.list(collectionId, appId, {
+   *   createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' },
+   *   orderBy: [{ priority: 'desc' }, { createdAt: 'asc' }],
+   * })
    * ```
    */
   export async function list(
@@ -140,8 +149,7 @@ export namespace cases {
     admin: boolean = false
   ): Promise<ListResult<AppCase>> {
     const path = basePath(collectionId, appId, admin)
-    const queryParams = params ? buildQueryString(params) : ''
-    return request<ListResult<AppCase>>(`${path}${queryParams}`)
+    return request<ListResult<AppCase>>(`${path}${appListQuery(params)}`)
   }
 
   /**
@@ -274,6 +282,7 @@ export namespace threads {
    *
    * Returns `{ items, nextCursor, count }`: the threads are in `items`, `count` is how many match in
    * all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`.
+   * Sort with `orderBy`. A date field (`createdAt`, `updatedAt`) takes a range: `{ gte, lte }`.
    * `includeDeleted` and `contactId` are for admin calls (`admin = true`) only: the public list
    * refuses a parameter it does not read.
    *
@@ -284,6 +293,12 @@ export namespace threads {
    * while (page.nextCursor) {
    *   page = await app.threads.list(collectionId, appId, { parentType: 'case', parentId: caseId, limit: 50, cursor: page.nextCursor })
    * }
+   *
+   * // The threads with the newest replies, started this month
+   * await app.threads.list(collectionId, appId, {
+   *   createdAt: { gte: '2026-11-01T00:00:00Z' },
+   *   orderBy: [{ lastReplyAt: 'desc' }],
+   * })
    * ```
    */
   export async function list(
@@ -293,8 +308,7 @@ export namespace threads {
     admin: boolean = false
   ): Promise<ListResult<AppThread>> {
     const path = basePath(collectionId, appId, admin)
-    const queryParams = params ? buildQueryString(params) : ''
-    return request<ListResult<AppThread>>(`${path}${queryParams}`)
+    return request<ListResult<AppThread>>(`${path}${appListQuery(params)}`)
   }
 
   /**
@@ -461,6 +475,8 @@ export namespace records {
    *
    * Returns `{ items, nextCursor, count }`: the records are in `items`, `count` is how many match in
    * all, and `nextCursor` is `null` on the last page. Page with `limit` and `cursor`.
+   * Search with `q`, sort with `orderBy`. A date field (`createdAt`, `updatedAt`, `startsAt`,
+   * `expiresAt`) takes a range: `{ gte, lte }`.
    *
    * Public/owner callers only receive records with `status: "active"`.
    * Admin callers can query all statuses (for example `draft`/`archived`).
@@ -474,6 +490,14 @@ export namespace records {
    * while (page.nextCursor) {
    *   page = await app.records.list(collectionId, appId, { recordType: 'tip', limit: 100, cursor: page.nextCursor })
    * }
+   *
+   * // Tips about watering, changed this month, newest change first
+   * await app.records.list(collectionId, appId, {
+   *   recordType: 'tip',
+   *   q: 'watering',
+   *   updatedAt: { gte: '2026-11-01T00:00:00Z' },
+   *   orderBy: [{ updatedAt: 'desc' }],
+   * })
    * ```
    */
   export async function list(
@@ -483,8 +507,7 @@ export namespace records {
     admin: boolean = false
   ): Promise<ListResult<AppRecord>> {
     const path = basePath(collectionId, appId, admin)
-    const queryParams = params ? buildQueryString(params) : ''
-    return request<ListResult<AppRecord>>(`${path}${queryParams}`)
+    return request<ListResult<AppRecord>>(`${path}${appListQuery(params)}`)
   }
 
   /**
@@ -632,8 +655,9 @@ export namespace records {
   /**
    * Match records against a runtime target scope.
    * Returns `{ items, nextCursor, count, strategy }`: `items` are the records whose scope is satisfied
-   * by the target, most specific first, and `count` is how many matched. It is not paged
-   * (`nextCursor` is always `null`); cap the answer with `limit`.
+   * by the target, most specific first, and `count` is how many matched. Without a `limit` it answers
+   * up to 100. Give a `limit` (in `input`) to page: when there are more, pass `nextCursor` back as
+   * `cursor`.
    * POST /records/match
    *
    * @param admin - false for public endpoint (visibility-filtered, active-only), true for admin
@@ -646,6 +670,13 @@ export namespace records {
    *   recordType: 'nutrition',
    * }, true);
    * const best = items[0] // the single highest-specificity nutrition record
+   *
+   * // 50 at a time
+   * const target = { productId: 'prod_abc' }
+   * let page = await app.records.match(collectionId, appId, { target, limit: 50 })
+   * while (page.nextCursor) {
+   *   page = await app.records.match(collectionId, appId, { target, limit: 50, cursor: page.nextCursor })
+   * }
    * ```
    */
   export async function match(
@@ -708,19 +739,27 @@ export namespace records {
    * Resolve every applicable record for a product context in one call.
    * Returns `{ items, nextCursor, count, context, truncated }`: `items` are the records across all
    * tiers (proof, batch, variant, product, rule, facet, collection), deduplicated and sorted by
-   * specificity descending, each as `{ record, matchedAt, specificity }`. It is not paged
-   * (`nextCursor` is always `null`); `truncated` says the answer was cut at `limit`.
+   * specificity descending, each as `{ record, matchedAt, specificity }`. Without a `limit` it answers
+   * up to 500. Give a `limit` (in `input`) to page: when there are more, pass `nextCursor` back as
+   * `cursor`.
    * POST /records/resolve-all
    *
    * @param admin - false for public (visibility-filtered, active-only), true for admin (all statuses)
    *
    * @example
    * ```ts
-   * const { items, truncated } = await app.records.resolveAll(collectionId, appId, {
+   * const { items } = await app.records.resolveAll(collectionId, appId, {
    *   context: { productId: 'prod_abc' },
    *   recordType: 'nutrition',
    * })
    * for (const { record, matchedAt } of items) console.log(matchedAt, record.data)
+   *
+   * // 100 at a time
+   * const context = { productId: 'prod_abc' }
+   * let page = await app.records.resolveAll(collectionId, appId, { context, limit: 100 })
+   * while (page.nextCursor) {
+   *   page = await app.records.resolveAll(collectionId, appId, { context, limit: 100, cursor: page.nextCursor })
+   * }
    * ```
    */
   export async function resolveAll(
@@ -753,27 +792,27 @@ export namespace records {
 // ==================== HELPERS ====================
 
 /**
- * Build a query string from an object of parameters
+ * The query string of a cases / threads / records list, in the order the options were given. Paging and
+ * the standard words (`q`, `orderBy`, a date range) go through `listQuery`. Two filters keep their own
+ * spelling: `parentIds` is sent comma-joined, and `dataFilter` as `dataFilter[key]=value` (repeated for
+ * an array of values).
  */
-function buildQueryString(params: Record<string, any>): string {
+function appListQuery(params?: Record<string, any>): string {
+  if (!params) return ''
   const parts: string[] = []
-  const add = (key: string, value: unknown) => {
-    if (value === undefined || value === null) return
-    parts.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
-  }
   for (const [key, value] of Object.entries(params)) {
     if (value === undefined || value === null) continue
-    if (Array.isArray(value)) {
-      add(key, value.join(',')) // unchanged: top-level arrays are sent comma-joined
-    } else if (typeof value === 'object' && !(value instanceof Date)) {
-      // Nested filter objects (e.g. dataFilter: { versionId: 'x', zone: 'in:a,b' }) → dataFilter[versionId]=x
+    if (key === 'dataFilter' && typeof value === 'object' && !Array.isArray(value)) {
       for (const [sub, subValue] of Object.entries(value as Record<string, unknown>)) {
-        if (Array.isArray(subValue)) subValue.forEach((v) => add(`${key}[${sub}]`, v))
-        else add(`${key}[${sub}]`, subValue)
+        for (const v of Array.isArray(subValue) ? subValue : [subValue]) {
+          if (v === undefined || v === null) continue
+          parts.push(`${encodeURIComponent(`${key}[${sub}]`)}=${encodeURIComponent(String(v))}`)
+        }
       }
-    } else {
-      add(key, value instanceof Date ? value.toISOString() : value)
+      continue
     }
+    const one = listQuery({ [key]: key === 'parentIds' && Array.isArray(value) ? value.join(',') : value })
+    if (one) parts.push(one.slice(1))
   }
   return parts.length ? `?${parts.join('&')}` : ''
 }

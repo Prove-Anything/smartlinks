@@ -55,6 +55,8 @@ function lists() {
     const opts = [
       (c.optionsRemoved || []).length ? 'no ' + c.optionsRemoved.map(code).join(', ') : '',
       (c.optionsAdded || []).length ? 'now ' + c.optionsAdded.map(code).join(', ') : '',
+      c.firstPageOnly ? '**one page now**' : '',
+      c.paged ? '' : 'always whole',
     ].filter(Boolean).join('; ')
     out.push(`| ${code(c.name)} | ${code(c.before)} | ${code(c.after)} | ${opts} |`)
   }

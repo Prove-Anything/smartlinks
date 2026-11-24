@@ -1,4 +1,5 @@
 import { request, post, put, del } from "../http.js";
+import { listQuery } from "../list.js";
 /**
  * Crate Management API
  *
@@ -36,15 +37,12 @@ export var crate;
      * ```
      */
     async function list(collectionId, params) {
-        const queryParams = new URLSearchParams();
-        if (params === null || params === void 0 ? void 0 : params.limit)
-            queryParams.append('limit', params.limit.toString());
-        if (params === null || params === void 0 ? void 0 : params.cursor)
-            queryParams.append('cursor', params.cursor);
-        if (params === null || params === void 0 ? void 0 : params.includeDeleted)
-            queryParams.append('includeDeleted', 'true');
-        const query = queryParams.toString();
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/crate${query ? `?${query}` : ''}`;
+        const query = listQuery({
+            limit: (params === null || params === void 0 ? void 0 : params.limit) || undefined,
+            cursor: params === null || params === void 0 ? void 0 : params.cursor,
+            includeDeleted: (params === null || params === void 0 ? void 0 : params.includeDeleted) ? 'true' : undefined,
+        });
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/crate${query}`;
         return request(path);
     }
     crate.list = list;

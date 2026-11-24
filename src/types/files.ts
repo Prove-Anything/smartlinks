@@ -1,4 +1,5 @@
 import type { Asset } from "./asset"
+import type { ListOptions } from "./list"
 
 /**
  * A file: an asset that's temporary, fetched from an address, extracted from another file, or made by something.
@@ -40,13 +41,13 @@ export interface FetchedFile extends FileRecord {
   unchanged?: boolean
 }
 
-export interface ListFilesQuery {
+/** `files.list` options: the filters, plus `limit` and `cursor`. */
+export interface ListFilesQuery extends ListOptions {
   origin?: "upload" | "fetched" | "derived" | "generated"
   retention?: "temporary" | "permanent"
   appId?: string
   /** The results extracted from one file. */
   derivedFromId?: string
-  limit?: number
 }
 
 export interface ExtractFileRequest {

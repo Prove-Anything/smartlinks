@@ -1,5 +1,5 @@
 import type { WalletPass, WalletPassRef, WalletPassSummary, WalletPassContent, IssueWalletPassRequest } from "../types/wallet.js";
-import type { ListResult } from "../types/list.js";
+import type { ListResult, ListOptions } from "../types/list.js";
 /**
  * Wallet passes: an event ticket, booking, membership card or loyalty card in the person's Apple Wallet or
  * Google Wallet, branded from the site (docs/wallet-passes.md).
@@ -29,16 +29,17 @@ export declare namespace wallet {
         pass: WalletPassSummary;
     }>;
     /**
-     * The signed-in person's active passes on this site, with their links. All of them in one answer:
-     * `nextCursor` is always null.
+     * The signed-in person's active passes on this site, with their links, a page at a time. Page with
+     * `limit` (50 unless you say) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await wallet.mine('coll_123')
-     * items.map((pass) => pass.links.google)
+     * let page = await wallet.mine('coll_123')
+     * page.items.map((pass) => pass.links.google)
+     * while (page.nextCursor) page = await wallet.mine('coll_123', { cursor: page.nextCursor })
      * ```
      */
-    function mine(collectionId: string): Promise<ListResult<WalletPassSummary>>;
+    function mine(collectionId: string, options?: ListOptions): Promise<ListResult<WalletPassSummary>>;
     /** Which wallets are switched on (admin). */
     function status(collectionId: string): Promise<{
         ok: true;
@@ -46,16 +47,18 @@ export declare namespace wallet {
         apple: boolean;
     }>;
     /**
-     * Passes for one thing (`refType` + `refId`) or one person (`contactId`) (admin). All of them in one
-     * answer: `nextCursor` is always null. Voided passes are left out unless `includeVoided` is true.
+     * Passes for one thing (`refType` + `refId`) or one person (`contactId`) (admin), a page at a time.
+     * Page with `limit` (50 unless you say) and `cursor`. Voided passes are left out unless
+     * `includeVoided` is true.
      *
      * @example
      * ```typescript
-     * const { items } = await wallet.list('coll_123', { refType: 'event', refId: eventId })
-     * items // WalletPass[]
+     * let page = await wallet.list('coll_123', { refType: 'event', refId: eventId, limit: 50 })
+     * page.items // WalletPass[]
+     * while (page.nextCursor) page = await wallet.list('coll_123', { refType: 'event', refId: eventId, limit: 50, cursor: page.nextCursor })
      * ```
      */
-    function list(collectionId: string, query: {
+    function list(collectionId: string, query: ListOptions & {
         refType?: string;
         refId?: string;
         contactId?: string;

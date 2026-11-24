@@ -1,4 +1,4 @@
-import type { ListResult } from "../types/list.js";
+import type { ListResult, ListOptions } from "../types/list.js";
 export declare namespace form {
     /**
      * Get a single form by ID for a collection.
@@ -8,17 +8,20 @@ export declare namespace form {
      */
     function get(collectionId: string, formId: string, admin?: boolean): Promise<any>;
     /**
-     * List all forms for a collection. All of them come back in one answer: `nextCursor` is always null.
+     * List the forms for a collection, 50 at a time unless you give a `limit` (at most 1000). Pass
+     * `nextCursor` back as `cursor` for the next page; `null` means that was the last one.
      * @param collectionId – The collection identifier
      * @param admin – If true, use admin endpoint; otherwise, use public
-     * @returns Promise resolving to `{ items, nextCursor }`, where `items` are the forms
+     * @param options – Paging: `limit` and `cursor`
+     * @returns Promise resolving to `{ items, nextCursor, count }`, where `items` are the forms
      *
      * @example
      * ```typescript
-     * const { items: forms } = await form.list(collectionId, true)
+     * let page = await form.list(collectionId, true, { limit: 100 })
+     * while (page.nextCursor) page = await form.list(collectionId, true, { limit: 100, cursor: page.nextCursor })
      * ```
      */
-    function list(collectionId: string, admin?: boolean): Promise<ListResult<any>>;
+    function list(collectionId: string, admin?: boolean, options?: ListOptions): Promise<ListResult<any>>;
     /**
      * Create a new form for a collection (admin only).
      * @param collectionId – The collection identifier

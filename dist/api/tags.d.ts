@@ -140,15 +140,15 @@ export declare namespace tags {
      * No embed support on the admin side.
      *
      * @param collectionId - Collection context
-     * @param params - `refType` and `refId` are required
-     * @returns `{ items: Tag[], nextCursor: null }`: every linked tag in one answer
+     * @param params - `refType` and `refId` are required; plus `limit` (default 50) and `cursor`
+     * @returns `{ items: Tag[], nextCursor: string | null }`: the linked tags, a page at a time
      *
      * @example
      * ```typescript
-     * const { items: linked } = await tags.byRef('coll_123', {
-     *   refType: 'container',
-     *   refId:   'container-uuid',
-     * })
+     * let page = await tags.byRef('coll_123', { refType: 'container', refId: 'container-uuid', limit: 50 })
+     * while (page.nextCursor) {
+     *   page = await tags.byRef('coll_123', { refType: 'container', refId: 'container-uuid', limit: 50, cursor: page.nextCursor })
+     * }
      * ```
      */
     function byRef(collectionId: string, params: ReverseTagLookupParams): Promise<ListResult<Tag>>;
@@ -209,15 +209,15 @@ export declare namespace tags {
      * Returns deduplicated embedded objects alongside the tag array.
      *
      * @param collectionId - Collection context
-     * @param data - `{ tagIds: string[], embed?: string }`
-     * @returns `{ items: Tag[], nextCursor: null, count: number, embedded: TagEmbedded }`
+     * @param data - `{ tagIds: string[], embed?: string }`, plus `limit` (default 50) and `cursor`
+     * @returns `{ items: Tag[], nextCursor: string | null, count: number, embedded: TagEmbedded }`:
+     *   the tags found, a page at a time
      *
      * @example
      * ```typescript
-     * const { items, count, embedded } = await tags.lookupTags('coll_123', {
-     *   tagIds: ['NFC-001', 'NFC-002', 'NFC-003'],
-     *   embed:  'product,proof',
-     * })
+     * const tagIds = ['NFC-001', 'NFC-002', 'NFC-003']
+     * // Every tag found comes back in the one answer: a look-up is never paged.
+     * const { items, embedded } = await tags.lookupTags('coll_123', { tagIds, embed: 'product,proof' })
      * ```
      */
     function lookupTags(collectionId: string, data: LookupTagsRequest): Promise<TagLookupResponse>;
@@ -227,8 +227,9 @@ export declare namespace tags {
      * `GET /public/collection/:collectionId/tags/lookup?tagIds=NFC-001,NFC-002&embed=product`
      *
      * @param collectionId - Collection context
-     * @param params - `tagIds` is comma-separated; `embed` is optional
-     * @returns `{ items: Tag[], nextCursor: null, count: number, embedded: TagEmbedded }`
+     * @param params - `tagIds` is comma-separated; `embed` is optional; plus `limit` (default 50) and `cursor`
+     * @returns `{ items: Tag[], nextCursor: string | null, count: number, embedded: TagEmbedded }`:
+     *   the tags found, a page at a time
      *
      * @example
      * ```typescript
@@ -245,15 +246,16 @@ export declare namespace tags {
      * `GET /public/collection/:collectionId/tags/by-ref?refType=container&refId=<uuid>&embed=ref`
      *
      * @param collectionId - Collection context
-     * @param params - `refType` and `refId` are required; `embed` is optional
-     * @returns `{ items: Tag[], nextCursor: null, embedded: TagEmbedded }`
+     * @param params - `refType` and `refId` are required; `embed` is optional; plus `limit` (default 50) and `cursor`
+     * @returns `{ items: Tag[], nextCursor: string | null, embedded: TagEmbedded }`: the linked tags, a page at a time
      *
      * @example
      * ```typescript
-     * const { items: linked, embedded } = await tags.publicByRef('coll_123', {
+     * const { items: linked, embedded, nextCursor } = await tags.publicByRef('coll_123', {
      *   refType: 'container',
      *   refId:   'container-uuid',
      *   embed:   'container',
+     *   limit:   50,
      * })
      * const container = embedded.containers?.[containerId]
      * ```
@@ -265,15 +267,16 @@ export declare namespace tags {
      * `POST /public/collection/:collectionId/tags/by-ref`
      *
      * @param collectionId - Collection context
-     * @param data - `{ refType, refId, embed? }`
-     * @returns `{ items: Tag[], nextCursor: null, embedded: TagEmbedded }`
+     * @param data - `{ refType, refId, embed? }`, plus `limit` (default 50) and `cursor`
+     * @returns `{ items: Tag[], nextCursor: string | null, embedded: TagEmbedded }`: the linked tags, a page at a time
      *
      * @example
      * ```typescript
-     * const { items: linked, embedded } = await tags.publicByRefPost('coll_123', {
+     * const { items: linked, embedded, nextCursor } = await tags.publicByRefPost('coll_123', {
      *   refType: 'container',
      *   refId:   'container-uuid',
      *   embed:   'container',
+     *   limit:   50,
      * })
      * ```
      */

@@ -582,7 +582,7 @@ const page = await analytics.admin.events('demo-collection', {
   from: '2026-03-01T00:00:00Z',
   to: '2026-03-31T23:59:59Z',
   limit: 100,
-  sort: 'desc',
+  orderBy: [{ timestamp: 'desc' }],
 })
 // page.items → the event rows
 // page.nextCursor → pass it back as `cursor` (with the same filters) for the next 100; null on the last page

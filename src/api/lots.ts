@@ -6,6 +6,7 @@ import {
   ResolveLotResponse, LotProductSummary,
 } from "../types/lots"
 import type { ListResult, ListOptions } from "../types/list"
+import { listQuery } from "../list"
 
 /**
  * Lots — collection-scoped production groupings that span one or more products.
@@ -20,21 +21,18 @@ export namespace lots {
   function publicBase(collectionId: string): string {
     return `/public/collection/${encodeURIComponent(collectionId)}/lots`
   }
-  function listQuery(params: ListLotsParams = {}): string {
-    const qs = new URLSearchParams()
-    if (params.status) qs.append('status', params.status)
-    if (params.search) qs.append('search', params.search)
-    if (params.productId) qs.append('productId', params.productId)
-    if (params.includeDeleted) qs.append('includeDeleted', 'true')
-    const s = qs.toString()
-    return s ? `?${s}` : ''
+  function lotsQuery(params: ListLotsParams = {}): string {
+    return listQuery({
+      status: params.status,
+      q: params.q,
+      productId: params.productId,
+      includeDeleted: params.includeDeleted ? 'true' : undefined,
+      limit: params.limit,
+      cursor: params.cursor,
+    })
   }
   function pageQuery(opts: ListOptions = {}): string {
-    const qs = new URLSearchParams()
-    if (opts.limit) qs.append('limit', String(opts.limit))
-    if (opts.cursor) qs.append('cursor', opts.cursor)
-    const s = qs.toString()
-    return s ? `?${s}` : ''
+    return listQuery({ limit: opts.limit || undefined, cursor: opts.cursor })
   }
 
   // ── Admin (writes + admin reads) ──
@@ -45,16 +43,19 @@ export namespace lots {
   }
 
   /**
-   * List lots (summary rows; `payload`/`productIds` omitted). Filter by status, search, or containing
-   * productId. One list, no pages.
+   * List lots (summary rows; `payload`/`productIds` omitted), a page at a time. Filter by `status`, search
+   * text (`q`), or containing `productId`; page with `limit` (default 50) and `cursor`.
    *
    * @example
    * ```typescript
-   * const { items } = await lots.list('coll_123', { status: 'open' })
+   * let page = await lots.list('coll_123', { status: 'open', q: 'spring', limit: 50 })
+   * while (page.nextCursor) {
+   *   page = await lots.list('coll_123', { status: 'open', q: 'spring', limit: 50, cursor: page.nextCursor })
+   * }
    * ```
    */
   export async function list(collectionId: string, params: ListLotsParams = {}): Promise<ListResult<Lot>> {
-    return request<ListResult<Lot>>(`${adminBase(collectionId)}${listQuery(params)}`)
+    return request<ListResult<Lot>>(`${adminBase(collectionId)}${lotsQuery(params)}`)
   }
 
   /** Get the full lot record. Pass `{ includeDeleted: true }` to fetch a soft-deleted one. */
@@ -113,15 +114,16 @@ export namespace lots {
   // ── Public (cross-app reads) ──
 
   /**
-   * List lots from a public context (summary rows). One list, no pages.
+   * List lots from a public context (summary rows), a page at a time. Filter by `status`, search text
+   * (`q`), or containing `productId`; page with `limit` (default 50) and `cursor`.
    *
    * @example
    * ```typescript
-   * const { items } = await lots.publicList('coll_123', { productId: 'prod_789' })
+   * const { items, nextCursor } = await lots.publicList('coll_123', { productId: 'prod_789', limit: 50 })
    * ```
    */
   export async function publicList(collectionId: string, params: Omit<ListLotsParams, 'includeDeleted'> = {}): Promise<ListResult<Lot>> {
-    return request<ListResult<Lot>>(`${publicBase(collectionId)}${listQuery(params)}`)
+    return request<ListResult<Lot>>(`${publicBase(collectionId)}${lotsQuery(params)}`)
   }
   export async function publicGet(collectionId: string, lotId: string): Promise<Lot> {
     return request<Lot>(`${publicBase(collectionId)}/${encodeURIComponent(lotId)}`)

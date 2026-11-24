@@ -2,6 +2,7 @@
  * User groups: named lists of people in a collection ("QC Controllers", "Warehouse", "Approved
  * partners"), used to say who may do what. See docs/user-groups.md.
  */
+import type { ListOptions } from './list.js';
 /** A user group. Apps may keep extra fields on it; the ones below are the platform's. */
 export interface UserGroup {
     /** Random id. Never changes. */
@@ -90,7 +91,8 @@ export interface UserGroupChange {
     /** The admin who made the change, when known. */
     actorId: string | null;
 }
-export interface UserGroupHistoryParams {
+/** `userGroups.history` options: the filters, the time window (`from` / `to`), plus `limit` (default 100, at most 1000) and `cursor`. */
+export interface UserGroupHistoryParams extends ListOptions {
     /** Only this user group. */
     userGroupId?: string;
     /** Only changes about this person. */
@@ -98,6 +100,4 @@ export interface UserGroupHistoryParams {
     /** ISO dates. Default: the last 30 days. At most 400 days apart. */
     from?: string;
     to?: string;
-    /** Default 100, at most 1000. */
-    limit?: number;
 }

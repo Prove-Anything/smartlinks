@@ -1,16 +1,9 @@
 // src/api/attestations.ts
 import { request, post } from "../http.js";
+import { listQuery } from "../list.js";
 // ─── Internal helper ──────────────────────────────────────────────────────────
-function buildAttestationQuery(params) {
-    const q = new URLSearchParams();
-    for (const [key, value] of Object.entries(params)) {
-        if (value !== undefined && value !== null) {
-            q.append(key, String(value));
-        }
-    }
-    const qs = q.toString();
-    return qs ? `?${qs}` : '';
-}
+// Summaries, latest and the tree calls take the same words as the lists (`recordedAt: { gte, lte }`).
+const buildAttestationQuery = (params) => listQuery(params);
 // ─── Namespace ────────────────────────────────────────────────────────────────
 /**
  * Postgres-backed Attestations API (v2).
@@ -95,7 +88,8 @@ export var attestations;
     /**
      * List attestations for a subject (admin).
      *
-     * Returns all three data zones. Supports filtering by type and date range.
+     * Returns all three data zones. Supports filtering by type and by when it was recorded
+     * (`recordedAt: { gte, lte }`).
      *
      * @param collectionId - Collection context
      * @param params - Query parameters; `subjectType` and `subjectId` are required. Page with
@@ -104,20 +98,20 @@ export var attestations;
      *
      * @example
      * ```typescript
-     * let page = await attestations.list('coll_123', {
+     * const filters = {
      *   subjectType: 'container',
      *   subjectId:   'uuid-of-cask',
      *   attestationType: 'temperature',
-     *   recordedAfter:   '2025-01-01T00:00:00Z',
-     *   limit: 50,
-     * })
+     *   recordedAt:  { gte: '2025-01-01T00:00:00Z' },
+     * } as const
+     * let page = await attestations.list('coll_123', { ...filters, limit: 50 })
      * const records = page.items
      * // next page: pass the cursor back with the same filters
      * if (page.nextCursor) page = await attestations.list('coll_123', { ...filters, limit: 50, cursor: page.nextCursor })
      * ```
      */
     async function list(collectionId, params) {
-        const qs = buildAttestationQuery(params);
+        const qs = listQuery(params);
         const path = `/admin/collection/${encodeURIComponent(collectionId)}/attestations${qs}`;
         return request(path);
     }
@@ -141,7 +135,7 @@ export var attestations;
      *   attestationType: 'temperature',
      *   valueField:      'celsius',
      *   groupBy:         'day',
-     *   recordedAfter:   '2025-01-01T00:00:00Z',
+     *   recordedAt:      { gte: '2025-01-01T00:00:00Z' },
      * })
      * ```
      */
@@ -266,7 +260,7 @@ export var attestations;
      *
      * @param collectionId - Collection context
      * @param params - Query parameters; `subjectType` and `subjectId` are required. Page with
-     *   `limit` and `cursor`
+     *   `limit` and `cursor`; filter by when it was recorded with `recordedAt: { gte, lte }`
      * @returns `{ items: Attestation[], nextCursor, audience: AttestationAudience }` — `nextCursor` is
      *   `null` on the last page
      *
@@ -275,11 +269,13 @@ export var attestations;
      * const { items: records, nextCursor, audience } = await attestations.publicList('coll_123', {
      *   subjectType: 'proof',
      *   subjectId:   'proof-uuid',
+     *   recordedAt:  { gte: '2025-01-01T00:00:00Z', lte: '2025-12-31T23:59:59Z' },
+     *   limit: 50,
      * })
      * ```
      */
     async function publicList(collectionId, params) {
-        const qs = buildAttestationQuery(params);
+        const qs = listQuery(params);
         const path = `/public/collection/${encodeURIComponent(collectionId)}/attestations${qs}`;
         return request(path);
     }
@@ -407,19 +403,20 @@ export var attestations;
      *
      * @param collectionId - Collection context
      * @param containerId - Container UUID
-     * @param params - Optional filters (attestationType, date range) and paging (`limit`, `cursor`)
+     * @param params - Optional filters (`attestationType`, `recordedAt: { gte, lte }`) and paging (`limit`, `cursor`)
      * @returns `{ items: Attestation[], nextCursor, audience }` — `nextCursor` is `null` on the last page
      *
      * @example
      * ```typescript
      * const { items: records, nextCursor } = await attestations.publicContainerList('coll_123', containerId, {
      *   attestationType: 'temperature',
+     *   recordedAt: { gte: '2025-01-01T00:00:00Z' },
      *   limit: 50,
      * })
      * ```
      */
     async function publicContainerList(collectionId, containerId, params) {
-        const qs = buildAttestationQuery(Object.assign({}, (params !== null && params !== void 0 ? params : {})));
+        const qs = listQuery(params);
         const path = `/public/collection/${encodeURIComponent(collectionId)}/containers/${encodeURIComponent(containerId)}/attestations${qs}`;
         return request(path);
     }

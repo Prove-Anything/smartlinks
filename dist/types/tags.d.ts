@@ -155,6 +155,7 @@ export interface ListTagsRequest extends ListOptions {
  * Request body / params for the collection-scoped batch lookup.
  *
  * `embed` — comma-separated: `'product'`, `'proof'`, `'container'`, `'ref'`
+ * Every tag found comes back in the one answer: a look-up by ids is never paged.
  */
 export interface LookupTagsRequest {
     tagIds: string[];
@@ -171,16 +172,17 @@ export interface LookupTagsQueryRequest {
 /**
  * POST body for the collection-scoped public by-ref lookup.
  * `embed` — comma-separated: `'product'`, `'proof'`, `'container'`, `'ref'`
+ * The linked tags come back a page at a time: `limit` (default 50) and `cursor`.
  */
-export interface ByRefRequest {
+export interface ByRefRequest extends ListOptions {
     refType: string;
     refId: string;
     embed?: string;
 }
 /**
- * Query parameters for admin and public GET by-ref requests.
+ * Query parameters for admin and public GET by-ref requests, plus `limit` (default 50) and `cursor`.
  */
-export interface ReverseTagLookupParams {
+export interface ReverseTagLookupParams extends ListOptions {
     /** Required — polymorphic ref type */
     refType: string;
     /** Required — UUID of the referenced object */

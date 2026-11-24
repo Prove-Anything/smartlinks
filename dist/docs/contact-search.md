@@ -24,7 +24,7 @@ await contact.search({ collectionId, id: "uuid-here" })
 await contact.search({
   collectionId,
   tags: ["vip"],
-  createdFrom: "2026-01-01",
+  createdAt: { gte: "2026-01-01T00:00:00Z" },
 })
 
 // Find by external ID (e.g. Shopify customer ID)
@@ -72,8 +72,7 @@ All filters are ANDed with each other and with any text search.
 | `tagsAll` | `string \| string[]` | Contacts must have **all** of these tags. |
 | `source` | `string` | Exact match on the `source` field. |
 | `locale` | `string` | Exact match on the `locale` field (e.g. `"en-US"`). |
-| `createdFrom` | `string` (ISO-8601) | Lower bound on `created_at`. |
-| `createdTo` | `string` (ISO-8601) | Upper bound on `created_at`. |
+| `createdAt` | `{ gte?, lte? }` (ISO-8601 or `Date`) | When the contact was created: on or after `gte`, on or before `lte`. |
 
 ### JSONB field filters
 

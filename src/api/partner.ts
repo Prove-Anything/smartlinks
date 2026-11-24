@@ -1,6 +1,7 @@
 import { request, post } from "../http";
 import { Partner, PartnerClaimSet, CreatePartnerClaimSetRequest, PartnerTagHit, ClientErrorEvent } from "../types";
-import type { ListResult } from "../types/list";
+import type { ListResult, ListOptions } from "../types/list";
+import { listQuery } from "../list";
 
 /**
  * Partners: organisations above collections (FanConnect, Zenith Coins, …) that own NFC claim sets and
@@ -11,15 +12,17 @@ import type { ListResult } from "../types/list";
 export namespace partner {
   /**
    * The partners you belong to, with your role in each. Returns `{ items, nextCursor }`: the partners are
-   * in `items` (empty for everyone else). The list is not paged, so `nextCursor` is always `null`.
+   * in `items` (empty for everyone else). A page at a time (`limit` and `cursor`; 50 unless you say
+   * otherwise).
    *
    * @example
    * ```typescript
-   * const { items: partners } = await partner.list()
+   * let page = await partner.list()
+   * while (page.nextCursor) page = await partner.list({ cursor: page.nextCursor })
    * ```
    */
-  export async function list(): Promise<ListResult<Partner>> {
-    return request<ListResult<Partner>>(`/admin/partner`)
+  export async function list(options: ListOptions = {}): Promise<ListResult<Partner>> {
+    return request<ListResult<Partner>>(`/admin/partner${listQuery(options)}`)
   }
 
   /** One partner (owners also see its members). */
@@ -28,16 +31,17 @@ export namespace partner {
   }
 
   /**
-   * The partner's claim sets. Returns `{ items, nextCursor }`: the sets are in `items`. The list is not
-   * paged, so `nextCursor` is always `null`.
+   * The partner's claim sets. Returns `{ items, nextCursor }`: the sets are in `items`. A page at a time
+   * (`limit` and `cursor`; 50 unless you say otherwise).
    *
    * @example
    * ```typescript
-   * const { items: sets } = await partner.claimSets(partnerId)
+   * let page = await partner.claimSets(partnerId)
+   * while (page.nextCursor) page = await partner.claimSets(partnerId, { cursor: page.nextCursor })
    * ```
    */
-  export async function claimSets(partnerId: string): Promise<ListResult<PartnerClaimSet>> {
-    return request<ListResult<PartnerClaimSet>>(`/admin/partner/${encodeURIComponent(partnerId)}/claimSet`)
+  export async function claimSets(partnerId: string, options: ListOptions = {}): Promise<ListResult<PartnerClaimSet>> {
+    return request<ListResult<PartnerClaimSet>>(`/admin/partner/${encodeURIComponent(partnerId)}/claimSet${listQuery(options)}`)
   }
 
   /** One of the partner's claim sets. */
@@ -53,8 +57,8 @@ export namespace partner {
   /**
    * Find a tag across the partner's sets by its chip UID (8 or 14 hex) or its code (printed or bare).
    * Returns `{ items, nextCursor }`: `items` has one hit for each of the partner's sets the tag is in
-   * (usually one; none if the tag isn't the partner's). Never returns keys. The list is not paged, so
-   * `nextCursor` is always `null`.
+   * (usually one; none if the tag isn't the partner's). Never returns keys. A look-up is never paged: every
+   * hit comes back in the one answer.
    *
    * @example
    * ```typescript
@@ -62,24 +66,21 @@ export namespace partner {
    * ```
    */
   export async function lookupTags(partnerId: string, query: { uid?: string; code?: string }): Promise<ListResult<PartnerTagHit>> {
-    const q = new URLSearchParams()
-    if (query.uid) q.set('uid', query.uid)
-    if (query.code) q.set('code', query.code)
-    return request<ListResult<PartnerTagHit>>(`/admin/partner/${encodeURIComponent(partnerId)}/tags/lookup?${q}`)
+    return request<ListResult<PartnerTagHit>>(`/admin/partner/${encodeURIComponent(partnerId)}/tags/lookup${listQuery(query)}`)
   }
 
   /**
    * What phones reported about one chip (errors.report with entityType 'tag'), newest first: a tag that
    * failed to program or register, with the host's NFC log in context. For a chip in the partner's sets,
-   * or attempts that named one of them. Returns `{ items, nextCursor }`: the ten latest reports are in
-   * `items`. The list is not paged, so `nextCursor` is always `null`.
+   * or attempts that named one of them. Returns `{ items, nextCursor }`: the latest reports are in
+   * `items` (ten unless `limit` says otherwise); `cursor` is the previous page's `nextCursor`.
    *
    * @example
    * ```typescript
-   * const { items: attempts } = await partner.tagAttempts(partnerId, '04A1B2C3D4E5F6')
+   * const { items: attempts } = await partner.tagAttempts(partnerId, '04A1B2C3D4E5F6', { limit: 20 })
    * ```
    */
-  export async function tagAttempts(partnerId: string, uid: string): Promise<ListResult<ClientErrorEvent>> {
-    return request<ListResult<ClientErrorEvent>>(`/admin/partner/${encodeURIComponent(partnerId)}/tags/attempts?uid=${encodeURIComponent(uid)}`)
+  export async function tagAttempts(partnerId: string, uid: string, options: ListOptions = {}): Promise<ListResult<ClientErrorEvent>> {
+    return request<ListResult<ClientErrorEvent>>(`/admin/partner/${encodeURIComponent(partnerId)}/tags/attempts${listQuery({ uid, ...options })}`)
   }
 }

@@ -23,7 +23,6 @@ export { comms } from "./comms.js";
 export { nfc } from "./nfc.js";
 export { contact } from "./contact.js";
 export { broadcasts } from "./broadcasts.js";
-export { async } from "./async.js";
 export { jobs } from "./jobs.js";
 export { segments } from "./segments.js";
 export { userGroups } from "./userGroups.js";

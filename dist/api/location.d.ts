@@ -12,13 +12,16 @@ export declare namespace location {
      */
     function create(collectionId: string, params: LocationPayload): Promise<Location>;
     /**
-     * Admin: Search locations to pick during setup (combines collection + global). One list, no pages:
-     * `limit` says how many (default 20, at most 100).
+     * Admin: Search locations to pick during setup (combines collection + global). `q` is the search
+     * text. `limit` says how many (default 20, at most 100) and `cursor` is the previous page's
+     * `nextCursor`. `orderBy` sorts by one field: `name` (the default), `countryCode` or `countryName`.
      * GET /admin/collection/:collectionId/location/search
      *
      * @example
      * ```typescript
-     * const { items } = await location.search('coll_123', { q: 'distillery', countryCode: 'GB', limit: 10 })
+     * const { items, nextCursor } = await location.search('coll_123', {
+     *   q: 'distillery', countryCode: 'GB', limit: 10, orderBy: [{ countryName: 'asc' }],
+     * })
      * ```
      */
     function search(collectionId: string, query?: LocationSearchQuery): Promise<ListResult<Location>>;

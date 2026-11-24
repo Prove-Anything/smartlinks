@@ -153,8 +153,25 @@ function analyseFile(ts, checker, sf, idx, rel) {
 
   const objectKeys = (call) => {
     const keys = new Set()
-    for (const a of call.arguments || []) if (ts.isObjectLiteralExpression(a)) for (const p of a.properties) if (p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name))) keys.add(p.name.text)
+    const named = (p) => p.name && (ts.isIdentifier(p.name) || ts.isStringLiteral(p.name))
+    for (const a of call.arguments || []) {
+      if (!ts.isObjectLiteralExpression(a)) continue
+      for (const p of a.properties) {
+        if (!named(p)) continue
+        keys.add(p.name.text)
+        // One level down, for options that sat inside another (`query.search`, `page.offset`):
+        // the keys written out, or "anything" when the inner object isn't written here.
+        if (ts.isPropertyAssignment(p) && ts.isObjectLiteralExpression(p.initializer)) {
+          for (const q of p.initializer.properties) { if (named(q)) keys.add(p.name.text + '.' + q.name.text); else keys.add(p.name.text + '.*') }
+        } else keys.add(p.name.text + '.*')
+      }
+    }
     return keys
+  }
+  /** Does a call's options object carry `option` (which may be `outer.inner`)? */
+  const carries = (keys, option) => {
+    if (!option.includes('.')) return keys.has(option)
+    return keys.has(option) || keys.has(option.split('.')[0] + '.*')
   }
 
   const visit = (node) => {
@@ -177,11 +194,18 @@ function analyseFile(ts, checker, sf, idx, rel) {
         if (idx.renames.has(name)) {
           const to = idx.renames.get(name)
           const [fromHead, toHead] = [name.split('.')[0], to.split('.')[0]]
-          // The part that changes is the first one: `product` in product.get, or the whole of a type's name.
+          const [fromLast, toLast] = [name.split('.').pop(), to.split('.').pop()]
+          // The last part changed (jobs.listJobs → jobs.list, async.enqueueAsyncJob → jobs.enqueue).
+          if (p.length > 1 && fromLast !== toLast && ts.isPropertyAccessExpression(node) && node.name.text === fromLast) {
+            edits.push({ start: node.name.getStart(sf), end: node.name.getEnd(), text: toLast })
+          }
+          // The first part changed: `product` in product.get, or the whole of a type's name.
           let head = node
           for (let i = p.length; i > 1 && ts.isPropertyAccessExpression(head); i--) head = head.expression
           while (ts.isParenthesizedExpression(head) || ts.isNonNullExpression(head) || ts.isAsExpression(head)) head = head.expression
-          if (ts.isPropertyAccessExpression(head) && head.name.text === fromHead) {
+          if (fromHead === toHead) {
+            // Same namespace: only the function's name changed, and that is done above.
+          } else if (ts.isPropertyAccessExpression(head) && head.name.text === fromHead) {
             edits.push({ start: head.name.getStart(sf), end: head.name.getEnd(), text: toHead }) // SL.product → SL.products
           } else if (ts.isIdentifier(head) && imports.has(symbolOf(head)) && imports.get(symbolOf(head)).imported === fromHead) {
             const sym = symbolOf(head)
@@ -201,8 +225,8 @@ function analyseFile(ts, checker, sf, idx, rel) {
           const list = idx.lists.get(name)
           if (list) {
             const keys = call ? objectKeys(call) : new Set()
-            const passes = (list.optionsRemoved || []).filter((o) => keys.has(o.split('.')[0]))
-            push('list', node, name, { before: list.before, after: list.after, paged: !!list.paged, passes, called: !!call, note: list.note || '' })
+            const passes = (list.optionsRemoved || []).filter((o) => carries(keys, o))
+            push('list', node, name, { before: list.before, after: list.after, paged: !!list.paged, firstPageOnly: !!list.firstPageOnly, passes, called: !!call, note: list.note || '' })
           }
           for (const opt of idx.options.get(name) || []) {
             if (typeof opt.argument === 'number') {
@@ -471,7 +495,10 @@ export function formatReport(result, { write = false } = {}) {
   if (lists.length) {
     out.push(`## Lists whose result changed (${lists.length})`, '',
       'Each of these now returns `{ items, nextCursor, count? }`. At each place: read the list from `.items`,',
-      'a total from `.count`, "is there more" from `.nextCursor !== null`, and page with `cursor`, not `offset` or `page`.', '')
+      'a total from `.count`, "is there more" from `.nextCursor !== null`, and page with `cursor`, not `offset` or `page`.', '',
+      '**"Used to return everything"** marks a list that came back whole in SDK 2 and now comes back one page at a time',
+      '(50 unless you pass `limit`). Where the app needs every item (it filters, counts, looks one up, or fills a picker),',
+      'replace the call with `all((cursor) => theList(…, { limit: 200, cursor }))`. Where it shows a page, pass `limit` and `cursor`.', '')
     const byFile = new Map()
     for (const w of lists) byFile.set(w.file, [...(byFile.get(w.file) || []), w])
     for (const [file, items] of byFile) {
@@ -479,7 +506,8 @@ export function formatReport(result, { write = false } = {}) {
       for (const w of items) {
         const bits = [`was \`${w.before}\``]
         if (w.passes.length) bits.push(`**passes ${w.passes.map((p) => '`' + p + '`').join(', ')}**, which is gone`)
-        if (!w.paged) bits.push('not paged')
+        if (w.firstPageOnly) bits.push('**used to return everything**, now one page')
+        if (!w.paged) bits.push('always returned whole (no `limit` or `cursor`)')
         if (!w.called) bits.push('passed as a value, not called here: follow it to where the result is read')
         if (w.note) bits.push(w.note)
         out.push(`- line ${w.line} \`${w.name}\`: ${bits.join('; ')}`)

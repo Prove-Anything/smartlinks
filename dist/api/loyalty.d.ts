@@ -2,14 +2,16 @@ import type { LoyaltyScheme, LoyaltyMember, LoyaltyTransaction, LoyaltyEarningRu
 import type { ListResult, ListOptions } from "../types/list.js";
 export declare namespace loyalty {
     /**
-     * The collection's loyalty schemes (admin). One list, no pages.
+     * The collection's loyalty schemes (admin), a page at a time. Page with `limit` (50 unless you
+     * say) and `cursor`. Pass `includeDeleted: true` to include deleted schemes.
      *
      * @example
      * ```typescript
-     * const { items } = await loyalty.list('coll_123')
+     * let page = await loyalty.list('coll_123', { limit: 50 })
+     * while (page.nextCursor) page = await loyalty.list('coll_123', { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    function list(collectionId: string, params?: {
+    function list(collectionId: string, params?: ListOptions & {
         includeDeleted?: boolean;
     }): Promise<ListResult<LoyaltyScheme>>;
     function get(collectionId: string, schemeId: string): Promise<LoyaltyScheme>;
@@ -17,14 +19,16 @@ export declare namespace loyalty {
     function update(collectionId: string, schemeId: string, body: UpdateLoyaltySchemeBody): Promise<LoyaltyScheme>;
     function remove(collectionId: string, schemeId: string): Promise<LoyaltyScheme>;
     /**
-     * A scheme's earning rules (admin). One list, no pages.
+     * A scheme's earning rules (admin), a page at a time. Page with `limit` (50 unless you say) and
+     * `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await loyalty.listEarningRules('coll_123', schemeId)
+     * let page = await loyalty.listEarningRules('coll_123', schemeId, { limit: 50 })
+     * while (page.nextCursor) page = await loyalty.listEarningRules('coll_123', schemeId, { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    function listEarningRules(collectionId: string, schemeId: string): Promise<ListResult<LoyaltyEarningRule>>;
+    function listEarningRules(collectionId: string, schemeId: string, options?: ListOptions): Promise<ListResult<LoyaltyEarningRule>>;
     function getEarningRule(collectionId: string, schemeId: string, ruleId: string): Promise<LoyaltyEarningRule>;
     function createEarningRule(collectionId: string, schemeId: string, body: CreateLoyaltyEarningRuleBody): Promise<LoyaltyEarningRule>;
     function updateEarningRule(collectionId: string, schemeId: string, ruleId: string, body: UpdateLoyaltyEarningRuleBody): Promise<LoyaltyEarningRule>;
@@ -62,28 +66,32 @@ export declare namespace loyalty {
      */
     function getMemberHistory(collectionId: string, schemeId: string, contactId: string, params?: ListOptions): Promise<ListResult<LoyaltyTransaction>>;
     /**
-     * List active schemes for a collection. No authentication required. One list, no pages.
+     * List active schemes for a collection, a page at a time. No authentication required. Page with
+     * `limit` (50 unless you say) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await loyalty.publicList('coll_123')
+     * let page = await loyalty.publicList('coll_123', { limit: 50 })
+     * while (page.nextCursor) page = await loyalty.publicList('coll_123', { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    function publicList(collectionId: string): Promise<ListResult<LoyaltyScheme>>;
+    function publicList(collectionId: string, options?: ListOptions): Promise<ListResult<LoyaltyScheme>>;
     /**
      * Get a single active scheme. No authentication required.
      */
     function publicGet(collectionId: string, schemeId: string): Promise<LoyaltyScheme>;
     /**
      * List active earning rules for a scheme — useful for showing "how to earn"
-     * in a loyalty UI. No authentication required. One list, no pages.
+     * in a loyalty UI. No authentication required. A page at a time: page with `limit` (50 unless you
+     * say) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await loyalty.publicListEarningRules('coll_123', schemeId)
+     * let page = await loyalty.publicListEarningRules('coll_123', schemeId, { limit: 50 })
+     * while (page.nextCursor) page = await loyalty.publicListEarningRules('coll_123', schemeId, { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    function publicListEarningRules(collectionId: string, schemeId: string): Promise<ListResult<LoyaltyEarningRule>>;
+    function publicListEarningRules(collectionId: string, schemeId: string, options?: ListOptions): Promise<ListResult<LoyaltyEarningRule>>;
     /**
      * Get all active schemes with the caller's membership embedded in each.
      *
@@ -95,15 +103,16 @@ export declare namespace loyalty {
      *   (or null if not yet enrolled in that scheme)
      * - Unauthenticated: `member` is null on all schemes
      *
-     * One list, no pages.
+     * A page at a time: page with `limit` (50 unless you say) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await loyalty.publicGetMe('coll_123')
-     * for (const scheme of items) console.log(scheme.name, scheme.member?.balance ?? 0)
+     * let page = await loyalty.publicGetMe('coll_123')
+     * for (const scheme of page.items) console.log(scheme.name, scheme.member?.balance ?? 0)
+     * while (page.nextCursor) page = await loyalty.publicGetMe('coll_123', { cursor: page.nextCursor })
      * ```
      */
-    function publicGetMe(collectionId: string): Promise<ListResult<LoyaltySchemeWithMembership>>;
+    function publicGetMe(collectionId: string, options?: ListOptions): Promise<ListResult<LoyaltySchemeWithMembership>>;
     /**
      * Get the authenticated caller's membership (balance + lifetimePoints)
      * on a specific scheme. Requires authentication.

@@ -1,4 +1,5 @@
 import type { Asset } from "./asset.js";
+import type { ListOptions } from "./list.js";
 /**
  * A file: an asset that's temporary, fetched from an address, extracted from another file, or made by something.
  * Files are private until kept, and stay out of asset lists (pickers, the Hub, the portal) unless kept.
@@ -33,13 +34,13 @@ export interface FetchedFile extends FileRecord {
     /** True when the source answered "not changed" (the same file is returned). */
     unchanged?: boolean;
 }
-export interface ListFilesQuery {
+/** `files.list` options: the filters, plus `limit` and `cursor`. */
+export interface ListFilesQuery extends ListOptions {
     origin?: "upload" | "fetched" | "derived" | "generated";
     retention?: "temporary" | "permanent";
     appId?: string;
     /** The results extracted from one file. */
     derivedFromId?: string;
-    limit?: number;
 }
 export interface ExtractFileRequest {
     variant: FileExtractVariant;

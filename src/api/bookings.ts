@@ -28,6 +28,7 @@ import type {
   MessageBookersResult,
 } from '../types/bookings'
 import type { ListResult } from '../types/list'
+import { listQuery } from '../list'
 
 function basePath(collectionId: string, appId: string, admin: boolean): string {
   const zone = admin ? 'admin' : 'public'
@@ -69,33 +70,36 @@ export namespace bookings {
   }
 
   /**
-   * List bookings (admin), a page at a time. `count` is how many match in all. There is no public
-   * list: a signed-in booker uses {@link mine}. GET /bookings
+   * List bookings (admin), a page at a time. `count` is how many match in all. `from` / `to` pick
+   * the bookings overlapping that time; `orderBy` sorts (earliest start first unless you say). There
+   * is no public list: a signed-in booker uses {@link mine}. GET /bookings
    *
    * @example
    * ```typescript
-   * let page = await bookings.list(collectionId, appId, { status: 'confirmed', from: new Date(), limit: 50 })
+   * const from = new Date()
+   * let page = await bookings.list(collectionId, appId, { status: 'confirmed', from, orderBy: [{ startsAt: 'desc' }], limit: 50 })
    * page.items      // Booking[]
    * page.count      // how many match in all
    * while (page.nextCursor) {
-   *   page = await bookings.list(collectionId, appId, { status: 'confirmed', from: new Date(), limit: 50, cursor: page.nextCursor })
+   *   page = await bookings.list(collectionId, appId, { status: 'confirmed', from, orderBy: [{ startsAt: 'desc' }], limit: 50, cursor: page.nextCursor })
    * }
    * ```
    */
   export async function list(collectionId: string, appId: string, params?: BookingListOptions, admin: boolean = true): Promise<ListResult<Booking>> {
-    return request<ListResult<Booking>>(`${basePath(collectionId, appId, admin)}${query(params)}`)
+    return request<ListResult<Booking>>(`${basePath(collectionId, appId, admin)}${listQuery(params)}`)
   }
 
   /**
-   * The signed-in caller's own bookings (public), a page at a time. GET /bookings/mine
+   * The signed-in caller's own bookings (public), a page at a time. Takes the same options as
+   * {@link list}, except `contactId`. GET /bookings/mine
    *
    * @example
    * ```typescript
-   * const { items, nextCursor, count } = await bookings.mine(collectionId, appId, { from: new Date() })
+   * const { items, nextCursor, count } = await bookings.mine(collectionId, appId, { from: new Date(), orderBy: [{ startsAt: 'asc' }], limit: 20 })
    * ```
    */
   export async function mine(collectionId: string, appId: string, params?: Omit<BookingListOptions, 'contactId'>): Promise<ListResult<Booking>> {
-    return request<ListResult<Booking>>(`${basePath(collectionId, appId, false)}/mine${query(params)}`)
+    return request<ListResult<Booking>>(`${basePath(collectionId, appId, false)}/mine${listQuery(params)}`)
   }
 
   /**
@@ -189,15 +193,18 @@ export namespace bookings {
 
     /**
      * List slots, a page at a time. Public: open, public slots only, each with `remaining`.
+     * `from` / `to` pick the slots in that time; `orderBy` sorts them.
      * GET /bookings/slots
      *
      * @example
      * ```typescript
-     * const { items, nextCursor, count } = await bookings.slots.list(collectionId, appId, { from, to, available: true })
+     * const { items, nextCursor, count } = await bookings.slots.list(collectionId, appId, {
+     *   from, to, available: true, orderBy: [{ startsAt: 'asc' }], limit: 50,
+     * })
      * ```
      */
     export async function list(collectionId: string, appId: string, params?: SlotListOptions, admin: boolean = false): Promise<ListResult<BookingSlot>> {
-      return request<ListResult<BookingSlot>>(`${basePath(collectionId, appId, admin)}/slots${query(params)}`)
+      return request<ListResult<BookingSlot>>(`${basePath(collectionId, appId, admin)}/slots${listQuery(params)}`)
     }
 
     /** GET /bookings/slots/:slotId */
@@ -228,15 +235,18 @@ export namespace bookings {
     }
 
     /**
-     * The blocks on a resource and/or in a date range, a page at a time. GET /bookings/blocks
+     * The blocks on a resource and/or in a date range (`from` / `to`), a page at a time (`limit`,
+     * `cursor`). GET /bookings/blocks
      *
      * @example
      * ```typescript
-     * const { items, nextCursor } = await bookings.blocks.list(collectionId, appId, { resourceType: 'record', resourceId: 'staff-1' })
+     * const { items, nextCursor } = await bookings.blocks.list(collectionId, appId, {
+     *   resourceType: 'record', resourceId: 'staff-1', from: '2026-12-01T00:00:00Z', to: '2027-01-01T00:00:00Z', limit: 50,
+     * })
      * ```
      */
     export async function list(collectionId: string, appId: string, params?: BlockListOptions): Promise<ListResult<BookingAllocation>> {
-      return request<ListResult<BookingAllocation>>(`${basePath(collectionId, appId, true)}/blocks${query(params)}`)
+      return request<ListResult<BookingAllocation>>(`${basePath(collectionId, appId, true)}/blocks${listQuery(params)}`)
     }
 
     export async function remove(collectionId: string, appId: string, blockId: string): Promise<{ success: boolean }> {

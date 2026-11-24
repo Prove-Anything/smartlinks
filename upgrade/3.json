@@ -162,6 +162,34 @@
       "note": ""
     },
     {
+      "kind": "renamed",
+      "name": "async.enqueueAsyncJob",
+      "to": "jobs.enqueue",
+      "mechanical": true,
+      "note": "The `async` namespace is gone: starting and following a job live in `jobs` with listing them."
+    },
+    {
+      "kind": "renamed",
+      "name": "async.getAsyncJobStatus",
+      "to": "jobs.status",
+      "mechanical": true,
+      "note": ""
+    },
+    {
+      "kind": "renamed",
+      "name": "jobs.listJobs",
+      "to": "jobs.list",
+      "mechanical": true,
+      "note": "Then treat it as a list: `jobs.list` returns ListResult<Job>."
+    },
+    {
+      "kind": "renamed",
+      "name": "jobs.getJob",
+      "to": "jobs.get",
+      "mechanical": true,
+      "note": ""
+    },
+    {
       "kind": "removed",
       "name": "ai.generateContent",
       "to": "ai.chat.completions.create",
@@ -395,6 +423,90 @@
       "note": "Admin only: use `lots.list`."
     },
     {
+      "kind": "option",
+      "name": "attestations.summary",
+      "option": "recordedAfter",
+      "mechanical": false,
+      "note": "Now `recordedAt: { gte: … }`, the same range the attestation lists take."
+    },
+    {
+      "kind": "option",
+      "name": "attestations.summary",
+      "option": "recordedBefore",
+      "mechanical": false,
+      "note": "Now `recordedAt: { lte: … }`, the same range the attestation lists take."
+    },
+    {
+      "kind": "option",
+      "name": "attestations.publicSummary",
+      "option": "recordedAfter",
+      "mechanical": false,
+      "note": "Now `recordedAt: { gte: … }`, the same range the attestation lists take."
+    },
+    {
+      "kind": "option",
+      "name": "attestations.publicSummary",
+      "option": "recordedBefore",
+      "mechanical": false,
+      "note": "Now `recordedAt: { lte: … }`, the same range the attestation lists take."
+    },
+    {
+      "kind": "option",
+      "name": "attestations.treeSummary",
+      "option": "recordedAfter",
+      "mechanical": false,
+      "note": "Now `recordedAt: { gte: … }`, the same range the attestation lists take."
+    },
+    {
+      "kind": "option",
+      "name": "attestations.treeSummary",
+      "option": "recordedBefore",
+      "mechanical": false,
+      "note": "Now `recordedAt: { lte: … }`, the same range the attestation lists take."
+    },
+    {
+      "kind": "option",
+      "name": "attestations.publicTreeSummary",
+      "option": "recordedAfter",
+      "mechanical": false,
+      "note": "Now `recordedAt: { gte: … }`, the same range the attestation lists take."
+    },
+    {
+      "kind": "option",
+      "name": "attestations.publicTreeSummary",
+      "option": "recordedBefore",
+      "mechanical": false,
+      "note": "Now `recordedAt: { lte: … }`, the same range the attestation lists take."
+    },
+    {
+      "kind": "option",
+      "name": "attestations.publicContainerSummary",
+      "option": "recordedAfter",
+      "mechanical": false,
+      "note": "Now `recordedAt: { gte: … }`, the same range the attestation lists take."
+    },
+    {
+      "kind": "option",
+      "name": "attestations.publicContainerSummary",
+      "option": "recordedBefore",
+      "mechanical": false,
+      "note": "Now `recordedAt: { lte: … }`, the same range the attestation lists take."
+    },
+    {
+      "kind": "option",
+      "name": "attestations.publicContainerTreeSummary",
+      "option": "recordedAfter",
+      "mechanical": false,
+      "note": "Now `recordedAt: { gte: … }`, the same range the attestation lists take."
+    },
+    {
+      "kind": "option",
+      "name": "attestations.publicContainerTreeSummary",
+      "option": "recordedBefore",
+      "mechanical": false,
+      "note": "Now `recordedAt: { lte: … }`, the same range the attestation lists take."
+    },
+    {
       "kind": "list",
       "name": "adminCards.list",
       "before": "{ cards, hidden, layout }",
@@ -402,7 +514,7 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": "`cards` is `items`; `hidden` and `layout` stay beside it."
+      "note": "`cards` is `items`; `hidden` and `layout` stay beside it. A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -412,7 +524,7 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": "`tools` is `items`."
+      "note": "`tools` is `items`. A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -422,7 +534,7 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": "`skills` is `items`."
+      "note": "`skills` is `items`. A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -431,12 +543,14 @@
       "after": "ListResult<Record<string, any>> & { source, sort }",
       "paged": true,
       "optionsRemoved": [
-        "offset"
+        "offset",
+        "sort"
       ],
       "optionsAdded": [
-        "cursor"
+        "cursor",
+        "orderBy"
       ],
-      "note": "`limit` and `cursor` go at the top level of the body. The old `count` was the rows on this page; it is gone."
+      "note": "`limit` and `cursor` go at the top level of the body. The old `count` was the rows on this page; it is gone. Sorting is now orderBy: [{ timestamp: 'asc' }] (or 'desc', the default); `sort: 'asc' | 'desc'` is gone. limit, cursor, from and to are unchanged. The answer still carries `sort: 'ASC' | 'DESC'`."
     },
     {
       "kind": "list",
@@ -445,22 +559,28 @@
       "after": "ListResult<AppCase>",
       "paged": true,
       "optionsRemoved": [
-        "offset"
+        "offset",
+        "sort"
       ],
       "optionsAdded": [
-        "cursor"
+        "cursor",
+        "orderBy"
       ],
-      "note": ""
+      "note": "`sort: 'priority:desc'` becomes `orderBy: [{ priority: 'desc' }]` (fields: createdAt, updatedAt, closedAt, priority, status, category, ref, customId, sourceSystem). `createdAt`, `updatedAt` and `closedAt` keep their names but are now a range object `{ gte, lte }`; the old string form ('gte:2024-01-01' or a bare date) is gone. An option set to an empty string is now left out of the request instead of being sent empty."
     },
     {
       "kind": "list",
       "name": "app.options.get",
       "before": "{ items, version, mode, total? } | { unchanged: true, version }",
       "after": "(ListResult<AppOption> & { version, mode }) | { unchanged: true, version }",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": "`total` is `count`. The `{ unchanged: true, version }` answer is as before."
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "`total` is `count`. The `{ unchanged: true, version }` answer is as before. A picker is now paged: it answers 50 entries unless you give `limit` (at most 1000), and `nextCursor` is no longer always null. An app that needs every entry must follow `nextCursor` or ask for a larger `limit`. `q`, `version` and `admin` are unchanged.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -469,32 +589,40 @@
       "after": "ListResult<AppRecord>",
       "paged": true,
       "optionsRemoved": [
-        "offset"
+        "offset",
+        "sort"
       ],
       "optionsAdded": [
-        "cursor"
+        "cursor",
+        "orderBy"
       ],
-      "note": ""
+      "note": "`sort: 'updatedAt:desc'` becomes `orderBy: [{ updatedAt: 'desc' }]` (fields: createdAt, updatedAt, startsAt, expiresAt, status, recordType, ref, customId, sourceSystem, scopeType, scopeId, specificity, label). `createdAt`, `updatedAt`, `startsAt` and `expiresAt` keep their names but are now a range object `{ gte, lte }`; the old string form is gone. `q`, `qFields` and `dataFilter` are unchanged (dataFilter is sent exactly as before). An option set to an empty string is now left out of the request."
     },
     {
       "kind": "list",
       "name": "app.records.match",
       "before": "{ data, total, strategy }",
       "after": "ListResult<MatchEntry> & { strategy }",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": "`total` is `count`."
+      "optionsAdded": [
+        "cursor",
+        "limit"
+      ],
+      "note": "`total` is `count`. `limit` was already in the input. With no `limit` it answers its usual 100 as before. With a `limit`, `nextCursor` is set when there are more: pass it back as `cursor` in the input."
     },
     {
       "kind": "list",
       "name": "app.records.resolveAll",
       "before": "{ records, total, context, truncated }",
       "after": "ListResult<ResolveAllEntry> & { context, truncated }",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": "`total` is `count`."
+      "optionsAdded": [
+        "cursor",
+        "limit"
+      ],
+      "note": "`total` is `count`. `limit` was already in the input. With no `limit` it answers its usual 500 as before. With a `limit`, `nextCursor` is set when there are more: pass it back as `cursor`. The API cuts one answer at 1000, so a `limit` above 1000 (the old maximum was 5000) now needs the cursor to get the rest."
     },
     {
       "kind": "list",
@@ -503,22 +631,28 @@
       "after": "ListResult<AppThread>",
       "paged": true,
       "optionsRemoved": [
-        "offset"
+        "offset",
+        "sort"
       ],
       "optionsAdded": [
-        "cursor"
+        "cursor",
+        "orderBy"
       ],
-      "note": ""
+      "note": "`sort: 'lastReplyAt:desc'` becomes `orderBy: [{ lastReplyAt: 'desc' }]` (fields: createdAt, updatedAt, lastReplyAt, replyCount, status). `createdAt` and `updatedAt` keep their names but are now a range object `{ gte, lte }`; the old string form is gone. `parentIds` is sent exactly as before (comma-joined). An option set to an empty string is now left out of the request."
     },
     {
       "kind": "list",
       "name": "appConfiguration.getData",
       "before": "any[]",
       "after": "ListResult<any>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "The options object is now `AppConfigOptions & ListOptions` for this function only. The list is now paged: 50 items unless you give `limit` (at most 1000). An app that needs every item must follow `nextCursor` or ask for a larger `limit`.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -528,19 +662,23 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
       "name": "asset.list",
       "before": "Asset[]",
       "after": "ListResult<Asset>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [
         "offset"
       ],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "cursor",
+        "limit"
+      ],
+      "note": "`limit` was already an option. The list is now paged: 50 assets unless you give `limit` (at most 1000), and `nextCursor` is no longer always null. An app that needs every asset must follow `nextCursor`.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -549,52 +687,71 @@
       "after": "ListResult<Asset>",
       "paged": true,
       "optionsRemoved": [
-        "offset"
+        "offset",
+        "sort",
+        "order"
       ],
       "optionsAdded": [
-        "cursor"
+        "cursor",
+        "orderBy"
       ],
-      "note": "`data` is `items` and `total` is `count`. 50 at a time unless you ask (at most 200)."
+      "note": "`data` is `items` and `total` is `count`. 50 at a time unless you ask (at most 200). `sort: 'name', order: 'asc'` becomes `orderBy: [{ name: 'asc' }]` (fields: createdAt, name, size, assetType). `limit`, `cursor` and `include` are unchanged."
     },
     {
       "kind": "list",
       "name": "asset.listForCollection",
       "before": "Asset[]",
       "after": "ListResult<Asset>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged: 50 assets unless you give `limit` (at most 1000). An app that needs every asset must follow `nextCursor`.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "asset.listForProduct",
       "before": "Asset[]",
       "after": "ListResult<Asset>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged: 50 assets unless you give `limit` (at most 1000). An app that needs every asset must follow `nextCursor`.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "asset.listForProof",
       "before": "Asset[]",
       "after": "ListResult<Asset>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "The options come after the optional `appId`: `listForProof(collectionId, productId, proofId, appId?, { limit, cursor })`. Now paged: 50 assets unless you give `limit` (at most 1000).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "attestation.list",
       "before": "AttestationResponse[]",
       "after": "ListResult<AttestationResponse>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": "The old namespace stays, but its list is a list like any other."
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "The old namespace stays, but its list is a list like any other. Now paged: 50 attestations unless you give `limit` (at most 1000). An app that needs every one must follow `nextCursor`. (Still the deprecated namespace.)",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -603,12 +760,15 @@
       "after": "ListResult<Attestation>",
       "paged": true,
       "optionsRemoved": [
-        "offset"
+        "offset",
+        "recordedAfter",
+        "recordedBefore"
       ],
       "optionsAdded": [
-        "cursor"
+        "cursor",
+        "recordedAt"
       ],
-      "note": ""
+      "note": "`recordedAfter: a, recordedBefore: b` becomes `recordedAt: { gte: a, lte: b }`. The summaries, latest and the tree calls take `recordedAt: { gte, lte }` too."
     },
     {
       "kind": "list",
@@ -617,12 +777,15 @@
       "after": "ListResult<Attestation> & { audience }",
       "paged": true,
       "optionsRemoved": [
-        "offset"
+        "offset",
+        "recordedAfter",
+        "recordedBefore"
       ],
       "optionsAdded": [
-        "cursor"
+        "cursor",
+        "recordedAt"
       ],
-      "note": ""
+      "note": "`recordedAfter: a, recordedBefore: b` becomes `recordedAt: { gte: a, lte: b }`."
     },
     {
       "kind": "list",
@@ -631,62 +794,87 @@
       "after": "ListResult<Attestation> & { audience }",
       "paged": true,
       "optionsRemoved": [
-        "offset"
+        "offset",
+        "recordedAfter",
+        "recordedBefore"
       ],
       "optionsAdded": [
-        "cursor"
+        "cursor",
+        "recordedAt"
       ],
-      "note": ""
+      "note": "`recordedAfter: a, recordedBefore: b` becomes `recordedAt: { gte: a, lte: b }`."
     },
     {
       "kind": "list",
       "name": "authKit.list",
       "before": "AuthKitConfig[]",
       "after": "ListResult<AuthKitConfig>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time): follow nextCursor to get every config.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "authKit.listTrustedDevices",
       "before": "{ devices: TrustedDevice[] }",
       "after": "ListResult<TrustedDevice>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": "`devices` is `items`."
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "`devices` is `items`. Now paged (50 at a time): follow nextCursor to get every device.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "batch.getBatchTags",
       "before": "BatchTag[]",
       "after": "ListResult<BatchTag>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "The options come after the optional `claimSetId`: `getBatchTags(collectionId, batchId, claimSetId?, { limit, cursor })`. Now paged: 50 tags unless you give `limit` (at most 1000). A batch with more than 50 tags needs `nextCursor` followed to get them all.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "batch.list",
       "before": "BatchResponse[]",
       "after": "ListResult<BatchResponse>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged: 50 batches unless you give `limit` (at most 1000). A product with more than 50 batches needs `nextCursor` followed to get them all.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "batch.searchInCollection",
       "before": "BatchResponse[]",
       "after": "ListResult<BatchResponse>",
-      "paged": false,
-      "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "paged": true,
+      "optionsRemoved": [
+        "search"
+      ],
+      "optionsAdded": [
+        "q",
+        "cursor",
+        "limit"
+      ],
+      "note": "`search: 'B-2024'` becomes `q: 'B-2024'`. `limit` and `productId` are unchanged. With a `limit`, `nextCursor` is set when there are more matches."
     },
     {
       "kind": "list",
@@ -709,12 +897,14 @@
       "after": "ListResult<Booking> (with count)",
       "paged": true,
       "optionsRemoved": [
-        "offset"
+        "offset",
+        "sort"
       ],
       "optionsAdded": [
-        "cursor"
+        "cursor",
+        "orderBy"
       ],
-      "note": ""
+      "note": "`sort: 'starts_at:desc'` becomes `orderBy: [{ startsAt: 'desc' }]` (fields: startsAt, endsAt, createdAt, updatedAt, status, ref, customId, sourceSystem). `from` / `to` are unchanged. Server functions (`ctx.sl.bookings.query`) still take `sort` and `offset`: that type (BookingListQueryParams) was not changed."
     },
     {
       "kind": "list",
@@ -723,12 +913,14 @@
       "after": "ListResult<Booking> (with count)",
       "paged": true,
       "optionsRemoved": [
-        "offset"
+        "offset",
+        "sort"
       ],
       "optionsAdded": [
-        "cursor"
+        "cursor",
+        "orderBy"
       ],
-      "note": ""
+      "note": "`sort: 'starts_at:desc'` becomes `orderBy: [{ startsAt: 'desc' }]` (same fields as bookings.list). `from` / `to` are unchanged."
     },
     {
       "kind": "list",
@@ -737,12 +929,14 @@
       "after": "ListResult<BookingSlot> (with count)",
       "paged": true,
       "optionsRemoved": [
-        "offset"
+        "offset",
+        "sort"
       ],
       "optionsAdded": [
-        "cursor"
+        "cursor",
+        "orderBy"
       ],
-      "note": ""
+      "note": "`sort: 'starts_at:asc'` becomes `orderBy: [{ startsAt: 'asc' }]` (fields: startsAt, endsAt, createdAt, updatedAt, status, capacity, ref, customId). `from` / `to` and `available` are unchanged. Server functions (`ctx.sl.bookings.slots.query`) still take `sort` and `offset`."
     },
     {
       "kind": "list",
@@ -780,30 +974,42 @@
       "name": "claimSet.getAll",
       "before": "any[]",
       "after": "ListResult<any>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "getAll(collectionId?, options?). The list is now paged (50 at a time): follow nextCursor. For your own claim sets (no collection) pass undefined first: getAll(undefined, { limit }).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "claimSet.getAssignedTags",
       "before": "any (the claim set with its tags in `tags`)",
       "after": "ListResult<any> & Record<string, any>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": "The tags are in `items`; the claim set's own fields (id, name, …) stay beside them."
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "The tags are in `items`; the claim set's own fields (id, name, …) stay beside them. getAssignedTags(claimSetId, collectionId?, options?). Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "claimSet.ranges.list",
       "before": "ClaimSetRange[]",
       "after": "ListResult<ClaimSetRange>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "ranges.list(scope, claimSetId, options?). Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -824,20 +1030,28 @@
       "name": "collection.getUsers",
       "before": "CollectionUser[]",
       "after": "ListResult<CollectionUser>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time): follow nextCursor to get every user.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "collection.list",
       "before": "CollectionResponse[]",
       "after": "ListResult<CollectionResponse>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time): an account with more than 50 collections must follow nextCursor. The options object is the function's only parameter: collection.list({ limit, cursor }).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -847,37 +1061,47 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
       "name": "comms.queryByUser",
       "before": "CommunicationEvent[]",
       "after": "ListResult<CommunicationEvent>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "cursor",
+        "limit"
+      ],
+      "note": "Now paged: `limit` is the page size, not a cap on the whole answer. Follow nextCursor for the rest."
     },
     {
       "kind": "list",
       "name": "comms.queryRecipientIds",
       "before": "RecipientId[]",
       "after": "ListResult<RecipientId>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "cursor",
+        "limit"
+      ],
+      "note": "Now paged: `limit` is the page size, not a cap on the whole answer. Follow nextCursor for the rest."
     },
     {
       "kind": "list",
       "name": "conditions.list",
       "before": "SavedCondition[]",
       "after": "ListResult<SavedCondition>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time), on both the public and the admin route. The options come after `admin`: conditions.list(collectionId, false, { limit, cursor }).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -887,7 +1111,7 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -897,7 +1121,7 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -937,25 +1161,32 @@
       "after": "ListResult<Contact>",
       "paged": true,
       "optionsRemoved": [
-        "offset"
+        "offset",
+        "createdFrom",
+        "createdTo"
       ],
       "optionsAdded": [
-        "cursor"
+        "cursor",
+        "createdAt"
       ],
       "typesRemoved": [
         "ContactSearchResponse"
       ],
-      "note": ""
+      "note": "The creation date is one range: createdAt: { gte, lte } replaces createdFrom / createdTo (a Date or an ISO string). q, limit and cursor are unchanged. Empty-string filters are no longer sent."
     },
     {
       "kind": "list",
       "name": "containers.findForItem",
       "before": "{ items: ContainerItem[], containers: Container[] }",
       "after": "ListResult<ContainerItem> & { containers: Container[] }",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "FindContainersForItemParams now extends ListOptions. Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1013,13 +1244,17 @@
       "name": "containers.publicListItems",
       "before": "ContainerItemsResponse = { items, limit, offset }",
       "after": "ListResult<ContainerItem>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [
         "limit",
         "offset"
       ],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "publicListItems(collectionId, containerId, options?). Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1046,7 +1281,7 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -1067,10 +1302,14 @@
       "name": "dpp.passports.versions",
       "before": "DppPassportVersion[] (unwrapped { versions })",
       "after": "ListResult<DppPassportVersion>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time): follow nextCursor to get every version.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1080,17 +1319,21 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
       "name": "dpp.tasks.list",
       "before": "DppTask[] (unwrapped { tasks })",
       "after": "ListResult<DppTask>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time): follow nextCursor to get every request.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1100,17 +1343,21 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
       "name": "facets.listValues",
       "before": "FacetValueListResponse = { facet, items }",
       "after": "ListResult<FacetValue> & { facet: FacetDefinition }",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "FacetValueListParams now extends ListOptions. A facet's values are now paged (50 at a time): follow nextCursor to get them all.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1120,7 +1367,7 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -1130,17 +1377,21 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
       "name": "facets.publicListValues",
       "before": "FacetValueListResponse = { facet, items }",
       "after": "ListResult<FacetValue> & { facet: FacetDefinition }",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "publicListValues(collectionId, facetKey, options?). A facet's values are now paged (50 at a time): follow nextCursor to get them all.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1150,7 +1401,7 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -1158,9 +1409,19 @@
       "before": "FacetQueryResponse = { items, buckets, meta? }",
       "after": "ListResult<{ facet, values }> & { buckets: FacetBucket[], meta? }",
       "paged": false,
-      "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsRemoved": [
+        "query.search",
+        "query.createdAfter",
+        "query.createdBefore",
+        "query.updatedAfter",
+        "query.updatedBefore"
+      ],
+      "optionsAdded": [
+        "q",
+        "createdAt",
+        "updatedAt"
+      ],
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -1168,29 +1429,46 @@
       "before": "FacetQueryResponse = { items, buckets, meta? }",
       "after": "ListResult<{ facet, values }> & { buckets: FacetBucket[], meta? }",
       "paged": false,
-      "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsRemoved": [
+        "query.search",
+        "query.createdAfter",
+        "query.createdBefore",
+        "query.updatedAfter",
+        "query.updatedBefore"
+      ],
+      "optionsAdded": [
+        "q",
+        "createdAt",
+        "updatedAt"
+      ],
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
       "name": "files.list",
       "before": "{ ok: true, files: FileRecord[] }",
       "after": "ListResult<FileRecord>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "cursor",
+        "limit"
+      ],
+      "note": "limit was already there; cursor is new, so follow nextCursor for the rest."
     },
     {
       "kind": "list",
       "name": "form.list",
       "before": "any[]",
       "after": "ListResult<any>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "The options come after `admin`: `form.list(collectionId, admin?, { limit, cursor })`. Now paged: 50 forms unless you give `limit` (at most 1000).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1200,7 +1478,7 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -1210,17 +1488,20 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
       "name": "integrations.listEntityRuns",
       "before": "{ runs, nextCursor? }",
       "after": "ListResult<FlowRun>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "cursor",
+        "limit"
+      ],
+      "note": "limit was already there; cursor is new."
     },
     {
       "kind": "list",
@@ -1240,13 +1521,17 @@
       "name": "integrations.listFlows",
       "before": "{ flows }",
       "after": "ListResult<IntegrationFlow>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
       "typesRemoved": [
         "FlowList"
       ],
-      "note": ""
+      "note": "Now paged (50 at a time): a collection with more than 50 flows must follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1259,7 +1544,7 @@
       "typesRemoved": [
         "RecordTypesResponse"
       ],
-      "note": ""
+      "note": "A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -1323,24 +1608,35 @@
       "name": "interactions.publicMyInteractions",
       "before": "InteractionEventRow[]",
       "after": "ListResult<InteractionEventRow>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "cursor",
+        "limit"
+      ],
+      "note": "Now paged: `limit` is the page size. Follow nextCursor for the rest. The trailing authToken parameter is unchanged."
     },
     {
       "kind": "list",
       "name": "interactions.query",
       "before": "InteractionEventRow[]",
       "after": "ListResult<InteractionEventRow>",
-      "paged": false,
-      "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "paged": true,
+      "optionsRemoved": [
+        "order",
+        "include"
+      ],
+      "optionsAdded": [
+        "cursor",
+        "orderBy",
+        "expand",
+        "limit"
+      ],
+      "note": "order: 'ASC' | 'DESC' becomes orderBy: [{ timestamp: 'asc' | 'desc' }]; include: ['interaction'] becomes expand: ['interaction']. Now paged: `limit` is the page size, follow nextCursor for the rest."
     },
     {
       "kind": "list",
-      "name": "jobs.listJobs",
+      "name": "jobs.list",
       "before": "{ items, limit, offset }",
       "after": "ListResult<Job>",
       "paged": true,
@@ -1377,79 +1673,117 @@
       "name": "journeysAnalytics.recipients",
       "before": "string[]",
       "after": "ListResult<string>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
+      "optionsAdded": [
+        "cursor",
+        "limit"
+      ],
       "typesRemoved": [
         "JourneyStepRecipientsResponse"
       ],
-      "note": ""
+      "note": "Now paged: `limit` is the page size. Follow nextCursor for the rest."
     },
     {
       "kind": "list",
       "name": "knowledge.listSets",
       "before": "KnowledgeSet[]",
       "after": "ListResult<KnowledgeSet>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time): follow nextCursor to get every set.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "knowledge.listSources",
       "before": "KnowledgeSource[]",
       "after": "ListResult<KnowledgeSource>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time): follow nextCursor to get every source.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "knowledge.publicSearch",
       "before": "KnowledgeSearchResponse { query, results, mode }",
       "after": "ListResult<KnowledgeSearchResult> & Pick<KnowledgeSearchResponse, 'query' | 'mode'>",
-      "paged": false,
-      "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": "`results` is `items`; `query` and `mode` stay beside it."
+      "paged": true,
+      "optionsRemoved": [
+        "query",
+        "k"
+      ],
+      "optionsAdded": [
+        "q",
+        "limit",
+        "cursor"
+      ],
+      "note": "`results` is `items`; `query` and `mode` stay beside it. The search text is `q` (was `query`) and the number of matches is `limit` (was `k`). `q` is required, as `query` was. The answer still carries `query` and `mode` beside `items`."
     },
     {
       "kind": "list",
       "name": "knowledge.search",
       "before": "{ query, results, mode }",
       "after": "ListResult<KnowledgeSearchResult> & { query, mode }",
-      "paged": false,
-      "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": "`results` is `items`; `query` and `mode` stay beside it."
+      "paged": true,
+      "optionsRemoved": [
+        "query",
+        "k"
+      ],
+      "optionsAdded": [
+        "q",
+        "limit",
+        "cursor"
+      ],
+      "note": "`results` is `items`; `query` and `mode` stay beside it. The search text is `q` (was `query`) and the number of matches is `limit` (was `k`). `q` is required, as `query` was. The answer still carries `query` and `mode` beside `items`."
     },
     {
       "kind": "list",
       "name": "location.search",
       "before": "{ items, count }",
       "after": "ListResult<Location>",
-      "paged": false,
-      "optionsRemoved": [],
-      "optionsAdded": [],
+      "paged": true,
+      "optionsRemoved": [
+        "sort"
+      ],
+      "optionsAdded": [
+        "cursor",
+        "orderBy",
+        "limit"
+      ],
       "typesRemoved": [
         "LocationSearchResponse"
       ],
-      "note": "The old `count` was the number of rows returned; it is gone."
+      "note": "The old `count` was the number of rows returned; it is gone. `sort: 'countryName'` is now `orderBy: [{ countryName: 'asc' }]` (one field at a time: name, countryCode or countryName; a direction can now be given). The SDK no longer fills in limit=20 and sort=name itself; the API's own defaults are the same (20, by name, at most 100)."
     },
     {
       "kind": "list",
       "name": "lots.list",
       "before": "Lot[] (the SDK unwrapped { lots })",
       "after": "ListResult<Lot>",
-      "paged": false,
-      "optionsRemoved": [],
-      "optionsAdded": [],
+      "paged": true,
+      "optionsRemoved": [
+        "search"
+      ],
+      "optionsAdded": [
+        "limit",
+        "cursor",
+        "q"
+      ],
       "typesRemoved": [
         "ListLotsResponse"
       ],
-      "note": ""
+      "note": "ListLotsParams now extends ListOptions; `search` is now `q`. Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1473,10 +1807,17 @@
       "name": "lots.publicList",
       "before": "Lot[] (the SDK unwrapped { lots })",
       "after": "ListResult<Lot>",
-      "paged": false,
-      "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "paged": true,
+      "optionsRemoved": [
+        "search"
+      ],
+      "optionsAdded": [
+        "limit",
+        "cursor",
+        "q"
+      ],
+      "note": "`search` is now `q`. Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1511,20 +1852,28 @@
       "name": "loyalty.list",
       "before": "LoyaltyScheme[]",
       "after": "ListResult<LoyaltyScheme>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time). includeDeleted is unchanged.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "loyalty.listEarningRules",
       "before": "LoyaltyEarningRule[]",
       "after": "ListResult<LoyaltyEarningRule>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time): follow nextCursor to get every rule.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1549,10 +1898,14 @@
       "name": "loyalty.publicGetMe",
       "before": "LoyaltySchemeWithMembership[]",
       "after": "ListResult<LoyaltySchemeWithMembership>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time): a collection with more than 50 schemes must follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1573,20 +1926,28 @@
       "name": "loyalty.publicList",
       "before": "LoyaltyScheme[]",
       "after": "ListResult<LoyaltyScheme>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "loyalty.publicListEarningRules",
       "before": "LoyaltyEarningRule[]",
       "after": "ListResult<LoyaltyEarningRule>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1596,7 +1957,7 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A look-up by ids is never paged: everything found comes back in the one answer, so the function takes no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -1620,26 +1981,32 @@
       "name": "order.getLocationHistory",
       "before": "{ orderRef, orderId, locations, count }",
       "after": "ListResult<LocationScan> & { orderRef: string; orderId: string }",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
+      "optionsAdded": [
+        "cursor",
+        "limit"
+      ],
       "typesRemoved": [
         "LocationResponse"
       ],
-      "note": "The old `count` was the number of rows returned; it is gone."
+      "note": "The old `count` was the number of rows returned; it is gone. Now paged: `limit` (default 1000) is the page size. Follow nextCursor for the rest."
     },
     {
       "kind": "list",
       "name": "order.getTimeline",
       "before": "{ orderRef, orderId, timeline, count }",
       "after": "ListResult<TagScanEvent> & { orderRef: string; orderId: string }",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
+      "optionsAdded": [
+        "cursor",
+        "limit"
+      ],
       "typesRemoved": [
         "TimelineResponse"
       ],
-      "note": "The old `count` was the number of rows returned; it is gone."
+      "note": "The old `count` was the number of rows returned; it is gone. Now paged: `limit` (default 1000) is the page size. Follow nextCursor for the rest. from, to and isAdmin are unchanged."
     },
     {
       "kind": "list",
@@ -1648,15 +2015,17 @@
       "after": "ListResult<Order>",
       "paged": true,
       "optionsRemoved": [
-        "offset"
+        "offset",
+        "includeItems"
       ],
       "optionsAdded": [
-        "cursor"
+        "cursor",
+        "expand"
       ],
       "typesRemoved": [
         "ListOrdersResponse"
       ],
-      "note": "Now sends `direction` and `partyId`, which SDK 2 accepted and silently dropped."
+      "note": "Now sends `direction` and `partyId`, which SDK 2 accepted and silently dropped. includeItems: true becomes expand: ['items']. (order.get still takes includeItems: it is not a list.) `direction` here is still the sales / purchase filter, not a sort."
     },
     {
       "kind": "list",
@@ -1665,35 +2034,54 @@
       "after": "ListResult<Order>",
       "paged": true,
       "optionsRemoved": [
-        "offset"
+        "offset",
+        "query.sortBy",
+        "query.sortOrder",
+        "query.createdAfter",
+        "query.createdBefore",
+        "query.updatedAfter",
+        "query.updatedBefore",
+        "includeItems"
       ],
       "optionsAdded": [
-        "cursor"
+        "cursor",
+        "orderBy",
+        "createdAt",
+        "updatedAt",
+        "expand"
       ],
       "typesRemoved": [
         "QueryOrdersResponse"
       ],
-      "note": "`limit` and `cursor` go at the top level of the body."
+      "note": "`limit` and `cursor` go at the top level of the body. Sorting, dates and items moved out of `query` to the top of the body: orderBy: [{ createdAt: 'desc' }] (fields: createdAt, updatedAt, status, orderRef, customerId, itemCount) replaces query.sortBy / query.sortOrder; createdAt: { gte, lte } and updatedAt: { gte, lte } replace query.createdAfter/Before and query.updatedAfter/Before; expand: ['items'] replaces includeItems: true. The other filters stay inside `query`."
     },
     {
       "kind": "list",
       "name": "partner.claimSets",
       "before": "PartnerClaimSet[]",
       "after": "ListResult<PartnerClaimSet>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time): follow nextCursor to get every claim set.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "partner.list",
       "before": "Partner[]",
       "after": "ListResult<Partner>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1703,37 +2091,49 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A look-up by ids is never paged: everything found comes back in the one answer, so the function takes no `limit` or `cursor`."
     },
     {
       "kind": "list",
       "name": "partner.tagAttempts",
       "before": "ClientErrorEvent[]",
       "after": "ListResult<ClientErrorEvent>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Still the ten latest reports unless `limit` says otherwise."
     },
     {
       "kind": "list",
       "name": "products.list",
       "before": "ProductResponse[]",
       "after": "ListResult<ProductResponse>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor",
+        "expand"
+      ],
+      "note": "list(collectionId, admin?, options?). No longer every product in one answer: 50 at a time, follow nextCursor (or use all() / each()). To pass options on the public route give `false` (or undefined) for admin: list(c, false, { limit }). New: expand: ['facets'] returns each product's facets as full values (the route's expandFacets, which the SDK never sent before).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "products.listAssets",
       "before": "unknown",
       "after": "ListResult<AssetResponse>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "listAssets(collectionId, productId, admin?, options?). Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1744,82 +2144,119 @@
       "optionsRemoved": [
         "page.limit",
         "page.offset",
-        "page.cursor"
+        "page.cursor",
+        "query.search",
+        "sort",
+        "query.createdAfter",
+        "query.createdBefore",
+        "query.updatedAfter",
+        "query.updatedBefore"
       ],
       "optionsAdded": [
         "limit",
-        "cursor"
+        "cursor",
+        "q",
+        "orderBy",
+        "createdAt",
+        "updatedAt",
+        "expand"
       ],
       "typesRemoved": [
         "ProductQueryResponse"
       ],
-      "note": "The nested `page` option is gone: `limit` and `cursor` go at the top level of the body. `page.total` is `count`."
+      "note": "The nested `page` option is gone: `limit` and `cursor` go at the top level of the body. `page.total` is `count`. The standard words sit at the top of the body, beside limit and cursor: q (was query.search); orderBy: [{ updatedAt: 'desc' }] (was sort: [{ field, direction }]); createdAt / updatedAt: { gte, lte } (were query.createdAfter/Before, query.updatedAfter/Before); expand: ['facets'] (the route's expandFacets, never in the SDK type). The old names are refused by the API. orderBy fields: id, name, status, category, type, schemaType, sku, gtin, createdAt, updatedAt, sortOrder, groupKey. query.status / productIds / sku / gtin / facetEquals and includeDeleted are unchanged."
     },
     {
       "kind": "list",
       "name": "proof.findByProduct",
       "before": "ProofResponse[]",
       "after": "ListResult<ProofResponse>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [
         "lastCursor",
         "page",
-        "perPage"
+        "perPage",
+        "includes"
       ],
       "optionsAdded": [
-        "limit"
+        "limit",
+        "cursor",
+        "expand"
       ],
-      "note": "Not paged: it returns the newest `limit` (default 100), or every proof matching `filterBy`. Page through proofs with `proof.query`."
+      "note": "Not paged: it returns the newest `limit` (default 100), or every proof matching `filterBy`. Page through proofs with `proof.query`. ProofFindQuery now extends ListOptions: `includes: ['assets']` is now `expand: ['assets']`, and `cursor` is new (limit was already there, default 100). The type keeps its open index signature, so a leftover `includes` still compiles but the API refuses it."
     },
     {
       "kind": "list",
       "name": "proof.getByBatch",
       "before": "ProofResponse[]",
       "after": "ListResult<ProofResponse>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "getByBatch(collectionId, productId, batchId, options?). Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "proof.getByProduct",
       "before": "ProofResponse[]",
       "after": "ListResult<ProofResponse>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "getByProduct(collectionId, productId, options?). Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "proof.getByUser",
       "before": "ProofResponse[]",
       "after": "ListResult<ProofResponse>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "getByUser(collectionId, userId, options?). Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "proof.list",
       "before": "ProofResponse[]",
       "after": "ListResult<ProofResponse>",
-      "paged": false,
-      "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "paged": true,
+      "optionsRemoved": [
+        "include"
+      ],
+      "optionsAdded": [
+        "limit",
+        "cursor",
+        "expand"
+      ],
+      "note": "The second argument changed from a positional `include?: string[]` to an options object: proof.list(c, ['product']) becomes proof.list(c, { expand: ['product'] }). An array passed the old way is a type error; in plain JavaScript it would be ignored silently. `expand` takes only 'product' (the one name the table gives). Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "proof.listGrants",
       "before": "ProofGrant[]",
       "after": "ListResult<ProofGrant>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "listGrants(collectionId, productId, proofId, options?). Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1829,7 +2266,7 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": "`secrets` is `items`."
+      "note": "`secrets` is `items`. A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -1839,7 +2276,7 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": "`secrets` is `items`."
+      "note": "`secrets` is `items`. A fixed set: always returned whole, with no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -1877,10 +2314,14 @@
       "name": "serviceAccounts.list",
       "before": "{ serviceAccounts, access }",
       "after": "ListResult<ServiceAccount> & { access: ServiceAccountAccess[] }",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": "`serviceAccounts` is `items`; `access` stays beside it."
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "`serviceAccounts` is `items`; `access` stays beside it. Now paged (50 at a time): follow nextCursor to get every service account. `access` still comes beside `items` on each page.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1929,10 +2370,14 @@
       "name": "shop.products",
       "before": "{ currency, items }",
       "after": "ListResult<ShopProduct> & { currency: string }",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": "Only `nextCursor` (always null) is new."
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Only `nextCursor` (always null) is new. Now paged (50 at a time): a shop front with more than 50 things for sale must follow nextCursor. productIds is unchanged (still sent as one comma list).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -1967,33 +2412,45 @@
       "name": "subscriptions.mine",
       "before": "MySubscription[]",
       "after": "ListResult<MySubscription>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "subscriptions.plans",
       "before": "PublicPlan[]",
       "after": "ListResult<PublicPlan>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "tags.byRef",
       "before": "{ tags }",
       "after": "ListResult<Tag>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
       "typesRemoved": [
         "ReverseTagLookupResponse"
       ],
-      "note": ""
+      "note": "ReverseTagLookupParams now extends ListOptions. Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -2020,7 +2477,7 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A look-up by ids is never paged: everything found comes back in the one answer, so the function takes no `limit` or `cursor`."
     },
     {
       "kind": "list",
@@ -2030,57 +2487,77 @@
       "paged": false,
       "optionsRemoved": [],
       "optionsAdded": [],
-      "note": ""
+      "note": "A look-up by ids is never paged: everything found comes back in the one answer, so the function takes no `limit` or `cursor`."
     },
     {
       "kind": "list",
       "name": "tags.publicByRef",
       "before": "{ tags, embedded }",
       "after": "ListResult<Tag> & { embedded: TagEmbedded }",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "ReverseTagLookupParams now extends ListOptions. Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "tags.publicByRefPost",
       "before": "{ tags, embedded }",
       "after": "ListResult<Tag> & { embedded: TagEmbedded }",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "ByRefRequest now extends ListOptions (limit and cursor go at the top of the body). Now paged (50 at a time): follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "template.getAll",
       "before": "Template[]",
       "after": "ListResult<Template>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged: 50 templates unless you give `limit` (at most 1000). A collection with more than 50 templates needs `nextCursor` followed to get them all.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "template.getAllowed",
       "before": "TemplatePublic[]",
       "after": "ListResult<TemplatePublic>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged: 50 templates unless you give `limit` (at most 1000).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "template.getAllowedGlobal",
       "before": "TemplatePublic[]",
       "after": "ListResult<TemplatePublic>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged: 50 templates unless you give `limit` (at most 1000).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
@@ -2104,80 +2581,111 @@
       "name": "userAppData.list",
       "before": "any[]",
       "after": "ListResult<any>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time): an app that keeps more than 50 items per user must follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "userGroups.history",
       "before": "UserGroupChange[]",
       "after": "ListResult<UserGroupChange>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "cursor",
+        "limit"
+      ],
+      "note": "Now paged: `limit` (default 100, at most 1000) is the page size. Follow nextCursor for the rest. Applies with and without userGroupId."
     },
     {
       "kind": "list",
       "name": "userGroups.list",
       "before": "UserGroup[]",
       "after": "ListResult<UserGroup>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "userGroups.members",
       "before": "UserGroupMember[]",
       "after": "ListResult<UserGroupMember>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time): a group with more than 50 people must follow nextCursor.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "userGroups.ofUser",
       "before": "UserGroupRef[]",
       "after": "ListResult<UserGroupRef>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged (50 at a time).",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "variant.list",
       "before": "VariantResponse[]",
       "after": "ListResult<VariantResponse>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": ""
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "Now paged: 50 variants unless you give `limit` (at most 1000). A product with more than 50 variants needs `nextCursor` followed to get them all.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "wallet.list",
       "before": "{ ok: true, passes }",
       "after": "ListResult<WalletPass>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": "`passes` is `items`; `ok` is gone."
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "`passes` is `items`; `ok` is gone. Now paged (50 at a time): an event with more than 50 passes must follow nextCursor. refType, refId, contactId and includeVoided are unchanged.",
+      "firstPageOnly": true
     },
     {
       "kind": "list",
       "name": "wallet.mine",
       "before": "{ ok: true, passes }",
       "after": "ListResult<WalletPassSummary>",
-      "paged": false,
+      "paged": true,
       "optionsRemoved": [],
-      "optionsAdded": [],
-      "note": "`passes` is `items`; `ok` is gone."
+      "optionsAdded": [
+        "limit",
+        "cursor"
+      ],
+      "note": "`passes` is `items`; `ok` is gone. Now paged (50 at a time).",
+      "firstPageOnly": true
     },
     {
       "kind": "behaviour",
@@ -2208,6 +2716,16 @@
       "kind": "behaviour",
       "name": "unknown list options",
       "note": "A list refuses a query option it does not read (400 UNKNOWN_PARAMETER) instead of ignoring it. Watch for one options object shared by an admin call and a public call (includeDeleted, contactId, assignedTo; status, includeScheduled and includeExpired on public app records)."
+    },
+    {
+      "kind": "behaviour",
+      "name": "every list is one page",
+      "note": "A list returns 50 items unless you ask for another `limit`, and `nextCursor` says whether there are more. In SDK 2 many lists (products, variants, batches, proofs of a product, forms, templates, lots, claim sets, group members, an app's config items…) returned everything in one answer. Where the app needs them all, use `all((cursor) => x.list(…, { limit: 200, cursor }))` or follow `nextCursor`; where it shows a page, pass `limit` and `cursor`. The report marks each such call \"used to return everything\". The exception is a small fixed set (a page's widgets, facet definitions, config fields, a look-up by ids): always whole, no `limit` or `cursor`."
+    },
+    {
+      "kind": "behaviour",
+      "name": "one word for search, sort, dates and related data",
+      "note": "Search text is `q` (was `search`, `query`, `query.search`). Sorting is `orderBy: [{ field: 'asc' | 'desc' }]` (was `sort`, `order`, `sortBy` + `sortOrder`). A date field takes a range, `createdAt: { gte, lte }` (was `createdFrom`/`createdTo`, `recordedAfter`/`recordedBefore`, `query.createdAfter`/`Before`, or a `'gte:…'` string). Related things are `expand: ['items']` (was `includeItems`, `expandFacets`, `includes`, `include`). The time window of a log or schedule stays `from` / `to`. The API refuses the old spellings with the word to use, and refuses a sort field or related thing the list does not have. A bare sort field used to mean descending on app records, cases, threads and bookings: say the direction."
     }
   ]
 }

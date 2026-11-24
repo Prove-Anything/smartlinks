@@ -1,6 +1,7 @@
 // src/types/journeysAnalytics.ts
 
 import type { IdField } from './common'
+import type { ListOptions } from './list'
 
 // Stats
 export interface JourneyStatsRequest {
@@ -22,14 +23,14 @@ export interface JourneyStatsResponse {
 }
 
 // Recipients
-export interface JourneyStepRecipientsRequest {
+/** `journeysAnalytics.recipients` options: the filters, the time window (`from` / `to`), plus `limit` and `cursor`. */
+export interface JourneyStepRecipientsRequest extends ListOptions {
   status?: 'entered' | 'completed' | 'pending'
   idField?: IdField
   interactionId?: string
   outcome?: string
   from?: string
   to?: string
-  limit?: number
 }
 
 // Funnel Report

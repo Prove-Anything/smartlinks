@@ -1,4 +1,4 @@
-import type { ListResult, ListOptions } from './list.js';
+import type { ListResult, ListOptions, OrderBy, DateRange } from './list.js';
 /**
  * Visibility levels for app objects
  */
@@ -104,15 +104,17 @@ export interface AggregateResponse {
 }
 /**
  * Common query parameters for list endpoints. Paging is `limit` and `cursor` (from {@link ListOptions}):
- * pass the previous page's `nextCursor` as `cursor` to get the next page.
+ * pass the previous page's `nextCursor` as `cursor` to get the next page. Each list adds its own
+ * `orderBy` (the fields it sorts by). A date field takes a range: `createdAt: { gte, lte }`.
  */
 export interface ListQueryParams extends ListOptions {
-    sort?: string;
     includeDeleted?: boolean;
     status?: string;
     productId?: string;
-    createdAt?: string;
-    updatedAt?: string;
+    /** Created on or after `gte`, on or before `lte`. */
+    createdAt?: DateRange;
+    /** Last changed on or after `gte`, on or before `lte`. */
+    updatedAt?: DateRange;
 }
 /**
  * App Case object
@@ -210,7 +212,10 @@ export interface CaseListQueryParams extends ListQueryParams {
     proofId?: string;
     contactId?: string;
     assignedTo?: string;
-    closedAt?: string;
+    /** Closed on or after `gte`, on or before `lte`. */
+    closedAt?: DateRange;
+    /** Sort keys, most important first: `[{ priority: 'desc' }, { createdAt: 'asc' }]`. */
+    orderBy?: OrderBy<'createdAt' | 'updatedAt' | 'closedAt' | 'priority' | 'status' | 'category' | 'ref' | 'customId' | 'sourceSystem'>;
 }
 /**
  * Reply entry in a thread
@@ -319,6 +324,8 @@ export interface ThreadListQueryParams extends ListQueryParams {
     productId?: string;
     tag?: string;
     contactId?: string;
+    /** Sort keys, most important first: `[{ lastReplyAt: 'desc' }]`. */
+    orderBy?: OrderBy<'createdAt' | 'updatedAt' | 'lastReplyAt' | 'replyCount' | 'status'>;
 }
 /**
  * A single clause in a FacetRule. Tests one facet key against one or more values (OR semantics).
@@ -452,7 +459,7 @@ export interface MatchEntry extends AppRecord {
 }
 /**
  * Response from the match endpoint: `items` are the matched records, most specific first; `count` is
- * how many matched. It is not paged, so `nextCursor` is always `null`.
+ * how many matched. When you gave a `limit` and there are more, `nextCursor` carries on from there.
  */
 export interface MatchResult extends ListResult<MatchEntry> {
     /** Strategy used for this result */
@@ -501,6 +508,8 @@ export interface MatchRecordsInput {
     recordType?: string;
     /** Maximum records to return. Default 100, max 1000. */
     limit?: number;
+    /** A `nextCursor` from the previous answer: carries on from where that one stopped. */
+    cursor?: string;
     /** Include records whose startsAt is in the future. Default false. */
     includeScheduled?: boolean;
     /** Include records whose expiresAt is in the past. Default false. */
@@ -655,8 +664,12 @@ export interface RecordListQueryParams extends ListQueryParams {
     authorId?: string;
     parentType?: string;
     parentId?: string;
-    startsAt?: string;
-    expiresAt?: string;
+    /** Starts on or after `gte`, on or before `lte`. */
+    startsAt?: DateRange;
+    /** Expires on or after `gte`, on or before `lte`. */
+    expiresAt?: DateRange;
+    /** Sort keys, most important first: `[{ updatedAt: 'desc' }]`. */
+    orderBy?: OrderBy<'createdAt' | 'updatedAt' | 'startsAt' | 'expiresAt' | 'status' | 'recordType' | 'ref' | 'customId' | 'sourceSystem' | 'scopeType' | 'scopeId' | 'specificity' | 'label'>;
     /** Include records where startsAt is in the future. Default false. */
     includeScheduled?: boolean;
     /** Include records where expiresAt is in the past. Default false. */
@@ -692,8 +705,10 @@ export interface ResolveAllParams {
     recordType?: string;
     /** Only return records belonging to these tiers. */
     tiers?: Array<'proof' | 'batch' | 'variant' | 'product' | 'rule' | 'facet' | 'collection'>;
-    /** Safety cap. Default 500, max 5000. */
+    /** The most to return. Default 500; at most 1000 in one answer (carry on with `cursor`). */
     limit?: number;
+    /** A `nextCursor` from the previous answer: carries on from where that one stopped. */
+    cursor?: string;
     /** Point-in-time for scheduling evaluation (ISO 8601). Defaults to now. */
     at?: string;
     /** Include records whose startsAt is in the future. Default false. */
@@ -703,8 +718,8 @@ export interface ResolveAllParams {
 }
 /**
  * Response from the resolve-all endpoint: `items` are every applicable record sorted by precedence
- * (most specific first), each at most once; `count` is how many were returned. It is not paged, so
- * `nextCursor` is always `null` (see `truncated`).
+ * (most specific first), each at most once; `count` is how many were returned. When you gave a `limit`
+ * and there are more, `nextCursor` carries on from there.
  */
 export interface ResolveAllResult extends ListResult<ResolveAllEntry> {
     /** The context echoed back from the request (for verification). */

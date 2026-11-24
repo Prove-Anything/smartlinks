@@ -4,6 +4,7 @@ import type {
   ExtractFileRequest, ExtractFileResponse, ReadFileResponse, FileLinkResponse,
 } from "../types/files"
 import type { ListResult } from "../types/list"
+import { listQuery } from "../list"
 
 /**
  * Files: temporary or kept files, web pages and documents fetched by address, and what's extracted from them
@@ -33,16 +34,18 @@ export namespace files {
 
   /**
    * Files on this site that aren't ordinary uploads: temporary, fetched, derived or generated (admin).
-   * They come back in one answer (`nextCursor` is always null); `limit` is the most it returns.
+   * A page at a time: `limit` says how many, `cursor` is the previous page's `nextCursor`.
    *
    * @example
    * ```typescript
-   * const { items } = await files.list('coll_123', { appId: 'my-app', origin: 'fetched' })
+   * let page = await files.list('coll_123', { appId: 'my-app', origin: 'fetched', limit: 50 })
+   * while (page.nextCursor) {
+   *   page = await files.list('coll_123', { appId: 'my-app', origin: 'fetched', limit: 50, cursor: page.nextCursor })
+   * }
    * ```
    */
   export async function list(collectionId: string, query: ListFilesQuery = {}): Promise<ListResult<FileRecord>> {
-    const qs = new URLSearchParams(Object.entries(query).filter(([, v]) => v != null).map(([k, v]) => [k, String(v)])).toString()
-    return request(`${adm(collectionId)}${qs ? `?${qs}` : ""}`)
+    return request(`${adm(collectionId)}${listQuery(query)}`)
   }
 
   /** A new file from text, base64 or JSON. Temporary (default 1 day) and private. */

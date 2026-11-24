@@ -1,4 +1,5 @@
 import { request, post, put, del, requestWithOptions, setBearerToken, invalidateCache } from "../http.js";
+import { listQuery } from "../list.js";
 /**
  * Namespace containing helper functions for the new AuthKit API.
  * Legacy collection-based authKit helpers retained (marked as *Legacy*).
@@ -500,17 +501,19 @@ export var authKit;
     }
     authKit.removeMfaFactor = removeMfaFactor;
     /**
-     * List devices trusted to skip MFA challenges for the current user (authenticated). Returns
-     * `{ items, nextCursor }`: the devices are in `items`. The list is not paged, so `nextCursor` is
-     * always `null`.
+     * List devices trusted to skip MFA challenges for the current user (authenticated), a page at a
+     * time. Returns `{ items, nextCursor }`: the devices are in `items`. Page with `limit` (50 unless
+     * you say) and `cursor`.
      *
      * @example
      * ```typescript
-     * const { items: devices } = await authKit.listTrustedDevices(clientId)
+     * let page = await authKit.listTrustedDevices(clientId, { limit: 50 })
+     * page.items // TrustedDevice[]
+     * while (page.nextCursor) page = await authKit.listTrustedDevices(clientId, { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    async function listTrustedDevices(clientId) {
-        return request(`/authkit/${encodeURIComponent(clientId)}/mfa/trusted-devices`);
+    async function listTrustedDevices(clientId, options = {}) {
+        return request(`/authkit/${encodeURIComponent(clientId)}/mfa/trusted-devices${listQuery(options)}`);
     }
     authKit.listTrustedDevices = listTrustedDevices;
     /** Revoke a single trusted device by id (authenticated). */
@@ -539,16 +542,19 @@ export var authKit;
     }
     authKit.get = get;
     /**
-     * List a collection's AuthKit configs (admin). Returns `{ items, nextCursor }`: the configs are in
-     * `items`. The list is not paged, so `nextCursor` is always `null`. There is no public list.
+     * List a collection's AuthKit configs (admin), a page at a time. Returns `{ items, nextCursor }`:
+     * the configs are in `items`. Page with `limit` (50 unless you say) and `cursor`. There is no
+     * public list.
      *
      * @example
      * ```typescript
-     * const { items: kits } = await authKit.list('coll_123')
+     * let page = await authKit.list('coll_123', { limit: 50 })
+     * page.items // AuthKitConfig[]
+     * while (page.nextCursor) page = await authKit.list('coll_123', { limit: 50, cursor: page.nextCursor })
      * ```
      */
-    async function list(collectionId) {
-        const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit`;
+    async function list(collectionId, options = {}) {
+        const path = `/admin/collection/${encodeURIComponent(collectionId)}/authKit${listQuery(options)}`;
         return request(path);
     }
     authKit.list = list;

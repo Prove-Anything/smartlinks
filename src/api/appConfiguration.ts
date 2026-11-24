@@ -7,7 +7,8 @@ import {
   GetCollectionWidgetsOptions
 } from "../types/appManifest"
 import type { AppsConfigResponse } from "../types/collection"
-import type { ListResult } from "../types/list"
+import type { ListResult, ListOptions } from "../types/list"
+import { listQuery } from "../list"
 import type {
   GetWidgetInstanceOptions,
   WidgetInstance,
@@ -101,8 +102,8 @@ function buildAppPath(opts: AppConfigOptions, type: "config" | "data" | "dataIte
  * });
  * 
  * // Get all user's data for this app
- * const { items: beds } = await userAppData.list('garden-planner');
- * 
+ * const { items: beds } = await userAppData.list('garden-planner', { limit: 50 });
+ *
  * // Get specific item
  * const bed = await userAppData.get('garden-planner', 'bed-1');
  * 
@@ -164,20 +165,22 @@ export namespace userAppData {
   }
 
   /**
-   * List all user's data items for an app.
-   * 
+   * List the user's data items for an app, a page at a time.
+   *
    * @param appId - The app ID
-   * @returns `{ items, nextCursor }`: the data items are in `items`, each with an `id` field. The list
-   *   is not paged, so `nextCursor` is always `null`.
-   * 
+   * @param options - `limit` (50 unless you say) and `cursor`
+   * @returns `{ items, nextCursor }`: the data items are in `items`, each with an `id` field; pass
+   *   `nextCursor` back as `cursor` for the next page (null on the last).
+   *
    * @example
    * ```typescript
-   * const { items: beds } = await userAppData.list('garden-planner');
-   * // beds: [{ id: 'bed-1', name: 'Vegetables', ... }, { id: 'bed-2', ... }]
+   * let page = await userAppData.list('garden-planner', { limit: 50 });
+   * // page.items: [{ id: 'bed-1', name: 'Vegetables', ... }, { id: 'bed-2', ... }]
+   * while (page.nextCursor) page = await userAppData.list('garden-planner', { limit: 50, cursor: page.nextCursor });
    * ```
    */
-  export async function list(appId: string): Promise<ListResult<any>> {
-    const path = `/public/auth/app/${encodeURIComponent(appId)}/data`
+  export async function list(appId: string, options: ListOptions = {}): Promise<ListResult<any>> {
+    const path = `/public/auth/app/${encodeURIComponent(appId)}/data${listQuery(options)}`
     return request<ListResult<any>>(path)
   }
 
@@ -419,22 +422,24 @@ export namespace appConfiguration {
     * visibility, ownership, or relationships, prefer `app.records`, `app.cases`,
     * or `app.threads` instead.
    * 
-   * @param opts - Options including appId and scope (collectionId, productId, etc.)
-   * @returns `{ items, nextCursor }`: the data items are in `items`. The list is not paged, so
-   *   `nextCursor` is always `null`.
-   * 
+   * @param opts - Options including appId and scope (collectionId, productId, etc.), plus paging:
+   *   `limit` and `cursor`
+   * @returns `{ items, nextCursor, count }`: the data items are in `items`, 50 at a time unless you
+   *   give a `limit` (at most 1000). Pass `nextCursor` back as `cursor` for the next page; `null`
+   *   means that was the last one.
+   *
    * @example
    * ```typescript
-   * const { items } = await appConfiguration.getData({
-   *   appId: 'product-docs',
-   *   collectionId: 'my-collection',
-   *   productId: 'product-123'
-   * });
+   * const scope = { appId: 'product-docs', collectionId: 'my-collection', productId: 'product-123' }
+   * let page = await appConfiguration.getData({ ...scope, limit: 100 });
+   * while (page.nextCursor) {
+   *   page = await appConfiguration.getData({ ...scope, limit: 100, cursor: page.nextCursor });
+   * }
    * ```
    */
-  export async function getData(opts: AppConfigOptions): Promise<ListResult<any>> {
+  export async function getData(opts: AppConfigOptions & ListOptions): Promise<ListResult<any>> {
     const path = buildAppPath(opts, "data")
-    return request<ListResult<any>>(path)
+    return request<ListResult<any>>(`${path}${listQuery({ limit: opts.limit, cursor: opts.cursor })}`)
   }
 
   /**
@@ -526,7 +531,8 @@ export namespace appConfiguration {
    * @param collectionId - The collection ID
    * @param options - Optional settings (force: bypass cache)
    * @returns `{ items, nextCursor }`: one entry per app with a widget, in `items`, with its manifest
-   *   and bundle files. The list is not paged, so `nextCursor` is always `null`.
+   *   and bundle files. It always comes back whole: there is no `limit` or `cursor`, and `nextCursor`
+   *   is always `null`.
    * @throws ErrorResponse if the request fails
    * 
    * @example

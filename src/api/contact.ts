@@ -3,6 +3,7 @@ import { ContactResponse, ContactCreateRequest, ContactUpdateRequest, ContactSea
 
 import type { StandardQuery, QueryResult, QueryDescription } from "../types/query"
 import type { ListResult, ListOptions } from "../types/list"
+import { listQuery } from "../list"
 
 export namespace contact {
   /**
@@ -58,18 +59,14 @@ export namespace contact {
     collectionId: string,
     params?: ListOptions & { includeDeleted?: boolean }
   ): Promise<ListResult<ContactResponse>> {
-    const query = new URLSearchParams()
-    if (params?.limit !== undefined) query.set("limit", String(params.limit))
-    if (params?.cursor !== undefined) query.set("cursor", params.cursor)
-    if (params?.includeDeleted !== undefined) query.set("includeDeleted", String(params.includeDeleted))
-    const qs = query.toString()
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts${qs ? `?${qs}` : ""}`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts${listQuery(params)}`
     return request<ListResult<ContactResponse>>(path)
   }
 
   /**
    * Search the collection's contacts (admin only), a page at a time: free text (`q`, with `typeahead`
-   * for search-as-you-type), or filters on email, phone, id, tags, source, dates and custom fields.
+   * for search-as-you-type), or filters on email, phone, id, tags, source and custom fields. Filter by
+   * when the contact was created with a range: `createdAt: { gte, lte }`.
    * GET /admin/collection/:collectionId/contacts/search
    *
    * @example
@@ -77,55 +74,22 @@ export namespace contact {
    * let page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20 })
    * page.items // Contact[]
    * if (page.nextCursor) page = await contact.search({ collectionId, q: 'joh', typeahead: true, limit: 20, cursor: page.nextCursor })
+   *
+   * // Contacts created in November
+   * await contact.search({ collectionId, createdAt: { gte: '2026-11-01T00:00:00Z', lte: '2026-11-30T23:59:59Z' } })
    * ```
    */
   export async function search({
     collectionId,
-    q,
-    typeahead,
-    email,
-    phone,
-    id,
-    userId,
     tags,
     tagsAll,
-    source,
-    locale,
-    createdFrom,
-    createdTo,
-    externalIdKey,
-    externalIdValue,
-    customFieldKey,
-    customFieldValue,
-    limit,
-    cursor,
+    ...rest
   }: ContactSearchParams): Promise<ListResult<ContactResponse>> {
-    const query = new URLSearchParams()
-    if (q !== undefined) query.set("q", q)
-    if (typeahead !== undefined) query.set("typeahead", String(typeahead))
-    if (email !== undefined) query.set("email", email)
-    if (phone !== undefined) query.set("phone", phone)
-    if (id !== undefined) query.set("id", id)
-    if (userId !== undefined) query.set("userId", userId)
-    if (tags !== undefined) {
-      const arr = Array.isArray(tags) ? tags : tags.split(",").map(t => t.trim())
-      arr.forEach(t => query.append("tags", t))
-    }
-    if (tagsAll !== undefined) {
-      const arr = Array.isArray(tagsAll) ? tagsAll : tagsAll.split(",").map(t => t.trim())
-      arr.forEach(t => query.append("tagsAll", t))
-    }
-    if (source !== undefined) query.set("source", source)
-    if (locale !== undefined) query.set("locale", locale)
-    if (createdFrom !== undefined) query.set("createdFrom", createdFrom)
-    if (createdTo !== undefined) query.set("createdTo", createdTo)
-    if (externalIdKey !== undefined) query.set("externalIdKey", externalIdKey)
-    if (externalIdValue !== undefined) query.set("externalIdValue", externalIdValue)
-    if (customFieldKey !== undefined) query.set("customFieldKey", customFieldKey)
-    if (customFieldValue !== undefined) query.set("customFieldValue", customFieldValue)
-    if (limit !== undefined) query.set("limit", String(limit))
-    if (cursor !== undefined) query.set("cursor", cursor)
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/search?${query.toString()}`
+    // A comma list is sent the same way as an array: the parameter repeated.
+    const many = (v?: string | string[]) =>
+      v === undefined ? undefined : Array.isArray(v) ? v : v.split(",").map(t => t.trim())
+    const qs = listQuery({ ...rest, tags: many(tags), tagsAll: many(tagsAll) })
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/search${qs}`
     return request<ListResult<ContactResponse>>(path)
   }
 
@@ -265,11 +229,7 @@ export namespace contact {
     collectionId: string,
     params?: ListOptions
   ): Promise<ContactDuplicatesResponse> {
-    const query = new URLSearchParams()
-    if (params?.limit !== undefined) query.set("limit", String(params.limit))
-    if (params?.cursor !== undefined) query.set("cursor", params.cursor)
-    const qs = query.toString()
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/duplicates${qs ? `?${qs}` : ""}`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/contacts/duplicates${listQuery(params)}`
     return request<ContactDuplicatesResponse>(path)
   }
 

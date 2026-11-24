@@ -23,6 +23,7 @@ import type {
   TranslationUpdateRequest,
 } from '../types/translations'
 import type { ListResult } from '../types/list'
+import { listQuery } from '../list'
 
 interface NormalizedLookupRequest {
   targetLanguage: string
@@ -74,18 +75,6 @@ function normalizeLookupRequest(body: TranslationLookupRequest): NormalizedLooku
     },
     texts,
   }
-}
-
-function buildTranslationListQuery(params: TranslationListParams = {}): string {
-  const query = new URLSearchParams()
-
-  for (const [key, value] of Object.entries(params)) {
-    if (value === undefined || value === null) continue
-    query.append(key, String(value))
-  }
-
-  const queryString = query.toString()
-  return queryString ? `?${queryString}` : ''
 }
 
 function sameLanguage(left: string, right: string): boolean {
@@ -372,8 +361,7 @@ export namespace translations {
     collectionId: string,
     params?: TranslationListParams
   ): Promise<ListResult<TranslationRecord>> {
-    const query = buildTranslationListQuery(params)
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/translations${query}`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/translations${listQuery(params)}`
     return request<ListResult<TranslationRecord>>(path)
   }
 

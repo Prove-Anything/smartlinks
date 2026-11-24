@@ -189,13 +189,16 @@ export var comms;
     }
     comms.resolveSubscriptions = resolveSubscriptions;
     /**
-     * Analytics: Query communication events by user or contact. The events come back in one answer
-     * (`nextCursor` is always null); `limit` is the most it returns.
+     * Analytics: Query communication events by user or contact, a page at a time (`limit` and `cursor`
+     * in the body). The time window is `from` / `to`.
      * POST /admin/collection/:collectionId/comm/query/by-user
      *
      * @example
      * ```typescript
-     * const { items: events } = await comms.queryByUser(collectionId, { contactId, from: '2026-01-01', limit: 200 })
+     * const query = { contactId, from: '2026-01-01T00:00:00Z', limit: 200 }
+     * let page = await comms.queryByUser(collectionId, query)
+     * page.items // CommunicationEvent[]
+     * while (page.nextCursor) page = await comms.queryByUser(collectionId, { ...query, cursor: page.nextCursor })
      * ```
      */
     async function queryByUser(collectionId, body = {}) {
@@ -204,13 +207,16 @@ export var comms;
     }
     comms.queryByUser = queryByUser;
     /**
-     * Analytics: Recipient IDs for a communication source. The ids come back in one answer
-     * (`nextCursor` is always null); `limit` is the most it returns.
+     * Analytics: Recipient IDs for a communication source, a page at a time (`limit` and `cursor` in
+     * the body). The time window is `from` / `to`.
      * POST /admin/collection/:collectionId/comm/query/recipient-ids
      *
      * @example
      * ```typescript
-     * const { items: ids } = await comms.queryRecipientIds(collectionId, { broadcastId, idField: 'contactId' })
+     * const query = { broadcastId, idField: 'contactId' as const, limit: 500 }
+     * let page = await comms.queryRecipientIds(collectionId, query)
+     * page.items // the ids
+     * while (page.nextCursor) page = await comms.queryRecipientIds(collectionId, { ...query, cursor: page.nextCursor })
      * ```
      */
     async function queryRecipientIds(collectionId, body) {

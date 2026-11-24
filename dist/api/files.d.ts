@@ -25,11 +25,14 @@ import type { ListResult } from "../types/list.js";
 export declare namespace files {
     /**
      * Files on this site that aren't ordinary uploads: temporary, fetched, derived or generated (admin).
-     * They come back in one answer (`nextCursor` is always null); `limit` is the most it returns.
+     * A page at a time: `limit` says how many, `cursor` is the previous page's `nextCursor`.
      *
      * @example
      * ```typescript
-     * const { items } = await files.list('coll_123', { appId: 'my-app', origin: 'fetched' })
+     * let page = await files.list('coll_123', { appId: 'my-app', origin: 'fetched', limit: 50 })
+     * while (page.nextCursor) {
+     *   page = await files.list('coll_123', { appId: 'my-app', origin: 'fetched', limit: 50, cursor: page.nextCursor })
+     * }
      * ```
      */
     function list(collectionId: string, query?: ListFilesQuery): Promise<ListResult<FileRecord>>;

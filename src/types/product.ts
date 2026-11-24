@@ -1,6 +1,6 @@
 // src/types/product.ts
 import { AssetRef } from "./asset"
-import type { ListOptions } from "./list"
+import type { ListOptions, OrderBy, DateRange } from "./list"
 
 export type JsonPrimitive = string | number | boolean | null
 
@@ -49,24 +49,43 @@ export interface ProductFacetValue {
  */
 export type ProductFacetMap = Record<string, string[]>
 
-/** Body for products.query(): filters and sorting, with `limit` (default 50) and `cursor` for paging. */
+/**
+ * Body for products.query(): search, sorting, date ranges and filters, with `limit` (default 50) and
+ * `cursor` for paging.
+ *
+ * @example
+ * ```typescript
+ * await products.query(collectionId, {
+ *   q: 'cabernet',
+ *   orderBy: [{ updatedAt: 'desc' }, { name: 'asc' }],
+ *   createdAt: { gte: '2026-11-01T00:00:00Z' },
+ *   expand: ['facets'],
+ *   query: { status: ['active'] },
+ *   limit: 20,
+ * })
+ * ```
+ */
 export interface ProductQueryRequest extends ListOptions {
+  /** Search text. */
+  q?: string
+  /** What to sort by, most important first. */
+  orderBy?: OrderBy<
+    'id' | 'name' | 'status' | 'category' | 'type' | 'schemaType' | 'sku' | 'gtin' | 'createdAt' | 'updatedAt' | 'sortOrder' | 'groupKey'
+  >
+  /** Only products created in this range. */
+  createdAt?: DateRange
+  /** Only products last updated in this range. */
+  updatedAt?: DateRange
+  /** Related things to bring along: `'facets'` gives each product's facets as full values. */
+  expand?: Array<'facets'>
+  /** The other filters. */
   query?: {
-    search?: string
     status?: string[]
     productIds?: string[]
     sku?: string
     gtin?: string
-    updatedAfter?: ISODateString
-    updatedBefore?: ISODateString
-    createdAfter?: ISODateString
-    createdBefore?: ISODateString
     facetEquals?: Record<string, JsonValue>
   }
-  sort?: Array<{
-    field: string
-    direction: 'asc' | 'desc'
-  }>
   includeDeleted?: boolean
 }
 

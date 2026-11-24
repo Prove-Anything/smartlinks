@@ -7,17 +7,7 @@ import type {
   SegmentRecipientsResponse,
 } from "../types/segments"
 import type { ListResult, ListOptions } from "../types/list"
-
-function encodeQuery(params: Record<string, any>): string {
-  const search = new URLSearchParams()
-  for (const [key, value] of Object.entries(params)) {
-    if (value === undefined || value === null || value === "") continue
-    if (typeof value === "boolean") search.set(key, value ? "true" : "false")
-    else search.set(key, String(value))
-  }
-  const qs = search.toString()
-  return qs ? `?${qs}` : ""
-}
+import { listQuery } from "../list"
 
 export namespace segments {
   // Create
@@ -44,7 +34,7 @@ export namespace segments {
     collectionId: string,
     query: ListSegmentsQuery = {}
   ): Promise<ListResult<SegmentRecord>> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/segments/${encodeQuery(query as any)}`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/segments/${listQuery(query)}`
     return request<ListResult<SegmentRecord>>(path)
   }
 
@@ -101,7 +91,7 @@ export namespace segments {
     id: string,
     query: ListOptions = {}
   ): Promise<SegmentRecipientsResponse> {
-    const path = `/admin/collection/${encodeURIComponent(collectionId)}/segments/${encodeURIComponent(id)}/recipients${encodeQuery(query as any)}`
+    const path = `/admin/collection/${encodeURIComponent(collectionId)}/segments/${encodeURIComponent(id)}/recipients${listQuery(query)}`
     return request<SegmentRecipientsResponse>(path)
   }
 }

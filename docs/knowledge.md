@@ -58,14 +58,14 @@ failed re-read keeps the previous passages searchable. `knowledge.reindex` reads
 ```typescript
 // From a website, Portal or Hub: public sets, plus customer sets for a signed-in person
 const { items } = await knowledge.publicSearch('coll_123', {
-  query: 'how do I descale',
+  q: 'how do I descale',
   filters: { productId: 'prod_k200' }, // exact matches on a document's meta
-  k: 5,
+  limit: 5,
 })
 for (const r of items) console.log(r.title, r.heading, r.url, r.snippet)
 
 // Staff: every set
-const { items: staffMatches, mode } = await knowledge.search('coll_123', { query: 'refund policy for damaged items' })
+const { items: staffMatches, mode } = await knowledge.search('coll_123', { q: 'refund policy for damaged items' })
 ```
 
 Both searches answer in the same shape: the matches in `items`, best first, with `query` and `mode` beside
