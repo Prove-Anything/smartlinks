@@ -42,6 +42,8 @@ describe('dpp', () => {
     assert.deepEqual(call(), ['PUT', `${A}/registry/acc`, ids])
     await dpp.registry.check('c1', 'acc')
     assert.deepEqual(call(), ['POST', `${A}/registry/acc/check`, {}])
+    await dpp.registry.enrolPractice('c1')
+    assert.deepEqual(call(), ['POST', `${A}/registry/practice/enrol`, {}])
   })
 
   test('passports: publish by what they are for, versions, withdraw', async () => {

@@ -1,19 +1,28 @@
 // src/types/dpp.ts — EU Digital Product Passports hosted by SmartLinks, and the brand's EU registry connection (dpp.*)
 
-/** The EU registry's environments: `acc` = the EU test registry, `prod` = the live one, `local` = a development stand-in. */
-export type DppEnvironment = "acc" | "prod" | "local" | (string & {})
+/**
+ * The registry environments: `acc` = the EU test registry, `prod` = the live EU registry, `practice` = the SmartLinks
+ * practice registry (never the EU — for trying the whole flow before a brand is verified with the EU), `local` = a
+ * development stand-in.
+ */
+export type DppEnvironment = "acc" | "prod" | "practice" | "local" | (string & {})
 
 /** How specific a passport is: one item (e.g. one battery), a batch, or a model. */
 export type DppGranularity = "item" | "batch" | "model"
 
-/** What the admin still has to do to connect a brand to the registry, in order (null = connected). */
-export type DppRegistryNextStep = "make-key" | "enter-service-account" | "enter-organisation-id" | "check" | null
+/**
+ * What the admin still has to do to connect a brand to the registry, in order (null = connected). The practice
+ * registry has one step: `enrol-practice` (`dpp.registry.enrolPractice`).
+ */
+export type DppRegistryNextStep = "make-key" | "enter-service-account" | "enter-organisation-id" | "check" | "enrol-practice" | null
 
 /** A brand's EU registry Service Account, as SmartLinks uses it. Never includes the private key. */
 export interface DppRegistry {
   environment: DppEnvironment
-  /** e.g. "EU test registry" */
+  /** e.g. "EU test registry", "SmartLinks practice registry (not the EU)" */
   label: string
+  /** The SmartLinks practice registry: nothing sent there reaches the EU. Say so wherever it's shown. */
+  practice: boolean
   /** The registry's web address, where the brand enrols and manages its Service Account. */
   portal: string | null
   /** The Service Account's Client ID, from the registry. */
