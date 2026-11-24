@@ -12830,7 +12830,7 @@ paths:
     get:
       tags:
         - attestation
-      summary: List all attestations for a proof.
+      summary: "List all attestations for a proof, in one list (no pages): `{ items, nextCursor: null }`."
       operationId: attestation_list
       security: []
       parameters:
@@ -12855,9 +12855,8 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/AttestationResponse"
+                type: object
+                additionalProperties: true
         400:
           description: Bad request
         401:

@@ -31,7 +31,8 @@
     "smartlinks-register-release": "scripts/register-release.mjs",
     "smartlinks-publish": "scripts/publish.mjs",
     "smartlinks-doctor": "scripts/doctor.mjs",
-    "smartlinks-headless": "scripts/headless-check.mjs"
+    "smartlinks-headless": "scripts/headless-check.mjs",
+    "smartlinks-upgrade": "scripts/upgrade.mjs"
   },
   "files": [
     "dist/",
@@ -40,6 +41,7 @@
     "scripts/register-release.mjs",
     "scripts/publish.mjs",
     "scripts/doctor.mjs",
+    "scripts/upgrade.mjs",
     "scripts/headless-check.mjs",
     "scripts/lib/",
     "openapi.yaml",

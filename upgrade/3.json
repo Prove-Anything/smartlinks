@@ -12,11 +12,16 @@
     "to": "v8"
   },
   "guide": "docs/upgrading-to-3.md",
-  "about": "Every change between SDK 2 and SDK 3, as data. kind: \"renamed\" = the same call under a new name (mechanical: true means a script may rename it: same arguments, same result unless a \"list\" entry for the new name says otherwise); \"removed\" = no like-for-like call, the note says what to do (\"to\" names the nearest replacement); \"option\" = an option or argument that went; \"list\" = a function that now returns ListResult<T> = { items, nextCursor, count? } (\"paged\" says whether it takes limit + cursor); \"behaviour\" = something that changes at run time and the compiler cannot see.",
+  "about": "Every change between SDK 2 and SDK 3, as data. kind: \"renamed\" = the same call under a new name (mechanical: true means a script may rename it: same arguments, same result unless a \"list\" entry for the new name says otherwise); \"removed\" = no like-for-like call, the note says what to do (\"to\" names the nearest replacement); \"option\" = an option or argument that went; \"option\" entries with \"argument\" name the position (0 = first) of an argument a script may drop when it is the last one passed; \"list\" = a function that now returns ListResult<T> = { items, nextCursor, count? } (\"paged\" says whether it takes limit + cursor); \"behaviour\" = something that changes at run time and the compiler cannot see.",
   "hold": [
     {
       "when": "The app calls a writing function of the old `attestation` namespace (singular): attestation.create, attestation.update, attestation.remove.",
-      "why": "Its data has not been moved to the new `attestations` yet. SDK 3 keeps the namespace so the app still builds; leave those calls as they are."
+      "why": "Its data has not been moved to the new `attestations` yet. SDK 3 keeps the namespace so the app still builds; leave those calls as they are.",
+      "names": [
+        "attestation.create",
+        "attestation.update",
+        "attestation.remove"
+      ]
     }
   ],
   "unchanged": [
@@ -322,7 +327,8 @@
       "name": "authKit.list",
       "option": "admin (the argument)",
       "mechanical": true,
-      "note": "There is no public list of AuthKit configs, so the call without `true` always failed. Call `authKit.list(collectionId)`."
+      "note": "There is no public list of AuthKit configs, so the call without `true` always failed. Call `authKit.list(collectionId)`.",
+      "argument": 1
     },
     {
       "kind": "option",
@@ -336,7 +342,8 @@
       "name": "collection.list",
       "option": "admin (the argument)",
       "mechanical": true,
-      "note": "There is no public list of collections, so `collection.list(false)` always failed. Call `collection.list()`: it lists the collections the signed-in user can work on."
+      "note": "There is no public list of collections, so `collection.list(false)` always failed. Call `collection.list()`: it lists the collections the signed-in user can work on.",
+      "argument": 0
     },
     {
       "kind": "option",
@@ -578,6 +585,16 @@
       "optionsRemoved": [],
       "optionsAdded": [],
       "note": ""
+    },
+    {
+      "kind": "list",
+      "name": "attestation.list",
+      "before": "AttestationResponse[]",
+      "after": "ListResult<AttestationResponse>",
+      "paged": false,
+      "optionsRemoved": [],
+      "optionsAdded": [],
+      "note": "The old namespace stays, but its list is a list like any other."
     },
     {
       "kind": "list",

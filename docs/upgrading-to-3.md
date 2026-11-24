@@ -25,14 +25,35 @@ that file; this page explains it.
 
 ## How to move an app
 
-1. Set the dependency to `^3` and install.
-2. Type-check. Most of what needs changing is now a compile error: a removed name, a list used as an
-   array, an option that no longer exists.
-3. Work through the errors with the sections below.
-4. Search for the things the compiler can't see (see [What the compiler won't catch](#what-the-compiler-wont-catch)).
-5. Build, run the SDK doctor, and try each screen that lists something.
+1. Set the dependency to `^3` and install. Update `@proveanything/smartlinks-utils-ui` and
+   `@proveanything/smartlinks-auth-ui` to their SDK 3 versions if the app uses them.
+2. Run `npx smartlinks-upgrade`. It shows what it can change by itself and lists every other place that
+   needs changing, with file and line. `npx smartlinks-upgrade --write` makes the mechanical changes.
+3. Work through its list with the sections below.
+4. Type-check. What's left is a compile error: a removed name, a list used as an array, an option that
+   no longer exists.
+5. Search for the things neither can see (see [What the compiler won't catch](#what-the-compiler-wont-catch)).
+6. Build, run `npx smartlinks-doctor`, and try each screen that lists something.
 
-Apps built in Forge move with the **Move to SDK 3** upgrade step, which follows this guide.
+Apps built in Forge move with the **Move to SDK 3** upgrade step, which follows these steps.
+
+### What `smartlinks-upgrade` does
+
+It reads `upgrade/3.json` and your source, and finds SDK calls by what a name is bound to, not by how
+it's spelled: `product.get(…)` only counts where `product` is the SDK's (an import, `SL.product`, or a
+name taken from one of those). A variable of your own called `product` is never touched.
+
+| It changes (with `--write`) | It lists for you |
+|---|---|
+| Calls that only changed name: `product.get` → `products.get`, with the import | Every call to a list whose result changed, and whether it passes `offset` or `page` |
+| Renamed types, with their imports | Every removed call, with what replaces it |
+| The argument that went from `collection.list` and `authKit.list` | Options that went |
+| `sharedDependencies` in the manifest, to `v8` | Error codes compared with a dotted or camel-case string |
+| | Old `attestation` writes, to leave alone |
+
+Where the new name is already a variable in a file (`const products = await product.list(…)` is
+common), it imports the SDK's under another name: `products as productsApi`. Running it twice changes
+nothing the second time. It never installs, builds, commits or releases.
 
 ## Lists
 
@@ -249,7 +270,7 @@ Search for these by hand (or let the Forge step do it):
 ## Every list that changed
 
 <!-- upgrade-table:lists:start -->
-149 functions. `ListResult<T>` is `{ items: T[], nextCursor, count? }`.
+150 functions. `ListResult<T>` is `{ items: T[], nextCursor, count? }`.
 
 | Function | SDK 2 returned | SDK 3 returns | Options |
 |---|---|---|---|
@@ -270,6 +291,7 @@ Search for these by hand (or let the Forge step do it):
 | `asset.listForCollection` | `Asset[]` | `ListResult<Asset>` |  |
 | `asset.listForProduct` | `Asset[]` | `ListResult<Asset>` |  |
 | `asset.listForProof` | `Asset[]` | `ListResult<Asset>` |  |
+| `attestation.list` | `AttestationResponse[]` | `ListResult<AttestationResponse>` |  |
 | `attestations.list` | `{ attestations }` | `ListResult<Attestation>` | no `offset`; now `cursor` |
 | `attestations.publicContainerList` | `{ attestations, audience }` | `ListResult<Attestation> & { audience }` | no `offset`; now `cursor` |
 | `attestations.publicList` | `{ attestations, audience }` | `ListResult<Attestation> & { audience }` | no `offset`; now `cursor` |

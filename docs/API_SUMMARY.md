@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 3.0.0-alpha.0  |  Generated: 2026-11-24T10:25:38.479Z
+Version: 3.0.0-alpha.0  |  Generated: 2026-11-24T11:41:03.170Z
 
 This is a concise summary of all available API functions and types.
 
@@ -13543,8 +13543,8 @@ Get job status by ID (may return 404 if completed/removed) GET /admin/collection
 
 **list**(collectionId: string,
     productId: string,
-    proofId: string) → `Promise<AttestationResponse[]>`
-List all attestations for a proof.
+    proofId: string) → `Promise<ListResult<AttestationResponse>>`
+List all attestations for a proof, in one list (no pages): `{ items, nextCursor: null }`.
 
 **get**(collectionId: string,
     productId: string,

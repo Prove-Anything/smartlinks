@@ -1,5 +1,6 @@
 import { request, post, put, del } from "../http"
 import type { AttestationResponse, AttestationCreateRequest, AttestationUpdateRequest } from "../types/attestation"
+import type { ListResult } from "../types/list"
 
 /**
  * @deprecated Legacy Firestore-backed attestation API.
@@ -18,16 +19,16 @@ import type { AttestationResponse, AttestationCreateRequest, AttestationUpdateRe
  */
 export namespace attestation {
   /**
-   * List all attestations for a proof.
+   * List all attestations for a proof, in one list (no pages): `{ items, nextCursor: null }`.
    * @deprecated Use `attestations.list()` with `subjectType='proof'` instead.
    */
   export async function list(
     collectionId: string,
     productId: string,
     proofId: string
-  ): Promise<AttestationResponse[]> {
+  ): Promise<ListResult<AttestationResponse>> {
     const path = `/public/collection/${encodeURIComponent(collectionId)}/product/${encodeURIComponent(productId)}/proof/${encodeURIComponent(proofId)}/attestation`
-    return request<AttestationResponse[]>(path)
+    return request<ListResult<AttestationResponse>>(path)
   }
 
   /**
