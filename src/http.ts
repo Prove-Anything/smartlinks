@@ -446,6 +446,33 @@ function normalizeErrorResponse(responseBody: any, statusCode: number): ErrorRes
     }
   }
 
+  // The one error shape (API version 2027-01): { error: { code, message, details?, requestId? } }. Also
+  // covers OpenAI-style { error: { message, type, code } } from the AI routes, which used to come out
+  // as "[object Object]".
+  if (responseBody.error && typeof responseBody.error === 'object' && !Array.isArray(responseBody.error)) {
+    const e = responseBody.error
+    const d: Record<string, any> = { ...(e.details && typeof e.details === 'object' ? e.details : {}) }
+    if (e.requestId) d.requestId = e.requestId
+    if (e.type) d.type = e.type
+    return {
+      code: statusCode,
+      errorCode: typeof e.code === 'string' ? e.code : typeof e.type === 'string' ? e.type : undefined,
+      message: e.message ? String(e.message) : `Request failed with status ${statusCode}`,
+      details: Object.keys(d).length > 0 ? d : undefined,
+    }
+  }
+  // { ok: false, errors: [{ code, message }] } (app publishing): every message, and the first code.
+  if (Array.isArray(responseBody.errors) && responseBody.errors.length && !responseBody.message && !responseBody.errorText) {
+    const list = responseBody.errors
+    const messages = list.map((x: any) => (x && typeof x === 'object' ? x.message : x)).filter(Boolean).map(String)
+    const first = list.find((x: any) => x && typeof x === 'object' && typeof x.code === 'string')
+    return {
+      code: statusCode,
+      errorCode: first ? first.code : undefined,
+      message: messages.join(' ') || 'Request failed',
+      details: { errors: list, ...(responseBody.ok === false ? { ok: false } : {}) },
+    }
+  }
   // Extract all possible fields from the response
   const {
     code,

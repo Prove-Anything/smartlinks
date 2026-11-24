@@ -68,4 +68,27 @@ describe('API version headers', () => {
     assert.ok(!host.includes('smartlinks-app'))
     assert.deepEqual(Object.keys(getClientHeaders()).sort(), ['SmartLinks-App', 'SmartLinks-SDK', 'SmartLinks-Version'])
   })
+
+  test('errors in the one shape (2027-01) are read: code, message, details and the request id', async () => {
+    initializeApi({ baseURL: 'https://api.test/api/v1', apiKey: 'k', force: true })
+    ;(globalThis as any).fetch = async () => new Response(JSON.stringify({ error: { code: 'INVALID_QUERY', message: 'Unknown field "emial" on contacts.', details: { field: 'emial' }, requestId: 'r1' } }), { status: 400, headers: { 'content-type': 'application/json' } })
+    await assert.rejects(() => request('/x'), (e: any) => {
+      assert.equal(e.statusCode, 400)
+      assert.equal(e.errorCode, 'INVALID_QUERY')
+      assert.match(e.message, /Unknown field "emial" on contacts./)
+      assert.deepEqual(e.details, { field: 'emial', requestId: 'r1' })
+      return true
+    })
+  })
+
+  test('older shapes still read, and two that used to come out garbled now make sense', async () => {
+    initializeApi({ baseURL: 'https://api.test/api/v1', apiKey: 'k', force: true })
+    const reply = (body: any, status = 400) => { (globalThis as any).fetch = async () => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } }) }
+    reply({ errorCode: 'NOT_FOUND', errorText: 'No such contact' }, 404)
+    await assert.rejects(() => request('/a'), (e: any) => e.errorCode === 'NOT_FOUND' && /No such contact/.test(e.message))
+    reply({ error: { message: 'Rate limit exceeded', type: 'rate_limit_error' } }, 429)
+    await assert.rejects(() => request('/b'), (e: any) => e.errorCode === 'rate_limit_error' && /Rate limit exceeded/.test(e.message) && !/object Object/.test(e.message))
+    reply({ ok: false, errors: [{ code: 'MANIFEST_INVALID', message: 'meta.name is required' }] }, 422)
+    await assert.rejects(() => request('/c'), (e: any) => e.errorCode === 'MANIFEST_INVALID' && /meta.name is required/.test(e.message))
+  })
 })
