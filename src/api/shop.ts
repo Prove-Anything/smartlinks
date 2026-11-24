@@ -3,6 +3,7 @@
 // Studio use `shop.admin`. Prices, totals and "paid" are never taken from the browser: the server prices the
 // basket, and only Stripe's webhook marks an order paid.
 import { request, post, put, patch, del } from '../http'
+import { formatMinor } from '../utils/money'
 import type {
   ShopPublicConfig,
   ShopProduct,
@@ -106,13 +107,13 @@ export namespace shop {
     return request(`${pub(collectionId)}/orders/mine${qs(params)}`)
   }
 
-  /** Format minor units as money for the person: `formatMoney(1299, 'GBP')` → "£12.99". */
+  /**
+   * Format minor units as money, in the page's language unless `locale` says otherwise:
+   * `formatMoney(1299, 'EUR')` → "€12.99" in English, "12,99 €" in German. Zero-decimal currencies
+   * (JPY, KRW) are whole units: `formatMoney(1299, 'JPY')` → "¥1,299".
+   */
   export function formatMoney(amount: number, currency: string, locale?: string): string {
-    try {
-      return new Intl.NumberFormat(locale, { style: 'currency', currency }).format(amount / 100)
-    } catch {
-      return `${(amount / 100).toFixed(2)} ${currency}`
-    }
+    return formatMinor(amount, currency, locale)
   }
 
   /** The seller's side: settings, Stripe, prices and orders (collection admins). */

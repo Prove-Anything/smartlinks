@@ -25,6 +25,7 @@ var __asyncGenerator = (this && this.__asyncGenerator) || function (thisArg, _ar
     function reject(value) { resume("throw", value); }
     function settle(f, v) { if (f(v), q.shift(), q.length) resume(q[0][0], q[0][1]); }
 };
+import { API_VERSION, API_VERSION_HEADER, SDK_HEADER, APP_HEADER, SDK_VERSION } from "./apiVersion.js";
 import { SmartlinksApiError, SmartlinksOfflineError } from "./types/error.js";
 import { idbGet, idbSet, idbClear } from './persistentCache.js';
 let baseURL = null;
@@ -37,6 +38,29 @@ let proxyMode = false;
 let proxyTimeoutMs = 90000;
 let ngrokSkipBrowserWarning = false;
 let extraHeadersGlobal = {};
+// Which API contract this client was built for, and who it is (see ./apiVersion). Sent on every request
+// the SDK makes itself, and passed to the host when the app runs in a frame. NOT part of getApiHeaders():
+// a host uses that to make calls on a framed app's behalf, and must send the APP's version, not its own.
+let apiVersionSent = API_VERSION;
+let clientAppVersion = null;
+/** The identity headers for this client: API version, SDK release and (in an app) the app. */
+export function getClientHeaders() {
+    const h = { [API_VERSION_HEADER]: apiVersionSent, [SDK_HEADER]: `js/${SDK_VERSION}` };
+    // The app is whichever app the SDK is running for (initializeApi({ appId }) / setAppContext).
+    if (appContextId)
+        h[APP_HEADER] = `${String(appContextId).slice(0, 80)}${clientAppVersion ? `@${clientAppVersion}` : ""}`;
+    return h;
+}
+/** The API version this client asks for (the SDK's own, unless `initializeApi({ apiVersion })` set another). */
+export function getApiVersion() {
+    return apiVersionSent;
+}
+function addClientHeaders(headers) {
+    const lower = new Set(Object.keys(headers).map((k) => k.toLowerCase()));
+    for (const [k, v] of Object.entries(getClientHeaders()))
+        if (!lower.has(k.toLowerCase()))
+            headers[k] = v;
+}
 /**
  * Client platform opt-in. When set to 'native', every request carries the
  * `X-Client-Platform: native` header, which tells AuthKit login endpoints to
@@ -421,6 +445,35 @@ function normalizeErrorResponse(responseBody, statusCode) {
             message,
         };
     }
+    // The one error shape (API version 2027-01): { error: { code, message, details?, requestId? } }. Also
+    // covers OpenAI-style { error: { message, type, code } } from the AI routes, which used to come out
+    // as "[object Object]".
+    if (responseBody.error && typeof responseBody.error === 'object' && !Array.isArray(responseBody.error)) {
+        const e = responseBody.error;
+        const d = Object.assign({}, (e.details && typeof e.details === 'object' ? e.details : {}));
+        if (e.requestId)
+            d.requestId = e.requestId;
+        if (e.type)
+            d.type = e.type;
+        return {
+            code: statusCode,
+            errorCode: typeof e.code === 'string' ? e.code : typeof e.type === 'string' ? e.type : undefined,
+            message: e.message ? String(e.message) : `Request failed with status ${statusCode}`,
+            details: Object.keys(d).length > 0 ? d : undefined,
+        };
+    }
+    // { ok: false, errors: [{ code, message }] } (app publishing): every message, and the first code.
+    if (Array.isArray(responseBody.errors) && responseBody.errors.length && !responseBody.message && !responseBody.errorText) {
+        const list = responseBody.errors;
+        const messages = list.map((x) => (x && typeof x === 'object' ? x.message : x)).filter(Boolean).map(String);
+        const first = list.find((x) => x && typeof x === 'object' && typeof x.code === 'string');
+        return {
+            code: statusCode,
+            errorCode: first ? first.code : undefined,
+            message: messages.join(' ') || 'Request failed',
+            details: Object.assign({ errors: list }, (responseBody.ok === false ? { ok: false } : {})),
+        };
+    }
     // Extract all possible fields from the response
     const { code, errorCode, error, message, errorText, ok } = responseBody, rest = __rest(responseBody
     // Determine the error code (prefer numeric code, fall back to errorCode or error string)
@@ -555,6 +608,8 @@ export function initializeApi(options) {
         ? !!options.ngrokSkipBrowserWarning
         : inferredNgrok;
     extraHeadersGlobal = options.extraHeaders ? Object.assign({}, options.extraHeaders) : {};
+    apiVersionSent = options.apiVersion && /^\d{4}-(0[1-9]|1[0-2])$/.test(options.apiVersion) ? options.apiVersion : API_VERSION;
+    clientAppVersion = options.appVersion ? String(options.appVersion).slice(0, 30) : null;
     // Platform opt-in (native refresh tokens). Preserve an earlier value when a
     // re-init call omits it, so long-lived native sessions aren't downgraded by a
     // later bootstrap that forgot to pass platform.
@@ -1103,7 +1158,9 @@ async function proxyRequest(method, path, body, headers, options) {
         method,
         path,
         body: payloadBody,
-        headers,
+        // The app's own API version and identity: the host forwards these, so the answer is shaped for the
+        // app's SDK, not the host's.
+        headers: Object.assign(Object.assign({}, getClientHeaders()), (headers || {})),
         options: sanitizeProxyRequestOptions(options),
     };
     logDebug('[smartlinks] proxy:postMessage', { id, method, path, headers: headers ? redactHeaders(headers) : undefined, hasBody: !!body });
@@ -1346,8 +1403,6 @@ export async function request(path) {
                     headers["X-Client-Platform"] = clientPlatform;
                 if (grantToken)
                     headers["X-Grant-Token"] = grantToken;
-                if (grantToken)
-                    headers["X-Grant-Token"] = grantToken;
                 if (ngrokSkipBrowserWarning)
                     headers["ngrok-skip-browser-warning"] = "true";
                 const _getDomain = getSourceDomain();
@@ -1355,6 +1410,7 @@ export async function request(path) {
                     headers["X-Source-Domain"] = _getDomain;
                 for (const [k, v] of Object.entries(extraHeadersGlobal))
                     headers[k] = v;
+                addClientHeaders(headers);
                 logDebug('[smartlinks] GET fetch', { url, headers: redactHeaders(headers) });
                 const response = await fetch(url, { method: "GET", headers });
                 logDebug('[smartlinks] GET response', { url, status: response.status, ok: response.ok });
@@ -1434,6 +1490,7 @@ export async function post(path, body, extraHeaders) {
     for (const [k, v] of Object.entries(extraHeadersGlobal))
         if (!(k in headers))
             headers[k] = v;
+    addClientHeaders(headers);
     // Only set Content-Type for non-FormData bodies
     if (!(body instanceof FormData)) {
         headers["Content-Type"] = "application/json";
@@ -1496,6 +1553,7 @@ export async function put(path, body, extraHeaders) {
     for (const [k, v] of Object.entries(extraHeadersGlobal))
         if (!(k in headers))
             headers[k] = v;
+    addClientHeaders(headers);
     // Only set Content-Type for non-FormData bodies
     if (!(body instanceof FormData)) {
         headers["Content-Type"] = "application/json";
@@ -1558,6 +1616,7 @@ export async function patch(path, body, extraHeaders) {
     for (const [k, v] of Object.entries(extraHeadersGlobal))
         if (!(k in headers))
             headers[k] = v;
+    addClientHeaders(headers);
     // Only set Content-Type for non-FormData bodies
     if (!(body instanceof FormData)) {
         headers["Content-Type"] = "application/json";
@@ -1659,6 +1718,7 @@ export async function requestWithOptions(path, options) {
             for (const [k, v] of Object.entries(extraHeadersGlobal))
                 if (!(k in headers))
                     headers[k] = v;
+            addClientHeaders(headers);
             logDebug('[smartlinks] requestWithOptions fetch', { url, method: options.method || 'GET', headers: redactHeaders(headers), body: safeBodyPreview(options.body) });
             const response = await fetch(url, Object.assign(Object.assign({}, options), { headers }));
             logDebug('[smartlinks] requestWithOptions response', { url, status: response.status, ok: response.ok });
@@ -1711,6 +1771,7 @@ export async function requestStream(path, options) {
     const body = options === null || options === void 0 ? void 0 : options.body;
     const extraHeaders = (options === null || options === void 0 ? void 0 : options.headers) || {};
     const headers = Object.assign(Object.assign(Object.assign({}, extraHeaders), getApiHeaders()), { Accept: 'text/event-stream' });
+    addClientHeaders(headers);
     if (!(typeof FormData !== 'undefined' && body instanceof FormData) && body !== undefined && !Object.keys(headers).some(k => k.toLowerCase() === 'content-type')) {
         headers['Content-Type'] = 'application/json';
     }
@@ -1771,6 +1832,7 @@ export async function del(path, extraHeaders) {
     for (const [k, v] of Object.entries(extraHeadersGlobal))
         if (!(k in headers))
             headers[k] = v;
+    addClientHeaders(headers);
     logDebug('[smartlinks] DELETE fetch', { url, headers: redactHeaders(headers) });
     const response = await fetch(url, {
         method: "DELETE",

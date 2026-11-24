@@ -1,6 +1,6 @@
 # Smartlinks API Summary
 
-Version: 3.0.0-alpha.0  |  Generated: 2026-11-24T12:10:12.200Z
+Version: 3.0.0-alpha.0  |  Generated: 2026-11-24T13:16:04.728Z
 
 This is a concise summary of all available API functions and types.
 
@@ -15759,7 +15759,7 @@ The thank-you page: the order a Stripe checkout paid for, from the `session_id` 
 The signed-in buyer's orders, newest first, with their download links, a page at a time. `count` is how many they have in all. ```typescript let page = await shop.myOrders(collectionId, { limit: 20 }) page.items // ShopBuyerOrder[] if (page.nextCursor) page = await shop.myOrders(collectionId, { limit: 20, cursor: page.nextCursor }) ```
 
 **formatMoney**(amount: number, currency: string, locale?: string) → `string`
-Format minor units as money for the person: `formatMoney(1299, 'GBP')` → "£12.99".
+Format minor units as money, in the page's language unless `locale` says otherwise: `formatMoney(1299, 'EUR')` → "€12.99" in English, "12,99 €" in German. Zero-decimal currencies (JPY, KRW) are whole units: `formatMoney(1299, 'JPY')` → "¥1,299".
 
 ### shop.admin
 
@@ -15837,7 +15837,7 @@ Move to another plan's price. Up (a higher-ranked or dearer plan): at once, char
 Stripe's page for the member's card, invoices and cancelling. Send them to `url`. @throws `NO_BILLING`
 
 **describePrice**(p: { amount: number; currency: string; interval: 'month' | 'year' | null; intervalCount?: number }, locale?: string) → `string`
-Format a plan price for people: "£15 a month", "£150 a year", "£40 every 3 months", "£99 once".
+Format a plan price for people, in the page's language unless `locale` says otherwise: "£15 a month", "15 € pro Monat", "40 € tous les 3 mois", "99 € una tantum".
 
 ### subscriptions.admin
 

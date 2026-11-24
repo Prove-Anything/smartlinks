@@ -1,3 +1,7 @@
+/** The identity headers for this client: API version, SDK release and (in an app) the app. */
+export declare function getClientHeaders(): Record<string, string>;
+/** The API version this client asks for (the SDK's own, unless `initializeApi({ apiVersion })` set another). */
+export declare function getApiVersion(): string;
 type Logger = {
     debug?: (...args: any[]) => void;
     info?: (...args: any[]) => void;
@@ -56,6 +60,16 @@ export declare function initializeApi(options: {
      * Preserved across re-initialization when not supplied.
      */
     appId?: string;
+    /**
+     * The app's own version (its manifest `meta.version`). With `appId`, it tells SmartLinks which release of
+     * which app is calling (the `SmartLinks-App` header), so an old route is never retired under an app still using it.
+     */
+    appVersion?: string;
+    /**
+     * The API version to ask for, as year-month (for example `"2026-11"`). Defaults to the version this SDK
+     * release was built for (`API_VERSION`), which is what you want unless you are pinning an older contract.
+     */
+    apiVersion?: string;
     /**
      * The release channel this build is running as ('dev' | 'alpha' | 'beta' | 'stable'). Normally
      * left unset — hosts that run a non-production build (Forge preview of a Test build) pass

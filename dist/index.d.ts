@@ -1,4 +1,4 @@
-export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, getHttpCacheDiagnostics, resetHttpCacheDiagnostics, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, getBaseURL, isProxyEnabled, setBearerToken, getBearerToken, setGrantToken, getGrantToken, getAppContext, setAppContext, getAppChannel, setAppChannel } from "./http.js";
+export { initializeApi, isInitialized, hasAuthCredentials, configureSdkCache, invalidateCache, getHttpCacheDiagnostics, resetHttpCacheDiagnostics, request, post, put, patch, del, sendCustomProxyMessage, getApiHeaders, getClientHeaders, getApiVersion, getBaseURL, isProxyEnabled, setBearerToken, getBearerToken, setGrantToken, getGrantToken, getAppContext, setAppContext, getAppChannel, setAppChannel } from "./http.js";
 export * from "./api/index.js";
 export * from "./types/index.js";
 export { iframe } from "./iframe.js";
@@ -23,6 +23,7 @@ export { SHARED_DEPENDENCY_CONTRACT_VERSION, SHARED_DEPENDENCIES, SHARED_DEPENDE
 export type { SharedDependency, HostSharedDependencies } from './shared-dependencies.js';
 export type { GuideSurface, GuideInfo, ScreenContent, GuideWhere, GuideNavigate, GuideCard, GuideStartOptions } from './api/aiGuide.js';
 export type { LiveState, LiveHandle, LiveOptions, LiveEndpoints, LiveEvent, LiveMintReply, LiveToolReply, LiveToolHandler } from './live.js';
+export { API_VERSION, SDK_VERSION, API_VERSION_HEADER, SDK_HEADER, APP_HEADER, CLIENT_HEADER_NAMES } from './apiVersion.js';
 export { AI_TOOL_NAMES, BUILTIN_AI_TOOLS, getBuiltinAiTool } from './ai-tools.js';
 export type { BuiltinAiToolDescriptor } from './ai-tools.js';
 export type { PortalPathParams, Gs1DigitalLinkParams, ConditionParams, ConditionDebugOptions, ConditionDebugLogger, ConditionSet, Condition, UserInfo, ProductInfo, ProofInfo, CollectionInfo, } from './utils/index.js';

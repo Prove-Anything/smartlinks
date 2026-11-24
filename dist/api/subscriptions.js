@@ -4,6 +4,7 @@
 // taken from the browser: Stripe's webhook makes the membership, and the platform applies what it grants
 // (the member's `level` and user groups).
 import { request, post, put, patch, del } from '../http.js';
+import { describeRecurring } from '../utils/money.js';
 const pub = (collectionId) => `/public/collection/${encodeURIComponent(collectionId)}/memberships`;
 const adm = (collectionId) => `/admin/collection/${encodeURIComponent(collectionId)}/memberships`;
 function qs(params) {
@@ -77,20 +78,11 @@ export var subscriptions;
     }
     subscriptions.billingLink = billingLink;
     /**
-     * Format a plan price for people: "£15 a month", "£150 a year", "£40 every 3 months", "£99 once".
+     * Format a plan price for people, in the page's language unless `locale` says otherwise:
+     * "£15 a month", "15 € pro Monat", "40 € tous les 3 mois", "99 € una tantum".
      */
     function describePrice(p, locale) {
-        let money;
-        try {
-            money = new Intl.NumberFormat(locale, { style: 'currency', currency: p.currency, minimumFractionDigits: p.amount % 100 ? 2 : 0 }).format(p.amount / 100);
-        }
-        catch (_a) {
-            money = `${(p.amount / 100).toFixed(2)} ${p.currency}`;
-        }
-        if (!p.interval)
-            return `${money} once`;
-        const n = p.intervalCount || 1;
-        return n === 1 ? `${money} a ${p.interval}` : `${money} every ${n} ${p.interval}s`;
+        return describeRecurring(p, locale);
     }
     subscriptions.describePrice = describePrice;
     /** The business's side: plans, prices and members (collection admins). Payments use the shop's Stripe set-up. */
