@@ -216,7 +216,9 @@ function analyseFile(ts, checker, sf, idx, rel) {
               }
             } else if (call && objectKeys(call).has(opt.option)) {
               push('option', node, name, { option: opt.option, note: opt.note })
-            } else if (call && call.arguments.some((a) => !ts.isObjectLiteralExpression(a) && !ts.isStringLiteral(a) && !ts.isNumericLiteral(a) && a.kind !== ts.SyntaxKind.TrueKeyword && a.kind !== ts.SyntaxKind.FalseKeyword)) {
+            } else if (call && call.arguments.some((a) => !ts.isObjectLiteralExpression(a) && !ts.isStringLiteral(a) && !ts.isNumericLiteral(a) && a.kind !== ts.SyntaxKind.TrueKeyword && a.kind !== ts.SyntaxKind.FalseKeyword
+              // An id or the admin flag is not an options object: `facets.list(collectionId)` passes no options.
+              && !(ts.isIdentifier(a) && /(Id|Ids|^id|^admin|^isAdmin)$/.test(a.text)))) {
               // Options built somewhere else: can't see inside from here.
               push('option-check', node, name, { option: opt.option, note: opt.note })
             }
