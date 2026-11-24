@@ -39,6 +39,21 @@ registry.lastCheck                    // { ok: true, … } or { ok: false, messa
 (`make-key` → `enter-service-account` → `enter-organisation-id` → `check` → `null` when connected). Show them as
 numbered steps.
 
+## Practising first: the SmartLinks practice registry
+
+Until a brand is verified with the EU, connect it to the **SmartLinks practice registry** instead. It works like
+the EU registry (it signs in as the brand, reads each passport at its address, checks the public and restricted
+views and the required fields, and answers with registration ids), but **nothing reaches the EU**. Label it as
+practice wherever it's shown (`registry.practice` is `true`).
+
+```ts
+const { registry } = await dpp.registry.enrolPractice(collectionId)   // key + enrolment + Service Account + check
+await dpp.register(collectionId, "practice", passportIds, { wait: true })
+// passport.registration.practice → { status: "registered", registryId: "uri_practice_…" }
+```
+
+Moving to the EU later is the normal set-up for `acc` (then `prod`): the passports stay the same.
+
 ## Publishing passports
 
 Say what a passport is for (a product, a batch or one item) and its granularity. SmartLinks updates that passport
@@ -92,6 +107,7 @@ passport's `registration.acc` / `registration.prod` holds its status.
 | `dpp.groups(collectionId)` | product groups, kinds, every field and the required ones per view |
 | `dpp.read(collectionId, id, { version? })` | the public document at its address (no sign-in) |
 | `dpp.registry.list / get / makeKey / set / check` | the brand's registry connection |
+| `dpp.registry.enrolPractice(collectionId)` | connect to the SmartLinks practice registry in one step (never the EU) |
 | `dpp.passports.list / get / create / update / upsert / upsertMany / versions / withdraw / restore` | passports |
 | `dpp.register(collectionId, env, ids, { wait? })` | send to the registry |
 | `dpp.tasks.list / refresh` | registry requests and their outcomes |

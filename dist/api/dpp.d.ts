@@ -34,6 +34,12 @@ export declare namespace dpp {
         }): Promise<DppRegistry>;
         /** Save the Service Account's Client ID and key ID, and the brand's Organisation ID, from the registry. PUT /dpp/registry/:env */
         function set(collectionId: string, env: DppEnvironment, input: SetDppRegistryInput): Promise<DppRegistry>;
+        /**
+         * Connect the brand to the SmartLinks PRACTICE registry in one step — key, enrolment, Service Account and check —
+         * to try publishing and registering before the brand is verified with the EU. Never the EU: label it as practice
+         * wherever it's shown. POST /dpp/registry/practice/enrol
+         */
+        function enrolPractice(collectionId: string): Promise<DppRegistryCheckResult>;
         /** Sign in to the registry and read its product groups — proves the connection works. POST /dpp/registry/:env/check */
         function check(collectionId: string, env: DppEnvironment): Promise<DppRegistryCheckResult>;
     }

@@ -7,6 +7,9 @@
 // qualified e-seal, on the EU's site) and adds a Service Account holding SmartLinks' public key. From then on
 // SmartLinks registers for it:
 //
+// To try it all before the brand is verified with the EU: dpp.registry.enrolPractice(collectionId), then use 'practice'
+// wherever 'acc' appears below (the SmartLinks practice registry — never the EU).
+//
 //   1. dpp.registry.makeKey(collectionId, 'acc')            → show registry.publicPem to upload to the Service Account
 //   2. dpp.registry.set(collectionId, 'acc', { clientId, kid, orgIdentifier })
 //   3. dpp.registry.check(collectionId, 'acc')              → signs in and reads the registry's product groups
@@ -102,6 +105,15 @@ export namespace dpp {
     export async function set(collectionId: string, env: DppEnvironment, input: SetDppRegistryInput): Promise<DppRegistry> {
       const out = await put<{ registry: DppRegistry }>(`${base(collectionId)}/registry/${enc(env)}`, input)
       return out.registry
+    }
+
+    /**
+     * Connect the brand to the SmartLinks PRACTICE registry in one step — key, enrolment, Service Account and check —
+     * to try publishing and registering before the brand is verified with the EU. Never the EU: label it as practice
+     * wherever it's shown. POST /dpp/registry/practice/enrol
+     */
+    export async function enrolPractice(collectionId: string): Promise<DppRegistryCheckResult> {
+      return post<DppRegistryCheckResult>(`${base(collectionId)}/registry/practice/enrol`, {})
     }
 
     /** Sign in to the registry and read its product groups — proves the connection works. POST /dpp/registry/:env/check */
