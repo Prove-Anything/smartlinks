@@ -100,9 +100,18 @@ await app.records.query(collectionId, appId, {
 
 ## Sorting and paging
 
-`orderBy` takes up to 3 `{ field: 'asc' | 'desc' }`. Only fields that are never empty can be sorted
-on (ask `queryFields`). Pass the answer's `nextCursor` as `cursor` for the next page, with the **same**
-`where` and `orderBy`; a cursor from a different query is refused.
+`orderBy` takes up to 3 `{ field: 'asc' | 'desc' }`, on the fields that can sort (ask `queryFields`: their
+`can` includes `sort`). A few of them can be empty, such as an app record's `startsAt` and `expiresAt`:
+the rows without one come **last**, whichever way you sort, and paging carries on through them. Pass the
+answer's `nextCursor` as `cursor` for the next page, with the **same** `where` and `orderBy`; a cursor from
+a different query is refused.
+
+```typescript
+// An app's events, latest first; any without a date at the end
+await app.records.query(collectionId, appId, { where: { recordType: 'event' }, orderBy: [{ startsAt: 'desc' }], limit: 100 })
+```
+
+A page holds at most 200 rows (`limit` 1–200). To read more, follow `nextCursor`.
 
 ```typescript
 let cursor: string | null = null
