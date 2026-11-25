@@ -131,6 +131,32 @@ function analyseFile(ts, checker, sf, idx, rel) {
   }
 
   /** The SDK name an expression stands for (['products', 'list']), [] for the SDK itself, null for anything else. */
+  /**
+   * Is this SDK call hidden from the type-check? It is when the SDK was cast to `any` on the way to it
+   * (`(SL as any).batch.list(…)`), reached through a name declared `any` (`const facets: any = SL.facets`),
+   * or its result is put straight into something declared `any` (`const res: any = await x.list()`).
+   * Such a call compiles whatever it does with the answer, so the type-check finishes the pass without it.
+   */
+  const isAny = (typeNode) => !!typeNode && typeNode.kind === ts.SyntaxKind.AnyKeyword
+  const hiddenFromTypes = (node) => {
+    for (let n = node; n; ) {
+      if (ts.isAsExpression(n) && isAny(n.type)) return true
+      if (ts.isPropertyAccessExpression(n) || ts.isParenthesizedExpression(n) || ts.isNonNullExpression(n) || ts.isAsExpression(n)) { n = n.expression; continue }
+      if (ts.isIdentifier(n)) {
+        const sym = symbolOf(n)
+        const decl = sym && sym.valueDeclaration
+        if (decl && ts.isVariableDeclaration(decl) && isAny(decl.type)) return true
+      }
+      break
+    }
+    // The answer goes straight into an `any`.
+    let up = node.parent
+    while (up && (ts.isCallExpression(up) || ts.isAwaitExpression(up) || ts.isParenthesizedExpression(up))) up = up.parent
+    if (up && ts.isAsExpression(up) && isAny(up.type)) return true
+    if (up && ts.isVariableDeclaration(up) && isAny(up.type)) return true
+    return false
+  }
+
   const sdkPath = (node, depth = 0) => {
     if (!node || depth > 8) return null
     if (ts.isParenthesizedExpression(node) || ts.isNonNullExpression(node) || ts.isAsExpression(node)) return sdkPath(node.expression, depth + 1)
@@ -251,7 +277,9 @@ function analyseFile(ts, checker, sf, idx, rel) {
               : insideWalk(node) ? 'inside all() / each()'
               : markedAt(line) ? 'marked ok'
               : false
-            push('list', node, name, { before: list.before, after: list.after, paged: !!list.paged, firstPageOnly: !!list.firstPageOnly, decided, passes, called: !!call, note: list.note || '' })
+            // `any` hides the call from the type-check: it has to be gone through by hand, or the `any` removed.
+            const untyped = hiddenFromTypes(node) && !markedAt(line)
+            push('list', node, name, { before: list.before, after: list.after, paged: !!list.paged, firstPageOnly: !!list.firstPageOnly, decided, untyped, passes, called: !!call, note: list.note || '' })
           }
           for (const opt of idx.options.get(name) || []) {
             if (typeof opt.argument === 'number') {
@@ -386,8 +414,14 @@ function analyseFile(ts, checker, sf, idx, rel) {
   hint(/\b(?:errorCode|details\??\.error(?:Code)?)\s*(?:===|!==|==|!=)\s*['"`](?![A-Z0-9_]+['"`])[^'"`]+['"`]/, 'error codes',
     'Compares an error code with a dotted or camel-case string. Codes are UPPER_SNAKE in SDK 3 (`segments.list.failed` is `SEGMENTS_LIST_FAILED`); read it from `error.errorCode`.')
   hint(/\bdetails\??\.error(?:Code)?\b(?!\s*(?:===|!==|==|!=))/, 'error codes', 'Reads the code from `details`. Use `error.errorCode`.')
-  hint(/['"]@proveanything\/smartlinks['"]\s*:\s*['"]SL['"]/, 'shared dependencies',
-    'The SDK\'s window global is written out here as `SL`. In a build for SDK 3 it is `SL3`: take the globals from `SHARED_DEPENDENCIES` so this can\'t drift.')
+  // The SDK named as the global `SL`: in a build config that is this app's own build; in the app's source
+  // it is a loader handing the SDK to OTHER apps' bundles, which is a different and bigger thing.
+  const inSource = /^src\//.test(rel)
+  hint(/['"]@proveanything\/smartlinks['"]\s*:\s*['"]SL['"]/, 'shared dependencies', inSource
+    ? 'This file gives the SDK to other apps\' bundles (a loader of its own). Once this app is on SDK 3, each app it embeds must still get the SDK IT was built for: SDK 2 (the host\'s `window.SL`) for a v7 manifest, SDK 3 for v8. Use the host\'s `EmbeddedWidget` prop instead of a loader of your own (the doctor says the same); the host chooses per app. Until then this app should stay on SDK 2.'
+    : 'The SDK\'s window global is written out here as `SL`. In a build for SDK 3 it is `SL3`: take the globals from `SHARED_DEPENDENCIES` so this can\'t drift.')
+  hint(/Object\.assign\(\s*window\b[^)]*\)|\bwindow\.SL\s*=(?!=)|\(window as any\)\.SL\s*=(?!=)/, 'shared dependencies',
+    'Puts things on `window` for other bundles. `window.SL` belongs to the page\'s host and is SDK 2: an app on SDK 3 must never put its own SDK there, or every older app on the page gets SDK 3 and breaks. If this is a loader for embedded apps, use the host\'s `EmbeddedWidget` prop instead.')
   hint(/\bwindow\.SL\b(?!3)/, 'shared dependencies', 'Reads `window.SL`, which stays SDK 2. A component built on SDK 3 gets the SDK from its import (or `window.SL3`).')
 
   return { edits, work }
@@ -506,9 +540,9 @@ export function passesOf(result, { write = false } = {}) {
     {
       id: 'lists', title: 'Lists: the new result and the standard words', judge: 'type-check',
       // The script can see an option that is gone; whether `.items` is read is the type-check\'s to say.
-      left: lists.filter((w) => w.passes.length),
+      left: lists.filter((w) => w.passes.length || w.untyped),
       all: lists,
-      how: 'Read each list from `.items` (a total from `.count`, more from `.nextCursor`), page with `cursor`, and use `q`, `orderBy`, a date range and `expand`. Done when the app type-checks and no call here passes an option that is gone.',
+      how: 'Read each list from `.items` (a total from `.count`, more from `.nextCursor`), page with `cursor`, and use `q`, `orderBy`, a date range and `expand`. Done when the app type-checks, no call here passes an option that is gone, and none is hidden from the type-check by `any`.',
     },
     {
       id: 'pages', title: 'One page, or all of them', judge: 'script',
@@ -551,7 +585,9 @@ export function formatReport(result, { write = false, only = null } = {}) {
       '| | Pass | Left | Finished when |', '|---|---|---|---|')
     const done = { script: 'nothing is left here', 'type-check': 'the app type-checks, and nothing is left here' }
     passes.forEach((p, i) => {
-      const left = p.id === 'lists' ? `${plural(p.all.length, 'call')} to go through${p.left.length ? `, ${p.left.length} passing an option that is gone` : ''}`
+      const gone = p.id === 'lists' ? p.left.filter((w) => w.passes.length).length : 0
+      const hidden = p.id === 'lists' ? p.left.filter((w) => w.untyped).length : 0
+      const left = p.id === 'lists' ? `${plural(p.all.length, 'call')} to go through${gone ? `, ${gone} passing an option that is gone` : ''}${hidden ? `, ${hidden} the type-check can't see` : ''}`
         : p.id === 'pages' ? `${p.left.length} to decide${p.decided.length ? `, ${p.decided.length} decided` : ''}`
         : p.id === 'automatic' ? (write ? 'done' : plural(p.total, 'edit')) : String(p.left.length)
       out.push(`| ${i + 1} | **${p.title}** (\`${p.id}\`) | ${left} | ${done[p.judge]} |`)
@@ -603,7 +639,10 @@ export function formatReport(result, { write = false, only = null } = {}) {
       out.push('Each of these now returns `{ items, nextCursor, count? }`. At each place: read the list from `.items`,',
         'a total from `.count`, "is there more" from `.nextCursor !== null`, and page with `cursor`, not `offset` or `page`.',
         'Search is `q`, sorting is `orderBy: [{ field: \'asc\' | \'desc\' }]`, a date field takes `{ gte, lte }`, related things are `expand`.', '',
-        '**Finished when the app type-checks** (`npx tsc --noEmit`) and no call below still passes an option that is gone.',
+        '**Finished when the app type-checks** (`npx tsc --noEmit`), no call below still passes an option that is gone,',
+        'and none is marked **typed `any`**. A call reached through `any` (`(SL as any).batch.list(…)`, `const res: any = await …`)',
+        'compiles whatever it does with the answer, so the type-check passes without having looked at it. Take the `any` away',
+        '(best: the type-check then does the work), or go through the call and put `// sl-upgrade: ok <why>` on the line above.',
         'In a JavaScript app there is no type-check to lean on: go through every call below.', '')
       const byFile = new Map()
       for (const w of p.all) byFile.set(w.file, [...(byFile.get(w.file) || []), w])
@@ -612,6 +651,7 @@ export function formatReport(result, { write = false, only = null } = {}) {
         for (const w of items) {
           const bits = [`was \`${w.before}\``]
           if (w.passes.length) bits.push(`**passes ${w.passes.map((o) => '`' + o + '`').join(', ')}**, which is gone`)
+          if (w.untyped) bits.push('**typed `any`**: the type-check can\'t see this call')
           if (w.firstPageOnly) bits.push('**used to return everything**, now one page (pass 4)')
           if (!w.paged) bits.push('always returned whole (no `limit` or `cursor`)')
           if (!w.called) bits.push('passed as a value, not called here: follow it to where the result is read')
@@ -662,7 +702,7 @@ export function summary(result, { write = false } = {}) {
   const passes = passesOf(result, { write })
   const left = (id) => passes.find((p) => p.id === id).left.length
   return `${plural(result.files.reduce((a, f) => a + f.edits, 0), 'mechanical edit')} in ${plural(result.files.length, 'file')}; `
-    + `left to do: ${plural(left('replace'), 'call or option')} to replace, ${plural(n('list'), 'list call')} to go through, `
+    + `left to do: ${plural(left('replace'), 'call or option', 'calls or options')} to replace, ${plural(n('list'), 'list call')} to go through, `
     + `${plural(left('pages'), 'list')} to decide (one page or all), ${plural(left('errors'), 'check')}`
     + (n('hold') ? `; ${plural(n('hold'), 'call')} to leave alone` : '')
 }

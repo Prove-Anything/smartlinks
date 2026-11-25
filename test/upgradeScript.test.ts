@@ -226,6 +226,49 @@ describe('smartlinks-upgrade: moving an app to SDK 3', () => {
     assert.match(after.report, /\| 4 \| \*\*One page, or all of them\*\* \(`pages`\) \| 0 to decide, 2 decided \|/)
   })
 
+  test('a list call hidden from the type-check by `any` is not finished until the `any` goes or a person notes it', async () => {
+    const { result, report } = await run({ 'src/p.ts': [
+      "import * as SL from '@proveanything/smartlinks'",
+      'export const a = (c: string, p: string) => (SL as any).batch.list(c, p, { limit: 20 })',
+      'const facets: any = SL.facets',
+      'export const b = (c: string) => facets.publicList(c)',
+      'export const d = async (c: string) => { const res: any = await SL.tags.list(c, { limit: 5 }); return res }',
+      'export const e = (c: string) => SL.tags.list(c, { limit: 5 })',
+      '// sl-upgrade: ok read as { items } two lines down',
+      'export const f = async (c: string) => { const res: any = await SL.tags.list(c, { limit: 5 }); return res.items }',
+      '',
+    ].join('\n') }, { write: false })
+    const { passesOf } = await load
+    const lists = passesOf(result).find((p: any) => p.id === 'lists')
+    assert.deepEqual(lists.all.map((w: any) => [w.line, w.name, w.untyped]), [
+      [2, 'batch.list', true], [4, 'facets.publicList', true], [5, 'tags.list', true], [6, 'tags.list', false], [8, 'tags.list', false],
+    ])
+    assert.deepEqual(lists.left.map((w: any) => w.line), [2, 4, 5])
+    assert.match(report, /3 the type-check can't see/)
+    assert.match(report, /line 2 `batch\.list`: .*\*\*typed `any`\*\*: the type-check can't see this call/)
+  })
+
+  test('an app with a widget loader of its own is told what that means on SDK 3', async () => {
+    const { result } = await run({
+      'src/utils/widget-loader.ts': [
+        "import * as SL from '@proveanything/smartlinks'",
+        "const REQUIRE_MAP: Record<string, string> = { 'react': 'React', '@proveanything/smartlinks': 'SL' }",
+        'export function ensureGlobals() { Object.assign(window, { SL }) }',
+        'export const m = REQUIRE_MAP',
+        '',
+      ].join('\n'),
+      'vite.config.widget.ts': "export default { build: { rollupOptions: { output: { globals: { '@proveanything/smartlinks': 'SL' } } } } }\n",
+    }, { write: false })
+    const { passesOf } = await load
+    const left = passesOf(result).find((p: any) => p.id === 'errors').left
+    const inLoader = left.filter((w: any) => w.file === 'src/utils/widget-loader.ts').map((w: any) => w.note)
+    assert.equal(inLoader.length, 2)
+    assert.ok(inLoader.some((n: string) => /a loader of its own/.test(n) && /EmbeddedWidget/.test(n) && /stay on SDK 2/.test(n)))
+    assert.ok(inLoader.some((n: string) => /never put its own SDK there/.test(n)))
+    // The same words in a build config are about this app's own build, not a loader.
+    for (const w of left.filter((x: any) => x.file !== 'src/utils/widget-loader.ts')) assert.match(w.note, /In a build for SDK 3 it is `SL3`/)
+  })
+
   test('finds SDK calls reached through a name taken from the SDK', async () => {
     const { work } = await run({ 'src/j.ts': "export function f(host: any, c: string) {\n  const { tags, product } = host.SL\n  const records = host.SL.app.records\n  return [tags.list(c), product.find(c, {}), records.list(c, 'a')]\n}\n" }, { write: false })
     assert.deepEqual(work.filter((w) => w.kind === 'list').map((w) => w.name).sort(), ['app.records.list', 'tags.list'])

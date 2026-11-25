@@ -399,14 +399,14 @@
       "name": "facets.list",
       "option": "includeValues",
       "mechanical": false,
-      "note": "The list never read it: a facet list has no values. Read one facet with `facets.get(…, { includeValues: true })`, or its values with `facets.listValues`."
+      "note": "The list never read it, and never needed it: every facet in the list already comes with its `values`. Remove the option."
     },
     {
       "kind": "option",
       "name": "facets.publicList",
       "option": "includeValues",
       "mechanical": false,
-      "note": "The list never read it. Read a facet's values with `facets.publicListValues`."
+      "note": "The list never read it, and never needed it: every facet in the list already comes with its `values`. Remove the option."
     },
     {
       "kind": "option",

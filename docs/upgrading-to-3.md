@@ -47,6 +47,12 @@ something.
 `--check` exits 0 when nothing is left and 2 when something is, so a script or an agent can use it as a
 gate. `--check pages` (or any pass) prints only that pass's places.
 
+**In pass 3, `any` hides a call from the type-check.** `(SL as any).batch.list(…)` or
+`const res: any = await x.list()` compiles whatever it does with the answer, so the type-check passes
+without having looked at it. On the first real app moved, 11 of its 17 list calls were like this. The
+script marks each one **typed `any`** and the pass is not finished while any is left: take the `any`
+away so the type-check can do the work, or go through the call and note it (`// sl-upgrade: ok <why>`).
+
 **Pass 4 is the one to take slowly.** Nothing else catches it: code that reads `.items` from a list that
 used to return everything compiles, runs, and is wrong once there are more than 50. The script counts a
 call as decided when it says how many it wants (`limit`), follows the pages (`cursor`, or it sits inside
@@ -61,6 +67,18 @@ The same note settles a place in pass 5 that is right as it is. It never excuses
 exists.
 
 Apps built in Forge move with the **Move to SDK 3** upgrade step, which goes through these passes.
+
+### An app that embeds other apps
+
+A few apps load other apps' widgets themselves, with a loader of their own, instead of the host's
+`EmbeddedWidget` prop. **Such an app should not move to SDK 3 until it uses the host's `EmbeddedWidget`.**
+Its loader hands its own SDK to whatever it embeds, and puts it on `window.SL`. On SDK 3 that gives SDK 3
+to every embedded app built for SDK 2, and replaces the page's SDK 2 for every other older app on the
+page. The host's `EmbeddedWidget` chooses the SDK each embedded app was built for.
+
+The script flags this in pass 5 (a loader that names the SDK's global, or that puts things on `window`),
+and `smartlinks-doctor` warns about a hand-rolled loader on any SDK. The rule behind it: `window.SL` is the
+host's, and is SDK 2. An app on SDK 3 never writes to it.
 
 ### What `smartlinks-upgrade` does
 
@@ -264,8 +282,8 @@ longer have them.
 | `comms.queryRecipientIds` | `journeyStepId` | The server never read it. For one journey step's recipients use `journeysAnalytics.recipients`. |
 | `containers.publicList` | `status` | The public list is always the active containers. |
 | `containers.publicList` | `ref` | The public list never filtered by ref. |
-| `facets.list` | `includeValues` | The list never read it: a facet list has no values. Read one facet with `facets.get(…, { includeValues: true })`, or its values with `facets.listValues`. |
-| `facets.publicList` | `includeValues` | The list never read it. Read a facet's values with `facets.publicListValues`. |
+| `facets.list` | `includeValues` | The list never read it, and never needed it: every facet in the list already comes with its `values`. Remove the option. |
+| `facets.publicList` | `includeValues` | The list never read it, and never needed it: every facet in the list already comes with its `values`. Remove the option. |
 | `interactions.publicMyInteractions` | `scope` | The server never read it. |
 | `lots.publicList` | `includeDeleted` | Admin only: use `lots.list`. |
 | `attestations.summary` | `recordedAfter` | Now `recordedAt: { gte: … }`, the same range the attestation lists take. |
