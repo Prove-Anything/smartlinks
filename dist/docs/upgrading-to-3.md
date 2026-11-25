@@ -25,17 +25,42 @@ that file; this page explains it.
 
 ## How to move an app
 
-1. Set the dependency to `^3` and install. Update `@proveanything/smartlinks-utils-ui` and
-   `@proveanything/smartlinks-auth-ui` to their SDK 3 versions if the app uses them.
-2. Run `npx smartlinks-upgrade`. It shows what it can change by itself and lists every other place that
-   needs changing, with file and line. `npx smartlinks-upgrade --write` makes the mechanical changes.
-3. Work through its list with the sections below.
-4. Type-check. What's left is a compile error: a removed name, a list used as an array, an option that
-   no longer exists.
-5. Search for the things neither can see (see [What the compiler won't catch](#what-the-compiler-wont-catch)).
-6. Build, run `npx smartlinks-doctor`, and try each screen that lists something.
+Set the dependency to `^3` and install. Update `@proveanything/smartlinks-utils-ui` and
+`@proveanything/smartlinks-auth-ui` to their SDK 3 versions if the app uses them. Then run
+`npx smartlinks-upgrade`: it shows the move as five passes, with every place left in each.
 
-Apps built in Forge move with the **Move to SDK 3** upgrade step, which follows these steps.
+**Do the passes in order, one at a time. A pass is finished when its check passes, not when it looks
+finished.** Different kinds of change fail in different ways, and the ones nothing complains about are
+the ones that get missed when everything is done in one go.
+
+| | Pass | What it is | Finished when |
+|---|---|---|---|
+| 1 | `automatic` | The renames and dropped arguments the script makes itself | `npx smartlinks-upgrade --write` has run |
+| 2 | `replace` | Calls that no longer exist, and options that went. Each needs a decision | `npx smartlinks-upgrade --check replace` finds nothing |
+| 3 | `lists` | Every list returns `{ items, nextCursor, count? }` and takes the standard words | the app type-checks, and `--check lists` finds nothing |
+| 4 | `pages` | A list that used to return everything now returns one page: all of them, or a page? | `--check pages` finds nothing |
+| 5 | `errors` | Error codes compared as text, the SDK read from `window` | `--check errors` finds nothing |
+
+Then build, run `npx smartlinks-doctor`, run the app's own tests, and try each screen that lists
+something.
+
+`--check` exits 0 when nothing is left and 2 when something is, so a script or an agent can use it as a
+gate. `--check pages` (or any pass) prints only that pass's places.
+
+**Pass 4 is the one to take slowly.** Nothing else catches it: code that reads `.items` from a list that
+used to return everything compiles, runs, and is wrong once there are more than 50. The script counts a
+call as decided when it says how many it wants (`limit`), follows the pages (`cursor`, or it sits inside
+`all()` / `each()`), or carries a note from a person:
+
+```typescript
+// sl-upgrade: ok the picker shows the first few on purpose
+const { items } = await lots.list(collectionId)
+```
+
+The same note settles a place in pass 5 that is right as it is. It never excuses a call that no longer
+exists.
+
+Apps built in Forge move with the **Move to SDK 3** upgrade step, which goes through these passes.
 
 ### What `smartlinks-upgrade` does
 
@@ -43,11 +68,11 @@ It reads `upgrade/3.json` and your source, and finds SDK calls by what a name is
 it's spelled: `product.get(…)` only counts where `product` is the SDK's (an import, `SL.product`, or a
 name taken from one of those). A variable of your own called `product` is never touched.
 
-| It changes (with `--write`) | It lists for you |
+| It changes (with `--write`) | It lists for you, by pass |
 |---|---|
-| Calls that only changed name: `product.get` → `products.get`, with the import | Every call to a list whose result changed, and whether it passes `offset` or `page` |
-| Renamed types, with their imports | Every removed call, with what replaces it |
-| The argument that went from `collection.list` and `authKit.list` | Options that went |
+| Calls that only changed name: `product.get` → `products.get`, `jobs.listJobs` → `jobs.list`, with the import | Every removed call, with what replaces it, and options that went |
+| Renamed types, with their imports | Every call to a list whose result changed, and any option it passes that is gone |
+| The argument that went from `collection.list` and `authKit.list` | Every call to a list that used to return everything, until it is decided |
 | `sharedDependencies` in the manifest, to `v8` | Error codes compared with a dotted or camel-case string |
 | | Old `attestation` writes, to leave alone |
 

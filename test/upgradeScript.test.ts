@@ -124,7 +124,8 @@ describe('smartlinks-upgrade: moving an app to SDK 3', () => {
       ['app.records.list', 5, true, []],
     ])
     assert.match(report, /line 2 `tags\.list`: was `\{ tags, limit, offset \}`; \*\*passes `offset`\*\*, which is gone/)
-    assert.match(report, /What the script will change/)
+    assert.match(report, /## 1\. Automatic changes/)
+    assert.match(report, /## The passes/)
   })
 
   test('the two job namespaces become one: async.* and the old jobs names move to jobs.*', async () => {
@@ -161,10 +162,68 @@ describe('smartlinks-upgrade: moving an app to SDK 3', () => {
       ['lots.list', true, true, ['search']],
       ['knowledge.search', false, true, ['query', 'k']],
     ])
-    assert.match(report, /line 2 `variant\.list`: was `VariantResponse\[\]`; \*\*used to return everything\*\*, now one page/)
+    assert.match(report, /line 2 `variant\.list`: was `VariantResponse\[\]`; \*\*used to return everything\*\*, now one page \(pass 4\)/)
     assert.match(report, /line 3 `facets\.list`: .*always returned whole/)
     assert.match(report, /line 4 `lots\.list`: .*\*\*passes `search`\*\*, which is gone; \*\*used to return everything\*\*/)
-    assert.match(report, /replace the call with `all\(\(cursor\) => theList/)
+    assert.match(report, /`all\(\(cursor\) => theList/)
+    assert.match(report, /## 4\. One page, or all of them \(2 to decide\)/)
+  })
+
+  test('a list that used to return everything is decided once the call says how many, follows the pages, or is marked', async () => {
+    const { result } = await run({ 'src/m.ts': [
+      "import { variant, batch, lots, all, each } from '@proveanything/smartlinks'",
+      'export const a = (c: string, p: string) => variant.list(c, p)',
+      'export const b = (c: string, p: string) => variant.list(c, p, { limit: 20 })',
+      'export const d = (c: string, p: string, cursor?: string) => batch.list(c, p, { cursor })',
+      'export const e = (c: string, p: string) => all((cursor) => batch.list(c, p, { limit: 200, cursor }))',
+      'export const f = (c: string, page: any) => all(() => lots.list(c, page))',
+      '// sl-upgrade: ok the picker only ever shows the first few',
+      'export const g = (c: string) => lots.list(c)',
+      'export const h = (c: string, opts: any) => lots.list(c, opts)',
+      'export const i = { queryFn: lots.list }',
+      '',
+    ].join('\n') }, { write: false })
+    const { passesOf, leftToDo } = await load
+    const pages = passesOf(result).find((p: any) => p.id === 'pages')
+    assert.deepEqual(pages.left.map((w: any) => w.line), [2, 9, 10])
+    assert.deepEqual(pages.decided.map((w: any) => [w.line, w.decided]), [
+      [3, 'says how many'], [4, 'follows the pages'], [5, 'follows the pages'], [6, 'inside all() / each()'], [8, 'marked ok'],
+    ])
+    assert.equal(leftToDo(result, { only: 'pages' }), 3)
+  })
+
+  test('the passes: what is left in each, and nothing left once every place is dealt with', async () => {
+    const before = await run({ 'src/n.ts': [
+      "import { product, ai, variant, lots } from '@proveanything/smartlinks'",
+      'export const one = (c: string, id: string) => product.get(c, id)',
+      "export const gen = (c: string) => ai.generateContent(c, { contents: 'hi' })",
+      'export const vs = (c: string, p: string) => variant.list(c, p)',
+      "export const ls = (c: string) => lots.list(c, { search: 'oak' })",
+      "export const bad = (e: any) => e.errorCode === 'lots.list.failed'",
+      '',
+    ].join('\n') }, { write: false })
+    const { passesOf, leftToDo, formatReport } = await load
+    const left = (r: any, write = false) => Object.fromEntries(passesOf(r, { write }).map((p: any) => [p.id, p.left.length]))
+    assert.deepEqual(left(before.result), { automatic: 1, replace: 1, lists: 1, pages: 2, errors: 1 })
+    assert.match(before.report, /\| 4 \| \*\*One page, or all of them\*\* \(`pages`\) \| 2 to decide \|/)
+    // One pass on its own: only its places.
+    const only = formatReport(before.result, { only: 'pages' }) as string
+    assert.match(only, /## 4\. One page, or all of them \(2 to decide\)/)
+    assert.doesNotMatch(only, /## 2\.|## The passes|What no script can see/)
+
+    // The app after the move: every place dealt with.
+    const after = await run({ 'src/n.ts': [
+      "import { products, ai, variant, lots, all } from '@proveanything/smartlinks'",
+      'export const one = (c: string, id: string) => products.get(c, id)',
+      "export const gen = (c: string) => ai.chat.completions.create(c, { messages: [{ role: 'user', content: 'hi' }] })",
+      'export const vs = (c: string, p: string) => all((cursor) => variant.list(c, p, { limit: 200, cursor }))',
+      "export const ls = (c: string) => lots.list(c, { q: 'oak', limit: 20 })",
+      "export const bad = (e: any) => e.errorCode === 'LOTS_LIST_FAILED'",
+      '',
+    ].join('\n') }, { write: false })
+    assert.deepEqual(left(after.result), { automatic: 0, replace: 0, lists: 0, pages: 0, errors: 0 })
+    assert.equal(leftToDo(after.result), 0)
+    assert.match(after.report, /\| 4 \| \*\*One page, or all of them\*\* \(`pages`\) \| 0 to decide, 2 decided \|/)
   })
 
   test('finds SDK calls reached through a name taken from the SDK', async () => {

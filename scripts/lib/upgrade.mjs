@@ -82,6 +82,22 @@ function analyseFile(ts, checker, sf, idx, rel) {
   const work = [] // { kind, name, line, note, ... }
   const lineOf = (node) => sf.getLineAndCharacterOfPosition(node.getStart(sf)).line + 1
   const push = (kind, node, name, extra = {}) => work.push({ kind, file: rel, line: lineOf(node), name, ...extra })
+  // `// sl-upgrade: ok <why>` on the line, or the line above, says a person has looked at this place and it
+  // is right as it is (the first page is all that's wanted; the options come from elsewhere and carry a
+  // limit). It settles what only a person can judge; it never excuses a call that no longer exists.
+  const lines = text.split('\n')
+  const MARK = /sl-upgrade:\s*ok\b/i
+  const markedAt = (line) => MARK.test(lines[line - 1] || '') || MARK.test(lines[line - 2] || '')
+  /** Is this node inside the page function handed to `all(…)` or `each(…)`? */
+  const insideWalk = (node) => {
+    for (let n = node.parent; n; n = n.parent) {
+      if (!ts.isCallExpression(n)) continue
+      const callee = n.expression
+      const name = ts.isIdentifier(callee) ? callee.text : ts.isPropertyAccessExpression(callee) ? callee.name.text : ''
+      if ((name === 'all' || name === 'each') && n.arguments.some((a) => a.pos <= node.pos && node.end <= a.end)) return true
+    }
+    return false
+  }
 
   // 1. What the SDK's names are bound to in this file.
   const imports = new Map() // symbol → { imported, local, spec, decl }
@@ -226,7 +242,16 @@ function analyseFile(ts, checker, sf, idx, rel) {
           if (list) {
             const keys = call ? objectKeys(call) : new Set()
             const passes = (list.optionsRemoved || []).filter((o) => carries(keys, o))
-            push('list', node, name, { before: list.before, after: list.after, paged: !!list.paged, firstPageOnly: !!list.firstPageOnly, passes, called: !!call, note: list.note || '' })
+            // A list that used to return everything: has this call been decided? It has when it says how many
+            // it wants (`limit`), follows the pages (`cursor`, or it sits inside all() / each()), or is marked.
+            const line = lineOf(node)
+            const decided = !list.firstPageOnly ? null
+              : keys.has('cursor') ? 'follows the pages'
+              : keys.has('limit') ? 'says how many'
+              : insideWalk(node) ? 'inside all() / each()'
+              : markedAt(line) ? 'marked ok'
+              : false
+            push('list', node, name, { before: list.before, after: list.after, paged: !!list.paged, firstPageOnly: !!list.firstPageOnly, decided, passes, called: !!call, note: list.note || '' })
           }
           for (const opt of idx.options.get(name) || []) {
             if (typeof opt.argument === 'number') {
@@ -355,7 +380,7 @@ function analyseFile(ts, checker, sf, idx, rel) {
   const hint = (re, name, note) => {
     let m
     const g = new RegExp(re.source, re.flags.includes('g') ? re.flags : re.flags + 'g')
-    while ((m = g.exec(text))) work.push({ kind: 'check', file: rel, line: text.slice(0, m.index).split('\n').length, name, note })
+    while ((m = g.exec(text))) { const line = text.slice(0, m.index).split('\n').length; work.push({ kind: 'check', file: rel, line, name, note, ok: markedAt(line) }) }
   }
   // A code compared with something that isn't UPPER_SNAKE: 'segments.list.failed', 'notFound'.
   hint(/\b(?:errorCode|details\??\.error(?:Code)?)\s*(?:===|!==|==|!=)\s*['"`](?![A-Z0-9_]+['"`])[^'"`]+['"`]/, 'error codes',
@@ -441,100 +466,203 @@ export function upgradeApp({ dir, major = '3', write = false, ts = null } = {}) 
   return result
 }
 
-// ── the report ───────────────────────────────────────────────────────────────────────────────────
+// ── the passes ───────────────────────────────────────────────────────────────────────────────────
 
 const plural = (n, one, many = one + 's') => `${n} ${n === 1 ? one : many}`
 
-/** The plan as Markdown: what the script did (or would do), then the work left, file by file. */
-export function formatReport(result, { write = false } = {}) {
+/**
+ * The move as a series of passes, in the order to do them. Each has the places still to change (`left`)
+ * and what decides it is finished (`judge`): this script, run again, or the app's own type-check.
+ * A pass the script judges is done when `left` is empty; do them in order, one at a time.
+ *
+ *   automatic  the renames and dropped arguments the script makes itself (--write)
+ *   replace    calls that no longer exist, and options that went: each needs a decision
+ *   lists      every list returns { items, nextCursor, count? } and takes the standard words: the
+ *              type-check finds what is left (the script lists the calls, and judges the options)
+ *   pages      a list that used to return everything now returns one page: all of them, or a page?
+ *   errors     error codes compared as text, and the SDK read from window: found by search
+ */
+export function passesOf(result, { write = false } = {}) {
+  const of = (kind) => result.work.filter((w) => w.kind === kind)
+  const edits = result.files.reduce((n, f) => n + f.edits, 0)
+  const manifestChange = !!(result.manifest && result.manifest.from !== result.manifest.to)
+  const lists = of('list')
+  const seen = new Set()
+  const checks = of('check').filter((w) => { const k = w.file + ':' + w.line + w.note; if (seen.has(k)) return false; seen.add(k); return true })
+  const pages = lists.filter((w) => w.firstPageOnly)
+  return [
+    {
+      id: 'automatic', title: 'Automatic changes', judge: 'script',
+      // After --write they are made: nothing is left unless the files could not be written.
+      left: write ? [] : [...result.files.map((f) => ({ file: f.file, edits: f.edits })), ...(manifestChange ? [{ file: result.manifest.file, edits: 1 }] : [])],
+      total: edits + (manifestChange ? 1 : 0),
+      how: 'Run `npx smartlinks-upgrade --write`.',
+    },
+    {
+      id: 'replace', title: 'Calls to replace and options that went', judge: 'script',
+      left: [...of('removed'), ...of('by-hand'), ...of('option'), ...of('option-check')],
+      how: 'Each is a call that no longer exists, or an option a call no longer takes. Replace it as the note says.',
+    },
+    {
+      id: 'lists', title: 'Lists: the new result and the standard words', judge: 'type-check',
+      // The script can see an option that is gone; whether `.items` is read is the type-check\'s to say.
+      left: lists.filter((w) => w.passes.length),
+      all: lists,
+      how: 'Read each list from `.items` (a total from `.count`, more from `.nextCursor`), page with `cursor`, and use `q`, `orderBy`, a date range and `expand`. Done when the app type-checks and no call here passes an option that is gone.',
+    },
+    {
+      id: 'pages', title: 'One page, or all of them', judge: 'script',
+      left: pages.filter((w) => w.decided === false),
+      decided: pages.filter((w) => w.decided),
+      how: 'Each of these returned everything in SDK 2 and returns 50 now. Where the app needs every item (it filters, counts, looks one up, fills a picker): `all((cursor) => theList(…, { limit: 200, cursor }))`. Where it shows a page: pass `limit` (and `cursor` for the next). Where the first 50 really is all that is wanted, or the options come from elsewhere: put `// sl-upgrade: ok <why>` on the line above.',
+    },
+    {
+      id: 'errors', title: 'Error codes and the SDK global', judge: 'script',
+      left: checks.filter((w) => !w.ok),
+      how: 'Found by search, so read each one. Where the code is right as it is, put `// sl-upgrade: ok <why>` on the line above.',
+    },
+  ]
+}
+
+/** Is there anything left in the passes this script judges (all of them, or just `only`)? */
+export function leftToDo(result, { write = false, only = null } = {}) {
+  return passesOf(result, { write }).filter((p) => (only ? p.id === only : true)).reduce((n, p) => n + p.left.length, 0)
+}
+
+// ── the report ───────────────────────────────────────────────────────────────────────────────────
+
+/** The plan as Markdown: the passes, then each pass's places, file by file. */
+export function formatReport(result, { write = false, only = null } = {}) {
   const { table, work } = result
   const out = []
   const major = table.sdk.to
+  const passes = passesOf(result, { write })
+  const pass = (id) => passes.find((p) => p.id === id)
+  const show = (id) => !only || only === id
+  const where = (w) => `\`${w.file}:${w.line}\``
+  const of = (kind) => work.filter((w) => w.kind === kind)
+
   out.push(`# Moving to SDK ${major}`, '')
 
-  const edits = result.files.reduce((n, f) => n + f.edits, 0)
-  const manifestChange = result.manifest && result.manifest.from !== result.manifest.to
-  out.push(`## ${write ? 'Done by the script' : 'What the script will change (run again with --write)'}`, '')
-  if (!edits && !manifestChange) out.push('Nothing mechanical to change.', '')
-  for (const f of result.files) out.push(`- \`${f.file}\`: ${plural(f.edits, 'edit')} (renamed calls, dropped arguments, imports)`)
-  if (manifestChange) out.push(`- \`${result.manifest.file}\`: \`sharedDependencies\` ${result.manifest.from} → ${result.manifest.to}`)
-  if (edits || manifestChange) out.push('')
-
-  const of = (kind) => work.filter((w) => w.kind === kind)
-  const where = (w) => `\`${w.file}:${w.line}\``
+  if (!only) {
+    out.push('## The passes', '',
+      'Do them in this order, one at a time. A pass is finished when its check passes, not before:',
+      'run `npx smartlinks-upgrade --check <pass>` (it exits 0 when nothing is left), or the type-check where it says so.', '',
+      '| | Pass | Left | Finished when |', '|---|---|---|---|')
+    const done = { script: 'nothing is left here', 'type-check': 'the app type-checks, and nothing is left here' }
+    passes.forEach((p, i) => {
+      const left = p.id === 'lists' ? `${plural(p.all.length, 'call')} to go through${p.left.length ? `, ${p.left.length} passing an option that is gone` : ''}`
+        : p.id === 'pages' ? `${p.left.length} to decide${p.decided.length ? `, ${p.decided.length} decided` : ''}`
+        : p.id === 'automatic' ? (write ? 'done' : plural(p.total, 'edit')) : String(p.left.length)
+      out.push(`| ${i + 1} | **${p.title}** (\`${p.id}\`) | ${left} | ${done[p.judge]} |`)
+    })
+    out.push('', 'Then build, run the SDK doctor and the app\'s own tests, and say which screens changed. Never release: the owner does.', '')
+  }
 
   const hold = of('hold')
-  if (hold.length) {
+  if (hold.length && !only) {
     out.push('## Leave these as they are', '', hold[0].note, '')
     for (const w of hold) out.push(`- ${where(w)} \`${w.name}\``)
     out.push('')
   }
 
   const bad = result.packages.filter((p) => !p.ok)
-  if (bad.length) {
+  if (bad.length && !only) {
     out.push('## Packages to update first', '')
     for (const p of bad) out.push(`- \`${p.name}\` ${p.version} is built for SDK \`${p.range}\`. Install a version built for SDK ${major}, or it will read the old shapes.`)
     out.push('')
   }
 
-  const removed = [...of('removed'), ...of('by-hand')]
-  if (removed.length) {
-    out.push(`## Calls to replace (${removed.length})`, '')
-    for (const w of removed) out.push(`- ${where(w)} \`${w.name}\`${w.to ? ` → \`${w.to}\`` : ''}. ${w.note}`)
-    out.push('')
+  if (show('automatic')) {
+    const p = pass('automatic')
+    const manifestChange = result.manifest && result.manifest.from !== result.manifest.to
+    out.push(`## 1. ${p.title}`, '', write ? 'Made by the script:' : p.how, '')
+    if (!p.total) out.push('Nothing mechanical to change.', '')
+    for (const f of result.files) out.push(`- \`${f.file}\`: ${plural(f.edits, 'edit')} (renamed calls, dropped arguments, imports)`)
+    if (manifestChange) out.push(`- \`${result.manifest.file}\`: \`sharedDependencies\` ${result.manifest.from} → ${result.manifest.to}`)
+    if (p.total) out.push('')
   }
 
-  const options = [...of('option'), ...of('option-check')]
-  if (options.length) {
-    out.push(`## Options that went (${options.length})`, '')
-    for (const w of options) out.push(`- ${where(w)} \`${w.name}\` ${w.kind === 'option' ? 'passes' : 'may pass'} \`${w.option}\`. ${w.note}`)
-    out.push('')
-  }
-
-  const lists = of('list')
-  if (lists.length) {
-    out.push(`## Lists whose result changed (${lists.length})`, '',
-      'Each of these now returns `{ items, nextCursor, count? }`. At each place: read the list from `.items`,',
-      'a total from `.count`, "is there more" from `.nextCursor !== null`, and page with `cursor`, not `offset` or `page`.', '',
-      '**"Used to return everything"** marks a list that came back whole in SDK 2 and now comes back one page at a time',
-      '(50 unless you pass `limit`). Where the app needs every item (it filters, counts, looks one up, or fills a picker),',
-      'replace the call with `all((cursor) => theList(…, { limit: 200, cursor }))`. Where it shows a page, pass `limit` and `cursor`.', '')
-    const byFile = new Map()
-    for (const w of lists) byFile.set(w.file, [...(byFile.get(w.file) || []), w])
-    for (const [file, items] of byFile) {
-      out.push(`### \`${file}\``, '')
-      for (const w of items) {
-        const bits = [`was \`${w.before}\``]
-        if (w.passes.length) bits.push(`**passes ${w.passes.map((p) => '`' + p + '`').join(', ')}**, which is gone`)
-        if (w.firstPageOnly) bits.push('**used to return everything**, now one page')
-        if (!w.paged) bits.push('always returned whole (no `limit` or `cursor`)')
-        if (!w.called) bits.push('passed as a value, not called here: follow it to where the result is read')
-        if (w.note) bits.push(w.note)
-        out.push(`- line ${w.line} \`${w.name}\`: ${bits.join('; ')}`)
-      }
+  if (show('replace')) {
+    const p = pass('replace')
+    out.push(`## 2. ${p.title} (${p.left.length} left)`, '')
+    if (!p.left.length) out.push('Nothing left.', '')
+    else {
+      out.push(p.how, '')
+      for (const w of [...of('removed'), ...of('by-hand')]) out.push(`- ${where(w)} \`${w.name}\`${w.to ? ` → \`${w.to}\`` : ''}. ${w.note}`)
+      for (const w of [...of('option'), ...of('option-check')]) out.push(`- ${where(w)} \`${w.name}\` ${w.kind === 'option' ? 'passes' : 'may pass'} \`${w.option}\`. ${w.note}`)
       out.push('')
     }
   }
 
-  const checks = of('check')
-  if (checks.length) {
-    out.push(`## Check by hand (${checks.length})`, '')
-    const seen = new Set()
-    for (const w of checks) { const k = w.file + ':' + w.line + w.note; if (seen.has(k)) continue; seen.add(k); out.push(`- ${where(w)} ${w.note}`) }
-    out.push('')
+  if (show('lists')) {
+    const p = pass('lists')
+    out.push(`## 3. ${p.title} (${plural(p.all.length, 'call')})`, '')
+    if (!p.all.length) out.push('This app calls no list that changed.', '')
+    else {
+      out.push('Each of these now returns `{ items, nextCursor, count? }`. At each place: read the list from `.items`,',
+        'a total from `.count`, "is there more" from `.nextCursor !== null`, and page with `cursor`, not `offset` or `page`.',
+        'Search is `q`, sorting is `orderBy: [{ field: \'asc\' | \'desc\' }]`, a date field takes `{ gte, lte }`, related things are `expand`.', '',
+        '**Finished when the app type-checks** (`npx tsc --noEmit`) and no call below still passes an option that is gone.',
+        'In a JavaScript app there is no type-check to lean on: go through every call below.', '')
+      const byFile = new Map()
+      for (const w of p.all) byFile.set(w.file, [...(byFile.get(w.file) || []), w])
+      for (const [file, items] of byFile) {
+        out.push(`### \`${file}\``, '')
+        for (const w of items) {
+          const bits = [`was \`${w.before}\``]
+          if (w.passes.length) bits.push(`**passes ${w.passes.map((o) => '`' + o + '`').join(', ')}**, which is gone`)
+          if (w.firstPageOnly) bits.push('**used to return everything**, now one page (pass 4)')
+          if (!w.paged) bits.push('always returned whole (no `limit` or `cursor`)')
+          if (!w.called) bits.push('passed as a value, not called here: follow it to where the result is read')
+          if (w.note) bits.push(w.note)
+          out.push(`- line ${w.line} \`${w.name}\`: ${bits.join('; ')}`)
+        }
+        out.push('')
+      }
+    }
   }
 
-  out.push('## What no script can see', '')
-  for (const b of result.behaviour) out.push(`- **${b.name}.** ${b.note}`)
-  for (const f of result.fields) out.push(`- **\`${f.name}\`** (a field).${f.to ? ` Use \`${f.to}\`.` : ''} ${f.note}`)
-  out.push('', `Everything above is explained in \`docs/${path.basename(table.guide)}\` in this package.`, '')
+  if (show('pages')) {
+    const p = pass('pages')
+    out.push(`## 4. ${p.title} (${p.left.length} to decide${p.decided.length ? `, ${p.decided.length} decided` : ''})`, '')
+    if (!p.left.length && !p.decided.length) out.push('This app calls no list that used to return everything.', '')
+    else {
+      out.push(p.how, '',
+        'This is the change that breaks an app quietly: code that reads `.items` compiles and runs, and is wrong once there are more than 50.', '')
+      for (const w of p.left) out.push(`- ${where(w)} \`${w.name}\`${w.called ? '' : ' (passed as a value, not called here)'}`)
+      if (p.left.length) out.push('')
+      if (p.decided.length) {
+        out.push('Decided:', '')
+        for (const w of p.decided) out.push(`- ${where(w)} \`${w.name}\`: ${w.decided}`)
+        out.push('')
+      }
+    }
+  }
+
+  if (show('errors')) {
+    const p = pass('errors')
+    out.push(`## 5. ${p.title} (${p.left.length} left)`, '')
+    if (!p.left.length) out.push('Nothing left.', '')
+    else { out.push(p.how, ''); for (const w of p.left) out.push(`- ${where(w)} ${w.note}`); out.push('') }
+  }
+
+  if (!only) {
+    out.push('## What no script can see', '')
+    for (const b of result.behaviour) out.push(`- **${b.name}.** ${b.note}`)
+    for (const f of result.fields) out.push(`- **\`${f.name}\`** (a field).${f.to ? ` Use \`${f.to}\`.` : ''} ${f.note}`)
+    out.push('', `Everything above is explained in \`docs/${path.basename(table.guide)}\` in this package.`, '')
+  }
   return out.join('\n')
 }
 
 /** One line for a log. */
-export function summary(result) {
+export function summary(result, { write = false } = {}) {
   const n = (k) => result.work.filter((w) => w.kind === k).length
+  const passes = passesOf(result, { write })
+  const left = (id) => passes.find((p) => p.id === id).left.length
   return `${plural(result.files.reduce((a, f) => a + f.edits, 0), 'mechanical edit')} in ${plural(result.files.length, 'file')}; `
-    + `left to do: ${plural(n('list'), 'list call')}, ${plural(n('removed') + n('by-hand'), 'call')} to replace, ${plural(n('option') + n('option-check'), 'option')}, ${plural(n('check'), 'check')}`
+    + `left to do: ${plural(left('replace'), 'call or option')} to replace, ${plural(n('list'), 'list call')} to go through, `
+    + `${plural(left('pages'), 'list')} to decide (one page or all), ${plural(left('errors'), 'check')}`
     + (n('hold') ? `; ${plural(n('hold'), 'call')} to leave alone` : '')
 }
